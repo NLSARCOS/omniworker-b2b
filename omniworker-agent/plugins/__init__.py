@@ -1,0 +1,1 @@
+# OmniWorker plugins package

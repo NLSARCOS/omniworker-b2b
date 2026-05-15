@@ -1,0 +1,25 @@
+# Generated from this template by scripts/generate-winget-manifests.mjs.
+PackageIdentifier: OmniWorker.OmniWorkerDesktop
+PackageVersion: {{VERSION}}
+PackageLocale: en-US
+Publisher: Nous Research
+PublisherUrl: https://github.com/fathah/omniworker-desktop
+PublisherSupportUrl: https://github.com/fathah/omniworker-desktop/issues
+PackageName: OmniWorker Agent
+PackageUrl: https://github.com/fathah/omniworker-desktop
+License: MIT
+LicenseUrl: https://github.com/fathah/omniworker-desktop/blob/main/LICENSE
+ShortDescription: Self-improving AI assistant desktop app
+Description: |-
+  OmniWorker Desktop is a native desktop app for installing, configuring, and chatting
+  with OmniWorker Agent — a self-improving AI assistant with tool use, multi-platform
+  messaging, and a closed learning loop.
+Tags:
+  - ai
+  - agent
+  - desktop
+  - electron
+  - llm
+ReleaseNotesUrl: {{RELEASE_NOTES_URL}}
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

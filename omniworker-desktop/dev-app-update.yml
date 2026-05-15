@@ -1,0 +1,4 @@
+provider: github
+owner: fathah
+repo: omniworker-desktop
+updaterCacheDirName: omniworker-desktop-updater

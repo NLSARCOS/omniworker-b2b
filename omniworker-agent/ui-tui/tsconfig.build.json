@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@omniworker/ink": ["src/types/omniworker-ink.d.ts"]
+    }
+  }
+}

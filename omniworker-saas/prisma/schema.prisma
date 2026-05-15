@@ -1,0 +1,56 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @default("CHANGE_ME") // Necesario para Login en Desktop
+  name          String?
+  role          Role      @default(USER) // USER, SUPERADMIN
+  planId        String?
+  plan          SubscriptionPlan? @relation(fields: [planId], references: [id])
+  tokenBalance  Int       @default(0)    // "Bolsa" de tokens
+  createdAt     DateTime  @default(now())
+  
+  tasks         TaskLog[]
+}
+
+model SubscriptionPlan {
+  id          String   @id @default(uuid())
+  name        String   @unique // Ej. "Free", "Pro B2B", "Enterprise"
+  tokenLimit  Int      // Límite de tokens mensual o total
+  price       Float    // Costo del plan
+  users       User[]
+}
+
+enum Role {
+  USER
+  SUPERADMIN
+}
+
+model TaskLog {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  promptTokens   Int
+  completionTks  Int
+  modelUsed      String   // ej. "gpt-4o", "claude-3.5-sonnet"
+  taskType       String   // "mcp_github", "complex_reasoning"
+  createdAt      DateTime @default(now())
+}
+
+// Nueva tabla para que el Superadmin gestione los proveedores que sostienen el SaaS
+model MasterProvider {
+  id          String   @id @default(uuid())
+  provider    String   @unique // Ej: "openai", "anthropic"
+  apiKey      String   // Encriptada en un escenario real
+  isActive    Boolean  @default(true)
+  priority    Int      @default(1) // Para balanceo o fallbacks
+}

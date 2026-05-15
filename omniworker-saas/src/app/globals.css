@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  
+  /* Brutalist Shadows and Borders */
+  --shadow-brutal: 4px 4px 0px 0px #000000;
+  --shadow-brutal-hover: 2px 2px 0px 0px #000000;
+  --shadow-brutal-active: 0px 0px 0px 0px #000000;
+  --border-thick: 4px solid #000000;
+  --border-medium: 2px solid #000000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Space Mono", "Courier New", Courier, monospace;
+  --font-mono: "Space Mono", "Courier New", Courier, monospace;
+}
+
+/* Force Light Theme for true high-contrast B&W */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: none;
+}
+
+/* Base Brutalist Utilities */
+.btn-brutal {
+  background-color: #ffffff;
+  color: #000000;
+  border: var(--border-thick);
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-brutal);
+  transition: all 0.1s ease-in-out;
+  cursor: pointer;
+}
+
+.btn-brutal:hover {
+  box-shadow: var(--shadow-brutal-hover);
+  transform: translate(2px, 2px);
+  background-color: #f0f0f0;
+}
+
+.btn-brutal:active {
+  box-shadow: var(--shadow-brutal-active);
+  transform: translate(4px, 4px);
+}
+
+.card-brutal {
+  background-color: #ffffff;
+  border: var(--border-thick);
+  box-shadow: var(--shadow-brutal);
+  padding: 1.5rem;
+}
+
+.input-brutal {
+  background-color: #ffffff;
+  border: var(--border-thick);
+  padding: 0.75rem;
+  font-family: var(--font-mono);
+  outline: none;
+}
+
+.input-brutal:focus {
+  background-color: #ffff00; /* High contrast yellow for focus state */
+}
