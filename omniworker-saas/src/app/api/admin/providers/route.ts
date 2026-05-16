@@ -69,7 +69,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Rate limit excedido" }, { status: 429 });
   }
 
-  let body: Record<string, unknown>;
+  interface ProviderCreateBody {
+    name: string;
+    provider: string;
+    apiKey: string;
+    isActive?: boolean;
+    priority?: number;
+    dailyLimit?: number;
+    notes?: string;
+  }
+
+  let body: ProviderCreateBody;
   try { body = await request.json(); } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
@@ -104,7 +114,18 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  let body: Record<string, unknown>;
+  interface ProviderUpdateBody {
+    id: string;
+    name?: string;
+    provider?: string;
+    apiKey?: string;
+    isActive?: boolean;
+    priority?: number;
+    dailyLimit?: number;
+    notes?: string;
+  }
+
+  let body: ProviderUpdateBody;
   try { body = await request.json(); } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
@@ -117,7 +138,9 @@ export async function PATCH(request: Request) {
     delete data.apiKey;
   }
 
-  const updated = await prisma.masterProvider.update({ where: { id }, data });
+  const updatePayload: any = { ...data };
+
+  const updated = await prisma.masterProvider.update({ where: { id }, data: updatePayload });
 
   await prisma.adminAuditLog.create({
     data: { adminId: auth.user.id, action: "UPDATE_PROVIDER", target: id },

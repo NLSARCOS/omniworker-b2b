@@ -24,7 +24,7 @@ interface ApiKeyData {
 
 export default function DashboardPage() {
   const [user, setUser] = useState<UserData | null>(null);
-  const [agents, setAgents] = useState<Record<string, unknown>[]>([]);
+  const [agents, setAgents] = useState<{ id: string; agentName: string; hostname: string; platform: string; status: string }[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingKey, setGeneratingKey] = useState(false);

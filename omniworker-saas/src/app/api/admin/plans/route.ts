@@ -23,7 +23,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  let body: Record<string, unknown>;
+  interface PlanCreateBody {
+    name: string;
+    description?: string;
+    tokenLimit: number | string;
+    maxAgents?: number | string;
+    maxUsers?: number | string;
+    price: number | string;
+    billingPeriod?: string;
+    isPublic?: boolean;
+    features?: string[];
+    sortOrder?: number | string;
+  }
+  
+  let body: PlanCreateBody;
   try { body = await request.json(); } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
@@ -38,14 +51,14 @@ export async function POST(request: Request) {
     data: {
       name,
       description: description || null,
-      tokenLimit: parseInt(tokenLimit),
-      maxAgents: parseInt(maxAgents ?? 1),
-      maxUsers: parseInt(maxUsers ?? 1),
-      price: parseFloat(price),
+      tokenLimit: typeof tokenLimit === 'string' ? parseInt(tokenLimit) : tokenLimit,
+      maxAgents: typeof maxAgents === 'string' ? parseInt(maxAgents) : (maxAgents ?? 1),
+      maxUsers: typeof maxUsers === 'string' ? parseInt(maxUsers) : (maxUsers ?? 1),
+      price: typeof price === 'string' ? parseFloat(price) : price,
       billingPeriod: billingPeriod || "monthly",
       isPublic: isPublic ?? true,
       features: JSON.stringify(features || []),
-      sortOrder: parseInt(sortOrder ?? 0),
+      sortOrder: typeof sortOrder === 'string' ? parseInt(sortOrder) : (sortOrder ?? 0),
     },
   });
 
@@ -62,7 +75,21 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  let body: Record<string, unknown>;
+  interface PlanUpdateBody {
+    id: string;
+    name?: string;
+    description?: string;
+    tokenLimit?: number | string;
+    maxAgents?: number | string;
+    maxUsers?: number | string;
+    price?: number | string;
+    billingPeriod?: string;
+    isPublic?: boolean;
+    features?: string[];
+    sortOrder?: number | string;
+  }
+
+  let body: PlanUpdateBody;
   try { body = await request.json(); } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
@@ -70,12 +97,12 @@ export async function PATCH(request: Request) {
   const { id, features, ...rest } = body;
   if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
 
-  const updateData: Record<string, unknown> = { ...rest as object };
+  const updateData: any = { ...rest };
   if (features !== undefined) updateData.features = JSON.stringify(features);
-  if (rest.tokenLimit !== undefined) updateData.tokenLimit = parseInt(rest.tokenLimit);
-  if (rest.maxAgents !== undefined) updateData.maxAgents = parseInt(rest.maxAgents);
-  if (rest.maxUsers !== undefined) updateData.maxUsers = parseInt(rest.maxUsers);
-  if (rest.price !== undefined) updateData.price = parseFloat(rest.price);
+  if (rest.tokenLimit !== undefined) updateData.tokenLimit = typeof rest.tokenLimit === 'string' ? parseInt(rest.tokenLimit) : rest.tokenLimit;
+  if (rest.maxAgents !== undefined) updateData.maxAgents = typeof rest.maxAgents === 'string' ? parseInt(rest.maxAgents) : rest.maxAgents;
+  if (rest.maxUsers !== undefined) updateData.maxUsers = typeof rest.maxUsers === 'string' ? parseInt(rest.maxUsers) : rest.maxUsers;
+  if (rest.price !== undefined) updateData.price = typeof rest.price === 'string' ? parseFloat(rest.price) : rest.price;
 
   const plan = await prisma.subscriptionPlan.update({ where: { id }, data: updateData });
 

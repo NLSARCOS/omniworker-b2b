@@ -35,22 +35,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Rate limit excedido" }, { status: 429 });
   }
 
-  let body: Record<string, unknown>;
+  interface TenantCreateBody {
+    name: string;
+    planId?: string;
+    isActive?: boolean;
+    contactName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    website?: string;
+    taxId?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
+    notes?: string;
+    adminEmail?: string;
+    adminPassword?: string;
+    adminName?: string;
+    tokenBalance?: number | string;
+  }
+
+  let body: TenantCreateBody;
   try { body = await request.json(); } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
   const {
     name, planId, isActive,
-    // Contact
     contactName, contactEmail, contactPhone, website,
-    // Fiscal
     taxId, address, city, country, postalCode,
-    // Notes
     notes,
-    // Admin user for this tenant
     adminEmail, adminPassword, adminName,
-    // Tokens
     tokenBalance,
   } = body;
 
@@ -92,7 +107,7 @@ export async function POST(request: Request) {
           name: adminName || contactName || name,
           role: "ADMIN",
           tenantId: tenant.id,
-          tokenBalance: tokenBalance || 10000,
+          tokenBalance: tokenBalance !== undefined ? (typeof tokenBalance === 'string' ? parseInt(tokenBalance) : tokenBalance) : 10000,
           isActive: true,
         },
       });
@@ -112,7 +127,24 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  let body: Record<string, unknown>;
+  interface TenantUpdateBody {
+    id: string;
+    name?: string;
+    planId?: string;
+    isActive?: boolean;
+    contactName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    website?: string;
+    taxId?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    postalCode?: string;
+    notes?: string;
+  }
+
+  let body: TenantUpdateBody;
   try { body = await request.json(); } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
@@ -120,9 +152,11 @@ export async function PATCH(request: Request) {
   const { id, ...data } = body;
   if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
 
+  const updatePayload: any = { ...data };
+
   const tenant = await prisma.tenant.update({
     where: { id },
-    data,
+    data: updatePayload,
     include: { plan: true },
   });
 

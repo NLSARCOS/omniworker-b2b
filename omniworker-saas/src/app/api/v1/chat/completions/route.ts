@@ -23,13 +23,20 @@ When fixing bugs, explain the root cause. When suggesting code, include complete
 Languages, frameworks, and tools: you are fluent in all of them.`,
 };
 
+const OPENCODE_GO_MODELS = [
+  "glm-5.1", "glm-5", "kimi-k2.5", "kimi-k2.6", 
+  "deepseek-v4-pro", "deepseek-v4-flash", "mimo-v2.5", "mimo-v2.5-pro",
+  "minimax-m2.7", "minimax-m2.5", "qwen3.6-plus", "qwen3.5-plus"
+];
+
 function detectProvider(model: string): string {
   const m = model.toLowerCase();
+  if (OPENCODE_GO_MODELS.includes(m)) return "opencode-go";
   if (m.includes("deepseek")) return "deepseek";
-  if (m.includes("opencode")) return "opencode-go";
   if (m.includes("moonshot") || m.includes("kimi")) return "moonshot";
   if (m.includes("minimax")) return "minimax";
   if (m.includes("claude")) return "anthropic";
+  if (m.includes("gemini")) return "gemini";
   return "openai";
 }
 

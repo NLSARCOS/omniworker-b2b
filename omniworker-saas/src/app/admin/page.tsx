@@ -46,6 +46,16 @@ interface Tenant {
   createdAt: string;
 }
 
+interface AuditLog {
+  id: string;
+  adminId: string;
+  action: string;
+  target: string | null;
+  details: string | null;
+  ip: string | null;
+  createdAt: string;
+}
+
 type View = "dashboard" | "providers" | "tenants" | "plans" | "audit";
 
 export default function SuperAdminCommandCenter() {
@@ -55,6 +65,7 @@ export default function SuperAdminCommandCenter() {
   const [opencodeGoModels, setOpencodeGoModels] = useState<OpenCodeGoModel[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -66,16 +77,18 @@ export default function SuperAdminCommandCenter() {
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${localStorage.getItem("ow_token")}` };
-      const [pRes, tRes, plRes] = await Promise.all([
+      const [pRes, tRes, plRes, auditRes] = await Promise.all([
         fetch("/api/admin/providers", { headers }).then(r => r.json()),
         fetch("/api/admin/tenants", { headers }).then(r => r.json()),
-        fetch("/api/admin/plans", { headers }).then(r => r.json())
+        fetch("/api/admin/plans", { headers }).then(r => r.json()),
+        fetch("/api/admin/audit", { headers }).then(r => r.json())
       ]);
       setProviders(pRes.providers || []);
       setProviderOptions(pRes.availableProviders || []);
       setOpencodeGoModels(pRes.openCodeGoModels || []);
       setTenants(tRes.tenants || []);
       setPlans(plRes.plans || []);
+      setAuditLogs(auditRes.logs || []);
     } catch (err) {
       console.error(err);
       setError("SYSTEM_FAULT: Gataway connection failed.");
@@ -244,10 +257,15 @@ export default function SuperAdminCommandCenter() {
                       <td className="p-4 text-zinc-400 font-mono">{(limit/1000).toFixed(0)}k</td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <span className={`font-mono ${remaining < limit * 0.1 ? "text-red-400" : "text-lime-400"}`}>{(remaining/1000).toFixed(0)}k</span>
+                          <span className={`font-mono ${percent >= 80 ? "text-red-400 font-bold" : "text-lime-400"}`}>{(remaining/1000).toFixed(0)}k</span>
                           <div className="w-24 h-1.5 bg-zinc-800 overflow-hidden">
-                            <div className="h-full bg-lime-500" style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
+                            <div className={`h-full ${percent >= 80 ? "bg-red-500 animate-pulse" : "bg-lime-500"}`} style={{ width: `${Math.min(100, Math.max(0, percent))}%` }} />
                           </div>
+                          {percent >= 80 && (
+                            <span className="flex items-center gap-1 text-[10px] text-red-500 bg-red-500/10 px-1.5 py-0.5 border border-red-500/20 uppercase font-mono tracking-wider ml-1">
+                              <ShieldAlert size={10} /> 80%+ Warn
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="p-4 font-mono text-zinc-300">${cost.toFixed(4)}</td>
@@ -432,6 +450,35 @@ export default function SuperAdminCommandCenter() {
              <div className="bg-zinc-900 border-l-4 border-lime-500 p-6">
                 <div className="text-lime-400 font-mono font-bold mb-2">IMMUTABLE LEDGER ACTIVE</div>
                 <p className="text-zinc-400 text-sm">All SuperAdmin destructive actions (DELETE, UPDATE, PROVISION) are hard-logged into the PostgreSQL audit chain associated with your admin token. Actions cannot be repudiated.</p>
+             </div>
+             <div className="bg-zinc-900 border border-zinc-800 overflow-x-auto">
+               <table className="w-full text-left font-mono text-sm text-zinc-300">
+                 <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
+                   <tr>
+                     <th className="px-6 py-4">Timestamp</th>
+                     <th className="px-6 py-4">Admin ID</th>
+                     <th className="px-6 py-4">Action</th>
+                     <th className="px-6 py-4">Target</th>
+                     <th className="px-6 py-4">Details</th>
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-zinc-800">
+                   {auditLogs.map(log => (
+                     <tr key={log.id} className="hover:bg-zinc-800/50 transition-colors">
+                       <td className="px-6 py-4 whitespace-nowrap text-zinc-500">{new Date(log.createdAt).toLocaleString()}</td>
+                       <td className="px-6 py-4 whitespace-nowrap">{log.adminId.slice(0, 8)}...</td>
+                       <td className="px-6 py-4 whitespace-nowrap font-bold text-lime-400">{log.action}</td>
+                       <td className="px-6 py-4 whitespace-nowrap">{log.target || "-"}</td>
+                       <td className="px-6 py-4 truncate max-w-xs">{log.details || "-"}</td>
+                     </tr>
+                   ))}
+                   {auditLogs.length === 0 && (
+                     <tr>
+                       <td colSpan={5} className="px-6 py-8 text-center text-zinc-600">No audit logs found.</td>
+                     </tr>
+                   )}
+                 </tbody>
+               </table>
              </div>
           </div>
         )}
