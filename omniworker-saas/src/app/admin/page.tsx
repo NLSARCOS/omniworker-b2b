@@ -77,11 +77,27 @@ export default function SuperAdminCommandCenter() {
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${localStorage.getItem("ow_token")}` };
+      
+      const fetchJson = async (url: string) => {
+        const res = await fetch(url, { headers });
+        const text = await res.text();
+        if (!text) {
+          console.warn(`Empty response from ${url}`);
+          return {};
+        }
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.error(`Invalid JSON from ${url}:`, text);
+          return {};
+        }
+      };
+
       const [pRes, tRes, plRes, auditRes] = await Promise.all([
-        fetch("/api/admin/providers", { headers }).then(r => r.json()),
-        fetch("/api/admin/tenants", { headers }).then(r => r.json()),
-        fetch("/api/admin/plans", { headers }).then(r => r.json()),
-        fetch("/api/admin/audit", { headers }).then(r => r.json())
+        fetchJson("/api/admin/providers"),
+        fetchJson("/api/admin/tenants"),
+        fetchJson("/api/admin/plans"),
+        fetchJson("/api/admin/audit")
       ]);
       setProviders(pRes.providers || []);
       setProviderOptions(pRes.availableProviders || []);
