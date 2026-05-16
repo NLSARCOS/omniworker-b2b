@@ -72,11 +72,22 @@ export async function POST(request: Request) {
     }).catch(() => { /* license may have been revoked */ });
   }
 
+  // License usage for desktop app header display
+  const tenantWithPlan = await prisma.tenant.findUnique({
+    where: { id: user.tenantId },
+    include: { plan: true },
+  });
+  const activeLicenseCount = await prisma.license.count({
+    where: { tenantId: user.tenantId, status: "ACTIVE" },
+  });
+  const maxLicenses = tenantWithPlan?.plan?.maxLicenses ?? 1;
+
   return NextResponse.json({
     success: true,
-    commands: [], // Placeholder for future command queue
+    commands: [],
     plan: user.plan,
     tokenBalance: user.tokenBalance,
     tenantName: user.tenantName,
+    licenseUsage: { active: activeLicenseCount, max: maxLicenses },
   });
 }

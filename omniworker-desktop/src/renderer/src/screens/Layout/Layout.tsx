@@ -154,7 +154,12 @@ function Layout({
     };
   }, []);
 
-  const [saasInfo, setSaasInfo] = useState<{ plan: string | null; tokenBalance: number | null; tenantName: string | null } | null>(null);
+  const [saasInfo, setSaasInfo] = useState<{
+    plan: string | null;
+    tokenBalance: number | null;
+    tenantName: string | null;
+    licenseUsage?: { active: number; max: number };
+  } | null>(null);
 
   // OmniWorker B2B: Edge Agent Heartbeat
   useEffect(() => {
@@ -210,6 +215,7 @@ function Layout({
               plan: data.plan || null,
               tokenBalance: typeof data.tokenBalance === "number" ? data.tokenBalance : null,
               tenantName: data.tenantName || null,
+              licenseUsage: data.licenseUsage || undefined,
             });
           }
         }
@@ -342,10 +348,15 @@ function Layout({
                 <div style={{ color: 'var(--text-primary)', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px' }}>
                   {saasInfo.tenantName || 'Tenant'}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                   <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px' }}>
                     {saasInfo.plan || 'Free'} Plan
                   </span>
+                  {saasInfo.licenseUsage && (
+                    <span style={{ backgroundColor: saasInfo.licenseUsage.active >= saasInfo.licenseUsage.max ? '#ef4444' : 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px', color: saasInfo.licenseUsage.active >= saasInfo.licenseUsage.max ? '#fff' : 'inherit' }}>
+                      {saasInfo.licenseUsage.active} / {saasInfo.licenseUsage.max} INST
+                    </span>
+                  )}
                   <span style={{ 
                     color: saasInfo.tokenBalance && saasInfo.tokenBalance > 1000 ? 'var(--text-primary)' : '#ef4444',
                     fontWeight: 'bold' 
