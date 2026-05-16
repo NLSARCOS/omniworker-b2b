@@ -34,6 +34,9 @@ model Tenant {
   // Notas internas
   notes         String?
 
+  // Subscription state
+  subscriptionEndsAt DateTime?
+
   users       User[]
   edgeAgents  EdgeAgent[]
   apiKeys     TenantApiKey[]

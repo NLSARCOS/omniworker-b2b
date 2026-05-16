@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 
+/* ─── Types ─── */
 interface UserData {
   id: string;
   email: string;
@@ -22,47 +23,144 @@ interface ApiKeyData {
   lastUsedAt: string | null;
 }
 
+interface AgentData {
+  id: string;
+  agentName: string;
+  hostname: string;
+  platform: string;
+  status: string;
+}
+
+/* ─── Mini Components (brutalist style) ─── */
+
+function PageHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32, paddingBottom: 20, borderBottom: "3px solid #111" }}>
+      <div>
+        <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-1px", textTransform: "uppercase", lineHeight: 1, margin: 0 }}>{title}</h1>
+        <p style={{ fontSize: 13, color: "#555", marginTop: 6, fontFamily: "'Space Mono', monospace", textTransform: "uppercase", letterSpacing: 1 }}>{subtitle}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function StatCard({ title, value, progress, subtitle }: { title: string; value: string | number; progress?: number; subtitle?: string }) {
+  return (
+    <div style={{ background: "#fff", border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111" }}>
+      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, color: "#555", marginBottom: 8, fontFamily: "'Space Mono', monospace" }}>{title}</p>
+      <p style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-2px", lineHeight: 1, margin: 0 }}>{value}</p>
+      {progress !== undefined && (
+        <>
+          <div style={{ height: 4, background: "#eee", overflow: "hidden", marginTop: 12 }}>
+            <div style={{ height: "100%", width: `${Math.min(progress, 100)}%`, background: progress > 90 ? "#ff0000" : "#000", transition: "width 0.6s ease" }} />
+          </div>
+          {subtitle && <p style={{ fontSize: 12, color: "#888", marginTop: 6, fontFamily: "'Space Mono', monospace" }}>{subtitle}</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function StatsGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, marginBottom: 32, border: "3px solid #111", boxShadow: "4px 4px 0 0 #111" }}>
+      {children}
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 32, border: "3px solid #111", padding: 24, background: "#fff", boxShadow: "4px 4px 0 0 #111" }}>
+      <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, marginBottom: 20, paddingBottom: 12, borderBottom: "1px solid #e0e0e0", fontFamily: "'Space Mono', monospace" }}>{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function Badge({ variant, children }: { variant: "success" | "warning" | "danger" | "info" | "default"; children: React.ReactNode }) {
+  const colors: Record<string, { color: string; border: string; bg?: string }> = {
+    success: { color: "#000", border: "#000" },
+    warning: { color: "#000", border: "#000", bg: "#f0f0f0" },
+    danger: { color: "#ff0000", border: "#ff0000" },
+    info: { color: "#000", border: "#000" },
+    default: { color: "#666", border: "#ccc" },
+  };
+  const c = colors[variant] || colors.default;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace", border: `1px solid ${c.border}`, color: c.color, background: c.bg || "transparent" }}>
+      {children}
+    </span>
+  );
+}
+
+function Button({ variant = "primary", onClick, disabled, children }: { variant?: "primary" | "secondary" | "danger"; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  const styles: Record<string, React.CSSProperties> = {
+    primary: { background: "#000", color: "#fff", borderColor: "#000" },
+    secondary: { background: "#fff", color: "#000", borderColor: "#000" },
+    danger: { background: "#ff0000", color: "#fff", borderColor: "#ff0000" },
+  };
+  const s = styles[variant] || styles.primary;
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px",
+        fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
+        border: "3px solid", cursor: disabled ? "not-allowed" : "pointer",
+        fontFamily: "'Space Mono', monospace", boxShadow: "2px 2px 0 0 #111",
+        transition: "all 0.15s ease", opacity: disabled ? 0.5 : 1,
+        ...s,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ─── Page ─── */
 export default function DashboardPage() {
   const [user, setUser] = useState<UserData | null>(null);
-  const [agents, setAgents] = useState<{ id: string; agentName: string; hostname: string; platform: string; status: string }[]>([]);
+  const [agents, setAgents] = useState<AgentData[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingKey, setGeneratingKey] = useState(false);
   const [newKeyRaw, setNewKeyRaw] = useState<string | null>(null);
+  const [keyError, setKeyError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Load user data (cookies are sent automatically)
-    fetch("/api/v1/auth/me")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) {
-          setUser(data.user);
-          // Load edge agents & API keys
-          if (data.user.tenantId) {
-            Promise.all([
-              fetch("/api/v1/edge/status").then(r => r.json()),
-              fetch("/api/v1/apikeys").then(r => r.json())
-            ]).then(([agentsData, keysData]) => {
-              if (agentsData?.success) setAgents(agentsData.agents || []);
-              if (keysData?.success) setApiKeys(keysData.keys || []);
-            });
-          }
-        } else {
-          window.location.href = "/login";
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const meRes = await fetch("/api/v1/auth/me");
+      const meData = await meRes.json();
+      if (meData.success) {
+        setUser(meData.user);
+        if (meData.user.tenantId) {
+          const [agentsRes, keysRes] = await Promise.allSettled([
+            fetch("/api/v1/edge/status").then(r => r.json()),
+            fetch("/api/v1/apikeys").then(r => r.json()),
+          ]);
+          if (agentsRes.status === "fulfilled" && agentsRes.value?.success) setAgents(agentsRes.value.agents || []);
+          if (keysRes.status === "fulfilled" && keysRes.value?.success) setApiKeys(keysRes.value.keys || []);
         }
-      })
-      .catch(() => {
+      } else {
         window.location.href = "/login";
-      })
-      .finally(() => setLoading(false));
-  }, []);
+      }
+    } catch {
+      window.location.href = "/login";
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const handleLogout = async () => {
     await fetch("/api/v1/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };
-
-  const [keyError, setKeyError] = useState<string | null>(null);
 
   const handleGenerateKey = async () => {
     setGeneratingKey(true);
@@ -71,18 +169,17 @@ export default function DashboardPage() {
       const res = await fetch("/api/v1/apikeys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "Desktop Agent Key" })
+        body: JSON.stringify({ name: "Desktop Agent Key" }),
       });
       const data = await res.json();
-      
       if (data.success) {
         setNewKeyRaw(data.apiKey.key);
         setApiKeys([{ ...data.apiKey, keyPrefix: data.apiKey.key.substring(0, 16) }, ...apiKeys]);
       } else {
-        setKeyError(data.error || "Error desconocido al generar la clave");
+        setKeyError(data.error || "Error desconocido");
       }
     } catch (e: unknown) {
-      setKeyError(e instanceof Error ? e.message : "Error de red al generar la clave");
+      setKeyError(e instanceof Error ? e.message : "Error de red");
     } finally {
       setGeneratingKey(false);
     }
@@ -90,226 +187,207 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-white text-black font-mono">
-        <p className="text-2xl uppercase font-bold">Cargando...</p>
+      <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F4F4F0", fontFamily: "'Space Mono', monospace" }}>
+        <p style={{ fontSize: 24, fontWeight: 700, textTransform: "uppercase" }}>Cargando...</p>
       </main>
     );
   }
 
   if (!user) return null;
 
+  const onlineAgents = agents.filter(a => a.status === "online").length;
+  const tokenPct = user.tokenBalance > 0 ? Math.min(100, (user.tokenBalance / 100000) * 100) : 0;
+
   return (
-    <main className="min-h-screen p-8 font-mono bg-white text-black">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-start border-b-4 border-black pb-6 mb-8">
-          <div>
-            <h1 className="text-4xl sm:text-5xl font-bold uppercase tracking-tighter">
-              Dashboard
-            </h1>
-            <p className="text-lg uppercase mt-2">
-              {user.tenantName || user.name || user.email}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            {user.role === "SUPERADMIN" && (
-              <a
-                href="/admin"
-                className="bg-black text-white px-4 py-2 text-sm font-bold uppercase border-2 border-black"
-              >
-                Admin
-              </a>
+    <>
+      {/* Fonts */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+      <main style={{ minHeight: "100vh", padding: 32, fontFamily: "'Inter', sans-serif", background: "#F4F4F0", color: "#111" }}>
+        <div style={{ maxWidth: 1320, margin: "0 auto" }}>
+
+          <PageHeader
+            title="Dashboard"
+            subtitle={loading ? "Loading..." : `${user.tenantName || user.email} / ${(user.plan || "FREE").toUpperCase()} PLAN`}
+            action={
+              <div style={{ display: "flex", gap: 8 }}>
+                {user.role === "SUPERADMIN" && (
+                  <a href="/admin" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, border: "3px solid #111", fontFamily: "'Space Mono', monospace", boxShadow: "2px 2px 0 0 #111", background: "#FFC800", color: "#000", textDecoration: "none" }}>
+                    ADMIN
+                  </a>
+                )}
+                <Button variant="secondary" onClick={handleLogout}>SALIR</Button>
+              </div>
+            }
+          />
+
+          {/* Subscription expired warning */}
+          {user.isLocked && (
+            <div style={{ marginBottom: 32, padding: "16px 20px", background: "rgba(255,100,100,0.1)", border: "1px solid rgba(255,100,100,0.3)", color: "var(--text-primary)" }}>
+              <strong>SALDO INSUFICIENTE</strong>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>Tu balance de tokens está agotado. Contacta a tu administrador para recargar.</p>
+            </div>
+          )}
+
+          {/* Stats Grid */}
+          <StatsGrid>
+            <StatCard
+              title="Tokens Disponibles"
+              value={user.tokenBalance.toLocaleString()}
+              progress={100 - tokenPct}
+              subtitle={`${tokenPct}% restante`}
+            />
+            <StatCard title="Plan" value={(user.plan || "Free").toUpperCase()} />
+            <StatCard
+              title="Agentes Online"
+              value={`${onlineAgents} / ${agents.length}`}
+            />
+          </StatsGrid>
+
+          {/* API Keys Section */}
+          <Section title="API KEYS — CONEXIÓN AGENTE">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Genera claves para conectar tus OmniWorker Desktop Agents.</p>
+              <Button variant="primary" onClick={handleGenerateKey} disabled={generatingKey}>
+                {generatingKey ? "GENERANDO..." : "+ NUEVA CLAVE"}
+              </Button>
+            </div>
+
+            {keyError && (
+              <div style={{ padding: 16, background: "#fff0f0", border: "3px solid #ff0000", marginBottom: 16 }}>
+                <p style={{ fontWeight: 700, fontSize: 14, margin: "0 0 4px" }}>ERROR AL GENERAR</p>
+                <p style={{ fontSize: 13, color: "#555", margin: 0 }}>{keyError}</p>
+              </div>
             )}
-            <button
-              onClick={handleLogout}
-              className="border-2 border-black px-4 py-2 text-sm font-bold uppercase hover:bg-black hover:text-white"
-            >
-              Salir
-            </button>
-          </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          <div className="border-4 border-black p-6">
-            <p className="text-xs uppercase font-bold mb-1">Tokens Disponibles</p>
-            <p className="text-4xl font-bold">{user.tokenBalance.toLocaleString()}</p>
-          </div>
-          <div className="border-4 border-black p-6">
-            <p className="text-xs uppercase font-bold mb-1">Plan</p>
-            <p className="text-4xl font-bold">{user.plan || "Free"}</p>
-          </div>
-          <div className="border-4 border-black p-6">
-            <p className="text-xs uppercase font-bold mb-1">Agentes Activos</p>
-            <p className="text-4xl font-bold">{agents.length}</p>
-          </div>
-        </div>
+            {newKeyRaw && (
+              <div style={{ padding: 16, background: "#FFC800", border: "3px solid #111", marginBottom: 16, boxShadow: "4px 4px 0 0 #111" }}>
+                <p style={{ fontWeight: 700, fontSize: 16, margin: "0 0 8px" }}>Copia tu nueva clave ahora!</p>
+                <p style={{ fontSize: 13, color: "#333", margin: "0 0 8px" }}>Por seguridad, no volveremos a mostrarla.</p>
+                <code style={{ display: "block", background: "#111", color: "#fff", padding: 16, fontFamily: "'Space Mono', monospace", fontSize: 13, wordBreak: "break-all" }}>{newKeyRaw}</code>
+                <button onClick={() => setNewKeyRaw(null)} style={{ marginTop: 12, padding: "8px 16px", border: "3px solid #111", background: "#fff", fontWeight: 700, fontSize: 12, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", cursor: "pointer" }}>
+                  ENTENDIDO
+                </button>
+              </div>
+            )}
 
-        {/* API Keys */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center bg-black text-white p-2 mb-4">
-            <h2 className="text-2xl font-bold uppercase inline-block">
-              API Keys (Conexión Agente)
-            </h2>
-            <button 
-              onClick={handleGenerateKey}
-              disabled={generatingKey}
-              className="bg-white text-black px-3 py-1 text-sm font-bold uppercase hover:bg-gray-200 disabled:opacity-50"
-            >
-              + Nueva Clave
-            </button>
-          </div>
+            {apiKeys.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
+                <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin claves activas</p>
+                <p style={{ fontSize: 13, margin: 0 }}>Genera una clave para conectar tu OmniWorker Agent Desktop.</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Nombre</th>
+                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Prefijo</th>
+                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Creada</th>
+                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Último Uso</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {apiKeys.map((key) => (
+                      <tr key={key.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
+                        <td style={{ padding: "12px 16px" }}>{key.name}</td>
+                        <td style={{ padding: "12px 16px", fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{key.keyPrefix}...</td>
+                        <td style={{ padding: "12px 16px" }}>{new Date(key.createdAt).toLocaleDateString()}</td>
+                        <td style={{ padding: "12px 16px" }}>{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : "Nunca"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Section>
 
-          {keyError && (
-            <div className="border-4 border-red-500 bg-red-100 p-4 mb-4 text-red-700">
-              <p className="font-bold text-lg mb-2">Error al generar la clave</p>
-              <p className="text-sm">{keyError}</p>
-              <button 
-                onClick={() => setKeyError(null)}
-                className="mt-3 border-2 border-red-500 px-3 py-1 text-xs font-bold uppercase hover:bg-red-200"
+          {/* Edge Agents Section */}
+          <Section title="AGENTES CONECTADOS">
+            {agents.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
+                <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin agentes en línea</p>
+                <p style={{ fontSize: 13, margin: 0 }}>Configura tu agente con tu API Key generada arriba.</p>
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Agente</th>
+                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Host</th>
+                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Plataforma</th>
+                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {agents.map((agent) => (
+                      <tr key={agent.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
+                        <td style={{ padding: "12px 16px", fontWeight: 600 }}>{agent.agentName}</td>
+                        <td style={{ padding: "12px 16px", fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{agent.hostname}</td>
+                        <td style={{ padding: "12px 16px" }}>{agent.platform}</td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <Badge variant={agent.status === "online" ? "success" : agent.status === "busy" ? "warning" : "default"}>
+                            {agent.status.toUpperCase()}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Section>
+
+          {/* Quick Actions */}
+          <Section title="ACCIONES RÁPIDAS">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 0 }}>
+              <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111", transition: "all 0.15s ease", cursor: "pointer" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translate(-4px,-4px)"; e.currentTarget.style.boxShadow = "8px 8px 0 0 #111"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "2px 2px 0 0 #111"; }}
               >
-                Cerrar
-              </button>
-            </div>
-          )}
-
-          {newKeyRaw && (
-            <div className="border-4 border-black bg-yellow-100 p-4 mb-4">
-              <p className="font-bold text-lg mb-2">¡Copia tu nueva clave ahora!</p>
-              <p className="text-sm mb-2">Por seguridad, no volveremos a mostrarla.</p>
-              <code className="block bg-black text-white p-3 break-all">{newKeyRaw}</code>
-              <button 
-                onClick={() => setNewKeyRaw(null)}
-                className="mt-3 border-2 border-black px-3 py-1 text-xs font-bold uppercase"
-              >
-                Entendido
-              </button>
-            </div>
-          )}
-
-          {apiKeys.length === 0 ? (
-            <div className="border-4 border-black p-8 text-center">
-              <p className="text-lg uppercase font-bold mb-2">
-                No tienes claves activas
-              </p>
-              <p className="text-sm opacity-60">
-                Genera una clave para conectar tu OmniWorker Agent Desktop.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {apiKeys.map((key) => (
-                <div
-                  key={key.id}
-                  className="border-4 border-black p-4 flex justify-between items-center"
-                >
-                  <div>
-                    <p className="font-bold">{key.name}</p>
-                    <p className="text-sm opacity-60">
-                      {key.keyPrefix}... • Creada: {new Date(key.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold uppercase">Último uso</p>
-                    <p className="text-sm opacity-80">{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : 'Nunca'}</p>
-                  </div>
+                <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Descargar Desktop</p>
+                <p style={{ fontSize: 13, color: "#555", margin: "0 0 16px" }}>App nativa para macOS, Windows, Linux</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest-mac.zip" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Mac</a>
+                  <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-Setup-latest.exe" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Windows</a>
+                  <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest.AppImage" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#fff", color: "#000", textDecoration: "none", border: "2px solid #000" }}>Linux</a>
                 </div>
-              ))}
+              </div>
+              <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111", transition: "all 0.15s ease" }}>
+                <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Documentación</p>
+                <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Guías de instalación y configuración</p>
+              </div>
             </div>
-          )}
-        </div>
+          </Section>
 
-        {/* Edge Agents */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold uppercase bg-black text-white p-2 inline-block mb-4">
-            Agentes Conectados
-          </h2>
-
-          {agents.length === 0 ? (
-            <div className="border-4 border-black p-8 text-center">
-              <p className="text-lg uppercase font-bold mb-2">
-                Sin agentes en línea
-              </p>
-              <p className="text-sm opacity-60">
-                Configura tu agente con tu API Key generada arriba.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {agents.map((agent) => (
-                <div
-                  key={agent.id}
-                  className="border-4 border-black p-4 flex justify-between items-center"
-                >
-                  <div>
-                    <p className="font-bold text-lg">{agent.agentName}</p>
-                    <p className="text-sm opacity-60">
-                      {agent.hostname} · {agent.platform}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`px-3 py-1 text-sm font-bold uppercase border-2 ${
-                        agent.status === "online"
-                          ? "border-black bg-black text-white"
-                          : "border-black bg-white text-black"
-                      }`}
-                    >
-                      {agent.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div>
-          <h2 className="text-2xl font-bold uppercase bg-black text-white p-2 inline-block mb-4">
-            Acciones
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="border-4 border-black p-6 flex flex-col justify-between">
+          {/* Platform Status */}
+          <Section title="ESTADO DE PLATAFORMA">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
+              <div style={{ borderRight: "3px solid #111" }}>
+                <span style={{ color: "#555", fontSize: 13 }}>Plan</span>
+                <br />
+                <strong style={{ fontSize: 16 }}>{(user.plan || "Free").toUpperCase()}</strong>
+              </div>
+              <div style={{ borderRight: "3px solid #111" }}>
+                <span style={{ color: "#555", fontSize: 13 }}>Cuenta</span>
+                <br />
+                <Badge variant={user.isLocked ? "danger" : "success"}>
+                  {user.isLocked ? "BLOQUEADA" : "ACTIVA"}
+                </Badge>
+              </div>
               <div>
-                <p className="text-xl font-bold uppercase">Descargar Desktop</p>
-                <p className="text-sm mt-1 opacity-60 mb-4">
-                  App nativa de OmniWorker
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <a
-                  href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest-mac.zip"
-                  className="bg-black text-white px-3 py-2 text-xs font-bold uppercase hover:bg-gray-800 transition-colors"
-                >
-                   Mac (.dmg)
-                </a>
-                <a
-                  href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-Setup-latest.exe"
-                  className="bg-black text-white px-3 py-2 text-xs font-bold uppercase hover:bg-gray-800 transition-colors"
-                >
-                  ⊞ Win (.exe)
-                </a>
-                <a
-                  href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest.AppImage"
-                  className="border-2 border-black px-3 py-2 text-xs font-bold uppercase hover:bg-gray-200 transition-colors"
-                >
-                  🐧 Linux
-                </a>
+                <span style={{ color: "#555", fontSize: 13 }}>Organización</span>
+                <br />
+                <strong style={{ fontSize: 16 }}>{user.tenantName || "—"}</strong>
               </div>
             </div>
-            <a
-              href="#"
-              className="border-4 border-black p-6 hover:bg-black hover:text-white transition-colors block"
-            >
-              <p className="text-xl font-bold uppercase">Documentación</p>
-              <p className="text-sm mt-1 opacity-60">
-                Guías de instalación y configuración
-              </p>
-            </a>
-          </div>
+          </Section>
+
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

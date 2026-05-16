@@ -66,6 +66,7 @@ export default function SuperAdminCommandCenter() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [modelMetrics, setModelMetrics] = useState<{model: string, calls: number, tokens: number}[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -93,11 +94,12 @@ export default function SuperAdminCommandCenter() {
         }
       };
 
-      const [pRes, tRes, plRes, auditRes] = await Promise.all([
+      const [pRes, tRes, plRes, auditRes, metricsRes] = await Promise.all([
         fetchJson("/api/admin/providers"),
         fetchJson("/api/admin/tenants"),
         fetchJson("/api/admin/plans"),
-        fetchJson("/api/admin/audit")
+        fetchJson("/api/admin/audit"),
+        fetchJson("/api/admin/metrics")
       ]);
       setProviders(pRes.providers || []);
       setProviderOptions(pRes.availableProviders || []);
@@ -105,6 +107,7 @@ export default function SuperAdminCommandCenter() {
       setTenants(tRes.tenants || []);
       setPlans(plRes.plans || []);
       setAuditLogs(auditRes.logs || []);
+      setModelMetrics(metricsRes.models || []);
     } catch (err) {
       console.error(err);
       setError("SYSTEM_FAULT: Gataway connection failed.");
@@ -243,6 +246,85 @@ export default function SuperAdminCommandCenter() {
               <div className="bg-zinc-900 border border-zinc-800 p-6">
                 <div className="text-zinc-500 text-xs font-mono uppercase mb-2">System Edge Agents</div>
                 <div className="text-3xl font-bold text-white">{tenants.reduce((acc, t) => acc + t._count.edgeAgents, 0)}</div>
+              </div>
+            </div>
+
+            <h2 className="text-lg font-bold text-white uppercase mt-12 mb-4 border-b border-zinc-800 pb-2">Business & Platform Insights</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* TOP APIS / MODELS */}
+              <div className="bg-zinc-900 border border-zinc-800 p-6">
+                <div className="flex items-center gap-3 mb-4 text-zinc-400">
+                  <Activity size={18} className="text-lime-500" />
+                  <h3 className="font-bold text-white tracking-widest uppercase text-sm">Top Models by Usage</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-zinc-500 uppercase bg-zinc-950/50">
+                      <tr>
+                        <th className="px-4 py-3 font-mono">Model / API</th>
+                        <th className="px-4 py-3 font-mono">Calls</th>
+                        <th className="px-4 py-3 font-mono">Total Tokens</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {modelMetrics.length === 0 && (
+                        <tr><td colSpan={3} className="px-4 py-6 text-center text-zinc-500 font-mono">No API usage recorded yet</td></tr>
+                      )}
+                      {modelMetrics.map((m, i) => (
+                        <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
+                          <td className="px-4 py-3 font-medium text-lime-400">{m.model}</td>
+                          <td className="px-4 py-3 text-zinc-300 font-mono">{m.calls.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-zinc-300 font-mono">{m.tokens.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* TOP CONSUMING TENANTS */}
+              <div className="bg-zinc-900 border border-zinc-800 p-6">
+                <div className="flex items-center gap-3 mb-4 text-zinc-400">
+                  <DollarSign size={18} className="text-lime-500" />
+                  <h3 className="font-bold text-white tracking-widest uppercase text-sm">Top Consuming Tenants</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-zinc-500 uppercase bg-zinc-950/50">
+                      <tr>
+                        <th className="px-4 py-3 font-mono">Tenant Name</th>
+                        <th className="px-4 py-3 font-mono">Tokens Used</th>
+                        <th className="px-4 py-3 font-mono">Plan Expiry</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tenants.length === 0 && (
+                        <tr><td colSpan={3} className="px-4 py-6 text-center text-zinc-500 font-mono">No tenants found</td></tr>
+                      )}
+                      {[...tenants].sort((a, b) => calcTenantTokensUsed(b) - calcTenantTokensUsed(a)).slice(0, 10).map(t => {
+                        const used = calcTenantTokensUsed(t);
+                        const isExpired = t.subscriptionEndsAt ? new Date(t.subscriptionEndsAt) < new Date() : false;
+                        
+                        return (
+                          <tr key={t.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
+                            <td className="px-4 py-3 font-medium text-white">{t.name}</td>
+                            <td className="px-4 py-3 font-mono text-zinc-300">{used.toLocaleString()}</td>
+                            <td className="px-4 py-3 font-mono text-zinc-400">
+                              {t.subscriptionEndsAt ? (
+                                <span className={isExpired ? "text-red-400 font-bold" : ""}>
+                                  {new Date(t.subscriptionEndsAt).toLocaleDateString()}
+                                </span>
+                              ) : (
+                                "Unlimited"
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
