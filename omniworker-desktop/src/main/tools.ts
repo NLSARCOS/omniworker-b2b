@@ -96,6 +96,16 @@ const TOOLSET_DEFS: {
     labelKey: "tools.todo.label",
     descriptionKey: "tools.todo.description",
   },
+  {
+    key: "cli_anything",
+    labelKey: "tools.cli_anything.label",
+    descriptionKey: "tools.cli_anything.description",
+  },
+  {
+    key: "scrapling",
+    labelKey: "tools.scrapling.label",
+    descriptionKey: "tools.scrapling.description",
+  },
 ];
 
 function localizeToolDefs(

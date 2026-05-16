@@ -1,0 +1,29 @@
+brand_id,name,category,style_keywords,primary_color,bg_color_dark,bg_color_light,text_color_dark,text_color_light,accent_color,font_heading,font_body,button_radius,card_radius,shadow_style
+linear,Linear,Developer Tools,"minimal precision purple dark ultra-clean",#5E6AD2,#0F111A,#FFFFFF,#FFFFFF,#0F111A,#5E6AD2,Inter,Inter,6px,8px,subtle
+vercel,Vercel,Developer Tools,"monochrome geist precision black-white",#171717,#000000,#FFFFFF,#FFFFFF,#171717,#0070F3,Geist Sans,Geist Mono,6px,8px,none
+stripe,Stripe,Fintech,"elegant gradient purple sophisticated",#533AFD,#1C1E54,#FFFFFF,#FFFFFF,#061B31,#533AFD,Inter,Inter,6px,12px,soft
+notion,Notion,Productivity,"warm minimalism serif soft",#0075DE,#31302E,#F6F5F4,#FFFFFF,rgba(0,0,0,0.95),#0075DE,Lyon Display,Inter,4px,8px,warm
+spotify,Spotify,Entertainment,"dark vibrant green music",#1ED760,#121212,#FFFFFF,#FFFFFF,#FFFFFF,#1ED760,Circular,Helvetica,24px,8px,heavy
+framer,Framer,Design Tools,"bold black blue motion-first",#0099FF,#000000,#FFFFFF,#FFFFFF,#FFFFFF,#0099FF,Framer Sans,Inter,12px,16px,glow
+apple,Apple,Consumer Tech,"premium white-space cinematic sf-pro",#0071E3,#000000,#F5F5F7,#FFFFFF,#1D1D1F,#0071E3,SF Pro Display,SF Pro Text,980px,20px,photographic
+clickhouse,ClickHouse,Infrastructure,"neon black speed acid-yellow",#FAFF69,#000000,#FFFFFF,#FFFFFF,#FFFFFF,#FAFF69,Inter,Inter,8px,12px,neon
+airbnb,Airbnb,Travel,"warm coral friendly photography",#FF5A5F,#FFFFFF,#FFFFFF,#484848,#484848,#FF5A5F,Cereal,Cereal,8px,12px,warm
+claude,Claude,AI,"warm terracotta editorial clean",#D97757,#FFFFFF,#FFFFFF,#0F0F0F,#0F0F0F,#D97757,Serif Sans,Serif Sans,8px,12px,soft
+cohere,Cohere,AI,"enterprise purple-violet rounded",#1863DC,#FFFFFF,#FFFFFF,#1C1E54,#1C1E54,#1863DC,CohereText,Unica77,22px,22px,soft
+runwayml,RunwayML,AI,"cinematic dark editorial film",#FFFFFF,#000000,#FFFFFF,#FFFFFF,#FFFFFF,#767D88,abcNormal,abcNormal,8px,0px,none
+supabase,Supabase,Developer Tools,"dark emerald code-first",#3ECF8E,#1C1C1C,#FFFFFF,#FFFFFF,#FFFFFF,#3ECF8E,Inter,Inter,6px,8px,subtle
+raycast,Raycast,Productivity,"sleek dark chrome gradients",#FF6363,#000000,#FFFFFF,#FFFFFF,#FFFFFF,#FF6363,Inter,Inter,8px,12px,gradient
+figma,Figma,Design Tools,"vibrant multi-color playful",#F24E1E,#2C2C2C,#FFFFFF,#FFFFFF,#FFFFFF,#F24E1E,Inter,Inter,6px,8px,soft
+mintlify,Mintlify,Developer Tools,"clean green reading-optimized",#36F4C2,#0D0D0D,#FFFFFF,#FFFFFF,#FFFFFF,#36F4C2,Inter,Inter,8px,12px,soft
+hashicorp,HashiCorp,Infrastructure,"enterprise clean bw",#000000,#FFFFFF,#FFFFFF,#000000,#000000,#000000,Helvetica Neue,Helvetica Neue,4px,4px,none
+sentry,Sentry,Developer Tools,"dark dashboard pink-purple",#E1567C,#1F1F1F,#FFFFFF,#FFFFFF,#FFFFFF,#E1567C,Inter,Inter,8px,8px,soft
+posthog,PostHog,Analytics,"playful hedgehog dark",#F54E00,#000000,#FFFFFF,#FFFFFF,#FFFFFF,#F54E00,Inter,Inter,8px,12px,warm
+resend,Resend,Email API,"minimal dark monospace",#000000,#000000,#FFFFFF,#FFFFFF,#FFFFFF,#000000,JetBrains Mono,JetBrains Mono,0px,0px,none
+expo,Expo,Mobile,"react-native dark code",#000020,#000020,#FFFFFF,#FFFFFF,#FFFFFF,#4630EB,Inter,Inter,8px,12px,soft
+miro,Miro,Collaboration,"bright yellow infinite-canvas",#FFD02F,#FFFFFF,#FFFFFF,#050038,#050038,#FFD02F,Inter,Inter,8px,12px,heavy
+webflow,Webflow,No-Code,"blue polished marketing",#4353FF,#FFFFFF,#FFFFFF,#000000,#000000,#4353FF,Inter,Inter,4px,8px,soft
+intercom,Intercom,Messaging,"friendly blue conversational",#1F8DED,#FFFFFF,#FFFFFF,#000000,#000000,#1F8DED,Inter,Inter,40px,8px,warm
+pinterest,Pinterest,Social,"red masonry image-first",#E60023,#FFFFFF,#FFFFFF,#111111,#111111,#E60023,Inter,Inter,24px,16px,none
+uber,Uber,Mobility,"bold black-white urban",#000000,#000000,#FFFFFF,#FFFFFF,#FFFFFF,#276EF1,Uber Move,Uber Move,0px,0px,none
+nvidia,NVIDIA,Hardware,"green-black energy technical",#76B900,#000000,#FFFFFF,#FFFFFF,#FFFFFF,#76B900,NVIDIA Sans,NVIDIA Sans,4px,8px,glow
+ibm,IBM,Enterprise,"carbon structured blue",#0F62FE,#FFFFFF,#FFFFFF,#161616,#161616,#0F62FE,IBM Plex Sans,IBM Plex Sans,0px,0px,none

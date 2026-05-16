@@ -1,7 +1,8 @@
-// src/app/api/v1/chat/completions/route.ts — LLM Gateway multi-tenant
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { chatCompletionSchema } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Provider → URL mapping
 const PROVIDER_URLS: Record<string, string> = {
@@ -11,6 +12,15 @@ const PROVIDER_URLS: Record<string, string> = {
   moonshot: "https://api.moonshot.cn/v1/chat/completions",
   minimax: "https://api.minimax.chat/v1/text/chatcompletion_v2",
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
+};
+
+// OmniWorker virtual models → role-based system prompts
+const OMNIWORKER_ROLES: Record<string, string> = {
+  "omniworker-code": `You are OmniWorker Code, an expert software engineer and coding assistant.
+You write clean, efficient, well-documented code.
+Always prefer production-quality solutions with proper error handling.
+When fixing bugs, explain the root cause. When suggesting code, include complete examples.
+Languages, frameworks, and tools: you are fluent in all of them.`,
 };
 
 function detectProvider(model: string): string {
@@ -23,14 +33,28 @@ function detectProvider(model: string): string {
   return "openai";
 }
 
+function isOmniWorkerVirtualModel(model: string): boolean {
+  return model.startsWith("omniworker");
+}
+
 export async function POST(request: Request) {
+  // 0. Rate limiting
+  const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
+  const rateLimit = await checkRateLimit(ip, "chat");
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Demasiadas peticiones. Intenta más tarde." },
+      { status: 429, headers: { "X-RateLimit-Remaining": "0" } }
+    );
+  }
+
   // 1. Auth
   const auth = await authenticateRequest(request);
   if (!auth) {
     return NextResponse.json({ error: "No autorizado. Token requerido." }, { status: 401 });
   }
 
-  const { user, payload } = auth;
+  const { user } = auth;
 
   // 2. Check balance
   if (user.tokenBalance <= 0) {
@@ -40,14 +64,156 @@ export async function POST(request: Request) {
     );
   }
 
-  // 3. Parse request
-  const body = await request.json();
+  // 3. Parse and Validate request
+  let body;
+  try {
+    const rawBody = await request.json();
+    const parsed = chatCompletionSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Estructura de petición inválida", issues: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    body = parsed.data;
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+
   const requestedModel = (body.model || "gpt-4o-mini").toLowerCase();
-  const targetProvider = detectProvider(requestedModel);
-  const targetUrl = PROVIDER_URLS[targetProvider];
   const isStream = body.stream === true;
 
-  // 4. Get master API key for provider
+  // ── OmniWorker virtual model handling ──────────────────────────────
+  if (isOmniWorkerVirtualModel(requestedModel)) {
+    // Find the first active master provider (priority order)
+    const masterProvider = await prisma.masterProvider.findFirst({
+      where: { isActive: true },
+      orderBy: { priority: "asc" },
+    });
+
+    if (!masterProvider?.apiKey) {
+      return NextResponse.json(
+        { error: "No hay proveedores de IA configurados. Contacta al admin." },
+        { status: 503 }
+      );
+    }
+
+    const targetProvider = masterProvider.provider;
+    const targetUrl = PROVIDER_URLS[targetProvider];
+    if (!targetUrl) {
+      return NextResponse.json(
+        { error: `Proveedor ${targetProvider} no soportado` },
+        { status: 503 }
+      );
+    }
+
+    // Resolve real model ID from provider's default or use a sensible default
+    const realModel = masterProvider.defaultModel || "gpt-4o-mini";
+
+    // Inject role-based system prompt for code mode
+    const rolePrompt = OMNIWORKER_ROLES[requestedModel] || null;
+    let messages = body.messages || [];
+    if (rolePrompt && messages.length > 0) {
+      // Prepend role system prompt
+      messages = [{ role: "system", content: rolePrompt }, ...messages];
+    }
+
+    console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${realModel}) [${requestedModel}]`);
+
+    // Build provider-specific payload
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    let payload: Record<string, unknown>;
+
+    if (targetProvider === "anthropic") {
+      headers["x-api-key"] = masterProvider.apiKey;
+      headers["anthropic-version"] = "2023-06-01";
+      // Anthropic API format
+      const systemMsg = messages.find((m: { role: string; content: string }) => m.role === "system");
+      const chatMsgs = messages.filter((m: { role: string; content: string }) => m.role !== "system");
+      payload = {
+        model: realModel,
+        max_tokens: body.max_tokens || 4096,
+        ...(systemMsg ? { system: systemMsg.content } : {}),
+        messages: chatMsgs.map((m: { role: string; content: string }) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: m.content,
+        })),
+        stream: isStream,
+      };
+    } else {
+      headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
+      payload = { ...body, model: realModel, messages };
+    }
+
+    const estimatedCost = 50;
+
+    try {
+      const aiResponse = await fetch(targetUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (!aiResponse.ok) {
+        const errTxt = await aiResponse.text();
+        console.error(`[OmniWorker Cloud] Error ${targetProvider}:`, errTxt);
+        return NextResponse.json(
+          { error: `Error del proveedor (${targetProvider})` },
+          { status: 502 }
+        );
+      }
+
+      // Deduct tokens + log
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { tokenBalance: { decrement: estimatedCost } },
+      });
+
+      await prisma.taskLog.create({
+        data: {
+          userId: user.id,
+          tenantId: user.tenantId,
+          promptTokens: estimatedCost,
+          completionTks: 0,
+          modelUsed: requestedModel,
+          taskType: requestedModel === "omniworker-code" ? "code_generation" : "cloud_reasoning",
+          status: "completed",
+        },
+      });
+
+      if (isStream) {
+        return new Response(aiResponse.body, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          },
+        });
+      }
+
+      const data = await aiResponse.json();
+      return NextResponse.json(data);
+    } catch (error) {
+      console.error("[LLM Gateway Error]", error);
+      await prisma.taskLog.create({
+        data: {
+          userId: user.id,
+          tenantId: user.tenantId,
+          promptTokens: 0,
+          completionTks: 0,
+          modelUsed: requestedModel,
+          taskType: "cloud_reasoning",
+          status: "failed",
+        },
+      });
+      return NextResponse.json({ error: "Error interno del proxy IA" }, { status: 500 });
+    }
+  }
+
+  // ── Standard (non-virtual) model handling ──────────────────────────
+  const targetProvider = detectProvider(requestedModel);
+  const targetUrl = PROVIDER_URLS[targetProvider];
+
   const masterProvider = await prisma.masterProvider.findFirst({
     where: { isActive: true, provider: targetProvider },
   });
@@ -61,14 +227,10 @@ export async function POST(request: Request) {
 
   console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${requestedModel})`);
 
-  // 5. Billing: estimate cost (simplified — fixed per request)
   const estimatedCost = 50;
 
-  // 6. Call AI provider
   try {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
 
     if (targetProvider === "anthropic") {
       headers["x-api-key"] = masterProvider.apiKey;
@@ -92,7 +254,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 7. Deduct tokens + log
     await prisma.user.update({
       where: { id: user.id },
       data: { tokenBalance: { decrement: estimatedCost } },
@@ -110,7 +271,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // 8. Return response (stream or json)
     if (isStream) {
       return new Response(aiResponse.body, {
         headers: {
@@ -126,7 +286,6 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[LLM Gateway Error]", error);
 
-    // Log failed task
     await prisma.taskLog.create({
       data: {
         userId: user.id,
@@ -139,9 +298,6 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(
-      { error: "Error interno del proxy IA" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Error interno del proxy IA" }, { status: 500 });
   }
 }

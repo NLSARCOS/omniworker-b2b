@@ -105,6 +105,10 @@ while [[ $# -gt 0 ]]; do
             INSTALL_DIR_EXPLICIT=true
             shift 2
             ;;
+        --local)
+            LOCAL_INSTALL=true
+            shift 1
+            ;;
         --omniworker-home)
             OMNIWORKER_HOME="$2"
             shift 2
@@ -884,6 +888,21 @@ show_manual_install_hint() {
 # ============================================================================
 
 clone_repo() {
+    if [ "$LOCAL_INSTALL" = true ]; then
+        log_info "Local install mode: copying local source to $INSTALL_DIR..."
+        local source_dir="$(cd "$(dirname "$0")/.." && pwd)"
+        mkdir -p "$INSTALL_DIR"
+        # Use rsync or cp to copy contents
+        if command -v rsync >/dev/null 2>&1; then
+            rsync -a "$source_dir/" "$INSTALL_DIR/" --exclude "venv" --exclude ".venv"
+        else
+            cp -R "$source_dir/"* "$INSTALL_DIR/"
+            cp -R "$source_dir/".* "$INSTALL_DIR/" 2>/dev/null || true
+        fi
+        cd "$INSTALL_DIR"
+        return 0
+    fi
+
     log_info "Installing to $INSTALL_DIR..."
 
     if [ -d "$INSTALL_DIR" ]; then

@@ -22,6 +22,7 @@ export {
   Sun,
   Timer,
   Users,
+  User,
   Wrench,
   X,
 } from "lucide-react";

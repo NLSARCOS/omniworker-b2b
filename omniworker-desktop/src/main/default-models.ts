@@ -1,13 +1,11 @@
 /**
- * Default models seeded on first install.
+ * OmniWorker B2B — Fixed models.
  *
- * Contributors: add new models here! They'll be available to all users
- * on fresh install. Format:
- *   { name: "Display Name", provider: "provider-key", model: "model-id", baseUrl: "" }
+ * Only two modes are exposed to B2B users:
+ *   1. OmniWorker Normal  — general-purpose assistant
+ *   2. OmniWorker Code    — code-optimized assistant
  *
- * Provider keys: openrouter, anthropic, openai, custom
- * For openrouter models, use the full path (e.g. "anthropic/claude-sonnet-4-20250514")
- * For direct provider models, use the provider's model ID (e.g. "claude-sonnet-4-20250514")
+ * The actual LLM routing happens on the SaaS backend.
  */
 
 export interface DefaultModel {
@@ -18,30 +16,18 @@ export interface DefaultModel {
 }
 
 const DEFAULT_MODELS: DefaultModel[] = [
-  // ── OpenRouter (200+ models via single API key) ──────────────────────
   {
-    name: "Claude Sonnet 4",
-    provider: "openrouter",
-    model: "anthropic/claude-sonnet-4-20250514",
+    name: "OmniWorker Normal",
+    provider: "omniworker",
+    model: "omniworker",
     baseUrl: "",
   },
-
-  // ── Anthropic (direct) ───────────────────────────────────────────────
   {
-    name: "Claude Sonnet 4",
-    provider: "anthropic",
-    model: "claude-sonnet-4-20250514",
+    name: "OmniWorker Code",
+    provider: "omniworker",
+    model: "omniworker-code",
     baseUrl: "",
   },
-
-  // ── OpenAI (direct) ──────────────────────────────────────────────────
-  {
-    name: "GPT-4.1",
-    provider: "openai",
-    model: "gpt-4.1",
-    baseUrl: "",
-  },
-
 ];
 
 export default DEFAULT_MODELS;

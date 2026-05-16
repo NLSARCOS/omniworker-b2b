@@ -593,9 +593,19 @@ export async function runInstall(
       // then run the official install script. Electron apps launched from Finder
       // don't inherit the terminal environment.
       const shellProfile = getShellProfile(home);
+      
+      const fs = require("fs");
+      const path = require("path");
+      
+      let localInstallScript = path.join(__dirname, "../../../omniworker-agent/scripts/install.sh");
+      if (!fs.existsSync(localInstallScript)) {
+          // Fallback if packaged or path is different
+          localInstallScript = path.join(__dirname, "../../omniworker-agent/scripts/install.sh");
+      }
+
       const installCmd = [
         shellProfile ? `source "${shellProfile}" 2>/dev/null;` : "",
-        "curl -fsSL https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scripts/install.sh | bash -s -- --skip-setup",
+        `bash "${localInstallScript}" --dir "${OMNIWORKER_REPO}" --local --skip-setup`,
       ].join(" ");
 
       const basePath = getEnhancedPath();

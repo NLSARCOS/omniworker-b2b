@@ -1,10 +1,11 @@
 // prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -12,11 +13,26 @@ datasource db {
 model Tenant {
   id          String    @id @default(uuid())
   name        String
-  slug        String    @unique        // ej: "acme-corp"
+  slug        String    @unique
   planId      String?
   plan        SubscriptionPlan? @relation(fields: [planId], references: [id])
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Datos de contacto
+  contactName   String?
+  contactEmail  String?
+  contactPhone  String?
+  website       String?
+  // Datos fiscales
+  taxId         String?
+  address       String?
+  city          String?
+  country       String?
+  postalCode    String?
+  // Notas internas
+  notes         String?
 
   users       User[]
   edgeAgents  EdgeAgent[]
@@ -29,9 +45,9 @@ model TenantApiKey {
   id          String    @id @default(uuid())
   tenantId    String
   tenant      Tenant    @relation(fields: [tenantId], references: [id])
-  keyHash     String    @unique        // Hashed API key
-  keyPrefix   String                   // First 8 chars for identification
-  name        String?                  // "Laptop Nelson", "Server ACME"
+  keyHash     String    @unique
+  keyPrefix   String
+  name        String?
   lastUsedAt  DateTime?
   createdAt   DateTime  @default(now())
 
@@ -44,7 +60,7 @@ model User {
   email         String    @unique
   passwordHash  String
   name          String?
-  role          UserRole  @default(USER)
+  role          String    @default("USER")
   tenantId      String?
   tenant        Tenant?   @relation(fields: [tenantId], references: [id])
   tokenBalance  Int       @default(0)
@@ -53,28 +69,43 @@ model User {
   lastLoginAt   DateTime?
 
   tasks         TaskLog[]
+  refreshTokens RefreshToken[]
 }
 
-enum UserRole {
-  USER
-  ADMIN        // Admin del tenant
-  SUPERADMIN   // Admin de la plataforma
+// ─── REFRESH TOKEN ───
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family    String
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
 }
 
 // ─── SUBSCRIPTION PLANS ───
 model SubscriptionPlan {
-  id              String   @id @default(uuid())
-  name            String   @unique // "Free", "Pro", "Enterprise"
-  tokenLimit      Int               // Tokens mensuales
-  maxAgents       Int      @default(1)
-  maxUsers        Int      @default(1)
-  price           Float
-  isActive        Boolean  @default(true)
+  id            String   @id @default(uuid())
+  name          String   @unique
+  description   String?
+  tokenLimit    Int
+  maxAgents     Int      @default(1)
+  maxUsers      Int      @default(1)
+  price         Float
+  billingPeriod String   @default("monthly")
+  isActive      Boolean  @default(true)
+  isPublic      Boolean  @default(true)
+  features      String   @default("[]")
+  sortOrder     Int      @default(0)
 
-  tenants         Tenant[]
+  tenants       Tenant[]
 }
 
-// ─── TASK LOG (uso/billing) ───
+// ─── TASK LOG ───
 model TaskLog {
   id             String   @id @default(uuid())
   tenantId       String?
@@ -84,32 +115,49 @@ model TaskLog {
   promptTokens   Int      @default(0)
   completionTks  Int      @default(0)
   modelUsed      String
-  taskType       String   // "cloud_reasoning", "edge_tool", "embedding"
-  status         String   @default("completed") // "completed", "failed"
+  taskType       String
+  status         String   @default("completed")
   createdAt      DateTime @default(now())
 }
 
-// ─── MASTER PROVIDERS (superadmin) ───
+// ─── MASTER PROVIDERS — multi-key por proveedor ───
 model MasterProvider {
-  id          String   @id @default(uuid())
-  provider    String   @unique // "openai", "anthropic", "deepseek", etc.
-  apiKey      String
-  isActive    Boolean  @default(true)
-  priority    Int      @default(1)
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  provider     String
+  apiKey       String
+  defaultModel String   @default("gpt-4o-mini")
+  isActive     Boolean  @default(true)
+  priority     Int      @default(1)
+  dailyLimit   Int?
+  usedToday    Int      @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
-// ─── EDGE AGENT (PCs conectadas) ───
+// ─── ADMIN AUDIT LOG ───
+model AdminAuditLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  action    String
+  target    String?
+  details   String?
+  ip        String?
+  createdAt DateTime @default(now())
+}
+
+// ─── EDGE AGENT ───
 model EdgeAgent {
   id            String    @id @default(uuid())
   tenantId      String
   tenant        Tenant    @relation(fields: [tenantId], references: [id])
-  agentName     String                   // Nombre identificativo
-  hostname      String?                  // Nombre del equipo
-  platform      String?                  // "macOS", "Linux", "Windows"
-  status        String    @default("offline") // "online", "offline", "busy"
+  agentName     String
+  hostname      String?
+  platform      String?
+  status        String    @default("offline")
   lastSeenAt    DateTime?
-  capabilities  String    @default("[]") // JSON array de tools disponibles
+  capabilities  String    @default("[]")
   createdAt     DateTime  @default(now())
 
   @@index([tenantId])

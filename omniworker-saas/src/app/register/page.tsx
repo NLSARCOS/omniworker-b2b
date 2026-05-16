@@ -28,11 +28,7 @@ export default function RegisterPage() {
 
     if (data.success) {
       setSuccess(true);
-      // Auto-login: store token
-      localStorage.setItem("ow_token", data.accessToken);
-      localStorage.setItem("ow_user", JSON.stringify(data.user));
-      // Redirect to dashboard after 2s
-      setTimeout(() => (window.location.href = "/dashboard"), 2000);
+      setTimeout(() => (window.location.href = "/dashboard"), 1500);
     } else {
       setError(data.error || "Error al registrar");
     }

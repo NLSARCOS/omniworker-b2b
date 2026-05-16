@@ -13,4 +13,5 @@ export default {
   kanban: "Kanban",
   gateway: "Gateway",
   settings: "Pengaturan",
+  account: "Akun",
 } as const;

@@ -17,3 +17,7 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+
+# Blackbox generated files (created by /init)
+AGENTS.md
+docs/

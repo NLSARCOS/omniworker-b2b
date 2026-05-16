@@ -70,6 +70,24 @@ export default function Home() {
               total desde la nube.
             </p>
           </div>
+          <div className="card-brutal">
+            <h2 className="text-2xl font-bold uppercase mb-4 border-b-2 border-black pb-2">
+              Navegación Text-DOM
+            </h2>
+            <p className="text-lg">
+              Automatización de formularios y ERPs ultra-rápida y eficiente en tokens,
+              ideal para tareas repetitivas 24/7.
+            </p>
+          </div>
+          <div className="card-brutal">
+            <h2 className="text-2xl font-bold uppercase mb-4 border-b-2 border-black pb-2">
+              Automatización 24/7
+            </h2>
+            <p className="text-lg">
+              Operación autónoma ininterrumpida con recuperación de errores
+              y monitoreo en tiempo real desde tu dashboard.
+            </p>
+          </div>
         </div>
       </div>
     </main>

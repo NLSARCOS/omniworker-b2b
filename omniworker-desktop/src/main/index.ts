@@ -931,7 +931,7 @@ function setupIPC(): void {
   });
   ipcMain.handle("claw3d-get-logs", () => getClaw3dLogs());
 
-  ipcMain.handle("claw3d-start-dev", () => startDevServer());
+  ipcMain.handle("claw3d-start-dev", async () => startDevServer());
   ipcMain.handle("claw3d-stop-dev", () => {
     stopDevServer();
     return true;

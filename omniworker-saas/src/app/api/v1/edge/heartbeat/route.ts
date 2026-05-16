@@ -2,20 +2,43 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { edgeHeartbeatSchema } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  // Rate limiting
+  const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
+  const rateLimit = await checkRateLimit(ip, "default");
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Demasiadas peticiones. Intenta más tarde." },
+      { status: 429 }
+    );
+  }
+
   const auth = await authenticateRequest(request);
   if (!auth) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   const { user } = auth;
-  const body = await request.json();
-  const { agentId, status, capabilities } = body;
 
-  if (!agentId) {
-    return NextResponse.json({ error: "agentId es obligatorio" }, { status: 400 });
+  let body;
+  try {
+    const rawBody = await request.json();
+    const parsed = edgeHeartbeatSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Datos inválidos", issues: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    body = parsed.data;
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
+
+  const { agentId, status, capabilities } = body;
 
   if (!user.tenantId) {
     return NextResponse.json({ error: "Sin tenant" }, { status: 400 });
@@ -39,9 +62,11 @@ export async function POST(request: Request) {
     },
   });
 
-  // Return pending commands for the agent (future: queue system)
   return NextResponse.json({
     success: true,
     commands: [], // Placeholder for future command queue
+    plan: user.plan,
+    tokenBalance: user.tokenBalance,
+    tenantName: user.tenantName,
   });
 }

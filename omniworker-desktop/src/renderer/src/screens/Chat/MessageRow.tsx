@@ -1,5 +1,5 @@
 import { memo } from "react";
-import icon from "../../assets/icon.png";
+
 import { AgentMarkdown } from "../../components/AgentMarkdown";
 import { useI18n } from "../../components/useI18n";
 import type { ChatMessage } from "./types";
@@ -13,8 +13,8 @@ export const OmniWorkerAvatar = memo(function OmniWorkerAvatar({
   size?: number;
 }): React.JSX.Element {
   return (
-    <div className="chat-avatar chat-avatar-agent">
-      <img src={icon} width={size} height={size} alt="" />
+    <div className="chat-avatar chat-avatar-agent" style={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fff", color: "#000", fontWeight: "bold", fontSize: "14px", width: size, height: size, borderRadius: "50%" }}>
+      <div>OW</div>
     </div>
   );
 });

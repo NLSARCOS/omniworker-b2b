@@ -59,6 +59,14 @@ export default {
     label: "Task Planning",
     description: "Create and manage to-do lists for complex tasks",
   },
+  cli_anything: {
+    label: "CLI Anything",
+    description: "Generates CLI wrappers to automate desktop applications",
+  },
+  scrapling: {
+    label: "Scrapling Web Fetcher",
+    description: "Advanced stealth web fetching capabilities",
+  },
   mcpServers: "MCP Servers",
   mcpDescription: "Model Context Protocol servers configured in config.yaml. Manage via <code>omniworker mcp add/remove</code> in the terminal.",
   http: "HTTP",

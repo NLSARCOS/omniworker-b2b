@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* ========================================================================
    OmniWorker Agent Desktop — Clean Design System
    Dark + Light mode, no gradients, flat design
@@ -5318,5 +5320,289 @@ body {
 .kanban-event-time {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+/* ========================================================================
+   Account Screen
+   ======================================================================== */
+
+.account-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  overflow-y: auto;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.account-loading,
+.account-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  color: var(--text-muted);
+}
+
+.account-error-text {
+  color: var(--error);
+  font-size: 14px;
+}
+
+.account-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.account-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.account-refresh-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.15s;
+}
+
+.account-refresh-btn:hover {
+  background: var(--bg-hover);
+}
+
+.account-refresh-btn.spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.account-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.account-card-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-tertiary);
+}
+
+.account-card-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.account-user-info {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.account-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.account-value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.account-badge {
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.account-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.account-stat-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-stat-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.account-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.account-stat-bar-track {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-hover);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.account-stat-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.account-stat-warning {
+  font-size: 11px;
+  color: var(--error);
+  font-weight: 500;
+}
+
+.account-empty {
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.account-agents-list,
+.account-keys-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.account-agent-row,
+.account-key-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-agent-row:last-child,
+.account-key-row:last-child {
+  border-bottom: none;
+}
+
+.account-agent-info,
+.account-key-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-agent-name,
+.account-key-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.account-agent-detail,
+.account-key-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.account-status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.account-status-badge.online {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.account-status-badge.offline,
+.account-status-badge.busy {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+
+.account-key-last {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.account-copy-key-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 16px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.account-copy-key-btn:hover {
+  background: var(--bg-hover);
+}
+
+@media (max-width: 700px) {
+  .account-stats {
+    grid-template-columns: 1fr;
+  }
 }
 

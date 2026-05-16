@@ -29,6 +29,10 @@ pnpm-debug.log*
 release/
 .claude/worktrees
 
+# Bundled Claw3D (generated during build)
+resources/omniworker-office
+
+
 # Tauri
 **/src-tauri/target/
 **/src-tauri/gen/

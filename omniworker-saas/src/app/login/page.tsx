@@ -24,8 +24,6 @@ export default function LoginPage() {
     setLoading(false);
 
     if (data.success) {
-      localStorage.setItem("ow_token", data.auth.accessToken);
-      localStorage.setItem("ow_user", JSON.stringify(data.user));
       window.location.href = "/dashboard";
     } else {
       setError(data.error || "Error al iniciar sesión");

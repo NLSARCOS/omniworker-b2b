@@ -2,8 +2,20 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { edgeRegisterSchema } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  // Rate limiting
+  const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
+  const rateLimit = await checkRateLimit(ip, "default");
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Demasiadas peticiones. Intenta más tarde." },
+      { status: 429 }
+    );
+  }
+
   const auth = await authenticateRequest(request);
   if (!auth) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -18,15 +30,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = await request.json();
-  const { agentName, hostname, platform, capabilities } = body;
-
-  if (!agentName) {
-    return NextResponse.json(
-      { error: "agentName es obligatorio" },
-      { status: 400 }
-    );
+  let body;
+  try {
+    const rawBody = await request.json();
+    const parsed = edgeRegisterSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Datos inválidos", issues: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    body = parsed.data;
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
+
+  const { agentName, hostname, platform, capabilities } = body;
 
   // Check plan limits
   const tenant = await prisma.tenant.findUnique({

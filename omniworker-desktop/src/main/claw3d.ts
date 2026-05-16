@@ -12,13 +12,23 @@ import { createConnection } from "net";
 import { getEnhancedPath, OMNIWORKER_HOME } from "./installer";
 import { stripAnsi, safeWriteFile } from "./utils";
 
-const OMNIWORKER_OFFICE_REPO = "https://github.com/fathah/omniworker-office";
 const OMNIWORKER_OFFICE_DIR = join(OMNIWORKER_HOME, "omniworker-office");
+
+// Path to bundled Claw3D shipped with the desktop installer
+function getBundledOfficeDir(): string | null {
+  // In production, extraResources are unpacked next to the executable
+  const bundled = join(process.resourcesPath, "omniworker-office");
+  if (existsSync(join(bundled, "server.js"))) return bundled;
+  // Development fallback: relative from out/main/
+  const devFallback = join(__dirname, "../../resources/omniworker-office");
+  if (existsSync(join(devFallback, "server.js"))) return devFallback;
+  return null;
+}
 const DEV_PID_FILE = join(OMNIWORKER_HOME, "claw3d-dev.pid");
 const ADAPTER_PID_FILE = join(OMNIWORKER_HOME, "claw3d-adapter.pid");
 const PORT_FILE = join(OMNIWORKER_HOME, "claw3d-port");
 const WS_URL_FILE = join(OMNIWORKER_HOME, "claw3d-ws-url");
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 8765;
 const DEFAULT_WS_URL = "ws://localhost:18789";
 const CLAW3D_SETTINGS_DIR = join(homedir(), ".omniworker", "claw3d");
 
@@ -135,7 +145,13 @@ function createCommandInvocation(
 function getSavedPort(): number {
   try {
     const port = parseInt(readFileSync(PORT_FILE, "utf-8").trim(), 10);
-    return isNaN(port) ? DEFAULT_PORT : port;
+    if (isNaN(port)) return DEFAULT_PORT;
+    // Migrate old default port 3000 to new default 8765
+    if (port === 3000) {
+      setClaw3dPort(DEFAULT_PORT);
+      return DEFAULT_PORT;
+    }
+    return port;
   } catch {
     return DEFAULT_PORT;
   }
@@ -244,6 +260,14 @@ function checkPort(port: number): Promise<boolean> {
   });
 }
 
+async function findFreePort(startPort: number = DEFAULT_PORT): Promise<number> {
+  for (let port = startPort; port < startPort + 100; port++) {
+    const inUse = await checkPort(port);
+    if (!inUse) return port;
+  }
+  throw new Error(`No free port found in range ${startPort}-${startPort + 99}`);
+}
+
 export interface Claw3dStatus {
   cloned: boolean;
   installed: boolean;
@@ -311,8 +335,11 @@ function isAdapterRunning(): boolean {
 }
 
 export async function getClaw3dStatus(): Promise<Claw3dStatus> {
-  const cloned = existsSync(join(OMNIWORKER_OFFICE_DIR, "package.json"));
-  const installed = existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+  const bundled = getBundledOfficeDir();
+  const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
+  const hasPackageJson = existsSync(join(OMNIWORKER_OFFICE_DIR, "package.json"));
+  const hasNodeModules = existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+  const installed = hasStandalone || hasNodeModules;
   const port = getSavedPort();
   const devRunning = isDevServerRunning();
   // Only check port conflict when dev server is NOT running
@@ -320,11 +347,11 @@ export async function getClaw3dStatus(): Promise<Claw3dStatus> {
   const adapterUp = isAdapterRunning();
   const error = devServerError || adapterError;
   return {
-    cloned,
+    cloned: hasStandalone || hasPackageJson || bundled !== null,
     installed,
     devServerRunning: devRunning,
     adapterRunning: adapterUp,
-    running: devRunning && adapterUp,
+    running: devRunning,
     port,
     portInUse,
     wsUrl: getSavedWsUrl(),
@@ -416,6 +443,35 @@ function findNpm(envPath = getEnhancedPath()): ResolvedCommand {
 export async function setupClaw3d(
   onProgress: (progress: Claw3dSetupProgress) => void,
 ): Promise<void> {
+  const bundledDir = getBundledOfficeDir();
+  if (bundledDir) {
+    // Fast path: copy bundled standalone build shipped with the app
+    onProgress({
+      step: 1,
+      totalSteps: 1,
+      title: "Installing Claw3D...",
+      detail: "Copying from app bundle",
+      log: "Claw3D found in app bundle. Copying to workspace...\n",
+    });
+
+    const { cpSync, rmSync } = require("fs");
+    if (existsSync(OMNIWORKER_OFFICE_DIR)) {
+      rmSync(OMNIWORKER_OFFICE_DIR, { recursive: true, force: true });
+    }
+    cpSync(bundledDir, OMNIWORKER_OFFICE_DIR, { recursive: true });
+
+    writeClaw3dSettings();
+    onProgress({
+      step: 1,
+      totalSteps: 1,
+      title: "Claw3D ready",
+      detail: "Installed successfully",
+      log: "Claw3D installed from app bundle.\n",
+    });
+    return;
+  }
+
+  // Fallback: clone from GitHub (for development without bundle)
   const totalSteps = 2;
   let log = "";
 
@@ -438,7 +494,7 @@ export async function setupClaw3d(
   };
   const git = resolveCommand("git", env.PATH);
 
-  // Step 1: Clone (or pull if already cloned)
+  // Step 1: Clone
   const cloned = existsSync(join(OMNIWORKER_OFFICE_DIR, "package.json"));
 
   if (!cloned) {
@@ -446,7 +502,7 @@ export async function setupClaw3d(
     await new Promise<void>((resolve, reject) => {
       const gitClone = createCommandInvocation(git, [
         "clone",
-        OMNIWORKER_OFFICE_REPO,
+        "https://github.com/iamlukethedev/Claw3D",
         OMNIWORKER_OFFICE_DIR,
       ]);
       const proc = spawn(gitClone.command, gitClone.args, {
@@ -477,11 +533,7 @@ export async function setupClaw3d(
       );
     });
   } else {
-    emit(
-      1,
-      "Claw3D already cloned",
-      "Repository already exists, pulling latest...\n",
-    );
+    emit(1, "Claw3D already cloned", "Pulling latest...\n");
     await new Promise<void>((resolve) => {
       const gitPull = createCommandInvocation(git, ["pull", "--ff-only"]);
       const proc = spawn(gitPull.command, gitPull.args, {
@@ -501,7 +553,7 @@ export async function setupClaw3d(
 
       proc.on("close", (code) => {
         if (code === 0) resolve();
-        else resolve(); // non-fatal: pull failures shouldn't block setup
+        else resolve();
       });
       proc.on("error", () => resolve());
     });
@@ -529,11 +581,7 @@ export async function setupClaw3d(
 
     proc.on("close", (code) => {
       if (code === 0) {
-        emit(
-          2,
-          "Installing dependencies...",
-          "Dependencies installed successfully.\n",
-        );
+        emit(2, "Installing dependencies...", "Dependencies installed.\n");
         resolve();
       } else {
         reject(new Error(`npm install failed (exit code ${code})`));
@@ -544,7 +592,6 @@ export async function setupClaw3d(
     );
   });
 
-  // Write config files so Claw3D skips onboarding
   writeClaw3dSettings();
 }
 
@@ -570,13 +617,25 @@ function killProcessTree(proc: ChildProcess): void {
   }
 }
 
-export function startDevServer(): boolean {
+export async function startDevServer(): Promise<boolean> {
   if (isDevServerRunning()) return true;
-  if (!existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"))) return false;
 
   devServerError = "";
   devServerLogs = "";
-  const port = getSavedPort();
+  let port = getSavedPort();
+
+  // If the preferred port is in use, find a free one
+  const portInUse = await checkPort(port);
+  if (portInUse) {
+    try {
+      port = await findFreePort(port + 1);
+      setClaw3dPort(port);
+    } catch (err) {
+      devServerError = `No free port found near ${getSavedPort()}. ${(err as Error).message}`;
+      return false;
+    }
+  }
+
   const env = {
     ...process.env,
     PATH: getEnhancedPath(),
@@ -584,15 +643,36 @@ export function startDevServer(): boolean {
     TERM: "dumb",
     PORT: String(port),
   };
-  const npm = createCommandInvocation(findNpm(env.PATH), ["run", "dev"]);
-  const proc = spawn(npm.command, npm.args, {
-    cwd: OMNIWORKER_OFFICE_DIR,
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-    detached: true,
-    windowsHide: true,
-    windowsVerbatimArguments: npm.windowsVerbatimArguments,
-  });
+
+  // Check if we have a bundled standalone build
+  const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
+  const hasNodeModules = existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+
+  if (!hasStandalone && !hasNodeModules) return false;
+
+  let proc: ChildProcess;
+
+  if (hasStandalone) {
+    // Use production standalone server (no npm needed)
+    proc = spawn("node", ["server.js"], {
+      cwd: OMNIWORKER_OFFICE_DIR,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
+      windowsHide: true,
+    });
+  } else {
+    // Fallback: use npm run dev (legacy clone path)
+    const npm = createCommandInvocation(findNpm(env.PATH), ["run", "dev"]);
+    proc = spawn(npm.command, npm.args, {
+      cwd: OMNIWORKER_OFFICE_DIR,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
+      windowsHide: true,
+      windowsVerbatimArguments: npm.windowsVerbatimArguments,
+    });
+  }
 
   devServerProcess = proc;
   if (proc.pid) writePid(DEV_PID_FILE, proc.pid);
@@ -727,18 +807,34 @@ export function stopAdapter(): void {
   cleanupPid(ADAPTER_PID_FILE);
 }
 
-export function startAll(): { success: boolean; error?: string } {
-  if (!existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"))) {
-    return {
-      success: false,
-      error: "Claw3D is not installed. Please install it first.",
-    };
+export async function startAll(): Promise<{ success: boolean; error?: string }> {
+  const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
+  const hasNodeModules = existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+
+  if (!hasStandalone && !hasNodeModules) {
+    // Auto-install from bundle if available
+    const bundledDir = getBundledOfficeDir();
+    if (bundledDir) {
+      try {
+        await setupClaw3d(() => { /* no-op progress for auto-install */ });
+      } catch (err) {
+        return {
+          success: false,
+          error: `Failed to install Claw3D from bundle: ${(err as Error).message}`,
+        };
+      }
+    } else {
+      return {
+        success: false,
+        error: "Claw3D is not installed. Please install it first.",
+      };
+    }
   }
 
   const port = getSavedPort();
 
   // Start dev server
-  const devOk = startDevServer();
+  const devOk = await startDevServer();
   if (!devOk) {
     return {
       success: false,
@@ -746,10 +842,12 @@ export function startAll(): { success: boolean; error?: string } {
     };
   }
 
-  // Start adapter
-  const adapterOk = startAdapter();
-  if (!adapterOk) {
-    return { success: false, error: "Failed to start OmniWorker adapter" };
+  // Start adapter only for legacy (non-standalone) installs
+  if (hasNodeModules && !hasStandalone) {
+    const adapterOk = startAdapter();
+    if (!adapterOk) {
+      return { success: false, error: "Failed to start OmniWorker adapter" };
+    }
   }
 
   return { success: true };

@@ -161,7 +161,6 @@ function Chat({
           currentModel={modelConfig.currentModel}
           currentProvider={modelConfig.currentProvider}
           currentBaseUrl={modelConfig.currentBaseUrl}
-          modelGroups={modelConfig.modelGroups}
           displayModel={modelConfig.displayModel}
           onOpen={modelConfig.reload}
           onSelectModel={modelConfig.selectModel}

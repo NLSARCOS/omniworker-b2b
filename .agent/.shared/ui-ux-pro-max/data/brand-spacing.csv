@@ -1,0 +1,16 @@
+brand_id,section_padding,grid_columns,gap_base,container_max,section_alternating
+linear,120px 0,12,24px,1200px,true
+vercel,80px 0,12,24px,1200px,false
+stripe,100px 0,12,32px,1040px,false
+notion,64px 0,2,8px,900px,false
+spotify,32px 0,6,24px,1955px,true
+framer,100px 0,1,48px,1200px,true
+apple,80px 0,1,40px,100%,true
+clickhouse,120px 0,2,64px,1200px,true
+cohere,80px 0,12,24px,1200px,false
+airbnb,40px 0,4,16px,1600px,false
+claude,80px 0,1,32px,800px,false
+runwayml,0,1,0,100%,true
+supabase,100px 0,12,32px,1200px,true
+raycast,80px 0,1,40px,1200px,true
+figma,80px 0,2,24px,1200px,false

@@ -22,14 +22,12 @@ function App(): React.JSX.Element {
   >("local");
   const [verifyWarning, setVerifyWarning] = useState(false);
   const [userData, setUserData] = useState<any>(null);
-  const [authData, setAuthData] = useState<any>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const isMac = window.electron?.process?.platform === "darwin";
 
   const runInstallCheck = useCallback(async () => {
     const startedAt = Date.now();
     let next: Screen = "login"; // OMNIWORKER B2B: Siempre empezamos en Login
-    let error: string | null = null;
-    let isRemote = false;
 
     // TODO: Comprobar JWT guardado localmente para auto-login
 
@@ -51,11 +49,20 @@ function App(): React.JSX.Element {
 
   const handleLoginSuccess = async (user: any, auth: any) => {
     setUserData(user);
-    setAuthData(auth);
-    
-    // Aquí iniciaríamos la validación real del motor (checkInstall) de OmniWorker
-    // Para el flujo B2B, saltamos el Welcome e intentamos Setup o Main directo
-    setScreen("main"); 
+    if (auth?.accessToken) setAuthToken(auth.accessToken);
+
+    // Comprobar la instalación del motor local de Python
+    try {
+      const status = await window.omniworkerAPI.checkInstall();
+      if (!status.installed) {
+        setScreen("installing");
+      } else {
+        setScreen("main");
+      }
+    } catch (err) {
+      console.error("Error comprobando la instalación:", err);
+      setScreen("installing");
+    }
   };
 
   function handleInstallComplete(): void {
@@ -154,6 +161,8 @@ function App(): React.JSX.Element {
             verifyWarning={verifyWarning}
             onReinstall={handleVerifyReinstall}
             onDismissVerifyWarning={handleDismissVerifyWarning}
+            userData={userData}
+            authToken={authToken}
           />
         );
     }

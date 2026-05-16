@@ -12,6 +12,10 @@ files:
 asarUnpack:
   - resources/**
 extraResources:
+  - from: "resources/omniworker-office"
+    to: "omniworker-office"
+    filter:
+      - "**/*"
   - from: "../omniworker-agent/dist/omniworker-engine"
     to: "engine/omniworker-engine"
     filter:
@@ -61,5 +65,5 @@ rpm:
 npmRebuild: false
 publish:
   provider: github
-  owner: fathah
-  repo: omniworker-desktop
+  owner: Simplex-lat
+  repo: omniworker-releases

@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { adminUpdateUserSchema } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
   const auth = await authenticateRequest(request);
@@ -34,12 +36,32 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  const body = await request.json();
-  const { userId, tokenBalance, role, isActive } = body;
-
-  if (!userId) {
-    return NextResponse.json({ error: "userId requerido" }, { status: 400 });
+  // Rate limiting
+  const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
+  const rateLimit = await checkRateLimit(ip, "admin");
+  if (!rateLimit.success) {
+    return NextResponse.json(
+      { error: "Demasiadas peticiones. Intenta más tarde." },
+      { status: 429 }
+    );
   }
+
+  let body;
+  try {
+    const rawBody = await request.json();
+    const parsed = adminUpdateUserSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Datos inválidos", issues: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    body = parsed.data;
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+
+  const { userId, tokenBalance, role, isActive } = body;
 
   const user = await prisma.user.update({
     where: { id: userId },

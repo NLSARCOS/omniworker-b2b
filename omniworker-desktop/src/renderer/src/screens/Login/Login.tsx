@@ -32,7 +32,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       }
 
       // Enviar datos al App.tsx para manejar estado e incializar agente local
-      onLoginSuccess(data.user, data.auth);
+      onLoginSuccess(data.user, { accessToken: data.accessToken });
 
     } catch (err: any) {
       setError(err.message);
@@ -42,50 +42,57 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-white text-black font-mono">
-      <div className="w-full max-w-md border-[12px] border-black p-8 bg-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
-        <h1 className="text-4xl font-bold uppercase mb-2 border-b-4 border-black pb-2">OmniWorker</h1>
-        <p className="text-sm font-bold uppercase mb-8">Agent-as-a-Service B2B Login</p>
+    <div className="screen welcome-screen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div className="welcome-remote-card" style={{ width: '100%', maxWidth: '400px', padding: '32px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+        
+        <h1 className="welcome-title" style={{ fontSize: '24px', marginBottom: '8px', textAlign: 'center' }}>OmniWorker</h1>
+        <p className="welcome-subtitle" style={{ marginBottom: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          Agent-as-a-Service B2B Login
+        </p>
 
         {error && (
-          <div className="bg-black text-white p-3 mb-6 font-bold uppercase text-sm border-2 border-black">
-            Error: {error}
+          <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid #ef4444', padding: '12px', borderRadius: '6px', marginBottom: '20px', fontSize: '13px' }}>
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label className="block text-xl font-bold uppercase mb-2">Empresa Email</label>
+            <label className="welcome-remote-label" style={{ display: 'block', marginBottom: '8px' }}>Empresa Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border-4 border-black p-3 outline-none focus:bg-gray-100 font-bold"
+              className="welcome-remote-input"
               placeholder="admin@empresa.com"
               required
+              style={{ width: '100%' }}
             />
           </div>
           <div>
-            <label className="block text-xl font-bold uppercase mb-2">Password</label>
+            <label className="welcome-remote-label" style={{ display: 'block', marginBottom: '8px' }}>Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border-4 border-black p-3 outline-none focus:bg-gray-100 font-bold"
+              className="welcome-remote-input"
               placeholder="••••••••"
               required
+              style={{ width: '100%' }}
             />
           </div>
+          
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-black text-white font-bold uppercase text-xl py-4 hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: '8px', padding: '12px' }}
           >
             {isLoading ? "Validando..." : "Ingresar"}
           </button>
         </form>
         
-        <p className="mt-6 text-xs font-bold text-center uppercase text-gray-500">
+        <p style={{ marginTop: '24px', fontSize: '12px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Uso exclusivo B2B. Contacta a tu administrador para acceso.
         </p>
       </div>

@@ -1,44 +1,45 @@
 // src/app/api/v1/auth/register/route.ts
 import { NextResponse } from "next/server";
-import { registerUser } from "@/lib/auth";
+import { registerUser, setAuthCookies } from "@/lib/auth";
+import { registerSchema } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting by IP
+    const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
+    const rateLimit = await checkRateLimit(ip, "auth");
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Demasiados intentos. Intenta más tarde." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
-    const { email, password, name, tenantName } = body;
 
-    if (!email || !password) {
+    // Zod validation
+    const parsed = registerSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Email y contraseña son obligatorios" },
+        { error: "Datos inválidos", issues: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "La contraseña debe tener al menos 8 caracteres" },
-        { status: 400 }
-      );
-    }
-
-    // Basic email validation
-    if (!email.includes("@") || !email.includes(".")) {
-      return NextResponse.json(
-        { error: "Email inválido" },
-        { status: 400 }
-      );
-    }
-
+    const { email, password, name, tenantName } = parsed.data;
     const result = await registerUser({ email, password, name, tenantName });
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
+    // Set cookies
+    await setAuthCookies(result.accessToken!, result.refreshToken!);
+
     return NextResponse.json({
       success: true,
       user: result.user,
-      accessToken: result.accessToken,
     });
   } catch (error) {
     console.error("[Register API] Error:", error);

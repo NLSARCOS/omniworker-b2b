@@ -112,7 +112,12 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
       setWebviewError("");
       if (wv.executeJavaScript) {
         wv.executeJavaScript(
-          `try { localStorage.setItem("claw3d:onboarding:completed", "true") } catch(e) {}`,
+          `try { 
+            localStorage.setItem("claw3d:onboarding:completed", "true");
+            if (!localStorage.getItem("claw3d:gateway:url")) {
+              localStorage.setItem("claw3d:gateway:url", "ws://127.0.0.1:18789");
+            }
+          } catch(e) {}`,
         ).catch(() => {});
       }
     };
@@ -126,12 +131,14 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
       );
     };
     wv.addEventListener("did-finish-load", onLoad);
+    wv.addEventListener("dom-ready", onLoad);
     wv.addEventListener("did-fail-load", onFail);
     return () => {
       wv.removeEventListener("did-finish-load", onLoad);
+      wv.removeEventListener("dom-ready", onLoad);
       wv.removeEventListener("did-fail-load", onFail);
     };
-  }, [running, port]);
+  }, [webviewRef.current]);
 
   async function handleInstall(): Promise<void> {
     setState("installing");
@@ -213,7 +220,7 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
       ? Math.round((progress.step / progress.totalSteps) * 100)
       : 0;
 
-  const claw3dUrl = `http://localhost:${port}`;
+  const claw3dUrl = `http://127.0.0.1:${port}`;
 
   // --- Checking ---
   if (state === "checking") {

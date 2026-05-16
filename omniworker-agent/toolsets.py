@@ -39,11 +39,15 @@ _OMNIWORKER_CORE_TOOLS = [
     "vision_analyze", "image_generate",
     # Skills
     "skills_list", "skill_view", "skill_manage",
-    # Browser automation
+    # Browser automation (screenshot-based)
     "browser_navigate", "browser_snapshot", "browser_click",
     "browser_type", "browser_scroll", "browser_back",
     "browser_press", "browser_get_images",
     "browser_vision", "browser_console", "browser_cdp", "browser_dialog",
+    # Browser automation (text-DOM / screenshot-free, inspired by page-agent)
+    "browser_dom_navigate", "browser_dom_read", "browser_dom_click",
+    "browser_dom_type", "browser_dom_select", "browser_dom_scroll",
+    "browser_dom_eval",
     # Text-to-speech
     "text_to_speech",
     # Planning & memory
@@ -70,6 +74,8 @@ _OMNIWORKER_CORE_TOOLS = [
     "kanban_unblock",
     # Computer use (macOS, gated on cua-driver being installed via check_fn)
     "computer_use",
+    # Third-party integrations
+    "cli_anything_hub", "scrapling_fetch",
 ]
 
 
@@ -140,6 +146,18 @@ TOOLSETS = {
         "includes": []
     },
     
+    "scrapling": {
+        "description": "Advanced stealth web scraping utilizing Scrapling to bypass protections",
+        "tools": ["scrapling_fetch"],
+        "includes": []
+    },
+
+    "cli_anything": {
+        "description": "Interact with desktop apps via CLI wrappers.",
+        "tools": ["cli_anything_hub"],
+        "includes": []
+    },
+
     "skills": {
         "description": "Access, create, edit, and manage skill documents with specialized instructions and knowledge",
         "tools": ["skills_list", "skill_view", "skill_manage"],
@@ -147,13 +165,24 @@ TOOLSETS = {
     },
     
     "browser": {
-        "description": "Browser automation for web interaction (navigate, click, type, scroll, iframes, hold-click) with web search for finding URLs",
+        "description": (
+            "Browser automation: screenshot-based tools (navigate, click, type, scroll, vision) "
+            "plus text-DOM tools (browser_dom_*) for screenshot-free, token-efficient interaction. "
+            "Prefer browser_dom_* for form filling and ERP/CRM tasks."
+        ),
         "tools": [
+            # Screenshot-based
             "browser_navigate", "browser_snapshot", "browser_click",
             "browser_type", "browser_scroll", "browser_back",
             "browser_press", "browser_get_images",
             "browser_vision", "browser_console", "browser_cdp",
-            "browser_dialog", "web_search"
+            "browser_dialog",
+            # Text-DOM (screenshot-free, page-agent style)
+            "browser_dom_navigate", "browser_dom_read", "browser_dom_click",
+            "browser_dom_type", "browser_dom_select", "browser_dom_scroll",
+            "browser_dom_eval",
+            # Web search
+            "web_search"
         ],
         "includes": []
     },

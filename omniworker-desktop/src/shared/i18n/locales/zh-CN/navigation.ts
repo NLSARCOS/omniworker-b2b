@@ -13,4 +13,5 @@ export default {
   kanban: "看板",
   gateway: "网关",
   settings: "设置",
+  account: "账户",
 } as const;

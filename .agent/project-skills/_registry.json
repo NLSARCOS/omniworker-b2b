@@ -1,0 +1,7 @@
+{
+  "settings": {
+    "threshold": 3,
+    "auto_materialize": true
+  },
+  "topics": {}
+}

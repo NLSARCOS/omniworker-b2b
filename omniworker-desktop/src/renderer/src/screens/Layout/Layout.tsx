@@ -13,13 +13,15 @@ import Models from "../Models/Models";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
 import Kanban from "../Kanban/Kanban";
+import Account from "../Account/Account";
 import RemoteNotice from "../../components/RemoteNotice";
 import VerifyWarningBanner from "../../components/VerifyWarningBanner";
-import omniworkerlogo from "../../assets/omniworker.png";
+
 import {
   ChatBubble,
   Clock,
   Users,
+  User,
   Settings as SettingsIcon,
   Puzzle,
   Sparkles,
@@ -27,8 +29,6 @@ import {
   Wrench,
   Signal,
   Building,
-  Layers,
-  KeyRound,
   Timer,
   Kanban as KanbanIcon,
   Download,
@@ -50,7 +50,8 @@ type View =
   | "schedules"
   | "kanban"
   | "gateway"
-  | "settings";
+  | "settings"
+  | "account";
 
 const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "chat", icon: ChatBubble, labelKey: "navigation.chat" },
@@ -67,18 +68,23 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
   { view: "gateway", icon: Signal, labelKey: "navigation.gateway" },
   { view: "settings", icon: SettingsIcon, labelKey: "navigation.settings" },
+  { view: "account", icon: User, labelKey: "navigation.account" },
 ];
 
 interface LayoutProps {
   verifyWarning?: boolean;
   onReinstall?: () => void;
   onDismissVerifyWarning?: () => void;
+  userData?: any;
+  authToken?: string | null;
 }
 
 function Layout({
   verifyWarning,
   onReinstall,
   onDismissVerifyWarning,
+  userData,
+  authToken,
 }: LayoutProps = {}): React.JSX.Element {
   const { t } = useI18n();
   const [view, setView] = useState<View>("chat");
@@ -139,12 +145,84 @@ function Layout({
       setUpdateError(message);
       setDownloadPercent(0);
     });
+
     return () => {
       cleanupAvailable();
       cleanupProgress();
       cleanupDownloaded();
       cleanupError();
     };
+  }, []);
+
+  const [saasInfo, setSaasInfo] = useState<{ plan: string | null; tokenBalance: number | null; tenantName: string | null } | null>(null);
+
+  // OmniWorker B2B: Edge Agent Heartbeat
+  useEffect(() => {
+    let heartbeatTimer: any;
+    let registeredAgentId: string | null = null;
+    let isRegistering = false;
+
+    async function ensureHeartbeat() {
+      try {
+        const envs = await window.omniworkerAPI.getEnv();
+        const apiKey = envs?.CUSTOM_API_KEY;
+        if (!apiKey || !apiKey.startsWith("tsto_")) return;
+
+        const saasUrl = import.meta.env.VITE_SAAS_URL || "http://localhost:3000";
+
+        if (!registeredAgentId && !isRegistering) {
+          isRegistering = true;
+          const res = await fetch(`${saasUrl}/api/v1/edge/register`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              agentName: "OmniWorker Desktop",
+              hostname: "Local Desktop",
+              platform: window.electron?.process?.platform || "unknown",
+              capabilities: ["chat", "files"],
+            }),
+          });
+          const data = await res.json();
+          if (data.success && data.agent?.id) {
+            registeredAgentId = data.agent.id;
+          }
+          isRegistering = false;
+        }
+
+        if (registeredAgentId) {
+          const res = await fetch(`${saasUrl}/api/v1/edge/heartbeat`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              agentId: registeredAgentId,
+              status: "online",
+            }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            setSaasInfo({
+              plan: data.plan || null,
+              tokenBalance: typeof data.tokenBalance === "number" ? data.tokenBalance : null,
+              tenantName: data.tenantName || null,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Agent heartbeat error:", err);
+        isRegistering = false;
+      }
+    }
+
+    ensureHeartbeat();
+    heartbeatTimer = setInterval(ensureHeartbeat, 30000);
+
+    return () => clearInterval(heartbeatTimer);
   }, []);
 
   async function handleUpdate(): Promise<void> {
@@ -211,7 +289,9 @@ function Layout({
     <div className="layout">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <img src={omniworkerlogo} height={30} alt="" />
+          <div style={{ color: "var(--accent-text)", fontSize: "20px", fontWeight: "900", letterSpacing: "1px", fontFamily: "var(--font-mono)", padding: "4px 8px", border: "2px solid var(--accent-text)" }}>
+            OMNIWORKER
+          </div>
         </div>
 
         <nav className="sidebar-nav">
@@ -256,8 +336,27 @@ function Layout({
               )}
             </button>
           )}
-          <div className="sidebar-footer-text">
-            {activeProfile === "default" ? t("common.appName") : activeProfile}
+          <div className="sidebar-footer-text" style={{ padding: '8px', borderTop: '1px solid var(--border-subtle)', marginTop: 'auto' }}>
+            {saasInfo ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                <div style={{ color: 'var(--text-primary)', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px' }}>
+                  {saasInfo.tenantName || 'Tenant'}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px' }}>
+                    {saasInfo.plan || 'Free'} Plan
+                  </span>
+                  <span style={{ 
+                    color: saasInfo.tokenBalance && saasInfo.tokenBalance > 1000 ? 'var(--text-primary)' : '#ef4444',
+                    fontWeight: 'bold' 
+                  }}>
+                    {saasInfo.tokenBalance?.toLocaleString()} TKS
+                  </span>
+                </div>
+              </div>
+            ) : (
+              activeProfile === "default" ? t("common.appName") : activeProfile
+            )}
           </div>
         </div>
       </aside>
@@ -408,6 +507,12 @@ function Layout({
         {visitedViews.has("settings") && (
           <div style={paneStyle("settings")}>
             <Settings profile={activeProfile} />
+          </div>
+        )}
+
+        {visitedViews.has("account") && (
+          <div style={paneStyle("account")}>
+            <Account userData={userData} authToken={authToken} />
           </div>
         )}
       </main>
