@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     tokenLimit: number | string;
     maxAgents?: number | string;
     maxUsers?: number | string;
+    maxLicenses?: number | string;
     price: number | string;
     billingPeriod?: string;
     isPublic?: boolean;
@@ -41,11 +42,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { name, description, tokenLimit, maxAgents, maxUsers, price, billingPeriod, isPublic, features, sortOrder } = body;
+  const { name, description, tokenLimit, maxAgents, maxUsers, maxLicenses, price, billingPeriod, isPublic, features, sortOrder } = body;
+
 
   if (!name || tokenLimit === undefined || price === undefined) {
     return NextResponse.json({ error: "name, tokenLimit y price son requeridos" }, { status: 400 });
   }
+
 
   const plan = await prisma.subscriptionPlan.create({
     data: {
@@ -54,6 +57,7 @@ export async function POST(request: Request) {
       tokenLimit: typeof tokenLimit === 'string' ? parseInt(tokenLimit) : tokenLimit,
       maxAgents: typeof maxAgents === 'string' ? parseInt(maxAgents) : (maxAgents ?? 1),
       maxUsers: typeof maxUsers === 'string' ? parseInt(maxUsers) : (maxUsers ?? 1),
+      maxLicenses: typeof maxLicenses === 'string' ? parseInt(maxLicenses) : (maxLicenses ?? 1),
       price: typeof price === 'string' ? parseFloat(price) : price,
       billingPeriod: billingPeriod || "monthly",
       isPublic: isPublic ?? true,
@@ -82,6 +86,7 @@ export async function PATCH(request: Request) {
     tokenLimit?: number | string;
     maxAgents?: number | string;
     maxUsers?: number | string;
+    maxLicenses?: number | string;
     price?: number | string;
     billingPeriod?: string;
     isPublic?: boolean;
@@ -102,6 +107,7 @@ export async function PATCH(request: Request) {
   if (rest.tokenLimit !== undefined) updateData.tokenLimit = typeof rest.tokenLimit === 'string' ? parseInt(rest.tokenLimit) : rest.tokenLimit;
   if (rest.maxAgents !== undefined) updateData.maxAgents = typeof rest.maxAgents === 'string' ? parseInt(rest.maxAgents) : rest.maxAgents;
   if (rest.maxUsers !== undefined) updateData.maxUsers = typeof rest.maxUsers === 'string' ? parseInt(rest.maxUsers) : rest.maxUsers;
+  if (rest.maxLicenses !== undefined) updateData.maxLicenses = typeof rest.maxLicenses === 'string' ? parseInt(rest.maxLicenses) : rest.maxLicenses;
   if (rest.price !== undefined) updateData.price = typeof rest.price === 'string' ? parseFloat(rest.price) : rest.price;
 
   const plan = await prisma.subscriptionPlan.update({ where: { id }, data: updateData });

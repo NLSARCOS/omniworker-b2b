@@ -183,18 +183,53 @@ export async function authenticateRequest(request: Request): Promise<{
     const keyHash = createHash("sha256").update(token).digest("hex");
     const apiKey = await prisma.tenantApiKey.findUnique({
       where: { keyHash },
-      include: { tenant: { include: { plan: true, users: { where: { role: { in: ["ADMIN", "SUPERADMIN"] } }, take: 1 } } } },
+      include: {
+        license: true,
+        tenant: {
+          include: {
+            plan: true,
+            users: { where: { role: { in: ["ADMIN", "SUPERADMIN"] } }, take: 1 }
+          }
+        }
+      },
     });
 
-    if (!apiKey || !apiKey.tenant.isActive) return null;
+
+    // 1. Key must exist
+    if (!apiKey) return null;
+
+
+    // 2. Tenant must be active
+    if (!apiKey.tenant.isActive) return null;
+
+
+    // 3. Tenant plan must be active
+    if (!apiKey.tenant.plan?.isActive) return null;
+
+
+    // 4. Key must have an active license attached
+    if (!apiKey.licenseId || !apiKey.license) return null;
+    if (apiKey.license.status !== "ACTIVE") return null;
+
+
+    // 5. Tenant must not exceed maxLicenses
+    const activeLicenseCount = await prisma.license.count({
+      where: { tenantId: apiKey.tenantId, status: "ACTIVE" },
+    });
+    const maxLicenses = apiKey.tenant.plan?.maxLicenses ?? 1;
+    if (activeLicenseCount > maxLicenses) return null;
 
     const dbUser = apiKey.tenant.users[0];
     if (!dbUser) return null;
 
-    await prisma.tenantApiKey.update({
-      where: { id: apiKey.id },
-      data: { lastUsedAt: new Date() },
-    });
+    // Update lastUsedAt on the key AND lastSeenAt on the license
+    const now = new Date();
+    await Promise.all([
+      prisma.tenantApiKey.update({ where: { id: apiKey.id }, data: { lastUsedAt: now } }),
+      apiKey.licenseId
+        ? prisma.license.update({ where: { id: apiKey.licenseId }, data: { lastSeenAt: now } })
+        : Promise.resolve(),
+    ]);
 
     return {
       user: {

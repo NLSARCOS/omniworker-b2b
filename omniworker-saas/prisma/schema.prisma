@@ -40,6 +40,7 @@ model Tenant {
   users       User[]
   edgeAgents  EdgeAgent[]
   apiKeys     TenantApiKey[]
+  licenses    License[]
   tasks       TaskLog[]
 }
 
@@ -48,6 +49,8 @@ model TenantApiKey {
   id          String    @id @default(uuid())
   tenantId    String
   tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  licenseId   String?
+  license     License?  @relation(fields: [licenseId], references: [id])
   keyHash     String    @unique
   keyPrefix   String
   name        String?
@@ -55,6 +58,7 @@ model TenantApiKey {
   createdAt   DateTime  @default(now())
 
   @@index([tenantId])
+  @@index([licenseId])
 }
 
 // ─── USER ───
@@ -98,6 +102,7 @@ model SubscriptionPlan {
   tokenLimit    Int
   maxAgents     Int      @default(1)
   maxUsers      Int      @default(1)
+  maxLicenses   Int      @default(1)
   price         Float
   billingPeriod String   @default("monthly")
   isActive      Boolean  @default(true)
@@ -150,11 +155,34 @@ model AdminAuditLog {
   createdAt DateTime @default(now())
 }
 
+// ─── LICENSE ───────────────────────────────────────────────────────────────
+model License {
+  id               String    @id @default(uuid())
+  tenantId         String
+  tenant           Tenant    @relation(fields: [tenantId], references: [id])
+  name             String
+  status           String    @default("ACTIVE")
+  deviceFingerprint String?
+  activatedAt      DateTime  @default(now())
+  lastSeenAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  apiKeys          TenantApiKey[]
+  edgeAgents       EdgeAgent[]
+
+  @@index([tenantId])
+  @@index([status])
+}
+
 // ─── EDGE AGENT ───
 model EdgeAgent {
   id            String    @id @default(uuid())
   tenantId      String
   tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  licenseId     String?
+  license       License?  @relation(fields: [licenseId], references: [id])
   agentName     String
   hostname      String?
   platform      String?
@@ -164,4 +192,5 @@ model EdgeAgent {
   createdAt     DateTime  @default(now())
 
   @@index([tenantId])
+  @@index([licenseId])
 }

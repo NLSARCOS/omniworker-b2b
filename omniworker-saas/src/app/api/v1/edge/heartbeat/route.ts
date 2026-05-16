@@ -44,23 +44,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sin tenant" }, { status: 400 });
   }
 
-  // Verify agent belongs to user's tenant
+
   const agent = await prisma.edgeAgent.findFirst({
     where: { id: agentId, tenantId: user.tenantId },
   });
+
 
   if (!agent) {
     return NextResponse.json({ error: "Agente no encontrado" }, { status: 404 });
   }
 
+  const now = new Date();
   await prisma.edgeAgent.update({
     where: { id: agentId },
     data: {
       status: status || "online",
-      lastSeenAt: new Date(),
+      lastSeenAt: now,
       ...(capabilities ? { capabilities: JSON.stringify(capabilities) } : {}),
     },
   });
+
+  // Update license lastSeenAt if this agent is attached to a license
+  if (agent.licenseId) {
+    await prisma.license.update({
+      where: { id: agent.licenseId },
+      data: { lastSeenAt: now },
+    }).catch(() => { /* license may have been revoked */ });
+  }
 
   return NextResponse.json({
     success: true,

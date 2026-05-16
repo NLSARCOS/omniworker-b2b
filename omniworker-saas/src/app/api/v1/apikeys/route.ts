@@ -1,49 +1,45 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { createApiKeySchema } from "@/lib/validation";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { randomBytes, createHash } from "crypto";
 
 export async function POST(request: Request) {
   const auth = await authenticateRequest(request);
-  if (!auth) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  if (!auth) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { user } = auth;
   if (!user.tenantId) {
     return NextResponse.json({ error: "El usuario no pertenece a un tenant" }, { status: 400 });
   }
 
-  // Rate limiting
   const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
   const rateLimit = await checkRateLimit(ip, "default");
   if (!rateLimit.success) {
-    return NextResponse.json(
-      { error: "Demasiadas peticiones. Intenta más tarde." },
-      { status: 429 }
-    );
+    return NextResponse.json({ error: "Demasiadas peticiones. Intenta más tarde." }, { status: 429 });
   }
 
   let body;
   try {
-    const rawBody = await request.json();
-    const parsed = createApiKeySchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Datos inválidos", issues: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
-    }
-    body = parsed.data;
+    body = await request.json();
   } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { name } = body;
+  const { name, licenseId } = body as { name?: string; licenseId?: string };
 
-  // Generate a new secure API Key
+  if (!licenseId) {
+    return NextResponse.json({ error: "licenseId es requerido" }, { status: 400 });
+  }
+
+  // Verify license belongs to tenant and is ACTIVE
+  const license = await prisma.license.findFirst({
+    where: { id: licenseId, tenantId: user.tenantId, status: "ACTIVE" },
+  });
+  if (!license) {
+    return NextResponse.json({ error: "Licencia inválida o inactiva" }, { status: 400 });
+  }
+
   const rawKey = "tsto_" + randomBytes(16).toString("hex");
   const keyPrefix = rawKey.substring(0, 16);
   const keyHash = createHash("sha256").update(rawKey).digest("hex");
@@ -51,8 +47,9 @@ export async function POST(request: Request) {
   const newKey = await prisma.tenantApiKey.create({
     data: {
       tenantId: user.tenantId,
-      keyHash: keyHash,
-      keyPrefix: keyPrefix,
+      licenseId: license.id,
+      keyHash,
+      keyPrefix,
       name: name || "Nueva Clave",
     },
   });
@@ -63,16 +60,16 @@ export async function POST(request: Request) {
       id: newKey.id,
       name: newKey.name,
       key: rawKey,
+      licenseId: license.id,
+      licenseName: license.name,
       createdAt: newKey.createdAt,
-    }
+    },
   });
 }
 
 export async function GET(request: Request) {
   const auth = await authenticateRequest(request);
-  if (!auth) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  if (!auth) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { user } = auth;
   if (!user.tenantId) {
@@ -81,9 +78,44 @@ export async function GET(request: Request) {
 
   const keys = await prisma.tenantApiKey.findMany({
     where: { tenantId: user.tenantId },
-    select: { id: true, name: true, keyPrefix: true, createdAt: true, lastUsedAt: true },
+    select: {
+      id: true,
+      name: true,
+      keyPrefix: true,
+      createdAt: true,
+      lastUsedAt: true,
+      licenseId: true,
+      license: { select: { id: true, name: true, status: true } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
   return NextResponse.json({ success: true, keys });
+}
+
+export async function DELETE(request: Request) {
+  const auth = await authenticateRequest(request);
+  if (!auth) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const { user } = auth;
+  if (!user.tenantId) {
+    return NextResponse.json({ error: "Sin tenant" }, { status: 400 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const keyId = searchParams.get("id");
+  if (!keyId) {
+    return NextResponse.json({ error: "id requerido" }, { status: 400 });
+  }
+
+  const key = await prisma.tenantApiKey.findFirst({
+    where: { id: keyId, tenantId: user.tenantId },
+  });
+  if (!key) {
+    return NextResponse.json({ error: "Clave no encontrada" }, { status: 404 });
+  }
+
+  await prisma.tenantApiKey.delete({ where: { id: keyId } });
+
+  return NextResponse.json({ success: true });
 }

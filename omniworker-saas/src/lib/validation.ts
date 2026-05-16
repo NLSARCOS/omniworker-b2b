@@ -29,6 +29,7 @@ export const edgeRegisterSchema = z.object({
   hostname: z.string().max(100).optional(),
   platform: z.string().max(50).optional(),
   capabilities: z.array(z.string()).optional(),
+  licenseId: z.string().optional(),
 });
 
 export const edgeHeartbeatSchema = z.object({
@@ -69,4 +70,20 @@ export const adminTenantPatchSchema = z.object({
 // ─── API Keys ───
 export const createApiKeySchema = z.object({
   name: z.string().min(1).max(100),
+  licenseId: z.string().min(1, "licenseId es requerido"),
+});
+
+export const deleteApiKeySchema = z.object({
+  id: z.string().min(1),
+});
+
+// ─── Licenses ───
+export const createLicenseSchema = z.object({
+  name: z.string().max(100).optional(),
+  deviceFingerprint: z.string().max(255).optional(),
+});
+
+export const updateLicenseSchema = z.object({
+  name: z.string().max(100).optional(),
+  deviceFingerprint: z.string().max(255).optional(),
 });

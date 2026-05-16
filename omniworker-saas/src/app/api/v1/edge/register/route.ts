@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { agentName, hostname, platform, capabilities } = body;
+  const { agentName, hostname, platform, capabilities, licenseId } = body;
 
   // Check plan limits
   const tenant = await prisma.tenant.findUnique({
@@ -65,6 +65,15 @@ export async function POST(request: Request) {
     );
   }
 
+  if (licenseId) {
+    const lic = await prisma.license.findFirst({
+      where: { id: licenseId, tenantId: user.tenantId, status: "ACTIVE" },
+    });
+    if (!lic) {
+      return NextResponse.json({ error: "Licencia inválida o inactiva" }, { status: 400 });
+    }
+  }
+
   const agent = await prisma.edgeAgent.create({
     data: {
       tenantId: user.tenantId,
@@ -73,6 +82,7 @@ export async function POST(request: Request) {
       platform: platform || null,
       status: "online",
       capabilities: JSON.stringify(capabilities || []),
+      ...(licenseId ? { licenseId } : {}),
     },
   });
 
