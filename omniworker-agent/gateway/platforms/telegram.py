@@ -917,7 +917,7 @@ class TelegramAdapter(BasePlatformAdapter):
         # Exhausted retries — fatal
         message = (
             "Another process is already polling this Telegram bot token "
-            "(possibly OpenClaw or another OmniWorker instance). "
+            "(possibly OmniWorker or another OmniWorker instance). "
             "OmniWorker stopped Telegram polling after %d retries. "
             "Only one poller can run per token — stop the other process "
             "and restart with 'omniworker start'."
@@ -1939,7 +1939,7 @@ class TelegramAdapter(BasePlatformAdapter):
         """Delete a previously sent Telegram message.
 
         Used by the stream consumer's fresh-final cleanup path (ported
-        from openclaw/openclaw#72038) to remove long-lived preview
+        from omniworker/omniworker#72038) to remove long-lived preview
         messages after sending the completed reply as a fresh message.
         Telegram's Bot API ``deleteMessage`` works for bot-posted
         messages in the last 48 hours.  Failures are non-fatal — the

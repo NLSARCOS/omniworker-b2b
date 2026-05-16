@@ -31,7 +31,7 @@ The following is the complete skill definition that OmniWorker loads when this s
 
 # OmniWorker Agent
 
-OmniWorker Agent is an open-source AI agent framework by Nous Research that runs in your terminal, messaging platforms, and IDEs. It belongs to the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. OmniWorker works with any LLM provider (OpenRouter, Anthropic, OpenAI, DeepSeek, local models, and 15+ others) and runs on Linux, macOS, and WSL.
+OmniWorker Agent is an open-source AI agent framework by Nous Research that runs in your terminal, messaging platforms, and IDEs. It belongs to the same category as Claude Code (Anthropic), Codex (OpenAI), and OmniWorker — autonomous coding and task-execution agents that use tool calling to interact with your system. OmniWorker works with any LLM provider (OpenRouter, Anthropic, OpenAI, DeepSeek, local models, and 15+ others) and runs on Linux, macOS, and WSL.
 
 What makes OmniWorker different:
 
@@ -237,7 +237,7 @@ omniworker honcho setup/status  Honcho memory integration (requires honcho plugi
 omniworker memory setup/status/off  Memory provider config
 omniworker completion bash|zsh  Shell completions
 omniworker acp                  ACP server (IDE integration)
-omniworker claw migrate         Migrate from OpenClaw
+omniworker claw migrate         Migrate from OmniWorker
 omniworker uninstall            Uninstall OmniWorker
 ```
 

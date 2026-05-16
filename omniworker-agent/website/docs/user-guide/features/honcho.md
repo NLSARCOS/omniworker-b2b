@@ -215,7 +215,7 @@ omniworker honcho sessions        # List known Honcho session mappings
 omniworker honcho map             # Map current directory to a Honcho session name
 omniworker honcho enable          # Enable Honcho for the active profile
 omniworker honcho disable         # Disable Honcho for the active profile
-omniworker honcho migrate         # Step-by-step migration guide from openclaw-honcho
+omniworker honcho migrate         # Step-by-step migration guide from omniworker-honcho
 ```
 
 ## Migrating from `omniworker honcho`

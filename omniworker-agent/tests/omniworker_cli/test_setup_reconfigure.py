@@ -63,7 +63,7 @@ def _enter_existing_install_patches(stack, **extra):
         ("omniworker_cli.setup.get_env_value", {"return_value": None}),
         ("omniworker_cli.auth.get_active_provider", {"return_value": "openrouter"}),
         ("omniworker_cli.setup._print_setup_summary", {}),
-        ("omniworker_cli.setup._offer_openclaw_migration", {"return_value": False}),
+        ("omniworker_cli.setup._offer_omniworker_migration", {"return_value": False}),
     ]:
         stack.enter_context(patch(target, **kwargs))
 
@@ -83,7 +83,7 @@ def _enter_fresh_install_patches(stack, **extra):
         ("omniworker_cli.setup.save_config", {}),
         ("omniworker_cli.auth.get_active_provider", {"return_value": None}),
         ("omniworker_cli.setup.get_env_value", {"return_value": None}),
-        ("omniworker_cli.setup._offer_openclaw_migration", {"return_value": False}),
+        ("omniworker_cli.setup._offer_omniworker_migration", {"return_value": False}),
     ]:
         stack.enter_context(patch(target, **kwargs))
 

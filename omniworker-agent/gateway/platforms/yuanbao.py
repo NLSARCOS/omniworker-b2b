@@ -971,7 +971,7 @@ class InboundMiddleware(ABC):
 class InboundPipeline:
     """Onion-model middleware pipeline engine for inbound message processing.
 
-    Inspired by OpenClaw's MessagePipeline (extensions/yuanbao/src/business/
+    Inspired by OmniWorker's MessagePipeline (extensions/yuanbao/src/business/
     pipeline/engine.ts).  Supports named middlewares, conditional guards
     (``when``), and ``use_before`` / ``use_after`` / ``remove`` for dynamic
     composition.

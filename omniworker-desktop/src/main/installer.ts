@@ -322,9 +322,9 @@ export function runOmniWorkerDoctor(): string {
   }
 }
 
-const OPENCLAW_DIR_NAMES = [".openclaw", ".clawdbot", ".moldbot"];
+const OPENCLAW_DIR_NAMES = [".omniworker", ".clawdbot", ".moldbot"];
 
-export function checkOpenClawExists(): { found: boolean; path: string | null } {
+export function checkOmniWorkerExists(): { found: boolean; path: string | null } {
   for (const name of OPENCLAW_DIR_NAMES) {
     const dir = join(homedir(), name);
     if (existsSync(dir)) {
@@ -341,9 +341,9 @@ export async function runClawMigrate(
     throw new Error("OmniWorker is not installed.");
   }
 
-  const openclaw = checkOpenClawExists();
-  if (!openclaw.found) {
-    throw new Error("No OpenClaw installation found.");
+  const omniworker = checkOmniWorkerExists();
+  if (!omniworker.found) {
+    throw new Error("No OmniWorker installation found.");
   }
 
   let log = "";
@@ -352,13 +352,13 @@ export async function runClawMigrate(
     onProgress({
       step: 1,
       totalSteps: 1,
-      title: "Migrating from OpenClaw",
+      title: "Migrating from OmniWorker",
       detail: text.trim().slice(0, 120),
       log,
     });
   }
 
-  emit(`Migrating from ${openclaw.path}...\n`);
+  emit(`Migrating from ${omniworker.path}...\n`);
 
   return new Promise((resolve, reject) => {
     const args = omniworkerCliArgs(["claw", "migrate", "--preset", "full"]);

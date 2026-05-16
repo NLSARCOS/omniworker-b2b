@@ -61,9 +61,9 @@ const omniworkerAPI = {
   runOmniWorkerUpdate: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("run-omniworker-update"),
 
-  // OpenClaw migration
-  checkOpenClaw: (): Promise<{ found: boolean; path: string | null }> =>
-    ipcRenderer.invoke("check-openclaw"),
+  // OmniWorker migration
+  checkOmniWorker: (): Promise<{ found: boolean; path: string | null }> =>
+    ipcRenderer.invoke("check-omniworker"),
   runClawMigrate: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("run-claw-migrate"),
 

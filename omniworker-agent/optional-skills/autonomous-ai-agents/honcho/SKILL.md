@@ -425,7 +425,7 @@ Session summary requires at least one prior turn in the current Honcho session. 
 | `omniworker honcho map <name>` | Map current working directory to a Honcho session name |
 | `omniworker honcho identity` | Seed AI peer identity or show both peer representations |
 | `omniworker honcho sync` | Create host blocks for all OmniWorker profiles that don't have one yet |
-| `omniworker honcho migrate` | Step-by-step migration guide from OpenClaw native memory to OmniWorker + Honcho |
+| `omniworker honcho migrate` | Step-by-step migration guide from OmniWorker native memory to OmniWorker + Honcho |
 | `omniworker memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
 | `omniworker memory status` | Show active memory provider and config |
 | `omniworker memory off` | Disable external memory provider |

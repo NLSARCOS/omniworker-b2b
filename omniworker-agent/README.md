@@ -72,7 +72,7 @@ omniworker tools        # Configure which tools are enabled
 omniworker config set   # Set individual config values
 omniworker gateway      # Start the messaging gateway (Telegram, Discord, etc.)
 omniworker setup        # Run the full setup wizard (configures everything at once)
-omniworker claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
+omniworker claw migrate # Migrate from OmniWorker (if coming from OmniWorker)
 omniworker update       # Update to the latest version
 omniworker doctor       # Diagnose any issues
 ```
@@ -123,11 +123,11 @@ All documentation lives at **[omniworker-agent.omniworker.com/docs](https://omni
 
 ---
 
-## Migrating from OpenClaw
+## Migrating from OmniWorker
 
-If you're coming from OpenClaw, OmniWorker can automatically import your settings, memories, skills, and API keys.
+If you're coming from OmniWorker, OmniWorker can automatically import your settings, memories, skills, and API keys.
 
-**During first-time setup:** The setup wizard (`omniworker setup`) automatically detects `~/.openclaw` and offers to migrate before configuration begins.
+**During first-time setup:** The setup wizard (`omniworker setup`) automatically detects `~/.omniworker` and offers to migrate before configuration begins.
 
 **Anytime after install:**
 
@@ -141,14 +141,14 @@ omniworker claw migrate --overwrite  # Overwrite existing conflicts
 What gets imported:
 - **SOUL.md** — persona file
 - **Memories** — MEMORY.md and USER.md entries
-- **Skills** — user-created skills → `~/.omniworker/skills/openclaw-imports/`
+- **Skills** — user-created skills → `~/.omniworker/skills/omniworker-imports/`
 - **Command allowlist** — approval patterns
 - **Messaging settings** — platform configs, allowed users, working directory
 - **API keys** — allowlisted secrets (Telegram, OpenRouter, OpenAI, Anthropic, ElevenLabs)
 - **TTS assets** — workspace audio files
 - **Workspace instructions** — AGENTS.md (with `--workspace-target`)
 
-See `omniworker claw migrate --help` for all options, or use the `openclaw-migration` skill for an interactive agent-guided migration with dry-run previews.
+See `omniworker claw migrate --help` for all options, or use the `omniworker-migration` skill for an interactive agent-guided migration with dry-run previews.
 
 ---
 
@@ -182,7 +182,7 @@ scripts/run_tests.sh
 - 💬 [Discord](https://discord.gg/OmniWorker)
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/OmniWorker/omniworker-agent/issues)
-- 🔌 [OmniWorkerClaw](https://github.com/AaronWong1999/omniworkerclaw) — Community WeChat bridge: Run OmniWorker Agent and OpenClaw on the same WeChat account.
+- 🔌 [OmniWorkerClaw](https://github.com/AaronWong1999/omniworkerclaw) — Community WeChat bridge: Run OmniWorker Agent and OmniWorker on the same WeChat account.
 
 ---
 

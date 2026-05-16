@@ -64,9 +64,9 @@ export default {
   runDiagnosis: "診断を実行",
   running: "実行中...",
   debugDump: "デバッグダンプ",
-  migrationDetected: "OpenClaw インストールを検出",
+  migrationDetected: "OmniWorker インストールを検出",
   migrationDesc:
-    "<code>{{path}}</code> に OpenClaw が見つかりました。設定・API キー・セッション・スキルを OmniWorker に移行できます。",
+    "<code>{{path}}</code> に OmniWorker が見つかりました。設定・API キー・セッション・スキルを OmniWorker に移行できます。",
   migrationDismiss: "再表示しない",
   migrating: "移行中...",
   migrateToOmniWorker: "OmniWorker に移行",

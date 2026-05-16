@@ -185,7 +185,7 @@
 - Use explicit key mapping for returning-user menu dispatch instead of positional index ([#3083](https://github.com/OmniWorker/omniworker-agent/pull/3083))
 - Use `sys.executable` for pip in update commands to fix PEP 668 ([#3099](https://github.com/OmniWorker/omniworker-agent/pull/3099))
 - Harden `omniworker update` against diverged history, non-main branches, and gateway edge cases ([#3492](https://github.com/OmniWorker/omniworker-agent/pull/3492))
-- OpenClaw migration overwrites defaults and setup wizard skips imported sections — fixed ([#3282](https://github.com/OmniWorker/omniworker-agent/pull/3282))
+- OmniWorker migration overwrites defaults and setup wizard skips imported sections — fixed ([#3282](https://github.com/OmniWorker/omniworker-agent/pull/3282))
 - Stop recursive AGENTS.md walk, load top-level only ([#3110](https://github.com/OmniWorker/omniworker-agent/pull/3110))
 - Add macOS Homebrew paths to browser and terminal PATH resolution ([#2713](https://github.com/OmniWorker/omniworker-agent/pull/2713))
 - YAML boolean handling for `tool_progress` config ([#3300](https://github.com/OmniWorker/omniworker-agent/pull/3300))
@@ -244,7 +244,7 @@
 ### New Skills
 - **G0DM0D3 godmode jailbreaking skill** + docs ([#3157](https://github.com/OmniWorker/omniworker-agent/pull/3157))
 - **Docker management skill** added to optional-skills ([#3060](https://github.com/OmniWorker/omniworker-agent/pull/3060))
-- **OpenClaw migration v2** — 17 new modules, terminal recap for migrating from OpenClaw to OmniWorker ([#2906](https://github.com/OmniWorker/omniworker-agent/pull/2906))
+- **OmniWorker migration v2** — 17 new modules, terminal recap for migrating from OmniWorker to OmniWorker ([#2906](https://github.com/OmniWorker/omniworker-agent/pull/2906))
 
 ---
 
@@ -291,7 +291,7 @@
 - Fix Slack progress messages appearing in wrong thread ([#3063](https://github.com/OmniWorker/omniworker-agent/pull/3063))
 - Fix WhatsApp media downloads (documents, audio, video) ([#2978](https://github.com/OmniWorker/omniworker-agent/pull/2978))
 - Fix Telegram "Message thread not found" killing progress messages ([#3390](https://github.com/OmniWorker/omniworker-agent/pull/3390))
-- Fix OpenClaw migration overwriting defaults ([#3282](https://github.com/OmniWorker/omniworker-agent/pull/3282))
+- Fix OmniWorker migration overwriting defaults ([#3282](https://github.com/OmniWorker/omniworker-agent/pull/3282))
 - Fix returning-user setup menu dispatching wrong section ([#3083](https://github.com/OmniWorker/omniworker-agent/pull/3083))
 - Fix `omniworker update` PEP 668 "externally-managed-environment" error ([#3099](https://github.com/OmniWorker/omniworker-agent/pull/3099))
 - Fix subagents hitting `max_iterations` prematurely via shared budget ([#3004](https://github.com/OmniWorker/omniworker-agent/pull/3004))

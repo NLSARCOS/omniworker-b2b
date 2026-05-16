@@ -25,9 +25,9 @@ function getCachedVersion(): string | null {
   }
 }
 
-function getCachedOpenClaw(): { found: boolean; path: string | null } | null {
+function getCachedOmniWorker(): { found: boolean; path: string | null } | null {
   try {
-    const raw = localStorage.getItem("omniworker-openclaw-cache");
+    const raw = localStorage.getItem("omniworker-omniworker-cache");
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -52,16 +52,16 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
     "success" | "error" | null
   >(null);
 
-  // OpenClaw migration — initialize from localStorage cache
-  const cachedClaw = getCachedOpenClaw();
-  const [openclawFound, setOpenclawFound] = useState(
+  // OmniWorker migration — initialize from localStorage cache
+  const cachedClaw = getCachedOmniWorker();
+  const [omniworkerFound, setOpenclawFound] = useState(
     cachedClaw?.found ?? false,
   );
-  const [openclawPath, setOpenclawPath] = useState<string | null>(
+  const [omniworkerPath, setOpenclawPath] = useState<string | null>(
     cachedClaw?.path ?? null,
   );
   const [migrationDismissed, setMigrationDismissed] = useState(
-    () => localStorage.getItem("omniworker-openclaw-dismissed") === "true",
+    () => localStorage.getItem("omniworker-omniworker-dismissed") === "true",
   );
   const [migrating, setMigrating] = useState(false);
   const [migrationLog, setMigrationLog] = useState("");
@@ -146,12 +146,12 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       }
     });
 
-    if (localStorage.getItem("omniworker-openclaw-dismissed") !== "true") {
-      window.omniworkerAPI.checkOpenClaw().then((claw) => {
+    if (localStorage.getItem("omniworker-omniworker-dismissed") !== "true") {
+      window.omniworkerAPI.checkOmniWorker().then((claw) => {
         setOpenclawFound(claw.found);
         setOpenclawPath(claw.path);
         try {
-          localStorage.setItem("omniworker-openclaw-cache", JSON.stringify(claw));
+          localStorage.setItem("omniworker-omniworker-cache", JSON.stringify(claw));
         } catch {
           /* ignore */
         }
@@ -194,7 +194,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   }
 
   function handleDismissMigration(): void {
-    localStorage.setItem("omniworker-openclaw-dismissed", "true");
+    localStorage.setItem("omniworker-omniworker-dismissed", "true");
     setMigrationDismissed(true);
   }
 
@@ -673,7 +673,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         )}
       </div>
 
-      {openclawFound && !migrationDismissed && (
+      {omniworkerFound && !migrationDismissed && (
         <div className="settings-migration-banner">
           <div className="settings-migration-header">
             <div>
@@ -684,7 +684,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
                 className="settings-migration-desc"
                 dangerouslySetInnerHTML={{
                   __html: t("settings.migrationDesc", {
-                    path: openclawPath || "",
+                    path: omniworkerPath || "",
                   }),
                 }}
               />

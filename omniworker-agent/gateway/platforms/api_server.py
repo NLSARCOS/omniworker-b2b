@@ -3403,7 +3403,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 return False
 
             # Refuse to start network-accessible with a placeholder key.
-            # Ported from openclaw/openclaw#64586.
+            # Ported from omniworker/omniworker#64586.
             if is_network_accessible(self._host) and self._api_key:
                 try:
                     from omniworker_cli.auth import has_usable_secret

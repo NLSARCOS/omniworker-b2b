@@ -66,9 +66,9 @@ export default {
   runDiagnosis: "Executar Diagnóstico",
   running: "Executando...",
   debugDump: "Dump de Depuração",
-  migrationDetected: "Instalação do OpenClaw Detectada",
+  migrationDetected: "Instalação do OmniWorker Detectada",
   migrationDesc:
-    "Encontramos o OpenClaw em <code>{{path}}</code>. Você pode migrar sua configuração, chaves de API, sessões e habilidades para o OmniWorker.",
+    "Encontramos o OmniWorker em <code>{{path}}</code>. Você pode migrar sua configuração, chaves de API, sessões e habilidades para o OmniWorker.",
   migrationDismiss: "Não mostrar novamente",
   migrating: "Migrando...",
   migrateToOmniWorker: "Migrar para o OmniWorker",

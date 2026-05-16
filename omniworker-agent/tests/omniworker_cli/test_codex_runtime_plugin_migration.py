@@ -345,7 +345,7 @@ class TestMigrate:
 
     def test_plugin_discovery_writes_plugin_blocks(self, tmp_path, monkeypatch):
         """Discovered curated plugins land as [plugins."<name>@<marketplace>"]
-        blocks. This is what OpenClaw calls 'migrate native codex plugins.'"""
+        blocks. This is what OmniWorker calls 'migrate native codex plugins.'"""
         from omniworker_cli import codex_runtime_plugin_migration as crpm
 
         def fake_query(codex_home=None, timeout=8.0):
@@ -369,7 +369,7 @@ class TestMigrate:
         """Plugins where codex reports availability != AVAILABLE should
         be skipped — they're broken/uninstallable on codex's side, so
         migrating them would write config that fails at activation
-        time. Cf. openclaw#80815."""
+        time. Cf. omniworker#80815."""
         from omniworker_cli.codex_runtime_plugin_migration import _query_codex_plugins
         from unittest.mock import patch
 

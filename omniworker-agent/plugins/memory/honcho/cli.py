@@ -1077,12 +1077,12 @@ def cmd_identity(args) -> None:
 
 
 def cmd_migrate(args) -> None:
-    """Step-by-step migration guide: OpenClaw native memory → OmniWorker + Honcho."""
+    """Step-by-step migration guide: OmniWorker native memory → OmniWorker + Honcho."""
     from pathlib import Path
 
-    # ── Detect OpenClaw native memory files ──────────────────────────────────
+    # ── Detect OmniWorker native memory files ──────────────────────────────────
     cwd = Path(os.getcwd())
-    openclaw_home = Path.home() / ".openclaw"
+    omniworker_home = Path.home() / ".omniworker"
 
     # User peer: facts about the user
     user_file_names = ["USER.md", "MEMORY.md"]
@@ -1092,12 +1092,12 @@ def cmd_migrate(args) -> None:
     user_files: list[Path] = []
     agent_files: list[Path] = []
     for name in user_file_names:
-        for d in [cwd, openclaw_home]:
+        for d in [cwd, omniworker_home]:
             p = d / name
             if p.exists() and p not in user_files:
                 user_files.append(p)
     for name in agent_file_names:
-        for d in [cwd, openclaw_home]:
+        for d in [cwd, omniworker_home]:
             p = d / name
             if p.exists() and p not in agent_files:
                 agent_files.append(p)
@@ -1105,9 +1105,9 @@ def cmd_migrate(args) -> None:
     cfg = _read_config()
     has_key = bool(_resolve_api_key(cfg))
 
-    print("\nHoncho migration: OpenClaw native memory → OmniWorker\n" + "─" * 50)
+    print("\nHoncho migration: OmniWorker native memory → OmniWorker\n" + "─" * 50)
     print()
-    print("  OpenClaw's native memory stores context in local markdown files")
+    print("  OmniWorker's native memory stores context in local markdown files")
     print("  (USER.md, MEMORY.md, SOUL.md, ...) and injects them via QMD search.")
     print("  Honcho replaces that with a cloud-backed, LLM-observable memory layer:")
     print("  context is retrieved semantically, injected automatically each turn,")
@@ -1140,7 +1140,7 @@ def cmd_migrate(args) -> None:
 
     # ── Step 2: Detected files ────────────────────────────────────────────────
     print()
-    print("Step 2  Detected OpenClaw memory files")
+    print("Step 2  Detected OmniWorker memory files")
     print()
     if user_files or agent_files:
         if user_files:
@@ -1152,7 +1152,7 @@ def cmd_migrate(args) -> None:
             for f in agent_files:
                 print(f"    {f}")
     else:
-        print("  No OpenClaw native memory files found in cwd or ~/.openclaw/.")
+        print("  No OmniWorker native memory files found in cwd or ~/.omniworker/.")
         print("  If your files are elsewhere, copy them here before continuing,")
         print("  or seed them manually:  omniworker honcho identity <path/to/file>")
 
@@ -1213,7 +1213,7 @@ def cmd_migrate(args) -> None:
     print("Step 4  Seed AI identity files → Honcho AI peer")
     print()
     print("  SOUL.md, IDENTITY.md, AGENTS.md, TOOLS.md, BOOTSTRAP.md define the")
-    print("  agent's character, capabilities, and behavioral rules. In OpenClaw")
+    print("  agent's character, capabilities, and behavioral rules. In OmniWorker")
     print("  these are injected via file search at prompt-build time.")
     print()
     print("  In OmniWorker, they are seeded once into Honcho's AI peer through the")
@@ -1259,20 +1259,20 @@ def cmd_migrate(args) -> None:
 
     # ── Step 5: What changes ──────────────────────────────────────────────────
     print()
-    print("Step 5  What changes vs. OpenClaw native memory")
+    print("Step 5  What changes vs. OmniWorker native memory")
     print()
     print("  Storage")
-    print("    OpenClaw: markdown files on disk, searched via QMD at prompt-build time.")
+    print("    OmniWorker: markdown files on disk, searched via QMD at prompt-build time.")
     print("    OmniWorker:   cloud-backed Honcho peers. Files can stay on disk as source")
     print("              of truth; Honcho holds the live representation.")
     print()
     print("  Context injection")
-    print("    OpenClaw: file excerpts injected synchronously before each LLM call.")
+    print("    OmniWorker: file excerpts injected synchronously before each LLM call.")
     print("    OmniWorker:   Honcho context fetched async at turn end, injected next turn.")
     print("              First turn has no Honcho context; subsequent turns are loaded.")
     print()
     print("  Memory growth")
-    print("    OpenClaw: you edit files manually to update memory.")
+    print("    OmniWorker: you edit files manually to update memory.")
     print("    OmniWorker:   Honcho observes every message and updates representations")
     print("              automatically. Files become the seed, not the live store.")
     print()
@@ -1284,7 +1284,7 @@ def cmd_migrate(args) -> None:
     print("    honcho_conclude      — write a conclusion/fact back to memory")
     print()
     print("  Session naming")
-    print("    OpenClaw: no persistent session concept — files are global.")
+    print("    OmniWorker: no persistent session concept — files are global.")
     print("    OmniWorker:   per-session by default — each run gets its own session")
     print("              Map a custom name:  omniworker honcho map <session-name>")
 
@@ -1442,7 +1442,7 @@ def register_cli(subparser) -> None:
 
     subs.add_parser(
         "migrate",
-        help="Step-by-step migration guide from openclaw-honcho to OmniWorker Honcho",
+        help="Step-by-step migration guide from omniworker-honcho to OmniWorker Honcho",
     )
     subs.add_parser("enable", help="Enable Honcho for the active profile")
     subs.add_parser("disable", help="Disable Honcho for the active profile")

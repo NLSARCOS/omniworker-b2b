@@ -39,7 +39,7 @@ _DOH_PROVIDERS: list[dict] = [
 ]
 
 # Last-resort IPs when DoH is also blocked.  These are stable Telegram Bot API
-# endpoints in the 149.154.160.0/20 block (same seed used by OpenClaw).
+# endpoints in the 149.154.160.0/20 block (same seed used by OmniWorker).
 _SEED_FALLBACK_IPS: list[str] = ["149.154.167.220"]
 
 

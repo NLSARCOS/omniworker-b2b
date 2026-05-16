@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""OpenClaw -> OmniWorker migration helper.
+"""OmniWorker -> OmniWorker migration helper.
 
-This script migrates the parts of an OpenClaw user footprint that map cleanly
+This script migrates the parts of an OmniWorker user footprint that map cleanly
 into OmniWorker Agent, archives selected unmapped docs for manual review, and
 reports exactly what was skipped and why.
 """
@@ -28,9 +28,9 @@ except Exception:  # pragma: no cover - handled at runtime
 ENTRY_DELIMITER = "\n§\n"
 DEFAULT_MEMORY_CHAR_LIMIT = 2200
 DEFAULT_USER_CHAR_LIMIT = 1375
-SKILL_CATEGORY_DIRNAME = "openclaw-imports"
+SKILL_CATEGORY_DIRNAME = "omniworker-imports"
 SKILL_CATEGORY_DESCRIPTION = (
-    "Skills migrated from an OpenClaw workspace."
+    "Skills migrated from an OmniWorker workspace."
 )
 SKILL_CONFLICT_MODES = {"skip", "overwrite", "rename"}
 SUPPORTED_SECRET_TARGETS={
@@ -45,11 +45,11 @@ WORKSPACE_INSTRUCTIONS_FILENAME = "AGENTS" + ".md"
 MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     "soul": {
         "label": "SOUL.md",
-        "description": "Import the OpenClaw persona file into OmniWorker.",
+        "description": "Import the OmniWorker persona file into OmniWorker.",
     },
     "workspace-agents": {
         "label": "Workspace instructions",
-        "description": "Copy the OpenClaw workspace instructions file into a chosen workspace.",
+        "description": "Copy the OmniWorker workspace instructions file into a chosen workspace.",
     },
     "memory": {
         "label": "MEMORY.md",
@@ -69,11 +69,11 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "command-allowlist": {
         "label": "Command allowlist",
-        "description": "Merge OpenClaw exec approval patterns into OmniWorker command_allowlist.",
+        "description": "Merge OmniWorker exec approval patterns into OmniWorker command_allowlist.",
     },
     "skills": {
         "label": "User skills",
-        "description": "Copy OpenClaw skills into ~/.omniworker/skills/openclaw-imports/.",
+        "description": "Copy OmniWorker skills into ~/.omniworker/skills/omniworker-imports/.",
     },
     "tts-assets": {
         "label": "TTS assets",
@@ -109,7 +109,7 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "shared-skills": {
         "label": "Shared skills",
-        "description": "Copy shared OpenClaw skills from ~/.openclaw/skills/ into OmniWorker.",
+        "description": "Copy shared OmniWorker skills from ~/.omniworker/skills/ into OmniWorker.",
     },
     "daily-memory": {
         "label": "Daily memory files",
@@ -121,11 +121,11 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "mcp-servers": {
         "label": "MCP servers",
-        "description": "Import MCP server definitions from OpenClaw into OmniWorker config.yaml.",
+        "description": "Import MCP server definitions from OmniWorker into OmniWorker config.yaml.",
     },
     "plugins-config": {
         "label": "Plugins configuration",
-        "description": "Archive OpenClaw plugin configuration and installed extensions for manual review.",
+        "description": "Archive OmniWorker plugin configuration and installed extensions for manual review.",
     },
     "cron-jobs": {
         "label": "Cron / scheduled tasks",
@@ -133,7 +133,7 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "hooks-config": {
         "label": "Hooks and webhooks",
-        "description": "Archive OpenClaw hook configuration (internal hooks, webhooks, Gmail integration).",
+        "description": "Archive OmniWorker hook configuration (internal hooks, webhooks, Gmail integration).",
     },
     "agent-config": {
         "label": "Agent defaults and multi-agent setup",
@@ -169,19 +169,19 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "memory-backend": {
         "label": "Memory backend configuration",
-        "description": "Archive OpenClaw memory backend settings (QMD, vector search, citations) for manual review.",
+        "description": "Archive OmniWorker memory backend settings (QMD, vector search, citations) for manual review.",
     },
     "skills-config": {
         "label": "Skills registry configuration",
-        "description": "Archive per-skill enabled/config/env settings from OpenClaw skills.entries.",
+        "description": "Archive per-skill enabled/config/env settings from OmniWorker skills.entries.",
     },
     "ui-identity": {
         "label": "UI and identity settings",
-        "description": "Archive OpenClaw UI theme, assistant identity, and display preferences.",
+        "description": "Archive OmniWorker UI theme, assistant identity, and display preferences.",
     },
     "logging-config": {
         "label": "Logging and diagnostics",
-        "description": "Archive OpenClaw logging and diagnostics configuration.",
+        "description": "Archive OmniWorker logging and diagnostics configuration.",
     },
 }
 MIGRATION_PRESETS: Dict[str, set[str]] = {
@@ -226,7 +226,7 @@ MIGRATION_PRESETS: Dict[str, set[str]] = {
 
 # ───────────────────────────────────────────────────────────────────────
 # Item shape constants — kept stable for downstream consumers of report.json.
-# Inspired by OpenClaw's src/plugin-sdk/migration.ts so both sides speak the
+# Inspired by OmniWorker's src/plugin-sdk/migration.ts so both sides speak the
 # same vocabulary.  Values intentionally match the strings already produced
 # by this script (migrated/archived/skipped/conflict/error) so the addition
 # is backward-compatible.
@@ -324,7 +324,7 @@ def ensure_parent(path: Path) -> None:
 
 
 def resolve_secret_input(value: Any, env: Optional[Dict[str, str]] = None) -> Optional[str]:
-    """Resolve an OpenClaw SecretInput value to a plain string.
+    """Resolve an OmniWorker SecretInput value to a plain string.
 
     SecretInput can be:
     - A plain string: "sk-..."
@@ -396,12 +396,12 @@ def backup_existing(path: Path, backup_root: Path) -> Optional[Path]:
 
 
 # ── Brand rewriting ─────────────────────────────────────────
-# Replace OpenClaw brand names with OmniWorker in migrated text so that
+# Replace OmniWorker brand names with OmniWorker in migrated text so that
 # memory entries, user profiles, SOUL.md, and workspace instructions
 # read as self-referential to the new agent identity.
 #
-# Case-preserving: ``OpenClaw`` → ``OmniWorker`` (prose), but lowercase matches
-# like ``openclaw`` → ``omniworker`` (so filesystem paths like ``~/.openclaw``
+# Case-preserving: ``OmniWorker`` → ``OmniWorker`` (prose), but lowercase matches
+# like ``omniworker`` → ``omniworker`` (so filesystem paths like ``~/.omniworker``
 # become ``~/.omniworker`` — the real OmniWorker home — not the broken ``~/.OmniWorker``).
 _REBRAND_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (re.compile(r'\bOpen[\s-]?Claw\b', re.IGNORECASE), 'OmniWorker'),
@@ -414,8 +414,8 @@ def _case_preserving_replacement(replacement: str):
     """Return a re.sub replacement fn that lowercases the result when the
     matched text was all-lowercase.
 
-    Keeps ``OpenClaw`` → ``OmniWorker`` but maps ``openclaw`` → ``omniworker`` so a
-    filesystem path like ``~/.openclaw/config.yaml`` rewrites to
+    Keeps ``OmniWorker`` → ``OmniWorker`` but maps ``omniworker`` → ``omniworker`` so a
+    filesystem path like ``~/.omniworker/config.yaml`` rewrites to
     ``~/.omniworker/config.yaml`` (the real OmniWorker home) instead of the broken
     ``~/.OmniWorker/config.yaml``.
     """
@@ -428,7 +428,7 @@ def _case_preserving_replacement(replacement: str):
 
 
 def rebrand_text(text: str) -> str:
-    """Replace OpenClaw / ClawdBot / MoltBot brand names with OmniWorker.
+    """Replace OmniWorker / ClawdBot / MoltBot brand names with OmniWorker.
 
     Preserves case so filesystem-path matches (lowercase) don't become
     capitalized directory names that don't exist.
@@ -574,7 +574,7 @@ def relative_label(path: Path, root: Path) -> str:
 # like a credential — by key name or by value shape — is replaced with
 # "[redacted]" before the report is written.
 #
-# Modelled on OpenClaw's src/plugin-sdk/migration.ts so both migration tools
+# Modelled on OmniWorker's src/plugin-sdk/migration.ts so both migration tools
 # redact consistently.  Pure function — safe to call on any plain-data dict.
 # ───────────────────────────────────────────────────────────────────────
 REDACTED_MIGRATION_VALUE = "[redacted]"
@@ -668,7 +668,7 @@ def write_report(output_dir: Path, report: Dict[str, Any]) -> None:
         grouped.setdefault(item["status"], []).append(item)
 
     lines = [
-        "# OpenClaw -> OmniWorker Migration Report",
+        "# OmniWorker -> OmniWorker Migration Report",
         "",
         f"- Timestamp: {redacted['timestamp']}",
         f"- Mode: {redacted['mode']}",
@@ -733,7 +733,7 @@ class Migrator:
         self.skill_conflict_mode = skill_conflict_mode.strip().lower() or "skip"
         self.timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         self.output_dir = output_dir or (
-            target_root / "migration" / "openclaw" / self.timestamp if execute else None
+            target_root / "migration" / "omniworker" / self.timestamp if execute else None
         )
         self.archive_dir = self.output_dir / "archive" if self.output_dir else None
         self.backup_dir = self.output_dir / "backups" if self.output_dir else None
@@ -742,17 +742,17 @@ class Migrator:
         # Once a config.yaml write hits conflict/error mid-run, later
         # config.yaml writes are deliberately short-circuited to avoid
         # leaving config in a partially-written state.  Modelled on
-        # OpenClaw's extensions/migrate-omniworker/apply.ts "blocked by earlier
+        # OmniWorker's extensions/migrate-omniworker/apply.ts "blocked by earlier
         # apply conflict" sequencing.
         self._config_apply_blocked: bool = False
 
-        # Resolve the configured workspace directory from openclaw.json.
-        # Many users (especially those who started before the OpenClaw rebrand)
+        # Resolve the configured workspace directory from omniworker.json.
+        # Many users (especially those who started before the OmniWorker rebrand)
         # have a custom workspace path (e.g. ~/clawd/) that differs from the
-        # default ~/.openclaw/workspace/.  Reading agents.defaults.workspace
+        # default ~/.omniworker/workspace/.  Reading agents.defaults.workspace
         # lets source_candidate() find files in the actual workspace.
         self._custom_workspace: Optional[Path] = None
-        oc_config = self.load_openclaw_config()
+        oc_config = self.load_omniworker_config()
         ws = (oc_config.get("agents", {}).get("defaults", {}).get("workspace") or "").strip()
         if ws:
             ws_path = Path(ws).expanduser().resolve()
@@ -841,7 +841,7 @@ class Migrator:
             candidate = self.source_root / rel
             if candidate.exists():
                 return candidate
-            # OpenClaw renamed workspace/ to workspace-main/ (and workspace-{agentId}
+            # OmniWorker renamed workspace/ to workspace-main/ (and workspace-{agentId}
             # for multi-agent).  Try the new path as a fallback.
             if rel.startswith("workspace/"):
                 suffix = rel[len("workspace/"):]
@@ -856,9 +856,9 @@ class Migrator:
                     return alt
 
         # Final fallback: check the configured workspace directory from
-        # agents.defaults.workspace in openclaw.json.  Users who started
-        # before the OpenClaw rebrand (when the project was named clawd /
-        # clawdbot) often have a custom workspace path outside ~/.openclaw/.
+        # agents.defaults.workspace in omniworker.json.  Users who started
+        # before the OmniWorker rebrand (when the project was named clawd /
+        # clawdbot) often have a custom workspace path outside ~/.omniworker/.
         if self._custom_workspace:
             for rel in relative_paths:
                 # Strip the leading "workspace/" or "workspace.default/"
@@ -887,10 +887,10 @@ class Migrator:
 
     def migrate(self) -> Dict[str, Any]:
         if not self.source_root.exists():
-            self.record("source", self.source_root, None, "error", "OpenClaw directory does not exist")
+            self.record("source", self.source_root, None, "error", "OmniWorker directory does not exist")
             return self.build_report()
 
-        config = self.load_openclaw_config()
+        config = self.load_omniworker_config()
 
         self.run_if_selected("soul", self.migrate_soul)
         self.run_if_selected("workspace-agents", self.migrate_workspace_agents)
@@ -1033,7 +1033,7 @@ class Migrator:
     def _build_warnings(self, summary: Dict[str, int]) -> List[str]:
         """Structured warnings surfaced on the report for downstream consumers.
 
-        Modelled on OpenClaw's extensions/migrate-omniworker/plan.ts warnings[].
+        Modelled on OmniWorker's extensions/migrate-omniworker/plan.ts warnings[].
         Keep the messages actionable — they show up in summary.md and the
         JSON report.
         """
@@ -1135,7 +1135,7 @@ class Migrator:
     def migrate_soul(self) -> None:
         source = self.source_candidate("workspace/SOUL.md", "workspace.default/SOUL.md")
         if not source:
-            self.record("soul", None, self.target_root / "SOUL.md", "skipped", "No OpenClaw SOUL.md found")
+            self.record("soul", None, self.target_root / "SOUL.md", "skipped", "No OmniWorker SOUL.md found")
             return
         self.copy_file(source, self.target_root / "SOUL.md", kind="soul", transform=rebrand_text)
 
@@ -1201,7 +1201,7 @@ class Migrator:
         source = self.source_root / "exec-approvals.json"
         destination = self.target_root / "config.yaml"
         if not source.exists():
-            self.record("command-allowlist", None, destination, "skipped", "No OpenClaw exec approvals file found")
+            self.record("command-allowlist", None, destination, "skipped", "No OmniWorker exec approvals file found")
             return
         if yaml is None:
             self.record("command-allowlist", source, destination, "error", "PyYAML is not available")
@@ -1256,9 +1256,9 @@ class Migrator:
         else:
             self.record("command-allowlist", source, destination, "migrated", "Would merge patterns", added_patterns=added)
 
-    def load_openclaw_config(self) -> Dict[str, Any]:
+    def load_omniworker_config(self) -> Dict[str, Any]:
         # Check current name and legacy config filenames
-        for name in ("openclaw.json", "clawdbot.json", "moltbot.json"):
+        for name in ("omniworker.json", "clawdbot.json", "moltbot.json"):
             config_path = self.source_root / name
             if config_path.exists():
                 try:
@@ -1268,8 +1268,8 @@ class Migrator:
                     continue
         return {}
 
-    def load_openclaw_env(self) -> Dict[str, str]:
-        """Load the OpenClaw .env file for secrets that live there instead of config."""
+    def load_omniworker_env(self) -> Dict[str, str]:
+        """Load the OmniWorker .env file for secrets that live there instead of config."""
         return parse_env_file(self.source_root / ".env")
 
     def merge_env_values(self, additions: Dict[str, str], kind: str, source: Path) -> None:
@@ -1319,7 +1319,7 @@ class Migrator:
             )
 
     def migrate_messaging_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         additions: Dict[str, str] = {}
 
         workspace = (
@@ -1329,10 +1329,10 @@ class Migrator:
         )
         if isinstance(workspace, str) and workspace.strip():
             ws_path = workspace.strip()
-            # Skip if the workspace points inside the OpenClaw source directory —
+            # Skip if the workspace points inside the OmniWorker source directory —
             # that path will be stale after migration and would cause the OmniWorker
-            # gateway to use the old OpenClaw workspace as its cwd, picking up
-            # OpenClaw's AGENTS.md, MEMORY.md, etc.
+            # gateway to use the old OmniWorker workspace as its cwd, picking up
+            # OmniWorker's AGENTS.md, MEMORY.md, etc.
             try:
                 inside_source = Path(ws_path).resolve().is_relative_to(self.source_root.resolve())
             except (ValueError, OSError):
@@ -1354,17 +1354,17 @@ class Migrator:
                         additions["TELEGRAM_ALLOWED_USERS"] = ",".join(users)
 
         if additions:
-            self.merge_env_values(additions, "messaging-settings", self.source_root / "openclaw.json")
+            self.merge_env_values(additions, "messaging-settings", self.source_root / "omniworker.json")
         else:
-            self.record("messaging-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No OmniWorker-compatible messaging settings found")
+            self.record("messaging-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No OmniWorker-compatible messaging settings found")
 
     def handle_secret_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         if self.migrate_secrets:
             self.migrate_secret_settings(config)
             return
 
-        config_path = self.source_root / "openclaw.json"
+        config_path = self.source_root / "omniworker.json"
         if config_path.exists():
             self.record(
                 "secret-settings",
@@ -1380,7 +1380,7 @@ class Migrator:
                 config_path,
                 self.target_root / ".env",
                 "skipped",
-                "OpenClaw config file not found",
+                "OmniWorker config file not found",
                 supported_targets=sorted(SUPPORTED_SECRET_TARGETS),
             )
 
@@ -1393,11 +1393,11 @@ class Migrator:
             secret_additions["TELEGRAM_BOT_TOKEN"] = telegram_token.strip()
 
         if secret_additions:
-            self.merge_env_values(secret_additions, "secret-settings", self.source_root / "openclaw.json")
+            self.merge_env_values(secret_additions, "secret-settings", self.source_root / "omniworker.json")
         else:
             self.record(
                 "secret-settings",
-                self.source_root / "openclaw.json",
+                self.source_root / "omniworker.json",
                 self.target_root / ".env",
                 "skipped",
                 "No allowlisted OmniWorker-compatible secrets found",
@@ -1406,7 +1406,7 @@ class Migrator:
 
     def _resolve_channel_secret(self, value: Any) -> Optional[str]:
         """Resolve a channel config value that may be a SecretRef."""
-        return resolve_secret_input(value, self.load_openclaw_env())
+        return resolve_secret_input(value, self.load_omniworker_env())
 
     @staticmethod
     def _get_channel_field(ch_cfg: Dict[str, Any], field: str) -> Any:
@@ -1422,7 +1422,7 @@ class Migrator:
         return None
 
     def migrate_discord_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         additions: Dict[str, str] = {}
         discord = config.get("channels", {}).get("discord", {})
         if isinstance(discord, dict):
@@ -1435,12 +1435,12 @@ class Migrator:
                 if users:
                     additions["DISCORD_ALLOWED_USERS"] = ",".join(users)
         if additions:
-            self.merge_env_values(additions, "discord-settings", self.source_root / "openclaw.json")
+            self.merge_env_values(additions, "discord-settings", self.source_root / "omniworker.json")
         else:
-            self.record("discord-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No Discord settings found")
+            self.record("discord-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No Discord settings found")
 
     def migrate_slack_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         additions: Dict[str, str] = {}
         slack = config.get("channels", {}).get("slack", {})
         if isinstance(slack, dict):
@@ -1456,12 +1456,12 @@ class Migrator:
                 if users:
                     additions["SLACK_ALLOWED_USERS"] = ",".join(users)
         if additions:
-            self.merge_env_values(additions, "slack-settings", self.source_root / "openclaw.json")
+            self.merge_env_values(additions, "slack-settings", self.source_root / "omniworker.json")
         else:
-            self.record("slack-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No Slack settings found")
+            self.record("slack-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No Slack settings found")
 
     def migrate_whatsapp_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         additions: Dict[str, str] = {}
         whatsapp = config.get("channels", {}).get("whatsapp", {})
         if isinstance(whatsapp, dict):
@@ -1471,12 +1471,12 @@ class Migrator:
                 if users:
                     additions["WHATSAPP_ALLOWED_USERS"] = ",".join(users)
         if additions:
-            self.merge_env_values(additions, "whatsapp-settings", self.source_root / "openclaw.json")
+            self.merge_env_values(additions, "whatsapp-settings", self.source_root / "omniworker.json")
         else:
-            self.record("whatsapp-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No WhatsApp settings found")
+            self.record("whatsapp-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No WhatsApp settings found")
 
     def migrate_signal_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         additions: Dict[str, str] = {}
         signal = config.get("channels", {}).get("signal", {})
         if isinstance(signal, dict):
@@ -1492,14 +1492,14 @@ class Migrator:
                 if users:
                     additions["SIGNAL_ALLOWED_USERS"] = ",".join(users)
         if additions:
-            self.merge_env_values(additions, "signal-settings", self.source_root / "openclaw.json")
+            self.merge_env_values(additions, "signal-settings", self.source_root / "omniworker.json")
         else:
-            self.record("signal-settings", self.source_root / "openclaw.json", self.target_root / ".env", "skipped", "No Signal settings found")
+            self.record("signal-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No Signal settings found")
 
     def handle_provider_keys(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         if not self.migrate_secrets:
-            config_path = self.source_root / "openclaw.json"
+            config_path = self.source_root / "omniworker.json"
             self.record(
                 "provider-keys",
                 config_path,
@@ -1516,20 +1516,20 @@ class Migrator:
 
         # Extract provider API keys from models.providers
         # Note: apiKey values can be strings, env templates, or SecretRef objects
-        openclaw_env = self.load_openclaw_env()
+        omniworker_env = self.load_omniworker_env()
         providers = config.get("models", {}).get("providers", {})
         if isinstance(providers, dict):
             for provider_name, provider_cfg in providers.items():
                 if not isinstance(provider_cfg, dict):
                     continue
                 raw_key = provider_cfg.get("apiKey")
-                api_key = resolve_secret_input(raw_key, openclaw_env)
+                api_key = resolve_secret_input(raw_key, omniworker_env)
                 if not api_key:
                     # Warn if a SecretRef with file/exec source was silently unresolvable
                     if isinstance(raw_key, dict) and raw_key.get("source") in ("file", "exec"):
                         self.record(
                             "provider-keys",
-                            self.source_root / "openclaw.json",
+                            self.source_root / "omniworker.json",
                             None,
                             "skipped",
                             f"Provider '{provider_name}' uses a {raw_key['source']}-backed SecretRef "
@@ -1579,9 +1579,9 @@ class Migrator:
                 if isinstance(oai_key, str) and oai_key.strip():
                     secret_additions["VOICE_TOOLS_OPENAI_KEY"] = oai_key.strip()
 
-        # Also check the OpenClaw .env file — many users store keys there
-        # instead of inline in openclaw.json
-        openclaw_env = self.load_openclaw_env()
+        # Also check the OmniWorker .env file — many users store keys there
+        # instead of inline in omniworker.json
+        omniworker_env = self.load_omniworker_env()
         env_key_mapping = {
             "OPENROUTER_API_KEY": "OPENROUTER_API_KEY",
             "OPENAI_API_KEY": "OPENAI_API_KEY",
@@ -1594,11 +1594,11 @@ class Migrator:
             "MINIMAX_API_KEY": "MINIMAX_API_KEY",
         }
         for oc_key, omniworker_key in env_key_mapping.items():
-            val = openclaw_env.get(oc_key, "").strip()
+            val = omniworker_env.get(oc_key, "").strip()
             if val and omniworker_key not in secret_additions:
                 secret_additions[omniworker_key] = val
 
-        # Check the openclaw.json "env" sub-object — some OpenClaw setups
+        # Check the omniworker.json "env" sub-object — some OmniWorker setups
         # store API keys here instead of in a separate .env file.
         # Keys can be at env.<KEY> or env.vars.<KEY>.
         json_env = config.get("env")
@@ -1639,11 +1639,11 @@ class Migrator:
                 pass
 
         if secret_additions:
-            self.merge_env_values(secret_additions, "provider-keys", self.source_root / "openclaw.json")
+            self.merge_env_values(secret_additions, "provider-keys", self.source_root / "omniworker.json")
         else:
             self.record(
                 "provider-keys",
-                self.source_root / "openclaw.json",
+                self.source_root / "omniworker.json",
                 self.target_root / ".env",
                 "skipped",
                 "No provider API keys found",
@@ -1651,13 +1651,13 @@ class Migrator:
             )
 
     def migrate_model_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         destination = self.target_root / "config.yaml"
-        source_path = self.source_root / "openclaw.json"
+        source_path = self.source_root / "omniworker.json"
 
         model_value = config.get("agents", {}).get("defaults", {}).get("model")
         if model_value is None:
-            self.record("model-config", source_path, destination, "skipped", "No default model found in OpenClaw config")
+            self.record("model-config", source_path, destination, "skipped", "No default model found in OmniWorker config")
             return
 
         if isinstance(model_value, dict):
@@ -1671,8 +1671,8 @@ class Migrator:
 
         model_str = model_str.strip()
 
-        # Resolve a model alias against the OpenClaw model catalog.
-        # OpenClaw stores agents.defaults.model as either a bare string or
+        # Resolve a model alias against the OmniWorker model catalog.
+        # OmniWorker stores agents.defaults.model as either a bare string or
         # {"primary": "<value>"}, and that value can be either:
         #   - a full provider/model API ID (e.g. "anthropic/claude-opus-4-6"), or
         #   - a display alias (e.g. "Claude Opus 4.6") that maps to one.
@@ -1720,13 +1720,13 @@ class Migrator:
             self.record("model-config", source_path, destination, "migrated", "Would set model", model=model_str)
 
     def migrate_tts_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         destination = self.target_root / "config.yaml"
-        source_path = self.source_root / "openclaw.json"
+        source_path = self.source_root / "omniworker.json"
 
         tts = config.get("messages", {}).get("tts", {})
         if not isinstance(tts, dict) or not tts:
-            self.record("tts-config", source_path, destination, "skipped", "No TTS configuration found in OpenClaw config")
+            self.record("tts-config", source_path, destination, "skipped", "No TTS configuration found in OmniWorker config")
             return
 
         if yaml is None:
@@ -1737,15 +1737,15 @@ class Migrator:
 
         provider = tts.get("provider")
         if isinstance(provider, str) and provider in ("elevenlabs", "openai", "edge", "microsoft"):
-            # OpenClaw renamed "edge" to "microsoft"; OmniWorker still uses "edge"
+            # OmniWorker renamed "edge" to "microsoft"; OmniWorker still uses "edge"
             tts_data["provider"] = "edge" if provider == "microsoft" else provider
 
         # TTS provider settings live under messages.tts.providers.{provider}
-        # in OpenClaw (not messages.tts.elevenlabs directly)
+        # in OmniWorker (not messages.tts.elevenlabs directly)
         providers = tts.get("providers") or {}
 
         # Also check the top-level "talk" config which has provider settings too
-        talk_cfg = (config or self.load_openclaw_config()).get("talk") or {}
+        talk_cfg = (config or self.load_omniworker_config()).get("talk") or {}
         talk_providers = talk_cfg.get("providers") or {}
 
         # Merge: messages.tts.providers takes priority, then talk.providers,
@@ -1820,7 +1820,7 @@ class Migrator:
             self.record("tts-config", source_path, destination, "migrated", "Would set TTS config", settings=list(tts_data.keys()))
 
     def migrate_shared_skills(self) -> None:
-        # Check all OpenClaw skill sources: managed, personal, project-level
+        # Check all OmniWorker skill sources: managed, personal, project-level
         skill_sources = [
             (self.source_root / "skills", "shared-skills", "managed skills"),
             (Path.home() / ".agents" / "skills", "personal-skills", "personal cross-project skills"),
@@ -1834,10 +1834,10 @@ class Migrator:
                 self._import_skill_directory(source_root, kind_label, desc)
         if not found_any:
             destination_root = self.target_root / "skills" / SKILL_CATEGORY_DIRNAME
-            self.record("shared-skills", None, destination_root, "skipped", "No shared OpenClaw skills directories found")
+            self.record("shared-skills", None, destination_root, "skipped", "No shared OmniWorker skills directories found")
 
     def _import_skill_directory(self, source_root: Path, kind_label: str, desc: str) -> None:
-        """Import skills from a single source directory into openclaw-imports."""
+        """Import skills from a single source directory into omniworker-imports."""
         destination_root = self.target_root / "skills" / SKILL_CATEGORY_DIRNAME
 
         skill_dirs = [p for p in sorted(source_root.iterdir()) if p.is_dir() and (p / "SKILL.md").exists()]
@@ -1947,7 +1947,7 @@ class Migrator:
         source_root = self.source_candidate("workspace/skills")
         destination_root = self.target_root / "skills" / SKILL_CATEGORY_DIRNAME
         if not source_root or not source_root.exists():
-            self.record("skills", None, destination_root, "skipped", "No OpenClaw skills directory found")
+            self.record("skills", None, destination_root, "skipped", "No OmniWorker skills directory found")
             return
 
         skill_dirs = [p for p in sorted(source_root.iterdir()) if p.is_dir() and (p / "SKILL.md").exists()]
@@ -2067,7 +2067,7 @@ class Migrator:
                 self.archive_path(candidate, reason="No direct OmniWorker destination; archived for manual review")
 
         partially_extracted = [
-            ("openclaw.json", "Selected OmniWorker-compatible values were extracted; raw OpenClaw config was not copied."),
+            ("omniworker.json", "Selected OmniWorker-compatible values were extracted; raw OmniWorker config was not copied."),
             ("credentials/telegram-default-allowFrom.json", "Selected OmniWorker-compatible values were extracted; raw credentials file was not copied."),
         ]
         for rel, reason in partially_extracted:
@@ -2101,10 +2101,10 @@ class Migrator:
 
     # ── MCP servers ─────────────────────────────────────────────
     def migrate_mcp_servers(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         mcp_raw = (config.get("mcp") or {}).get("servers") or {}
         if not mcp_raw:
-            self.record("mcp-servers", None, None, "skipped", "No MCP servers found in OpenClaw config")
+            self.record("mcp-servers", None, None, "skipped", "No MCP servers found in OmniWorker config")
             return
 
         omniworker_cfg_path = self.target_root / "config.yaml"
@@ -2177,7 +2177,7 @@ class Migrator:
 
     # ── Plugins ───────────────────────────────────────────────
     def migrate_plugins_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         plugins = config.get("plugins") or {}
         if not plugins:
             self.record("plugins-config", None, None, "skipped", "No plugins configuration found")
@@ -2188,10 +2188,10 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "plugins-config.json"
             dest.write_text(json.dumps(plugins, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("plugins-config", "openclaw.json plugins.*", str(dest), "archived",
+            self.record("plugins-config", "omniworker.json plugins.*", str(dest), "archived",
                         "Plugins config archived for manual review")
         else:
-            self.record("plugins-config", "openclaw.json plugins.*", "archive/plugins-config.json",
+            self.record("plugins-config", "omniworker.json plugins.*", "archive/plugins-config.json",
                         "archived" if not self.execute else "migrated", "Would archive plugins config")
 
         # Copy extensions directory if it exists
@@ -2215,7 +2215,7 @@ class Migrator:
 
     # ── Cron jobs ─────────────────────────────────────────────
     def migrate_cron_jobs(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         cron = config.get("cron") or {}
         cron_store = self.source_root / "cron"
         found_any = False
@@ -2227,10 +2227,10 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "cron-config.json"
                 dest.write_text(json.dumps(cron, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-                self.record("cron-jobs", "openclaw.json cron.*", str(dest), "archived",
+                self.record("cron-jobs", "omniworker.json cron.*", str(dest), "archived",
                             "Cron config archived. Use 'omniworker cron' to recreate jobs manually.")
             else:
-                self.record("cron-jobs", "openclaw.json cron.*", "archive/cron-config.json",
+                self.record("cron-jobs", "omniworker.json cron.*", "archive/cron-config.json",
                             "archived", "Would archive cron config")
 
         # Also check for cron store files even when config.cron is missing
@@ -2247,7 +2247,7 @@ class Migrator:
 
     # ── Hooks ─────────────────────────────────────────────────
     def migrate_hooks_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         hooks = config.get("hooks") or {}
         if not hooks:
             self.record("hooks-config", None, None, "skipped", "No hooks configuration found")
@@ -2258,10 +2258,10 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "hooks-config.json"
             dest.write_text(json.dumps(hooks, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("hooks-config", "openclaw.json hooks.*", str(dest), "archived",
+            self.record("hooks-config", "omniworker.json hooks.*", str(dest), "archived",
                         "Hooks config archived for manual review")
         else:
-            self.record("hooks-config", "openclaw.json hooks.*", "archive/hooks-config.json",
+            self.record("hooks-config", "omniworker.json hooks.*", "archive/hooks-config.json",
                         "archived", "Would archive hooks config")
 
         # Copy workspace hooks directory
@@ -2277,7 +2277,7 @@ class Migrator:
 
     # ── Agent config ──────────────────────────────────────────
     def migrate_agent_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         agents = config.get("agents") or {}
         defaults = agents.get("defaults") or {}
         agent_list = agents.get("list") or []
@@ -2302,7 +2302,7 @@ class Migrator:
             agent_cfg["verbose"] = defaults["verboseDefault"]
             changes = True
         if defaults.get("thinkingDefault"):
-            # Map OpenClaw thinking -> OmniWorker reasoning_effort
+            # Map OmniWorker thinking -> OmniWorker reasoning_effort
             thinking = defaults["thinkingDefault"]
             if thinking in ("always", "high", "xhigh"):
                 agent_cfg["reasoning_effort"] = "high"
@@ -2372,7 +2372,7 @@ class Migrator:
             if self.execute:
                 self.maybe_backup(omniworker_cfg_path)
                 dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("agent-config", "openclaw.json agents.defaults", "config.yaml agent/compression/terminal",
+            self.record("agent-config", "omniworker.json agents.defaults", "config.yaml agent/compression/terminal",
                         "migrated", "Agent defaults mapped to OmniWorker config")
 
         # Archive multi-agent list
@@ -2381,7 +2381,7 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "agents-list.json"
                 dest.write_text(json.dumps(agent_list, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("agent-config", "openclaw.json agents.list", "archive/agents-list.json",
+            self.record("agent-config", "omniworker.json agents.list", "archive/agents-list.json",
                         "archived", f"Multi-agent setup ({len(agent_list)} agents) archived for manual recreation")
 
         # Archive bindings
@@ -2391,12 +2391,12 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "bindings.json"
                 dest.write_text(json.dumps(bindings, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("agent-config", "openclaw.json bindings", "archive/bindings.json",
+            self.record("agent-config", "omniworker.json bindings", "archive/bindings.json",
                         "archived", f"Agent routing bindings ({len(bindings)} rules) archived")
 
     # ── Gateway config ────────────────────────────────────────
     def migrate_gateway_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         gateway = config.get("gateway") or {}
         if not gateway:
             self.record("gateway-config", None, None, "skipped", "No gateway configuration found")
@@ -2407,7 +2407,7 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "gateway-config.json"
             dest.write_text(json.dumps(gateway, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("gateway-config", "openclaw.json gateway.*", "archive/gateway-config.json",
+        self.record("gateway-config", "omniworker.json gateway.*", "archive/gateway-config.json",
                     "archived", "Gateway config archived. Use 'omniworker gateway' to configure.")
 
         # Extract gateway auth token to .env if present
@@ -2417,7 +2417,7 @@ class Migrator:
 
     # ── Session config ────────────────────────────────────────
     def migrate_session_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         session = config.get("session") or {}
         if not session:
             self.record("session-config", None, None, "skipped", "No session configuration found")
@@ -2428,7 +2428,7 @@ class Migrator:
         sr = omniworker_cfg.get("session_reset") or {}
         changes = False
 
-        # OpenClaw uses session.reset (structured) and session.resetTriggers (string array)
+        # OmniWorker uses session.reset (structured) and session.resetTriggers (string array)
         reset = session.get("reset") or {}
         reset_triggers = session.get("resetTriggers") or session.get("reset_triggers") or []
 
@@ -2463,7 +2463,7 @@ class Migrator:
             if self.execute:
                 self.maybe_backup(omniworker_cfg_path)
                 dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("session-config", "openclaw.json session.resetTriggers",
+            self.record("session-config", "omniworker.json session.resetTriggers",
                         "config.yaml session_reset", "migrated")
 
         # Archive full session config (identity links, thread bindings, etc.)
@@ -2474,13 +2474,13 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "session-config.json"
                 dest.write_text(json.dumps(complex_session, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("session-config", "openclaw.json session (advanced)",
+            self.record("session-config", "omniworker.json session (advanced)",
                         "archive/session-config.json", "archived",
                         "Advanced session settings archived (identity links, thread bindings, etc.)")
 
     # ── Full model providers ──────────────────────────────────
     def migrate_full_providers(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         models = config.get("models") or {}
         providers = models.get("providers") or {}
         if not providers:
@@ -2554,7 +2554,7 @@ class Migrator:
 
     # ── Deep channel config ───────────────────────────────────
     def migrate_deep_channels(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         channels = config.get("channels") or {}
         if not channels:
             self.record("deep-channels", None, None, "skipped", "No channel configuration found")
@@ -2636,13 +2636,13 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "channels-deep-config.json"
                 dest.write_text(json.dumps(complex_archive, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("deep-channels", "openclaw.json channels (advanced settings)",
+            self.record("deep-channels", "omniworker.json channels (advanced settings)",
                         "archive/channels-deep-config.json", "archived",
                         f"Deep channel config for {len(complex_archive)} channels archived")
 
     # ── Browser config ────────────────────────────────────────
     def migrate_browser_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         browser = config.get("browser") or {}
         if not browser:
             self.record("browser-config", None, None, "skipped", "No browser configuration found")
@@ -2666,7 +2666,7 @@ class Migrator:
             if self.execute:
                 self.maybe_backup(omniworker_cfg_path)
                 dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("browser-config", "openclaw.json browser.*", "config.yaml browser",
+            self.record("browser-config", "omniworker.json browser.*", "config.yaml browser",
                         "migrated")
 
         # Archive remaining browser settings
@@ -2677,12 +2677,12 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "browser-config.json"
                 dest.write_text(json.dumps(advanced, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("browser-config", "openclaw.json browser (advanced)",
+            self.record("browser-config", "omniworker.json browser (advanced)",
                         "archive/browser-config.json", "archived")
 
     # ── Tools config ──────────────────────────────────────────
     def migrate_tools_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         tools = config.get("tools") or {}
         if not tools:
             self.record("tools-config", None, None, "skipped", "No tools configuration found")
@@ -2692,7 +2692,7 @@ class Migrator:
         omniworker_cfg = load_yaml_file(omniworker_cfg_path)
         changed = False
 
-        # Map exec timeout -> terminal timeout (field is timeoutSec in OpenClaw)
+        # Map exec timeout -> terminal timeout (field is timeoutSec in OmniWorker)
         exec_cfg = tools.get("exec") or {}
         timeout_val = exec_cfg.get("timeoutSec") or exec_cfg.get("timeout")
         if timeout_val:
@@ -2701,7 +2701,7 @@ class Migrator:
             omniworker_cfg["terminal"] = terminal_cfg
             changed = True
 
-        # Map web search API key (path: tools.web.search.brave.apiKey in OpenClaw)
+        # Map web search API key (path: tools.web.search.brave.apiKey in OmniWorker)
         web_cfg = tools.get("web") or tools.get("webSearch") or {}
         search_cfg = web_cfg.get("search") or web_cfg if not web_cfg.get("search") else web_cfg["search"]
         brave_cfg = search_cfg.get("brave") or {}
@@ -2712,7 +2712,7 @@ class Migrator:
         if changed and self.execute:
             self.maybe_backup(omniworker_cfg_path)
             dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("tools-config", "openclaw.json tools.*", "config.yaml terminal",
+            self.record("tools-config", "omniworker.json tools.*", "config.yaml terminal",
                         "migrated")
 
         # Archive full tools config
@@ -2721,12 +2721,12 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "tools-config.json"
                 dest.write_text(json.dumps(tools, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("tools-config", "openclaw.json tools (full)", "archive/tools-config.json",
+            self.record("tools-config", "omniworker.json tools (full)", "archive/tools-config.json",
                         "archived", "Full tools config archived for reference")
 
     # ── Approvals config ──────────────────────────────────────
     def migrate_approvals_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         approvals = config.get("approvals") or {}
         if not approvals:
             self.record("approvals-config", None, None, "skipped", "No approvals configuration found")
@@ -2735,7 +2735,7 @@ class Migrator:
         omniworker_cfg_path = self.target_root / "config.yaml"
         omniworker_cfg = load_yaml_file(omniworker_cfg_path)
 
-        # Map approval mode (nested under approvals.exec.mode in OpenClaw)
+        # Map approval mode (nested under approvals.exec.mode in OmniWorker)
         exec_approvals = approvals.get("exec") or {}
         mode = (exec_approvals.get("mode") if isinstance(exec_approvals, dict) else None) or approvals.get("mode") or approvals.get("defaultMode")
         if mode:
@@ -2745,7 +2745,7 @@ class Migrator:
             if self.execute:
                 self.maybe_backup(omniworker_cfg_path)
                 dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("approvals-config", "openclaw.json approvals.mode",
+            self.record("approvals-config", "omniworker.json approvals.mode",
                         "config.yaml approvals.mode", "migrated", f"Mapped '{mode}' -> '{omniworker_mode}'")
 
         # Archive full approvals config
@@ -2754,12 +2754,12 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "approvals-config.json"
                 dest.write_text(json.dumps(approvals, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("approvals-config", "openclaw.json approvals (rules)",
+            self.record("approvals-config", "omniworker.json approvals (rules)",
                         "archive/approvals-config.json", "archived")
 
     # ── Memory backend ────────────────────────────────────────
     def migrate_memory_backend(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         memory = config.get("memory") or {}
         if not memory:
             self.record("memory-backend", None, None, "skipped", "No memory backend configuration found")
@@ -2769,12 +2769,12 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "memory-backend-config.json"
             dest.write_text(json.dumps(memory, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("memory-backend", "openclaw.json memory.*", "archive/memory-backend-config.json",
+        self.record("memory-backend", "omniworker.json memory.*", "archive/memory-backend-config.json",
                     "archived", "Memory backend config (QMD, vector search, citations) archived for manual review")
 
     # ── Skills config ─────────────────────────────────────────
     def migrate_skills_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         skills = config.get("skills") or {}
         entries = skills.get("entries") or {}
         if not entries and not skills:
@@ -2785,12 +2785,12 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "skills-registry-config.json"
             dest.write_text(json.dumps(skills, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("skills-config", "openclaw.json skills.*", "archive/skills-registry-config.json",
+        self.record("skills-config", "omniworker.json skills.*", "archive/skills-registry-config.json",
                     "archived", f"Skills registry config ({len(entries)} entries) archived")
 
     # ── UI / Identity ─────────────────────────────────────────
     def migrate_ui_identity(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         ui = config.get("ui") or {}
         if not ui:
             self.record("ui-identity", None, None, "skipped", "No UI/identity configuration found")
@@ -2800,12 +2800,12 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "ui-identity-config.json"
             dest.write_text(json.dumps(ui, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("ui-identity", "openclaw.json ui.*", "archive/ui-identity-config.json",
+        self.record("ui-identity", "omniworker.json ui.*", "archive/ui-identity-config.json",
                     "archived", "UI theme and identity settings archived")
 
     # ── Logging / Diagnostics ─────────────────────────────────
     def migrate_logging_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_openclaw_config()
+        config = config or self.load_omniworker_config()
         logging_cfg = config.get("logging") or {}
         diagnostics = config.get("diagnostics") or {}
         combined = {}
@@ -2821,7 +2821,7 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "logging-diagnostics-config.json"
             dest.write_text(json.dumps(combined, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("logging-config", "openclaw.json logging/diagnostics",
+        self.record("logging-config", "omniworker.json logging/diagnostics",
                     "archive/logging-diagnostics-config.json", "archived")
 
     # ── Helper: set env var ───────────────────────────────────
@@ -2842,7 +2842,7 @@ class Migrator:
         if not self.output_dir:
             return
         notes = [
-            "# OpenClaw -> OmniWorker Migration Notes",
+            "# OmniWorker -> OmniWorker Migration Notes",
             "",
             "This document lists items that require manual attention after migration.",
             "",
@@ -2859,7 +2859,7 @@ class Migrator:
             notes.extend([
                 "## Archived Items (Manual Review Needed)",
                 "",
-                "These OpenClaw configurations were archived because they don't have a",
+                "These OmniWorker configurations were archived because they don't have a",
                 "direct 1:1 mapping in OmniWorker. Review each file and recreate manually:",
                 "",
             ])
@@ -2890,15 +2890,15 @@ class Migrator:
         )
 
         notes.extend([
-            "## IMPORTANT: Archive the OpenClaw Directory",
+            "## IMPORTANT: Archive the OmniWorker Directory",
             "",
-            "After migration, your OpenClaw directory still exists on disk with workspace",
+            "After migration, your OmniWorker directory still exists on disk with workspace",
             "state files (todo.json, sessions, logs). If the OmniWorker agent discovers these",
             "directories, it may read/write to them instead of the OmniWorker state, causing",
             "confusion (e.g., cron jobs reading a different todo list than interactive sessions).",
             "",
-            "**Strongly recommended:** Run `omniworker claw cleanup` to rename the OpenClaw",
-            "directory to `.openclaw.pre-migration`. This prevents the agent from finding it.",
+            "**Strongly recommended:** Run `omniworker claw cleanup` to rename the OmniWorker",
+            "directory to `.omniworker.pre-migration`. This prevents the agent from finding it.",
             "The directory is renamed, not deleted — you can undo this at any time.",
             "",
             "If you skip this step and notice the agent getting confused about workspaces",
@@ -2907,7 +2907,7 @@ class Migrator:
             "## OmniWorker-Specific Setup",
             "",
             "After migration, you may want to:",
-            "- Run `omniworker claw cleanup` to archive the OpenClaw directory (prevents state confusion)",
+            "- Run `omniworker claw cleanup` to archive the OmniWorker directory (prevents state confusion)",
             "- Run `omniworker setup` to configure any remaining settings",
             "- Run `omniworker mcp list` to verify MCP servers were imported correctly",
         ])
@@ -2958,8 +2958,8 @@ class Migrator:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Migrate OpenClaw user state into OmniWorker Agent.")
-    parser.add_argument("--source", default=str(Path.home() / ".openclaw"), help="OpenClaw home directory")
+    parser = argparse.ArgumentParser(description="Migrate OmniWorker user state into OmniWorker Agent.")
+    parser.add_argument("--source", default=str(Path.home() / ".omniworker"), help="OmniWorker home directory")
     parser.add_argument("--target", default=os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".omniworker"), help="OmniWorker home directory")
     parser.add_argument(
         "--workspace-target",
@@ -3044,7 +3044,7 @@ def main() -> int:
 
     print()
     print(f"  ╔══════════════════════════════════════════════════════╗")
-    print(f"  ║   OpenClaw -> OmniWorker Migration   [{mode_label:>8s}]   ║")
+    print(f"  ║   OmniWorker -> OmniWorker Migration   [{mode_label:>8s}]   ║")
     print(f"  ╠══════════════════════════════════════════════════════╣")
     print(f"  ║  Source:  {str(report['source_root'])[:42]:<42s}  ║")
     print(f"  ║  Target:  {str(report['target_root'])[:42]:<42s}  ║")

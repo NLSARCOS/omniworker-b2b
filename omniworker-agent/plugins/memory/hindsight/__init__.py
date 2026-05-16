@@ -52,7 +52,7 @@ _DEFAULT_LOCAL_URL = "http://localhost:8888"
 _MIN_CLIENT_VERSION = "0.4.22"
 _DEFAULT_TIMEOUT = 120  # seconds — cloud API can take 30-40s per request
 _DEFAULT_IDLE_TIMEOUT = 300  # seconds — Hindsight embedded daemon default
-# Mirrors hindsight-integrations/openclaw — Hindsight 0.5.0 added
+# Mirrors hindsight-integrations/omniworker — Hindsight 0.5.0 added
 # `update_mode='append'` semantics on retain (vectorize-io/hindsight#932).
 # Without it, reusing a stable session-scoped document_id silently
 # overwrites prior turns server-side, so we keep the per-process
@@ -100,7 +100,7 @@ def _check_local_runtime() -> tuple[bool, str | None]:
 
 
 # ---------------------------------------------------------------------------
-# Hindsight API capability probe — mirrors hindsight-integrations/openclaw.
+# Hindsight API capability probe — mirrors hindsight-integrations/omniworker.
 # ---------------------------------------------------------------------------
 
 # Cache of API_URL -> bool (whether that API supports update_mode='append').

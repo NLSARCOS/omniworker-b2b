@@ -1,4 +1,4 @@
-"""omniworker claw — OpenClaw migration commands.
+"""omniworker claw — OmniWorker migration commands.
 
 Usage:
     omniworker claw migrate              # Preview then migrate (always shows preview first)
@@ -6,7 +6,7 @@ Usage:
     omniworker claw migrate --yes        # Skip confirmation prompt
     omniworker claw migrate --preset full --overwrite --migrate-secrets  # Full run w/ secrets
     omniworker claw migrate --no-backup  # Skip pre-migration snapshot
-    omniworker claw cleanup              # Archive leftover OpenClaw directories
+    omniworker claw cleanup              # Archive leftover OmniWorker directories
     omniworker claw cleanup --dry-run    # Preview what would be archived
 """
 
@@ -37,9 +37,9 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 _OPENCLAW_SCRIPT = (
     get_optional_skills_dir(PROJECT_ROOT / "optional-skills")
     / "migration"
-    / "openclaw-migration"
+    / "omniworker-migration"
     / "scripts"
-    / "openclaw_to_omniworker.py"
+    / "omniworker_to_omniworker.py"
 )
 
 # Fallback: user may have installed the skill from the Hub
@@ -47,16 +47,16 @@ _OPENCLAW_SCRIPT_INSTALLED = (
     get_omniworker_home()
     / "skills"
     / "migration"
-    / "openclaw-migration"
+    / "omniworker-migration"
     / "scripts"
-    / "openclaw_to_omniworker.py"
+    / "omniworker_to_omniworker.py"
 )
 
-# Known OpenClaw directory names (current + legacy)
-_OPENCLAW_DIR_NAMES = (".openclaw", ".clawdbot", ".moltbot")
+# Known OmniWorker directory names (current + legacy)
+_OPENCLAW_DIR_NAMES = (".omniworker", ".clawdbot", ".moltbot")
 
-def _detect_openclaw_processes() -> list[str]:
-    """Detect running OpenClaw processes and services.
+def _detect_omniworker_processes() -> list[str]:
+    """Detect running OmniWorker processes and services.
 
     Returns a list of human-readable descriptions of what was found.
     An empty list means nothing was detected.
@@ -67,18 +67,18 @@ def _detect_openclaw_processes() -> list[str]:
     if sys.platform != "win32":
         try:
             result = subprocess.run(
-                ["systemctl", "--user", "is-active", "openclaw-gateway.service"],
+                ["systemctl", "--user", "is-active", "omniworker-gateway.service"],
                 capture_output=True, text=True, timeout=5,
             )
             if result.stdout.strip() == "active":
-                found.append("systemd service: openclaw-gateway.service")
+                found.append("systemd service: omniworker-gateway.service")
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
     # -- process scan ------------------------------------------------------
     if sys.platform == "win32":
         try:
-            for exe in ("openclaw.exe", "clawd.exe"):
+            for exe in ("omniworker.exe", "clawd.exe"):
                 result = subprocess.run(
                     ["tasklist", "/FI", f"IMAGENAME eq {exe}"],
                     capture_output=True, text=True, timeout=5,
@@ -86,11 +86,11 @@ def _detect_openclaw_processes() -> list[str]:
                 if exe in result.stdout.lower():
                     found.append(f"process: {exe}")
 
-            # Node.js-hosted OpenClaw — tasklist doesn't show command lines,
+            # Node.js-hosted OmniWorker — tasklist doesn't show command lines,
             # so fall back to PowerShell.
             ps_cmd = (
                 'Get-CimInstance Win32_Process -Filter "Name = \'node.exe\'" | '
-                'Where-Object { $_.CommandLine -match "openclaw|clawd" } | '
+                'Where-Object { $_.CommandLine -match "omniworker|clawd" } | '
                 'Select-Object -First 1 ProcessId'
             )
             result = subprocess.run(
@@ -98,45 +98,45 @@ def _detect_openclaw_processes() -> list[str]:
                 capture_output=True, text=True, timeout=5,
             )
             if result.stdout.strip():
-                found.append(f"node.exe process with openclaw in command line (PID {result.stdout.strip()})")
+                found.append(f"node.exe process with omniworker in command line (PID {result.stdout.strip()})")
         except Exception:
             pass
     else:
         try:
             result = subprocess.run(
-                ["pgrep", "-f", "openclaw"],
+                ["pgrep", "-f", "omniworker"],
                 capture_output=True, text=True, timeout=3,
             )
             if result.returncode == 0:
                 pids = result.stdout.strip().split()
-                found.append(f"openclaw process(es) (PIDs: {', '.join(pids)})")
+                found.append(f"omniworker process(es) (PIDs: {', '.join(pids)})")
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
 
     return found
 
 
-def _warn_if_openclaw_running(auto_yes: bool) -> None:
-    """Warn if OpenClaw is still running before migration.
+def _warn_if_omniworker_running(auto_yes: bool) -> None:
+    """Warn if OmniWorker is still running before migration.
 
     Telegram, Discord, and Slack only allow one active connection per bot
-    token. Migrating while OpenClaw is running causes both to fight for the
+    token. Migrating while OmniWorker is running causes both to fight for the
     same token.
     """
-    running = _detect_openclaw_processes()
+    running = _detect_omniworker_processes()
     if not running:
         return
 
     print()
-    print_error("OpenClaw appears to be running:")
+    print_error("OmniWorker appears to be running:")
     for detail in running:
         print_info(f"  * {detail}")
     print_info(
         "Messaging platforms (Telegram, Discord, Slack) only allow one "
-        "active session per bot token. If you continue, both OpenClaw and "
+        "active session per bot token. If you continue, both OmniWorker and "
         "OmniWorker may try to use the same token, causing disconnects."
     )
-    print_info("Recommendation: stop OpenClaw before migrating.")
+    print_info("Recommendation: stop OmniWorker before migrating.")
     print()
     if auto_yes:
         return
@@ -144,7 +144,7 @@ def _warn_if_openclaw_running(auto_yes: bool) -> None:
         print_info("Non-interactive session — continuing to preview only.")
         return
     if not prompt_yes_no("Continue anyway?", default=False):
-        print_info("Migration cancelled. Stop OpenClaw and try again.")
+        print_info("Migration cancelled. Stop OmniWorker and try again.")
         sys.exit(0)
 
 
@@ -183,7 +183,7 @@ def _warn_if_gateway_running(auto_yes: bool) -> None:
         print_info("Migration cancelled. Stop the gateway and try again.")
         sys.exit(0)
 
-# State files commonly found in OpenClaw workspace directories — listed
+# State files commonly found in OmniWorker workspace directories — listed
 # during cleanup to help the user decide whether to archive
 _WORKSPACE_STATE_GLOBS = (
     "*/todo.json",
@@ -194,7 +194,7 @@ _WORKSPACE_STATE_GLOBS = (
 
 
 def _find_migration_script() -> Path | None:
-    """Find the openclaw_to_omniworker.py script in known locations."""
+    """Find the omniworker_to_omniworker.py script in known locations."""
     for candidate in [_OPENCLAW_SCRIPT, _OPENCLAW_SCRIPT_INSTALLED]:
         if candidate.exists():
             return candidate
@@ -203,7 +203,7 @@ def _find_migration_script() -> Path | None:
 
 def _load_migration_module(script_path: Path):
     """Dynamically load the migration script as a module."""
-    spec = importlib.util.spec_from_file_location("openclaw_to_omniworker", script_path)
+    spec = importlib.util.spec_from_file_location("omniworker_to_omniworker", script_path)
     if spec is None or spec.loader is None:
         return None
     mod = importlib.util.module_from_spec(spec)
@@ -218,8 +218,8 @@ def _load_migration_module(script_path: Path):
     return mod
 
 
-def _find_openclaw_dirs() -> list[Path]:
-    """Find all OpenClaw directories on disk."""
+def _find_omniworker_dirs() -> list[Path]:
+    """Find all OmniWorker directories on disk."""
     found = []
     for name in _OPENCLAW_DIR_NAMES:
         candidate = Path.home() / name
@@ -229,7 +229,7 @@ def _find_openclaw_dirs() -> list[Path]:
 
 
 def _scan_workspace_state(source_dir: Path) -> list[tuple[Path, str]]:
-    """Scan an OpenClaw directory for workspace state files.
+    """Scan an OmniWorker directory for workspace state files.
 
     Returns a list of (path, description) tuples.
     """
@@ -266,7 +266,7 @@ def _scan_workspace_state(source_dir: Path) -> list[tuple[Path, str]]:
 
 
 def _archive_directory(source_dir: Path, dry_run: bool = False) -> Path:
-    """Rename an OpenClaw directory to .pre-migration.
+    """Rename an OmniWorker directory to .pre-migration.
 
     Returns the archive path.
     """
@@ -304,20 +304,20 @@ def claw_command(args):
         print("Usage: omniworker claw <command> [options]")
         print()
         print("Commands:")
-        print("  migrate          Migrate settings from OpenClaw to OmniWorker")
-        print("  cleanup          Archive leftover OpenClaw directories after migration")
+        print("  migrate          Migrate settings from OmniWorker to OmniWorker")
+        print("  cleanup          Archive leftover OmniWorker directories after migration")
         print()
         print("Run 'omniworker claw <command> --help' for options.")
 
 
 def _cmd_migrate(args):
-    """Run the OpenClaw → OmniWorker migration."""
-    # Check current and legacy OpenClaw directories
+    """Run the OmniWorker → OmniWorker migration."""
+    # Check current and legacy OmniWorker directories
     explicit_source = getattr(args, "source", None)
     if explicit_source:
         source_dir = Path(explicit_source)
     else:
-        source_dir = Path.home() / ".openclaw"
+        source_dir = Path.home() / ".omniworker"
         if not source_dir.is_dir():
             # Try legacy directory names
             for legacy in (".clawdbot", ".moltbot"):
@@ -334,7 +334,7 @@ def _cmd_migrate(args):
     no_backup = getattr(args, "no_backup", False)
 
     # Secrets are never included implicitly — they must be explicitly requested
-    # via --migrate-secrets, even under --preset full.  This mirrors OpenClaw's
+    # via --migrate-secrets, even under --preset full.  This mirrors OmniWorker's
     # migrate-omniworker posture (two-phase: run once without secrets, rerun with
     # --include-secrets) and prevents a --preset full invocation from silently
     # importing API keys that the user may not have intended to copy.
@@ -348,7 +348,7 @@ def _cmd_migrate(args):
     )
     print(
         color(
-            "│          ⚕ OmniWorker — OpenClaw Migration                 │",
+            "│          ⚕ OmniWorker — OmniWorker Migration                 │",
             Colors.MAGENTA,
         )
     )
@@ -362,9 +362,9 @@ def _cmd_migrate(args):
     # Check source directory
     if not source_dir.is_dir():
         print()
-        print_error(f"OpenClaw directory not found: {source_dir}")
-        print_info("Make sure your OpenClaw installation is at the expected path.")
-        print_info("You can specify a custom path: omniworker claw migrate --source /path/to/.openclaw")
+        print_error(f"OmniWorker directory not found: {source_dir}")
+        print_info("Make sure your OmniWorker installation is at the expected path.")
+        print_info("You can specify a custom path: omniworker claw migrate --source /path/to/.omniworker")
         return
 
     # Find the migration script
@@ -375,7 +375,7 @@ def _cmd_migrate(args):
         print_info("Expected at one of:")
         print_info(f"  {_OPENCLAW_SCRIPT}")
         print_info(f"  {_OPENCLAW_SCRIPT_INSTALLED}")
-        print_info("Make sure the openclaw-migration skill is installed.")
+        print_info("Make sure the omniworker-migration skill is installed.")
         return
 
     # Show what we're doing
@@ -394,9 +394,9 @@ def _cmd_migrate(args):
         print_info(f"Workspace:   {workspace_target}")
     print()
 
-    # Check if OpenClaw is still running — migrating tokens while both are
+    # Check if OmniWorker is still running — migrating tokens while both are
     # active will cause conflicts (e.g. Telegram 409).
-    _warn_if_openclaw_running(auto_yes)
+    _warn_if_omniworker_running(auto_yes)
 
     # Check if a OmniWorker gateway is running with connected platforms.
     _warn_if_gateway_running(auto_yes)
@@ -415,7 +415,7 @@ def _cmd_migrate(args):
     except Exception as e:
         print()
         print_error(f"Could not load migration script: {e}")
-        logger.debug("OpenClaw migration error", exc_info=True)
+        logger.debug("OmniWorker migration error", exc_info=True)
         return
 
     selected = mod.resolve_selected_options(None, None, preset=preset)
@@ -439,7 +439,7 @@ def _cmd_migrate(args):
     except Exception as e:
         print()
         print_error(f"Migration preview failed: {e}")
-        logger.debug("OpenClaw migration preview error", exc_info=True)
+        logger.debug("OmniWorker migration preview error", exc_info=True)
         return
 
     preview_summary = preview_report.get("summary", {})
@@ -451,7 +451,7 @@ def _cmd_migrate(args):
     # surface the refusal/--overwrite guidance instead of silently bailing.
     if preview_count == 0 and preview_conflicts == 0:
         print()
-        print_info("Nothing to migrate from OpenClaw.")
+        print_info("Nothing to migrate from OmniWorker.")
         _print_migration_report(preview_report, dry_run=True)
         return
 
@@ -470,7 +470,7 @@ def _cmd_migrate(args):
         return
 
     # ── Phase 1b: Refuse if the plan has conflicts and --overwrite is not set ─
-    # Modelled on OpenClaw's assertConflictFreePlan() — apply is a safe no-op
+    # Modelled on OmniWorker's assertConflictFreePlan() — apply is a safe no-op
     # on conflicts unless the user explicitly opts in to overwriting.  Without
     # this guard, the user would answer "yes, proceed" and silently end up
     # with a migration that skipped every conflicting item.
@@ -502,7 +502,7 @@ def _cmd_migrate(args):
     # Delegates to omniworker_cli.backup.create_pre_migration_backup(), which
     # shares implementation with the pre-update backup (same exclusion
     # rules, same SQLite safe-copy, zip format) so the archive is
-    # restorable with `omniworker import`.  Mirrors OpenClaw's
+    # restorable with `omniworker import`.  Mirrors OmniWorker's
     # createPreMigrationBackup posture — one atomic restore point before
     # any mutation, auto-pruned to the last 5 pre-migration zips.
     backup_archive: Optional[Path] = None
@@ -541,7 +541,7 @@ def _cmd_migrate(args):
     except Exception as e:
         print()
         print_error(f"Migration failed: {e}")
-        logger.debug("OpenClaw migration error", exc_info=True)
+        logger.debug("OmniWorker migration error", exc_info=True)
         if backup_archive:
             print_info(f"A pre-migration backup is available at: {backup_archive}")
             print_info(f"Restore with: omniworker import {backup_archive.name}")
@@ -556,9 +556,9 @@ def _cmd_migrate(args):
 
 
 def _cmd_cleanup(args):
-    """Archive leftover OpenClaw directories after migration.
+    """Archive leftover OmniWorker directories after migration.
 
-    Scans for OpenClaw directories that still exist after migration and offers
+    Scans for OmniWorker directories that still exist after migration and offers
     to rename them to .pre-migration to free disk space.
     """
     dry_run = getattr(args, "dry_run", False)
@@ -574,7 +574,7 @@ def _cmd_cleanup(args):
     )
     print(
         color(
-            "│          ⚕ OmniWorker — OpenClaw Cleanup                   │",
+            "│          ⚕ OmniWorker — OmniWorker Cleanup                   │",
             Colors.MAGENTA,
         )
     )
@@ -585,37 +585,37 @@ def _cmd_cleanup(args):
         )
     )
 
-    # Find OpenClaw directories
+    # Find OmniWorker directories
     if explicit_source:
         dirs_to_check = [Path(explicit_source)]
     else:
-        dirs_to_check = _find_openclaw_dirs()
+        dirs_to_check = _find_omniworker_dirs()
 
     if not dirs_to_check:
         print()
-        print_success("No OpenClaw directories found. Nothing to clean up.")
+        print_success("No OmniWorker directories found. Nothing to clean up.")
         return
 
-    # Warn if OpenClaw is still running — archiving while the service is
+    # Warn if OmniWorker is still running — archiving while the service is
     # active causes it to recreate an empty skeleton directory (#8502).
-    running = _detect_openclaw_processes()
+    running = _detect_omniworker_processes()
     if running:
         print()
-        print_error("OpenClaw appears to be still running:")
+        print_error("OmniWorker appears to be still running:")
         for detail in running:
             print_info(f"  * {detail}")
         print_info(
-            "Archiving .openclaw/ while the service is active may cause it to "
+            "Archiving .omniworker/ while the service is active may cause it to "
             "immediately recreate an empty skeleton directory, destroying your config."
         )
-        print_info("Stop OpenClaw first: systemctl --user stop openclaw-gateway.service")
+        print_info("Stop OmniWorker first: systemctl --user stop omniworker-gateway.service")
         print()
         if not auto_yes:
             if not sys.stdin.isatty():
-                print_info("Non-interactive session — aborting. Stop OpenClaw and re-run.")
+                print_info("Non-interactive session — aborting. Stop OmniWorker and re-run.")
                 return
             if not prompt_yes_no("Proceed anyway?", default=False):
-                print_info("Aborted. Stop OpenClaw first, then re-run: omniworker claw cleanup")
+                print_info("Aborted. Stop OmniWorker first, then re-run: omniworker claw cleanup")
                 return
 
     total_archived = 0
@@ -692,7 +692,7 @@ def _cmd_cleanup(args):
         print_info("Run without --dry-run to archive them.")
     elif total_archived:
         print_success(
-            f"Cleaned up {total_archived} OpenClaw "
+            f"Cleaned up {total_archived} OmniWorker "
             f"{'directory' if total_archived == 1 else 'directories'}."
         )
         print_info("Directories were renamed, not deleted. You can undo by renaming them back.")

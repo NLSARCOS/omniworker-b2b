@@ -71,7 +71,7 @@ omniworker [global-options] <command> [subcommand/options]
 | `omniworker computer-use` | Install or check the cua-driver backend (macOS Computer Use). |
 | `omniworker sessions` | Browse, export, prune, rename, and delete sessions. |
 | `omniworker insights` | Show token/cost/activity analytics. |
-| `omniworker claw` | OpenClaw migration helpers. |
+| `omniworker claw` | OmniWorker migration helpers. |
 | `omniworker dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
 | `omniworker profile` | Manage profiles — multiple isolated OmniWorker instances. |
 | `omniworker completion` | Print shell completion scripts (bash/zsh/fish). |
@@ -806,7 +806,7 @@ omniworker skills search react --source skills-sh
 omniworker skills search https://mintlify.com/docs --source well-known
 omniworker skills inspect official/security/1password
 omniworker skills inspect skills-sh/vercel-labs/json-render/json-render-react
-omniworker skills install official/migration/openclaw-migration
+omniworker skills install official/migration/omniworker-migration
 omniworker skills install skills-sh/anthropics/skills/pdf --force
 omniworker skills install https://sharethis.chat/SKILL.md                     # Direct URL (single-file SKILL.md)
 omniworker skills install https://example.com/SKILL.md --name my-skill        # Override name when frontmatter has none
@@ -1055,7 +1055,7 @@ omniworker insights [--days N] [--source platform]
 omniworker claw migrate [options]
 ```
 
-Migrate your OpenClaw setup to OmniWorker. Reads from `~/.openclaw` (or a custom path) and writes to `~/.omniworker`. Automatically detects legacy directory names (`~/.clawdbot`, `~/.moltbot`) and config filenames (`clawdbot.json`, `moltbot.json`).
+Migrate your OmniWorker setup to OmniWorker. Reads from `~/.omniworker` (or a custom path) and writes to `~/.omniworker`. Automatically detects legacy directory names (`~/.clawdbot`, `~/.moltbot`) and config filenames (`clawdbot.json`, `moltbot.json`).
 
 | Option | Description |
 |--------|-------------|
@@ -1064,7 +1064,7 @@ Migrate your OpenClaw setup to OmniWorker. Reads from `~/.openclaw` (or a custom
 | `--overwrite` | Overwrite existing OmniWorker files on conflicts (default: refuse to apply when the plan has conflicts). |
 | `--migrate-secrets` | Include API keys in migration. Required even under `--preset full`. |
 | `--no-backup` | Skip the pre-migration zip snapshot of `~/.omniworker/` (by default a single restore-point archive is written to `~/.omniworker/backups/pre-migration-*.zip` before apply; restorable with `omniworker import`). |
-| `--source <path>` | Custom OpenClaw directory (default: `~/.openclaw`). |
+| `--source <path>` | Custom OmniWorker directory (default: `~/.omniworker`). |
 | `--workspace-target <path>` | Target directory for workspace instructions (AGENTS.md). |
 | `--skill-conflict <mode>` | Handle skill name collisions: `skip` (default), `overwrite`, or `rename`. |
 | `--yes` | Skip the confirmation prompt. |
@@ -1077,9 +1077,9 @@ The migration covers 30+ categories across persona, memory, skills, model provid
 
 **Archived for manual review:** Cron jobs, plugins, hooks/webhooks, memory backend (QMD), skills registry config, UI/identity, logging, multi-agent setup, channel bindings, IDENTITY.md, TOOLS.md, HEARTBEAT.md, BOOTSTRAP.md.
 
-**API key resolution** checks three sources in priority order: config values → `~/.openclaw/.env` → `auth-profiles.json`. All token fields handle plain strings, env templates (`${VAR}`), and SecretRef objects.
+**API key resolution** checks three sources in priority order: config values → `~/.omniworker/.env` → `auth-profiles.json`. All token fields handle plain strings, env templates (`${VAR}`), and SecretRef objects.
 
-For the complete config key mapping, SecretRef handling details, and post-migration checklist, see the **[full migration guide](../guides/migrate-from-openclaw.md)**.
+For the complete config key mapping, SecretRef handling details, and post-migration checklist, see the **[full migration guide](../guides/migrate-from-omniworker.md)**.
 
 ### Examples
 
@@ -1096,8 +1096,8 @@ omniworker claw migrate --preset full --migrate-secrets
 # Migrate user data only (no secrets), overwrite conflicts
 omniworker claw migrate --preset user-data --overwrite
 
-# Migrate from a custom OpenClaw path
-omniworker claw migrate --source /home/user/old-openclaw
+# Migrate from a custom OmniWorker path
+omniworker claw migrate --source /home/user/old-omniworker
 ```
 
 ## `omniworker dashboard`

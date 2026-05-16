@@ -17,7 +17,7 @@ X/Twitter via xurl CLI: post, search, DM, media, v2 API.
 | Source | Bundled (installed by default) |
 | Path | `skills/social-media/xurl` |
 | Version | `1.1.1` |
-| Author | xdevplatform + openclaw + OmniWorker Agent |
+| Author | xdevplatform + omniworker + OmniWorker Agent |
 | License | MIT |
 | Platforms | linux, macos |
 | Tags | `twitter`, `x`, `social-media`, `xurl`, `official-api` |
@@ -424,5 +424,5 @@ xurl --app staging /2/users/me             # one-off against staging
 ## Attribution
 
 - Upstream CLI: https://github.com/xdevplatform/xurl (X developer platform team, Chris Park et al.)
-- Upstream agent skill: https://github.com/openclaw/openclaw/blob/main/skills/xurl/SKILL.md
+- Upstream agent skill: https://github.com/omniworker/omniworker/blob/main/skills/xurl/SKILL.md
 - OmniWorker adaptation: reformatted for OmniWorker skill conventions; safety guardrails preserved verbatim.

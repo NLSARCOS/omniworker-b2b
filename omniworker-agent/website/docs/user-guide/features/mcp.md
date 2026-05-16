@@ -490,7 +490,7 @@ Or if you installed OmniWorker in a specific location:
 
 ### Available tools
 
-The MCP server exposes 10 tools, matching OpenClaw's channel bridge surface plus a OmniWorker-specific channel browser:
+The MCP server exposes 10 tools, matching OmniWorker's channel bridge surface plus a OmniWorker-specific channel browser:
 
 | Tool | Description |
 |------|-------------|

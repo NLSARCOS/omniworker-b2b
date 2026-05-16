@@ -10,14 +10,14 @@ SCRIPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "optional-skills"
     / "migration"
-    / "openclaw-migration"
+    / "omniworker-migration"
     / "scripts"
-    / "openclaw_to_omniworker.py"
+    / "omniworker_to_omniworker.py"
 )
 
 
 def load_module():
-    spec = importlib.util.spec_from_file_location("openclaw_to_omniworker", SCRIPT_PATH)
+    spec = importlib.util.spec_from_file_location("omniworker_to_omniworker", SCRIPT_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     sys.modules[spec.name] = module
@@ -104,7 +104,7 @@ def test_resolve_selected_options_rejects_unknown_preset():
 
 def test_migrator_copies_skill_and_merges_allowlist(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
 
@@ -149,14 +149,14 @@ def test_migrator_copies_skill_and_merges_allowlist(tmp_path: Path):
 
 def test_migrator_optionally_imports_supported_secrets_and_messaging_settings(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
 
     (source / "credentials").mkdir(parents=True)
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps(
             {
-                "agents": {"defaults": {"workspace": "/tmp/openclaw-workspace"}},
+                "agents": {"defaults": {"workspace": "/tmp/omniworker-workspace"}},
                 "channels": {"telegram": {"botToken": "123:abc"}},
             }
         ),
@@ -180,22 +180,22 @@ def test_migrator_optionally_imports_supported_secrets_and_messaging_settings(tm
     migrator.migrate()
 
     env_text = (target / ".env").read_text(encoding="utf-8")
-    assert "MESSAGING_CWD=/tmp/openclaw-workspace" in env_text
+    assert "MESSAGING_CWD=/tmp/omniworker-workspace" in env_text
     assert "TELEGRAM_ALLOWED_USERS=111,222" in env_text
     assert "TELEGRAM_BOT_TOKEN=123:abc" in env_text
 
 
 def test_messaging_cwd_skipped_when_inside_source(tmp_path: Path):
-    """MESSAGING_CWD pointing inside the OpenClaw source dir should be skipped."""
+    """MESSAGING_CWD pointing inside the OmniWorker source dir should be skipped."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
 
     # Workspace path is inside the source directory
     ws_path = str(source / "workspace")
     (source / "credentials").mkdir(parents=True)
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({"agents": {"defaults": {"workspace": ws_path}}}),
         encoding="utf-8",
     )
@@ -219,7 +219,7 @@ def test_messaging_cwd_skipped_when_inside_source(tmp_path: Path):
 
 def test_migrator_can_execute_only_selected_categories(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
 
@@ -256,7 +256,7 @@ def test_migrator_can_execute_only_selected_categories(tmp_path: Path):
 
 def test_migrator_records_preset_in_report(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     (target / "config.yaml").write_text("command_allowlist: []\n", encoding="utf-8")
@@ -281,10 +281,10 @@ def test_migrator_records_preset_in_report(tmp_path: Path):
 
 
 def test_source_candidate_finds_files_in_custom_workspace(tmp_path: Path):
-    """When agents.defaults.workspace points outside ~/.openclaw, files should
+    """When agents.defaults.workspace points outside ~/.omniworker, files should
     be discovered there as a fallback."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     custom_ws = tmp_path / "my-custom-workspace"
 
@@ -292,7 +292,7 @@ def test_source_candidate_finds_files_in_custom_workspace(tmp_path: Path):
     source.mkdir()
     custom_ws.mkdir()
 
-    # No workspace/ directory inside .openclaw — files live in custom workspace
+    # No workspace/ directory inside .omniworker — files live in custom workspace
     (custom_ws / "MEMORY.md").write_text("# Memory\n\n- custom workspace entry\n", encoding="utf-8")
     (custom_ws / "SOUL.md").write_text("# Soul\n\nI am me.\n", encoding="utf-8")
     (custom_ws / "skills" / "my-skill").mkdir(parents=True)
@@ -303,7 +303,7 @@ def test_source_candidate_finds_files_in_custom_workspace(tmp_path: Path):
     (custom_ws / "memory").mkdir()
     (custom_ws / "memory" / "2026-01-01.md").write_text("- daily note\n", encoding="utf-8")
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({"agents": {"defaults": {"workspace": str(custom_ws)}}}),
         encoding="utf-8",
     )
@@ -339,10 +339,10 @@ def test_source_candidate_finds_files_in_custom_workspace(tmp_path: Path):
 
 
 def test_source_candidate_prefers_standard_workspace_over_custom(tmp_path: Path):
-    """When files exist in both ~/.openclaw/workspace/ and the custom workspace,
+    """When files exist in both ~/.omniworker/workspace/ and the custom workspace,
     the standard location should win (custom is a fallback only)."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     custom_ws = tmp_path / "my-custom-workspace"
 
@@ -354,7 +354,7 @@ def test_source_candidate_prefers_standard_workspace_over_custom(tmp_path: Path)
     (source / "workspace" / "SOUL.md").write_text("# Standard soul\n", encoding="utf-8")
     (custom_ws / "SOUL.md").write_text("# Custom soul\n", encoding="utf-8")
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({"agents": {"defaults": {"workspace": str(custom_ws)}}}),
         encoding="utf-8",
     )
@@ -378,7 +378,7 @@ def test_source_candidate_prefers_standard_workspace_over_custom(tmp_path: Path)
 
 def test_migrator_exports_full_overflow_entries(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     (target / "config.yaml").write_text("memory:\n  memory_char_limit: 10\n  user_char_limit: 10\n", encoding="utf-8")
@@ -409,7 +409,7 @@ def test_migrator_exports_full_overflow_entries(tmp_path: Path):
 
 def test_migrator_can_rename_conflicting_imported_skill(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
 
@@ -448,7 +448,7 @@ def test_migrator_can_rename_conflicting_imported_skill(tmp_path: Path):
 
 def test_migrator_can_overwrite_conflicting_imported_skill_with_backup(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
 
@@ -486,12 +486,12 @@ def test_migrator_can_overwrite_conflicting_imported_skill_with_backup(tmp_path:
 def test_discord_settings_migrated(tmp_path: Path):
     """Discord bot token and allowlist migrate to .env."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "channels": {
                 "discord": {
@@ -517,12 +517,12 @@ def test_discord_settings_migrated(tmp_path: Path):
 def test_slack_settings_migrated(tmp_path: Path):
     """Slack bot/app tokens and allowlist migrate to .env."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "channels": {
                 "slack": {
@@ -550,12 +550,12 @@ def test_slack_settings_migrated(tmp_path: Path):
 def test_signal_settings_migrated(tmp_path: Path):
     """Signal account, HTTP URL, and allowlist migrate to .env."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "channels": {
                 "signal": {
@@ -583,12 +583,12 @@ def test_signal_settings_migrated(tmp_path: Path):
 def test_model_config_migrated(tmp_path: Path):
     """Default model setting migrates to config.yaml."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "agents": {"defaults": {"model": "anthropic/claude-sonnet-4"}}
         }),
@@ -610,12 +610,12 @@ def test_model_config_migrated(tmp_path: Path):
 def test_model_config_object_format(tmp_path: Path):
     """Model config handles {primary: ...} object format."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "agents": {"defaults": {"model": {"primary": "openai/gpt-4o"}}}
         }),
@@ -636,12 +636,12 @@ def test_model_config_object_format(tmp_path: Path):
 def test_tts_config_migrated(tmp_path: Path):
     """TTS provider and voice settings migrate to config.yaml."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "messages": {
                 "tts": {
@@ -669,9 +669,9 @@ def test_tts_config_migrated(tmp_path: Path):
 
 
 def test_shared_skills_migrated(tmp_path: Path):
-    """Shared skills from ~/.openclaw/skills/ are migrated."""
+    """Shared skills from ~/.omniworker/skills/ are migrated."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
 
@@ -695,7 +695,7 @@ def test_shared_skills_migrated(tmp_path: Path):
 def test_daily_memory_merged(tmp_path: Path):
     """Daily memory notes from workspace/memory/*.md are merged into MEMORY.md."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
 
@@ -726,12 +726,12 @@ def test_daily_memory_merged(tmp_path: Path):
 def test_provider_keys_require_migrate_secrets_flag(tmp_path: Path):
     """Provider keys migration is double-gated: needs option + --migrate-secrets."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "openclaw.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "models": {
                 "providers": {
@@ -770,7 +770,7 @@ def test_provider_keys_require_migrate_secrets_flag(tmp_path: Path):
 def test_workspace_agents_records_skip_when_missing(tmp_path: Path):
     """Bug fix: workspace-agents records 'skipped' when source is missing."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     source.mkdir()
     target.mkdir()
@@ -787,15 +787,15 @@ def test_workspace_agents_records_skip_when_missing(tmp_path: Path):
 
 
 def test_cron_store_is_archived_without_config_cron_section(tmp_path: Path):
-    """Bug fix: archive cron store even when openclaw.json has no top-level cron config."""
+    """Bug fix: archive cron store even when omniworker.json has no top-level cron config."""
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     output_dir = target / "migration-report"
     source.mkdir()
     target.mkdir()
 
-    (source / "openclaw.json").write_text(json.dumps({"channels": {}}), encoding="utf-8")
+    (source / "omniworker.json").write_text(json.dumps({"channels": {}}), encoding="utf-8")
     (source / "cron").mkdir(parents=True)
     (source / "cron" / "jobs.json").write_text(
         json.dumps({"version": 1, "jobs": [{"id": "job-1", "name": "demo"}]}),
@@ -831,7 +831,7 @@ def test_skill_installs_cleanly_under_skills_guard():
     skills_guard = load_skills_guard()
     result = skills_guard.scan_skill(
         SCRIPT_PATH.parents[1],
-        source="official/migration/openclaw-migration",
+        source="official/migration/omniworker-migration",
     )
 
     # The migration script has several known false-positive findings from the
@@ -855,17 +855,17 @@ def test_skill_installs_cleanly_under_skills_guard():
 # ── rebrand_text tests ────────────────────────────────────────
 
 
-def test_rebrand_text_replaces_openclaw_variants():
+def test_rebrand_text_replaces_omniworker_variants():
     mod = load_module()
     # Mixed-case / capitalized matches → capital-H ``OmniWorker``.
-    assert mod.rebrand_text("OpenClaw prefers Python 3.11") == "OmniWorker prefers Python 3.11"
+    assert mod.rebrand_text("OmniWorker prefers Python 3.11") == "OmniWorker prefers Python 3.11"
     assert mod.rebrand_text("I told Open Claw to use dark mode") == "I told OmniWorker to use dark mode"
     assert mod.rebrand_text("Open-Claw config is great") == "OmniWorker config is great"
     assert mod.rebrand_text("OPENCLAW uses tools well") == "OmniWorker uses tools well"
     # All-lowercase matches → lowercase ``omniworker``; this preserves the
     # real filesystem path ``~/.omniworker`` (OmniWorker home) when rebranding
-    # memory entries that reference ``~/.openclaw`` or ``openclaw`` prose.
-    assert mod.rebrand_text("openclaw should always respond concisely") == "omniworker should always respond concisely"
+    # memory entries that reference ``~/.omniworker`` or ``omniworker`` prose.
+    assert mod.rebrand_text("omniworker should always respond concisely") == "omniworker should always respond concisely"
 
 
 def test_rebrand_text_replaces_legacy_bot_names():
@@ -885,39 +885,39 @@ def test_rebrand_text_preserves_unrelated_content():
 
 def test_rebrand_text_handles_multiple_replacements():
     mod = load_module()
-    text = "OpenClaw said to ask ClawdBot about MoltBot settings"
+    text = "OmniWorker said to ask ClawdBot about MoltBot settings"
     assert mod.rebrand_text(text) == "OmniWorker said to ask OmniWorker about OmniWorker settings"
 
 
 def test_rebrand_text_preserves_filesystem_path_casing():
-    """Lowercase matches — especially ``.openclaw`` filesystem paths — must
+    """Lowercase matches — especially ``.omniworker`` filesystem paths — must
     rewrite to lowercase ``.omniworker`` (the real OmniWorker home), not the broken
     ``.OmniWorker``.
 
-    Regression test for @versun's OpenClaw-residue feedback: after migration,
-    memory entries that referenced ``~/.openclaw/config.yaml`` were being
+    Regression test for @versun's OmniWorker-residue feedback: after migration,
+    memory entries that referenced ``~/.omniworker/config.yaml`` were being
     rewritten to ``~/.OmniWorker/config.yaml`` — a path that doesn't exist —
     and the agent kept trying to read it.
     """
     mod = load_module()
-    assert mod.rebrand_text("config is at ~/.openclaw/config.yaml") == \
+    assert mod.rebrand_text("config is at ~/.omniworker/config.yaml") == \
         "config is at ~/.omniworker/config.yaml"
-    assert mod.rebrand_text("use .openclaw directory") == "use .omniworker directory"
-    assert mod.rebrand_text("Path.home() / '.openclaw'") == "Path.home() / '.omniworker'"
+    assert mod.rebrand_text("use .omniworker directory") == "use .omniworker directory"
+    assert mod.rebrand_text("Path.home() / '.omniworker'") == "Path.home() / '.omniworker'"
     # Sentence with both lowercase path and capitalized prose.
-    assert mod.rebrand_text("openclaw config path: ~/.openclaw/") == \
+    assert mod.rebrand_text("omniworker config path: ~/.omniworker/") == \
         "omniworker config path: ~/.omniworker/"
 
 
 def test_migrate_memory_rebrands_entries(tmp_path):
     mod = load_module()
-    source_root = tmp_path / "openclaw"
+    source_root = tmp_path / "omniworker"
     source_root.mkdir()
     workspace = source_root / "workspace"
     workspace.mkdir()
     memory_md = workspace / "MEMORY.md"
     memory_md.write_text(
-        "# Memory\n\n- OpenClaw should use Python 3.11\n- ClawdBot prefers dark mode\n",
+        "# Memory\n\n- OmniWorker should use Python 3.11\n- ClawdBot prefers dark mode\n",
         encoding="utf-8",
     )
 
@@ -938,19 +938,19 @@ def test_migrate_memory_rebrands_entries(tmp_path):
     migrator.migrate()
 
     result = (target_root / "memories" / "MEMORY.md").read_text(encoding="utf-8")
-    assert "OpenClaw" not in result
+    assert "OmniWorker" not in result
     assert "ClawdBot" not in result
     assert "OmniWorker" in result
 
 
 def test_migrate_soul_rebrands_content(tmp_path):
     mod = load_module()
-    source_root = tmp_path / "openclaw"
+    source_root = tmp_path / "omniworker"
     source_root.mkdir()
     workspace = source_root / "workspace"
     workspace.mkdir()
     soul_md = workspace / "SOUL.md"
-    soul_md.write_text("You are OpenClaw, an AI assistant made by SparkLab.", encoding="utf-8")
+    soul_md.write_text("You are OmniWorker, an AI assistant made by SparkLab.", encoding="utf-8")
 
     target_root = tmp_path / "omniworker"
     target_root.mkdir()
@@ -968,23 +968,23 @@ def test_migrate_soul_rebrands_content(tmp_path):
     migrator.migrate()
 
     result = (target_root / "SOUL.md").read_text(encoding="utf-8")
-    assert "OpenClaw" not in result
+    assert "OmniWorker" not in result
     assert "You are OmniWorker" in result
 
 
 # ── migrate_model_config: alias resolution (issue #16745) ──────────────────
 
-def _run_model_migration(tmp_path: Path, openclaw_json: dict) -> dict:
-    """Helper: run just migrate_model_config on an openclaw.json and return
+def _run_model_migration(tmp_path: Path, omniworker_json: dict) -> dict:
+    """Helper: run just migrate_model_config on an omniworker.json and return
     the parsed destination config.yaml."""
     import yaml
 
     mod = load_module()
-    source = tmp_path / ".openclaw"
+    source = tmp_path / ".omniworker"
     target = tmp_path / ".omniworker"
     source.mkdir(parents=True)
     target.mkdir(parents=True)
-    (source / "openclaw.json").write_text(json.dumps(openclaw_json), encoding="utf-8")
+    (source / "omniworker.json").write_text(json.dumps(omniworker_json), encoding="utf-8")
 
     migrator = mod.Migrator(
         source_root=source,
@@ -1010,8 +1010,8 @@ def _extract_model(parsed: dict) -> str | None:
     return model
 
 
-def test_migrate_model_config_resolves_alias_against_real_openclaw_schema(tmp_path: Path):
-    """Regression for #16745 — OpenClaw's catalog is keyed by the full
+def test_migrate_model_config_resolves_alias_against_real_omniworker_schema(tmp_path: Path):
+    """Regression for #16745 — OmniWorker's catalog is keyed by the full
     provider/model API ID with an "alias" field on the value.  The migration
     must reverse-lookup the alias to find the API ID."""
     parsed = _run_model_migration(

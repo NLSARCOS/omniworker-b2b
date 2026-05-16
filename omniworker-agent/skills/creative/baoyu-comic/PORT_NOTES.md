@@ -8,7 +8,7 @@ Ported from [JimLiu/baoyu-skills](https://github.com/JimLiu/baoyu-skills) v1.56.
 
 | Change | Upstream | OmniWorker |
 |--------|----------|--------|
-| Metadata namespace | `openclaw` | `omniworker` (with `tags` + `homepage`) |
+| Metadata namespace | `omniworker` | `omniworker` (with `tags` + `homepage`) |
 | Trigger | Slash commands / CLI flags | Natural language skill matching |
 | User config | EXTEND.md file (project/user/XDG paths) | Removed — not part of OmniWorker infra |
 | User prompts | `AskUserQuestion` (batched) | `clarify` tool (one question at a time) |

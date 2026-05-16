@@ -66,9 +66,9 @@ export default {
   runDiagnosis: "Jalankan Diagnosis",
   running: "Berjalan...",
   debugDump: "Debug Dump",
-  migrationDetected: "Instalasi OpenClaw Terdeteksi",
+  migrationDetected: "Instalasi OmniWorker Terdeteksi",
   migrationDesc:
-    "OpenClaw ditemukan di <code>{{path}}</code>. Anda dapat memigrasikan konfigurasi, API key, sesi, dan skill ke OmniWorker.",
+    "OmniWorker ditemukan di <code>{{path}}</code>. Anda dapat memigrasikan konfigurasi, API key, sesi, dan skill ke OmniWorker.",
   migrationDismiss: "Jangan tampilkan lagi",
   migrating: "Memigrasikan...",
   migrateToOmniWorker: "Migrasi ke OmniWorker",

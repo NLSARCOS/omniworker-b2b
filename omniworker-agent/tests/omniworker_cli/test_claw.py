@@ -19,7 +19,7 @@ class TestFindMigrationScript:
     """Test script discovery in known locations."""
 
     def test_finds_project_root_script(self, tmp_path):
-        script = tmp_path / "openclaw_to_omniworker.py"
+        script = tmp_path / "omniworker_to_omniworker.py"
         script.write_text("# placeholder")
         with patch.object(claw_mod, "_OPENCLAW_SCRIPT", script):
             assert claw_mod._find_migration_script() == script
@@ -42,19 +42,19 @@ class TestFindMigrationScript:
 
 
 # ---------------------------------------------------------------------------
-# _find_openclaw_dirs
+# _find_omniworker_dirs
 # ---------------------------------------------------------------------------
 
 
 class TestFindOpenclawDirs:
-    """Test discovery of OpenClaw directories."""
+    """Test discovery of OmniWorker directories."""
 
-    def test_finds_openclaw_dir(self, tmp_path):
-        openclaw = tmp_path / ".openclaw"
-        openclaw.mkdir()
+    def test_finds_omniworker_dir(self, tmp_path):
+        omniworker = tmp_path / ".omniworker"
+        omniworker.mkdir()
         with patch("pathlib.Path.home", return_value=tmp_path):
-            found = claw_mod._find_openclaw_dirs()
-        assert openclaw in found
+            found = claw_mod._find_omniworker_dirs()
+        assert omniworker in found
 
     def test_finds_legacy_dirs(self, tmp_path):
         clawdbot = tmp_path / ".clawdbot"
@@ -62,14 +62,14 @@ class TestFindOpenclawDirs:
         moltbot = tmp_path / ".moltbot"
         moltbot.mkdir()
         with patch("pathlib.Path.home", return_value=tmp_path):
-            found = claw_mod._find_openclaw_dirs()
+            found = claw_mod._find_omniworker_dirs()
         assert len(found) == 2
         assert clawdbot in found
         assert moltbot in found
 
     def test_returns_empty_when_none_exist(self, tmp_path):
         with patch("pathlib.Path.home", return_value=tmp_path):
-            found = claw_mod._find_openclaw_dirs()
+            found = claw_mod._find_omniworker_dirs()
         assert found == []
 
 
@@ -124,21 +124,21 @@ class TestArchiveDirectory:
     """Test directory archival (rename)."""
 
     def test_renames_to_pre_migration(self, tmp_path):
-        source = tmp_path / ".openclaw"
+        source = tmp_path / ".omniworker"
         source.mkdir()
         (source / "test.txt").write_text("data")
 
         archive_path = claw_mod._archive_directory(source)
-        assert archive_path == tmp_path / ".openclaw.pre-migration"
+        assert archive_path == tmp_path / ".omniworker.pre-migration"
         assert archive_path.is_dir()
         assert not source.exists()
         assert (archive_path / "test.txt").read_text() == "data"
 
     def test_adds_timestamp_when_archive_exists(self, tmp_path):
-        source = tmp_path / ".openclaw"
+        source = tmp_path / ".omniworker"
         source.mkdir()
         # Pre-existing archive
-        (tmp_path / ".openclaw.pre-migration").mkdir()
+        (tmp_path / ".omniworker.pre-migration").mkdir()
 
         archive_path = claw_mod._archive_directory(source)
         assert ".pre-migration-" in archive_path.name
@@ -146,11 +146,11 @@ class TestArchiveDirectory:
         assert not source.exists()
 
     def test_dry_run_does_not_rename(self, tmp_path):
-        source = tmp_path / ".openclaw"
+        source = tmp_path / ".omniworker"
         source.mkdir()
 
         archive_path = claw_mod._archive_directory(source, dry_run=True)
-        assert archive_path == tmp_path / ".openclaw.pre-migration"
+        assert archive_path == tmp_path / ".omniworker.pre-migration"
         assert source.is_dir()  # Still exists
 
 
@@ -199,8 +199,8 @@ class TestCmdMigrate:
     """Test the migrate command handler."""
 
     @pytest.fixture(autouse=True)
-    def _mock_openclaw_running(self):
-        with patch.object(claw_mod, "_detect_openclaw_processes", return_value=[]):
+    def _mock_omniworker_running(self):
+        with patch.object(claw_mod, "_detect_omniworker_processes", return_value=[]):
             yield
 
     def test_error_when_source_missing(self, tmp_path, capsys):
@@ -215,10 +215,10 @@ class TestCmdMigrate:
         assert "not found" in captured.out
 
     def test_error_when_script_missing(self, tmp_path, capsys):
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=True, preset="full", overwrite=False,
             migrate_secrets=False, workspace_target=None,
             skill_conflict="skip", yes=False,
@@ -232,13 +232,13 @@ class TestCmdMigrate:
         assert "Migration script not found" in captured.out
 
     def test_dry_run_succeeds(self, tmp_path, capsys):
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         script = tmp_path / "script.py"
         script.write_text("# placeholder")
 
         # Build a fake migration module
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value={"soul", "memory"})
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -251,7 +251,7 @@ class TestCmdMigrate:
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=True, preset="full", overwrite=False,
             migrate_secrets=False, workspace_target=None,
             skill_conflict="skip", yes=False,
@@ -271,12 +271,12 @@ class TestCmdMigrate:
         assert "5 skipped" in captured.out
 
     def test_execute_with_confirmation(self, tmp_path, capsys):
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         config_path = tmp_path / "config.yaml"
         config_path.write_text("agent:\n  max_turns: 90\n")
 
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value={"soul"})
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -289,7 +289,7 @@ class TestCmdMigrate:
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=False, preset="user-data", overwrite=False,
             migrate_secrets=False, workspace_target=None,
             skill_conflict="skip", yes=False,
@@ -313,10 +313,10 @@ class TestCmdMigrate:
 
     def test_dry_run_does_not_touch_source(self, tmp_path, capsys):
         """Dry run should not modify the source directory."""
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
 
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value=set())
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -327,7 +327,7 @@ class TestCmdMigrate:
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=True, preset="full", overwrite=False,
             migrate_secrets=False, workspace_target=None,
             skill_conflict="skip", yes=False,
@@ -342,16 +342,16 @@ class TestCmdMigrate:
         ):
             claw_mod._cmd_migrate(args)
 
-        assert openclaw_dir.is_dir()  # Source untouched
+        assert omniworker_dir.is_dir()  # Source untouched
 
     def test_execute_cancelled_by_user(self, tmp_path, capsys):
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         config_path = tmp_path / "config.yaml"
         config_path.write_text("")
 
         # Preview must succeed before the confirmation prompt is shown
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value=set())
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -361,7 +361,7 @@ class TestCmdMigrate:
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=False, preset="full", overwrite=False,
             migrate_secrets=False, workspace_target=None,
             skill_conflict="skip", yes=False,
@@ -383,12 +383,12 @@ class TestCmdMigrate:
         assert "Migration cancelled" in captured.out
 
     def test_execute_with_yes_skips_confirmation(self, tmp_path, capsys):
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         config_path = tmp_path / "config.yaml"
         config_path.write_text("")
 
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value=set())
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -398,7 +398,7 @@ class TestCmdMigrate:
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=False, preset="full", overwrite=False,
             migrate_secrets=False, workspace_target=None,
             skill_conflict="skip", yes=True,
@@ -415,13 +415,13 @@ class TestCmdMigrate:
         mock_prompt.assert_not_called()
 
     def test_handles_migration_error(self, tmp_path, capsys):
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         config_path = tmp_path / "config.yaml"
         config_path.write_text("")
 
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=True, preset="full", overwrite=False,
             migrate_secrets=False, workspace_target=None,
             skill_conflict="skip", yes=False,
@@ -443,14 +443,14 @@ class TestCmdMigrate:
         """The 'full' preset must NOT auto-enable migrate_secrets.
 
         Users have to opt in to secret import explicitly via --migrate-secrets,
-        even under the 'full' preset.  This mirrors OpenClaw's migrate-omniworker
+        even under the 'full' preset.  This mirrors OmniWorker's migrate-omniworker
         posture (two-phase import) and prevents a 'full' run from silently
         copying API keys.
         """
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
 
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value=set())
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -460,7 +460,7 @@ class TestCmdMigrate:
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=True, preset="full", overwrite=False,
             migrate_secrets=False,  # Not explicitly set by user
             workspace_target=None,
@@ -484,10 +484,10 @@ class TestCmdMigrate:
 
     def test_full_preset_with_explicit_migrate_secrets_passes_through(self, tmp_path, capsys):
         """Explicit --migrate-secrets still works under --preset full."""
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
 
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value=set())
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -497,7 +497,7 @@ class TestCmdMigrate:
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
         args = Namespace(
-            source=str(openclaw_dir),
+            source=str(omniworker_dir),
             dry_run=True, preset="full", overwrite=False,
             migrate_secrets=True,  # Explicitly requested
             workspace_target=None,
@@ -527,58 +527,58 @@ class TestCmdCleanup:
     """Test the cleanup command handler."""
 
     @pytest.fixture(autouse=True)
-    def _mock_openclaw_running(self):
-        with patch.object(claw_mod, "_detect_openclaw_processes", return_value=[]):
+    def _mock_omniworker_running(self):
+        with patch.object(claw_mod, "_detect_omniworker_processes", return_value=[]):
             yield
 
     def test_no_dirs_found(self, tmp_path, capsys):
         args = Namespace(source=None, dry_run=False, yes=False)
-        with patch.object(claw_mod, "_find_openclaw_dirs", return_value=[]):
+        with patch.object(claw_mod, "_find_omniworker_dirs", return_value=[]):
             claw_mod._cmd_cleanup(args)
         captured = capsys.readouterr()
-        assert "No OpenClaw directories found" in captured.out
+        assert "No OmniWorker directories found" in captured.out
 
     def test_dry_run_lists_dirs(self, tmp_path, capsys):
-        openclaw = tmp_path / ".openclaw"
-        openclaw.mkdir()
-        ws = openclaw / "workspace"
+        omniworker = tmp_path / ".omniworker"
+        omniworker.mkdir()
+        ws = omniworker / "workspace"
         ws.mkdir()
         (ws / "todo.json").write_text("{}")
 
         args = Namespace(source=None, dry_run=True, yes=False)
-        with patch.object(claw_mod, "_find_openclaw_dirs", return_value=[openclaw]):
+        with patch.object(claw_mod, "_find_omniworker_dirs", return_value=[omniworker]):
             claw_mod._cmd_cleanup(args)
 
         captured = capsys.readouterr()
         assert "Would archive" in captured.out
-        assert openclaw.is_dir()  # Not actually archived
+        assert omniworker.is_dir()  # Not actually archived
 
     def test_archives_with_yes(self, tmp_path, capsys):
-        openclaw = tmp_path / ".openclaw"
-        openclaw.mkdir()
-        (openclaw / "workspace").mkdir()
-        (openclaw / "workspace" / "todo.json").write_text("{}")
+        omniworker = tmp_path / ".omniworker"
+        omniworker.mkdir()
+        (omniworker / "workspace").mkdir()
+        (omniworker / "workspace" / "todo.json").write_text("{}")
 
         args = Namespace(source=None, dry_run=False, yes=True)
-        with patch.object(claw_mod, "_find_openclaw_dirs", return_value=[openclaw]):
+        with patch.object(claw_mod, "_find_omniworker_dirs", return_value=[omniworker]):
             claw_mod._cmd_cleanup(args)
 
         captured = capsys.readouterr()
         assert "Archived" in captured.out
         assert "Cleaned up 1" in captured.out
-        assert not openclaw.exists()
-        assert (tmp_path / ".openclaw.pre-migration").is_dir()
+        assert not omniworker.exists()
+        assert (tmp_path / ".omniworker.pre-migration").is_dir()
 
     def test_skips_when_user_declines(self, tmp_path, capsys):
-        openclaw = tmp_path / ".openclaw"
-        openclaw.mkdir()
+        omniworker = tmp_path / ".omniworker"
+        omniworker.mkdir()
 
         mock_stdin = MagicMock()
         mock_stdin.isatty.return_value = True
 
         args = Namespace(source=None, dry_run=False, yes=False)
         with (
-            patch.object(claw_mod, "_find_openclaw_dirs", return_value=[openclaw]),
+            patch.object(claw_mod, "_find_omniworker_dirs", return_value=[omniworker]),
             patch.object(claw_mod, "prompt_yes_no", return_value=False),
             patch("sys.stdin", mock_stdin),
         ):
@@ -586,10 +586,10 @@ class TestCmdCleanup:
 
         captured = capsys.readouterr()
         assert "Skipped" in captured.out
-        assert openclaw.is_dir()
+        assert omniworker.is_dir()
 
     def test_explicit_source(self, tmp_path, capsys):
-        custom_dir = tmp_path / "my-openclaw"
+        custom_dir = tmp_path / "my-omniworker"
         custom_dir.mkdir()
         (custom_dir / "todo.json").write_text("{}")
 
@@ -601,15 +601,15 @@ class TestCmdCleanup:
         assert not custom_dir.exists()
 
     def test_shows_workspace_details(self, tmp_path, capsys):
-        openclaw = tmp_path / ".openclaw"
-        openclaw.mkdir()
-        ws = openclaw / "workspace"
+        omniworker = tmp_path / ".omniworker"
+        omniworker.mkdir()
+        ws = omniworker / "workspace"
         ws.mkdir()
         (ws / "todo.json").write_text("{}")
         (ws / "SOUL.md").write_text("# Soul")
 
         args = Namespace(source=None, dry_run=True, yes=False)
-        with patch.object(claw_mod, "_find_openclaw_dirs", return_value=[openclaw]):
+        with patch.object(claw_mod, "_find_omniworker_dirs", return_value=[omniworker]):
             claw_mod._cmd_cleanup(args)
 
         captured = capsys.readouterr()
@@ -617,18 +617,18 @@ class TestCmdCleanup:
         assert "todo.json" in captured.out
 
     def test_handles_multiple_dirs(self, tmp_path, capsys):
-        openclaw = tmp_path / ".openclaw"
-        openclaw.mkdir()
+        omniworker = tmp_path / ".omniworker"
+        omniworker.mkdir()
         clawdbot = tmp_path / ".clawdbot"
         clawdbot.mkdir()
 
         args = Namespace(source=None, dry_run=False, yes=True)
-        with patch.object(claw_mod, "_find_openclaw_dirs", return_value=[openclaw, clawdbot]):
+        with patch.object(claw_mod, "_find_omniworker_dirs", return_value=[omniworker, clawdbot]):
             claw_mod._cmd_cleanup(args)
 
         captured = capsys.readouterr()
         assert "Cleaned up 2" in captured.out
-        assert not openclaw.exists()
+        assert not omniworker.exists()
         assert not clawdbot.exists()
 
 
@@ -664,7 +664,7 @@ class TestPrintMigrationReport:
             "items": [
                 {"kind": "soul", "status": "migrated", "destination": "/home/user/.omniworker/SOUL.md"},
             ],
-            "output_dir": "/home/user/.omniworker/migration/openclaw/20250312T120000",
+            "output_dir": "/home/user/.omniworker/migration/omniworker/20250312T120000",
         }
         claw_mod._print_migration_report(report, dry_run=False)
         captured = capsys.readouterr()
@@ -683,17 +683,17 @@ class TestPrintMigrationReport:
 
 
 class TestDetectOpenclawProcesses:
-    def test_returns_match_when_pgrep_finds_openclaw(self):
+    def test_returns_match_when_pgrep_finds_omniworker(self):
         with patch.object(claw_mod, "sys") as mock_sys:
             mock_sys.platform = "linux"
             with patch.object(claw_mod, "subprocess") as mock_subprocess:
-                # systemd check misses, pgrep finds openclaw
+                # systemd check misses, pgrep finds omniworker
                 mock_subprocess.run.side_effect = [
                     MagicMock(returncode=1, stdout=""),  # systemctl
                     MagicMock(returncode=0, stdout="1234\n"),  # pgrep
                 ]
                 mock_subprocess.TimeoutExpired = subprocess.TimeoutExpired
-                result = claw_mod._detect_openclaw_processes()
+                result = claw_mod._detect_omniworker_processes()
                 assert len(result) == 1
                 assert "1234" in result[0]
 
@@ -706,7 +706,7 @@ class TestDetectOpenclawProcesses:
                     MagicMock(returncode=1, stdout=""),  # pgrep
                 ]
                 mock_subprocess.TimeoutExpired = subprocess.TimeoutExpired
-                result = claw_mod._detect_openclaw_processes()
+                result = claw_mod._detect_omniworker_processes()
                 assert result == []
 
     def test_detects_systemd_service(self):
@@ -718,31 +718,31 @@ class TestDetectOpenclawProcesses:
                     MagicMock(returncode=1, stdout=""),  # pgrep
                 ]
                 mock_subprocess.TimeoutExpired = subprocess.TimeoutExpired
-                result = claw_mod._detect_openclaw_processes()
+                result = claw_mod._detect_omniworker_processes()
                 assert len(result) == 1
                 assert "systemd" in result[0]
 
-    def test_returns_match_on_windows_when_openclaw_exe_running(self):
+    def test_returns_match_on_windows_when_omniworker_exe_running(self):
         with patch.object(claw_mod, "sys") as mock_sys:
             mock_sys.platform = "win32"
             with patch.object(claw_mod, "subprocess") as mock_subprocess:
                 mock_subprocess.run.side_effect = [
-                    MagicMock(returncode=0, stdout="openclaw.exe                 1234 Console    1     45,056 K\n"),
+                    MagicMock(returncode=0, stdout="omniworker.exe                 1234 Console    1     45,056 K\n"),
                 ]
-                result = claw_mod._detect_openclaw_processes()
+                result = claw_mod._detect_omniworker_processes()
                 assert len(result) >= 1
-                assert any("openclaw.exe" in r for r in result)
+                assert any("omniworker.exe" in r for r in result)
 
-    def test_returns_match_on_windows_when_node_exe_has_openclaw_in_cmdline(self):
+    def test_returns_match_on_windows_when_node_exe_has_omniworker_in_cmdline(self):
         with patch.object(claw_mod, "sys") as mock_sys:
             mock_sys.platform = "win32"
             with patch.object(claw_mod, "subprocess") as mock_subprocess:
                 mock_subprocess.run.side_effect = [
-                    MagicMock(returncode=0, stdout=""),  # tasklist openclaw.exe
+                    MagicMock(returncode=0, stdout=""),  # tasklist omniworker.exe
                     MagicMock(returncode=0, stdout=""),  # tasklist clawd.exe
                     MagicMock(returncode=0, stdout="1234\n"),  # PowerShell
                 ]
-                result = claw_mod._detect_openclaw_processes()
+                result = claw_mod._detect_omniworker_processes()
                 assert len(result) >= 1
                 assert any("node.exe" in r for r in result)
 
@@ -755,45 +755,45 @@ class TestDetectOpenclawProcesses:
                     MagicMock(returncode=0, stdout=""),
                     MagicMock(returncode=0, stdout=""),
                 ]
-                result = claw_mod._detect_openclaw_processes()
+                result = claw_mod._detect_omniworker_processes()
                 assert result == []
 
 
 class TestWarnIfOpenclawRunning:
     def test_noop_when_not_running(self, capsys):
-        with patch.object(claw_mod, "_detect_openclaw_processes", return_value=[]):
-            claw_mod._warn_if_openclaw_running(auto_yes=False)
+        with patch.object(claw_mod, "_detect_omniworker_processes", return_value=[]):
+            claw_mod._warn_if_omniworker_running(auto_yes=False)
         captured = capsys.readouterr()
         assert captured.out == ""
 
     def test_warns_and_exits_when_running_and_user_declines(self, capsys):
-        with patch.object(claw_mod, "_detect_openclaw_processes", return_value=["openclaw process(es) (PIDs: 1234)"]):
+        with patch.object(claw_mod, "_detect_omniworker_processes", return_value=["omniworker process(es) (PIDs: 1234)"]):
             with patch.object(claw_mod, "prompt_yes_no", return_value=False):
                 with patch.object(claw_mod.sys.stdin, "isatty", return_value=True):
                     with pytest.raises(SystemExit) as exc_info:
-                        claw_mod._warn_if_openclaw_running(auto_yes=False)
+                        claw_mod._warn_if_omniworker_running(auto_yes=False)
         assert exc_info.value.code == 0
         captured = capsys.readouterr()
-        assert "OpenClaw appears to be running" in captured.out
+        assert "OmniWorker appears to be running" in captured.out
 
     def test_warns_and_continues_when_running_and_user_accepts(self, capsys):
-        with patch.object(claw_mod, "_detect_openclaw_processes", return_value=["openclaw process(es) (PIDs: 1234)"]):
+        with patch.object(claw_mod, "_detect_omniworker_processes", return_value=["omniworker process(es) (PIDs: 1234)"]):
             with patch.object(claw_mod, "prompt_yes_no", return_value=True):
                 with patch.object(claw_mod.sys.stdin, "isatty", return_value=True):
-                    claw_mod._warn_if_openclaw_running(auto_yes=False)
+                    claw_mod._warn_if_omniworker_running(auto_yes=False)
         captured = capsys.readouterr()
-        assert "OpenClaw appears to be running" in captured.out
+        assert "OmniWorker appears to be running" in captured.out
 
     def test_warns_and_continues_in_auto_yes_mode(self, capsys):
-        with patch.object(claw_mod, "_detect_openclaw_processes", return_value=["openclaw process(es) (PIDs: 1234)"]):
-            claw_mod._warn_if_openclaw_running(auto_yes=True)
+        with patch.object(claw_mod, "_detect_omniworker_processes", return_value=["omniworker process(es) (PIDs: 1234)"]):
+            claw_mod._warn_if_omniworker_running(auto_yes=True)
         captured = capsys.readouterr()
-        assert "OpenClaw appears to be running" in captured.out
+        assert "OmniWorker appears to be running" in captured.out
 
     def test_warns_and_continues_in_non_interactive_session(self, capsys):
-        with patch.object(claw_mod, "_detect_openclaw_processes", return_value=["openclaw process(es) (PIDs: 1234)"]):
+        with patch.object(claw_mod, "_detect_omniworker_processes", return_value=["omniworker process(es) (PIDs: 1234)"]):
             with patch.object(claw_mod.sys.stdin, "isatty", return_value=False):
-                claw_mod._warn_if_openclaw_running(auto_yes=False)
+                claw_mod._warn_if_omniworker_running(auto_yes=False)
         captured = capsys.readouterr()
-        assert "OpenClaw appears to be running" in captured.out
+        assert "OmniWorker appears to be running" in captured.out
         assert "Non-interactive session" in captured.out

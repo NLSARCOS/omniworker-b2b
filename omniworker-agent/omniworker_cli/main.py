@@ -33,7 +33,7 @@ Usage:
     omniworker honcho tokens --dialectic N     # Set dialectic result char cap
     omniworker honcho identity                 # Show AI peer identity representation
     omniworker honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
-    omniworker honcho migrate                  # Step-by-step migration guide: OpenClaw native → OmniWorker + Honcho
+    omniworker honcho migrate                  # Step-by-step migration guide: OmniWorker native → OmniWorker + Honcho
     omniworker version             Show version
     omniworker update              Update to latest version
     omniworker uninstall           Uninstall OmniWorker Agent
@@ -11537,24 +11537,24 @@ Examples:
     insights_parser.set_defaults(func=cmd_insights)
 
     # =========================================================================
-    # claw command (OpenClaw migration)
+    # claw command (OmniWorker migration)
     # =========================================================================
     claw_parser = subparsers.add_parser(
         "claw",
-        help="OpenClaw migration tools",
-        description="Migrate settings, memories, skills, and API keys from OpenClaw to OmniWorker",
+        help="OmniWorker migration tools",
+        description="Migrate settings, memories, skills, and API keys from OmniWorker to OmniWorker",
     )
     claw_subparsers = claw_parser.add_subparsers(dest="claw_action")
 
     # claw migrate
     claw_migrate = claw_subparsers.add_parser(
         "migrate",
-        help="Migrate from OpenClaw to OmniWorker",
-        description="Import settings, memories, skills, and API keys from an OpenClaw installation. "
+        help="Migrate from OmniWorker to OmniWorker",
+        description="Import settings, memories, skills, and API keys from an OmniWorker installation. "
         "Always shows a preview before making changes.",
     )
     claw_migrate.add_argument(
-        "--source", help="Path to OpenClaw directory (default: ~/.openclaw)"
+        "--source", help="Path to OmniWorker directory (default: ~/.omniworker)"
     )
     claw_migrate.add_argument(
         "--dry-run",
@@ -11603,11 +11603,11 @@ Examples:
     claw_cleanup = claw_subparsers.add_parser(
         "cleanup",
         aliases=["clean"],
-        help="Archive leftover OpenClaw directories after migration",
-        description="Scan for and archive leftover OpenClaw directories to prevent state fragmentation",
+        help="Archive leftover OmniWorker directories after migration",
+        description="Scan for and archive leftover OmniWorker directories to prevent state fragmentation",
     )
     claw_cleanup.add_argument(
-        "--source", help="Path to a specific OpenClaw directory to clean up"
+        "--source", help="Path to a specific OmniWorker directory to clean up"
     )
     claw_cleanup.add_argument(
         "--dry-run",

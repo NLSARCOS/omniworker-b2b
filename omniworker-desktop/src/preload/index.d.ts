@@ -125,8 +125,8 @@ interface OmniWorkerAPI {
   runOmniWorkerDoctor: () => Promise<string>;
   runOmniWorkerUpdate: () => Promise<{ success: boolean; error?: string }>;
 
-  // OpenClaw migration
-  checkOpenClaw: () => Promise<{ found: boolean; path: string | null }>;
+  // OmniWorker migration
+  checkOmniWorker: () => Promise<{ found: boolean; path: string | null }>;
   runClawMigrate: () => Promise<{ success: boolean; error?: string }>;
 
   getLocale: () => Promise<AppLocale>;

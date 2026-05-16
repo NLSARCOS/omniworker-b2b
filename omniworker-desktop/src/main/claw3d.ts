@@ -20,7 +20,7 @@ const PORT_FILE = join(OMNIWORKER_HOME, "claw3d-port");
 const WS_URL_FILE = join(OMNIWORKER_HOME, "claw3d-ws-url");
 const DEFAULT_PORT = 3000;
 const DEFAULT_WS_URL = "ws://localhost:18789";
-const CLAW3D_SETTINGS_DIR = join(homedir(), ".openclaw", "claw3d");
+const CLAW3D_SETTINGS_DIR = join(homedir(), ".omniworker", "claw3d");
 
 let devServerProcess: ChildProcess | null = null;
 let adapterProcess: ChildProcess | null = null;
@@ -171,13 +171,13 @@ export function getClaw3dWsUrl(): string {
 }
 
 /**
- * Write Claw3D settings to ~/.openclaw/claw3d/settings.json
+ * Write Claw3D settings to ~/.omniworker/claw3d/settings.json
  * and .env in the claw3d directory so onboarding is skipped.
  */
 function writeClaw3dSettings(wsUrl?: string): void {
   const url = wsUrl || getSavedWsUrl();
 
-  // Write ~/.openclaw/claw3d/settings.json
+  // Write ~/.omniworker/claw3d/settings.json
   try {
     mkdirSync(CLAW3D_SETTINGS_DIR, { recursive: true });
     const settingsPath = join(CLAW3D_SETTINGS_DIR, "settings.json");

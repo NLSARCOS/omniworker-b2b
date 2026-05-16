@@ -147,7 +147,7 @@ def _get_anthropic_max_output(model: str) -> int:
 
 def _resolve_positive_anthropic_max_tokens(value) -> Optional[int]:
     """Return ``value`` floored to a positive int, or ``None`` if it is not a
-    finite positive number. Ported from openclaw/openclaw#66664.
+    finite positive number. Ported from omniworker/omniworker#66664.
 
     Anthropic's Messages API rejects ``max_tokens`` values that are 0,
     negative, non-integer, or non-finite with HTTP 400. Python's ``or``
@@ -188,7 +188,7 @@ def _resolve_anthropic_messages_max_tokens(
     not, to keep the positive-value contract independent of endpoint
     specifics.
 
-    Ported from openclaw/openclaw#66664 (resolveAnthropicMessagesMaxTokens).
+    Ported from omniworker/omniworker#66664 (resolveAnthropicMessagesMaxTokens).
     """
     resolved = _resolve_positive_anthropic_max_tokens(requested)
     if resolved is not None:
@@ -1735,7 +1735,7 @@ def convert_messages_to_anthropic(
     # assistant message — the third-party will generate its own
     # thinking blocks if it supports extended thinking.
     #
-    # For direct Anthropic (strategy following clawdbot/OpenClaw):
+    # For direct Anthropic (strategy following clawdbot/OmniWorker):
     # 1. Strip thinking/redacted_thinking from all assistant messages
     #    EXCEPT the last one — preserves reasoning continuity on the
     #    current tool-use chain while avoiding stale signature errors.
@@ -1919,7 +1919,7 @@ def build_anthropic_kwargs(
     # effective_max_tokens = output cap for this call (≠ total context window)
     # Use the resolver helper so non-positive values (negative ints,
     # fractional floats, NaN, non-numeric) fail locally with a clear error
-    # rather than 400-ing at the Anthropic API. See openclaw/openclaw#66664.
+    # rather than 400-ing at the Anthropic API. See omniworker/omniworker#66664.
     effective_max_tokens = _resolve_anthropic_messages_max_tokens(
         max_tokens, model, context_length=context_length
     )

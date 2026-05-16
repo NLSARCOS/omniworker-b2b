@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 BUSY_INPUT_FLAG = "busy_input_prompt"
 TOOL_PROGRESS_FLAG = "tool_progress_prompt"
-OPENCLAW_RESIDUE_FLAG = "openclaw_residue_cleanup"
+OPENCLAW_RESIDUE_FLAG = "omniworker_residue_cleanup"
 
 
 # -------------------------------------------------------------------------
@@ -95,33 +95,33 @@ def tool_progress_hint_cli() -> str:
     )
 
 
-def openclaw_residue_hint_cli() -> str:
-    """Banner shown the first time OmniWorker starts and finds ``~/.openclaw/``.
+def omniworker_residue_hint_cli() -> str:
+    """Banner shown the first time OmniWorker starts and finds ``~/.omniworker/``.
 
     Points users at ``omniworker claw migrate`` (non-destructive port of config,
     memory, and skills) first. ``omniworker claw cleanup`` is mentioned as the
     follow-up step for users who have already migrated and want to archive
-    the old directory — with a warning that archiving breaks OpenClaw.
+    the old directory — with a warning that archiving breaks OmniWorker.
     """
     return (
-        "A legacy OpenClaw directory was detected at ~/.openclaw/.\n"
+        "A legacy OmniWorker directory was detected at ~/.omniworker/.\n"
         "To port your config, memory, and skills over to OmniWorker, run "
         "`omniworker claw migrate`.\n"
         "If you've already migrated and want to archive the old directory, "
-        "run `omniworker claw cleanup` (renames it to ~/.openclaw.pre-migration — "
-        "OpenClaw will stop working after this).\n"
+        "run `omniworker claw cleanup` (renames it to ~/.omniworker.pre-migration — "
+        "OmniWorker will stop working after this).\n"
         "This tip only shows once."
     )
 
 
-def detect_openclaw_residue(home: Optional[Path] = None) -> bool:
-    """Return True if an OpenClaw workspace directory is present in ``$HOME``.
+def detect_omniworker_residue(home: Optional[Path] = None) -> bool:
+    """Return True if an OmniWorker workspace directory is present in ``$HOME``.
 
     Pure filesystem check — no side effects. ``home`` override exists for tests.
     """
     base = home or Path.home()
     try:
-        return (base / ".openclaw").is_dir()
+        return (base / ".omniworker").is_dir()
     except OSError:
         return False
 
@@ -186,8 +186,8 @@ __all__ = [
     "busy_input_hint_cli",
     "tool_progress_hint_gateway",
     "tool_progress_hint_cli",
-    "openclaw_residue_hint_cli",
-    "detect_openclaw_residue",
+    "omniworker_residue_hint_cli",
+    "detect_omniworker_residue",
     "is_seen",
     "mark_seen",
 ]

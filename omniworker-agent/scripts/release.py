@@ -215,7 +215,7 @@ AUTHOR_MAP = {
     "jani@0xhoneyjar.xyz": "deep-name",
     # LINE messaging plugin (synthesis PR)
     "32443648+leepoweii@users.noreply.github.com": "leepoweii",
-    "openclaw@liyangchen.me": "liyoungc",
+    "omniworker@liyangchen.me": "liyoungc",
     "charles@perng.com": "perng",
     "soichiro0111.dev@gmail.com": "soichiyo",
     "0xde@pieverse.io": "David-0x221Eight",
@@ -561,7 +561,7 @@ AUTHOR_MAP = {
     "omniworker@noushq.ai": "benbarclay",
     "chinmingcock@gmail.com": "ChimingLiu",
     "allard.quek@singtel.com": "AllardQuek",
-    "openclaw@sparklab.ai": "openclaw",
+    "omniworker@sparklab.ai": "omniworker",
     "semihcvlk53@gmail.com": "Himess",
     "erenkar950@gmail.com": "erenkarakus",
     "adavyasharma@gmail.com": "adavyas",
@@ -932,7 +932,7 @@ AUTHOR_MAP = {
     "raipratik0101@gmail.com": "PratikRai0101",
     "code@sasha.id": "sasha-id",
     "chen.yunbo@xydigit.com": "chenyunbo411",
-    "openclaw@local": "Asce66",
+    "omniworker@local": "Asce66",
     "59465365+0xsir0000@users.noreply.github.com": "0xsir0000",
     "lisanhu2014@hotmail.com": "lisanhu",
     "0668001438@zte.com.cn": "chenyunbo411",
@@ -1036,7 +1036,7 @@ AUTHOR_MAP = {
     "miniding@miniding.home": "Foolafroos",  # PR #20329 French locale
     "montbra@gmail.com": "Montbra",  # PR #20897 salvage of #16189 (TUI voice PTT)
     "promptsiren@gmail.com": "firefly",  # PR #18123 salvage of #16660 (ContextVars)
-    "wtyopenclaw@gmail.com": "WuTianyi123",  # PR #20275 salvage of #13723 (feishu markdown)
+    "wtyomniworker@gmail.com": "WuTianyi123",  # PR #20275 salvage of #13723 (feishu markdown)
     "zhicheng.han@mathematik.uni-goettingen.de": "hanzckernel",  # PR #20311 (api-server approval events)
     "agentsmithlaor@gmail.com": "oferlaor",  # PR #22356 salvage (cron origin sender identity)
     "jhin.lee@unity3d.com": "leehack",  # PR #22053 salvage (telegram DM topic reply fallback)
@@ -1048,7 +1048,7 @@ AUTHOR_MAP = {
     "hello@dominikh.com": "dmnkhorvath",  # salvage of #23358 (kanban worker send_message)
     "413011+smwbev@users.noreply.github.com": "smwbev",  # salvage of #23659 (aria-label colLabel)
     "58116817+TurgutKural@users.noreply.github.com": "TurgutKural",  # salvage of #23356 (OMNIWORKER_HOME inject)
-    "openclaw@agent.local": "29206394",  # PR #22194 salvage (sudo -S brute-force guard, #9590)
+    "omniworker@agent.local": "29206394",  # PR #22194 salvage (sudo -S brute-force guard, #9590)
     "freedemon@gmail.com": "fr33d3m0n",  # PR #21128 salvage (sudo stdin/askpass DANGEROUS, #17873 cat 4)
     "zhaowh3613@outlook.com": "VinceZcrikl",  # PR #23647 salvage (npm UTF-8 decode on GBK Windows)
     "anton.kuenzi@gmail.com": "ZeterMordio",  # PR #11754 salvage (zsh completion compdef + _arguments syntax)

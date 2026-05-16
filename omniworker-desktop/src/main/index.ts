@@ -19,7 +19,7 @@ import {
   clearVersionCache,
   runOmniWorkerDoctor,
   runOmniWorkerUpdate,
-  checkOpenClawExists,
+  checkOmniWorkerExists,
   runClawMigrate,
   runOmniWorkerBackup,
   runOmniWorkerImport,
@@ -370,8 +370,8 @@ function setupIPC(): void {
     }
   });
 
-  // OpenClaw migration
-  ipcMain.handle("check-openclaw", () => checkOpenClawExists());
+  // OmniWorker migration
+  ipcMain.handle("check-omniworker", () => checkOmniWorkerExists());
   ipcMain.handle("run-claw-migrate", async (event) => {
     try {
       await runClawMigrate((progress: InstallProgress) => {

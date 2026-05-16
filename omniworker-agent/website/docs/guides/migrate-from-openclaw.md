@@ -1,12 +1,12 @@
 ---
 sidebar_position: 10
-title: "Migrate from OpenClaw"
-description: "Complete guide to migrating your OpenClaw / Clawdbot setup to OmniWorker Agent — what gets migrated, how config maps, and what to check after."
+title: "Migrate from OmniWorker"
+description: "Complete guide to migrating your OmniWorker / Clawdbot setup to OmniWorker Agent — what gets migrated, how config maps, and what to check after."
 ---
 
-# Migrate from OpenClaw
+# Migrate from OmniWorker
 
-`omniworker claw migrate` imports your OpenClaw (or legacy Clawdbot/Moldbot) setup into OmniWorker. This guide covers exactly what gets migrated, the config key mappings, and what to verify after migration.
+`omniworker claw migrate` imports your OmniWorker (or legacy Clawdbot/Moldbot) setup into OmniWorker. This guide covers exactly what gets migrated, the config key mappings, and what to verify after migration.
 
 ## Quick start
 
@@ -23,7 +23,7 @@ omniworker claw migrate --preset full --migrate-secrets --yes
 
 The migration always shows a full preview of what will be imported before making any changes. Review the list, then confirm to proceed.
 
-Reads from `~/.openclaw/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` directories are detected automatically. Same for legacy config filenames (`clawdbot.json`, `moltbot.json`).
+Reads from `~/.omniworker/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` directories are detected automatically. Same for legacy config filenames (`clawdbot.json`, `moltbot.json`).
 
 ## Options
 
@@ -34,7 +34,7 @@ Reads from `~/.openclaw/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` dir
 | `--overwrite` | Overwrite existing OmniWorker files on conflicts (default: refuse to apply when the plan has conflicts). |
 | `--migrate-secrets` | Include API keys. Required even under `--preset full` — no preset imports secrets silently. |
 | `--no-backup` | Skip the pre-migration zip snapshot of `~/.omniworker/` (by default a single restore-point archive is written before apply, under `~/.omniworker/backups/pre-migration-*.zip`; restorable with `omniworker import`). |
-| `--source <path>` | Custom OpenClaw directory. |
+| `--source <path>` | Custom OmniWorker directory. |
 | `--workspace-target <path>` | Where to place `AGENTS.md`. |
 | `--skill-conflict <mode>` | `skip` (default), `overwrite`, or `rename`. |
 | `--yes` | Skip the confirmation prompt after preview. |
@@ -43,7 +43,7 @@ Reads from `~/.openclaw/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` dir
 
 ### Persona, memory, and instructions
 
-| What | OpenClaw source | OmniWorker destination | Notes |
+| What | OmniWorker source | OmniWorker destination | Notes |
 |------|----------------|-------------------|-------|
 | Persona | `workspace/SOUL.md` | `~/.omniworker/SOUL.md` | Direct copy |
 | Workspace instructions | `workspace/AGENTS.md` | `AGENTS.md` in `--workspace-target` | Requires `--workspace-target` flag |
@@ -51,22 +51,22 @@ Reads from `~/.openclaw/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` dir
 | User profile | `workspace/USER.md` | `~/.omniworker/memories/USER.md` | Same entry-merge logic as memory. |
 | Daily memory files | `workspace/memory/*.md` | `~/.omniworker/memories/MEMORY.md` | All daily files merged into main memory. |
 
-Workspace files are also checked at `workspace.default/` and `workspace-main/` as fallback paths (OpenClaw renamed `workspace/` to `workspace-main/` in recent versions, and uses `workspace-{agentId}` for multi-agent setups).
+Workspace files are also checked at `workspace.default/` and `workspace-main/` as fallback paths (OmniWorker renamed `workspace/` to `workspace-main/` in recent versions, and uses `workspace-{agentId}` for multi-agent setups).
 
 ### Skills (4 sources)
 
-| Source | OpenClaw location | OmniWorker destination |
+| Source | OmniWorker location | OmniWorker destination |
 |--------|------------------|-------------------|
-| Workspace skills | `workspace/skills/` | `~/.omniworker/skills/openclaw-imports/` |
-| Managed/shared skills | `~/.openclaw/skills/` | `~/.omniworker/skills/openclaw-imports/` |
-| Personal cross-project | `~/.agents/skills/` | `~/.omniworker/skills/openclaw-imports/` |
-| Project-level shared | `workspace/.agents/skills/` | `~/.omniworker/skills/openclaw-imports/` |
+| Workspace skills | `workspace/skills/` | `~/.omniworker/skills/omniworker-imports/` |
+| Managed/shared skills | `~/.omniworker/skills/` | `~/.omniworker/skills/omniworker-imports/` |
+| Personal cross-project | `~/.agents/skills/` | `~/.omniworker/skills/omniworker-imports/` |
+| Project-level shared | `workspace/.agents/skills/` | `~/.omniworker/skills/omniworker-imports/` |
 
 Skill conflicts are handled by `--skill-conflict`: `skip` leaves the existing OmniWorker skill, `overwrite` replaces it, `rename` creates a `-imported` copy.
 
 ### Model and provider configuration
 
-| What | OpenClaw config path | OmniWorker destination | Notes |
+| What | OmniWorker config path | OmniWorker destination | Notes |
 |------|---------------------|-------------------|-------|
 | Default model | `agents.defaults.model` | `config.yaml` → `model` | Can be a string or `{primary, fallbacks}` object |
 | Custom providers | `models.providers.*` | `config.yaml` → `custom_providers` | Maps `baseUrl`, `apiType`/`api` — handles both short ("openai", "anthropic") and hyphenated ("openai-completions", "anthropic-messages", "google-generative-ai") values |
@@ -74,7 +74,7 @@ Skill conflicts are handled by `--skill-conflict`: `skip` leaves the existing Om
 
 ### Agent behavior
 
-| What | OpenClaw config path | OmniWorker config path | Mapping |
+| What | OmniWorker config path | OmniWorker config path | Mapping |
 |------|---------------------|-------------------|---------|
 | Max turns | `agents.defaults.timeoutSeconds` | `agent.max_turns` | `timeoutSeconds / 10`, capped at 200 |
 | Verbose mode | `agents.defaults.verboseDefault` | `agent.verbose` | "off" / "on" / "full" |
@@ -90,17 +90,17 @@ Skill conflicts are handled by `--skill-conflict`: `skip` leaves the existing Om
 
 ### Session reset policies
 
-| OpenClaw config path | OmniWorker config path | Notes |
+| OmniWorker config path | OmniWorker config path | Notes |
 |---------------------|-------------------|-------|
 | `session.reset.mode` | `session_reset.mode` | "daily", "idle", or both |
 | `session.reset.atHour` | `session_reset.at_hour` | Hour (0–23) for daily reset |
 | `session.reset.idleMinutes` | `session_reset.idle_minutes` | Minutes of inactivity |
 
-Note: OpenClaw also has `session.resetTriggers` (a simple string array like `["daily", "idle"]`). If the structured `session.reset` isn't present, the migration falls back to inferring from `resetTriggers`.
+Note: OmniWorker also has `session.resetTriggers` (a simple string array like `["daily", "idle"]`). If the structured `session.reset` isn't present, the migration falls back to inferring from `resetTriggers`.
 
 ### MCP servers
 
-| OpenClaw field | OmniWorker field | Notes |
+| OmniWorker field | OmniWorker field | Notes |
 |----------------|-------------|-------|
 | `mcp.servers.*.command` | `mcp_servers.*.command` | Stdio transport |
 | `mcp.servers.*.args` | `mcp_servers.*.args` | |
@@ -112,7 +112,7 @@ Note: OpenClaw also has `session.resetTriggers` (a simple string array like `["d
 
 ### TTS (text-to-speech)
 
-TTS settings are read from **two** OpenClaw config locations with this priority:
+TTS settings are read from **two** OmniWorker config locations with this priority:
 
 1. `messages.tts.providers.{provider}.*` (canonical location)
 2. Top-level `talk.providers.{provider}.*` (fallback)
@@ -125,12 +125,12 @@ TTS settings are read from **two** OpenClaw config locations with this priority:
 | ElevenLabs model ID | `config.yaml` → `tts.elevenlabs.model_id` |
 | OpenAI model | `config.yaml` → `tts.openai.model` |
 | OpenAI voice | `config.yaml` → `tts.openai.voice` |
-| Edge TTS voice | `config.yaml` → `tts.edge.voice` (OpenClaw renamed "edge" to "microsoft" — both are recognized) |
+| Edge TTS voice | `config.yaml` → `tts.edge.voice` (OmniWorker renamed "edge" to "microsoft" — both are recognized) |
 | TTS assets | `~/.omniworker/tts/` (file copy) |
 
 ### Messaging platforms
 
-| Platform | OpenClaw config path | OmniWorker `.env` variable | Notes |
+| Platform | OmniWorker config path | OmniWorker `.env` variable | Notes |
 |----------|---------------------|----------------------|-------|
 | Telegram | `channels.telegram.botToken` or `.accounts.default.botToken` | `TELEGRAM_BOT_TOKEN` | Token can be string or [SecretRef](#secretref-handling). Both flat and accounts layout supported. |
 | Telegram | `credentials/telegram-default-allowFrom.json` | `TELEGRAM_ALLOWED_USERS` | Comma-joined from `allowFrom[]` array |
@@ -148,7 +148,7 @@ TTS settings are read from **two** OpenClaw config locations with this priority:
 
 ### Other config
 
-| What | OpenClaw path | OmniWorker path | Notes |
+| What | OmniWorker path | OmniWorker path | Notes |
 |------|-------------|-------------|-------|
 | Approval mode | `approvals.exec.mode` | `config.yaml` → `approvals.mode` | "auto"→"off", "always"→"manual", "smart"→"smart" |
 | Command allowlist | `exec-approvals.json` | `config.yaml` → `command_allowlist` | Patterns merged and deduped |
@@ -160,7 +160,7 @@ TTS settings are read from **two** OpenClaw config locations with this priority:
 
 ### Archived (no direct OmniWorker equivalent)
 
-These are saved to `~/.omniworker/migration/openclaw/<timestamp>/archive/` for manual review:
+These are saved to `~/.omniworker/migration/omniworker/<timestamp>/archive/` for manual review:
 
 | What | Archive file | How to recreate in OmniWorker |
 |------|-------------|--------------------------|
@@ -183,10 +183,10 @@ These are saved to `~/.omniworker/migration/openclaw/<timestamp>/archive/` for m
 
 When `--migrate-secrets` is enabled, API keys are collected from **four sources** in priority order:
 
-1. **Config values** — `models.providers.*.apiKey` and TTS provider keys in `openclaw.json`
-2. **Environment file** — `~/.openclaw/.env` (keys like `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, etc.)
-3. **Config env sub-object** — `openclaw.json` → `"env"` or `"env"."vars"` (some setups store keys here instead of a separate `.env` file)
-4. **Auth profiles** — `~/.openclaw/agents/main/agent/auth-profiles.json` (per-agent credentials)
+1. **Config values** — `models.providers.*.apiKey` and TTS provider keys in `omniworker.json`
+2. **Environment file** — `~/.omniworker/.env` (keys like `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, etc.)
+3. **Config env sub-object** — `omniworker.json` → `"env"` or `"env"."vars"` (some setups store keys here instead of a separate `.env` file)
+4. **Auth profiles** — `~/.omniworker/agents/main/agent/auth-profiles.json` (per-agent credentials)
 
 Config values take priority. Each subsequent source fills any remaining gaps.
 
@@ -198,7 +198,7 @@ Keys not in this allowlist are never copied.
 
 ## SecretRef handling
 
-OpenClaw config values for tokens and API keys can be in three formats:
+OmniWorker config values for tokens and API keys can be in three formats:
 
 ```json
 // Plain string
@@ -211,13 +211,13 @@ OpenClaw config values for tokens and API keys can be in three formats:
 "channels": { "telegram": { "botToken": { "source": "env", "id": "TELEGRAM_BOT_TOKEN" } } }
 ```
 
-The migration resolves all three formats. For env templates and SecretRef objects with `source: "env"`, it looks up the value in `~/.openclaw/.env` and the `openclaw.json` env sub-object. SecretRef objects with `source: "file"` or `source: "exec"` can't be resolved automatically — the migration warns about these, and those values must be added to OmniWorker manually via `omniworker config set`.
+The migration resolves all three formats. For env templates and SecretRef objects with `source: "env"`, it looks up the value in `~/.omniworker/.env` and the `omniworker.json` env sub-object. SecretRef objects with `source: "file"` or `source: "exec"` can't be resolved automatically — the migration warns about these, and those values must be added to OmniWorker manually via `omniworker config set`.
 
 ## After migration
 
 1. **Check the migration report** — printed on completion with counts of migrated, skipped, and conflicting items.
 
-2. **Review archived files** — anything in `~/.omniworker/migration/openclaw/<timestamp>/archive/` needs manual attention.
+2. **Review archived files** — anything in `~/.omniworker/migration/omniworker/<timestamp>/archive/` needs manual attention.
 
 3. **Start a new session** — imported skills and memory entries take effect in new sessions, not the current one.
 
@@ -229,22 +229,22 @@ The migration resolves all three formats. For env templates and SecretRef object
 
 7. **Re-pair WhatsApp** — WhatsApp uses QR code pairing (Baileys), not token migration. Run `omniworker whatsapp` to pair.
 
-8. **Archive cleanup** — after confirming everything works, run `omniworker claw cleanup` to rename leftover OpenClaw directories to `.pre-migration/` (prevents state confusion).
+8. **Archive cleanup** — after confirming everything works, run `omniworker claw cleanup` to rename leftover OmniWorker directories to `.pre-migration/` (prevents state confusion).
 
 ## Troubleshooting
 
-### "OpenClaw directory not found"
+### "OmniWorker directory not found"
 
-The migration checks `~/.openclaw/`, then `~/.clawdbot/`, then `~/.moltbot/`. If your installation is elsewhere, use `--source /path/to/your/openclaw`.
+The migration checks `~/.omniworker/`, then `~/.clawdbot/`, then `~/.moltbot/`. If your installation is elsewhere, use `--source /path/to/your/omniworker`.
 
 ### "No provider API keys found"
 
-Keys might be stored in several places depending on your OpenClaw version: inline in `openclaw.json` under `models.providers.*.apiKey`, in `~/.openclaw/.env`, in the `openclaw.json` `"env"` sub-object, or in `agents/main/agent/auth-profiles.json`. The migration checks all four. If keys use `source: "file"` or `source: "exec"` SecretRefs, they can't be resolved automatically — add them via `omniworker config set`.
+Keys might be stored in several places depending on your OmniWorker version: inline in `omniworker.json` under `models.providers.*.apiKey`, in `~/.omniworker/.env`, in the `omniworker.json` `"env"` sub-object, or in `agents/main/agent/auth-profiles.json`. The migration checks all four. If keys use `source: "file"` or `source: "exec"` SecretRefs, they can't be resolved automatically — add them via `omniworker config set`.
 
 ### Skills not appearing after migration
 
-Imported skills land in `~/.omniworker/skills/openclaw-imports/`. Start a new session for them to take effect, or run `/skills` to verify they're loaded.
+Imported skills land in `~/.omniworker/skills/omniworker-imports/`. Start a new session for them to take effect, or run `/skills` to verify they're loaded.
 
 ### TTS voice not migrated
 
-OpenClaw stores TTS settings in two places: `messages.tts.providers.*` and the top-level `talk` config. The migration checks both. If your voice ID was set via the OpenClaw UI (stored in a different path), you may need to set it manually: `omniworker config set tts.elevenlabs.voice_id YOUR_VOICE_ID`.
+OmniWorker stores TTS settings in two places: `messages.tts.providers.*` and the top-level `talk` config. The migration checks both. If your voice ID was set via the OmniWorker UI (stored in a different path), you may need to set it manually: `omniworker config set tts.elevenlabs.voice_id YOUR_VOICE_ID`.

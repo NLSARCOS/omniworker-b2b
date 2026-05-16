@@ -3675,7 +3675,7 @@ class AIAgent:
           * ``<function_call>…</function_call>``
           * ``<function_calls>…</function_calls>``
           * ``<function name="…">…</function>`` (Gemma style)
-        Ported from openclaw/openclaw#67318. The ``<function>`` variant is
+        Ported from omniworker/omniworker#67318. The ``<function>`` variant is
         boundary-gated (only strips when the tag sits at start-of-line or
         after punctuation and carries a ``name="..."`` attribute) so prose
         mentions like "Use <function> in JavaScript" are preserved.
@@ -3690,7 +3690,7 @@ class AIAgent:
         content = re.sub(r'<reasoning>.*?</reasoning>', '', content, flags=re.DOTALL | re.IGNORECASE)
         content = re.sub(r'<REASONING_SCRATCHPAD>.*?</REASONING_SCRATCHPAD>', '', content, flags=re.DOTALL | re.IGNORECASE)
         content = re.sub(r'<thought>.*?</thought>', '', content, flags=re.DOTALL | re.IGNORECASE)
-        # 1b. Tool-call XML blocks (openclaw/openclaw#67318). Handle the
+        # 1b. Tool-call XML blocks (omniworker/omniworker#67318). Handle the
         #     generic tag names first — they have no attribute gating since
         #     a literal <tool_call> in prose is already vanishingly rare.
         for _tc_name in ("tool_call", "tool_calls", "tool_result",
@@ -3734,7 +3734,7 @@ class AIAgent:
         # 3b. Stray tool-call closers. (We do NOT strip bare <function> or
         #     unterminated <function name="..."> because a truncated tail
         #     during streaming may still be valuable to the user; matches
-        #     OpenClaw's intentional asymmetry.)
+        #     OmniWorker's intentional asymmetry.)
         content = re.sub(
             r'</(?:tool_call|tool_calls|tool_result|function_call|function_calls|function)>\s*',
             '',
@@ -15830,7 +15830,7 @@ class AIAgent:
         # If the turn signalled the underlying client is wedged (deadline
         # blown, post-tool watchdog tripped, OAuth refresh died, subprocess
         # exited), retire the session so the next turn respawns codex
-        # rather than riding the broken process. Mirrors openclaw beta.8's
+        # rather than riding the broken process. Mirrors omniworker beta.8's
         # "retire timed-out app-server clients" fix.
         if getattr(turn, "should_retire", False):
             logger.warning(

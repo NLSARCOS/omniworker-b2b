@@ -112,7 +112,7 @@ class TestIsBotMentioned:
         assert not self.adapter._is_bot_mentioned("omniworkerbot is here")
 
     # m.mentions.user_ids — MSC3952 / Matrix v1.7 authoritative mentions
-    # Ported from openclaw/openclaw#64796
+    # Ported from omniworker/omniworker#64796
 
     def test_m_mentions_user_ids_authoritative(self):
         """m.mentions.user_ids alone is sufficient — no body text needed."""
@@ -314,7 +314,7 @@ async def test_require_mention_html_pill(monkeypatch):
 async def test_require_mention_m_mentions_user_ids(monkeypatch):
     """m.mentions.user_ids is authoritative per MSC3952 — no body mention needed.
 
-    Ported from openclaw/openclaw#64796.
+    Ported from omniworker/omniworker#64796.
     """
     monkeypatch.delenv("MATRIX_REQUIRE_MENTION", raising=False)
     monkeypatch.delenv("MATRIX_FREE_RESPONSE_ROOMS", raising=False)

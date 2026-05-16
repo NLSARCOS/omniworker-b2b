@@ -186,7 +186,7 @@
 
 ### Telegram
 - **Chat allowlists for groups and forums** (@web3blind) ([#15027](https://github.com/OmniWorker/omniworker-agent/pull/15027))
-- **Send fresh finals for stale preview streams** (port openclaw#72038) ([#16261](https://github.com/OmniWorker/omniworker-agent/pull/16261))
+- **Send fresh finals for stale preview streams** (port omniworker#72038) ([#16261](https://github.com/OmniWorker/omniworker-agent/pull/16261))
 - **Render markdown tables as row-group bullets + prompt hint** ([#16997](https://github.com/OmniWorker/omniworker-agent/pull/16997))
 - Document fallback in centralized audio routing ([#17833](https://github.com/OmniWorker/omniworker-agent/pull/17833))
 - Native multi-image sending ([#17909](https://github.com/OmniWorker/omniworker-agent/pull/17909))
@@ -342,11 +342,11 @@
 - Refactor: drop `/provider`, `/plan` handler, and clean up slash registry ([#15047](https://github.com/OmniWorker/omniworker-agent/pull/15047))
 - Refactor: drop `persist_session` plumbing + fix broken `/btw` mid-turn bypass ([#16075](https://github.com/OmniWorker/omniworker-agent/pull/16075))
 
-### OpenClaw migration (for folks coming from OpenClaw)
-- **Hardened OpenClaw import** — plan-first apply, redaction, pre-migration backup ([#16911](https://github.com/OmniWorker/omniworker-agent/pull/16911))
-- Fix: case-preserving brand rewrite + one-time `~/.openclaw` residue banner ([#16327](https://github.com/OmniWorker/omniworker-agent/pull/16327))
-- Fix: resolve `openclaw` workspace files from `agents.defaults.workspace` ([#16879](https://github.com/OmniWorker/omniworker-agent/pull/16879))
-- Fix: resolve model aliases against real OpenClaw catalog schema (salvage #16778) ([#16977](https://github.com/OmniWorker/omniworker-agent/pull/16977))
+### OmniWorker migration (for folks coming from OmniWorker)
+- **Hardened OmniWorker import** — plan-first apply, redaction, pre-migration backup ([#16911](https://github.com/OmniWorker/omniworker-agent/pull/16911))
+- Fix: case-preserving brand rewrite + one-time `~/.omniworker` residue banner ([#16327](https://github.com/OmniWorker/omniworker-agent/pull/16327))
+- Fix: resolve `omniworker` workspace files from `agents.defaults.workspace` ([#16879](https://github.com/OmniWorker/omniworker-agent/pull/16879))
+- Fix: resolve model aliases against real OmniWorker catalog schema (salvage #16778) ([#16977](https://github.com/OmniWorker/omniworker-agent/pull/16977))
 
 ---
 

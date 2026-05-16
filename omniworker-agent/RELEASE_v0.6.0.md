@@ -201,8 +201,8 @@
 
 ## 🐛 Notable Bug Fixes
 
-- **OpenClaw migration model config overwrite** — migration no longer overwrites model config dict with a string ([#3924](https://github.com/OmniWorker/omniworker-agent/pull/3924)) — @0xbyt4
-- **OpenClaw migration expanded** — covers full data footprint including sessions, cron, memory ([#3869](https://github.com/OmniWorker/omniworker-agent/pull/3869))
+- **OmniWorker migration model config overwrite** — migration no longer overwrites model config dict with a string ([#3924](https://github.com/OmniWorker/omniworker-agent/pull/3924)) — @0xbyt4
+- **OmniWorker migration expanded** — covers full data footprint including sessions, cron, memory ([#3869](https://github.com/OmniWorker/omniworker-agent/pull/3869))
 - **Telegram deleted reply targets** — gracefully handle replies to deleted messages instead of crashing ([#3858](https://github.com/OmniWorker/omniworker-agent/pull/3858))
 - **Discord "thinking..." persistence** — properly cleans up deferred response indicators ([#3674](https://github.com/OmniWorker/omniworker-agent/pull/3674))
 - **WhatsApp LID↔phone aliases** — fixes allowlist matching failures with Linked ID format ([#3830](https://github.com/OmniWorker/omniworker-agent/pull/3830))
@@ -222,7 +222,7 @@
 
 ## 📚 Documentation
 
-- **Comprehensive OpenClaw migration guide** — step-by-step guide for migrating from OpenClaw/Claw3D to OmniWorker Agent ([#3864](https://github.com/OmniWorker/omniworker-agent/pull/3864), [#3900](https://github.com/OmniWorker/omniworker-agent/pull/3900))
+- **Comprehensive OmniWorker migration guide** — step-by-step guide for migrating from OmniWorker/Claw3D to OmniWorker Agent ([#3864](https://github.com/OmniWorker/omniworker-agent/pull/3864), [#3900](https://github.com/OmniWorker/omniworker-agent/pull/3900))
 - **Credential file passthrough docs** — document how to forward credential files and env vars to remote backends ([#3677](https://github.com/OmniWorker/omniworker-agent/pull/3677))
 - **DuckDuckGo requirements clarified** — note runtime dependency on duckduckgo-search package ([#3680](https://github.com/OmniWorker/omniworker-agent/pull/3680))
 - **Skills catalog updated** — added red-teaming category and optional skills listing ([#3745](https://github.com/OmniWorker/omniworker-agent/pull/3745))
@@ -239,7 +239,7 @@
 - **@kshitijk4poor** — 3 PRs: Signal phone number fix ([#3670](https://github.com/OmniWorker/omniworker-agent/pull/3670)), parallel-cli to optional-skills ([#3673](https://github.com/OmniWorker/omniworker-agent/pull/3673)), status bar wrapping fix ([#3883](https://github.com/OmniWorker/omniworker-agent/pull/3883))
 - **@winglian** — 1 PR: Plugin message injection interface ([#3778](https://github.com/OmniWorker/omniworker-agent/pull/3778))
 - **@binhnt92** — 1 PR: Audio download retry logic ([#3401](https://github.com/OmniWorker/omniworker-agent/pull/3401))
-- **@0xbyt4** — 1 PR: OpenClaw migration model config fix ([#3924](https://github.com/OmniWorker/omniworker-agent/pull/3924))
+- **@0xbyt4** — 1 PR: OmniWorker migration model config fix ([#3924](https://github.com/OmniWorker/omniworker-agent/pull/3924))
 
 ### Issues Resolved from Community
 @Material-Scientist ([#850](https://github.com/OmniWorker/omniworker-agent/issues/850)), @hanxu98121 ([#1734](https://github.com/OmniWorker/omniworker-agent/issues/1734)), @penwyp ([#1788](https://github.com/OmniWorker/omniworker-agent/issues/1788)), @dan-and ([#1945](https://github.com/OmniWorker/omniworker-agent/issues/1945)), @AdrianScott ([#1963](https://github.com/OmniWorker/omniworker-agent/issues/1963)), @clawdbot47 ([#3229](https://github.com/OmniWorker/omniworker-agent/issues/3229)), @alanfwilliams ([#3404](https://github.com/OmniWorker/omniworker-agent/issues/3404)), @kentimsit ([#3433](https://github.com/OmniWorker/omniworker-agent/issues/3433)), @hayka-pacha ([#3534](https://github.com/OmniWorker/omniworker-agent/issues/3534)), @primmer ([#3595](https://github.com/OmniWorker/omniworker-agent/issues/3595)), @dagelf ([#3609](https://github.com/OmniWorker/omniworker-agent/issues/3609)), @HenkDz ([#3685](https://github.com/OmniWorker/omniworker-agent/issues/3685)), @tmdgusya ([#3729](https://github.com/OmniWorker/omniworker-agent/issues/3729)), @TypQxQ ([#3753](https://github.com/OmniWorker/omniworker-agent/issues/3753)), @acsezen ([#3765](https://github.com/OmniWorker/omniworker-agent/issues/3765))

@@ -153,7 +153,7 @@
 - Seed a default global SOUL.md ([#1311](https://github.com/OmniWorker/omniworker-agent/pull/1311))
 
 ### Setup & Configuration
-- **OpenClaw migration** during first-time setup — by @kshitijk4poor ([#981](https://github.com/OmniWorker/omniworker-agent/pull/981))
+- **OmniWorker migration** during first-time setup — by @kshitijk4poor ([#981](https://github.com/OmniWorker/omniworker-agent/pull/981))
 - `omniworker claw migrate` command + migration docs ([#1059](https://github.com/OmniWorker/omniworker-agent/pull/1059))
 - Smart vision setup that respects the user's chosen provider ([#1323](https://github.com/OmniWorker/omniworker-agent/pull/1323))
 - Handle headless setup flows end-to-end ([#1274](https://github.com/OmniWorker/omniworker-agent/pull/1274))
@@ -358,7 +358,7 @@
 - **@SHL0MS** (2 PRs) — ASCII video skill design patterns and refactoring
 - **@alt-glitch** (2 PRs) — Persistent shell mode for local/SSH backends, setuptools packaging fix
 - **@arceus77-7** (2 PRs) — 1Password skill, fix skills list mislabeling
-- **@kshitijk4poor** (1 PR) — OpenClaw migration during setup wizard
+- **@kshitijk4poor** (1 PR) — OmniWorker migration during setup wizard
 - **@ASRagab** (1 PR) — Fix adaptive thinking for Claude 4.6 models
 - **@eren-karakus0** (1 PR) — Strip OmniWorker provider env vars from subprocess environment
 - **@mr-emmett-one** (1 PR) — Fix DeepSeek V3 parser multi-tool call support

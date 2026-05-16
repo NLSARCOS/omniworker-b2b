@@ -1,4 +1,4 @@
-"""Tests for OpenClaw migration integration in the setup wizard."""
+"""Tests for OmniWorker migration integration in the setup wizard."""
 
 from argparse import Namespace
 from types import ModuleType
@@ -8,45 +8,45 @@ from omniworker_cli import setup as setup_mod
 
 
 # ---------------------------------------------------------------------------
-# _offer_openclaw_migration — unit tests
+# _offer_omniworker_migration — unit tests
 # ---------------------------------------------------------------------------
 
 
 class TestOfferOpenclawMigration:
-    """Test the _offer_openclaw_migration helper in isolation."""
+    """Test the _offer_omniworker_migration helper in isolation."""
 
-    def test_skips_when_no_openclaw_dir(self, tmp_path):
-        """Should return False immediately when ~/.openclaw does not exist."""
+    def test_skips_when_no_omniworker_dir(self, tmp_path):
+        """Should return False immediately when ~/.omniworker does not exist."""
         with patch("omniworker_cli.setup.Path.home", return_value=tmp_path):
-            assert setup_mod._offer_openclaw_migration(tmp_path / ".omniworker") is False
+            assert setup_mod._offer_omniworker_migration(tmp_path / ".omniworker") is False
 
     def test_skips_when_migration_script_missing(self, tmp_path):
         """Should return False when the migration script file is absent."""
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         with (
             patch("omniworker_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", tmp_path / "nonexistent.py"),
         ):
-            assert setup_mod._offer_openclaw_migration(tmp_path / ".omniworker") is False
+            assert setup_mod._offer_omniworker_migration(tmp_path / ".omniworker") is False
 
     def test_skips_when_user_declines(self, tmp_path):
         """Should return False when user declines the migration prompt."""
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
-        script = tmp_path / "openclaw_to_omniworker.py"
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
+        script = tmp_path / "omniworker_to_omniworker.py"
         script.write_text("# placeholder")
         with (
             patch("omniworker_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", script),
             patch.object(setup_mod, "prompt_yes_no", return_value=False),
         ):
-            assert setup_mod._offer_openclaw_migration(tmp_path / ".omniworker") is False
+            assert setup_mod._offer_omniworker_migration(tmp_path / ".omniworker") is False
 
     def test_runs_migration_when_user_accepts(self, tmp_path):
         """Should run dry-run preview first, then execute after confirmation."""
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
 
         # Create a fake omniworker home with config
         omniworker_home = tmp_path / ".omniworker"
@@ -55,7 +55,7 @@ class TestOfferOpenclawMigration:
         config_path.write_text("agent:\n  max_turns: 90\n")
 
         # Build a fake migration module
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value={"soul", "memory"})
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -65,7 +65,7 @@ class TestOfferOpenclawMigration:
         }
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
-        script = tmp_path / "openclaw_to_omniworker.py"
+        script = tmp_path / "omniworker_to_omniworker.py"
         script.write_text("# placeholder")
 
         with (
@@ -87,7 +87,7 @@ class TestOfferOpenclawMigration:
 
             mock_spec.loader.exec_module = exec_module
 
-            result = setup_mod._offer_openclaw_migration(omniworker_home)
+            result = setup_mod._offer_omniworker_migration(omniworker_home)
 
         assert result is True
         fake_mod.resolve_selected_options.assert_called_once_with(
@@ -115,15 +115,15 @@ class TestOfferOpenclawMigration:
 
     def test_user_declines_after_preview(self, tmp_path):
         """Should return False when user sees preview but declines to proceed."""
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
 
         omniworker_home = tmp_path / ".omniworker"
         omniworker_home.mkdir()
         config_path = omniworker_home / "config.yaml"
         config_path.write_text("agent:\n  max_turns: 90\n")
 
-        fake_mod = ModuleType("openclaw_to_omniworker")
+        fake_mod = ModuleType("omniworker_to_omniworker")
         fake_mod.resolve_selected_options = MagicMock(return_value={"soul", "memory"})
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -132,7 +132,7 @@ class TestOfferOpenclawMigration:
         }
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
-        script = tmp_path / "openclaw_to_omniworker.py"
+        script = tmp_path / "omniworker_to_omniworker.py"
         script.write_text("# placeholder")
 
         # First prompt (preview): Yes, Second prompt (proceed): No
@@ -155,7 +155,7 @@ class TestOfferOpenclawMigration:
 
             mock_spec.loader.exec_module = exec_module
 
-            result = setup_mod._offer_openclaw_migration(omniworker_home)
+            result = setup_mod._offer_omniworker_migration(omniworker_home)
 
         assert result is False
         # Only dry-run Migrator was created, not the execute one
@@ -165,14 +165,14 @@ class TestOfferOpenclawMigration:
 
     def test_handles_migration_error_gracefully(self, tmp_path):
         """Should catch exceptions and return False."""
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         omniworker_home = tmp_path / ".omniworker"
         omniworker_home.mkdir()
         config_path = omniworker_home / "config.yaml"
         config_path.write_text("")
 
-        script = tmp_path / "openclaw_to_omniworker.py"
+        script = tmp_path / "omniworker_to_omniworker.py"
         script.write_text("# placeholder")
 
         with (
@@ -185,20 +185,20 @@ class TestOfferOpenclawMigration:
                 side_effect=RuntimeError("boom"),
             ),
         ):
-            result = setup_mod._offer_openclaw_migration(omniworker_home)
+            result = setup_mod._offer_omniworker_migration(omniworker_home)
 
         assert result is False
 
     def test_creates_config_if_missing(self, tmp_path):
         """Should bootstrap config.yaml before running migration."""
-        openclaw_dir = tmp_path / ".openclaw"
-        openclaw_dir.mkdir()
+        omniworker_dir = tmp_path / ".omniworker"
+        omniworker_dir.mkdir()
         omniworker_home = tmp_path / ".omniworker"
         omniworker_home.mkdir()
         config_path = omniworker_home / "config.yaml"
         # config does NOT exist yet
 
-        script = tmp_path / "openclaw_to_omniworker.py"
+        script = tmp_path / "omniworker_to_omniworker.py"
         script.write_text("# placeholder")
 
         with (
@@ -213,7 +213,7 @@ class TestOfferOpenclawMigration:
                 side_effect=RuntimeError("stop early"),
             ),
         ):
-            setup_mod._offer_openclaw_migration(omniworker_home)
+            setup_mod._offer_omniworker_migration(omniworker_home)
 
         # save_config should have been called to bootstrap the file
         mock_save.assert_called_once_with({"agent": {}})
@@ -233,10 +233,10 @@ def _first_time_args() -> Namespace:
 
 
 class TestSetupWizardOpenclawIntegration:
-    """Verify _offer_openclaw_migration is called during first-time setup."""
+    """Verify _offer_omniworker_migration is called during first-time setup."""
 
     def test_migration_offered_during_first_time_setup(self, tmp_path):
-        """On first-time setup, _offer_openclaw_migration should be called."""
+        """On first-time setup, _offer_omniworker_migration should be called."""
         args = _first_time_args()
 
         with (
@@ -252,7 +252,7 @@ class TestSetupWizardOpenclawIntegration:
             patch.object(setup_mod, "prompt_choice", return_value=1),
             # Mock the migration offer
             patch.object(
-                setup_mod, "_offer_openclaw_migration", return_value=False
+                setup_mod, "_offer_omniworker_migration", return_value=False
             ) as mock_migration,
             # Mock the actual setup sections so they don't run
             patch.object(setup_mod, "setup_model_provider"),
@@ -285,7 +285,7 @@ class TestSetupWizardOpenclawIntegration:
             patch("omniworker_cli.auth.get_active_provider", return_value=None),
             patch("builtins.input", return_value=""),
             patch.object(setup_mod, "prompt_choice", return_value=1),
-            patch.object(setup_mod, "_offer_openclaw_migration", return_value=True),
+            patch.object(setup_mod, "_offer_omniworker_migration", return_value=True),
             patch.object(setup_mod, "setup_model_provider"),
             patch.object(setup_mod, "setup_terminal_backend"),
             patch.object(setup_mod, "setup_agent_settings"),
@@ -317,7 +317,7 @@ class TestSetupWizardOpenclawIntegration:
             patch("omniworker_cli.auth.get_active_provider", return_value=None),
             patch("builtins.input", return_value=""),
             patch.object(setup_mod, "prompt_choice", return_value=1),
-            patch.object(setup_mod, "_offer_openclaw_migration", return_value=True),
+            patch.object(setup_mod, "_offer_omniworker_migration", return_value=True),
             patch.object(setup_mod, "setup_model_provider") as setup_model_provider,
             patch.object(setup_mod, "setup_terminal_backend"),
             patch.object(setup_mod, "setup_agent_settings"),
@@ -347,7 +347,7 @@ class TestSetupWizardOpenclawIntegration:
             # Returning user picks "Exit"
             patch.object(setup_mod, "prompt_choice", return_value=9),
             patch.object(
-                setup_mod, "_offer_openclaw_migration", return_value=False
+                setup_mod, "_offer_omniworker_migration", return_value=False
             ) as mock_migration,
         ):
             setup_mod.run_setup_wizard(args)
@@ -442,7 +442,7 @@ class TestGetSectionConfigSummary:
     # Regression tests for issue #13025: the model / gateway summaries used
     # stale, hardcoded env-var allowlists that drifted from the real setup +
     # status flows.  Every case below would previously return ``None`` and
-    # force OpenClaw migration to re-run setup for an already-configured
+    # force OmniWorker migration to re-run setup for an already-configured
     # section.
 
     def test_model_recognises_zai_glm_api_key(self):
@@ -639,7 +639,7 @@ class TestSetupWizardSkipsConfiguredSections:
             patch.object(setup_mod, "prompt_choice", return_value=1),
             # Migration succeeds and flips the env_side flag
             patch.object(
-                setup_mod, "_offer_openclaw_migration",
+                setup_mod, "_offer_omniworker_migration",
                 side_effect=fake_migration,
             ),
             # User says No to all reconfig prompts

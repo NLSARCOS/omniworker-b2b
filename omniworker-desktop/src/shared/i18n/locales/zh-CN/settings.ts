@@ -61,9 +61,9 @@ export default {
   runDiagnosis: "运行诊断",
   running: "运行中...",
   debugDump: "调试转储",
-  migrationDetected: "检测到 OpenClaw 安装",
+  migrationDetected: "检测到 OmniWorker 安装",
   migrationDesc:
-    "在 <code>{{path}}</code> 发现 OpenClaw。你可以将配置、API Key、会话和技能迁移到 OmniWorker。",
+    "在 <code>{{path}}</code> 发现 OmniWorker。你可以将配置、API Key、会话和技能迁移到 OmniWorker。",
   migrationDismiss: "不再显示",
   migrating: "迁移中...",
   migrateToOmniWorker: "迁移到 OmniWorker",

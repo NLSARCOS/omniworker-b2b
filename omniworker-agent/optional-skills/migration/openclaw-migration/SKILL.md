@@ -1,19 +1,19 @@
 ---
-name: openclaw-migration
-description: Migrate a user's OpenClaw customization footprint into OmniWorker Agent. Imports OmniWorker-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.openclaw, then reports exactly what could not be migrated and why.
+name: omniworker-migration
+description: Migrate a user's OmniWorker customization footprint into OmniWorker Agent. Imports OmniWorker-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.omniworker, then reports exactly what could not be migrated and why.
 version: 1.0.0
 author: OmniWorker Agent (Nous Research)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
   omniworker:
-    tags: [Migration, OpenClaw, OmniWorker, Memory, Persona, Import]
+    tags: [Migration, OmniWorker, OmniWorker, Memory, Persona, Import]
     related_skills: [omniworker-agent]
 ---
 
-# OpenClaw -> OmniWorker Migration
+# OmniWorker -> OmniWorker Migration
 
-Use this skill when a user wants to move their OpenClaw setup into OmniWorker Agent with minimal manual cleanup.
+Use this skill when a user wants to move their OmniWorker setup into OmniWorker Agent with minimal manual cleanup.
 
 ## CLI Command
 
@@ -24,23 +24,23 @@ omniworker claw migrate              # Full interactive migration
 omniworker claw migrate --dry-run    # Preview what would be migrated
 omniworker claw migrate --preset user-data   # Migrate without secrets
 omniworker claw migrate --overwrite  # Overwrite existing conflicts
-omniworker claw migrate --source /custom/path/.openclaw  # Custom source
+omniworker claw migrate --source /custom/path/.omniworker  # Custom source
 ```
 
 The CLI command runs the same migration script described below. Use this skill (via the agent) when you want an interactive, guided migration with dry-run previews and per-item conflict resolution.
 
-**First-time setup:** The `omniworker setup` wizard automatically detects `~/.openclaw` and offers migration before configuration begins.
+**First-time setup:** The `omniworker setup` wizard automatically detects `~/.omniworker` and offers migration before configuration begins.
 
 ## What this skill does
 
-It uses `scripts/openclaw_to_omniworker.py` to:
+It uses `scripts/omniworker_to_omniworker.py` to:
 
 - import `SOUL.md` into the OmniWorker home directory as `SOUL.md`
-- transform OpenClaw `MEMORY.md` and `USER.md` into OmniWorker memory entries
-- merge OpenClaw command approval patterns into OmniWorker `command_allowlist`
+- transform OmniWorker `MEMORY.md` and `USER.md` into OmniWorker memory entries
+- merge OmniWorker command approval patterns into OmniWorker `command_allowlist`
 - migrate OmniWorker-compatible messaging settings such as `TELEGRAM_ALLOWED_USERS` and `MESSAGING_CWD`
-- copy OpenClaw skills into `~/.omniworker/skills/openclaw-imports/`
-- optionally copy the OpenClaw workspace instructions file into a chosen OmniWorker workspace
+- copy OmniWorker skills into `~/.omniworker/skills/omniworker-imports/`
+- optionally copy the OmniWorker workspace instructions file into a chosen OmniWorker workspace
 - mirror compatible workspace assets such as `workspace/tts/` into `~/.omniworker/tts/`
 - archive non-secret docs that do not have a direct OmniWorker destination
 - produce a structured report listing migrated items, conflicts, skipped items, and reasons
@@ -49,17 +49,17 @@ It uses `scripts/openclaw_to_omniworker.py` to:
 
 The helper script lives in this skill directory at:
 
-- `scripts/openclaw_to_omniworker.py`
+- `scripts/omniworker_to_omniworker.py`
 
 When this skill is installed from the Skills Hub, the normal location is:
 
-- `~/.omniworker/skills/migration/openclaw-migration/scripts/openclaw_to_omniworker.py`
+- `~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py`
 
-Do not guess a shorter path like `~/.omniworker/skills/openclaw-migration/...`.
+Do not guess a shorter path like `~/.omniworker/skills/omniworker-migration/...`.
 
 Before running the helper:
 
-1. Prefer the installed path under `~/.omniworker/skills/migration/openclaw-migration/`.
+1. Prefer the installed path under `~/.omniworker/skills/migration/omniworker-migration/`.
 2. If that path fails, inspect the installed skill directory and resolve the script relative to the installed `SKILL.md`.
 3. Only use `find` as a fallback if the installed location is missing or the skill was moved manually.
 4. When calling the terminal tool, do not pass `workdir: "~"`. Use an absolute directory such as the user's home directory, or omit `workdir` entirely.
@@ -159,9 +159,9 @@ Execution gate:
 Use these exact `clarify` payload shapes as the default pattern:
 
 - `{"question":"Your existing SOUL.md conflicts with the imported one. What should I do?","choices":["keep existing","overwrite with backup","review first"]}`
-- `{"question":"One or more imported OpenClaw skills already exist in OmniWorker. How should I handle those skill conflicts?","choices":["keep existing skills","overwrite conflicting skills with backup","import conflicting skills under renamed folders"]}`
+- `{"question":"One or more imported OmniWorker skills already exist in OmniWorker. How should I handle those skill conflicts?","choices":["keep existing skills","overwrite conflicting skills with backup","import conflicting skills under renamed folders"]}`
 - `{"question":"Choose migration mode: migrate only user data, or run the full compatible migration including allowlisted secrets?","choices":["user-data only","full compatible migration","cancel"]}`
-- `{"question":"Do you want to copy the OpenClaw workspace instructions file into a OmniWorker workspace?","choices":["skip workspace instructions","copy to a workspace path","decide later"]}`
+- `{"question":"Do you want to copy the OmniWorker workspace instructions file into a OmniWorker workspace?","choices":["skip workspace instructions","copy to a workspace path","decide later"]}`
 - `{"question":"Please provide an absolute path where the workspace instructions should be copied."}`
 
 ## Decision-to-command mapping
@@ -229,37 +229,37 @@ The helper script still supports category-level `--include` / `--exclude`, but t
 Dry run with full discovery:
 
 ```bash
-python3 ~/.omniworker/skills/migration/openclaw-migration/scripts/openclaw_to_omniworker.py
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py
 ```
 
 When using the terminal tool, prefer an absolute invocation pattern such as:
 
 ```json
-{"command":"python3 /home/USER/.omniworker/skills/migration/openclaw-migration/scripts/openclaw_to_omniworker.py","workdir":"/home/USER"}
+{"command":"python3 /home/USER/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py","workdir":"/home/USER"}
 ```
 
 Dry run with the user-data preset:
 
 ```bash
-python3 ~/.omniworker/skills/migration/openclaw-migration/scripts/openclaw_to_omniworker.py --preset user-data
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py --preset user-data
 ```
 
 Execute a user-data migration:
 
 ```bash
-python3 ~/.omniworker/skills/migration/openclaw-migration/scripts/openclaw_to_omniworker.py --execute --preset user-data --skill-conflict skip
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py --execute --preset user-data --skill-conflict skip
 ```
 
 Execute a full compatible migration:
 
 ```bash
-python3 ~/.omniworker/skills/migration/openclaw-migration/scripts/openclaw_to_omniworker.py --execute --preset full --migrate-secrets --skill-conflict skip
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py --execute --preset full --migrate-secrets --skill-conflict skip
 ```
 
 Execute with workspace instructions included:
 
 ```bash
-python3 ~/.omniworker/skills/migration/openclaw-migration/scripts/openclaw_to_omniworker.py --execute --preset user-data --skill-conflict rename --workspace-target "/absolute/workspace/path"
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py --execute --preset user-data --skill-conflict rename --workspace-target "/absolute/workspace/path"
 ```
 
 Do not use `$PWD` or the home directory as the workspace target by default. Ask for an explicit workspace path first.
@@ -270,7 +270,7 @@ Do not use `$PWD` or the home directory as the workspace target by default. Ask 
 2. Do not migrate secrets by default. Tokens, auth blobs, device credentials, and raw gateway config should stay out of OmniWorker unless the user explicitly asks for secret migration.
 3. Do not silently overwrite non-empty OmniWorker targets unless the user explicitly wants that. The helper script will preserve backups when overwriting is enabled.
 4. Always give the user the skipped-items report. That report is part of the migration, not an optional extra.
-5. Prefer the primary OpenClaw workspace (`~/.openclaw/workspace/`) over `workspace.default/`. Only use the default workspace as fallback when the primary files are missing.
+5. Prefer the primary OmniWorker workspace (`~/.omniworker/workspace/`) over `workspace.default/`. Only use the default workspace as fallback when the primary files are missing.
 6. Even in secret-migration mode, only migrate secrets with a clean OmniWorker destination. Unsupported auth blobs must still be reported as skipped.
 7. If the dry run shows a large asset copy, a conflicting `SOUL.md`, or overflowed memory entries, call those out separately before execution.
 8. Default to `user-data only` if the user is unsure.
@@ -293,6 +293,6 @@ Do not use `$PWD` or the home directory as the workspace target by default. Ask 
 After a successful run, the user should have:
 
 - OmniWorker persona state imported
-- OmniWorker memory files populated with converted OpenClaw knowledge
-- OpenClaw skills available under `~/.omniworker/skills/openclaw-imports/`
+- OmniWorker memory files populated with converted OmniWorker knowledge
+- OmniWorker skills available under `~/.omniworker/skills/omniworker-imports/`
 - a migration report showing any conflicts, omissions, or unsupported data

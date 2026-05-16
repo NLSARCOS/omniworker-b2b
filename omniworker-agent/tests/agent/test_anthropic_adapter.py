@@ -1808,7 +1808,7 @@ class TestToolChoice:
 
 
 # ---------------------------------------------------------------------------
-# max_tokens resolver — openclaw/openclaw#66664 port
+# max_tokens resolver — omniworker/omniworker#66664 port
 # ---------------------------------------------------------------------------
 
 from agent.anthropic_adapter import (

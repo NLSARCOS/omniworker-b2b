@@ -214,7 +214,7 @@
 - **Solana Blockchain** — Wallet balances, USD pricing, token names ([#212](https://github.com/OmniWorker/omniworker-agent/pull/212)) — @gizdusum
 - **AgentMail** — Agent-owned email inboxes ([#330](https://github.com/OmniWorker/omniworker-agent/pull/330)) — @teyrebaz33
 - **Polymarket** — Prediction market data (read-only) ([#629](https://github.com/OmniWorker/omniworker-agent/pull/629))
-- **OpenClaw Migration** — Official migration tool ([#570](https://github.com/OmniWorker/omniworker-agent/pull/570)) — @unmodeled-tyler
+- **OmniWorker Migration** — Official migration tool ([#570](https://github.com/OmniWorker/omniworker-agent/pull/570)) — @unmodeled-tyler
 - **Domain Intelligence** — Passive recon: subdomains, SSL, WHOIS, DNS ([#136](https://github.com/OmniWorker/omniworker-agent/pull/136)) — @FurkanL0
 - **Superpowers** — Software development skills ([#137](https://github.com/OmniWorker/omniworker-agent/pull/137)) — @kaos35
 - **OmniWorker-Atropos** — RL environment development skill ([#815](https://github.com/OmniWorker/omniworker-agent/pull/815))

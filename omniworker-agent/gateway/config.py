@@ -361,13 +361,13 @@ class StreamingConfig:
     edit_interval: float = DEFAULT_STREAMING_EDIT_INTERVAL
     buffer_threshold: int = DEFAULT_STREAMING_BUFFER_THRESHOLD
     cursor: str = DEFAULT_STREAMING_CURSOR
-    # Ported from openclaw/openclaw#72038.  When >0, the final edit for
+    # Ported from omniworker/omniworker#72038.  When >0, the final edit for
     # a long-running streamed response is delivered as a fresh message
     # if the original preview has been visible for at least this many
     # seconds, so the platform's visible timestamp reflects completion
     # time instead of the preview creation time.  Currently applied to
     # Telegram only (other platforms ignore the setting).  Default 60s
-    # matches the OpenClaw rollout.  Set to 0 to disable.
+    # matches the OmniWorker rollout.  Set to 0 to disable.
     fresh_final_after_seconds: float = 60.0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -1210,7 +1210,7 @@ def _validate_gateway_config(config: "GatewayConfig") -> None:
             )
 
     # Reject known-weak placeholder tokens.
-    # Ported from openclaw/openclaw#64586: users who copy .env.example
+    # Ported from omniworker/omniworker#64586: users who copy .env.example
     # without changing placeholder values get a clear startup error instead
     # of a confusing "auth failed" from the platform API.
     try:

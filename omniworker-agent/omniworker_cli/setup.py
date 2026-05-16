@@ -2703,7 +2703,7 @@ def _gateway_platform_short_label(label: str) -> str:
 def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]:
     """Return a short summary if a setup section is already configured, else None.
 
-    Used after OpenClaw migration to detect which sections can be skipped.
+    Used after OmniWorker migration to detect which sections can be skipped.
     ``get_env_value`` is the module-level import from omniworker_cli.config
     so that test patches on ``setup_mod.get_env_value`` take effect.
     """
@@ -2771,21 +2771,21 @@ def _skip_configured_section(
 
 
 # =============================================================================
-# OpenClaw Migration
+# OmniWorker Migration
 # =============================================================================
 
 
 _OPENCLAW_SCRIPT = (
     get_optional_skills_dir(PROJECT_ROOT / "optional-skills")
     / "migration"
-    / "openclaw-migration"
+    / "omniworker-migration"
     / "scripts"
-    / "openclaw_to_omniworker.py"
+    / "omniworker_to_omniworker.py"
 )
 
 
-def _load_openclaw_migration_module():
-    """Load the openclaw_to_omniworker migration script as a module.
+def _load_omniworker_migration_module():
+    """Load the omniworker_to_omniworker migration script as a module.
 
     Returns the loaded module, or None if the script can't be loaded.
     """
@@ -2793,7 +2793,7 @@ def _load_openclaw_migration_module():
         return None
 
     spec = importlib.util.spec_from_file_location(
-        "openclaw_to_omniworker", _OPENCLAW_SCRIPT
+        "omniworker_to_omniworker", _OPENCLAW_SCRIPT
     )
     if spec is None or spec.loader is None:
         return None
@@ -2813,18 +2813,18 @@ def _load_openclaw_migration_module():
 
 # Item kinds that represent high-impact changes warranting explicit warnings.
 # Gateway tokens/channels can hijack messaging platforms from the old agent.
-# Config values may have different semantics between OpenClaw and OmniWorker.
+# Config values may have different semantics between OmniWorker and OmniWorker.
 # Instruction/context files (.md) can contain incompatible setup procedures.
 _HIGH_IMPACT_KIND_KEYWORDS = {
-    "gateway": "⚠ Gateway/messaging — this will configure OmniWorker to use your OpenClaw messaging channels",
-    "telegram": "⚠ Telegram — this will point OmniWorker at your OpenClaw Telegram bot",
-    "slack": "⚠ Slack — this will point OmniWorker at your OpenClaw Slack workspace",
-    "discord": "⚠ Discord — this will point OmniWorker at your OpenClaw Discord bot",
-    "whatsapp": "⚠ WhatsApp — this will point OmniWorker at your OpenClaw WhatsApp connection",
-    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to OmniWorker equivalents",
-    "soul": "⚠ Instruction file — may contain OpenClaw-specific setup/restart procedures",
-    "memory": "⚠ Memory/context file — may reference OpenClaw-specific infrastructure",
-    "context": "⚠ Context file — may contain OpenClaw-specific instructions",
+    "gateway": "⚠ Gateway/messaging — this will configure OmniWorker to use your OmniWorker messaging channels",
+    "telegram": "⚠ Telegram — this will point OmniWorker at your OmniWorker Telegram bot",
+    "slack": "⚠ Slack — this will point OmniWorker at your OmniWorker Slack workspace",
+    "discord": "⚠ Discord — this will point OmniWorker at your OmniWorker Discord bot",
+    "whatsapp": "⚠ WhatsApp — this will point OmniWorker at your OmniWorker WhatsApp connection",
+    "config": "⚠ Config values — OmniWorker settings may not map 1:1 to OmniWorker equivalents",
+    "soul": "⚠ Instruction file — may contain OmniWorker-specific setup/restart procedures",
+    "memory": "⚠ Memory/context file — may reference OmniWorker-specific infrastructure",
+    "context": "⚠ Context file — may contain OmniWorker-specific instructions",
 }
 
 
@@ -2886,30 +2886,30 @@ def _print_migration_preview(report: dict):
         for warning in sorted(warnings_shown):
             print(color(f"    {warning}", Colors.YELLOW))
         print()
-        print(color("  Note: OpenClaw config values may have different semantics in OmniWorker.", Colors.YELLOW))
-        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ OmniWorker's yolo mode.", Colors.YELLOW))
-        print(color("  Instruction files (.md) from OpenClaw may contain incompatible procedures.", Colors.YELLOW))
+        print(color("  Note: OmniWorker config values may have different semantics in OmniWorker.", Colors.YELLOW))
+        print(color("  For example, OmniWorker's tool_call_execution: \"auto\" ≠ OmniWorker's yolo mode.", Colors.YELLOW))
+        print(color("  Instruction files (.md) from OmniWorker may contain incompatible procedures.", Colors.YELLOW))
         print()
 
 
-def _offer_openclaw_migration(omniworker_home: Path) -> bool:
-    """Detect ~/.openclaw and offer to migrate during first-time setup.
+def _offer_omniworker_migration(omniworker_home: Path) -> bool:
+    """Detect ~/.omniworker and offer to migrate during first-time setup.
 
     Runs a dry-run first to show the user exactly what would be imported,
     overwritten, or taken over. Only executes after explicit confirmation.
 
     Returns True if migration ran successfully, False otherwise.
     """
-    openclaw_dir = Path.home() / ".openclaw"
-    if not openclaw_dir.is_dir():
+    omniworker_dir = Path.home() / ".omniworker"
+    if not omniworker_dir.is_dir():
         return False
 
     if not _OPENCLAW_SCRIPT.exists():
         return False
 
     print()
-    print_header("OpenClaw Installation Detected")
-    print_info(f"Found OpenClaw data at {openclaw_dir}")
+    print_header("OmniWorker Installation Detected")
+    print_info(f"Found OmniWorker data at {omniworker_dir}")
     print_info("OmniWorker can preview what would be imported before making any changes.")
     print()
 
@@ -2926,20 +2926,20 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
 
     # Load the migration module
     try:
-        mod = _load_openclaw_migration_module()
+        mod = _load_omniworker_migration_module()
         if mod is None:
             print_warning("Could not load migration script.")
             return False
     except Exception as e:
         print_warning(f"Could not load migration script: {e}")
-        logger.debug("OpenClaw migration module load error", exc_info=True)
+        logger.debug("OmniWorker migration module load error", exc_info=True)
         return False
 
     # ── Phase 1: Dry-run preview ──
     try:
         selected = mod.resolve_selected_options(None, None, preset="full")
         dry_migrator = mod.Migrator(
-            source_root=openclaw_dir.resolve(),
+            source_root=omniworker_dir.resolve(),
             target_root=omniworker_home.resolve(),
             execute=False,  # dry-run — no files modified
             workspace_target=None,
@@ -2952,7 +2952,7 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
         preview_report = dry_migrator.migrate()
     except Exception as e:
         print_warning(f"Migration preview failed: {e}")
-        logger.debug("OpenClaw migration preview error", exc_info=True)
+        logger.debug("OmniWorker migration preview error", exc_info=True)
         return False
 
     # Display the full preview
@@ -2961,7 +2961,7 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
 
     if preview_count == 0:
         print()
-        print_info("Nothing to import from OpenClaw.")
+        print_info("Nothing to import from OmniWorker.")
         return False
 
     print()
@@ -2984,7 +2984,7 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
     # preserved. The user saw the preview; conflicts are skipped by default.
     try:
         migrator = mod.Migrator(
-            source_root=openclaw_dir.resolve(),
+            source_root=omniworker_dir.resolve(),
             target_root=omniworker_home.resolve(),
             execute=True,
             workspace_target=None,
@@ -2997,7 +2997,7 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
         report = migrator.migrate()
     except Exception as e:
         print_warning(f"Migration failed: {e}")
-        logger.debug("OpenClaw migration error", exc_info=True)
+        logger.debug("OmniWorker migration error", exc_info=True)
         return False
 
     # Print final summary
@@ -3009,7 +3009,7 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
 
     print()
     if migrated:
-        print_success(f"Imported {migrated} item(s) from OpenClaw.")
+        print_success(f"Imported {migrated} item(s) from OmniWorker.")
     if conflicts:
         print_info(f"Skipped {conflicts} item(s) that already exist in OmniWorker (use omniworker claw migrate --overwrite to force).")
     if skipped:
@@ -3174,7 +3174,7 @@ def run_setup_wizard(args):
         # Existing install — default is the full-wizard reconfigure flow.
         # Every prompt shows the current value as its default, so pressing
         # Enter keeps it.  Opt into `--quick` for the narrow "just fill in
-        # missing items" flow (useful after a partial OpenClaw migration
+        # missing items" flow (useful after a partial OmniWorker migration
         # or when a required API key got cleared).
         if quick_requested:
             _run_quick_setup(config, omniworker_home)
@@ -3201,8 +3201,8 @@ def run_setup_wizard(args):
             print_info("No existing configuration found — running first-time setup.")
             print()
 
-        # Offer OpenClaw migration before configuration begins
-        migration_ran = _offer_openclaw_migration(omniworker_home)
+        # Offer OmniWorker migration before configuration begins
+        migration_ran = _offer_omniworker_migration(omniworker_home)
         if migration_ran:
             config = load_config()
 
@@ -3226,7 +3226,7 @@ def run_setup_wizard(args):
 
     if migration_ran:
         print()
-        print_info("Settings were imported from OpenClaw.")
+        print_info("Settings were imported from OmniWorker.")
         print_info("Each section below will show what was imported — press Enter to keep,")
         print_info("or choose to reconfigure if needed.")
 

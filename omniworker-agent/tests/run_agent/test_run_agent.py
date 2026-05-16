@@ -380,7 +380,7 @@ class TestStripThinkBlocks:
         assert "mixed" not in result
         assert "final" in result
 
-    # ─── Tool-call XML block stripping (openclaw/openclaw#67318) ─────────
+    # ─── Tool-call XML block stripping (omniworker/omniworker#67318) ─────────
     # Some open models (notably Gemma variants via OpenRouter) emit
     # standalone tool-call XML inside assistant content instead of via the
     # structured `tool_calls` field. Left unstripped, raw XML leaks to
@@ -452,7 +452,7 @@ class TestStripThinkBlocks:
 
     def test_dangling_function_open_tag_preserved(self, agent):
         """A streamed-but-truncated <function name="..."> block with no close
-        is intentionally NOT stripped (OpenClaw's asymmetry). The tail of a
+        is intentionally NOT stripped (OmniWorker's asymmetry). The tail of a
         streaming reply may still be valuable to the user."""
         text = 'Checking: <function name="read">'
         result = agent._strip_think_blocks(text)

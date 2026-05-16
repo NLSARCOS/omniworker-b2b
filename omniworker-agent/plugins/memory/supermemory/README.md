@@ -75,7 +75,7 @@ For a profile named `coder`, this resolves to `omniworker-coder`. The default pr
 
 ## Multi-Container Mode
 
-For advanced setups (e.g. OpenClaw-style multi-workspace), you can enable custom container tags so the agent can read/write across multiple named containers:
+For advanced setups (e.g. OmniWorker-style multi-workspace), you can enable custom container tags so the agent can read/write across multiple named containers:
 
 ```json
 {
