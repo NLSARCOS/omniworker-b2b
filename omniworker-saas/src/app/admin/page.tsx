@@ -152,7 +152,8 @@ export default function SuperAdminCommandCenter() {
         name: form.tenantName.value,
         planId: form.planId.value,
         adminEmail: form.adminEmail.value,
-        adminPassword: form.adminPassword.value
+        adminPassword: form.adminPassword.value,
+        subscriptionEndsAt: form.subscriptionEndsAt.value ? new Date(form.subscriptionEndsAt.value).toISOString() : null,
       })
     });
     form.reset();
@@ -475,7 +476,7 @@ export default function SuperAdminCommandCenter() {
             
             <div className="bg-zinc-900 border border-zinc-800 p-6">
                <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2"><Box size={16}/> Provision New Workspace</h2>
-               <form onSubmit={handleTenantCreate} className="grid grid-cols-1 md:grid-cols-4 gap-6">
+               <form onSubmit={handleTenantCreate} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                  <div>
                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Organization Name</label>
                    <input name="tenantName" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-700" placeholder="Acme Corp" />
@@ -488,6 +489,10 @@ export default function SuperAdminCommandCenter() {
                    </select>
                  </div>
                  <div>
+                   <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Plan Expiry Date</label>
+                   <input name="subscriptionEndsAt" type="date" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors [&::-webkit-calendar-picker-indicator]:invert-[0.8]" />
+                 </div>
+                 <div>
                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Root Email</label>
                    <input name="adminEmail" type="email" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-700" placeholder="admin@acme.com" />
                  </div>
@@ -495,7 +500,7 @@ export default function SuperAdminCommandCenter() {
                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Initial Keyphrase</label>
                    <input name="adminPassword" type="password" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-700" placeholder="••••••••" />
                  </div>
-                 <div className="md:col-span-4 flex justify-end">
+                 <div className="md:col-span-3 lg:col-span-5 flex justify-end">
                    <button type="submit" className="bg-lime-500 text-black px-8 py-3 font-bold uppercase tracking-wider text-sm hover:bg-lime-400 transition-colors">
                      Execute Provisioning
                    </button>

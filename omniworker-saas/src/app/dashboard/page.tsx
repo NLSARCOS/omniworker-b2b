@@ -31,7 +31,7 @@ interface AgentData {
   status: string;
 }
 
-/* ─── Mini Components (brutalist style) ─── */
+/* ─── Brutalist Components ─── */
 
 function PageHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
   return (
@@ -47,7 +47,7 @@ function PageHeader({ title, subtitle, action }: { title: string; subtitle: stri
 
 function StatCard({ title, value, progress, subtitle }: { title: string; value: string | number; progress?: number; subtitle?: string }) {
   return (
-    <div style={{ background: "#fff", border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111" }}>
+    <div style={{ background: "#fff", padding: 24, border: "none" }}>
       <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, color: "#555", marginBottom: 8, fontFamily: "'Space Mono', monospace" }}>{title}</p>
       <p style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-2px", lineHeight: 1, margin: 0 }}>{value}</p>
       {progress !== undefined && (
@@ -70,9 +70,9 @@ function StatsGrid({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 32, border: "3px solid #111", padding: 24, background: "#fff", boxShadow: "4px 4px 0 0 #111" }}>
+    <div id={id} style={{ marginBottom: 32, border: "3px solid #111", padding: 24, background: "#fff", boxShadow: "4px 4px 0 0 #111" }}>
       <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, marginBottom: 20, paddingBottom: 12, borderBottom: "1px solid #e0e0e0", fontFamily: "'Space Mono', monospace" }}>{title}</h2>
       {children}
     </div>
@@ -95,7 +95,7 @@ function Badge({ variant, children }: { variant: "success" | "warning" | "danger
   );
 }
 
-function Button({ variant = "primary", onClick, disabled, children }: { variant?: "primary" | "secondary" | "danger"; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+function Button({ variant = "primary", onClick, disabled, children, small }: { variant?: "primary" | "secondary" | "danger"; onClick: () => void; disabled?: boolean; children: React.ReactNode; small?: boolean }) {
   const styles: Record<string, React.CSSProperties> = {
     primary: { background: "#000", color: "#fff", borderColor: "#000" },
     secondary: { background: "#fff", color: "#000", borderColor: "#000" },
@@ -107,8 +107,9 @@ function Button({ variant = "primary", onClick, disabled, children }: { variant?
       onClick={onClick}
       disabled={disabled}
       style={{
-        display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px",
-        fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
+        display: "inline-flex", alignItems: "center", gap: 6,
+        padding: small ? "6px 12px" : "10px 20px",
+        fontSize: small ? 11 : 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
         border: "3px solid", cursor: disabled ? "not-allowed" : "pointer",
         fontFamily: "'Space Mono', monospace", boxShadow: "2px 2px 0 0 #111",
         transition: "all 0.15s ease", opacity: disabled ? 0.5 : 1,
@@ -157,11 +158,6 @@ export default function DashboardPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  const handleLogout = async () => {
-    await fetch("/api/v1/auth/logout", { method: "POST" });
-    window.location.href = "/login";
-  };
-
   const handleGenerateKey = async () => {
     setGeneratingKey(true);
     setKeyError(null);
@@ -187,9 +183,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F4F4F0", fontFamily: "'Space Mono', monospace" }}>
-        <p style={{ fontSize: 24, fontWeight: 700, textTransform: "uppercase" }}>Cargando...</p>
-      </main>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+        <p style={{ fontSize: 24, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace" }}>Cargando...</p>
+      </div>
     );
   }
 
@@ -200,194 +196,160 @@ export default function DashboardPage() {
 
   return (
     <>
-      {/* Fonts */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+      <PageHeader
+        title="Dashboard"
+        subtitle={loading ? "Loading..." : `${user.tenantName || user.email} / ${(user.plan || "FREE").toUpperCase()} PLAN`}
+      />
 
-      <main style={{ minHeight: "100vh", padding: 32, fontFamily: "'Inter', sans-serif", background: "#F4F4F0", color: "#111" }}>
-        <div style={{ maxWidth: 1320, margin: "0 auto" }}>
-
-          <PageHeader
-            title="Dashboard"
-            subtitle={loading ? "Loading..." : `${user.tenantName || user.email} / ${(user.plan || "FREE").toUpperCase()} PLAN`}
-            action={
-              <div style={{ display: "flex", gap: 8 }}>
-                {user.role === "SUPERADMIN" && (
-                  <a href="/admin" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 20px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, border: "3px solid #111", fontFamily: "'Space Mono', monospace", boxShadow: "2px 2px 0 0 #111", background: "#FFC800", color: "#000", textDecoration: "none" }}>
-                    ADMIN
-                  </a>
-                )}
-                <Button variant="secondary" onClick={handleLogout}>SALIR</Button>
-              </div>
-            }
-          />
-
-          {/* Subscription expired warning */}
-          {user.isLocked && (
-            <div style={{ marginBottom: 32, padding: "16px 20px", background: "rgba(255,100,100,0.1)", border: "1px solid rgba(255,100,100,0.3)", color: "var(--text-primary)" }}>
-              <strong>SALDO INSUFICIENTE</strong>
-              <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>Tu balance de tokens está agotado. Contacta a tu administrador para recargar.</p>
-            </div>
-          )}
-
-          {/* Stats Grid */}
-          <StatsGrid>
-            <StatCard
-              title="Tokens Disponibles"
-              value={user.tokenBalance.toLocaleString()}
-              progress={100 - tokenPct}
-              subtitle={`${tokenPct}% restante`}
-            />
-            <StatCard title="Plan" value={(user.plan || "Free").toUpperCase()} />
-            <StatCard
-              title="Agentes Online"
-              value={`${onlineAgents} / ${agents.length}`}
-            />
-          </StatsGrid>
-
-          {/* API Keys Section */}
-          <Section title="API KEYS — CONEXIÓN AGENTE">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Genera claves para conectar tus OmniWorker Desktop Agents.</p>
-              <Button variant="primary" onClick={handleGenerateKey} disabled={generatingKey}>
-                {generatingKey ? "GENERANDO..." : "+ NUEVA CLAVE"}
-              </Button>
-            </div>
-
-            {keyError && (
-              <div style={{ padding: 16, background: "#fff0f0", border: "3px solid #ff0000", marginBottom: 16 }}>
-                <p style={{ fontWeight: 700, fontSize: 14, margin: "0 0 4px" }}>ERROR AL GENERAR</p>
-                <p style={{ fontSize: 13, color: "#555", margin: 0 }}>{keyError}</p>
-              </div>
-            )}
-
-            {newKeyRaw && (
-              <div style={{ padding: 16, background: "#FFC800", border: "3px solid #111", marginBottom: 16, boxShadow: "4px 4px 0 0 #111" }}>
-                <p style={{ fontWeight: 700, fontSize: 16, margin: "0 0 8px" }}>Copia tu nueva clave ahora!</p>
-                <p style={{ fontSize: 13, color: "#333", margin: "0 0 8px" }}>Por seguridad, no volveremos a mostrarla.</p>
-                <code style={{ display: "block", background: "#111", color: "#fff", padding: 16, fontFamily: "'Space Mono', monospace", fontSize: 13, wordBreak: "break-all" }}>{newKeyRaw}</code>
-                <button onClick={() => setNewKeyRaw(null)} style={{ marginTop: 12, padding: "8px 16px", border: "3px solid #111", background: "#fff", fontWeight: 700, fontSize: 12, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", cursor: "pointer" }}>
-                  ENTENDIDO
-                </button>
-              </div>
-            )}
-
-            {apiKeys.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
-                <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin claves activas</p>
-                <p style={{ fontSize: 13, margin: 0 }}>Genera una clave para conectar tu OmniWorker Agent Desktop.</p>
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Nombre</th>
-                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Prefijo</th>
-                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Creada</th>
-                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Último Uso</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {apiKeys.map((key) => (
-                      <tr key={key.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
-                        <td style={{ padding: "12px 16px" }}>{key.name}</td>
-                        <td style={{ padding: "12px 16px", fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{key.keyPrefix}...</td>
-                        <td style={{ padding: "12px 16px" }}>{new Date(key.createdAt).toLocaleDateString()}</td>
-                        <td style={{ padding: "12px 16px" }}>{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : "Nunca"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Section>
-
-          {/* Edge Agents Section */}
-          <Section title="AGENTES CONECTADOS">
-            {agents.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
-                <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin agentes en línea</p>
-                <p style={{ fontSize: 13, margin: 0 }}>Configura tu agente con tu API Key generada arriba.</p>
-              </div>
-            ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Agente</th>
-                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Host</th>
-                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Plataforma</th>
-                      <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {agents.map((agent) => (
-                      <tr key={agent.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
-                        <td style={{ padding: "12px 16px", fontWeight: 600 }}>{agent.agentName}</td>
-                        <td style={{ padding: "12px 16px", fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{agent.hostname}</td>
-                        <td style={{ padding: "12px 16px" }}>{agent.platform}</td>
-                        <td style={{ padding: "12px 16px" }}>
-                          <Badge variant={agent.status === "online" ? "success" : agent.status === "busy" ? "warning" : "default"}>
-                            {agent.status.toUpperCase()}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Section>
-
-          {/* Quick Actions */}
-          <Section title="ACCIONES RÁPIDAS">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 0 }}>
-              <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111", transition: "all 0.15s ease", cursor: "pointer" }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translate(-4px,-4px)"; e.currentTarget.style.boxShadow = "8px 8px 0 0 #111"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "2px 2px 0 0 #111"; }}
-              >
-                <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Descargar Desktop</p>
-                <p style={{ fontSize: 13, color: "#555", margin: "0 0 16px" }}>App nativa para macOS, Windows, Linux</p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest-mac.zip" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Mac</a>
-                  <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-Setup-latest.exe" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Windows</a>
-                  <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest.AppImage" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#fff", color: "#000", textDecoration: "none", border: "2px solid #000" }}>Linux</a>
-                </div>
-              </div>
-              <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111", transition: "all 0.15s ease" }}>
-                <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Documentación</p>
-                <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Guías de instalación y configuración</p>
-              </div>
-            </div>
-          </Section>
-
-          {/* Platform Status */}
-          <Section title="ESTADO DE PLATAFORMA">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
-              <div style={{ borderRight: "3px solid #111" }}>
-                <span style={{ color: "#555", fontSize: 13 }}>Plan</span>
-                <br />
-                <strong style={{ fontSize: 16 }}>{(user.plan || "Free").toUpperCase()}</strong>
-              </div>
-              <div style={{ borderRight: "3px solid #111" }}>
-                <span style={{ color: "#555", fontSize: 13 }}>Cuenta</span>
-                <br />
-                <Badge variant={user.isLocked ? "danger" : "success"}>
-                  {user.isLocked ? "BLOQUEADA" : "ACTIVA"}
-                </Badge>
-              </div>
-              <div>
-                <span style={{ color: "#555", fontSize: 13 }}>Organización</span>
-                <br />
-                <strong style={{ fontSize: 16 }}>{user.tenantName || "—"}</strong>
-              </div>
-            </div>
-          </Section>
-
+      {/* Subscription warning */}
+      {user.isLocked && (
+        <div style={{ marginBottom: 32, padding: "16px 20px", background: "rgba(255,100,100,0.1)", border: "3px solid #ff0000" }}>
+          <strong style={{ textTransform: "uppercase" }}>Saldo Insuficiente</strong>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>Tu balance de tokens está agotado. Contacta a tu administrador.</p>
         </div>
-      </main>
+      )}
+
+      {/* Stats */}
+      <StatsGrid>
+        <StatCard title="Tokens Disponibles" value={user.tokenBalance.toLocaleString()} progress={tokenPct} subtitle={`${tokenPct}% restante`} />
+        <StatCard title="Plan" value={(user.plan || "Free").toUpperCase()} />
+        <StatCard title="Agentes Online" value={`${onlineAgents} / ${agents.length}`} />
+      </StatsGrid>
+
+      {/* API Keys */}
+      <Section title="API KEYS — CONEXIÓN AGENTE" id="keys">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Claves para conectar OmniWorker Desktop Agents.</p>
+          <Button onClick={handleGenerateKey} disabled={generatingKey}>
+            {generatingKey ? "GENERANDO..." : "+ NUEVA CLAVE"}
+          </Button>
+        </div>
+
+        {keyError && (
+          <div style={{ padding: 16, background: "#fff0f0", border: "3px solid #ff0000", marginBottom: 16 }}>
+            <p style={{ fontWeight: 700, margin: "0 0 4px" }}>ERROR</p>
+            <p style={{ fontSize: 13, color: "#555", margin: 0 }}>{keyError}</p>
+          </div>
+        )}
+
+        {newKeyRaw && (
+          <div style={{ padding: 16, background: "#FFC800", border: "3px solid #111", marginBottom: 16, boxShadow: "4px 4px 0 0 #111" }}>
+            <p style={{ fontWeight: 700, fontSize: 16, margin: "0 0 8px" }}>Copia tu nueva clave ahora!</p>
+            <p style={{ fontSize: 13, color: "#333", margin: "0 0 8px" }}>Por seguridad, no volveremos a mostrarla.</p>
+            <code style={{ display: "block", background: "#111", color: "#fff", padding: 16, fontFamily: "'Space Mono', monospace", fontSize: 13, wordBreak: "break-all" }}>{newKeyRaw}</code>
+            <button onClick={() => setNewKeyRaw(null)} style={{ marginTop: 12, padding: "8px 16px", border: "3px solid #111", background: "#fff", fontWeight: 700, fontSize: 12, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", cursor: "pointer" }}>
+              ENTENDIDO
+            </button>
+          </div>
+        )}
+
+        {apiKeys.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
+            <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin claves activas</p>
+            <p style={{ fontSize: 13, margin: 0 }}>Genera una clave para conectar tu agente.</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Nombre</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Prefijo</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Creada</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Último Uso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {apiKeys.map((key) => (
+                  <tr key={key.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
+                    <td style={{ padding: "12px 16px", fontWeight: 600 }}>{key.name}</td>
+                    <td style={{ padding: "12px 16px", fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{key.keyPrefix}...</td>
+                    <td style={{ padding: "12px 16px" }}>{new Date(key.createdAt).toLocaleDateString()}</td>
+                    <td style={{ padding: "12px 16px" }}>{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : "Nunca"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
+
+      {/* Edge Agents */}
+      <Section title="AGENTES CONECTADOS" id="agents">
+        {agents.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
+            <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin agentes</p>
+            <p style={{ fontSize: 13, margin: 0 }}>Configura tu agente con tu API Key.</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Agente</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Host</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Plataforma</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {agents.map((agent) => (
+                  <tr key={agent.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
+                    <td style={{ padding: "12px 16px", fontWeight: 600 }}>{agent.agentName}</td>
+                    <td style={{ padding: "12px 16px", fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{agent.hostname}</td>
+                    <td style={{ padding: "12px 16px" }}>{agent.platform}</td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Badge variant={agent.status === "online" ? "success" : agent.status === "busy" ? "warning" : "default"}>
+                        {agent.status.toUpperCase()}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
+
+      {/* Quick Actions */}
+      <Section title="ACCIONES RÁPIDAS" id="actions">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 0 }}>
+          <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111", transition: "all 0.15s ease", cursor: "pointer" }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translate(-4px,-4px)"; e.currentTarget.style.boxShadow = "8px 8px 0 0 #111"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "2px 2px 0 0 #111"; }}
+          >
+            <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Descargar Desktop</p>
+            <p style={{ fontSize: 13, color: "#555", margin: "0 0 16px" }}>App nativa para macOS, Windows, Linux</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest-mac.zip" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Mac</a>
+              <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-Setup-latest.exe" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Windows</a>
+              <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest.AppImage" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#fff", color: "#000", textDecoration: "none", border: "2px solid #000" }}>Linux</a>
+            </div>
+          </div>
+          <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111" }}>
+            <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Documentación</p>
+            <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Guías de instalación y configuración</p>
+          </div>
+        </div>
+      </Section>
+
+      {/* Platform Status */}
+      <Section title="ESTADO DE PLATAFORMA">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
+          <div style={{ borderRight: "3px solid #111" }}>
+            <span style={{ color: "#555", fontSize: 13 }}>Plan</span><br />
+            <strong style={{ fontSize: 16 }}>{(user.plan || "Free").toUpperCase()}</strong>
+          </div>
+          <div style={{ borderRight: "3px solid #111" }}>
+            <span style={{ color: "#555", fontSize: 13 }}>Cuenta</span><br />
+            <Badge variant={user.isLocked ? "danger" : "success"}>{user.isLocked ? "BLOQUEADA" : "ACTIVA"}</Badge>
+          </div>
+          <div>
+            <span style={{ color: "#555", fontSize: 13 }}>Organización</span><br />
+            <strong style={{ fontSize: 16 }}>{user.tenantName || "—"}</strong>
+          </div>
+        </div>
+      </Section>
     </>
   );
 }

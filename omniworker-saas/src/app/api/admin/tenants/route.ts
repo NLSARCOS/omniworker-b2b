@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     adminPassword?: string;
     adminName?: string;
     tokenBalance?: number | string;
+    subscriptionEndsAt?: string | Date;
   }
 
   let body: TenantCreateBody;
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
     notes,
     adminEmail, adminPassword, adminName,
     tokenBalance,
+    subscriptionEndsAt
   } = body;
 
   if (!name) {
@@ -91,6 +93,7 @@ export async function POST(request: Request) {
       country: country || null,
       postalCode: postalCode || null,
       notes: notes || null,
+      subscriptionEndsAt: subscriptionEndsAt ? new Date(subscriptionEndsAt) : null,
     },
   });
 
@@ -142,6 +145,7 @@ export async function PATCH(request: Request) {
     country?: string;
     postalCode?: string;
     notes?: string;
+    subscriptionEndsAt?: string | Date;
   }
 
   let body: TenantUpdateBody;
@@ -149,10 +153,13 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { id, ...data } = body;
+  const { id, subscriptionEndsAt, ...data } = body;
   if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
 
   const updatePayload: any = { ...data };
+  if (subscriptionEndsAt !== undefined) {
+    updatePayload.subscriptionEndsAt = subscriptionEndsAt ? new Date(subscriptionEndsAt) : null;
+  }
 
   const tenant = await prisma.tenant.update({
     where: { id },
