@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+// src/app/api/v1/auth/login/route.ts — Login con bcrypt + JWT real
+import { NextResponse } from "next/server";
+import { loginWithEmail } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
@@ -9,52 +8,30 @@ export async function POST(request: Request) {
     const { email, password } = body;
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Faltan credenciales" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Faltan credenciales" },
+        { status: 400 }
+      );
     }
 
-    // Consulta real a la base de datos
-    const user = await prisma.user.findUnique({ 
-      where: { email }, 
-      include: { plan: true } 
-    });
+    const result = await loginWithEmail(email, password);
 
-    if (!user) {
-      return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 401 });
     }
-
-    // En producción se usaría bcrypt.compare, pero para no añadir dep ahora, verificamos hash directo
-    if (user.passwordHash !== password) { 
-      return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
-    }
-
-    // 1. JWT Básico (Para MVP, usando un string codificado)
-    const accessToken = "jwt-mock-" + Buffer.from(email).toString('base64');
-    
-    // 2. Llave Única para Desencriptar el SQLite Local del usuario
-    const localDatabaseCryptoKey = "aes-256-key-" + user.id;
-
-    // 3. Chequeo de Suscripción para el Bloqueo en Desktop
-    const tokenBalance = user.tokenBalance;
-    const planName = user.plan?.name || "Sin Plan";
-    const isLocked = tokenBalance <= 0;
 
     return NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        plan: planName,
-        tokenBalance,
-        isLocked
-      },
+      user: result.user,
       auth: {
-        accessToken,
-        localDatabaseCryptoKey
-      }
+        accessToken: result.accessToken,
+      },
     });
-
   } catch (error) {
     console.error("[Auth API] Error:", error);
-    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    );
   }
 }

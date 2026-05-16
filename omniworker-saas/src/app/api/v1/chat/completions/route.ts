@@ -1,126 +1,147 @@
+// src/app/api/v1/chat/completions/route.ts — LLM Gateway multi-tenant
 import { NextResponse } from "next/server";
-import { PrismaClient } from '@prisma/client';
+import { authenticateRequest } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+// Provider → URL mapping
+const PROVIDER_URLS: Record<string, string> = {
+  openai: "https://api.openai.com/v1/chat/completions",
+  anthropic: "https://api.anthropic.com/v1/messages",
+  deepseek: "https://api.deepseek.com/chat/completions",
+  moonshot: "https://api.moonshot.cn/v1/chat/completions",
+  minimax: "https://api.minimax.chat/v1/text/chatcompletion_v2",
+  "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
+};
+
+function detectProvider(model: string): string {
+  const m = model.toLowerCase();
+  if (m.includes("deepseek")) return "deepseek";
+  if (m.includes("opencode")) return "opencode-go";
+  if (m.includes("moonshot") || m.includes("kimi")) return "moonshot";
+  if (m.includes("minimax")) return "minimax";
+  if (m.includes("claude")) return "anthropic";
+  return "openai";
+}
 
 export async function POST(request: Request) {
+  // 1. Auth
+  const auth = await authenticateRequest(request);
+  if (!auth) {
+    return NextResponse.json({ error: "No autorizado. Token requerido." }, { status: 401 });
+  }
+
+  const { user, payload } = auth;
+
+  // 2. Check balance
+  if (user.tokenBalance <= 0) {
+    return NextResponse.json(
+      { error: "Saldo de tokens insuficiente. Actualice su plan." },
+      { status: 402 }
+    );
+  }
+
+  // 3. Parse request
+  const body = await request.json();
+  const requestedModel = (body.model || "gpt-4o-mini").toLowerCase();
+  const targetProvider = detectProvider(requestedModel);
+  const targetUrl = PROVIDER_URLS[targetProvider];
+  const isStream = body.stream === true;
+
+  // 4. Get master API key for provider
+  const masterProvider = await prisma.masterProvider.findFirst({
+    where: { isActive: true, provider: targetProvider },
+  });
+
+  if (!masterProvider?.apiKey) {
+    return NextResponse.json(
+      { error: `Proveedor ${targetProvider} no disponible` },
+      { status: 503 }
+    );
+  }
+
+  console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${requestedModel})`);
+
+  // 5. Billing: estimate cost (simplified — fixed per request)
+  const estimatedCost = 50;
+
+  // 6. Call AI provider
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "No autorizado. Token requerido." }, { status: 401 });
-    }
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
 
-    // 1. Validar Usuario (Decodificar MVP JWT)
-    const token = authHeader.split(" ")[1];
-    let email = "";
-    if (token.startsWith("jwt-mock-")) {
-      email = Buffer.from(token.replace("jwt-mock-", ""), "base64").toString("utf-8");
+    if (targetProvider === "anthropic") {
+      headers["x-api-key"] = masterProvider.apiKey;
+      headers["anthropic-version"] = "2023-06-01";
     } else {
-      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
+      headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
-    }
-
-    if (user.tokenBalance <= 0) {
-      return NextResponse.json({ error: "Saldo de tokens insuficiente. Actualice su plan." }, { status: 402 });
-    }
-
-    // 3. Determinar el Proveedor y la URL Base según el modelo solicitado
-    const body = await request.json();
-    const requestedModel = (body.model || "gpt-4o-mini").toLowerCase();
-    
-    let targetProvider = "openai";
-    let targetUrl = "https://api.openai.com/v1/chat/completions";
-
-    if (requestedModel.includes("deepseek")) {
-      targetProvider = "deepseek";
-      targetUrl = "https://api.deepseek.com/chat/completions";
-    } else if (requestedModel.includes("opencode")) {
-      targetProvider = "opencode-go";
-      targetUrl = "https://opencode.ai/zen/go/v1/chat/completions";
-    } else if (requestedModel.includes("moonshot") || requestedModel.includes("kimi")) {
-      targetProvider = "moonshot";
-      targetUrl = "https://api.moonshot.cn/v1/chat/completions";
-    } else if (requestedModel.includes("minimax")) {
-      targetProvider = "minimax";
-      targetUrl = "https://api.minimax.chat/v1/text/chatcompletion_v2";
-    } else if (requestedModel.includes("claude")) {
-      targetProvider = "anthropic";
-      // Nota: Anthropic requiere formateo diferente si no se usa un shim (OpenRouter). 
-      // Por simplicidad en este MVP asumiremos endpoints compatibles con OpenAI.
-      targetUrl = "https://api.anthropic.com/v1/messages"; 
-    }
-
-    // 4. Obtener Llave Maestra del Superadmin para el proveedor seleccionado
-    const masterProvider = await prisma.masterProvider.findFirst({ 
-      where: { isActive: true, provider: targetProvider } 
-    });
-
-    if (!masterProvider || !masterProvider.apiKey) {
-      return NextResponse.json({ error: `Servicio temporalmente no disponible para el proveedor: ${targetProvider}` }, { status: 503 });
-    }
-
-    console.log(`[OmniWorker Cloud] Enrutando petición de ${email} hacia -> ${targetProvider} (${requestedModel})`);
-
-    // 5. Facturación: Descontar tokens
-    const isStream = body.stream === true;
-    const cost = 50; // Costo fijo MVP
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { tokenBalance: { decrement: cost } }
-    });
-
-    await prisma.taskLog.create({
-      data: {
-        userId: user.id,
-        promptTokens: cost,
-        completionTks: 0,
-        modelUsed: requestedModel,
-        taskType: "cloud_reasoning"
-      }
-    });
-
-    // 6. Llamar a la API de IA (compatible con OpenAI)
     const aiResponse = await fetch(targetUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${masterProvider.apiKey}`
-        // Anthropic requiere un header extra "x-api-key" y "anthropic-version" si se llamara directo, 
-        // pero idealmente el cliente ya envía esto o usamos un Gateway compatible.
-      },
-      body: JSON.stringify({
-        ...body,
-        model: requestedModel
-      })
+      headers,
+      body: JSON.stringify({ ...body, model: requestedModel }),
     });
 
     if (!aiResponse.ok) {
       const errTxt = await aiResponse.text();
       console.error(`[OmniWorker Cloud] Error ${targetProvider}:`, errTxt);
-      return NextResponse.json({ error: `Error del proveedor remoto (${targetProvider})` }, { status: 502 });
+      return NextResponse.json(
+        { error: `Error del proveedor (${targetProvider})` },
+        { status: 502 }
+      );
     }
 
-    // 7. Retornar el flujo (stream o json)
+    // 7. Deduct tokens + log
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { tokenBalance: { decrement: estimatedCost } },
+    });
+
+    await prisma.taskLog.create({
+      data: {
+        userId: user.id,
+        tenantId: user.tenantId,
+        promptTokens: estimatedCost,
+        completionTks: 0,
+        modelUsed: requestedModel,
+        taskType: "cloud_reasoning",
+        status: "completed",
+      },
+    });
+
+    // 8. Return response (stream or json)
     if (isStream) {
       return new Response(aiResponse.body, {
         headers: {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
+          Connection: "keep-alive",
         },
       });
-    } else {
-      const data = await aiResponse.json();
-      return NextResponse.json(data);
     }
 
+    const data = await aiResponse.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("[LLM Gateway Error]", error);
-    return NextResponse.json({ error: "Error interno del proxy IA" }, { status: 500 });
+
+    // Log failed task
+    await prisma.taskLog.create({
+      data: {
+        userId: user.id,
+        tenantId: user.tenantId,
+        promptTokens: 0,
+        completionTks: 0,
+        modelUsed: requestedModel,
+        taskType: "cloud_reasoning",
+        status: "failed",
+      },
+    });
+
+    return NextResponse.json(
+      { error: "Error interno del proxy IA" },
+      { status: 500 }
+    );
   }
 }
