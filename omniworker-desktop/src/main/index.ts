@@ -48,6 +48,9 @@ import {
   ensureSshTunnelIfNeeded,
   setSshRemoteApiKey,
   startLocalLlmServer,
+  startSmartRouter,
+  stopSmartRouter,
+  getSmartRouterUrl,
 } from "./omniworker";
 import {
   startSshTunnel,
@@ -676,6 +679,7 @@ function setupIPC(): void {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) { await sshStartGateway(conn.ssh); return true; }
     startLocalLlmServer(); // Auto-start local LLM if installed
+    startSmartRouter();    // Auto-start smart router (routes local SLM ↔ cloud)
     return startGateway();
   });
   ipcMain.handle("stop-gateway", async () => {
@@ -689,6 +693,11 @@ function setupIPC(): void {
     if (conn.mode === "ssh" && conn.ssh) return sshGatewayStatus(conn.ssh);
     return isGatewayRunning();
   });
+
+  // Smart Router (local SLM ↔ cloud routing)
+  ipcMain.handle("start-smart-router", () => startSmartRouter());
+  ipcMain.handle("stop-smart-router", () => { stopSmartRouter(); return true; });
+  ipcMain.handle("smart-router-url", (_event, cloudFallback: string) => getSmartRouterUrl(cloudFallback));
 
   // Platform toggles (config.yaml platforms section)
   ipcMain.handle("get-platform-enabled", (_event, profile?: string) => {
@@ -1410,6 +1419,7 @@ app.on("before-quit", () => {
     currentChatAbort();
     currentChatAbort = null;
   }
+  stopSmartRouter();
   stopGateway();
   stopSshTunnel();
   stopClaw3d();

@@ -232,6 +232,12 @@ const omniworkerAPI = {
   stopGateway: (): Promise<boolean> => ipcRenderer.invoke("stop-gateway"),
   gatewayStatus: (): Promise<boolean> => ipcRenderer.invoke("gateway-status"),
 
+  // Smart Router (local SLM ↔ cloud routing)
+  startSmartRouter: (): Promise<boolean> => ipcRenderer.invoke("start-smart-router"),
+  stopSmartRouter: (): Promise<boolean> => ipcRenderer.invoke("stop-smart-router"),
+  getSmartRouterUrl: (cloudFallback: string): Promise<string> =>
+    ipcRenderer.invoke("smart-router-url", cloudFallback),
+
   // Platform toggles
   getPlatformEnabled: (profile?: string): Promise<Record<string, boolean>> =>
     ipcRenderer.invoke("get-platform-enabled", profile),

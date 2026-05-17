@@ -652,6 +652,147 @@ function sendMessageViaCli(
 
 let apiServerAvailable: boolean | null = null; // cached after first check
 
+// ────────────────────────────────────────────────────
+//  Local SLM Router — classify messages for local vs cloud
+// ────────────────────────────────────────────────────
+
+const LOCAL_SLM_PORT = parseInt(process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080", 10);
+
+/**
+ * Classify a message as "simple" (→ local SLM) or "complex" (→ cloud SaaS).
+ * Simple: greetings, short questions, yes/no, basic chitchat, no history.
+ * Complex: code, long text, tool use, multi-turn reasoning.
+ */
+function shouldUseLocalSlm(
+  message: string,
+  history?: Array<{ role: string; content: string }>,
+): boolean {
+  // Multi-turn → always cloud
+  if (history && history.length > 0) return false;
+
+  const trimmed = message.trim();
+
+  // Very short (< 15 chars) — greetings, yes/no
+  if (trimmed.length <= 15) return true;
+
+  // Simple greeting/thanks patterns
+  const simplePatterns = /^(hola|hi|hello|hey|buenos días|buenas|gracias|thanks|bye|adiós|ok|sí|no|yes|nope|sure|claro|dale|listo|yo|qué tal|qué haces|cómo estás|how are you|what's up|sup|good morning|good night|buenas noches)[\s!.?]*$/i;
+  if (simplePatterns.test(trimmed)) return true;
+
+  // Medium (15-100 chars) with no code indicators → local
+  if (trimmed.length <= 100) {
+    const codeIndicators = /```|function |class |import |const |def |async |await |SELECT |CREATE |npm |git |pip |python|error|traceback|exception|debug|fix|archivo|file|install|configurar/i;
+    if (!codeIndicators.test(trimmed)) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Send a message to the local SLM (llama-server).
+ * Returns null if SLM is not available, letting the caller fallback.
+ */
+function sendMessageViaLocalSlm(
+  message: string,
+  cb: ChatCallbacks,
+): ChatHandle | null {
+  const controller = new AbortController();
+  const slmUrl = `http://127.0.0.1:${LOCAL_SLM_PORT}/v1/chat/completions`;
+
+  const body = JSON.stringify({
+    model: "slm",
+    messages: [{ role: "user", content: message }],
+    stream: true,
+  });
+
+  let hasContent = false;
+  let finished = false;
+
+  function finish(error?: string): void {
+    if (finished) return;
+    finished = true;
+    if (error) cb.onError(error);
+    else cb.onDone();
+  }
+
+  const req = http.request(
+    slmUrl,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      timeout: 30000,
+    },
+    (res) => {
+      if (res.statusCode !== 200) {
+        let errBody = "";
+        res.on("data", (d: Buffer) => { errBody += d.toString(); });
+        res.on("end", () => finish(`Local SLM error ${res.statusCode}`));
+        return;
+      }
+
+      let buffer = "";
+      res.on("data", (chunk: Buffer) => {
+        buffer += chunk.toString();
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() || "";
+
+        for (const part of parts) {
+          for (const line of part.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6);
+            if (data === "[DONE]") {
+              finish(hasContent ? undefined : "Local SLM returned empty");
+              return;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) { hasContent = true; cb.onChunk(content); }
+            } catch { /* skip malformed chunk */ }
+          }
+        }
+      });
+
+      res.on("end", () => {
+        // Process any remaining buffer
+        if (buffer.trim()) {
+          for (const line of buffer.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6);
+            if (data === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) { hasContent = true; cb.onChunk(content); }
+            } catch { /* skip */ }
+          }
+        }
+        finish(hasContent ? undefined : "No response from local SLM");
+      });
+
+      res.on("error", (err) => finish(`Local SLM stream error: ${err.message}`));
+    },
+  );
+
+  req.on("error", (err) => {
+    if (err.name === "AbortError") return;
+    finish(`Local SLM unavailable: ${err.message}`);
+  });
+
+  req.on("timeout", () => {
+    req.destroy();
+    finish("Local SLM request timed out");
+  });
+
+  req.write(body);
+  req.end();
+
+  return { abort: () => { controller.abort(); } };
+}
+
+// ────────────────────────────────────────────────────
+
 export async function sendMessage(
   message: string,
   cb: ChatCallbacks,
@@ -660,6 +801,19 @@ export async function sendMessage(
   history?: Array<{ role: string; content: string }>,
 ): Promise<ChatHandle> {
   ensureInitialized();
+
+  // ── LOCAL SLM FAST PATH ──
+  // Simple messages (greetings, short Qs) go to local llama-server when available.
+  // Falls through to cloud on any error.
+  if (
+    !isRemoteMode() &&
+    !resumeSessionId &&
+    shouldUseLocalSlm(message, history)
+  ) {
+    const slmHandle = sendMessageViaLocalSlm(message, cb);
+    if (slmHandle) return slmHandle;
+    // SLM not available — fall through to gateway/cloud
+  }
 
   // Remote mode: always use API, no CLI fallback
   if (isRemoteMode()) {
@@ -756,7 +910,7 @@ export function stopHealthPolling(): void {
 
 let localLlmProcess: ChildProcess | null = null;
 
-const LOCAL_LLM_PORT = parseInt(process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080", 10);
+const _LOCAL_LLM_PORT_ORIG = parseInt(process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080", 10);
 
 function isLocalLlmRunning(): boolean {
   // Synchronous TCP probe — fast (300 ms timeout) and no external deps.
@@ -764,7 +918,7 @@ function isLocalLlmRunning(): boolean {
   try {
     const net = require("net") as typeof import("net");
     return new Promise<boolean>((resolve) => {
-      const s = net.createConnection({ port: LOCAL_LLM_PORT, host: "127.0.0.1" });
+      const s = net.createConnection({ port: _LOCAL_LLM_PORT_ORIG, host: "127.0.0.1" });
       s.setTimeout(300);
       s.once("connect", () => { s.destroy(); resolve(true); });
       s.once("error",   () => { s.destroy(); resolve(false); });
@@ -818,6 +972,102 @@ export function startLocalLlmServer(): boolean {
   });
 
   return true;
+}
+
+//  Smart Router management
+// ────────────────────────────────────────────────────
+
+const SMART_ROUTER_PORT = parseInt(process.env.SMART_ROUTER_PORT ?? "8341", 10);
+
+let smartRouterProcess: ChildProcess | null = null;
+
+/**
+ * Check if the smart router is running on port 8341.
+ */
+function isSmartRouterRunning(): boolean {
+  try {
+    const net = require("net") as typeof import("net");
+    return new Promise<boolean>((resolve) => {
+      const s = net.createConnection({ port: SMART_ROUTER_PORT, host: "127.0.0.1" });
+      s.setTimeout(300);
+      s.once("connect", () => { s.destroy(); resolve(true); });
+      s.once("error",   () => { s.destroy(); resolve(false); });
+      s.once("timeout", () => { s.destroy(); resolve(false); });
+    }) as unknown as boolean;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Start the smart router proxy that routes inference between local SLM and cloud.
+ * Must be called AFTER login (needs OPENAI_API_KEY and CLOUD_API_URL in env).
+ */
+export function startSmartRouter(): boolean {
+  if (isSmartRouterRunning()) {
+    return true; // Already running
+  }
+
+  const routerScript = join(OMNIWORKER_REPO, "smart_router.py");
+  if (!existsSync(routerScript)) {
+    console.warn("[SmartRouter] Script not found:", routerScript);
+    return false;
+  }
+
+  // Get current env to pass auth credentials to router
+  const routerEnv: Record<string, string> = {
+    ...(process.env as Record<string, string>),
+    PATH: getEnhancedPath(),
+    HOME: homedir(),
+    SMART_ROUTER_PORT: String(SMART_ROUTER_PORT),
+    LOCAL_SLM_PORT: process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
+    CLOUD_API_URL: process.env.CLOUD_API_URL || "https://worker.thelab.lat/api",
+    SMART_ROUTER_LOG: "1", // Enable logging
+  };
+
+  // Forward the JWT token so the router can auth with cloud
+  const apiKey = readEnv().OPENAI_API_KEY || "";
+  if (apiKey) {
+    routerEnv.OPENAI_API_KEY = apiKey;
+  }
+
+  const args = [OMNIWORKER_PYTHON, routerScript];
+  smartRouterProcess = spawn(args[0], args.slice(1), {
+    cwd: OMNIWORKER_REPO,
+    env: routerEnv,
+    stdio: "ignore",
+    detached: true,
+    ...HIDDEN_SUBPROCESS_OPTIONS,
+  });
+
+  smartRouterProcess.unref();
+  smartRouterProcess.on("close", () => {
+    smartRouterProcess = null;
+  });
+
+  console.log("[SmartRouter] Started on port", SMART_ROUTER_PORT);
+  return true;
+}
+
+/**
+ * Stop the smart router process.
+ */
+export function stopSmartRouter(): void {
+  if (smartRouterProcess && !smartRouterProcess.killed) {
+    smartRouterProcess.kill("SIGTERM");
+    smartRouterProcess = null;
+  }
+}
+
+/**
+ * Get the smart router base URL for config.yaml.
+ * Returns "http://localhost:8341/v1" if router is available, else falls back to direct cloud.
+ */
+export function getSmartRouterUrl(cloudFallback: string): string {
+  if (isSmartRouterRunning()) {
+    return `http://127.0.0.1:${SMART_ROUTER_PORT}/v1`;
+  }
+  return cloudFallback;
 }
 
 //  Gateway management

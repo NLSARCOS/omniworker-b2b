@@ -252,7 +252,7 @@ export function setModelConfig(
   profile?: string,
 ): void {
   invalidateCache(`mc:${profile || "default"}`);
-  const { configFile, home } = profilePaths(profile);
+  const { configFile } = profilePaths(profile);
   if (!existsSync(configFile)) {
     // Create config.yaml with minimal structure if it doesn't exist (fresh install)
     const dir = join(configFile, "..");

@@ -73,17 +73,23 @@ function App(): React.JSX.Element {
     if (auth?.accessToken) {
       setAuthToken(auth.accessToken);
       
-      // OMNIWORKER B2B: Configure the LOCAL agent to use the SaaS backend as its LLM provider
-      const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
-      const gatewayUrl = `${saasUrl}/api/v1`;
-      
-      // 1. Guardar el token como OPENAI_API_KEY para que el agente local lo detecte automáticamente
+      // OMNIWORKER B2B: Smart Router Architecture
+      // 1. Guardar el token como OPENAI_API_KEY
       await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
       
-      // 2. Configurar el provider 'custom' para que apunte al SaaS
-      await window.omniworkerAPI.setModelConfig("custom", "omniworker", gatewayUrl);
+      // 2. Guardar la URL del cloud para que el smart router sepa a dónde ir
+      const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+      await window.omniworkerAPI.setEnv("CLOUD_API_URL", `${saasUrl}/api`);
       
-      // 3. Forzar modo local (para que el Desktop App hable con el agente Python local)
+      // 3. Iniciar el smart router (proxy que enruta local SLM ↔ cloud)
+      await window.omniworkerAPI.startSmartRouter();
+      
+      // 4. Configurar el provider para que apunte al smart router (no al cloud directo)
+      //    El router decide: mensajes simples → SLM local, complejos → cloud SaaS
+      const baseUrl = await window.omniworkerAPI.getSmartRouterUrl(`${saasUrl}/api/v1`);
+      await window.omniworkerAPI.setModelConfig("custom", "omniworker", baseUrl);
+      
+      // 5. Forzar modo local (para que el Desktop App hable con el agente Python local)
       await window.omniworkerAPI.setConnectionConfig("local", "", "");
     }
 

@@ -217,6 +217,11 @@ interface OmniWorkerAPI {
   stopGateway: () => Promise<boolean>;
   gatewayStatus: () => Promise<boolean>;
 
+  // Smart Router (local SLM ↔ cloud routing)
+  startSmartRouter: () => Promise<boolean>;
+  stopSmartRouter: () => Promise<boolean>;
+  getSmartRouterUrl: (cloudFallback: string) => Promise<string>;
+
   // Platform toggles
   getPlatformEnabled: (profile?: string) => Promise<Record<string, boolean>>;
   setPlatformEnabled: (
