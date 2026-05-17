@@ -861,7 +861,7 @@ function ensureInitialized(): void {
   if (!isRemoteMode()) {
     ensureApiServerConfig();
     ensureLocalLlmScripts(); // Copy startup scripts on first run
-    startSmartRouter(); // Start smart router so gateway has it available
+    startSmartRouter().catch(e => console.error("[SmartRouter] Init failed", e)); // Start smart router so gateway has it available
   }
   startHealthPolling();
 }
@@ -1022,8 +1022,9 @@ function isSmartRouterRunning(): boolean {
  * Start the smart router proxy that routes inference between local SLM and cloud.
  * Must be called AFTER login (needs OPENAI_API_KEY and CLOUD_API_URL in env).
  */
-export function startSmartRouter(): boolean {
-  if (isSmartRouterRunning()) {
+export async function startSmartRouter(): Promise<boolean> {
+  const isRunning = await isSmartRouterRunning();
+  if (isRunning) {
     return true; // Already running
   }
 
@@ -1051,10 +1052,11 @@ export function startSmartRouter(): boolean {
   }
 
   const args = [OMNIWORKER_PYTHON, routerScript];
+  const logStream = require("fs").createWriteStream(join(OMNIWORKER_HOME, "smart_router.log"), { flags: "a" });
   smartRouterProcess = spawn(args[0], args.slice(1), {
     cwd: OMNIWORKER_REPO,
     env: routerEnv,
-    stdio: "ignore",
+    stdio: ["ignore", logStream, logStream],
     detached: true,
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });

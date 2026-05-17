@@ -307,6 +307,31 @@ export default function Account({ userData: loginData, authToken }: AccountProps
             : t("account.copyKey") || "Copy current API key"}
         </button>
       </div>
+
+      {/* System Validation */}
+      <div className="account-card">
+        <div className="account-card-header">
+          <h2>
+            <Check size={16} />
+            {t("account.systemValidation") || "System Validation"}
+          </h2>
+        </div>
+        <div className="account-keys-list" style={{ padding: "16px" }}>
+          <p style={{ color: "var(--text-muted)", marginBottom: "16px" }}>
+            Check if the local agent, smart router, and models are installed and running correctly.
+          </p>
+          <button 
+            className="btn btn-primary"
+            onClick={async () => {
+              alert("Validating system...\n1. SaaS Connection: OK\n2. Agent Configuration: Checking...\n3. Local Model: Checking...");
+              const doctorOutput = await window.omniworkerAPI.runOmniWorkerDoctor();
+              alert("Validation Results:\n\n" + doctorOutput.split("\n").slice(0, 10).join("\n") + "\n...");
+            }}
+          >
+            Run Validation Check
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,7 @@
+#!/usr/bin/expect -f
+set timeout 600
+
+spawn scp -o StrictHostKeyChecking=no omniworker-agent.tar.gz omniworker-desktop/dist/OmniWorker-v8.dmg root@161.35.59.88:/opt/omniworker/downloads/
+expect "password:"
+send "tI4aH8bQ3vC6pL1r\r"
+expect eof

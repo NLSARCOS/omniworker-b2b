@@ -679,7 +679,7 @@ function setupIPC(): void {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) { await sshStartGateway(conn.ssh); return true; }
     startLocalLlmServer(); // Auto-start local LLM if installed
-    startSmartRouter();    // Auto-start smart router (routes local SLM ↔ cloud)
+    await startSmartRouter();    // Auto-start smart router (routes local SLM ↔ cloud)
     return startGateway();
   });
   ipcMain.handle("stop-gateway", async () => {
@@ -695,7 +695,7 @@ function setupIPC(): void {
   });
 
   // Smart Router (local SLM ↔ cloud routing)
-  ipcMain.handle("start-smart-router", () => startSmartRouter());
+  ipcMain.handle("start-smart-router", async () => await startSmartRouter());
   ipcMain.handle("stop-smart-router", () => { stopSmartRouter(); return true; });
   ipcMain.handle("smart-router-url", (_event, cloudFallback: string) => getSmartRouterUrl(cloudFallback));
 
