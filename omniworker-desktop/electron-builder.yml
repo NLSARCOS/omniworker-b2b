@@ -9,11 +9,31 @@ files:
   - "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
   - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
   - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+  - "!**/*.dmg"
+  - "!**/*.zip"
+  - "!resources/engine/slm.gguf"
+  - "!tests/**"
+  - "!.agents/**"
+  - "!.claude/**"
+  - "!docs/**"
+  - "!scripts/**"
+  - "!CONTRIBUTING*"
+  - "!screenshot.png"
 asarUnpack:
-  - resources/**
+  - resources/local-llm-scripts/**
+  - resources/engine/llama-server
 extraResources:
   - from: "resources/omniworker-office"
     to: "omniworker-office"
+    filter:
+      - "**/*"
+  - from: "resources/engine"
+    to: "engine"
+    filter:
+      - "llama-server"
+      - "slm.gguf"
+  - from: "resources/local-llm-scripts"
+    to: "local-llm-scripts"
     filter:
       - "**/*"
 
