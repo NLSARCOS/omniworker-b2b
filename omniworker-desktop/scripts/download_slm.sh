@@ -50,11 +50,30 @@ else
   esac
 
   if [ -n "${ASSET:-}" ]; then
-    TMP_ZIP="$RESOURCES_DIR/_llama_tmp.zip"
-    curl -fL --retry 3 --retry-delay 2 "$BASE/$ASSET" -o "$TMP_ZIP"
-    unzip -jo "$TMP_ZIP" "*/llama-server*" -d "$RESOURCES_DIR"
-    rm -f "$TMP_ZIP"
+    TMP_ARCHIVE="$RESOURCES_DIR/_llama_tmp"
+    curl -fL --retry 3 --retry-delay 2 "$BASE/$ASSET" -o "$TMP_ARCHIVE"
+
+    case "$ASSET" in
+      *.tar.gz)
+        # Mac / Linux — .tar.gz bundles
+        tar -xzf "$TMP_ARCHIVE" -C "$RESOURCES_DIR"
+        # Move nested binary to top level if needed
+        find "$RESOURCES_DIR" -mindepth 2 -name 'llama-server*' -exec mv {} "$RESOURCES_DIR/" \; 2>/dev/null || true
+        # Clean up extracted directories
+        find "$RESOURCES_DIR" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} + 2>/dev/null || true
+        ;;
+      *.zip)
+        # Windows — .zip bundles
+        unzip -jo "$TMP_ARCHIVE" "*/llama-server*" -d "$RESOURCES_DIR"
+        ;;
+      *)
+        echo "[warn] Unknown archive format: $ASSET"
+        ;;
+    esac
+
+    rm -f "$TMP_ARCHIVE"
     chmod +x "$RESOURCES_DIR/llama-server" 2>/dev/null || true
+    chmod +x "$RESOURCES_DIR/llama-server.exe" 2>/dev/null || true
     echo "[ok]   llama-server downloaded."
   fi
 fi
