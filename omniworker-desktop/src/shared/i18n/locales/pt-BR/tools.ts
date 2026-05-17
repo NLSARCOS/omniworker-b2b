@@ -59,6 +59,10 @@ export default {
     label: "Planejamento de Tarefas",
     description: "Cria e gerencia listas de afazeres para tarefas complexas",
   },
+  ecommerce: {
+    label: "E-commerce",
+    description: "Gerencie produtos e pedidos do Shopify, WooCommerce e PrestaShop",
+  },
   mcpServers: "Servidores MCP",
   mcpDescription: "Servidores Model Context Protocol configurados no config.yaml. Gerencie via <code>omniworker mcp add/remove</code> no terminal.",
   http: "HTTP",

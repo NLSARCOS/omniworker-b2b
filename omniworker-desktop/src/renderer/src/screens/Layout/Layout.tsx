@@ -173,7 +173,7 @@ function Layout({
         const apiKey = envs?.CUSTOM_API_KEY;
         if (!apiKey || !apiKey.startsWith("tsto_")) return;
 
-        const saasUrl = import.meta.env.VITE_SAAS_URL || "http://localhost:3000";
+        const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
 
         if (!registeredAgentId && !isRegistering) {
           isRegistering = true;
@@ -255,6 +255,15 @@ function Layout({
     setCurrentSessionId(null);
     goTo("chat");
   }, [goTo]);
+
+  // Listen for app-state-changed (post-import refresh)
+  useEffect(() => {
+    const cleanup = window.omniworkerAPI.onAppStateChanged(() => {
+      // Force full app reload to pick up restored data
+      window.location.reload();
+    });
+    return cleanup;
+  }, []);
 
   // Listen for menu IPC events (Cmd+N, Cmd+K from app menu)
   useEffect(() => {

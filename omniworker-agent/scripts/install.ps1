@@ -963,6 +963,59 @@ except Exception:
     Write-Success "All dependencies installed"
 }
 
+function Setup-LocalLlm {
+    Write-Info "Setting up local LLM for basic tasks and embeddings..."
+    
+    $localLlmDir = "$OmniWorkerHome\local-llm"
+    $modelsDir = "$localLlmDir\models"
+    $scriptsDir = "$localLlmDir\scripts"
+    
+    New-Item -ItemType Directory -Force -Path $modelsDir | Out-Null
+    New-Item -ItemType Directory -Force -Path $scriptsDir | Out-Null
+    
+    # Install local AI dependencies in the venv
+    $uvExe = Get-Command uv -ErrorAction SilentlyContinue
+    if (-not $uvExe) {
+        Write-Warning "uv not found — skipping local LLM setup"
+        return
+    }
+    
+    $venvPython = "$InstallDir\venv\Scripts\python.exe"
+    if (-not (Test-Path $venvPython)) {
+        Write-Warning "venv Python not found — skipping local LLM setup"
+        return
+    }
+    
+    try {
+        & $uvExe pip install llama-cpp-python sentence-transformers --python $venvPython 2>&1 | ForEach-Object {
+            if ($_ -match "error|ERROR") { Write-Host $_ -ForegroundColor Red }
+            else { Write-Host $_ -ForegroundColor Gray }
+        }
+        Write-Success "Local AI dependencies installed"
+    } catch {
+        Write-Warning "Failed to install local AI dependencies: $_"
+        Write-Warning "Local models won't be available, but cloud mode will still work"
+        return
+    }
+    
+    # Run the setup script to download the model and configure config.yaml
+    $setupScript = "$InstallDir\scripts\setup-local-llm.py"
+    if (Test-Path $setupScript) {
+        try {
+            & $venvPython $setupScript 2>&1 | ForEach-Object {
+                if ($_ -match "error|ERROR") { Write-Host $_ -ForegroundColor Red }
+                else { Write-Host $_ -ForegroundColor Gray }
+            }
+            Write-Success "Local LLM setup complete"
+        } catch {
+            Write-Warning "Local LLM setup script failed: $_"
+            Write-Warning "Cloud-only mode will still work"
+        }
+    } else {
+        Write-Warning "setup-local-llm.py not found at $setupScript"
+    }
+}
+
 function Set-PathVariable {
     Write-Info "Setting up omniworker command..."
     
@@ -1538,6 +1591,7 @@ function Main {
     Install-Repository
     Install-Venv
     Install-Dependencies
+    Setup-LocalLlm
     Install-NodeDeps
     Set-PathVariable
     Copy-ConfigTemplates

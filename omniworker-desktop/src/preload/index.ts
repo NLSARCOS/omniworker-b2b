@@ -22,8 +22,8 @@ const omniworkerAPI = {
 
   verifyInstall: (): Promise<boolean> => ipcRenderer.invoke("verify-install"),
 
-  startInstall: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke("start-install"),
+  startInstall: (authToken?: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("start-install", authToken),
 
   onInstallProgress: (
     callback: (progress: {
@@ -722,7 +722,7 @@ const omniworkerAPI = {
   openExternal: (url: string): Promise<void> =>
     ipcRenderer.invoke("open-external", url),
 
-  // Backup / Import
+  // Backup / Import (legacy)
   runOmniWorkerBackup: (
     profile?: string,
   ): Promise<{ success: boolean; path?: string; error?: string }> =>
@@ -733,6 +733,42 @@ const omniworkerAPI = {
     profile?: string,
   ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("run-omniworker-import", archivePath, profile),
+
+  // Enhanced Backup / Import
+  scanBackupData: (
+    profile?: string,
+    options?: { includeSessions?: boolean; includeKanban?: boolean },
+  ): Promise<any> => ipcRenderer.invoke("scan-backup-data", profile, options),
+
+  createBackup: (
+    profile?: string,
+    options?: { includeSessions?: boolean; includeKanban?: boolean },
+  ): Promise<{ success: boolean; path?: string; size?: number; error?: string }> =>
+    ipcRenderer.invoke("create-backup", profile, options),
+
+  readBackupManifest: (): Promise<{ manifest: any | null; error?: string }> =>
+    ipcRenderer.invoke("read-backup-manifest"),
+
+  restoreBackup: (
+    archivePath: string,
+    profile?: string,
+    options?: { includeSessions?: boolean; includeKanban?: boolean; overwrite?: boolean },
+  ): Promise<{ success: boolean; error?: string; restoredItems: string[] }> =>
+    ipcRenderer.invoke("restore-backup", archivePath, profile, options),
+
+  onBackupProgress: (
+    callback: (progress: { phase: string; currentFile: string; percent: number }) => void,
+  ) => {
+    const handler = (_event: any, progress: any) => callback(progress);
+    ipcRenderer.on("backup-progress", handler);
+    return () => ipcRenderer.removeListener("backup-progress", handler);
+  },
+
+  onAppStateChanged: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on("app-state-changed", handler);
+    return () => ipcRenderer.removeListener("app-state-changed", handler);
+  },
 
   // Debug dump
   runOmniWorkerDump: (): Promise<string> => ipcRenderer.invoke("run-omniworker-dump"),

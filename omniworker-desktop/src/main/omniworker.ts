@@ -1,5 +1,5 @@
 import { ChildProcess, spawn } from "child_process";
-import { existsSync, readFileSync, appendFileSync, unlinkSync } from "fs";
+import { existsSync, readFileSync, appendFileSync, unlinkSync, copyFileSync, chmodSync, symlinkSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import http from "http";
@@ -688,8 +688,47 @@ function ensureInitialized(): void {
   _initialized = true;
   if (!isRemoteMode()) {
     ensureApiServerConfig();
+    ensureLocalLlmScripts(); // Copy startup scripts on first run
   }
   startHealthPolling();
+}
+
+/**
+ * Copy bundled local-llm startup scripts from app resources into
+ * OMNIWORKER_HOME/local-llm/ so startLocalLlmServer() can find them.
+ * Safe to call multiple times — only copies if destination is missing.
+ */
+function ensureLocalLlmScripts(): void {
+  try {
+    const { app } = require("electron");
+    const srcDir = join(app.getAppPath(), "resources", "local-llm-scripts");
+    const engineSrcDir = join(app.getAppPath(), "resources", "engine");
+    const destScriptsDir = join(OMNIWORKER_HOME, "local-llm", "scripts");
+    const destEngineDir = join(OMNIWORKER_HOME, "local-llm", "engine");
+
+    if (!existsSync(srcDir)) return; // not packaged yet (dev mode)
+
+    mkdirSync(destScriptsDir, { recursive: true });
+    mkdirSync(destEngineDir, { recursive: true });
+
+    // Copy startup scripts
+    for (const f of ["start-local-llm.sh", "start-local-llm.bat"]) {
+      const src = join(srcDir, f);
+      const dst = join(destScriptsDir, f);
+      if (existsSync(src) && !existsSync(dst)) {
+        copyFileSync(src, dst);
+        if (f.endsWith(".sh")) chmodSync(dst, 0o755);
+      }
+    }
+
+    // Symlink engine dir so scripts can reference ../engine relative to scripts/
+    const engineLink = join(OMNIWORKER_HOME, "local-llm", "engine");
+    if (existsSync(engineSrcDir) && !existsSync(engineLink)) {
+      symlinkSync(engineSrcDir, engineLink);
+    }
+  } catch (e) {
+    console.warn("[local-llm] ensureLocalLlmScripts failed:", e);
+  }
 }
 
 function startHealthPolling(): void {
@@ -712,6 +751,75 @@ export function stopHealthPolling(): void {
 }
 
 // ────────────────────────────────────────────────────
+//  Local LLM server management
+// ────────────────────────────────────────────────────
+
+let localLlmProcess: ChildProcess | null = null;
+
+const LOCAL_LLM_PORT = parseInt(process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080", 10);
+
+function isLocalLlmRunning(): boolean {
+  // Synchronous TCP probe — fast (300 ms timeout) and no external deps.
+  // Returns true if llama-server is already bound on the configured port.
+  try {
+    const net = require("net") as typeof import("net");
+    return new Promise<boolean>((resolve) => {
+      const s = net.createConnection({ port: LOCAL_LLM_PORT, host: "127.0.0.1" });
+      s.setTimeout(300);
+      s.once("connect", () => { s.destroy(); resolve(true); });
+      s.once("error",   () => { s.destroy(); resolve(false); });
+      s.once("timeout", () => { s.destroy(); resolve(false); });
+    }) as unknown as boolean;
+  } catch {
+    return false;
+  }
+}
+
+export function startLocalLlmServer(): boolean {
+  const scriptPath = join(OMNIWORKER_HOME, "local-llm", "scripts", "start-local-llm.sh");
+  const winScriptPath = join(OMNIWORKER_HOME, "local-llm", "scripts", "start-local-llm.bat");
+
+  const startScript = process.platform === "win32" && existsSync(winScriptPath)
+    ? winScriptPath
+    : scriptPath;
+
+  if (!existsSync(startScript)) {
+    return false; // Local LLM not installed
+  }
+
+  if (isLocalLlmRunning()) {
+    return true; // Already running
+  }
+
+  if (localLlmProcess && !localLlmProcess.killed) {
+    return true; // Already started by us
+  }
+
+  const env = {
+    ...process.env,
+    PATH: getEnhancedPath(),
+    HOME: homedir(),
+  };
+
+  const command = process.platform === "win32" ? "cmd.exe" : "bash";
+  const args = process.platform === "win32" ? ["/c", startScript] : [startScript];
+
+  localLlmProcess = spawn(command, args, {
+    cwd: OMNIWORKER_HOME,
+    env,
+    stdio: "ignore",
+    detached: true,
+    ...HIDDEN_SUBPROCESS_OPTIONS,
+  });
+
+  localLlmProcess.unref();
+  localLlmProcess.on("close", () => {
+    localLlmProcess = null;
+  });
+
+  return true;
+}
+
 //  Gateway management
 // ────────────────────────────────────────────────────
 

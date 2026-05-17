@@ -67,6 +67,10 @@ export default {
     label: "Scrapling Web Fetcher",
     description: "Extracción web avanzada con omisión de protecciones antibot",
   },
+  ecommerce: {
+    label: "E-commerce",
+    description: "Gestiona productos y órdenes de Shopify, WooCommerce y PrestaShop",
+  },
   mcpServers: "Servidores MCP",
   mcpDescription: "Servidores Model Context Protocol configurados en config.yaml. Adminístralos con <code>omniworker mcp add/remove</code> en la terminal.",
   http: "HTTP",

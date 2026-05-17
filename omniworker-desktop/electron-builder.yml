@@ -16,10 +16,7 @@ extraResources:
     to: "omniworker-office"
     filter:
       - "**/*"
-  - from: "../omniworker-agent/dist/omniworker-engine"
-    to: "engine/omniworker-engine"
-    filter:
-      - "**/*"
+
 win:
   executableName: omniworker-agent
 nsis:

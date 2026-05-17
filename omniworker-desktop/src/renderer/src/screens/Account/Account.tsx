@@ -59,7 +59,7 @@ export default function Account({ userData: loginData, authToken }: AccountProps
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const saasUrl = import.meta.env.VITE_SAAS_URL || "http://localhost:3000";
+  const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
 
   // Build initial user from login data
   useEffect(() => {

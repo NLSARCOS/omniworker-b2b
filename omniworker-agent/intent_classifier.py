@@ -1,58 +1,124 @@
 import os
 import re
 import logging
+import urllib.request
+import urllib.error
 
 logger = logging.getLogger(__name__)
 
+# ── Endpoints ────────────────────────────────────────────────────────────────
+# Local SLM: llama-server spawned by the desktop at startup
+_LOCAL_SLM_BASE_URL = os.getenv("OMNIWORKER_LOCAL_SLM_URL", "http://127.0.0.1:8080/v1")
+_LOCAL_SLM_MODEL    = os.getenv("OMNIWORKER_LOCAL_SLM_MODEL", "slm")   # matches llama-server --alias
+
+# SaaS cloud gateway (injected by the desktop via ~/.omniworker/.env)
+_SAAS_BASE_URL = os.getenv("OMNIWORKER_SAAS_BASE_URL", "http://localhost:3000/api/v1")
+_SAAS_API_KEY  = os.getenv("OMNIWORKER_SAAS_API_KEY") or os.getenv("CUSTOM_API_KEY", "")
+_SAAS_MODEL    = os.getenv("OMNIWORKER_SAAS_MODEL", "omniworker-b2b")
+
+
+def _is_slm_alive() -> bool:
+    """
+    Quick TCP-level check to see if llama-server is listening.
+    Returns False on any error (not installed, still booting, etc.).
+    Times out in 300ms so it never blocks a turn.
+    """
+    try:
+        req = urllib.request.Request(
+            f"{_LOCAL_SLM_BASE_URL}/models",
+            headers={"Authorization": "Bearer no-key-required"},
+        )
+        with urllib.request.urlopen(req, timeout=0.3):
+            return True
+    except Exception:
+        return False
+
+
+# ── Intent classification ─────────────────────────────────────────────────────
+
+# Tasks cheap enough to run locally (file ops, translate, summarise short text…)
+_LOCAL_KEYWORDS = [
+    # File system
+    "buscar archivo", "busca el archivo", "encuentra el archivo",
+    "listar archivos", "lista archivos", "carpeta", "directorio",
+    # Translation
+    "traduce", "traducir", "translate", "translation",
+    # Simple summarise / short Q&A
+    "resume esto", "resumen", "summarize", "summary",
+    # Calendar / OS tasks
+    "calendario", "evento", "recordatorio", "reminder",
+    "abre la app", "abre el archivo", "abre el programa",
+    "ejecuta", "corre el script", "terminal", "comando",
+    # Misc cheap
+    "mi pc", "mi computadora", "mi mac", "local",
+    "convierte este texto", "convierte el formato",
+    "extrae el texto", "copiar texto",
+]
+
+# Tasks that need reasoning / long context → always go to cloud
+_CLOUD_KEYWORDS = [
+    "diseña", "arquitectura", "escribe el código", "implementa",
+    "crea una app", "crea una aplicación", "build", "refactor",
+    "analiza el código", "code review", "debug", "depura",
+    "react", "nextjs", "typescript", "python", "fastapi",
+    "aws", "docker", "kubernetes", "deploy",
+    "plan de", "estrategia", "roadmap", "propuesta",
+    "ensayo", "artículo largo", "escribe un libro",
+    "modelo matemático", "algoritmo complejo",
+    "generate", "genera código", "genera la función",
+]
+
+
 def is_local_intent(user_message: str) -> bool:
     """
-    Heurística rápida para clasificador de intenciones.
-    Decide si la petición debe resolverse en LOCAL (SLM) o en CLOUD (SaaS).
+    Heuristic classifier: True  → route to local SLM (save tokens)
+                          False → route to cloud SaaS gateway
     """
-    message_lower = user_message.lower()
-    
-    local_keywords = [
-        "buscar", "archivo", "sistema", "rag", "documento", "carpeta", 
-        "calendario", "evento", "abre", "ejecuta", "terminal", "script",
-        "mi computadora", "mi pc", "local"
-    ]
-    
-    complex_keywords = [
-        "diseña", "arquitectura", "compilador", "explícame la teoría", 
-        "ensayo", "analiza este código complejo", "escribe un libro",
-        "crea una aplicación web completa", "react", "nextjs", "aws",
-        "plan de marketing", "modelo matemático"
-    ]
-    
-    # 1. Regla: Tareas que interactúan explícitamente con el SO son locales.
-    for kw in local_keywords:
-        if kw in message_lower:
-            return True
-            
-    # 2. Regla: Tareas abstractas y complejas van a la nube.
-    for kw in complex_keywords:
-        if kw in message_lower:
+    msg = user_message.lower().strip()
+
+    # 1. Explicit cloud keywords take priority
+    for kw in _CLOUD_KEYWORDS:
+        if kw in msg:
             return False
-            
-    # 3. Longitud: Prompts muy largos suelen requerir razonamiento complejo (Cloud)
-    if len(user_message) > 500:
+
+    # 2. Long prompts almost always need cloud reasoning
+    if len(user_message) > 400:
         return False
-        
-    # Por defecto, resolvemos localmente para ahorrar tokens (AaaS value prop)
+
+    # 3. Local keywords → candidate for SLM
+    for kw in _LOCAL_KEYWORDS:
+        if kw in msg:
+            return True
+
+    # 4. Default: short+simple → local if SLM is up, cloud otherwise
     return True
 
-def get_routing_config(user_message: str, current_base_url: str, current_model: str, current_key: str):
+
+def get_routing_config(
+    user_message: str,
+    current_base_url: str,
+    current_model: str,
+    current_key: str,
+) -> tuple:
     """
-    Retorna (base_url, model, api_key) dependiendo de la ruta elegida.
+    Returns (base_url, model, api_key) for this turn.
+
+    Routing logic:
+      • complex / long prompt  → SaaS cloud gateway
+      • simple / local task    → llama-server (local SLM)
+          - but only if the SLM is actually running
+          - falls back to SaaS if SLM is offline
     """
     if is_local_intent(user_message):
-        logger.info("[Intent Classifier] Ruta elegida: LOCAL (SLM)")
-        # Devolver la configuración local original (Ej. LMStudio / Ollama)
-        return current_base_url, current_model, current_key
-    else:
-        logger.info("[Intent Classifier] Ruta elegida: CLOUD (SaaS Gateway)")
-        # Forzar el enrutamiento al backend SaaS
-        saas_url = os.getenv("OMNIWORKER_SAAS_URL", "http://localhost:3000/api/v1/chat/completions")
-        saas_key = os.getenv("OMNIWORKER_API_KEY", "dummy-local-token")
-        saas_model = "omniworker-cloud-reasoner"
-        return saas_url, saas_model, saas_key
+        if _is_slm_alive():
+            logger.info("[Intent Classifier] → LOCAL SLM (%s)", _LOCAL_SLM_BASE_URL)
+            return _LOCAL_SLM_BASE_URL, _LOCAL_SLM_MODEL, "no-key-required"
+        else:
+            logger.info(
+                "[Intent Classifier] LOCAL intent but SLM offline — falling back to CLOUD"
+            )
+
+    # Cloud path
+    saas_key = _SAAS_API_KEY or current_key  # honour whatever key the agent already has
+    logger.info("[Intent Classifier] → CLOUD SaaS (%s)", _SAAS_BASE_URL)
+    return _SAAS_BASE_URL, _SAAS_MODEL, saas_key

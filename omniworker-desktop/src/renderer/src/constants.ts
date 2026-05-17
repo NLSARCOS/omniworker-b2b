@@ -429,6 +429,53 @@ export const SETTINGS_SECTIONS: SectionDef[] = [
       },
     ],
   },
+  {
+    title: "constants.sectionEcommerce",
+    items: [
+      {
+        key: "SHOPIFY_STORE_DOMAIN",
+        label: "constants.shopifyStoreDomain",
+        type: "text",
+        hint: "constants.shopifyStoreDomainHint",
+      },
+      {
+        key: "SHOPIFY_ACCESS_TOKEN",
+        label: "constants.shopifyAccessToken",
+        type: "password",
+        hint: "constants.shopifyAccessTokenHint",
+      },
+      {
+        key: "WOOCOMMERCE_STORE_URL",
+        label: "constants.woocommerceStoreUrl",
+        type: "text",
+        hint: "constants.woocommerceStoreUrlHint",
+      },
+      {
+        key: "WOOCOMMERCE_CONSUMER_KEY",
+        label: "constants.woocommerceConsumerKey",
+        type: "password",
+        hint: "constants.woocommerceConsumerKeyHint",
+      },
+      {
+        key: "WOOCOMMERCE_CONSUMER_SECRET",
+        label: "constants.woocommerceConsumerSecret",
+        type: "password",
+        hint: "constants.woocommerceConsumerSecretHint",
+      },
+      {
+        key: "PRESTASHOP_STORE_URL",
+        label: "constants.prestashopStoreUrl",
+        type: "text",
+        hint: "constants.prestashopStoreUrlHint",
+      },
+      {
+        key: "PRESTASHOP_API_KEY",
+        label: "constants.prestashopApiKey",
+        type: "password",
+        hint: "constants.prestashopApiKeyHint",
+      },
+    ],
+  },
 ];
 
 // ── Gateway Sections ────────────────────────────────────

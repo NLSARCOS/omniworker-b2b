@@ -905,6 +905,16 @@ DEFAULT_CONFIG = {
             "timeout": 600,
             "extra_body": {},
         },
+        # Local small-model task router — used for simple ops (file search,
+        # translation, light summarization) to save cloud tokens.
+        "basic_tasks": {
+            "provider": "auto",
+            "model": "",
+            "base_url": "",
+            "api_key": "",
+            "timeout": 60,
+            "extra_body": {},
+        },
     },
     
     "display": {

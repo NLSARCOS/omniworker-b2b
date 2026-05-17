@@ -15,7 +15,9 @@ export async function GET(request: Request) {
     include: {
       plan: { select: { id: true, name: true, tokenLimit: true, price: true } },
       _count: { select: { users: true, edgeAgents: true, tasks: true } },
-      users: { select: { tokenBalance: true } }
+      users: { select: { tokenBalance: true } },
+      apiKeys: { select: { id: true, name: true, keyPrefix: true, lastUsedAt: true } },
+      edgeAgents: { select: { id: true, agentName: true, status: true, lastSeenAt: true } }
     },
     orderBy: { createdAt: "desc" },
   });
@@ -101,9 +103,13 @@ export async function POST(request: Request) {
   let adminUser = null;
   if (adminEmail && adminPassword) {
     const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
-    if (!existing) {
-      const pwHash = await hashPassword(adminPassword);
-      adminUser = await prisma.user.create({
+    if (existing) {
+      // Rollback tenant creation since we can't create the requested admin user
+      await prisma.tenant.delete({ where: { id: tenant.id } });
+      return NextResponse.json({ error: `El email ${adminEmail} ya está registrado` }, { status: 400 });
+    }
+    const pwHash = await hashPassword(adminPassword);
+    adminUser = await prisma.user.create({
         data: {
           email: adminEmail,
           passwordHash: pwHash,
@@ -114,7 +120,6 @@ export async function POST(request: Request) {
           isActive: true,
         },
       });
-    }
   }
 
   await prisma.adminAuditLog.create({

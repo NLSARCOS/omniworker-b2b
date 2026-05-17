@@ -8,7 +8,6 @@ const NAV_ITEMS = [
     section: "OVERVIEW",
     items: [
       { href: "/dashboard", label: "Dashboard" },
-      { href: "/chat", label: "Agent Chat" },
     ],
   },
   {

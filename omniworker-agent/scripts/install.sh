@@ -1810,6 +1810,27 @@ maybe_start_gateway() {
     fi
 }
 
+setup_local_llm() {
+    log_info "Setting up local LLM for basic tasks and embeddings..."
+
+    LOCAL_LLM_SCRIPT="$INSTALL_DIR/scripts/setup-local-llm.py"
+    if [ ! -f "$LOCAL_LLM_SCRIPT" ]; then
+        log_warn "Local LLM setup script not found at $LOCAL_LLM_SCRIPT"
+        return 0
+    fi
+
+    # Run the setup script with the venv Python
+    if [ "$USE_VENV" = true ]; then
+        "$INSTALL_DIR/venv/bin/python" "$LOCAL_LLM_SCRIPT" || {
+            log_warn "Local LLM setup failed (cloud-only mode will still work)"
+        }
+    else
+        python3 "$LOCAL_LLM_SCRIPT" || {
+            log_warn "Local LLM setup failed (cloud-only mode will still work)"
+        }
+    fi
+}
+
 print_success() {
     echo ""
     echo -e "${GREEN}${BOLD}"
@@ -1911,6 +1932,7 @@ main() {
     setup_venv
     install_deps
     install_node_deps
+    setup_local_llm
     setup_path
     copy_config_templates
     run_setup_wizard

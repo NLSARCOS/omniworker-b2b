@@ -7,6 +7,12 @@ import {
   Notification,
   dialog,
 } from "electron";
+import {
+  scanBackupData,
+  createBackup,
+  readBackupManifest,
+  restoreBackup,
+} from "./backup";
 import { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import type { AppUpdater } from "electron-updater";
@@ -41,6 +47,7 @@ import {
   restartGateway,
   ensureSshTunnelIfNeeded,
   setSshRemoteApiKey,
+  startLocalLlmServer,
 } from "./omniworker";
 import {
   startSshTunnel,
@@ -233,7 +240,7 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
-      webSecurity: true,
+      webSecurity: false, // Temporarily disabled to prevent strict CORS 'Failed to fetch' issues on Windows/Mac
       allowRunningInsecureContent: false,
       webviewTag: true,
     },
@@ -315,11 +322,11 @@ function setupIPC(): void {
 
   ipcMain.handle("verify-install", () => verifyInstall());
 
-  ipcMain.handle("start-install", async (event) => {
+  ipcMain.handle("start-install", async (event, authToken?: string) => {
     try {
       await runInstall((progress: InstallProgress) => {
         event.sender.send("install-progress", progress);
-      }, mainWindow);
+      }, mainWindow, authToken);
       return { success: true };
     } catch (err) {
       return { success: false, error: (err as Error).message };
@@ -668,6 +675,7 @@ function setupIPC(): void {
   ipcMain.handle("start-gateway", async () => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) { await sshStartGateway(conn.ssh); return true; }
+    startLocalLlmServer(); // Auto-start local LLM if installed
     return startGateway();
   });
   ipcMain.handle("stop-gateway", async () => {
@@ -1084,7 +1092,7 @@ function setupIPC(): void {
     openExternalUrl(url);
   });
 
-  // Backup / Import
+  // Backup / Import (legacy — delegates to Python CLI)
   ipcMain.handle("run-omniworker-backup", (_event, profile?: string) =>
     runOmniWorkerBackup(profile),
   );
@@ -1092,6 +1100,58 @@ function setupIPC(): void {
     "run-omniworker-import",
     (_event, archivePath: string, profile?: string) =>
       runOmniWorkerImport(archivePath, profile),
+  );
+
+  // Enhanced Backup / Import (Electron-native, full data)
+
+  ipcMain.handle("scan-backup-data", (_event, profile?: string, options?: any) =>
+    scanBackupData(profile, options),
+  );
+
+  ipcMain.handle("create-backup", async (event, profile?: string, options?: any) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const { dialog } = require("electron");
+    const result = await dialog.showSaveDialog(win, {
+      title: "Save OmniWorker Backup",
+      defaultPath: `omniworker-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`,
+      filters: [
+        { name: "OmniWorker Backup", extensions: ["tar.gz"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
+    });
+    if (result.canceled) return { success: false, error: "Cancelled" };
+    return createBackup(result.filePath, profile, options, (p: any) => {
+      event.sender.send("backup-progress", p);
+    });
+  });
+
+  ipcMain.handle("read-backup-manifest", async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const { dialog } = require("electron");
+    const result = await dialog.showOpenDialog(win, {
+      title: "Select OmniWorker Backup",
+      filters: [
+        { name: "OmniWorker Backup", extensions: ["tar.gz", "tgz"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
+      properties: ["openFile"],
+    });
+    if (result.canceled) return { manifest: null, error: "Cancelled" };
+    return readBackupManifest(result.filePaths[0]);
+  });
+
+  ipcMain.handle(
+    "restore-backup",
+    async (event, archivePath: string, profile?: string, options?: any) => {
+      const res = await restoreBackup(archivePath, profile, options, (p: any) => {
+        event.sender.send("backup-progress", p);
+      });
+      if (res.success) {
+        // Notify renderer to refresh all state
+        event.sender.send("app-state-changed");
+      }
+      return res;
+    },
   );
 
   // Debug dump

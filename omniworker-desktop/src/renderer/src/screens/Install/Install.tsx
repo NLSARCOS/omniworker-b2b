@@ -15,9 +15,10 @@ interface InstallProgress {
 interface InstallProps {
   onComplete: () => void;
   onFailed: (error: string) => void;
+  authToken?: string | null;
 }
 
-function Install({ onComplete, onFailed }: InstallProps): React.JSX.Element {
+function Install({ onComplete, onFailed, authToken }: InstallProps): React.JSX.Element {
   const { t } = useI18n();
   const [progress, setProgress] = useState<InstallProgress>({
     step: 0,
@@ -38,7 +39,7 @@ function Install({ onComplete, onFailed }: InstallProps): React.JSX.Element {
     });
 
     window.omniworkerAPI
-      .startInstall()
+      .startInstall(authToken || undefined)
       .then((result) => {
         if (!isMounted) return;
         if (result.success) {

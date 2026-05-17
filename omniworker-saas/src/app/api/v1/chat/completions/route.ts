@@ -14,6 +14,14 @@ const PROVIDER_URLS: Record<string, string> = {
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
 };
 
+// OpenCode Go has two endpoint formats depending on the model
+const OPENCODE_GO_ENDPOINTS = {
+  chat_completions: "https://opencode.ai/zen/go/v1/chat/completions",
+  messages: "https://opencode.ai/zen/go/v1/messages",
+} as const;
+
+type OpenCodeEndpoint = keyof typeof OPENCODE_GO_ENDPOINTS;
+
 // OmniWorker virtual models → role-based system prompts
 const OMNIWORKER_ROLES: Record<string, string> = {
   "omniworker-code": `You are OmniWorker Code, an expert software engineer and coding assistant.
@@ -23,15 +31,115 @@ When fixing bugs, explain the root cause. When suggesting code, include complete
 Languages, frameworks, and tools: you are fluent in all of them.`,
 };
 
-const OPENCODE_GO_MODELS = [
-  "glm-5.1", "glm-5", "kimi-k2.5", "kimi-k2.6", 
-  "deepseek-v4-pro", "deepseek-v4-flash", "mimo-v2.5", "mimo-v2.5-pro",
-  "minimax-m2.7", "minimax-m2.5", "qwen3.6-plus", "qwen3.5-plus"
+// ── OpenCode Go Intelligent Routing ──────────────────────────────────
+interface ModelTier {
+  id: string;
+  label: string;
+  tier: "reasoning" | "balanced" | "speed";
+  weight: number; // higher = more likely to be picked within tier
+  endpoint: OpenCodeEndpoint; // which OpenCode Go endpoint format this model uses
+}
+
+const OPENCODE_GO_CATALOG: ModelTier[] = [
+  // Tier: REASONING — heavy tasks, complex code, long context
+  { id: "glm-5.1",         label: "GLM-5.1",         tier: "reasoning", weight: 3, endpoint: "chat_completions" },
+  { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro",  tier: "reasoning", weight: 3, endpoint: "chat_completions" },
+  { id: "kimi-k2.6",       label: "Kimi K2.6",        tier: "reasoning", weight: 2, endpoint: "chat_completions" },
+  { id: "mimo-v2.5-pro",   label: "MiMo-V2.5-Pro",    tier: "reasoning", weight: 2, endpoint: "chat_completions" },
+  { id: "qwen3.6-plus",    label: "Qwen3.6 Plus",     tier: "reasoning", weight: 2, endpoint: "chat_completions" },
+  { id: "minimax-m2.7",    label: "MiniMax M2.7",     tier: "reasoning", weight: 1, endpoint: "messages" },
+  // Tier: BALANCED — general purpose, mid-complexity
+  { id: "glm-5",           label: "GLM-5",            tier: "balanced",  weight: 3, endpoint: "chat_completions" },
+  { id: "kimi-k2.5",       label: "Kimi K2.5",        tier: "balanced",  weight: 3, endpoint: "chat_completions" },
+  { id: "mimo-v2.5",       label: "MiMo-V2.5",        tier: "balanced",  weight: 2, endpoint: "chat_completions" },
+  { id: "qwen3.5-plus",    label: "Qwen3.5 Plus",     tier: "balanced",  weight: 2, endpoint: "chat_completions" },
+  { id: "minimax-m2.5",    label: "MiniMax M2.5",     tier: "balanced",  weight: 1, endpoint: "messages" },
+  // Tier: SPEED — fast responses, simple queries, chat
+  { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", tier: "speed", weight: 4, endpoint: "chat_completions" },
+  { id: "glm-5",             label: "GLM-5",             tier: "speed", weight: 2, endpoint: "chat_completions" },
+  { id: "kimi-k2.5",         label: "Kimi K2.5",          tier: "speed", weight: 2, endpoint: "chat_completions" },
 ];
+
+const OPENCODE_GO_MODEL_IDS = [...new Set(OPENCODE_GO_CATALOG.map(m => m.id))];
+
+/**
+ * Analyzes the prompt complexity and returns the best tier.
+ * Scoring:
+ *  - Long prompts (>2000 chars) → reasoning
+ *  - Code-related keywords → reasoning
+ *  - Medium prompts (500-2000) → balanced
+ *  - Short/simple prompts → speed
+ */
+function classifyPromptComplexity(messages: { role: string; content: string }[]): "reasoning" | "balanced" | "speed" {
+  const fullText = messages.map(m => m.content || "").join(" ");
+  const totalLength = fullText.length;
+  const messageCount = messages.length;
+
+  // Complexity signals
+  let score = 0;
+
+  // Length-based scoring
+  if (totalLength > 4000) score += 3;
+  else if (totalLength > 2000) score += 2;
+  else if (totalLength > 800) score += 1;
+
+  // Code/technical complexity indicators
+  const codePatterns = /```|function\s|class\s|import\s|export\s|const\s|def\s|async\s|await\s|\{[\s\S]*\}|SELECT\s|CREATE\s|ALTER\s|interface\s|type\s.*=/gi;
+  const codeMatches = fullText.match(codePatterns);
+  if (codeMatches && codeMatches.length > 3) score += 3;
+  else if (codeMatches && codeMatches.length > 0) score += 1;
+
+  // Reasoning keywords
+  const reasoningPatterns = /analyz|architect|refactor|optimi[zs]|debug|explain.*why|design.*system|implement.*complex|review.*code|compare|trade.?off|security|migration/gi;
+  const reasoningMatches = fullText.match(reasoningPatterns);
+  if (reasoningMatches && reasoningMatches.length >= 2) score += 2;
+  else if (reasoningMatches) score += 1;
+
+  // Conversation depth
+  if (messageCount > 10) score += 2;
+  else if (messageCount > 5) score += 1;
+
+  // System prompt depth (longer system prompts = more complex task)
+  const systemMsg = messages.find(m => m.role === "system");
+  if (systemMsg && systemMsg.content.length > 500) score += 2;
+  else if (systemMsg && systemMsg.content.length > 200) score += 1;
+
+  // Map score to tier
+  if (score >= 5) return "reasoning";
+  if (score >= 2) return "balanced";
+  return "speed";
+}
+
+/**
+ * Weighted random selection within a tier.
+ * Models with higher weight are picked proportionally more often.
+ */
+function selectModelFromTier(tier: "reasoning" | "balanced" | "speed"): ModelTier {
+  const candidates = OPENCODE_GO_CATALOG.filter(m => m.tier === tier);
+  const totalWeight = candidates.reduce((sum, m) => sum + m.weight, 0);
+  let random = Math.random() * totalWeight;
+  
+  for (const model of candidates) {
+    random -= model.weight;
+    if (random <= 0) return model;
+  }
+  
+  return candidates[0]; // fallback
+}
+
+/**
+ * Intelligent OpenCode Go model selection.
+ * Returns { model, tier, endpoint } for routing and observability.
+ */
+function intelligentModelSelect(messages: { role: string; content: string }[]): { model: string; tier: string; endpoint: OpenCodeEndpoint } {
+  const tier = classifyPromptComplexity(messages);
+  const selected = selectModelFromTier(tier);
+  return { model: selected.id, tier, endpoint: selected.endpoint };
+}
 
 function detectProvider(model: string): string {
   const m = model.toLowerCase();
-  if (OPENCODE_GO_MODELS.includes(m)) return "opencode-go";
+  if (OPENCODE_GO_MODEL_IDS.includes(m)) return "opencode-go";
   if (m.includes("deepseek")) return "deepseek";
   if (m.includes("moonshot") || m.includes("kimi")) return "moonshot";
   if (m.includes("minimax")) return "minimax";
@@ -114,8 +222,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // Resolve real model ID from provider's default or use a sensible default
-    const realModel = masterProvider.defaultModel || "gpt-4o-mini";
+    // Resolve real model: intelligent routing for OpenCode Go, default for others
+    let realModel: string;
+    let routingTier = "default";
+    let resolvedEndpoint: OpenCodeEndpoint = "chat_completions";
+    if (targetProvider === "opencode-go") {
+      const routing = intelligentModelSelect(body.messages || []);
+      realModel = routing.model;
+      routingTier = routing.tier;
+      resolvedEndpoint = routing.endpoint;
+    } else {
+      realModel = masterProvider.defaultModel || "gpt-4o-mini";
+    }
 
     // Inject role-based system prompt for code mode
     const rolePrompt = OMNIWORKER_ROLES[requestedModel] || null;
@@ -125,16 +243,31 @@ export async function POST(request: Request) {
       messages = [{ role: "system", content: rolePrompt }, ...messages];
     }
 
-    console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${realModel}) [${requestedModel}]`);
+    // Resolve the actual URL — OpenCode Go models may use different endpoints
+    let resolvedUrl = targetUrl;
+    if (targetProvider === "opencode-go") {
+      resolvedUrl = OPENCODE_GO_ENDPOINTS[resolvedEndpoint];
+    }
+
+    console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${realModel}) [${requestedModel}] tier=${routingTier} endpoint=${resolvedEndpoint}`);
 
     // Build provider-specific payload
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     let payload: Record<string, unknown>;
 
-    if (targetProvider === "anthropic") {
-      headers["x-api-key"] = masterProvider.apiKey;
-      headers["anthropic-version"] = "2023-06-01";
-      // Anthropic API format
+    // Anthropic-format providers OR OpenCode Go models that use /messages endpoint
+    const useAnthropicFormat = targetProvider === "anthropic" || 
+      (targetProvider === "opencode-go" && resolvedEndpoint === "messages");
+
+    if (useAnthropicFormat) {
+      if (targetProvider === "anthropic") {
+        headers["x-api-key"] = masterProvider.apiKey;
+        headers["anthropic-version"] = "2023-06-01";
+      } else {
+        // OpenCode Go /messages endpoint uses Bearer auth
+        headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
+      }
+      // Anthropic API format: system as top-level, no system in messages array
       const systemMsg = messages.find((m: { role: string; content: string }) => m.role === "system");
       const chatMsgs = messages.filter((m: { role: string; content: string }) => m.role !== "system");
       payload = {
@@ -155,7 +288,7 @@ export async function POST(request: Request) {
     const estimatedCost = 50;
 
     try {
-      const aiResponse = await fetch(targetUrl, {
+      const aiResponse = await fetch(resolvedUrl, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),

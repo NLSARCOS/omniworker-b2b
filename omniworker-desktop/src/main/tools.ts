@@ -106,6 +106,11 @@ const TOOLSET_DEFS: {
     labelKey: "tools.scrapling.label",
     descriptionKey: "tools.scrapling.description",
   },
+  {
+    key: "ecommerce",
+    labelKey: "tools.ecommerce.label",
+    descriptionKey: "tools.ecommerce.description",
+  },
 ];
 
 function localizeToolDefs(
@@ -194,7 +199,11 @@ export function getToolsets(profile?: string): ToolsetInfo[] {
       return localizeToolDefs(true);
     }
 
-    return localizeToolDefs((key) => enabledSet.has(key));
+    return localizeToolDefs((key) => {
+    // skills and memory are always enabled
+    if (key === "skills" || key === "memory") return true;
+    return enabledSet.has(key);
+  });
   } catch {
     return localizeToolDefs(true);
   }
@@ -211,6 +220,11 @@ export function setToolsetEnabled(
   try {
     const content = readFileSync(configFile, "utf-8");
     const currentEnabled = parseEnabledToolsets(content);
+
+    // skills and memory cannot be disabled
+    if (!enabled && (key === "skills" || key === "memory")) {
+      return true;
+    }
 
     if (enabled) {
       currentEnabled.add(key);

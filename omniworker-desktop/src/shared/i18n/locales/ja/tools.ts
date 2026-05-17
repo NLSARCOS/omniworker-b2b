@@ -59,6 +59,10 @@ export default {
     label: "タスク計画",
     description: "複雑なタスク用の TODO リストを作成・管理",
   },
+  ecommerce: {
+    label: "Eコマース",
+    description: "Shopify、WooCommerce、PrestaShop の商品と注文を管理",
+  },
   mcpServers: "MCP サーバ",
   mcpDescription: "config.yaml で構成された Model Context Protocol サーバ。ターミナルで <code>omniworker mcp add/remove</code> から管理します。",
   http: "HTTP",

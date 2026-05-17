@@ -1,6 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { useI18n } from "../../components/useI18n";
 
 interface OmniWorkerModel {
   id: string;
@@ -42,9 +41,7 @@ function getDisplayLabel(model: string): string {
 
 export const ModelPicker = memo(function ModelPicker({
   currentModel,
-  currentProvider,
   currentBaseUrl,
-  displayModel,
   onOpen,
   onSelectModel,
 }: ModelPickerProps): React.JSX.Element {

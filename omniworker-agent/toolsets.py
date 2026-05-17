@@ -76,6 +76,10 @@ _OMNIWORKER_CORE_TOOLS = [
     "computer_use",
     # Third-party integrations
     "cli_anything_hub", "scrapling_fetch",
+    # E-commerce integrations (gated on env vars via check_fn)
+    "shopify_list_products", "shopify_get_product", "shopify_list_orders", "shopify_get_order",
+    "woocommerce_list_products", "woocommerce_get_product", "woocommerce_list_orders", "woocommerce_get_order",
+    "prestashop_list_products", "prestashop_get_product", "prestashop_list_orders", "prestashop_get_order",
 ]
 
 
@@ -320,6 +324,16 @@ TOOLSETS = {
         "tools": [
             "spotify_playback", "spotify_devices", "spotify_queue", "spotify_search",
             "spotify_playlists", "spotify_albums", "spotify_library",
+        ],
+        "includes": []
+    },
+
+    "ecommerce": {
+        "description": "E-commerce integrations: Shopify, WooCommerce, and PrestaShop product and order management",
+        "tools": [
+            "shopify_list_products", "shopify_get_product", "shopify_list_orders", "shopify_get_order",
+            "woocommerce_list_products", "woocommerce_get_product", "woocommerce_list_orders", "woocommerce_get_order",
+            "prestashop_list_products", "prestashop_get_product", "prestashop_list_orders", "prestashop_get_order",
         ],
         "includes": []
     },

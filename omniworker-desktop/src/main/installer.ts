@@ -3,12 +3,14 @@ import {
   existsSync,
   readFileSync,
   readdirSync,
-  writeFileSync,
-  unlinkSync,
+  createWriteStream,
+  mkdirSync,
 } from "fs";
 import { join, delimiter } from "path";
 import { homedir, tmpdir } from "os";
 import { randomBytes } from "crypto";
+import https from "https";
+import { extract } from "tar";
 import type { BrowserWindow } from "electron";
 import { getModelConfig, getConnectionConfig } from "./config";
 import { profileHome, stripAnsi } from "./utils";
@@ -518,9 +520,12 @@ const STAGE_MARKERS: { pattern: RegExp; step: number; title: string }[] = [
   },
 ];
 
+const SAAS_BASE_URL = process.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+
 export async function runInstall(
   onProgress: (progress: InstallProgress) => void,
   parentWindow?: BrowserWindow | null,
+  authToken?: string,
 ): Promise<void> {
   const totalSteps = 7;
   let log = "";
@@ -551,7 +556,7 @@ export async function runInstall(
   emit("Running official OmniWorker install script...\n");
 
   if (IS_WINDOWS) {
-    return runInstallWindows(emit);
+    return runInstallWindows(emit, authToken);
   }
 
   // Ask for the sudo password ONCE upfront and warm sudo's credential cache
@@ -585,6 +590,65 @@ export async function runInstall(
     );
   }
 
+  // Resolve install script / agent source.
+  // Production: download authenticated tarball from SaaS API
+  // Development: use local repo path
+  let localInstallScript = "";
+  
+  if (authToken) {
+    emit("Authenticating with OmniWorker servers...\n");
+    const tarballPath = join(tmpdir(), `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`);
+    
+    await new Promise<void>((res, rej) => {
+      const url = `${SAAS_BASE_URL}/downloads/omniworker-agent.tar.gz`;
+      const file = createWriteStream(tarballPath);
+      const req = https.get(url, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      }, (response: any) => {
+        if (response.statusCode === 401 || response.statusCode === 403) {
+          rej(new Error("Authentication failed. Please check your credentials or subscription status."));
+          return;
+        }
+        if (response.statusCode !== 200) {
+          rej(new Error(`Download failed (HTTP ${response.statusCode}). Please try again later.`));
+          return;
+        }
+        response.pipe(file);
+        file.on("finish", () => { file.close(); res(); });
+      });
+      req.on("error", rej);
+    });
+    
+    emit("Extracting agent package...\n");
+    mkdirSync(OMNIWORKER_REPO, { recursive: true });
+    await extract({ cwd: OMNIWORKER_REPO, file: tarballPath, strip: 1 });
+    
+    localInstallScript = join(OMNIWORKER_REPO, "scripts", "install.sh");
+    if (!existsSync(localInstallScript)) {
+      throw new Error("Downloaded agent package is missing install.sh. Please contact support.");
+    }
+    emit("Agent downloaded and ready.\n");
+  } else {
+    // Development mode: use local repo path
+    const devPaths = [
+      join(__dirname, "../../../omniworker-agent/scripts/install.sh"),
+      join(__dirname, "../../omniworker-agent/scripts/install.sh"),
+    ];
+    for (const p of devPaths) {
+      if (existsSync(p)) {
+        localInstallScript = p;
+        break;
+      }
+    }
+    if (!localInstallScript) {
+      throw new Error(
+        "Agent source not found. The desktop app does not bundle the agent code.\n" +
+        "In production, the agent is downloaded after login.\n" +
+        "In development, ensure the omniworker-agent repo is cloned alongside the desktop."
+      );
+    }
+  }
+
   try {
     return await new Promise<void>((resolve, reject) => {
       const home = homedir();
@@ -593,15 +657,6 @@ export async function runInstall(
       // then run the official install script. Electron apps launched from Finder
       // don't inherit the terminal environment.
       const shellProfile = getShellProfile(home);
-      
-      const fs = require("fs");
-      const path = require("path");
-      
-      let localInstallScript = path.join(__dirname, "../../../omniworker-agent/scripts/install.sh");
-      if (!fs.existsSync(localInstallScript)) {
-          // Fallback if packaged or path is different
-          localInstallScript = path.join(__dirname, "../../omniworker-agent/scripts/install.sh");
-      }
 
       const installCmd = [
         shellProfile ? `source "${shellProfile}" 2>/dev/null;` : "",
@@ -663,10 +718,7 @@ export async function runInstall(
   }
 }
 
-// PS single-quoted string escape: ' → ''
-function psQuote(s: string): string {
-  return `'${s.replace(/'/g, "''")}'`;
-}
+
 
 // Resolve a powershell executable. Prefer PowerShell 7 (`pwsh`) when present,
 // fall back to Windows PowerShell 5.1 (`powershell.exe`). Both ship the same
@@ -687,51 +739,69 @@ function resolvePowerShellExe(): string {
   return "powershell.exe";
 }
 
-async function runInstallWindows(emit: (t: string) => void): Promise<void> {
-  // We can't `irm | iex` and pass parameters, and we want to override the
-  // upstream defaults (which install to %LOCALAPPDATA%\omniworker) so the
-  // desktop app's OMNIWORKER_HOME == ~\.omniworker convention keeps working.
-  // Strategy: write a small wrapper .ps1 to %TEMP%, run it with -File.
+async function runInstallWindows(
+  emit: (t: string) => void,
+  authToken?: string,
+): Promise<void> {
+  let localInstallScript = "";
+
+  if (authToken) {
+    emit("Authenticating with OmniWorker servers...\n");
+    const tarballPath = join(tmpdir(), `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`);
+
+    await new Promise<void>((res, rej) => {
+      const url = `${SAAS_BASE_URL}/downloads/omniworker-agent.tar.gz`;
+      const file = createWriteStream(tarballPath);
+      const req = https.get(url, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      }, (response: any) => {
+        if (response.statusCode === 401 || response.statusCode === 403) {
+          rej(new Error("Authentication failed. Please check your credentials or subscription status."));
+          return;
+        }
+        if (response.statusCode !== 200) {
+          rej(new Error(`Download failed (HTTP ${response.statusCode}). Please try again later.`));
+          return;
+        }
+        response.pipe(file);
+        file.on("finish", () => { file.close(); res(); });
+      });
+      req.on("error", rej);
+    });
+
+    emit("Extracting agent package...\n");
+    mkdirSync(OMNIWORKER_REPO, { recursive: true });
+    await extract({ cwd: OMNIWORKER_REPO, file: tarballPath, strip: 1 });
+
+    localInstallScript = join(OMNIWORKER_REPO, "scripts", "install.ps1");
+    if (!existsSync(localInstallScript)) {
+      throw new Error("Downloaded agent package is missing install.ps1. Please contact support.");
+    }
+    emit("Agent downloaded and ready.\n");
+  } else {
+    // Development mode: use local repo path
+    const devPaths = [
+      join(__dirname, "../../../omniworker-agent/scripts/install.ps1"),
+      join(__dirname, "../../omniworker-agent/scripts/install.ps1"),
+    ];
+    for (const p of devPaths) {
+      if (existsSync(p)) {
+        localInstallScript = p;
+        break;
+      }
+    }
+    if (!localInstallScript) {
+      throw new Error(
+        "Agent source not found. The desktop app does not bundle the agent code.\n" +
+        "In production, the agent is downloaded after login.\n" +
+        "In development, ensure the omniworker-agent repo is cloned alongside the desktop.",
+      );
+    }
+  }
+
   const home = homedir();
   const omniworkerHome = OMNIWORKER_HOME;
   const installDir = OMNIWORKER_REPO;
-
-  const wrapperPath = join(
-    tmpdir(),
-    `omniworker-install-${randomBytes(6).toString("hex")}.ps1`,
-  );
-
-  // The wrapper downloads install.ps1 to a sibling temp file and invokes it
-  // with our parameters. This sidesteps the `iex`-can't-pass-args limitation.
-  const wrapperScript = [
-    "$ErrorActionPreference = 'Stop'",
-    // Force TLS 1.2 for older Windows PowerShell 5.1 hosts that still default
-    // to TLS 1.0 — github raw refuses TLS < 1.2.
-    "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}",
-    "$url = 'https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scripts/install.ps1'",
-    `$installer = Join-Path $env:TEMP ("omniworker-install-script-" + [guid]::NewGuid().ToString() + ".ps1")`,
-    // Windows PowerShell 5.1 parses BOM-less files as the legacy ANSI codepage,
-    // which mangles the non-ASCII glyphs in install.ps1 and produces parse
-    // errors (see issue #149). Re-save with a UTF-8 BOM so PS 5.1 reads it as
-    // UTF-8. Idempotent if upstream later adds its own BOM or switches to ASCII.
-    "$resp = Invoke-WebRequest -Uri $url -UseBasicParsing",
-    "$text = if ($resp.Content -is [byte[]]) { [System.Text.Encoding]::UTF8.GetString($resp.Content) } else { [string]$resp.Content }",
-    "if ($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1) }",
-    "[System.IO.File]::WriteAllText($installer, $text, (New-Object System.Text.UTF8Encoding $true))",
-    `& $installer -SkipSetup -OmniWorkerHome ${psQuote(omniworkerHome)} -InstallDir ${psQuote(installDir)}`,
-    "$exit = $LASTEXITCODE",
-    "Remove-Item -Force -ErrorAction SilentlyContinue $installer",
-    "exit $exit",
-    "",
-  ].join("\r\n");
-
-  try {
-    writeFileSync(wrapperPath, wrapperScript, { encoding: "utf8" });
-  } catch (err) {
-    throw new Error(
-      `Failed to stage Windows installer: ${(err as Error).message}`,
-    );
-  }
 
   const psExe = resolvePowerShellExe();
   const basePath = getEnhancedPath();
@@ -745,7 +815,12 @@ async function runInstallWindows(emit: (t: string) => void): Promise<void> {
         "-NoProfile",
         "-NonInteractive",
         "-File",
-        wrapperPath,
+        localInstallScript,
+        "-SkipSetup",
+        "-OmniWorkerHome",
+        omniworkerHome,
+        "-InstallDir",
+        installDir,
       ],
       {
         cwd: home,
@@ -771,11 +846,6 @@ async function runInstallWindows(emit: (t: string) => void): Promise<void> {
     });
 
     proc.on("close", (code) => {
-      try {
-        unlinkSync(wrapperPath);
-      } catch {
-        /* best-effort */
-      }
       if (code === 0) {
         emit("\nInstallation complete!\n");
         resolve();
@@ -790,18 +860,13 @@ async function runInstallWindows(emit: (t: string) => void): Promise<void> {
       } else {
         reject(
           new Error(
-            `Installation failed (exit code ${code}). Open PowerShell and try: irm https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scripts/install.ps1 | iex`,
+            `Installation failed (exit code ${code}).`,
           ),
         );
       }
     });
 
     proc.on("error", (err) => {
-      try {
-        unlinkSync(wrapperPath);
-      } catch {
-        /* best-effort */
-      }
       // Most common failure: PowerShell is missing or blocked by policy.
       const hint =
         (err as NodeJS.ErrnoException).code === "ENOENT"

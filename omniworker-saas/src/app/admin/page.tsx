@@ -1,8 +1,8 @@
 // src/app/admin/page.tsx — Superadmin Command Center
 "use client";
 
-import { useState, useEffect } from "react";
-import { Terminal, Box, ShieldAlert, Cpu, Activity, Database, DollarSign } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Terminal, Box, ShieldAlert, Cpu, Activity, Database, DollarSign, Zap } from "lucide-react";
 
 interface Provider {
   id: string;
@@ -20,11 +20,20 @@ interface ProviderOption {
   baseUrl: string | null;
 }
 
-interface OpenCodeGoModel {
+interface OpenCodeGoTierModel {
   id: string;
   label: string;
-  sdk: string;
+  weight: number;
+  endpoint: string;
 }
+
+interface OpenCodeGoTier {
+  label: string;
+  description: string;
+  models: OpenCodeGoTierModel[];
+}
+
+type OpenCodeGoTiers = Record<string, OpenCodeGoTier>;
 
 interface Plan {
   id: string;
@@ -44,6 +53,9 @@ interface Tenant {
   _count: { users: number; edgeAgents: number; tasks: number };
   users: { tokenBalance: number }[];
   createdAt: string;
+  subscriptionEndsAt: string | null;
+  apiKeys: { id: string; name: string | null; keyPrefix: string; lastUsedAt: string | null }[];
+  edgeAgents: { id: string; agentName: string; status: string; lastSeenAt: string | null }[];
 }
 
 interface AuditLog {
@@ -62,13 +74,26 @@ export default function SuperAdminCommandCenter() {
   const [view, setView] = useState<View>("dashboard");
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providerOptions, setProviderOptions] = useState<ProviderOption[]>([]);
-  const [opencodeGoModels, setOpencodeGoModels] = useState<OpenCodeGoModel[]>([]);
+  const [opencodeGoTiers, setOpencodeGoTiers] = useState<OpenCodeGoTiers>({});
   const [plans, setPlans] = useState<Plan[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [modelMetrics, setModelMetrics] = useState<{model: string, calls: number, tokens: number}[]>([]);
+  const [expandedTenantId, setExpandedTenantId] = useState<string | null>(null);
+  const [showCreateTenant, setShowCreateTenant] = useState(false);
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [selectedFormProvider, setSelectedFormProvider] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Total model count across all OpenCode Go tiers
+  const opencodeGoModelCount = useMemo(() => {
+    const allIds = new Set<string>();
+    Object.values(opencodeGoTiers).forEach(tier => {
+      tier.models.forEach(m => allIds.add(m.id));
+    });
+    return allIds.size;
+  }, [opencodeGoTiers]);
 
   useEffect(() => {
     loadAll();
@@ -81,6 +106,10 @@ export default function SuperAdminCommandCenter() {
       
       const fetchJson = async (url: string) => {
         const res = await fetch(url, { headers });
+        if (res.status === 401 || res.status === 403) {
+          window.location.href = "/login/admin";
+          throw new Error("Unauthorized");
+        }
         const text = await res.text();
         if (!text) {
           console.warn(`Empty response from ${url}`);
@@ -103,7 +132,7 @@ export default function SuperAdminCommandCenter() {
       ]);
       setProviders(pRes.providers || []);
       setProviderOptions(pRes.availableProviders || []);
-      setOpencodeGoModels(pRes.openCodeGoModels || []);
+      setOpencodeGoTiers(pRes.openCodeGoTiers || {});
       setTenants(tRes.tenants || []);
       setPlans(plRes.plans || []);
       setAuditLogs(auditRes.logs || []);
@@ -145,19 +174,62 @@ export default function SuperAdminCommandCenter() {
   const handleTenantCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
-    await fetch("/api/admin/tenants", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
-      body: JSON.stringify({
-        name: form.tenantName.value,
-        planId: form.planId.value,
-        adminEmail: form.adminEmail.value,
-        adminPassword: form.adminPassword.value,
-        subscriptionEndsAt: form.subscriptionEndsAt.value ? new Date(form.subscriptionEndsAt.value).toISOString() : null,
-      })
-    });
-    form.reset();
-    loadAll();
+    try {
+      const res = await fetch("/api/admin/tenants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+        body: JSON.stringify({
+          name: form.tenantName.value,
+          planId: form.planId.value,
+          adminEmail: form.adminEmail.value,
+          adminPassword: form.adminPassword.value,
+          subscriptionEndsAt: form.subscriptionEndsAt.value ? new Date(form.subscriptionEndsAt.value).toISOString() : null,
+        })
+      });
+      
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to create workspace");
+        return;
+      }
+      
+      setError("");
+      form.reset();
+      loadAll();
+    } catch (err: any) {
+      setError(err.message || "Network error during provisioning");
+    }
+  };
+
+  const handleTenantUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTenant) return;
+    const form = e.target as HTMLFormElement;
+    try {
+      const res = await fetch("/api/admin/tenants", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+        body: JSON.stringify({
+          id: editingTenant.id,
+          name: form.tenantName.value,
+          planId: form.planId.value || undefined,
+          isActive: form.isActive.checked,
+          subscriptionEndsAt: form.subscriptionEndsAt.value ? new Date(form.subscriptionEndsAt.value).toISOString() : null,
+        })
+      });
+      
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to update workspace");
+        return;
+      }
+      
+      setError("");
+      setEditingTenant(null);
+      loadAll();
+    } catch (err: any) {
+      setError(err.message || "Network error during update");
+    }
   };
 
   // --- Business Logic Calculations ---
@@ -391,13 +463,36 @@ export default function SuperAdminCommandCenter() {
                 <form onSubmit={handleProviderCreate} className="space-y-5">
                   <div>
                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Provider Backbone</label>
-                    <select name="provider" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors">
+                    <select name="provider" onChange={(e) => setSelectedFormProvider(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors">
                       {providerOptions.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                     </select>
                   </div>
+
+                  {/* OpenCode Go: Intelligent Routing Banner */}
+                  {selectedFormProvider === "opencode-go" && (
+                    <div className="border border-lime-500/30 bg-lime-500/5 p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Zap size={14} className="text-lime-400" />
+                        <span className="text-xs font-bold text-lime-400 uppercase tracking-wider">Intelligent Auto-Routing Active</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400 font-mono leading-relaxed">
+                        OpenCode Go routes requests across <span className="text-white font-bold">{opencodeGoModelCount} models</span> in 3 tiers 
+                        (🧠 Reasoning · ⚖️ Balanced · ⚡ Speed). The system analyzes prompt complexity 
+                        and selects the optimal model automatically. No manual model selection needed.
+                      </p>
+                      <div className="flex gap-2 mt-1">
+                        {Object.entries(opencodeGoTiers).map(([key, tier]) => (
+                          <span key={key} className="text-[9px] font-mono px-2 py-0.5 bg-zinc-800 text-zinc-400 border border-zinc-700 uppercase">
+                            {tier.label} ({tier.models.length})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Node Identifier (Name)</label>
-                    <input name="nameInput" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-700" placeholder="e.g. OpenCode Primary" />
+                    <input name="nameInput" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-700" placeholder={selectedFormProvider === "opencode-go" ? "e.g. OpenCode Go Primary" : "e.g. OpenAI Primary"} />
                   </div>
                   <div>
                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Secret Key</label>
@@ -423,13 +518,40 @@ export default function SuperAdminCommandCenter() {
               <div className="xl:col-span-2 space-y-6">
                 <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2">Active Routing Graph</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {providers.map((p) => (
-                    <div key={p.id} className="bg-zinc-900 border border-zinc-800 p-5 group hover:border-zinc-700 transition-colors relative overflow-hidden">
+                  {providers.map((p) => {
+                    const isOpenCodeGo = p.provider === "opencode-go";
+                    return (
+                    <div key={p.id} className={`bg-zinc-900 border p-5 group hover:border-zinc-700 transition-colors relative overflow-hidden ${isOpenCodeGo ? "border-lime-500/30" : "border-zinc-800"}`}>
                       <div className="absolute top-0 right-0 p-4">
                         <span className={`w-2 h-2 block rounded-full ${p.isActive ? "bg-lime-500 animate-pulse" : "bg-red-500"}`}></span>
                       </div>
                       <div className="text-lg font-medium text-white mb-1">{p.name}</div>
-                      <div className="text-xs font-mono text-zinc-500 uppercase bg-zinc-950 inline-block px-2 py-1 mb-4 border border-zinc-800">{p.provider}</div>
+                      
+                      {isOpenCodeGo ? (
+                        <div className="mb-4 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono uppercase bg-lime-500/10 text-lime-400 px-2 py-1 border border-lime-500/30 flex items-center gap-1.5">
+                              <Zap size={10} />
+                              Intelligent Routing
+                            </span>
+                            <span className="text-[10px] font-mono text-zinc-500">
+                              {opencodeGoModelCount} models · 3 tiers
+                            </span>
+                          </div>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {Object.entries(opencodeGoTiers).map(([key, tier]) => {
+                              const tierIcons: Record<string, string> = { reasoning: "🧠", balanced: "⚖️", speed: "⚡" };
+                              return (
+                                <span key={key} className="text-[9px] font-mono px-1.5 py-0.5 bg-zinc-950 text-zinc-500 border border-zinc-800">
+                                  {tierIcons[key] || ""} {tier.models.length}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs font-mono text-zinc-500 uppercase bg-zinc-950 inline-block px-2 py-1 mb-4 border border-zinc-800">{p.provider}</div>
+                      )}
                       
                       <div className="space-y-2 text-sm font-mono text-zinc-400">
                         <div className="flex justify-between border-b border-zinc-800/50 pb-1">
@@ -438,6 +560,11 @@ export default function SuperAdminCommandCenter() {
                         <div className="flex justify-between border-b border-zinc-800/50 pb-1">
                           <span>KEY_HASH</span><span className="text-zinc-200">{p.apiKey}</span>
                         </div>
+                        {isOpenCodeGo && (
+                          <div className="flex justify-between border-b border-zinc-800/50 pb-1">
+                            <span>MODEL_SELECT</span><span className="text-lime-400">AUTO (Complexity-Based)</span>
+                          </div>
+                        )}
                         <div className="flex justify-between pb-1">
                           <span>LIMIT</span><span className="text-zinc-200">{p.dailyLimit || "UNLIMITED"}</span>
                         </div>
@@ -447,21 +574,76 @@ export default function SuperAdminCommandCenter() {
                         <button onClick={() => handleProviderDelete(p.id)} className="text-xs font-mono text-red-500 hover:text-red-400 uppercase tracking-widest">Terminate</button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {providers.length === 0 && <div className="col-span-2 border border-dashed border-zinc-800 p-12 text-center text-zinc-600 font-mono text-sm uppercase tracking-widest">No routing nodes detected. System offline.</div>}
                 </div>
 
-                {/* OpenCode Go Matrix */}
+                {/* OpenCode Go Intelligent Routing Matrix */}
                 <div className="mt-8">
-                  <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">OpenCode Go Architecture Matrix</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {opencodeGoModels.map(m => (
-                      <div key={m.id} className="bg-zinc-950 border border-zinc-800 p-3 hover:border-lime-500/50 transition-colors cursor-default group">
-                        <div className="text-xs font-bold text-white mb-2 truncate group-hover:text-lime-400 transition-colors">{m.label}</div>
-                        <div className="text-[10px] font-mono text-zinc-500 uppercase">{m.sdk}</div>
-                      </div>
-                    ))}
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-2 border-b border-zinc-800 pb-2 flex items-center gap-2">
+                    <Activity size={14} className="text-lime-500" />
+                    OpenCode Go — Intelligent Auto-Routing
+                  </h2>
+                  <p className="text-xs text-zinc-500 font-mono mb-5">Requests are automatically classified by complexity and routed to the optimal model tier. Higher weight = higher selection probability within tier.</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Object.entries(opencodeGoTiers).map(([tierKey, tier]) => {
+                      const tierColors: Record<string, { border: string; badge: string; bar: string; text: string; icon: string }> = {
+                        reasoning: { border: "border-purple-500/40", badge: "bg-purple-500/15 text-purple-400 border-purple-500/30", bar: "bg-purple-500", text: "text-purple-400", icon: "🧠" },
+                        balanced:  { border: "border-lime-500/40",   badge: "bg-lime-500/15 text-lime-400 border-lime-500/30",     bar: "bg-lime-500",   text: "text-lime-400",   icon: "⚖️" },
+                        speed:     { border: "border-cyan-500/40",   badge: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",     bar: "bg-cyan-500",   text: "text-cyan-400",   icon: "⚡" },
+                      };
+                      const colors = tierColors[tierKey] || tierColors.balanced;
+                      const maxWeight = Math.max(...tier.models.map(m => m.weight));
+                      const totalWeight = tier.models.reduce((sum, m) => sum + m.weight, 0);
+
+                      return (
+                        <div key={tierKey} className={`bg-zinc-900 border ${colors.border} p-5 transition-colors hover:bg-zinc-900/80`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">{colors.icon}</span>
+                            <span className={`text-xs font-bold uppercase tracking-wider ${colors.text}`}>{tier.label}</span>
+                          </div>
+                          <p className="text-[10px] text-zinc-500 font-mono mb-4">{tier.description}</p>
+                          
+                          <div className="space-y-2.5">
+                            {tier.models.map(model => {
+                              const pct = Math.round((model.weight / totalWeight) * 100);
+                              const isMessages = model.endpoint === "messages";
+                              return (
+                                <div key={model.id} className="group">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs font-medium text-zinc-300 group-hover:text-white transition-colors flex items-center gap-1.5">
+                                      {model.label}
+                                      {isMessages && <span className="text-[8px] font-mono px-1 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider leading-none">anthropic</span>}
+                                    </span>
+                                    <span className="text-[10px] font-mono text-zinc-500">{pct}%</span>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-zinc-800 overflow-hidden">
+                                    <div 
+                                      className={`h-full ${colors.bar} transition-all duration-500 group-hover:opacity-100 opacity-80`} 
+                                      style={{ width: `${(model.weight / maxWeight) * 100}%` }} 
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-zinc-800/50 flex justify-between items-center">
+                            <span className="text-[10px] font-mono text-zinc-600 uppercase">{tier.models.length} models</span>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 border ${colors.badge} uppercase tracking-wider`}>Auto</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+
+                  {Object.keys(opencodeGoTiers).length === 0 && (
+                    <div className="border border-dashed border-zinc-800 p-8 text-center text-zinc-600 font-mono text-sm uppercase tracking-widest">
+                      No routing tiers configured
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -472,66 +654,197 @@ export default function SuperAdminCommandCenter() {
         {/* --- VIEW: TENANTS --- */}
         {view === "tenants" && (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Tenant Isolation Management</h1>
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Tenant Isolation Management</h1>
+              <button 
+                onClick={() => setShowCreateTenant(!showCreateTenant)} 
+                className="bg-lime-500 text-black px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-lime-400 transition-colors"
+              >
+                {showCreateTenant ? "Cancel" : "Provision Workspace"}
+              </button>
+            </div>
             
-            <div className="bg-zinc-900 border border-zinc-800 p-6">
-               <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2"><Box size={16}/> Provision New Workspace</h2>
-               <form onSubmit={handleTenantCreate} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                 <div>
-                   <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Organization Name</label>
-                   <input name="tenantName" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-700" placeholder="Acme Corp" />
-                 </div>
-                 <div>
-                   <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Subscription Protocol</label>
-                   <select name="planId" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors">
-                     <option value="">[UNASSIGNED]</option>
-                     {plans.map(p => <option key={p.id} value={p.id}>{p.name} - ${(p.price).toFixed(2)}</option>)}
-                   </select>
-                 </div>
-                 <div>
-                   <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Plan Expiry Date</label>
-                   <input name="subscriptionEndsAt" type="date" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors [&::-webkit-calendar-picker-indicator]:invert-[0.8]" />
-                 </div>
-                 <div>
-                   <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Root Email</label>
-                   <input name="adminEmail" type="email" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-700" placeholder="admin@acme.com" />
-                 </div>
-                 <div>
-                   <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Initial Keyphrase</label>
-                   <input name="adminPassword" type="password" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-700" placeholder="••••••••" />
-                 </div>
-                 <div className="md:col-span-3 lg:col-span-5 flex justify-end">
-                   <button type="submit" className="bg-lime-500 text-black px-8 py-3 font-bold uppercase tracking-wider text-sm hover:bg-lime-400 transition-colors">
-                     Execute Provisioning
-                   </button>
-                 </div>
-               </form>
+            {showCreateTenant && (
+              <div className="bg-zinc-900 border border-zinc-800 p-6 animate-in slide-in-from-top-2 duration-300">
+                 <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2"><Box size={16}/> Provision New Workspace</h2>
+                 <form onSubmit={(e) => { handleTenantCreate(e); setShowCreateTenant(false); }} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                   <div>
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Organization Name *</label>
+                     <input name="tenantName" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-800/50" placeholder="Type name here..." />
+                   </div>
+                   <div>
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Subscription Protocol</label>
+                     <select name="planId" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors">
+                       <option value="">[UNASSIGNED]</option>
+                       {plans.map(p => <option key={p.id} value={p.id}>{p.name} - ${(p.price).toFixed(2)}</option>)}
+                     </select>
+                   </div>
+                   <div>
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Plan Expiry Date</label>
+                     <input name="subscriptionEndsAt" type="date" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors [&::-webkit-calendar-picker-indicator]:invert-[0.8]" />
+                   </div>
+                   <div>
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Root Email *</label>
+                     <input name="adminEmail" type="email" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-800/50" placeholder="Type email..." />
+                   </div>
+                   <div>
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Initial Keyphrase *</label>
+                     <input name="adminPassword" type="password" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-800/50" placeholder="Type password..." />
+                   </div>
+                   <div className="md:col-span-3 lg:col-span-5 flex justify-end">
+                     <button type="submit" className="bg-lime-500 text-black px-8 py-3 font-bold uppercase tracking-wider text-sm hover:bg-lime-400 transition-colors">
+                       Execute Provisioning
+                     </button>
+                   </div>
+                 </form>
+              </div>
+            )}
+
+            {/* List Table */}
+            <div className="bg-zinc-900 border border-zinc-800 overflow-x-auto">
+              <table className="w-full text-left font-mono text-sm text-zinc-300">
+                <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
+                  <tr>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Tenant Name</th>
+                    <th className="px-6 py-4">ID (Slug)</th>
+                    <th className="px-6 py-4">Plan</th>
+                    <th className="px-6 py-4 text-center">Users</th>
+                    <th className="px-6 py-4 text-center">Agents</th>
+                    <th className="px-6 py-4">Created</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800">
+                  {tenants.map(t => (
+                    <tr key={t.id} className="hover:bg-zinc-800/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {t.isActive ? <span className="w-2 h-2 inline-block bg-lime-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(132,204,22,0.8)]"></span> : <span className="w-2 h-2 inline-block bg-red-500 rounded-full"></span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium text-white">{t.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-zinc-500">{t.slug}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{t.plan?.name || "NONE"}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">{t._count.users}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">{t._count.edgeAgents}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-zinc-500">{new Date(t.createdAt).toISOString().split('T')[0]}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right space-x-4">
+                        <button 
+                          onClick={() => setExpandedTenantId(expandedTenantId === t.id ? null : t.id)}
+                          className="text-xs font-mono text-zinc-400 hover:text-white uppercase tracking-widest transition-colors"
+                        >
+                          {expandedTenantId === t.id ? "Hide Details" : "Details"}
+                        </button>
+                        <button 
+                          onClick={() => setEditingTenant(t)}
+                          className="text-xs font-mono text-lime-500 hover:text-lime-400 uppercase tracking-widest transition-colors"
+                        >
+                          Modify
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {tenants.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-zinc-600">No tenants found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {tenants.map(t => (
-                <div key={t.id} className="bg-zinc-900 border border-zinc-800 p-6 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="text-xl font-bold text-white">{t.name}</div>
-                      {t.isActive ? <span className="w-2 h-2 bg-lime-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(132,204,22,0.8)]"></span> : <span className="w-2 h-2 bg-red-500 rounded-full"></span>}
+            {/* EDITING MODAL */}
+            {editingTenant && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="bg-zinc-900 border border-zinc-800 p-6 w-full max-w-2xl animate-in zoom-in-95 duration-200">
+                  <h2 className="text-lg font-bold text-white uppercase tracking-wider mb-6 border-b border-zinc-800 pb-2">Modify Workspace: {editingTenant.name}</h2>
+                  <form onSubmit={handleTenantUpdateSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Organization Name</label>
+                        <input name="tenantName" defaultValue={editingTenant.name} required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Subscription Protocol</label>
+                        <select name="planId" defaultValue={editingTenant.plan?.id || ""} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors">
+                          <option value="">[UNASSIGNED]</option>
+                          {plans.map(p => <option key={p.id} value={p.id}>{p.name} - ${(p.price).toFixed(2)}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Plan Expiry Date</label>
+                        <input name="subscriptionEndsAt" type="date" defaultValue={editingTenant.subscriptionEndsAt ? new Date(editingTenant.subscriptionEndsAt).toISOString().split('T')[0] : ""} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors [&::-webkit-calendar-picker-indicator]:invert-[0.8]" />
+                      </div>
+                      <div className="flex items-end pb-3">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input type="checkbox" name="isActive" defaultChecked={editingTenant.isActive} className="w-5 h-5 accent-lime-500 bg-zinc-950 border border-zinc-800" />
+                          <span className="text-sm font-mono text-zinc-300 uppercase tracking-widest">Active Workspace</span>
+                        </label>
+                      </div>
                     </div>
-                    <div className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-6">ID: {t.slug}</div>
-                    
-                    <div className="space-y-3 font-mono text-sm text-zinc-400 border-t border-zinc-800 pt-4">
-                      <div className="flex justify-between"><span>PLAN:</span> <span className="text-zinc-200">{t.plan?.name || "NONE"}</span></div>
-                      <div className="flex justify-between"><span>AGENTS:</span> <span className="text-zinc-200">{t._count.edgeAgents}</span></div>
-                      <div className="flex justify-between"><span>USERS:</span> <span className="text-zinc-200">{t._count.users}</span></div>
-                      <div className="flex justify-between"><span>TASKS_LOG:</span> <span className="text-zinc-200">{t._count.tasks}</span></div>
+                    <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-zinc-800">
+                      <button type="button" onClick={() => setEditingTenant(null)} className="text-zinc-400 hover:text-white uppercase text-xs font-bold tracking-widest px-4 py-2">
+                        Cancel
+                      </button>
+                      <button type="submit" className="bg-lime-500 text-black px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-lime-400 transition-colors">
+                        Save Changes
+                      </button>
                     </div>
-                  </div>
-                  <div className="mt-6 pt-4 border-t border-zinc-800 flex justify-between items-center">
-                    <span className="text-xs font-mono text-zinc-600">{new Date(t.createdAt).toISOString().split('T')[0]}</span>
-                    <button className="text-xs font-mono text-lime-500 hover:text-lime-400 uppercase tracking-widest">Manage <span className="ml-1">→</span></button>
-                  </div>
+                  </form>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* EXPANDED DETAILS */}
+            {expandedTenantId && (
+              <div className="bg-zinc-900 border border-zinc-800 p-6 animate-in slide-in-from-top-4 duration-300">
+                {(() => {
+                  const t = tenants.find(t => t.id === expandedTenantId);
+                  if (!t) return null;
+                  return (
+                    <div>
+                      <div className="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+                        <h2 className="text-lg font-bold text-white uppercase">Devices & Keys: {t.name}</h2>
+                        <button onClick={() => setExpandedTenantId(null)} className="text-zinc-400 hover:text-white">✕</button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">API Keys ({t.apiKeys?.length || 0})</h3>
+                          {t.apiKeys?.length === 0 ? (
+                            <div className="text-zinc-600 text-xs font-mono italic p-4 border border-dashed border-zinc-800">No API keys registered.</div>
+                          ) : (
+                            <div className="space-y-2">
+                              {t.apiKeys?.map(k => (
+                                <div key={k.id} className="bg-zinc-950 border border-zinc-800 p-3 flex justify-between items-center text-xs font-mono">
+                                  <div className="text-zinc-300">{k.name || "Unnamed"} <span className="text-zinc-600 ml-2">{k.keyPrefix}...</span></div>
+                                  <div className="text-zinc-500">{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString() : "Never"}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Edge Agents ({t.edgeAgents?.length || 0})</h3>
+                          {t.edgeAgents?.length === 0 ? (
+                            <div className="text-zinc-600 text-xs font-mono italic p-4 border border-dashed border-zinc-800">No active edge agents.</div>
+                          ) : (
+                            <div className="space-y-2">
+                              {t.edgeAgents?.map(a => (
+                                <div key={a.id} className="bg-zinc-950 border border-zinc-800 p-3 flex justify-between items-center text-xs font-mono">
+                                  <div className="text-zinc-300">{a.agentName}</div>
+                                  <div>
+                                    {a.status === "online" ? <span className="text-lime-500">ONLINE</span> : <span className="text-zinc-500">OFFLINE</span>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
 

@@ -16,8 +16,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setIsLoading(true);
 
     try {
-      // Usar variable de entorno para producción, fallback a localhost para dev
-      const saasUrl = import.meta.env.VITE_SAAS_URL || "http://localhost:3000";
+      const saasUrl = "https://worker.thelab.lat";
       
       const response = await fetch(`${saasUrl}/api/v1/auth/login`, {
         method: "POST",
@@ -35,7 +34,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       onLoginSuccess(data.user, { accessToken: data.accessToken });
 
     } catch (err: any) {
-      setError(err.message);
+      setError(`[Network Error] URL: https://worker.thelab.lat/api/v1/auth/login | Detail: ${err.message}`);
     } finally {
       setIsLoading(false);
     }

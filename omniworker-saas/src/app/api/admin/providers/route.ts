@@ -17,20 +17,40 @@ const PROVIDER_OPTIONS = [
   { id: "opencode-go", label: "OpenCode Go",   baseUrl: "https://opencode.ai/zen/go/v1" },
 ];
 
-const OPENCODE_GO_MODELS = [
-  { id: "glm-5.1",         label: "GLM-5.1",         sdk: "openai-compatible" },
-  { id: "glm-5",           label: "GLM-5",            sdk: "openai-compatible" },
-  { id: "kimi-k2.5",       label: "Kimi K2.5",        sdk: "openai-compatible" },
-  { id: "kimi-k2.6",       label: "Kimi K2.6",        sdk: "openai-compatible" },
-  { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro",  sdk: "openai-compatible" },
-  { id: "deepseek-v4-flash","label": "DeepSeek V4 Flash", sdk: "openai-compatible" },
-  { id: "mimo-v2.5",       label: "MiMo-V2.5",        sdk: "openai-compatible" },
-  { id: "mimo-v2.5-pro",   label: "MiMo-V2.5-Pro",    sdk: "openai-compatible" },
-  { id: "minimax-m2.7",    label: "MiniMax M2.7",     sdk: "anthropic" },
-  { id: "minimax-m2.5",    label: "MiniMax M2.5",     sdk: "anthropic" },
-  { id: "qwen3.6-plus",    label: "Qwen3.6 Plus",     sdk: "alibaba" },
-  { id: "qwen3.5-plus",    label: "Qwen3.5 Plus",     sdk: "alibaba" },
-];
+const OPENCODE_GO_TIERS = {
+  reasoning: {
+    label: "Reasoning / Heavy",
+    description: "Complex code, architecture, debugging, long context",
+    models: [
+      { id: "glm-5.1",         label: "GLM-5.1",         weight: 3, endpoint: "chat_completions" },
+      { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro",  weight: 3, endpoint: "chat_completions" },
+      { id: "kimi-k2.6",       label: "Kimi K2.6",        weight: 2, endpoint: "chat_completions" },
+      { id: "mimo-v2.5-pro",   label: "MiMo-V2.5-Pro",    weight: 2, endpoint: "chat_completions" },
+      { id: "qwen3.6-plus",    label: "Qwen3.6 Plus",     weight: 2, endpoint: "chat_completions" },
+      { id: "minimax-m2.7",    label: "MiniMax M2.7",     weight: 1, endpoint: "messages" },
+    ]
+  },
+  balanced: {
+    label: "Balanced / General",
+    description: "General purpose, mid-complexity tasks",
+    models: [
+      { id: "glm-5",           label: "GLM-5",            weight: 3, endpoint: "chat_completions" },
+      { id: "kimi-k2.5",       label: "Kimi K2.5",        weight: 3, endpoint: "chat_completions" },
+      { id: "mimo-v2.5",       label: "MiMo-V2.5",        weight: 2, endpoint: "chat_completions" },
+      { id: "qwen3.5-plus",    label: "Qwen3.5 Plus",     weight: 2, endpoint: "chat_completions" },
+      { id: "minimax-m2.5",    label: "MiniMax M2.5",     weight: 1, endpoint: "messages" },
+    ]
+  },
+  speed: {
+    label: "Speed / Flash",
+    description: "Fast responses, simple queries, chat",
+    models: [
+      { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", weight: 4, endpoint: "chat_completions" },
+      { id: "glm-5",             label: "GLM-5",             weight: 2, endpoint: "chat_completions" },
+      { id: "kimi-k2.5",         label: "Kimi K2.5",          weight: 2, endpoint: "chat_completions" },
+    ]
+  }
+};
 
 function maskKey(key: string) {
   if (!key || key.length < 8) return "••••••••";
@@ -53,7 +73,7 @@ export async function GET(request: Request) {
       apiKey: maskKey(p.apiKey),
     })),
     availableProviders: PROVIDER_OPTIONS,
-    openCodeGoModels: OPENCODE_GO_MODELS,
+    openCodeGoTiers: OPENCODE_GO_TIERS,
   });
 }
 

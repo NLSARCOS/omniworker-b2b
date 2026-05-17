@@ -40,6 +40,7 @@ export default {
   sectionBrowserAutomation: "Navegador y automatización",
   sectionVoiceStt: "Voz y STT",
   sectionResearchTraining: "Investigación y entrenamiento",
+  sectionEcommerce: "E-commerce",
   // Settings field labels
   openrouterApiKey: "API key de OpenRouter",
   openrouterHint: "Más de 200 modelos a través de OpenRouter (recomendado)",
@@ -103,6 +104,21 @@ export default {
   tinkerHint: "Servicio de entrenamiento RL",
   wandbKey: "Clave de Weights & Biases",
   wandbHint: "Seguimiento de experimentos y métricas",
+  // E-commerce field labels
+  shopifyStoreDomain: "Dominio de la tienda Shopify",
+  shopifyStoreDomainHint: "p. ej. my-store.myshopify.com",
+  shopifyAccessToken: "Token de acceso de Shopify",
+  shopifyAccessTokenHint: "Token de Admin API de Shopify",
+  woocommerceStoreUrl: "URL de la tienda WooCommerce",
+  woocommerceStoreUrlHint: "p. ej. https://my-store.com",
+  woocommerceConsumerKey: "Consumer Key de WooCommerce",
+  woocommerceConsumerKeyHint: "Desde Ajustes > Avanzado > REST API en WooCommerce",
+  woocommerceConsumerSecret: "Consumer Secret de WooCommerce",
+  woocommerceConsumerSecretHint: "Secreto asociado al Consumer Key",
+  prestashopStoreUrl: "URL de la tienda PrestaShop",
+  prestashopStoreUrlHint: "p. ej. https://my-store.com",
+  prestashopApiKey: "API Key de PrestaShop",
+  prestashopApiKeyHint: "Desde Parámetros avanzados > Webservice en PrestaShop",
   // Gateway section titles
   gatewayMessagingPlatforms: "Plataformas de mensajería",
   // Gateway field labels

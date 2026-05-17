@@ -63,6 +63,10 @@ export default {
     label: "Perencanaan Tugas",
     description: "Buat dan kelola daftar tugas untuk pekerjaan kompleks",
   },
+  ecommerce: {
+    label: "E-commerce",
+    description: "Kelola produk dan pesanan Shopify, WooCommerce, dan PrestaShop",
+  },
   mcpServers: "Server MCP",
   mcpDescription:
     "Server Model Context Protocol yang dikonfigurasi di config.yaml. Kelola melalui <code>omniworker mcp add/remove</code> di terminal.",

@@ -47,27 +47,54 @@ function App(): React.JSX.Element {
     /* splash transition is driven by the install check, not a timer */
   }, []);
 
-  const handleLoginSuccess = async (user: any, auth: any) => {
-    setUserData(user);
-    if (auth?.accessToken) setAuthToken(auth.accessToken);
-
-    // Comprobar la instalación del motor local de Python
+  const runPostLoginInstallCheck = async () => {
     try {
-      const status = await window.omniworkerAPI.checkInstall();
-      if (!status.installed) {
-        setScreen("installing");
-      } else {
+      const mode = await window.omniworkerAPI.isRemoteOnlyMode();
+      if (mode) {
         setScreen("main");
+        return;
+      }
+      
+      const installStatus = await window.omniworkerAPI.checkInstall();
+      if (installStatus.installed) {
+        setScreen("main");
+      } else {
+        setScreen("installing");
       }
     } catch (err) {
-      console.error("Error comprobando la instalación:", err);
+      console.error("Install check failed:", err);
       setScreen("installing");
     }
   };
 
+  const handleLoginSuccess = async (user: any, auth: any) => {
+    setUserData(user);
+    
+    if (auth?.accessToken) {
+      setAuthToken(auth.accessToken);
+      
+      // OMNIWORKER B2B: Configure the LOCAL agent to use the SaaS backend as its LLM provider
+      const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+      const gatewayUrl = `${saasUrl}/api/v1`;
+      
+      // 1. Guardar el token como CUSTOM_API_KEY para que el agente local lo use
+      await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", auth.accessToken);
+      
+      // 2. Configurar el provider 'custom' para que apunte al SaaS
+      await window.omniworkerAPI.setModelConfig("custom", "omniworker", gatewayUrl);
+      
+      // 3. Forzar modo local (para que el Desktop App hable con el agente Python local)
+      await window.omniworkerAPI.setConnectionConfig("local", "", "");
+    }
+
+    // Comprobar la instalación para descargar la DB, RAG y motor local si faltan
+    await runPostLoginInstallCheck();
+  };
+
   function handleInstallComplete(): void {
     setInstallError(null);
-    setScreen("setup");
+    // B2B: The API Key is already configured during handleLoginSuccess, so we skip manual setup
+    setScreen("main");
   }
 
   function handleInstallFailed(error: string): void {
@@ -144,6 +171,7 @@ function App(): React.JSX.Element {
           <Install
             onComplete={handleInstallComplete}
             onFailed={handleInstallFailed}
+            authToken={authToken}
           />
         );
       case "setup":

@@ -3,9 +3,9 @@ import { useTheme } from "../../components/ThemeProvider";
 import { THEME_OPTIONS } from "../../constants";
 import { useI18n } from "../../components/useI18n";
 import { APP_LOCALES, type AppLocale } from "../../../../shared/i18n";
-import { Check, ChevronDown, Download, Upload, FileText, Send } from "lucide-react";
+import { Check, ChevronDown, Download, Upload, FileText } from "lucide-react";
 
-const TELEGRAM_COMMUNITY_URL = "https://t.me/omniworker_agent_desktop";
+
 
 const LANGUAGE_NATIVE_NAMES: Record<AppLocale, string> = {
   en: "English",
@@ -91,6 +91,15 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   const [backupResult, setBackupResult] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
+
+  // Enhanced backup state
+  const [backupInventory, setBackupInventory] = useState<any>(null);
+  const [includeSessions, setIncludeSessions] = useState(false);
+  const [includeKanban, setIncludeKanban] = useState(false);
+  const [backupProgress, setBackupProgress] = useState<{ phase: string; percent: number } | null>(null);
+  const [importManifest, setImportManifest] = useState<any>(null);
+  const [importArchivePath, setImportArchivePath] = useState<string | null>(null);
+  const [showImportPreview, setShowImportPreview] = useState(false);
 
   // Log viewer state
   const [logContent, setLogContent] = useState("");
@@ -253,36 +262,79 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   }
 
   async function handleBackup(): Promise<void> {
+    // Scan first to show what will be backed up
+    if (!backupInventory) {
+      const inv = await window.omniworkerAPI.scanBackupData(profile, { includeSessions, includeKanban });
+      setBackupInventory(inv);
+      return;
+    }
+
     setBackingUp(true);
     setBackupResult(null);
-    const result = await window.omniworkerAPI.runOmniWorkerBackup(profile);
+    setBackupProgress({ phase: "compressing", percent: 0 });
+
+    const cleanup = window.omniworkerAPI.onBackupProgress((p: any) => {
+      setBackupProgress({ phase: p.phase, percent: p.percent });
+    });
+
+    const result = await window.omniworkerAPI.createBackup(profile, { includeSessions, includeKanban });
+    cleanup();
+
     setBackingUp(false);
+    setBackupProgress(null);
     if (result.success) {
-      setBackupResult(`Backup created: ${result.path || "success"}`);
-    } else {
+      const sizeMB = result.size ? (result.size / 1024 / 1024).toFixed(1) : "?";
+      setBackupResult(`Backup created (${sizeMB} MB): ${result.path || "success"}`);
+      setBackupInventory(null);
+    } else if (result.error !== "Cancelled") {
       setBackupResult(result.error || "Backup failed.");
     }
   }
 
   async function handleImport(): Promise<void> {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".tar.gz,.tgz,.zip";
-    input.onchange = async (): Promise<void> => {
-      const file = input.files?.[0];
-      if (!file) return;
+    if (showImportPreview && importArchivePath) {
+      // Restore
       setImporting(true);
       setImportResult(null);
-      const filePath = (file as File & { path: string }).path;
-      const result = await window.omniworkerAPI.runOmniWorkerImport(filePath, profile);
+      setBackupProgress({ phase: "extracting", percent: 0 });
+
+      const cleanup = window.omniworkerAPI.onBackupProgress((p: any) => {
+        setBackupProgress({ phase: p.phase, percent: p.percent });
+      });
+
+      const result = await window.omniworkerAPI.restoreBackup(importArchivePath, profile, {
+        includeSessions: true,
+        includeKanban: true,
+        overwrite: true,
+      });
+      cleanup();
+
       setImporting(false);
+      setBackupProgress(null);
       if (result.success) {
-        setImportResult(t("settings.migrationComplete"));
+        setImportResult(`Restored ${result.restoredItems.length} items successfully. App will refresh...`);
+        setShowImportPreview(false);
+        setImportManifest(null);
+        setImportArchivePath(null);
+        // Refresh app state
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        setImportResult(result.error || t("settings.migrationFailed"));
+        setImportResult(result.error || "Import failed.");
       }
-    };
-    input.click();
+      return;
+    }
+
+    // Open file picker and read manifest
+    const result = await window.omniworkerAPI.readBackupManifest();
+    if (result.error === "Cancelled") return;
+    if (result.error) {
+      setImportResult(result.error);
+      return;
+    }
+    if (result.manifest) {
+      setImportManifest(result.manifest);
+      setShowImportPreview(true);
+    }
   }
 
   async function loadLogs(): Promise<void> {
@@ -475,28 +527,6 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           {dumpOutput && (
             <pre className="settings-omniworker-doctor">{dumpOutput}</pre>
           )}
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <div className="settings-section-title">Community</div>
-        <div className="settings-field">
-          <div className="settings-field-hint" style={{ marginBottom: 10 }}>
-            Join our Telegram group to ask questions, report issues, and chat
-            with other OmniWorker users.
-          </div>
-          <div className="settings-omniworker-actions">
-            <button
-              className="btn btn-secondary"
-              onClick={() =>
-                window.omniworkerAPI.openExternal(TELEGRAM_COMMUNITY_URL)
-              }
-              title={TELEGRAM_COMMUNITY_URL}
-            >
-              <Send size={14} style={{ marginRight: 6 }} />
-              Join Telegram Community
-            </button>
-          </div>
         </div>
       </div>
 
@@ -851,40 +881,94 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           <div className="settings-field-hint" style={{ marginBottom: 10 }}>
             {t("settings.dataHint")}
           </div>
-          <div className="settings-omniworker-actions">
-            <button
-              className="btn btn-secondary"
-              onClick={handleBackup}
-              disabled={backingUp}
-            >
-              <Download size={14} style={{ marginRight: 6 }} />
-              {backingUp ? t("settings.backingUp") : t("settings.exportBackup")}
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={handleImport}
-              disabled={importing}
-            >
-              <Upload size={14} style={{ marginRight: 6 }} />
-              {importing ? t("settings.importing") : t("settings.importBackup")}
-            </button>
+
+          {/* Export Backup */}
+          <div style={{ marginBottom: 16, padding: 16, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8 }}>
+            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>Export Backup</div>
+            {backupInventory && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+                  {backupInventory.files.filter((f: any) => f.exists).length} items found &middot; {(backupInventory.totalSize / 1024).toFixed(0)} KB
+                  {backupInventory.sessionCount > 0 && ` &middot; ${backupInventory.sessionCount} sessions`}
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 4 }}>
+                  <input type="checkbox" checked={includeSessions} onChange={e => { setIncludeSessions(e.target.checked); setBackupInventory(null); }} />
+                  Include chat history ({backupInventory.sessionCount} sessions)
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                  <input type="checkbox" checked={includeKanban} onChange={e => { setIncludeKanban(e.target.checked); setBackupInventory(null); }} />
+                  Include kanban tasks ({backupInventory.kanbanTaskCount} tasks)
+                </label>
+              </div>
+            )}
+            {backupProgress && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ height: 4, background: "var(--bg-hover)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${backupProgress.percent}%`, background: "var(--accent)", transition: "width 0.3s" }} />
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{backupProgress.phase}...</div>
+              </div>
+            )}
+            <div className="settings-omniworker-actions">
+              <button className="btn btn-secondary" onClick={handleBackup} disabled={backingUp}>
+                <Download size={14} style={{ marginRight: 6 }} />
+                {backingUp ? "Exporting..." : backupInventory ? "Save Backup..." : "Scan & Export"}
+              </button>
+              {backupInventory && !backingUp && (
+                <button className="btn btn-secondary" onClick={() => setBackupInventory(null)} style={{ fontSize: 12 }}>
+                  Cancel
+                </button>
+              )}
+            </div>
+            {backupResult && (
+              <div className={`settings-omniworker-result ${backupResult.includes("success") || backupResult.includes("created") ? "success" : "error"}`} style={{ marginTop: 8 }}>
+                {backupResult}
+              </div>
+            )}
           </div>
-          {backupResult && (
-            <div
-              className={`settings-omniworker-result ${backupResult.includes("created") || backupResult.includes("success") ? "success" : "error"}`}
-              style={{ marginTop: 8 }}
-            >
-              {backupResult}
+
+          {/* Import Backup */}
+          <div style={{ padding: 16, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8 }}>
+            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>Import Backup</div>
+            {showImportPreview && importManifest ? (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+                  Backup from: {new Date(importManifest.createdAt).toLocaleString()}
+                  &middot; Profile: {importManifest.profileName}
+                  &middot; {importManifest.items?.filter((i: any) => i.exists).length || "?"} items
+                </div>
+                {importManifest.includesSessions && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 2 }}>Includes: Chat history</div>}
+                {importManifest.includesKanban && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 2 }}>Includes: Kanban tasks</div>}
+                <div style={{ padding: "8px 12px", background: "var(--warning-bg)", border: "1px solid var(--warning)", borderRadius: 4, marginTop: 8, fontSize: 12, color: "var(--warning)" }}>
+                  This will overwrite your current data. The app will reload after import.
+                </div>
+              </div>
+            ) : null}
+            {backupProgress && importing && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ height: 4, background: "var(--bg-hover)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${backupProgress.percent}%`, background: "var(--warning)", transition: "width 0.3s" }} />
+                </div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{backupProgress.phase}...</div>
+              </div>
+            )}
+            <div className="settings-omniworker-actions">
+              <button className="btn btn-secondary" onClick={handleImport} disabled={importing}>
+                <Upload size={14} style={{ marginRight: 6 }} />
+                {importing ? "Restoring..." : showImportPreview ? "Confirm Restore" : "Select Backup File..."}
+              </button>
+              {showImportPreview && !importing && (
+                <button className="btn btn-secondary" onClick={() => { setShowImportPreview(false); setImportManifest(null); setImportArchivePath(null); }} style={{ fontSize: 12 }}>
+                  Cancel
+                </button>
+              )}
             </div>
-          )}
-          {importResult && (
-            <div
-              className={`settings-omniworker-result ${importResult.includes("complete") ? "success" : "error"}`}
-              style={{ marginTop: 8 }}
-            >
-              {importResult}
-            </div>
-          )}
+            {importResult && (
+              <div className={`settings-omniworker-result ${importResult.includes("success") || importResult.includes("Restored") ? "success" : "error"}`} style={{ marginTop: 8 }}>
+                {importResult}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
