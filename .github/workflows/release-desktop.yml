@@ -31,7 +31,7 @@ jobs:
       - name: Build and Publish
         working-directory: ./omniworker-desktop
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
             npm run build:win -- -p always
