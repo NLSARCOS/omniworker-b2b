@@ -804,14 +804,30 @@ export async function sendMessage(
 
   // ── LOCAL SLM FAST PATH ──
   // Simple messages (greetings, short Qs) go to local llama-server when available.
-  // Falls through to cloud on any error.
+  // Only attempt if SLM is actually running (quick TCP probe first).
   if (
     !isRemoteMode() &&
     !resumeSessionId &&
     shouldUseLocalSlm(message, history)
   ) {
-    const slmHandle = sendMessageViaLocalSlm(message, cb);
-    if (slmHandle) return slmHandle;
+    // Quick async probe — is the SLM actually accepting connections?
+    const slmAlive = await new Promise<boolean>((resolve) => {
+      try {
+        const netMod = require("net") as typeof import("net");
+        const s = netMod.createConnection({ port: LOCAL_SLM_PORT, host: "127.0.0.1" });
+        s.setTimeout(500);
+        s.once("connect", () => { s.destroy(); resolve(true); });
+        s.once("error", () => { s.destroy(); resolve(false); });
+        s.once("timeout", () => { s.destroy(); resolve(false); });
+      } catch {
+        resolve(false);
+      }
+    });
+
+    if (slmAlive) {
+      const slmHandle = sendMessageViaLocalSlm(message, cb);
+      if (slmHandle) return slmHandle;
+    }
     // SLM not available — fall through to gateway/cloud
   }
 
@@ -843,6 +859,7 @@ function ensureInitialized(): void {
   if (!isRemoteMode()) {
     ensureApiServerConfig();
     ensureLocalLlmScripts(); // Copy startup scripts on first run
+    startSmartRouter(); // Start smart router so gateway has it available
   }
   startHealthPolling();
 }
