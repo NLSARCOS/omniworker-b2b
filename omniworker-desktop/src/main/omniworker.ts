@@ -10,6 +10,7 @@ import {
   OMNIWORKER_PYTHON,
   omniworkerCliArgs,
   getEnhancedPath,
+  SAAS_BASE_URL,
 } from "./installer";
 import { getModelConfig, readEnv, getConnectionConfig } from "./config";
 import { getSshTunnelUrl, isSshTunnelActive, isSshTunnelHealthy, startSshTunnel } from "./ssh-tunnel";
@@ -468,6 +469,7 @@ function sendMessageViaCli(
     PATH: getEnhancedPath(),
     HOME: homedir(),
     OMNIWORKER_HOME: OMNIWORKER_HOME,
+    OMNIWORKER_SAAS_BASE_URL: process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     PYTHONUNBUFFERED: "1",
   };
 
@@ -1038,7 +1040,7 @@ export function startSmartRouter(): boolean {
     HOME: homedir(),
     SMART_ROUTER_PORT: String(SMART_ROUTER_PORT),
     LOCAL_SLM_PORT: process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
-    CLOUD_API_URL: process.env.CLOUD_API_URL || "https://worker.thelab.lat/api",
+    CLOUD_API_URL: process.env.CLOUD_API_URL || `${SAAS_BASE_URL}/api`,
     SMART_ROUTER_LOG: "1", // Enable logging
   };
 

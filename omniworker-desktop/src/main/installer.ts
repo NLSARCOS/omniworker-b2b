@@ -520,7 +520,7 @@ const STAGE_MARKERS: { pattern: RegExp; step: number; title: string }[] = [
   },
 ];
 
-const SAAS_BASE_URL = process.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+export const SAAS_BASE_URL = process.env.VITE_SAAS_URL || "https://worker.thelab.lat";
 
 export async function runInstall(
   onProgress: (progress: InstallProgress) => void,
@@ -660,7 +660,7 @@ export async function runInstall(
 
       const installCmd = [
         shellProfile ? `source "${shellProfile}" 2>/dev/null;` : "",
-        `bash "${localInstallScript}" --dir "${OMNIWORKER_REPO}" --local --skip-setup`,
+        `bash "${localInstallScript}" --dir "${OMNIWORKER_REPO}" --local "${OMNIWORKER_REPO}" --skip-setup`,
       ].join(" ");
 
       const basePath = getEnhancedPath();

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-16T23:19:17.646Z",
+  "source": "prompt",
+  "tasks": {
+    "TP-002": [],
+    "TP-003": [
+      "TP-002"
+    ]
+  }
+}

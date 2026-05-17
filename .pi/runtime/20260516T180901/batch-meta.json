@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "batchId": "20260516T180901",
+  "wavePlan": [
+    [
+      "TP-002"
+    ],
+    [
+      "TP-003"
+    ]
+  ],
+  "baseBranch": "master",
+  "orchBranch": "orch/nelsonsarcos-20260516T180901",
+  "mode": "repo",
+  "startedAt": 1778972941223,
+  "totalWaves": 2
+}

@@ -1,0 +1,13 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no root@217.76.62.37 "echo success"
+expect "*assword:*"
+send "19748961Nl\r"
+expect {
+    "Permission denied" {
+        exit 1
+    }
+    "success" {
+        exit 0
+    }
+}

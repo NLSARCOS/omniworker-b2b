@@ -1,0 +1,6 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh-copy-id -o StrictHostKeyChecking=no root@217.76.62.37
+expect "password:"
+send "Santiago1206"
+expect eof
