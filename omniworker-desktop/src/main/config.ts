@@ -252,8 +252,23 @@ export function setModelConfig(
   profile?: string,
 ): void {
   invalidateCache(`mc:${profile || "default"}`);
-  const { configFile } = profilePaths(profile);
-  if (!existsSync(configFile)) return;
+  const { configFile, home } = profilePaths(profile);
+  if (!existsSync(configFile)) {
+    // Create config.yaml with minimal structure if it doesn't exist (fresh install)
+    const dir = join(configFile, "..");
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const initial = [
+      "# OmniWorker Agent Configuration",
+      "model:",
+      `  provider: "${provider}"`,
+      `  default: "${model}"`,
+      baseUrl ? `  base_url: "${baseUrl}"` : "",
+      "  streaming: true",
+      "",
+    ].filter(Boolean).join("\n");
+    safeWriteFile(configFile, initial);
+    return;
+  }
 
   let content = readFileSync(configFile, "utf-8");
 

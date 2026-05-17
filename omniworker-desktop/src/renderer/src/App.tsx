@@ -77,8 +77,8 @@ function App(): React.JSX.Element {
       const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
       const gatewayUrl = `${saasUrl}/api/v1`;
       
-      // 1. Guardar el token como CUSTOM_API_KEY para que el agente local lo use
-      await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", auth.accessToken);
+      // 1. Guardar el token como OPENAI_API_KEY para que el agente local lo detecte automáticamente
+      await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
       
       // 2. Configurar el provider 'custom' para que apunte al SaaS
       await window.omniworkerAPI.setModelConfig("custom", "omniworker", gatewayUrl);
