@@ -189,15 +189,16 @@ export default function DashboardPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const meRes = await fetch("/api/v1/auth/me");
+      const token = localStorage.getItem("ow_token") || "";
+      const meRes = await fetch("/api/v1/auth/me", { headers: { Authorization: "Bearer " + token } });
       const meData = await meRes.json();
       if (meData.success) {
         setUser(meData.user);
         if (meData.user.tenantId) {
           const [agentsRes, keysRes, licensesRes] = await Promise.allSettled([
-            fetch("/api/v1/edge/status").then(r => r.json()),
-            fetch("/api/v1/apikeys").then(r => r.json()),
-            fetch("/api/v1/licenses").then(r => r.json()),
+            fetch("/api/v1/edge/status", { headers: { Authorization: "Bearer " + token } }).then(r => r.json()),
+            fetch("/api/v1/apikeys", { headers: { Authorization: "Bearer " + token } }).then(r => r.json()),
+            fetch("/api/v1/licenses", { headers: { Authorization: "Bearer " + token } }).then(r => r.json()),
           ]);
           if (agentsRes.status === "fulfilled" && agentsRes.value?.success) setAgents(agentsRes.value.agents || []);
           if (keysRes.status === "fulfilled" && keysRes.value?.success) setApiKeys(keysRes.value.keys || []);
@@ -224,7 +225,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/v1/licenses", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + localStorage.getItem("ow_token") },
         body: JSON.stringify({ name: newLicenseName || undefined }),
       });
       const data = await res.json();
@@ -249,7 +250,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/v1/apikeys", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + localStorage.getItem("ow_token") },
         body: JSON.stringify({ name: newKeyName || "Desktop Agent Key", licenseId: selectedLicenseId }),
       });
       const data = await res.json();
@@ -274,7 +275,7 @@ export default function DashboardPage() {
     if (!deleteKeyConfirm) return;
     setDeletingKey(true);
     try {
-      const res = await fetch(`/api/v1/apikeys?id=${deleteKeyConfirm.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/v1/apikeys?id=${deleteKeyConfirm.id}`, { method: "DELETE", headers: { Authorization: "Bearer " + localStorage.getItem("ow_token") } });
       const data = await res.json();
       if (data.success) {
         setDeleteKeyConfirm(null);
@@ -289,7 +290,7 @@ export default function DashboardPage() {
     if (!revokeLicenseConfirm) return;
     setRevokingLicense(true);
     try {
-      const res = await fetch(`/api/v1/licenses/${revokeLicenseConfirm.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/v1/licenses/${revokeLicenseConfirm.id}`, { method: "DELETE", headers: { Authorization: "Bearer " + localStorage.getItem("ow_token") } });
       const data = await res.json();
       if (data.success) {
         setRevokeLicenseConfirm(null);
@@ -497,9 +498,9 @@ export default function DashboardPage() {
             <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Descargar Desktop</p>
             <p style={{ fontSize: 13, color: "#555", margin: "0 0 16px" }}>App nativa para macOS, Windows, Linux</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest-mac.zip" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Mac</a>
-              <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-Setup-latest.exe" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Windows</a>
-              <a href="https://github.com/Simplex-lat/omniworker-releases/releases/latest/download/Omniworker-latest.AppImage" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#fff", color: "#000", textDecoration: "none", border: "2px solid #000" }}>Linux</a>
+              <a href="/downloads/OmniWorker-Desktop.dmg" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Mac</a>
+              <a href="/downloads/OmniWorker-Desktop-Setup.exe" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>Windows</a>
+              <a href="/downloads/OmniWorker-Desktop.AppImage" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#fff", color: "#000", textDecoration: "none", border: "2px solid #000" }}>Linux</a>
             </div>
           </div>
           <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111" }}>
