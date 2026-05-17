@@ -759,17 +759,53 @@ install_system_packages() {
     local description
     description=$(IFS=" and "; echo "${desc_parts[*]}")
 
-    # ── macOS: brew ──
+    # ── macOS: binary install (avoids slow brew compile on older macOS) ──
     if [ "$OS" = "macos" ]; then
-        if command -v brew &> /dev/null; then
-            log_info "Installing ${pkgs[*]} via Homebrew..."
-            if brew install "${pkgs[@]}"; then
-                [ "$need_ripgrep" = true ] && HAS_RIPGREP=true && log_success "ripgrep installed"
-                [ "$need_ffmpeg" = true ]  && HAS_FFMPEG=true  && log_success "ffmpeg installed"
-                return 0
+        log_info "Installing ${pkgs[*]} via direct binary..."
+        local mac_arch="$(uname -m)"
+        local install_ok=true
+
+        if [ "$need_ripgrep" = true ]; then
+            local rg_version="14.1.1"
+            local rg_arch=""
+            case "$mac_arch" in
+                arm64) rg_arch="aarch64-apple-darwin" ;;
+                x86_64) rg_arch="x86_64-apple-darwin" ;;
+                *) rg_arch="x86_64-apple-darwin" ;;
+            esac
+            local rg_url="https://github.com/BurntSushi/ripgrep/releases/download/${rg_version}/ripgrep-${rg_version}-${rg_arch}.tar.gz"
+            local rg_tmp="$(mktemp -d)"
+            log_info "Downloading ripgrep ${rg_version}..."
+            if curl -fL --retry 3 --retry-delay 2 "$rg_url" | tar -xzf - -C "$rg_tmp" 2>/dev/null; then
+                local rg_bin="$(find "$rg_tmp" -name 'rg' -type f | head -1)"
+                if [ -n "$rg_bin" ]; then
+                    cp "$rg_bin" /usr/local/bin/rg 2>/dev/null || cp "$rg_bin" "$HOME/.local/bin/rg" 2>/dev/null
+                    chmod +x /usr/local/bin/rg 2>/dev/null || chmod +x "$HOME/.local/bin/rg" 2>/dev/null
+                    HAS_RIPGREP=true
+                    log_success "ripgrep ${rg_version} installed (binary)"
+                fi
+            fi
+            rm -rf "$rg_tmp"
+        fi
+
+        if [ "$need_ffmpeg" = true ] && command -v brew &> /dev/null; then
+            log_info "Installing ffmpeg via Homebrew..."
+            if brew install ffmpeg; then
+                HAS_FFMPEG=true
+                log_success "ffmpeg installed"
             fi
         fi
-        log_warn "Could not auto-install (brew not found or install failed)"
+
+        if [ "$HAS_RIPGREP" = true ]; then return 0; fi
+
+        # Fallback to brew for ripgrep if binary install failed
+        if [ "$need_ripgrep" = true ] && [ "$HAS_RIPGREP" = false ] && command -v brew &> /dev/null; then
+            log_info "Binary install failed, trying Homebrew (may be slow)..."
+            if brew install ripgrep; then
+                HAS_RIPGREP=true
+                log_success "ripgrep installed via brew"
+            fi
+        fi
         log_info "Install manually: brew install ${pkgs[*]}"
         return 0
     fi
