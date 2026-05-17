@@ -1,0 +1,43 @@
+name: Build and Release Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'omniworker-desktop/package-lock.json'
+
+      - name: Install Dependencies
+        working-directory: ./omniworker-desktop
+        run: npm ci
+
+      - name: Build and Publish
+        working-directory: ./omniworker-desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            npm run build:win -- -p always
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            npm run build:mac -- -p always
+          else
+            npm run build:linux -- -p always
+          fi
+        shell: bash
