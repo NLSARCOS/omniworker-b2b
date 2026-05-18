@@ -73,32 +73,43 @@ function App(): React.JSX.Element {
   };
 
   const handleLoginSuccess = async (user: any, auth: any) => {
+    console.error("[APP] handleLoginSuccess started");
     setUserData(user);
 
     if (auth?.accessToken) {
+      console.error("[APP] Got accessToken, setting auth token");
       setAuthToken(auth.accessToken);
 
       // OMNIWORKER B2B: Smart Router Architecture
       const saasUrl =
         import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
 
+      console.error("[APP] Setting env vars");
       // 1. Guardar el token JWT como OPENAI_API_KEY para que el Smart Router pueda autenticarse en el SaaS
       await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
       await window.omniworkerAPI.setEnv("CLOUD_API_URL", `${saasUrl}/api`);
 
+      console.error("[APP] Starting Smart Router...");
       // 2. Iniciar el smart router (proxy local que enruta SLM ↔ cloud SaaS)
-      await window.omniworkerAPI.startSmartRouter();
+      try {
+        await window.omniworkerAPI.startSmartRouter();
+        console.error("[APP] Smart Router started");
+      } catch (srErr: any) {
+        console.error("[APP] Smart Router failed (non-fatal):", srErr?.message);
+      }
 
       // 3. Configurar el agente local para que envíe el prompt al smart router
       const baseUrl = await window.omniworkerAPI.getSmartRouterUrl(
         `${saasUrl}/api/v1`,
       );
+      console.error("[APP] Smart Router URL:", baseUrl);
       await window.omniworkerAPI.setModelConfig(
         "custom",
         "omniworker",
         baseUrl,
       );
 
+      console.error("[APP] Setting connection config to local");
       // 4. Forzar modo local para que el UI hable con el Agente Local (y así tener Tools locales)
       await window.omniworkerAPI.setConnectionConfig("local", "", "");
 
@@ -142,8 +153,10 @@ function App(): React.JSX.Element {
       }
     }
 
+    console.error("[APP] Running post login install check...");
     // Comprobar la instalación para descargar la DB, RAG y motor local si faltan
     await runPostLoginInstallCheck();
+    console.error("[APP] handleLoginSuccess finished");
   };
 
   async function handleInstallComplete(): Promise<void> {

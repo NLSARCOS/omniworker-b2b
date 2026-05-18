@@ -1,0 +1,6 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no root@217.76.62.37 "cat /opt/omniworker/omniworker-saas/.env || cat /opt/omniworker/.env"
+expect "*assword:*"
+send "19748961Nl\r"
+expect eof

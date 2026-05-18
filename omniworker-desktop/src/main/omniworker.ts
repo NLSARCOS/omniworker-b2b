@@ -1169,14 +1169,11 @@ export async function startSmartRouter(): Promise<boolean> {
   }
 
   const args = [OMNIWORKER_PYTHON, routerScript];
-  const logStream = require("fs").createWriteStream(
-    join(OMNIWORKER_HOME, "smart_router.log"),
-    { flags: "a" },
-  );
+
   smartRouterProcess = spawn(args[0], args.slice(1), {
     cwd: OMNIWORKER_REPO,
     env: routerEnv,
-    stdio: ["ignore", logStream, logStream],
+    stdio: "ignore",
     detached: true,
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });
@@ -1265,14 +1262,13 @@ export function startGateway(profile?: string): boolean {
     gatewayEnv.API_SERVER_KEY = gatewayEnv.CUSTOM_API_KEY;
   }
 
-  const logStream = require("fs").createWriteStream(
-    join(OMNIWORKER_HOME, "gateway.log"),
-    { flags: "a" },
-  );
+  const fs = require("fs");
+  const logFd = fs.openSync(join(OMNIWORKER_HOME, "gateway.log"), "a");
+
   gatewayProcess = spawn(OMNIWORKER_PYTHON, omniworkerCliArgs(["gateway"]), {
     cwd: OMNIWORKER_REPO,
     env: gatewayEnv,
-    stdio: ["ignore", logStream, logStream],
+    stdio: ["ignore", logFd, logFd],
     detached: true,
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });

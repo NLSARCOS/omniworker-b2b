@@ -14,9 +14,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+    console.error("[LOGIN] Starting login process...");
 
     try {
       const saasUrl = "https://worker.thelab.lat";
+      console.error("[LOGIN] Fetching from", saasUrl);
 
       const response = await fetch(`${saasUrl}/api/v1/auth/login`, {
         method: "POST",
@@ -24,22 +26,28 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         body: JSON.stringify({ email, password }),
       });
 
+      console.error("[LOGIN] Fetch response status:", response.status);
       const data = await response.json();
+      console.error("[LOGIN] Fetch response data parsed");
 
       if (!response.ok) {
         throw new Error(data.error || "Error de autenticación");
       }
 
+      console.error("[LOGIN] Calling onLoginSuccess...");
       // Enviar datos al App.tsx para manejar estado e incializar agente local
       onLoginSuccess(data.user, {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       });
+      console.error("[LOGIN] onLoginSuccess completed synchronously");
     } catch (err: any) {
+      console.error("[LOGIN] Error caught:", err.message);
       setError(
         `[Network Error] URL: https://worker.thelab.lat/api/v1/auth/login | Detail: ${err.message}`,
       );
     } finally {
+      console.error("[LOGIN] Finally block reached. Setting isLoading to false.");
       setIsLoading(false);
     }
   };

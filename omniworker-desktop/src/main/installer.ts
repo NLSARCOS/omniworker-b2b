@@ -691,7 +691,7 @@ export async function runInstall(
 
       const installCmd = [
         shellProfile ? `source "${shellProfile}" 2>/dev/null;` : "",
-        `bash "${localInstallScript}" --dir "${OMNIWORKER_REPO}" --local "${OMNIWORKER_REPO}" --skip-setup`,
+        `bash "${localInstallScript}" --dir "${OMNIWORKER_REPO}" --local --skip-setup`,
       ].join(" ");
 
       const basePath = getEnhancedPath();
