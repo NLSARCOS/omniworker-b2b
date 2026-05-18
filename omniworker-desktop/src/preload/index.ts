@@ -22,7 +22,9 @@ const omniworkerAPI = {
 
   verifyInstall: (): Promise<boolean> => ipcRenderer.invoke("verify-install"),
 
-  startInstall: (authToken?: string): Promise<{ success: boolean; error?: string }> =>
+  startInstall: (
+    authToken?: string,
+  ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("start-install", authToken),
 
   onInstallProgress: (
@@ -102,7 +104,8 @@ const omniworkerAPI = {
 
   // Connection mode (local / remote / ssh)
   isRemoteMode: (): Promise<boolean> => ipcRenderer.invoke("is-remote-mode"),
-  isRemoteOnlyMode: (): Promise<boolean> => ipcRenderer.invoke("is-remote-only-mode"),
+  isRemoteOnlyMode: (): Promise<boolean> =>
+    ipcRenderer.invoke("is-remote-only-mode"),
   getConnectionConfig: (): Promise<{
     mode: "local" | "remote" | "ssh";
     remoteUrl: string;
@@ -132,7 +135,15 @@ const omniworkerAPI = {
     remotePort: number,
     localPort: number,
   ): Promise<boolean> =>
-    ipcRenderer.invoke("set-ssh-config", host, port, username, keyPath, remotePort, localPort),
+    ipcRenderer.invoke(
+      "set-ssh-config",
+      host,
+      port,
+      username,
+      keyPath,
+      remotePort,
+      localPort,
+    ),
 
   testRemoteConnection: (url: string, apiKey?: string): Promise<boolean> =>
     ipcRenderer.invoke("test-remote-connection", url, apiKey),
@@ -144,7 +155,14 @@ const omniworkerAPI = {
     keyPath: string,
     remotePort: number,
   ): Promise<boolean> =>
-    ipcRenderer.invoke("test-ssh-connection", host, port, username, keyPath, remotePort),
+    ipcRenderer.invoke(
+      "test-ssh-connection",
+      host,
+      port,
+      username,
+      keyPath,
+      remotePort,
+    ),
 
   isSshTunnelActive: (): Promise<boolean> =>
     ipcRenderer.invoke("is-ssh-tunnel-active"),
@@ -152,8 +170,7 @@ const omniworkerAPI = {
   startSshTunnel: (): Promise<boolean> =>
     ipcRenderer.invoke("start-ssh-tunnel"),
 
-  stopSshTunnel: (): Promise<boolean> =>
-    ipcRenderer.invoke("stop-ssh-tunnel"),
+  stopSshTunnel: (): Promise<boolean> => ipcRenderer.invoke("stop-ssh-tunnel"),
 
   // Chat
   sendMessage: (
@@ -233,8 +250,12 @@ const omniworkerAPI = {
   gatewayStatus: (): Promise<boolean> => ipcRenderer.invoke("gateway-status"),
 
   // Smart Router (local SLM ↔ cloud routing)
-  startSmartRouter: (): Promise<boolean> => ipcRenderer.invoke("start-smart-router"),
-  stopSmartRouter: (): Promise<boolean> => ipcRenderer.invoke("stop-smart-router"),
+  startSmartRouter: (): Promise<boolean> =>
+    ipcRenderer.invoke("start-smart-router"),
+  stopSmartRouter: (): Promise<boolean> =>
+    ipcRenderer.invoke("stop-smart-router"),
+  smartRouterStatus: (): Promise<boolean> =>
+    ipcRenderer.invoke("smart-router-status"),
   getSmartRouterUrl: (cloudFallback: string): Promise<string> =>
     ipcRenderer.invoke("smart-router-url", cloudFallback),
 
@@ -566,8 +587,10 @@ const omniworkerAPI = {
   },
 
   onUpdateError: (callback: (message: string) => void): (() => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, message: unknown): void =>
-      callback(String(message));
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      message: unknown,
+    ): void => callback(String(message));
     ipcRenderer.on("update-error", handler);
     return () => ipcRenderer.removeListener("update-error", handler);
   },
@@ -661,18 +684,8 @@ const omniworkerAPI = {
     switchAfter?: boolean,
     profile?: string,
   ) =>
-    ipcRenderer.invoke(
-      "kanban-create-board",
-      slug,
-      name,
-      switchAfter,
-      profile,
-    ),
-  kanbanRemoveBoard: (
-    slug: string,
-    hardDelete?: boolean,
-    profile?: string,
-  ) =>
+    ipcRenderer.invoke("kanban-create-board", slug, name, switchAfter, profile),
+  kanbanRemoveBoard: (slug: string, hardDelete?: boolean, profile?: string) =>
     ipcRenderer.invoke("kanban-remove-board", slug, hardDelete, profile),
   kanbanListTasks: (filters?: {
     status?: string;
@@ -714,11 +727,8 @@ const omniworkerAPI = {
     ipcRenderer.invoke("kanban-archive-task", taskId, profile),
   kanbanSpecifyTask: (taskId: string, profile?: string) =>
     ipcRenderer.invoke("kanban-specify-task", taskId, profile),
-  kanbanReclaimTask: (
-    taskId: string,
-    reason?: string,
-    profile?: string,
-  ) => ipcRenderer.invoke("kanban-reclaim-task", taskId, reason, profile),
+  kanbanReclaimTask: (taskId: string, reason?: string, profile?: string) =>
+    ipcRenderer.invoke("kanban-reclaim-task", taskId, reason, profile),
   kanbanCommentTask: (taskId: string, body: string, profile?: string) =>
     ipcRenderer.invoke("kanban-comment-task", taskId, body, profile),
   kanbanDispatchOnce: (dryRun?: boolean, profile?: string) =>
@@ -749,8 +759,12 @@ const omniworkerAPI = {
   createBackup: (
     profile?: string,
     options?: { includeSessions?: boolean; includeKanban?: boolean },
-  ): Promise<{ success: boolean; path?: string; size?: number; error?: string }> =>
-    ipcRenderer.invoke("create-backup", profile, options),
+  ): Promise<{
+    success: boolean;
+    path?: string;
+    size?: number;
+    error?: string;
+  }> => ipcRenderer.invoke("create-backup", profile, options),
 
   readBackupManifest: (): Promise<{ manifest: any | null; error?: string }> =>
     ipcRenderer.invoke("read-backup-manifest"),
@@ -758,12 +772,20 @@ const omniworkerAPI = {
   restoreBackup: (
     archivePath: string,
     profile?: string,
-    options?: { includeSessions?: boolean; includeKanban?: boolean; overwrite?: boolean },
+    options?: {
+      includeSessions?: boolean;
+      includeKanban?: boolean;
+      overwrite?: boolean;
+    },
   ): Promise<{ success: boolean; error?: string; restoredItems: string[] }> =>
     ipcRenderer.invoke("restore-backup", archivePath, profile, options),
 
   onBackupProgress: (
-    callback: (progress: { phase: string; currentFile: string; percent: number }) => void,
+    callback: (progress: {
+      phase: string;
+      currentFile: string;
+      percent: number;
+    }) => void,
   ) => {
     const handler = (_event: any, progress: any) => callback(progress);
     ipcRenderer.on("backup-progress", handler);
@@ -777,7 +799,8 @@ const omniworkerAPI = {
   },
 
   // Debug dump
-  runOmniWorkerDump: (): Promise<string> => ipcRenderer.invoke("run-omniworker-dump"),
+  runOmniWorkerDump: (): Promise<string> =>
+    ipcRenderer.invoke("run-omniworker-dump"),
 
   // Memory providers
   discoverMemoryProviders: (

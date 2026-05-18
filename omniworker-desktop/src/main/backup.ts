@@ -71,14 +71,62 @@ const BACKUP_CATEGORIES: Array<{
   /** Included by default? */
   defaultInclude: boolean;
 }> = [
-  { category: "Config", label: "Configuration (config.yaml)", paths: ["config.yaml"], type: "file", defaultInclude: true },
-  { category: "Config", label: "Environment Variables (.env)", paths: [".env"], type: "file", defaultInclude: true },
-  { category: "Persona", label: "Agent Persona (SOUL.md)", paths: ["SOUL.md"], type: "file", defaultInclude: true },
-  { category: "Memory", label: "Agent Memory", paths: ["memories/MEMORY.md", "memories/USER.md"], type: "file", defaultInclude: true },
-  { category: "Skills", label: "Learned Skills", paths: ["skills"], type: "dir", defaultInclude: true },
-  { category: "Cron", label: "Scheduled Jobs", paths: ["cron/jobs.json"], type: "file", defaultInclude: true },
-  { category: "Sessions", label: "Chat History (state.db)", paths: ["state.db"], type: "file", defaultInclude: false },
-  { category: "Kanban", label: "Task Board (kanban.db)", paths: ["kanban.db"], type: "file", defaultInclude: false },
+  {
+    category: "Config",
+    label: "Configuration (config.yaml)",
+    paths: ["config.yaml"],
+    type: "file",
+    defaultInclude: true,
+  },
+  {
+    category: "Config",
+    label: "Environment Variables (.env)",
+    paths: [".env"],
+    type: "file",
+    defaultInclude: true,
+  },
+  {
+    category: "Persona",
+    label: "Agent Persona (SOUL.md)",
+    paths: ["SOUL.md"],
+    type: "file",
+    defaultInclude: true,
+  },
+  {
+    category: "Memory",
+    label: "Agent Memory",
+    paths: ["memories/MEMORY.md", "memories/USER.md"],
+    type: "file",
+    defaultInclude: true,
+  },
+  {
+    category: "Skills",
+    label: "Learned Skills",
+    paths: ["skills"],
+    type: "dir",
+    defaultInclude: true,
+  },
+  {
+    category: "Cron",
+    label: "Scheduled Jobs",
+    paths: ["cron/jobs.json"],
+    type: "file",
+    defaultInclude: true,
+  },
+  {
+    category: "Sessions",
+    label: "Chat History (state.db)",
+    paths: ["state.db"],
+    type: "file",
+    defaultInclude: false,
+  },
+  {
+    category: "Kanban",
+    label: "Task Board (kanban.db)",
+    paths: ["kanban.db"],
+    type: "file",
+    defaultInclude: false,
+  },
 ];
 
 const DESKTOP_FILES: Array<{ label: string; paths: string[] }> = [
@@ -141,19 +189,25 @@ export function scanBackupData(
     if (existsSync(stateDb)) {
       const Database = require("better-sqlite3");
       const db = new Database(stateDb, { readonly: true });
-      sessionCount = (db.prepare("SELECT COUNT(*) as c FROM sessions").get() as any)?.c || 0;
+      sessionCount =
+        (db.prepare("SELECT COUNT(*) as c FROM sessions").get() as any)?.c || 0;
       db.close();
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   try {
     const kanbanDb = join(home, "kanban.db");
     if (existsSync(kanbanDb)) {
       const Database = require("better-sqlite3");
       const db = new Database(kanbanDb, { readonly: true });
-      kanbanTaskCount = (db.prepare("SELECT COUNT(*) as c FROM tasks").get() as any)?.c || 0;
+      kanbanTaskCount =
+        (db.prepare("SELECT COUNT(*) as c FROM tasks").get() as any)?.c || 0;
       db.close();
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   return { profileName: name, files, totalSize, sessionCount, kanbanTaskCount };
 }
@@ -175,7 +229,9 @@ function scanPath(fullPath: string): { exists: boolean; size: number } {
       walk(fullPath);
       return { exists: true, size };
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { exists: false, size: 0 };
 }
 
@@ -197,7 +253,11 @@ export async function createBackup(
   for (const item of inventory.files) {
     if (!item.exists) continue;
     const src = join(home, item.relPath);
-    if (item.category === "Skills" && existsSync(src) && statSync(src).isDirectory()) {
+    if (
+      item.category === "Skills" &&
+      existsSync(src) &&
+      statSync(src).isDirectory()
+    ) {
       // Walk skills directory
       const walk = (dir: string, prefix: string) => {
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -227,7 +287,11 @@ export async function createBackup(
     profileName: name,
     includesSessions: !!options?.includeSessions,
     includesKanban: !!options?.includeKanban,
-    items: inventory.files.map((f) => ({ path: f.relPath, size: f.size, exists: f.exists })),
+    items: inventory.files.map((f) => ({
+      path: f.relPath,
+      size: f.size,
+      exists: f.exists,
+    })),
     totalSize: inventory.totalSize,
   };
 
@@ -235,7 +299,10 @@ export async function createBackup(
   return new Promise((resolve) => {
     try {
       const output = createWriteStream(destPath);
-      const archive = archiver("tar", { gzip: true, gzipOptions: { level: 6 } });
+      const archive = archiver("tar", {
+        gzip: true,
+        gzipOptions: { level: 6 },
+      });
 
       output.on("close", () => {
         const size = archive.pointer();
@@ -251,14 +318,18 @@ export async function createBackup(
         onProgress?.({
           phase: "compressing",
           currentFile: entry.name,
-          percent: Math.round((archive.pointer() / (inventory.totalSize || 1)) * 100),
+          percent: Math.round(
+            (archive.pointer() / (inventory.totalSize || 1)) * 100,
+          ),
         });
       });
 
       archive.pipe(output);
 
       // Add manifest
-      archive.append(JSON.stringify(manifest, null, 2), { name: "manifest.json" });
+      archive.append(JSON.stringify(manifest, null, 2), {
+        name: "manifest.json",
+      });
 
       // Add data files
       for (const item of toArchive) {
@@ -269,7 +340,10 @@ export async function createBackup(
 
       archive.finalize();
     } catch (err: any) {
-      resolve({ success: false, error: err.message || "Unknown error creating backup" });
+      resolve({
+        success: false,
+        error: err.message || "Unknown error creating backup",
+      });
     }
   });
 }
@@ -298,7 +372,9 @@ export async function readBackupManifest(
         existsSync(join(tmpDir, d, "manifest.json")),
       );
       if (sub) {
-        const data = JSON.parse(readFileSync(join(tmpDir, sub, "manifest.json"), "utf-8"));
+        const data = JSON.parse(
+          readFileSync(join(tmpDir, sub, "manifest.json"), "utf-8"),
+        );
         rmSync(tmpDir, { recursive: true, force: true });
         return { manifest: data };
       }
@@ -319,7 +395,11 @@ export async function readBackupManifest(
 export async function restoreBackup(
   archivePath: string,
   profile?: string,
-  options?: { includeSessions?: boolean; includeKanban?: boolean; overwrite?: boolean },
+  options?: {
+    includeSessions?: boolean;
+    includeKanban?: boolean;
+    overwrite?: boolean;
+  },
   onProgress?: (p: BackupProgress) => void,
 ): Promise<{ success: boolean; error?: string; restoredItems: string[] }> {
   const home = profileHome(profile);
@@ -328,21 +408,32 @@ export async function restoreBackup(
   try {
     // Extract full archive to temp
     mkdirSync(tmpDir, { recursive: true });
-    onProgress?.({ phase: "extracting", currentFile: archivePath, percent: 10 });
+    onProgress?.({
+      phase: "extracting",
+      currentFile: archivePath,
+      percent: 10,
+    });
 
     await extract({ cwd: tmpDir, file: archivePath, gzip: true });
 
     // Find the extracted root (may have a wrapper directory)
     let extractRoot = tmpDir;
     const entries = readdirSync(tmpDir);
-    if (entries.length === 1 && statSync(join(tmpDir, entries[0])).isDirectory()) {
+    if (
+      entries.length === 1 &&
+      statSync(join(tmpDir, entries[0])).isDirectory()
+    ) {
       extractRoot = join(tmpDir, entries[0]);
     }
 
     // Validate manifest
     const manifestPath = join(extractRoot, "manifest.json");
     if (!existsSync(manifestPath)) {
-      return { success: false, error: "Invalid backup: no manifest.json", restoredItems: [] };
+      return {
+        success: false,
+        error: "Invalid backup: no manifest.json",
+        restoredItems: [],
+      };
     }
 
     // Copy profile files
@@ -358,8 +449,8 @@ export async function restoreBackup(
           const relPath = relative(profileDir, src);
 
           // Skip optional items if not requested
-          if ((relPath === "state.db") && !options?.includeSessions) continue;
-          if ((relPath === "kanban.db") && !options?.includeKanban) continue;
+          if (relPath === "state.db" && !options?.includeSessions) continue;
+          if (relPath === "kanban.db" && !options?.includeKanban) continue;
 
           if (entry.isFile()) {
             if (existsSync(dest) && !options?.overwrite) {
@@ -395,7 +486,15 @@ export async function restoreBackup(
     return { success: true, restoredItems };
   } catch (err: any) {
     // Cleanup on error
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
-    return { success: false, error: err.message || "Restore failed", restoredItems: [] };
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
+    return {
+      success: false,
+      error: err.message || "Restore failed",
+      restoredItems: [],
+    };
   }
 }

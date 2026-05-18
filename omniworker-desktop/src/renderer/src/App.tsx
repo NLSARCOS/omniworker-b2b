@@ -54,9 +54,14 @@ function App(): React.JSX.Element {
         setScreen("main");
         return;
       }
-      
+
       const installStatus = await window.omniworkerAPI.checkInstall();
+      let isVerified = false;
       if (installStatus.installed) {
+        isVerified = await window.omniworkerAPI.verifyInstall();
+      }
+
+      if (installStatus.installed && isVerified) {
         setScreen("main");
       } else {
         setScreen("installing");
@@ -69,37 +74,89 @@ function App(): React.JSX.Element {
 
   const handleLoginSuccess = async (user: any, auth: any) => {
     setUserData(user);
-    
+
     if (auth?.accessToken) {
       setAuthToken(auth.accessToken);
-      
+
       // OMNIWORKER B2B: Smart Router Architecture
-      // 1. Guardar el token como OPENAI_API_KEY
+      const saasUrl =
+        import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+
+      // 1. Guardar el token JWT como OPENAI_API_KEY para que el Smart Router pueda autenticarse en el SaaS
       await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
-      
-      // 2. Guardar la URL del cloud para que el smart router sepa a dónde ir
-      const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
       await window.omniworkerAPI.setEnv("CLOUD_API_URL", `${saasUrl}/api`);
-      
-      // 3. Iniciar el smart router (proxy que enruta local SLM ↔ cloud)
+
+      // 2. Iniciar el smart router (proxy local que enruta SLM ↔ cloud SaaS)
       await window.omniworkerAPI.startSmartRouter();
-      
-      // 4. Configurar el provider para que apunte al smart router (no al cloud directo)
-      //    El router decide: mensajes simples → SLM local, complejos → cloud SaaS
-      const baseUrl = await window.omniworkerAPI.getSmartRouterUrl(`${saasUrl}/api/v1`);
-      await window.omniworkerAPI.setModelConfig("custom", "omniworker", baseUrl);
-      
-      // 5. Forzar modo local (para que el Desktop App hable con el agente Python local)
+
+      // 3. Configurar el agente local para que envíe el prompt al smart router
+      const baseUrl = await window.omniworkerAPI.getSmartRouterUrl(
+        `${saasUrl}/api/v1`,
+      );
+      await window.omniworkerAPI.setModelConfig(
+        "custom",
+        "omniworker",
+        baseUrl,
+      );
+
+      // 4. Forzar modo local para que el UI hable con el Agente Local (y así tener Tools locales)
       await window.omniworkerAPI.setConnectionConfig("local", "", "");
+
+      // 5. Auto-refresh del JWT cada 12 minutos para mantener vivo al Smart Router
+      if (auth.refreshToken) {
+        const doRefresh = async (refreshToken: string) => {
+          try {
+            const res = await fetch(`${saasUrl}/api/v1/auth/refresh`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refreshToken }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.accessToken) {
+                setAuthToken(data.accessToken);
+                // Actualizar el token en el backend local para que el Smart Router no reciba 401
+                await window.omniworkerAPI.setEnv(
+                  "OPENAI_API_KEY",
+                  data.accessToken,
+                );
+                return data.refreshToken || refreshToken;
+              }
+            }
+          } catch {
+            /* silent — will retry next cycle */
+          }
+          return refreshToken;
+        };
+
+        let currentRefreshToken = auth.refreshToken;
+        const interval = setInterval(
+          async () => {
+            currentRefreshToken = await doRefresh(currentRefreshToken);
+          },
+          12 * 60 * 1000,
+        ); // cada 12 minutos
+
+        // Cleanup on unmount
+        (window as any).__owRefreshInterval = interval;
+      }
     }
 
     // Comprobar la instalación para descargar la DB, RAG y motor local si faltan
     await runPostLoginInstallCheck();
   };
 
-  function handleInstallComplete(): void {
+  async function handleInstallComplete(): Promise<void> {
     setInstallError(null);
     // B2B: The API Key is already configured during handleLoginSuccess, so we skip manual setup
+    
+    try {
+      await window.omniworkerAPI.startSmartRouter();
+      await window.omniworkerAPI.startGateway();
+    } catch (err) {
+      console.error("Failed to start backend services after install:", err);
+    }
+    
     setScreen("main");
   }
 
@@ -141,13 +198,18 @@ function App(): React.JSX.Element {
       return (
         <div className="flex h-screen w-full items-center justify-center bg-black text-white font-mono z-50 fixed top-0 left-0">
           <div className="border-8 border-white p-12 text-center max-w-lg">
-            <h1 className="text-4xl font-bold uppercase mb-4 text-red-500">Acceso Bloqueado</h1>
+            <h1 className="text-4xl font-bold uppercase mb-4 text-red-500">
+              Acceso Bloqueado
+            </h1>
             <p className="text-xl font-bold uppercase mb-8">
-              Tu plan de suscripción B2B ha expirado o te has quedado sin tokens.
+              Tu plan de suscripción B2B ha expirado o te has quedado sin
+              tokens.
             </p>
-            <p className="text-sm">Por favor, contacta a tu administrador para reactivar la cuenta.</p>
-            <button 
-              onClick={() => setUserData(null)} 
+            <p className="text-sm">
+              Por favor, contacta a tu administrador para reactivar la cuenta.
+            </p>
+            <button
+              onClick={() => setUserData(null)}
               className="mt-8 bg-white text-black px-6 py-2 font-bold uppercase hover:bg-gray-200"
             >
               Cerrar Sesión

@@ -13,11 +13,13 @@ export default {
   dividerOr: "o",
   connectRemote: "Conectarse a OmniWorker remoto",
   connectRemoteTitle: "Conectarse a OmniWorker remoto",
-  connectRemoteSubtitle: "Introduce la URL de un servidor de API de OmniWorker en ejecución.",
+  connectRemoteSubtitle:
+    "Introduce la URL de un servidor de API de OmniWorker en ejecución.",
   remoteServerUrl: "URL del servidor",
   remoteApiKey: "API key (opcional)",
   remoteApiKeyPlaceholder: "Token Bearer (API_SERVER_KEY)",
   testingConnection: "Probando",
   connect: "Conectar",
-  remoteHint: "Deja la clave vacía si el servidor acepta solicitudes no autenticadas (por ejemplo, mediante un túnel SSH a localhost).",
+  remoteHint:
+    "Deja la clave vacía si el servidor acepta solicitudes no autenticadas (por ejemplo, mediante un túnel SSH a localhost).",
 } as const;

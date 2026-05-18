@@ -1,0 +1,6 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn scp dist/omniworker-desktop-0.4.3-x64.dmg root@217.76.62.37:/opt/omniworker/downloads/OmniWorker-v8.8.dmg
+expect "*?assword:*"
+send "Santiago1206\r"
+expect eof

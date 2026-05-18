@@ -18,7 +18,11 @@ interface InstallProps {
   authToken?: string | null;
 }
 
-function Install({ onComplete, onFailed, authToken }: InstallProps): React.JSX.Element {
+function Install({
+  onComplete,
+  onFailed,
+  authToken,
+}: InstallProps): React.JSX.Element {
   const { t } = useI18n();
   const [progress, setProgress] = useState<InstallProgress>({
     step: 0,

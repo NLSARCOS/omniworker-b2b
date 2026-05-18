@@ -69,7 +69,9 @@ describe("generateWingetManifests", () => {
       existsSync(join(outDir, "OmniWorker.OmniWorkerDesktop.installer.yaml")),
     ).toBe(true);
     expect(
-      existsSync(join(outDir, "OmniWorker.OmniWorkerDesktop.locale.en-US.yaml")),
+      existsSync(
+        join(outDir, "OmniWorker.OmniWorkerDesktop.locale.en-US.yaml"),
+      ),
     ).toBe(true);
     expect(existsSync(join(outDir, "OmniWorker.OmniWorkerDesktop.yaml"))).toBe(
       true,

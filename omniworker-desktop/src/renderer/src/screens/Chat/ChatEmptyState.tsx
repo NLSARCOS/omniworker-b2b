@@ -52,20 +52,29 @@ export const ChatEmptyState = memo(function ChatEmptyState({
 
   return (
     <div className="chat-empty">
-      <div className="chat-empty-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-        <div style={{
-          width: 64,
-          height: 64,
-          backgroundColor: 'var(--text-primary)',
-          color: 'var(--bg-primary)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 'bold',
-          fontSize: '24px',
-          borderRadius: '12px',
-          fontFamily: 'monospace'
-        }}>
+      <div
+        className="chat-empty-icon"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          marginBottom: "24px",
+        }}
+      >
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            backgroundColor: "var(--text-primary)",
+            color: "var(--bg-primary)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: "bold",
+            fontSize: "24px",
+            borderRadius: "12px",
+            fontFamily: "monospace",
+          }}
+        >
           OW
         </div>
       </div>

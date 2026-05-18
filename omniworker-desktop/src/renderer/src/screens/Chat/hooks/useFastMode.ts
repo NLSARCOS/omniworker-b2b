@@ -15,9 +15,11 @@ export function useFastMode(profile?: string): UseFastModeResult {
   const [fastMode, setFastMode] = useState(false);
 
   useEffect(() => {
-    window.omniworkerAPI.getConfig("agent.service_tier", profile).then((val) => {
-      setFastMode(isFastTier(val));
-    });
+    window.omniworkerAPI
+      .getConfig("agent.service_tier", profile)
+      .then((val) => {
+        setFastMode(isFastTier(val));
+      });
   }, [profile]);
 
   const set = useCallback(

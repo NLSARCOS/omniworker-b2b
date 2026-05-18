@@ -13,7 +13,8 @@ export default {
   dividerOr: "atau",
   connectRemote: "Hubungkan ke OmniWorker Remote",
   connectRemoteTitle: "Hubungkan ke OmniWorker Remote",
-  connectRemoteSubtitle: "Masukkan URL server OmniWorker API yang sedang berjalan.",
+  connectRemoteSubtitle:
+    "Masukkan URL server OmniWorker API yang sedang berjalan.",
   remoteServerUrl: "URL Server",
   remoteApiKey: "API Key (opsional)",
   remoteApiKeyPlaceholder: "Bearer token (API_SERVER_KEY)",

@@ -200,10 +200,10 @@ export function getToolsets(profile?: string): ToolsetInfo[] {
     }
 
     return localizeToolDefs((key) => {
-    // skills and memory are always enabled
-    if (key === "skills" || key === "memory") return true;
-    return enabledSet.has(key);
-  });
+      // skills and memory are always enabled
+      if (key === "skills" || key === "memory") return true;
+      return enabledSet.has(key);
+    });
   } catch {
     return localizeToolDefs(true);
   }

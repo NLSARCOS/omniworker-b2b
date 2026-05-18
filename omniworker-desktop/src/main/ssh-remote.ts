@@ -25,17 +25,27 @@ import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 function buildExecArgs(config: SshConfig): string[] {
   const keyPath = config.keyPath?.trim() || join(homedir(), ".ssh", "id_rsa");
   return [
-    "-o", "BatchMode=yes",
-    "-o", "StrictHostKeyChecking=accept-new",
-    "-o", "ConnectTimeout=15",
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    "StrictHostKeyChecking=accept-new",
+    "-o",
+    "ConnectTimeout=15",
     ...buildSshControlOptions(),
-    "-i", keyPath,
-    "-p", String(config.port || 22),
+    "-i",
+    keyPath,
+    "-p",
+    String(config.port || 22),
     `${config.username}@${config.host}`,
   ];
 }
 
-export function sshExec(config: SshConfig, command: string, stdin?: string, timeoutMs = 30000): Promise<string> {
+export function sshExec(
+  config: SshConfig,
+  command: string,
+  stdin?: string,
+  timeoutMs = 30000,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn("ssh", [...buildExecArgs(config), command], {
       stdio: ["pipe", "pipe", "pipe"],
@@ -49,8 +59,12 @@ export function sshExec(config: SshConfig, command: string, stdin?: string, time
     }, timeoutMs);
     child.stdout.setEncoding("utf-8");
     child.stderr.setEncoding("utf-8");
-    child.stdout.on("data", (chunk) => { stdout += chunk; });
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
     child.on("error", (err) => {
       clearTimeout(timeout);
       reject(err);
@@ -65,7 +79,12 @@ export function sshExec(config: SshConfig, command: string, stdin?: string, time
   });
 }
 
-function sshPython(config: SshConfig, script: string, stdin?: string, timeoutMs = 30000): Promise<string> {
+function sshPython(
+  config: SshConfig,
+  script: string,
+  stdin?: string,
+  timeoutMs = 30000,
+): Promise<string> {
   if (stdin === undefined) {
     return sshExec(config, "python3 -", script, timeoutMs);
   }
@@ -80,10 +99,18 @@ function sanitizeSshError(stderr: string): string {
     .filter((line) => !/identity file .* not accessible/i.test(line))
     .join("\n")
     .trim();
-  if (/Permission denied \(publickey\)|no such identity|could not open a connection|publickey/i.test(cleaned)) {
+  if (
+    /Permission denied \(publickey\)|no such identity|could not open a connection|publickey/i.test(
+      cleaned,
+    )
+  ) {
     return "SSH authentication failed. Configure an SSH key for this host and try again.";
   }
-  if (/Host key verification failed|REMOTE HOST IDENTIFICATION HAS CHANGED/i.test(cleaned)) {
+  if (
+    /Host key verification failed|REMOTE HOST IDENTIFICATION HAS CHANGED/i.test(
+      cleaned,
+    )
+  ) {
     return "SSH host key verification failed. Check the host key before reconnecting.";
   }
   return cleaned;
@@ -101,7 +128,10 @@ function pythonJsonInput(payload: unknown): string {
   return JSON.stringify(payload);
 }
 
-async function sshReadFile(config: SshConfig, remotePath: string): Promise<string> {
+async function sshReadFile(
+  config: SshConfig,
+  remotePath: string,
+): Promise<string> {
   try {
     return await sshExec(
       config,
@@ -112,7 +142,11 @@ async function sshReadFile(config: SshConfig, remotePath: string): Promise<strin
   }
 }
 
-async function sshWriteFile(config: SshConfig, remotePath: string, content: string): Promise<void> {
+async function sshWriteFile(
+  config: SshConfig,
+  remotePath: string,
+  content: string,
+): Promise<void> {
   const p = normalizeRemotePath(remotePath);
   const dir = p.includes("/") ? p.substring(0, p.lastIndexOf("/")) : ".";
   await sshExec(
@@ -126,7 +160,10 @@ async function sshWriteFile(config: SshConfig, remotePath: string, content: stri
 
 const REMOTE_PREFIX = "REMOTE:";
 
-export async function sshListInstalledSkills(config: SshConfig, profile?: string): Promise<InstalledSkill[]> {
+export async function sshListInstalledSkills(
+  config: SshConfig,
+  profile?: string,
+): Promise<InstalledSkill[]> {
   const script = `
 import os, json, sys
 payload = json.load(sys.stdin)
@@ -173,7 +210,10 @@ print(json.dumps(skills))
   try {
     const out = await sshPython(config, script, pythonJsonInput({ profile }));
     const parsed = JSON.parse(out.trim() || "[]") as Array<{
-      name: string; category: string; description: string; path: string;
+      name: string;
+      category: string;
+      description: string;
+      path: string;
     }>;
     return parsed.map((s) => ({ ...s, path: REMOTE_PREFIX + s.path }));
   } catch {
@@ -181,32 +221,52 @@ print(json.dumps(skills))
   }
 }
 
-export async function sshGetSkillContent(config: SshConfig, skillPath: string): Promise<string> {
+export async function sshGetSkillContent(
+  config: SshConfig,
+  skillPath: string,
+): Promise<string> {
   const remote = skillPath.startsWith(REMOTE_PREFIX)
     ? skillPath.slice(REMOTE_PREFIX.length)
     : skillPath;
   return await sshReadFile(config, `${remote}/SKILL.md`);
 }
 
-export async function sshInstallSkill(config: SshConfig, identifier: string): Promise<{ success: boolean; error?: string }> {
+export async function sshInstallSkill(
+  config: SshConfig,
+  identifier: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
-    await sshExec(config, `omniworker skills install ${shellQuote(identifier)} --yes 2>&1`, undefined, 120000);
+    await sshExec(
+      config,
+      `omniworker skills install ${shellQuote(identifier)} --yes 2>&1`,
+      undefined,
+      120000,
+    );
     return { success: true };
   } catch (err) {
     return { success: false, error: (err as Error).message };
   }
 }
 
-export async function sshUninstallSkill(config: SshConfig, name: string): Promise<{ success: boolean; error?: string }> {
+export async function sshUninstallSkill(
+  config: SshConfig,
+  name: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
-    await sshExec(config, `omniworker skills uninstall ${shellQuote(name)} 2>&1`);
+    await sshExec(
+      config,
+      `omniworker skills uninstall ${shellQuote(name)} 2>&1`,
+    );
     return { success: true };
   } catch (err) {
     return { success: false, error: (err as Error).message };
   }
 }
 
-export async function sshSearchSkills(config: SshConfig, query: string): Promise<SkillSearchResult[]> {
+export async function sshSearchSkills(
+  config: SshConfig,
+  query: string,
+): Promise<SkillSearchResult[]> {
   try {
     const out = await sshExec(
       config,
@@ -228,7 +288,9 @@ export async function sshSearchSkills(config: SshConfig, query: string): Promise
   }
 }
 
-export async function sshListBundledSkills(config: SshConfig): Promise<SkillSearchResult[]> {
+export async function sshListBundledSkills(
+  config: SshConfig,
+): Promise<SkillSearchResult[]> {
   return await sshSearchSkills(config, "");
 }
 
@@ -238,7 +300,9 @@ const ENTRY_DELIMITER = "\n§\n";
 const MEMORY_CHAR_LIMIT = 2200;
 const USER_CHAR_LIMIT = 1375;
 
-function parseMemoryEntries(content: string): Array<{ index: number; content: string }> {
+function parseMemoryEntries(
+  content: string,
+): Array<{ index: number; content: string }> {
   if (!content.trim()) return [];
   return content
     .split(ENTRY_DELIMITER)
@@ -246,7 +310,9 @@ function parseMemoryEntries(content: string): Array<{ index: number; content: st
     .filter((e) => e.content.length > 0);
 }
 
-function serializeEntries(entries: Array<{ index: number; content: string }>): string {
+function serializeEntries(
+  entries: Array<{ index: number; content: string }>,
+): string {
   return entries.map((e) => e.content).join(ENTRY_DELIMITER);
 }
 
@@ -294,7 +360,10 @@ finally:
   }
 }
 
-export async function sshReadMemory(config: SshConfig, profile?: string): Promise<MemoryInfo> {
+export async function sshReadMemory(
+  config: SshConfig,
+  profile?: string,
+): Promise<MemoryInfo> {
   const memContent = await sshReadFile(config, remoteMemoryPath(profile));
   const userContent = await sshReadFile(config, remoteUserPath(profile));
   const stats = await sshGetSessionStats(config, profile);
@@ -326,9 +395,15 @@ export async function sshAddMemoryEntry(
 ): Promise<{ success: boolean; error?: string }> {
   const current = await sshReadFile(config, remoteMemoryPath(profile));
   const entries = parseMemoryEntries(current);
-  const newContent = serializeEntries([...entries, { index: entries.length, content: content.trim() }]);
+  const newContent = serializeEntries([
+    ...entries,
+    { index: entries.length, content: content.trim() },
+  ]);
   if (newContent.length > MEMORY_CHAR_LIMIT) {
-    return { success: false, error: `Would exceed memory limit (${newContent.length}/${MEMORY_CHAR_LIMIT} chars)` };
+    return {
+      success: false,
+      error: `Would exceed memory limit (${newContent.length}/${MEMORY_CHAR_LIMIT} chars)`,
+    };
   }
   await sshWriteFile(config, remoteMemoryPath(profile), newContent);
   return { success: true };
@@ -342,11 +417,15 @@ export async function sshUpdateMemoryEntry(
 ): Promise<{ success: boolean; error?: string }> {
   const current = await sshReadFile(config, remoteMemoryPath(profile));
   const entries = parseMemoryEntries(current);
-  if (index < 0 || index >= entries.length) return { success: false, error: "Entry not found" };
+  if (index < 0 || index >= entries.length)
+    return { success: false, error: "Entry not found" };
   entries[index] = { ...entries[index], content: content.trim() };
   const newContent = serializeEntries(entries);
   if (newContent.length > MEMORY_CHAR_LIMIT) {
-    return { success: false, error: `Would exceed memory limit (${newContent.length}/${MEMORY_CHAR_LIMIT} chars)` };
+    return {
+      success: false,
+      error: `Would exceed memory limit (${newContent.length}/${MEMORY_CHAR_LIMIT} chars)`,
+    };
   }
   await sshWriteFile(config, remoteMemoryPath(profile), newContent);
   return { success: true };
@@ -361,7 +440,11 @@ export async function sshRemoveMemoryEntry(
   const entries = parseMemoryEntries(current);
   if (index < 0 || index >= entries.length) return false;
   entries.splice(index, 1);
-  await sshWriteFile(config, remoteMemoryPath(profile), serializeEntries(entries));
+  await sshWriteFile(
+    config,
+    remoteMemoryPath(profile),
+    serializeEntries(entries),
+  );
   return true;
 }
 
@@ -371,7 +454,10 @@ export async function sshWriteUserProfile(
   profile?: string,
 ): Promise<{ success: boolean; error?: string }> {
   if (content.length > USER_CHAR_LIMIT) {
-    return { success: false, error: `Exceeds limit (${content.length}/${USER_CHAR_LIMIT} chars)` };
+    return {
+      success: false,
+      error: `Exceeds limit (${content.length}/${USER_CHAR_LIMIT} chars)`,
+    };
   }
   await sshWriteFile(config, remoteUserPath(profile), content);
   return { success: true };
@@ -387,15 +473,23 @@ You strive to be helpful while being safe and responsible. You respect the user'
 `;
 
 function remoteSoulPath(profile?: string): string {
-  if (profile && profile !== "default") return `~/.omniworker/profiles/${profile}/SOUL.md`;
+  if (profile && profile !== "default")
+    return `~/.omniworker/profiles/${profile}/SOUL.md`;
   return "~/.omniworker/SOUL.md";
 }
 
-export async function sshReadSoul(config: SshConfig, profile?: string): Promise<string> {
+export async function sshReadSoul(
+  config: SshConfig,
+  profile?: string,
+): Promise<string> {
   return await sshReadFile(config, remoteSoulPath(profile));
 }
 
-export async function sshWriteSoul(config: SshConfig, content: string, profile?: string): Promise<boolean> {
+export async function sshWriteSoul(
+  config: SshConfig,
+  content: string,
+  profile?: string,
+): Promise<boolean> {
   try {
     await sshWriteFile(config, remoteSoulPath(profile), content);
     return true;
@@ -404,7 +498,10 @@ export async function sshWriteSoul(config: SshConfig, content: string, profile?:
   }
 }
 
-export async function sshResetSoul(config: SshConfig, profile?: string): Promise<string> {
+export async function sshResetSoul(
+  config: SshConfig,
+  profile?: string,
+): Promise<string> {
   await sshWriteSoul(config, DEFAULT_SOUL, profile);
   return DEFAULT_SOUL;
 }
@@ -412,19 +509,71 @@ export async function sshResetSoul(config: SshConfig, profile?: string): Promise
 // ── Tools ────────────────────────────────────────────────────────────────────
 
 const TOOLSET_DEFS = [
-  { key: "web", labelKey: "tools.web.label", descriptionKey: "tools.web.description" },
-  { key: "browser", labelKey: "tools.browser.label", descriptionKey: "tools.browser.description" },
-  { key: "terminal", labelKey: "tools.terminal.label", descriptionKey: "tools.terminal.description" },
-  { key: "file", labelKey: "tools.file.label", descriptionKey: "tools.file.description" },
-  { key: "code_execution", labelKey: "tools.code_execution.label", descriptionKey: "tools.code_execution.description" },
-  { key: "vision", labelKey: "tools.vision.label", descriptionKey: "tools.vision.description" },
-  { key: "image_gen", labelKey: "tools.image_gen.label", descriptionKey: "tools.image_gen.description" },
-  { key: "tts", labelKey: "tools.tts.label", descriptionKey: "tools.tts.description" },
-  { key: "skills", labelKey: "tools.skills.label", descriptionKey: "tools.skills.description" },
-  { key: "memory", labelKey: "tools.memory.label", descriptionKey: "tools.memory.description" },
-  { key: "session_search", labelKey: "tools.session_search.label", descriptionKey: "tools.session_search.description" },
-  { key: "clarify", labelKey: "tools.clarify.label", descriptionKey: "tools.clarify.description" },
-  { key: "delegation", labelKey: "tools.delegation.label", descriptionKey: "tools.delegation.description" },
+  {
+    key: "web",
+    labelKey: "tools.web.label",
+    descriptionKey: "tools.web.description",
+  },
+  {
+    key: "browser",
+    labelKey: "tools.browser.label",
+    descriptionKey: "tools.browser.description",
+  },
+  {
+    key: "terminal",
+    labelKey: "tools.terminal.label",
+    descriptionKey: "tools.terminal.description",
+  },
+  {
+    key: "file",
+    labelKey: "tools.file.label",
+    descriptionKey: "tools.file.description",
+  },
+  {
+    key: "code_execution",
+    labelKey: "tools.code_execution.label",
+    descriptionKey: "tools.code_execution.description",
+  },
+  {
+    key: "vision",
+    labelKey: "tools.vision.label",
+    descriptionKey: "tools.vision.description",
+  },
+  {
+    key: "image_gen",
+    labelKey: "tools.image_gen.label",
+    descriptionKey: "tools.image_gen.description",
+  },
+  {
+    key: "tts",
+    labelKey: "tools.tts.label",
+    descriptionKey: "tools.tts.description",
+  },
+  {
+    key: "skills",
+    labelKey: "tools.skills.label",
+    descriptionKey: "tools.skills.description",
+  },
+  {
+    key: "memory",
+    labelKey: "tools.memory.label",
+    descriptionKey: "tools.memory.description",
+  },
+  {
+    key: "session_search",
+    labelKey: "tools.session_search.label",
+    descriptionKey: "tools.session_search.description",
+  },
+  {
+    key: "clarify",
+    labelKey: "tools.clarify.label",
+    descriptionKey: "tools.clarify.description",
+  },
+  {
+    key: "delegation",
+    labelKey: "tools.delegation.label",
+    descriptionKey: "tools.delegation.description",
+  },
 ];
 
 function parseEnabledToolsets(content: string): Set<string> {
@@ -433,16 +582,35 @@ function parseEnabledToolsets(content: string): Set<string> {
   let inCli = false;
   for (const line of content.split("\n")) {
     const trimmed = line.trimEnd();
-    if (/^\s*platform_toolsets\s*:/.test(trimmed)) { inPlatformToolsets = true; inCli = false; continue; }
-    if (inPlatformToolsets && /^\s+cli\s*:/.test(trimmed)) { inCli = true; continue; }
-    if (inPlatformToolsets && /^\S/.test(trimmed) && !/^\s*$/.test(trimmed)) { inPlatformToolsets = false; inCli = false; continue; }
-    if (inCli && /^\s{4}\S/.test(trimmed) && !/^\s{4,}-/.test(trimmed)) { inCli = false; continue; }
-    if (inCli) { const m = trimmed.match(/^\s+-\s+["']?(\w+)["']?/); if (m) enabled.add(m[1]); }
+    if (/^\s*platform_toolsets\s*:/.test(trimmed)) {
+      inPlatformToolsets = true;
+      inCli = false;
+      continue;
+    }
+    if (inPlatformToolsets && /^\s+cli\s*:/.test(trimmed)) {
+      inCli = true;
+      continue;
+    }
+    if (inPlatformToolsets && /^\S/.test(trimmed) && !/^\s*$/.test(trimmed)) {
+      inPlatformToolsets = false;
+      inCli = false;
+      continue;
+    }
+    if (inCli && /^\s{4}\S/.test(trimmed) && !/^\s{4,}-/.test(trimmed)) {
+      inCli = false;
+      continue;
+    }
+    if (inCli) {
+      const m = trimmed.match(/^\s+-\s+["']?(\w+)["']?/);
+      if (m) enabled.add(m[1]);
+    }
   }
   return enabled;
 }
 
-function localizeToolDefs(enabled: boolean | ((key: string) => boolean)): ToolsetInfo[] {
+function localizeToolDefs(
+  enabled: boolean | ((key: string) => boolean),
+): ToolsetInfo[] {
   const locale = getAppLocale();
   return TOOLSET_DEFS.map((d) => ({
     key: d.key,
@@ -453,15 +621,20 @@ function localizeToolDefs(enabled: boolean | ((key: string) => boolean)): Toolse
 }
 
 function remoteConfigPath(profile?: string): string {
-  if (profile && profile !== "default") return `$HOME/.omniworker/profiles/${profile}/config.yaml`;
+  if (profile && profile !== "default")
+    return `$HOME/.omniworker/profiles/${profile}/config.yaml`;
   return `$HOME/.omniworker/config.yaml`;
 }
 
-export async function sshGetToolsets(config: SshConfig, profile?: string): Promise<ToolsetInfo[]> {
+export async function sshGetToolsets(
+  config: SshConfig,
+  profile?: string,
+): Promise<ToolsetInfo[]> {
   const content = await sshReadFile(config, remoteConfigPath(profile));
   if (!content) return localizeToolDefs(true);
   const enabled = parseEnabledToolsets(content);
-  if (enabled.size === 0 && !content.includes("platform_toolsets")) return localizeToolDefs(true);
+  if (enabled.size === 0 && !content.includes("platform_toolsets"))
+    return localizeToolDefs(true);
   return localizeToolDefs((key) => enabled.has(key));
 }
 
@@ -477,28 +650,54 @@ export async function sshSetToolsetEnabled(
     if (!content) return false;
 
     const current = parseEnabledToolsets(content);
-    if (enabled) current.add(key); else current.delete(key);
+    if (enabled) current.add(key);
+    else current.delete(key);
 
-    const toolsetLines = Array.from(current).sort().map((t) => `      - ${t}`).join("\n");
+    const toolsetLines = Array.from(current)
+      .sort()
+      .map((t) => `      - ${t}`)
+      .join("\n");
     const newSection = `  cli:\n${toolsetLines}`;
 
     let newContent: string;
     if (content.includes("platform_toolsets")) {
       const lines = content.split("\n");
       const result: string[] = [];
-      let inPT = false, inCli = false, inserted = false;
+      let inPT = false,
+        inCli = false,
+        inserted = false;
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trimEnd();
-        if (/^\s*platform_toolsets\s*:/.test(trimmed)) { inPT = true; result.push(line); continue; }
-        if (inPT && /^\s+cli\s*:/.test(trimmed)) { inCli = true; result.push(newSection); inserted = true; continue; }
-        if (inCli) { if (/^\s+-\s/.test(trimmed)) continue; inCli = false; result.push(line); continue; }
-        if (inPT && /^\S/.test(trimmed) && trimmed !== "") { inPT = false; if (!inserted) { result.push(newSection); } }
+        if (/^\s*platform_toolsets\s*:/.test(trimmed)) {
+          inPT = true;
+          result.push(line);
+          continue;
+        }
+        if (inPT && /^\s+cli\s*:/.test(trimmed)) {
+          inCli = true;
+          result.push(newSection);
+          inserted = true;
+          continue;
+        }
+        if (inCli) {
+          if (/^\s+-\s/.test(trimmed)) continue;
+          inCli = false;
+          result.push(line);
+          continue;
+        }
+        if (inPT && /^\S/.test(trimmed) && trimmed !== "") {
+          inPT = false;
+          if (!inserted) {
+            result.push(newSection);
+          }
+        }
         result.push(line);
       }
       newContent = result.join("\n");
     } else {
-      newContent = content.trimEnd() + "\n\nplatform_toolsets:\n" + newSection + "\n";
+      newContent =
+        content.trimEnd() + "\n\nplatform_toolsets:\n" + newSection + "\n";
     }
 
     await sshWriteFile(config, configPath, newContent);
@@ -511,11 +710,15 @@ export async function sshSetToolsetEnabled(
 // ── Env / Config (Providers) ─────────────────────────────────────────────────
 
 function remoteEnvPath(profile?: string): string {
-  if (profile && profile !== "default") return `~/.omniworker/profiles/${profile}/.env`;
+  if (profile && profile !== "default")
+    return `~/.omniworker/profiles/${profile}/.env`;
   return "~/.omniworker/.env";
 }
 
-export async function sshReadEnv(config: SshConfig, profile?: string): Promise<Record<string, string>> {
+export async function sshReadEnv(
+  config: SshConfig,
+  profile?: string,
+): Promise<Record<string, string>> {
   const content = await sshReadFile(config, remoteEnvPath(profile));
   const result: Record<string, string> = {};
   for (const line of content.split("\n")) {
@@ -524,7 +727,11 @@ export async function sshReadEnv(config: SshConfig, profile?: string): Promise<R
     const eqIdx = trimmed.indexOf("=");
     const k = trimmed.substring(0, eqIdx).trim();
     let v = trimmed.substring(eqIdx + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    if (
+      (v.startsWith('"') && v.endsWith('"')) ||
+      (v.startsWith("'") && v.endsWith("'"))
+    )
+      v = v.slice(1, -1);
     if (v) result[k] = v;
   }
   // Alias alternate env var names so the app can display them regardless of which name the server uses
@@ -533,8 +740,10 @@ export async function sshReadEnv(config: SshConfig, profile?: string): Promise<R
     ["HA_TOKEN", "HOMEASSISTANT_TOKEN"],
   ];
   for (const [appKey, serverKey] of ENV_ALIASES) {
-    if (!result[appKey] && result[serverKey]) result[appKey] = result[serverKey];
-    if (!result[serverKey] && result[appKey]) result[serverKey] = result[appKey];
+    if (!result[appKey] && result[serverKey])
+      result[appKey] = result[serverKey];
+    if (!result[serverKey] && result[appKey])
+      result[serverKey] = result[appKey];
   }
   return result;
 }
@@ -575,7 +784,9 @@ export async function sshGetConfigValue(
   const content = await sshReadFile(config, remoteConfigPath(profile));
   if (!content) return null;
   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = content.match(new RegExp(`^\\s*${escapedKey}:\\s*["']?([^"'\\n#]+)["']?`, "m"));
+  const match = content.match(
+    new RegExp(`^\\s*${escapedKey}:\\s*["']?([^"'\\n#]+)["']?`, "m"),
+  );
   return match ? match[1].trim() : null;
 }
 
@@ -586,19 +797,30 @@ export async function sshSetConfigValue(
   profile?: string,
 ): Promise<void> {
   if (/["\\\n\r]/.test(value)) {
-    throw new Error('Config value contains illegal characters: ", \\, or newline');
+    throw new Error(
+      'Config value contains illegal characters: ", \\, or newline',
+    );
   }
   const configPath = remoteConfigPath(profile);
   const content = await sshReadFile(config, configPath);
   if (!content) return;
   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`^(\\s*#?\\s*${escapedKey}:\\s*)["']?[^"'\\n#]*["']?`, "m");
-  const updated = regex.test(content) ? content.replace(regex, `$1"${value}"`) : content;
+  const regex = new RegExp(
+    `^(\\s*#?\\s*${escapedKey}:\\s*)["']?[^"'\\n#]*["']?`,
+    "m",
+  );
+  const updated = regex.test(content)
+    ? content.replace(regex, `$1"${value}"`)
+    : content;
   await sshWriteFile(config, configPath, updated);
 }
 
-export function sshGetOmniWorkerHome(_config: SshConfig, profile?: string): string {
-  if (profile && profile !== "default") return `~/.omniworker/profiles/${profile}`;
+export function sshGetOmniWorkerHome(
+  _config: SshConfig,
+  profile?: string,
+): string {
+  if (profile && profile !== "default")
+    return `~/.omniworker/profiles/${profile}`;
   return "~/.omniworker";
 }
 
@@ -626,10 +848,7 @@ export async function sshSetModelConfig(
   const configPath = remoteConfigPath(profile);
   const content = await sshReadFile(config, configPath);
   if (!content) return;
-  let updated = content.replace(
-    /^(\s*streaming:\s*)(\S+)/m,
-    "$1true",
-  );
+  let updated = content.replace(/^(\s*streaming:\s*)(\S+)/m, "$1true");
   const lines = updated.split("\n");
   for (let i = 0; i < lines.length; i++) {
     if (
@@ -680,7 +899,11 @@ print(json.dumps(result))
 conn.close()
 `;
   try {
-    const out = await sshPython(config, script, pythonJsonInput({ profile, limit, offset }));
+    const out = await sshPython(
+      config,
+      script,
+      pythonJsonInput({ profile, limit, offset }),
+    );
     return JSON.parse(out.trim() || "[]");
   } catch {
     return [];
@@ -710,7 +933,11 @@ print(json.dumps([{"id": r["id"], "role": r["role"], "content": r["content"] or 
 conn.close()
 `;
   try {
-    const out = await sshPython(config, script, pythonJsonInput({ profile, sessionId }));
+    const out = await sshPython(
+      config,
+      script,
+      pythonJsonInput({ profile, sessionId }),
+    );
     return JSON.parse(out.trim() || "[]");
   } catch {
     return [];
@@ -747,7 +974,11 @@ except Exception as e:
 conn.close()
 `;
   try {
-    const out = await sshPython(config, script, pythonJsonInput({ profile, query, limit }));
+    const out = await sshPython(
+      config,
+      script,
+      pythonJsonInput({ profile, query, limit }),
+    );
     return JSON.parse(out.trim() || "[]");
   } catch {
     return [];
@@ -769,7 +1000,9 @@ export interface SshProfileInfo {
   gatewayRunning: boolean;
 }
 
-export async function sshListProfiles(config: SshConfig): Promise<SshProfileInfo[]> {
+export async function sshListProfiles(
+  config: SshConfig,
+): Promise<SshProfileInfo[]> {
   const script = `
 import os, json
 omniworker_home = os.path.expanduser("~/.omniworker")
@@ -841,7 +1074,20 @@ print(json.dumps(profiles))
     const out = await sshPython(config, script);
     return JSON.parse(out.trim() || "[]");
   } catch {
-    return [{ name: "default", path: "~/.omniworker", isDefault: true, isActive: true, model: "", provider: "auto", hasEnv: false, hasSoul: false, skillCount: 0, gatewayRunning: false }];
+    return [
+      {
+        name: "default",
+        path: "~/.omniworker",
+        isDefault: true,
+        isActive: true,
+        model: "",
+        provider: "auto",
+        hasEnv: false,
+        hasSoul: false,
+        skillCount: 0,
+        gatewayRunning: false,
+      },
+    ];
   }
 }
 
@@ -855,9 +1101,15 @@ export async function sshCreateProfile(
     if (!safe) return false;
     const quoted = shellQuote(safe);
     if (clone) {
-      await sshExec(config, `omniworker profiles create ${quoted} --clone-from default 2>&1 || mkdir -p ~/.omniworker/profiles/${quoted}`);
+      await sshExec(
+        config,
+        `omniworker profiles create ${quoted} --clone-from default 2>&1 || mkdir -p ~/.omniworker/profiles/${quoted}`,
+      );
     } else {
-      await sshExec(config, `omniworker profiles create ${quoted} 2>&1 || mkdir -p ~/.omniworker/profiles/${quoted}`);
+      await sshExec(
+        config,
+        `omniworker profiles create ${quoted} 2>&1 || mkdir -p ~/.omniworker/profiles/${quoted}`,
+      );
     }
     return true;
   } catch {
@@ -865,12 +1117,18 @@ export async function sshCreateProfile(
   }
 }
 
-export async function sshDeleteProfile(config: SshConfig, name: string): Promise<boolean> {
+export async function sshDeleteProfile(
+  config: SshConfig,
+  name: string,
+): Promise<boolean> {
   try {
     const safe = name.replace(/[^a-zA-Z0-9_-]/g, "");
     if (!safe || safe === "default") return false;
     const quoted = shellQuote(safe);
-    await sshExec(config, `omniworker profiles delete ${quoted} --yes 2>&1 || rm -rf ~/.omniworker/profiles/${quoted}`);
+    await sshExec(
+      config,
+      `omniworker profiles delete ${quoted} --yes 2>&1 || rm -rf ~/.omniworker/profiles/${quoted}`,
+    );
     return true;
   } catch {
     return false;
@@ -884,9 +1142,9 @@ export async function sshGatewayStatus(config: SshConfig): Promise<boolean> {
     const out = await sshExec(
       config,
       `if [ -f $HOME/.omniworker/gateway.pid ]; then ` +
-      `pid=$(python3 -c "import json,sys; d=json.load(open('$HOME/.omniworker/gateway.pid')); print(d.get('pid',d) if isinstance(d,dict) else d)" 2>/dev/null || cat $HOME/.omniworker/gateway.pid); ` +
-      `kill -0 $pid 2>/dev/null && echo "running" || echo "stopped"; ` +
-      `else echo "stopped"; fi`,
+        `pid=$(python3 -c "import json,sys; d=json.load(open('$HOME/.omniworker/gateway.pid')); print(d.get('pid',d) if isinstance(d,dict) else d)" 2>/dev/null || cat $HOME/.omniworker/gateway.pid); ` +
+        `kill -0 $pid 2>/dev/null && echo "running" || echo "stopped"; ` +
+        `else echo "stopped"; fi`,
     );
     return out.trim() === "running";
   } catch {
@@ -896,7 +1154,10 @@ export async function sshGatewayStatus(config: SshConfig): Promise<boolean> {
 
 export async function sshStartGateway(config: SshConfig): Promise<void> {
   try {
-    await sshExec(config, `nohup omniworker gateway start > $HOME/.omniworker/gateway.log 2>&1 &`);
+    await sshExec(
+      config,
+      `nohup omniworker gateway start > $HOME/.omniworker/gateway.log 2>&1 &`,
+    );
   } catch {
     // best effort
   }
@@ -907,9 +1168,9 @@ export async function sshStopGateway(config: SshConfig): Promise<void> {
     await sshExec(
       config,
       `omniworker gateway stop 2>/dev/null || ` +
-      `(if [ -f $HOME/.omniworker/gateway.pid ]; then ` +
-      `pid=$(python3 -c "import json; d=json.load(open('$HOME/.omniworker/gateway.pid')); print(d['pid'] if isinstance(d,dict) else d)" 2>/dev/null); ` +
-      `[ -n "$pid" ] && kill $pid 2>/dev/null; fi); true`,
+        `(if [ -f $HOME/.omniworker/gateway.pid ]; then ` +
+        `pid=$(python3 -c "import json; d=json.load(open('$HOME/.omniworker/gateway.pid')); print(d['pid'] if isinstance(d,dict) else d)" 2>/dev/null); ` +
+        `[ -n "$pid" ] && kill $pid 2>/dev/null; fi); true`,
     );
   } catch {
     // best effort
@@ -929,9 +1190,14 @@ export async function sshReadRemoteApiKey(config: SshConfig): Promise<string> {
 
 // ── Versions ──────────────────────────────────────────────────────────────────
 
-export async function sshGetOmniWorkerVersion(config: SshConfig): Promise<string | null> {
+export async function sshGetOmniWorkerVersion(
+  config: SshConfig,
+): Promise<string | null> {
   try {
-    const out = await sshExec(config, `omniworker --version 2>/dev/null || omniworker version 2>/dev/null || echo ""`);
+    const out = await sshExec(
+      config,
+      `omniworker --version 2>/dev/null || omniworker version 2>/dev/null || echo ""`,
+    );
     return out.trim() || null;
   } catch {
     return null;
@@ -949,7 +1215,10 @@ export async function sshReadLogs(
   const file = logFile && allowed.includes(logFile) ? logFile : "agent.log";
   const remotePath = `$HOME/.omniworker/logs/${file}`;
   try {
-    const safeLines = Math.max(1, Math.min(5000, Number.parseInt(String(lines), 10) || 300));
+    const safeLines = Math.max(
+      1,
+      Math.min(5000, Number.parseInt(String(lines), 10) || 300),
+    );
     const content = await sshExec(
       config,
       `bash -c 'case "$2" in "~/"*) p="$HOME/\${2#~/}" ;; "\\$HOME/"*) p="$HOME/\${2#\\$HOME/}" ;; *) p="$2" ;; esac; tail -n "$1" -- "$p" 2>/dev/null || echo ""' -- ${shellQuote(String(safeLines))} ${shellQuote(remotePath)}`,
@@ -963,9 +1232,22 @@ export async function sshReadLogs(
 // ── Platform toggles (Gateway page) ──────────────────────────────────────────
 
 const SSH_SUPPORTED_PLATFORMS = [
-  "telegram", "discord", "slack", "whatsapp", "signal",
-  "matrix", "mattermost", "email", "sms", "bluebubbles",
-  "dingtalk", "feishu", "wecom", "weixin", "webhooks", "home_assistant",
+  "telegram",
+  "discord",
+  "slack",
+  "whatsapp",
+  "signal",
+  "matrix",
+  "mattermost",
+  "email",
+  "sms",
+  "bluebubbles",
+  "dingtalk",
+  "feishu",
+  "wecom",
+  "weixin",
+  "webhooks",
+  "home_assistant",
 ];
 
 // Map from app platform keys to gateway_state.json keys (where they differ)
@@ -979,7 +1261,10 @@ export async function sshGetPlatformEnabled(
 ): Promise<Record<string, boolean>> {
   void profile;
   try {
-    const raw = await sshReadFile(config, "$HOME/.omniworker/gateway_state.json");
+    const raw = await sshReadFile(
+      config,
+      "$HOME/.omniworker/gateway_state.json",
+    );
     if (raw.trim()) {
       const state = JSON.parse(raw);
       const platforms = state.platforms || {};
@@ -987,7 +1272,9 @@ export async function sshGetPlatformEnabled(
       for (const platform of SSH_SUPPORTED_PLATFORMS) {
         const stateKey = PLATFORM_STATE_KEY[platform] || platform;
         const p = platforms[stateKey];
-        result[platform] = p ? p.state === "connected" || p.state === "running" : false;
+        result[platform] = p
+          ? p.state === "connected" || p.state === "running"
+          : false;
       }
       return result;
     }
@@ -1025,11 +1312,15 @@ export async function sshSetPlatformEnabled(
       const lines = after.split("\n");
       let insertOffset = platformsIdx + 1 + lines[0].length + 1;
       for (let i = 1; i < lines.length; i++) {
-        if (lines[i].trim() === "" || /^\s/.test(lines[i])) insertOffset += lines[i].length + 1;
+        if (lines[i].trim() === "" || /^\s/.test(lines[i]))
+          insertOffset += lines[i].length + 1;
         else break;
       }
       const entry = `  ${platform}:\n    enabled: ${enabled}\n`;
-      updated = updated.substring(0, insertOffset) + entry + updated.substring(insertOffset);
+      updated =
+        updated.substring(0, insertOffset) +
+        entry +
+        updated.substring(insertOffset);
     }
   }
 
@@ -1059,7 +1350,10 @@ export async function sshListCachedSessions(
 
 export async function sshRunDoctor(config: SshConfig): Promise<string> {
   try {
-    const out = await sshExec(config, `omniworker doctor 2>&1 || echo "omniworker not found in PATH"`);
+    const out = await sshExec(
+      config,
+      `omniworker doctor 2>&1 || echo "omniworker not found in PATH"`,
+    );
     return out.trim() || "No output from doctor.";
   } catch (err) {
     return `SSH doctor failed: ${(err as Error).message}`;
@@ -1083,7 +1377,8 @@ export async function sshDiscoverMemoryProviders(
   config: SshConfig,
   profile?: string,
 ): Promise<MemoryProviderInfo[]> {
-  const activeProvider = (await sshGetConfigValue(config, "memory.provider", profile)) || "";
+  const activeProvider =
+    (await sshGetConfigValue(config, "memory.provider", profile)) || "";
   const script = `
 import json, os
 known = {
@@ -1139,6 +1434,13 @@ export async function sshListModels(config: SshConfig): Promise<SavedModel[]> {
   return [];
 }
 
-export async function sshSaveModels(config: SshConfig, models: SavedModel[]): Promise<void> {
-  await sshWriteFile(config, "$HOME/.omniworker/models.json", JSON.stringify(models, null, 2));
+export async function sshSaveModels(
+  config: SshConfig,
+  models: SavedModel[],
+): Promise<void> {
+  await sshWriteFile(
+    config,
+    "$HOME/.omniworker/models.json",
+    JSON.stringify(models, null, 2),
+  );
 }

@@ -112,7 +112,8 @@ export default {
   woocommerceStoreUrl: "WooCommerce Store URL",
   woocommerceStoreUrlHint: "e.g. https://my-store.com",
   woocommerceConsumerKey: "WooCommerce Consumer Key",
-  woocommerceConsumerKeyHint: "From Settings > Advanced > REST API in WooCommerce",
+  woocommerceConsumerKeyHint:
+    "From Settings > Advanced > REST API in WooCommerce",
   woocommerceConsumerSecret: "WooCommerce Consumer Secret",
   woocommerceConsumerSecretHint: "Secret associated with the Consumer Key",
   prestashopStoreUrl: "PrestaShop Store URL",

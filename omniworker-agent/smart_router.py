@@ -340,15 +340,14 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         # Build auth headers
         headers = {"Content-Type": "application/json"}
 
-        # Forward original Authorization header (JWT from login)
-        auth = self.headers.get("Authorization", "")
-        if auth:
-            headers["Authorization"] = auth
+        # Use env var (JWT from desktop app) as priority, fallback to original header
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         else:
-            # Fallback to env var (set by desktop app)
-            api_key = os.environ.get("OPENAI_API_KEY", "")
-            if api_key:
-                headers["Authorization"] = f"Bearer {api_key}"
+            auth = self.headers.get("Authorization", "")
+            if auth:
+                headers["Authorization"] = auth
 
         try:
             if use_https:

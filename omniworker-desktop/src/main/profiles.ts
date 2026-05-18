@@ -269,18 +269,22 @@ export function setActiveProfile(name: string): void {
   }
 
   try {
-    execFileSync(OMNIWORKER_PYTHON, omniworkerCliArgs(["profile", "use", name]), {
-      cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
-      env: {
-        ...process.env,
-        PATH: getEnhancedPath(),
-        HOME: homedir(),
-        OMNIWORKER_HOME,
+    execFileSync(
+      OMNIWORKER_PYTHON,
+      omniworkerCliArgs(["profile", "use", name]),
+      {
+        cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
+        env: {
+          ...process.env,
+          PATH: getEnhancedPath(),
+          HOME: homedir(),
+          OMNIWORKER_HOME,
+        },
+        stdio: "pipe",
+        timeout: 10000,
+        ...HIDDEN_SUBPROCESS_OPTIONS,
       },
-      stdio: "pipe",
-      timeout: 10000,
-      ...HIDDEN_SUBPROCESS_OPTIONS,
-    });
+    );
   } catch {
     // ignore
   }

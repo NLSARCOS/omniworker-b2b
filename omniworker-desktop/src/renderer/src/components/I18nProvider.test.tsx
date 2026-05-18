@@ -56,7 +56,9 @@ describe("I18nProvider", () => {
       );
     });
 
-    expect(await screen.findByText("Welcome to OmniWorker")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Welcome to OmniWorker"),
+    ).toBeInTheDocument();
   });
 
   it("renders Spanish translations after switching locale", async () => {
@@ -67,10 +69,14 @@ describe("I18nProvider", () => {
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Switch to Spanish" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Switch to Spanish" }),
+      );
     });
 
     expect(setLocale).toHaveBeenLastCalledWith("es");
-    expect(await screen.findByText("Bienvenido a OmniWorker")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Bienvenido a OmniWorker"),
+    ).toBeInTheDocument();
   });
 });

@@ -5,8 +5,6 @@ import { useI18n } from "../../components/useI18n";
 import { APP_LOCALES, type AppLocale } from "../../../../shared/i18n";
 import { Check, ChevronDown, Download, Upload, FileText } from "lucide-react";
 
-
-
 const LANGUAGE_NATIVE_NAMES: Record<AppLocale, string> = {
   en: "English",
   es: "Español",
@@ -96,9 +94,14 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   const [backupInventory, setBackupInventory] = useState<any>(null);
   const [includeSessions, setIncludeSessions] = useState(false);
   const [includeKanban, setIncludeKanban] = useState(false);
-  const [backupProgress, setBackupProgress] = useState<{ phase: string; percent: number } | null>(null);
+  const [backupProgress, setBackupProgress] = useState<{
+    phase: string;
+    percent: number;
+  } | null>(null);
   const [importManifest, setImportManifest] = useState<any>(null);
-  const [importArchivePath, setImportArchivePath] = useState<string | null>(null);
+  const [importArchivePath, setImportArchivePath] = useState<string | null>(
+    null,
+  );
   const [showImportPreview, setShowImportPreview] = useState(false);
 
   // Log viewer state
@@ -160,7 +163,10 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         setOpenclawFound(claw.found);
         setOpenclawPath(claw.path);
         try {
-          localStorage.setItem("omniworker-omniworker-cache", JSON.stringify(claw));
+          localStorage.setItem(
+            "omniworker-omniworker-cache",
+            JSON.stringify(claw),
+          );
         } catch {
           /* ignore */
         }
@@ -218,7 +224,11 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         18642,
       );
     } else {
-      await window.omniworkerAPI.setConnectionConfig(connMode, connRemoteUrl, connApiKey);
+      await window.omniworkerAPI.setConnectionConfig(
+        connMode,
+        connRemoteUrl,
+        connApiKey,
+      );
     }
     setConnStatus("Saved");
     setTimeout(() => setConnStatus(null), 2000);
@@ -243,10 +253,16 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       setConnStatus(ok ? "SSH tunnel connected!" : "Could not connect via SSH");
     } else {
       const url = connRemoteUrl.trim();
-      if (!url) { setConnStatus("Please enter a URL"); return; }
+      if (!url) {
+        setConnStatus("Please enter a URL");
+        return;
+      }
       setConnTesting(true);
       setConnStatus(null);
-      const ok = await window.omniworkerAPI.testRemoteConnection(url, connApiKey.trim());
+      const ok = await window.omniworkerAPI.testRemoteConnection(
+        url,
+        connApiKey.trim(),
+      );
       setConnTesting(false);
       setConnStatus(ok ? "Connected successfully!" : "Could not reach server");
     }
@@ -264,7 +280,10 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   async function handleBackup(): Promise<void> {
     // Scan first to show what will be backed up
     if (!backupInventory) {
-      const inv = await window.omniworkerAPI.scanBackupData(profile, { includeSessions, includeKanban });
+      const inv = await window.omniworkerAPI.scanBackupData(profile, {
+        includeSessions,
+        includeKanban,
+      });
       setBackupInventory(inv);
       return;
     }
@@ -277,14 +296,19 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       setBackupProgress({ phase: p.phase, percent: p.percent });
     });
 
-    const result = await window.omniworkerAPI.createBackup(profile, { includeSessions, includeKanban });
+    const result = await window.omniworkerAPI.createBackup(profile, {
+      includeSessions,
+      includeKanban,
+    });
     cleanup();
 
     setBackingUp(false);
     setBackupProgress(null);
     if (result.success) {
       const sizeMB = result.size ? (result.size / 1024 / 1024).toFixed(1) : "?";
-      setBackupResult(`Backup created (${sizeMB} MB): ${result.path || "success"}`);
+      setBackupResult(
+        `Backup created (${sizeMB} MB): ${result.path || "success"}`,
+      );
       setBackupInventory(null);
     } else if (result.error !== "Cancelled") {
       setBackupResult(result.error || "Backup failed.");
@@ -302,17 +326,23 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         setBackupProgress({ phase: p.phase, percent: p.percent });
       });
 
-      const result = await window.omniworkerAPI.restoreBackup(importArchivePath, profile, {
-        includeSessions: true,
-        includeKanban: true,
-        overwrite: true,
-      });
+      const result = await window.omniworkerAPI.restoreBackup(
+        importArchivePath,
+        profile,
+        {
+          includeSessions: true,
+          includeKanban: true,
+          overwrite: true,
+        },
+      );
       cleanup();
 
       setImporting(false);
       setBackupProgress(null);
       if (result.success) {
-        setImportResult(`Restored ${result.restoredItems.length} items successfully. App will refresh...`);
+        setImportResult(
+          `Restored ${result.restoredItems.length} items successfully. App will refresh...`,
+        );
         setShowImportPreview(false);
         setImportManifest(null);
         setImportArchivePath(null);
@@ -462,7 +492,9 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
               )}
             </div>
             <div className="settings-omniworker-detail">
-              <span className="settings-omniworker-label">{t("common.home")}</span>
+              <span className="settings-omniworker-label">
+                {t("common.home")}
+              </span>
               {!omniworkerHome ? (
                 <span className="skeleton skeleton-md" />
               ) : (
@@ -571,8 +603,8 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
             {connMode === "local"
               ? t("settings.modeLocalHint")
               : connMode === "ssh"
-              ? "Tunnel to a remote OmniWorker over SSH — no exposed ports or API keys needed."
-              : t("settings.modeRemoteHint")}
+                ? "Tunnel to a remote OmniWorker over SSH — no exposed ports or API keys needed."
+                : t("settings.modeRemoteHint")}
           </div>
         </div>
 
@@ -616,9 +648,14 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
                 onClick={handleTestConnection}
                 disabled={connTesting}
               >
-                {connTesting ? t("settings.testingConnection") : t("settings.testConnection")}
+                {connTesting
+                  ? t("settings.testingConnection")
+                  : t("settings.testConnection")}
               </button>
-              <button className="btn btn-primary" onClick={handleSaveConnection}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveConnection}
+              >
                 {t("settings.save")}
               </button>
             </div>
@@ -660,7 +697,9 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
             <div className="settings-field">
               <label className="settings-field-label">
                 Private Key Path{" "}
-                <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional, defaults to ~/.ssh/id_rsa)</span>
+                <span style={{ fontWeight: 400, opacity: 0.6 }}>
+                  (optional, defaults to ~/.ssh/id_rsa)
+                </span>
               </label>
               <input
                 className="input"
@@ -673,7 +712,9 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
             <div className="settings-field">
               <label className="settings-field-label">
                 Remote OmniWorker Port{" "}
-                <span style={{ fontWeight: 400, opacity: 0.6 }}>(default 8642)</span>
+                <span style={{ fontWeight: 400, opacity: 0.6 }}>
+                  (default 8642)
+                </span>
               </label>
               <input
                 className="input"
@@ -683,8 +724,16 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
                 placeholder="8642"
               />
               <div className="settings-field-hint">
-                Make sure you can run <code style={{ fontFamily: "monospace" }}>ssh {sshUser || "user"}@{sshHost || "host"}</code> without a password prompt.
-                The first connection trusts the host key and stores it in <code style={{ fontFamily: "monospace" }}>~/.ssh/known_hosts</code>; SSH will fail closed if that key changes later.
+                Make sure you can run{" "}
+                <code style={{ fontFamily: "monospace" }}>
+                  ssh {sshUser || "user"}@{sshHost || "host"}
+                </code>{" "}
+                without a password prompt. The first connection trusts the host
+                key and stores it in{" "}
+                <code style={{ fontFamily: "monospace" }}>
+                  ~/.ssh/known_hosts
+                </code>
+                ; SSH will fail closed if that key changes later.
               </div>
             </div>
             <div className="settings-omniworker-actions">
@@ -695,7 +744,10 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
               >
                 {connTesting ? "Testing SSH…" : "Test SSH Connection"}
               </button>
-              <button className="btn btn-primary" onClick={handleSaveConnection}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveConnection}
+              >
                 {t("settings.save")}
               </button>
             </div>
@@ -883,88 +935,264 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           </div>
 
           {/* Export Backup */}
-          <div style={{ marginBottom: 16, padding: 16, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8 }}>
-            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>Export Backup</div>
+          <div
+            style={{
+              marginBottom: 16,
+              padding: 16,
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>
+              Export Backup
+            </div>
             {backupInventory && (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-                  {backupInventory.files.filter((f: any) => f.exists).length} items found &middot; {(backupInventory.totalSize / 1024).toFixed(0)} KB
-                  {backupInventory.sessionCount > 0 && ` &middot; ${backupInventory.sessionCount} sessions`}
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-muted)",
+                    marginBottom: 8,
+                  }}
+                >
+                  {backupInventory.files.filter((f: any) => f.exists).length}{" "}
+                  items found &middot;{" "}
+                  {(backupInventory.totalSize / 1024).toFixed(0)} KB
+                  {backupInventory.sessionCount > 0 &&
+                    ` &middot; ${backupInventory.sessionCount} sessions`}
                 </div>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 4 }}>
-                  <input type="checkbox" checked={includeSessions} onChange={e => { setIncludeSessions(e.target.checked); setBackupInventory(null); }} />
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13,
+                    marginBottom: 4,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={includeSessions}
+                    onChange={(e) => {
+                      setIncludeSessions(e.target.checked);
+                      setBackupInventory(null);
+                    }}
+                  />
                   Include chat history ({backupInventory.sessionCount} sessions)
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                  <input type="checkbox" checked={includeKanban} onChange={e => { setIncludeKanban(e.target.checked); setBackupInventory(null); }} />
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={includeKanban}
+                    onChange={(e) => {
+                      setIncludeKanban(e.target.checked);
+                      setBackupInventory(null);
+                    }}
+                  />
                   Include kanban tasks ({backupInventory.kanbanTaskCount} tasks)
                 </label>
               </div>
             )}
             {backupProgress && (
               <div style={{ marginBottom: 8 }}>
-                <div style={{ height: 4, background: "var(--bg-hover)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${backupProgress.percent}%`, background: "var(--accent)", transition: "width 0.3s" }} />
+                <div
+                  style={{
+                    height: 4,
+                    background: "var(--bg-hover)",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${backupProgress.percent}%`,
+                      background: "var(--accent)",
+                      transition: "width 0.3s",
+                    }}
+                  />
                 </div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{backupProgress.phase}...</div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                    marginTop: 4,
+                  }}
+                >
+                  {backupProgress.phase}...
+                </div>
               </div>
             )}
             <div className="settings-omniworker-actions">
-              <button className="btn btn-secondary" onClick={handleBackup} disabled={backingUp}>
+              <button
+                className="btn btn-secondary"
+                onClick={handleBackup}
+                disabled={backingUp}
+              >
                 <Download size={14} style={{ marginRight: 6 }} />
-                {backingUp ? "Exporting..." : backupInventory ? "Save Backup..." : "Scan & Export"}
+                {backingUp
+                  ? "Exporting..."
+                  : backupInventory
+                    ? "Save Backup..."
+                    : "Scan & Export"}
               </button>
               {backupInventory && !backingUp && (
-                <button className="btn btn-secondary" onClick={() => setBackupInventory(null)} style={{ fontSize: 12 }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setBackupInventory(null)}
+                  style={{ fontSize: 12 }}
+                >
                   Cancel
                 </button>
               )}
             </div>
             {backupResult && (
-              <div className={`settings-omniworker-result ${backupResult.includes("success") || backupResult.includes("created") ? "success" : "error"}`} style={{ marginTop: 8 }}>
+              <div
+                className={`settings-omniworker-result ${backupResult.includes("success") || backupResult.includes("created") ? "success" : "error"}`}
+                style={{ marginTop: 8 }}
+              >
                 {backupResult}
               </div>
             )}
           </div>
 
           {/* Import Backup */}
-          <div style={{ padding: 16, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8 }}>
-            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>Import Backup</div>
+          <div
+            style={{
+              padding: 16,
+              background: "var(--bg-secondary)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>
+              Import Backup
+            </div>
             {showImportPreview && importManifest ? (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-                  Backup from: {new Date(importManifest.createdAt).toLocaleString()}
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-muted)",
+                    marginBottom: 8,
+                  }}
+                >
+                  Backup from:{" "}
+                  {new Date(importManifest.createdAt).toLocaleString()}
                   &middot; Profile: {importManifest.profileName}
-                  &middot; {importManifest.items?.filter((i: any) => i.exists).length || "?"} items
+                  &middot;{" "}
+                  {importManifest.items?.filter((i: any) => i.exists).length ||
+                    "?"}{" "}
+                  items
                 </div>
-                {importManifest.includesSessions && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 2 }}>Includes: Chat history</div>}
-                {importManifest.includesKanban && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 2 }}>Includes: Kanban tasks</div>}
-                <div style={{ padding: "8px 12px", background: "var(--warning-bg)", border: "1px solid var(--warning)", borderRadius: 4, marginTop: 8, fontSize: 12, color: "var(--warning)" }}>
-                  This will overwrite your current data. The app will reload after import.
+                {importManifest.includesSessions && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-secondary)",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Includes: Chat history
+                  </div>
+                )}
+                {importManifest.includesKanban && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-secondary)",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Includes: Kanban tasks
+                  </div>
+                )}
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    background: "var(--warning-bg)",
+                    border: "1px solid var(--warning)",
+                    borderRadius: 4,
+                    marginTop: 8,
+                    fontSize: 12,
+                    color: "var(--warning)",
+                  }}
+                >
+                  This will overwrite your current data. The app will reload
+                  after import.
                 </div>
               </div>
             ) : null}
             {backupProgress && importing && (
               <div style={{ marginBottom: 8 }}>
-                <div style={{ height: 4, background: "var(--bg-hover)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${backupProgress.percent}%`, background: "var(--warning)", transition: "width 0.3s" }} />
+                <div
+                  style={{
+                    height: 4,
+                    background: "var(--bg-hover)",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${backupProgress.percent}%`,
+                      background: "var(--warning)",
+                      transition: "width 0.3s",
+                    }}
+                  />
                 </div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{backupProgress.phase}...</div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                    marginTop: 4,
+                  }}
+                >
+                  {backupProgress.phase}...
+                </div>
               </div>
             )}
             <div className="settings-omniworker-actions">
-              <button className="btn btn-secondary" onClick={handleImport} disabled={importing}>
+              <button
+                className="btn btn-secondary"
+                onClick={handleImport}
+                disabled={importing}
+              >
                 <Upload size={14} style={{ marginRight: 6 }} />
-                {importing ? "Restoring..." : showImportPreview ? "Confirm Restore" : "Select Backup File..."}
+                {importing
+                  ? "Restoring..."
+                  : showImportPreview
+                    ? "Confirm Restore"
+                    : "Select Backup File..."}
               </button>
               {showImportPreview && !importing && (
-                <button className="btn btn-secondary" onClick={() => { setShowImportPreview(false); setImportManifest(null); setImportArchivePath(null); }} style={{ fontSize: 12 }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowImportPreview(false);
+                    setImportManifest(null);
+                    setImportArchivePath(null);
+                  }}
+                  style={{ fontSize: 12 }}
+                >
                   Cancel
                 </button>
               )}
             </div>
             {importResult && (
-              <div className={`settings-omniworker-result ${importResult.includes("success") || importResult.includes("Restored") ? "success" : "error"}`} style={{ marginTop: 8 }}>
+              <div
+                className={`settings-omniworker-result ${importResult.includes("success") || importResult.includes("Restored") ? "success" : "error"}`}
+                style={{ marginTop: 8 }}
+              >
                 {importResult}
               </div>
             )}

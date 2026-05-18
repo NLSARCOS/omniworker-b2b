@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       success: true,
       user: result.user,
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     });
   } catch (error) {
     console.error("[Auth API] Error:", error);

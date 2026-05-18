@@ -1,5 +1,15 @@
 import { ChildProcess, spawn } from "child_process";
-import { existsSync, readFileSync, appendFileSync, unlinkSync, copyFileSync, chmodSync, symlinkSync, mkdirSync } from "fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  appendFileSync,
+  unlinkSync,
+  copyFileSync,
+  chmodSync,
+  symlinkSync,
+  mkdirSync,
+} from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import http from "http";
@@ -13,7 +23,12 @@ import {
   SAAS_BASE_URL,
 } from "./installer";
 import { getModelConfig, readEnv, getConnectionConfig } from "./config";
-import { getSshTunnelUrl, isSshTunnelActive, isSshTunnelHealthy, startSshTunnel } from "./ssh-tunnel";
+import {
+  getSshTunnelUrl,
+  isSshTunnelActive,
+  isSshTunnelHealthy,
+  startSshTunnel,
+} from "./ssh-tunnel";
 import { stripAnsi } from "./utils";
 import { readModels } from "./models";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
@@ -53,7 +68,8 @@ export function setSshRemoteApiKey(key: string): void {
 export function getRemoteAuthHeader(): Record<string, string> {
   const conn = getConnectionConfig();
   if (conn.mode === "ssh") {
-    if (_sshRemoteApiKey) return { Authorization: `Bearer ${_sshRemoteApiKey}` };
+    if (_sshRemoteApiKey)
+      return { Authorization: `Bearer ${_sshRemoteApiKey}` };
     return {};
   }
   if (conn.mode === "remote" && conn.apiKey) {
@@ -64,7 +80,10 @@ export function getRemoteAuthHeader(): Record<string, string> {
 
 export async function ensureSshTunnelIfNeeded(): Promise<void> {
   const conn = getConnectionConfig();
-  if (conn.mode === "ssh" && (!isSshTunnelActive() || !await isSshTunnelHealthy())) {
+  if (
+    conn.mode === "ssh" &&
+    (!isSshTunnelActive() || !(await isSshTunnelHealthy()))
+  ) {
     await startSshTunnel(conn.ssh);
   }
 }
@@ -422,7 +441,9 @@ function sendMessageViaApi(
   });
   req.on("timeout", () => {
     req.destroy();
-    finish("API request timed out. Check the SSH tunnel and remote OmniWorker gateway.");
+    finish(
+      "API request timed out. Check the SSH tunnel and remote OmniWorker gateway.",
+    );
   });
 
   req.write(body);
@@ -469,7 +490,8 @@ function sendMessageViaCli(
     PATH: getEnhancedPath(),
     HOME: homedir(),
     OMNIWORKER_HOME: OMNIWORKER_HOME,
-    OMNIWORKER_SAAS_BASE_URL: process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
+    OMNIWORKER_SAAS_BASE_URL:
+      process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     PYTHONUNBUFFERED: "1",
   };
 
@@ -507,9 +529,13 @@ function sendMessageViaCli(
     // Check if this model has an explicit apiMode from custom_providers
     let modelApiMode: string | null = null;
     try {
-      const modelEntry = readModels().find(m => m.baseUrl === mc.baseUrl && m.model === mc.model);
+      const modelEntry = readModels().find(
+        (m) => m.baseUrl === mc.baseUrl && m.model === mc.model,
+      );
       if (modelEntry) modelApiMode = modelEntry.apiMode || null;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     const isAnthropicProtocol = modelApiMode === "anthropic_messages";
     if (isAnthropicProtocol) {
       env.OMNIWORKER_INFERENCE_PROVIDER = "anthropic";
@@ -531,12 +557,17 @@ function sendMessageViaCli(
       // Try custom provider auto-generated key from models.json
       try {
         const models = readModels();
-        const matching = models.find(m => m.baseUrl === mc.baseUrl);
+        const matching = models.find((m) => m.baseUrl === mc.baseUrl);
         if (matching) {
-          const envKey2 = "CUSTOM_PROVIDER_" + matching.name.replace(/[^A-Za-z0-9]/g, "_").toUpperCase() + "_KEY";
+          const envKey2 =
+            "CUSTOM_PROVIDER_" +
+            matching.name.replace(/[^A-Za-z0-9]/g, "_").toUpperCase() +
+            "_KEY";
           resolvedKey = profileEnv[envKey2] || env[envKey2] || "";
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       if (!resolvedKey) {
         resolvedKey =
           profileEnv.CUSTOM_API_KEY ||
@@ -658,7 +689,10 @@ let apiServerAvailable: boolean | null = null; // cached after first check
 //  Local SLM Router — classify messages for local vs cloud
 // ────────────────────────────────────────────────────
 
-const LOCAL_SLM_PORT = parseInt(process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080", 10);
+const LOCAL_SLM_PORT = parseInt(
+  process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
+  10,
+);
 
 /**
  * Classify a message as "simple" (→ local SLM) or "complex" (→ cloud SaaS).
@@ -678,12 +712,14 @@ function shouldUseLocalSlm(
   if (trimmed.length <= 15) return true;
 
   // Simple greeting/thanks patterns
-  const simplePatterns = /^(hola|hi|hello|hey|buenos días|buenas|gracias|thanks|bye|adiós|ok|sí|no|yes|nope|sure|claro|dale|listo|yo|qué tal|qué haces|cómo estás|how are you|what's up|sup|good morning|good night|buenas noches)[\s!.?]*$/i;
+  const simplePatterns =
+    /^(hola|hi|hello|hey|buenos días|buenas|gracias|thanks|bye|adiós|ok|sí|no|yes|nope|sure|claro|dale|listo|yo|qué tal|qué haces|cómo estás|how are you|what's up|sup|good morning|good night|buenas noches)[\s!.?]*$/i;
   if (simplePatterns.test(trimmed)) return true;
 
   // Medium (15-100 chars) with no code indicators → local
   if (trimmed.length <= 100) {
-    const codeIndicators = /```|function |class |import |const |def |async |await |SELECT |CREATE |npm |git |pip |python|error|traceback|exception|debug|fix|archivo|file|install|configurar/i;
+    const codeIndicators =
+      /```|function |class |import |const |def |async |await |SELECT |CREATE |npm |git |pip |python|error|traceback|exception|debug|fix|archivo|file|install|configurar/i;
     if (!codeIndicators.test(trimmed)) return true;
   }
 
@@ -728,7 +764,9 @@ function sendMessageViaLocalSlm(
     (res) => {
       if (res.statusCode !== 200) {
         let errBody = "";
-        res.on("data", (d: Buffer) => { errBody += d.toString(); });
+        res.on("data", (d: Buffer) => {
+          errBody += d.toString();
+        });
         res.on("end", () => finish(`Local SLM error ${res.statusCode}`));
         return;
       }
@@ -750,8 +788,13 @@ function sendMessageViaLocalSlm(
             try {
               const parsed = JSON.parse(data);
               const content = parsed.choices?.[0]?.delta?.content;
-              if (content) { hasContent = true; cb.onChunk(content); }
-            } catch { /* skip malformed chunk */ }
+              if (content) {
+                hasContent = true;
+                cb.onChunk(content);
+              }
+            } catch {
+              /* skip malformed chunk */
+            }
           }
         }
       });
@@ -766,14 +809,21 @@ function sendMessageViaLocalSlm(
             try {
               const parsed = JSON.parse(data);
               const content = parsed.choices?.[0]?.delta?.content;
-              if (content) { hasContent = true; cb.onChunk(content); }
-            } catch { /* skip */ }
+              if (content) {
+                hasContent = true;
+                cb.onChunk(content);
+              }
+            } catch {
+              /* skip */
+            }
           }
         }
         finish(hasContent ? undefined : "No response from local SLM");
       });
 
-      res.on("error", (err) => finish(`Local SLM stream error: ${err.message}`));
+      res.on("error", (err) =>
+        finish(`Local SLM stream error: ${err.message}`),
+      );
     },
   );
 
@@ -790,7 +840,11 @@ function sendMessageViaLocalSlm(
   req.write(body);
   req.end();
 
-  return { abort: () => { controller.abort(); } };
+  return {
+    abort: () => {
+      controller.abort();
+    },
+  };
 }
 
 // ────────────────────────────────────────────────────
@@ -816,11 +870,23 @@ export async function sendMessage(
     const slmAlive = await new Promise<boolean>((resolve) => {
       try {
         const netMod = require("net") as typeof import("net");
-        const s = netMod.createConnection({ port: LOCAL_SLM_PORT, host: "127.0.0.1" });
+        const s = netMod.createConnection({
+          port: LOCAL_SLM_PORT,
+          host: "127.0.0.1",
+        });
         s.setTimeout(500);
-        s.once("connect", () => { s.destroy(); resolve(true); });
-        s.once("error", () => { s.destroy(); resolve(false); });
-        s.once("timeout", () => { s.destroy(); resolve(false); });
+        s.once("connect", () => {
+          s.destroy();
+          resolve(true);
+        });
+        s.once("error", () => {
+          s.destroy();
+          resolve(false);
+        });
+        s.once("timeout", () => {
+          s.destroy();
+          resolve(false);
+        });
       } catch {
         resolve(false);
       }
@@ -861,7 +927,9 @@ function ensureInitialized(): void {
   if (!isRemoteMode()) {
     ensureApiServerConfig();
     ensureLocalLlmScripts(); // Copy startup scripts on first run
-    startSmartRouter().catch(e => console.error("[SmartRouter] Init failed", e)); // Start smart router so gateway has it available
+    startSmartRouter().catch((e) =>
+      console.error("[SmartRouter] Init failed", e),
+    ); // Start smart router so gateway has it available
   }
   startHealthPolling();
 }
@@ -929,38 +997,64 @@ export function stopHealthPolling(): void {
 
 let localLlmProcess: ChildProcess | null = null;
 
-const _LOCAL_LLM_PORT_ORIG = parseInt(process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080", 10);
+const _LOCAL_LLM_PORT_ORIG = parseInt(
+  process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
+  10,
+);
 
-function isLocalLlmRunning(): boolean {
+function isLocalLlmRunning(): Promise<boolean> {
   // Synchronous TCP probe — fast (300 ms timeout) and no external deps.
   // Returns true if llama-server is already bound on the configured port.
   try {
     const net = require("net") as typeof import("net");
     return new Promise<boolean>((resolve) => {
-      const s = net.createConnection({ port: _LOCAL_LLM_PORT_ORIG, host: "127.0.0.1" });
+      const s = net.createConnection({
+        port: _LOCAL_LLM_PORT_ORIG,
+        host: "127.0.0.1",
+      });
       s.setTimeout(300);
-      s.once("connect", () => { s.destroy(); resolve(true); });
-      s.once("error",   () => { s.destroy(); resolve(false); });
-      s.once("timeout", () => { s.destroy(); resolve(false); });
-    }) as unknown as boolean;
+      s.once("connect", () => {
+        s.destroy();
+        resolve(true);
+      });
+      s.once("error", () => {
+        s.destroy();
+        resolve(false);
+      });
+      s.once("timeout", () => {
+        s.destroy();
+        resolve(false);
+      });
+    });
   } catch {
-    return false;
+    return Promise.resolve(false);
   }
 }
 
-export function startLocalLlmServer(): boolean {
-  const scriptPath = join(OMNIWORKER_HOME, "local-llm", "scripts", "start-local-llm.sh");
-  const winScriptPath = join(OMNIWORKER_HOME, "local-llm", "scripts", "start-local-llm.bat");
+export async function startLocalLlmServer(): Promise<boolean> {
+  const scriptPath = join(
+    OMNIWORKER_HOME,
+    "local-llm",
+    "scripts",
+    "start-local-llm.sh",
+  );
+  const winScriptPath = join(
+    OMNIWORKER_HOME,
+    "local-llm",
+    "scripts",
+    "start-local-llm.bat",
+  );
 
-  const startScript = process.platform === "win32" && existsSync(winScriptPath)
-    ? winScriptPath
-    : scriptPath;
+  const startScript =
+    process.platform === "win32" && existsSync(winScriptPath)
+      ? winScriptPath
+      : scriptPath;
 
   if (!existsSync(startScript)) {
     return false; // Local LLM not installed
   }
 
-  if (isLocalLlmRunning()) {
+  if (await isLocalLlmRunning()) {
     return true; // Already running
   }
 
@@ -975,7 +1069,8 @@ export function startLocalLlmServer(): boolean {
   };
 
   const command = process.platform === "win32" ? "cmd.exe" : "bash";
-  const args = process.platform === "win32" ? ["/c", startScript] : [startScript];
+  const args =
+    process.platform === "win32" ? ["/c", startScript] : [startScript];
 
   localLlmProcess = spawn(command, args, {
     cwd: OMNIWORKER_HOME,
@@ -1003,20 +1098,34 @@ let smartRouterProcess: ChildProcess | null = null;
 /**
  * Check if the smart router is running on port 8341.
  */
-function isSmartRouterRunning(): boolean {
+export function isSmartRouterRunning(): Promise<boolean> {
   try {
     const net = require("net") as typeof import("net");
     return new Promise<boolean>((resolve) => {
-      const s = net.createConnection({ port: SMART_ROUTER_PORT, host: "127.0.0.1" });
+      const s = net.createConnection({
+        port: SMART_ROUTER_PORT,
+        host: "127.0.0.1",
+      });
       s.setTimeout(300);
-      s.once("connect", () => { s.destroy(); resolve(true); });
-      s.once("error",   () => { s.destroy(); resolve(false); });
-      s.once("timeout", () => { s.destroy(); resolve(false); });
-    }) as unknown as boolean;
+      s.once("connect", () => {
+        s.destroy();
+        resolve(true);
+      });
+      s.once("error", () => {
+        s.destroy();
+        resolve(false);
+      });
+      s.once("timeout", () => {
+        s.destroy();
+        resolve(false);
+      });
+    });
   } catch {
-    return false;
+    return Promise.resolve(false);
   }
 }
+
+import { SMART_ROUTER_SCRIPT } from "./smartRouterScript";
 
 /**
  * Start the smart router proxy that routes inference between local SLM and cloud.
@@ -1030,8 +1139,11 @@ export async function startSmartRouter(): Promise<boolean> {
 
   const routerScript = join(OMNIWORKER_REPO, "smart_router.py");
   if (!existsSync(routerScript)) {
-    console.warn("[SmartRouter] Script not found:", routerScript);
-    return false;
+    console.log(
+      "[SmartRouter] Script not found natively. Writing bundled version...",
+    );
+    mkdirSync(OMNIWORKER_REPO, { recursive: true });
+    writeFileSync(routerScript, SMART_ROUTER_SCRIPT);
   }
 
   // Get current env to pass auth credentials to router
@@ -1046,13 +1158,21 @@ export async function startSmartRouter(): Promise<boolean> {
   };
 
   // Forward the JWT token so the router can auth with cloud
-  const apiKey = readEnv().OPENAI_API_KEY || "";
+  const envConfig = readEnv();
+  const apiKey =
+    process.env.OPENAI_API_KEY ||
+    envConfig.OPENAI_API_KEY ||
+    envConfig.CUSTOM_API_KEY ||
+    "";
   if (apiKey) {
     routerEnv.OPENAI_API_KEY = apiKey;
   }
 
   const args = [OMNIWORKER_PYTHON, routerScript];
-  const logStream = require("fs").createWriteStream(join(OMNIWORKER_HOME, "smart_router.log"), { flags: "a" });
+  const logStream = require("fs").createWriteStream(
+    join(OMNIWORKER_HOME, "smart_router.log"),
+    { flags: "a" },
+  );
   smartRouterProcess = spawn(args[0], args.slice(1), {
     cwd: OMNIWORKER_REPO,
     env: routerEnv,
@@ -1065,9 +1185,30 @@ export async function startSmartRouter(): Promise<boolean> {
   smartRouterProcess.on("close", () => {
     smartRouterProcess = null;
   });
+  smartRouterProcess.on("error", (err) => {
+    console.error("[SmartRouter] Process error:", err);
+    smartRouterProcess = null;
+  });
 
-  console.log("[SmartRouter] Started on port", SMART_ROUTER_PORT);
-  return true;
+  console.log(
+    "[SmartRouter] Started process, waiting for port",
+    SMART_ROUTER_PORT,
+  );
+
+  // Wait for the port to be available
+  for (let i = 0; i < 20; i++) {
+    if (await isSmartRouterRunning()) {
+      console.log("[SmartRouter] Ready on port", SMART_ROUTER_PORT);
+      return true;
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+
+  console.error(
+    "[SmartRouter] Failed to detect running router on port",
+    SMART_ROUTER_PORT,
+  );
+  return false;
 }
 
 /**
@@ -1084,8 +1225,10 @@ export function stopSmartRouter(): void {
  * Get the smart router base URL for config.yaml.
  * Returns "http://localhost:8341/v1" if router is available, else falls back to direct cloud.
  */
-export function getSmartRouterUrl(cloudFallback: string): string {
-  if (isSmartRouterRunning()) {
+export async function getSmartRouterUrl(
+  cloudFallback: string,
+): Promise<string> {
+  if (await isSmartRouterRunning()) {
     return `http://127.0.0.1:${SMART_ROUTER_PORT}/v1`;
   }
   return cloudFallback;
@@ -1117,11 +1260,19 @@ export function startGateway(profile?: string): boolean {
       gatewayEnv[key] = value;
     }
   }
+  // Ensure the gateway gets the API_SERVER_KEY
+  if (!gatewayEnv.API_SERVER_KEY && gatewayEnv.CUSTOM_API_KEY) {
+    gatewayEnv.API_SERVER_KEY = gatewayEnv.CUSTOM_API_KEY;
+  }
 
+  const logStream = require("fs").createWriteStream(
+    join(OMNIWORKER_HOME, "gateway.log"),
+    { flags: "a" },
+  );
   gatewayProcess = spawn(OMNIWORKER_PYTHON, omniworkerCliArgs(["gateway"]), {
     cwd: OMNIWORKER_REPO,
     env: gatewayEnv,
-    stdio: "ignore",
+    stdio: ["ignore", logStream, logStream],
     detached: true,
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });
@@ -1134,6 +1285,11 @@ export function startGateway(profile?: string): boolean {
     apiServerAvailable = false;
     // Restart health polling to detect if gateway comes back
     startHealthPolling();
+  });
+  gatewayProcess.on("error", (err) => {
+    console.error("[Gateway] Process error:", err);
+    gatewayProcess = null;
+    gatewayStartedByApp = false;
   });
 
   gatewayStartedByApp = true;

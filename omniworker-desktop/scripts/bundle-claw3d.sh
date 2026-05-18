@@ -48,6 +48,12 @@ if [ -d "$TMP_DIR/claw3d/.next/static" ]; then
   echo "[Claw3D Bundle] Copied static assets"
 fi
 
+# Rename node_modules to bundled_node_modules to bypass electron-builder default ignore filters
+if [ -d "$OUTPUT_DIR/node_modules" ]; then
+  mv "$OUTPUT_DIR/node_modules" "$OUTPUT_DIR/bundled_node_modules"
+  echo "[Claw3D Bundle] Renamed node_modules to bundled_node_modules"
+fi
+
 # Copy public folder if it exists (favicon, images, etc.)
 if [ -d "$TMP_DIR/claw3d/public" ]; then
   cp -R "$TMP_DIR/claw3d/public/." "$OUTPUT_DIR/"

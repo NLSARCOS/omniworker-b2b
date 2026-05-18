@@ -169,7 +169,8 @@ export function checkInstallStatus(): InstallStatus {
   // `python --version` check used to run here adds 1–10s of cold-start
   // latency, so it now lives in `verifyInstall()` and is invoked lazily
   // by the renderer after the main UI is mounted.
-  const installed = existsSync(OMNIWORKER_PYTHON) && existsSync(OMNIWORKER_SCRIPT);
+  const installed =
+    existsSync(OMNIWORKER_PYTHON) && existsSync(OMNIWORKER_SCRIPT);
   const configured = existsSync(OMNIWORKER_ENV_FILE);
   let hasApiKey = false;
   const verified = installed;
@@ -221,7 +222,8 @@ let _verifyCache: { ok: boolean; ts: number } | null = null;
 const VERIFY_TTL_MS = 5 * 60 * 1000;
 
 export async function verifyInstall(): Promise<boolean> {
-  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) return false;
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT))
+    return false;
   if (_verifyCache && Date.now() - _verifyCache.ts < VERIFY_TTL_MS) {
     return _verifyCache.ok;
   }
@@ -255,7 +257,8 @@ let _versionFetching = false;
 
 export async function getOmniWorkerVersion(): Promise<string | null> {
   if (_cachedVersion !== null) return _cachedVersion;
-  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) return null;
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT))
+    return null;
   if (_versionFetching) {
     // Wait for in-flight fetch
     return new Promise((resolve) => {
@@ -305,18 +308,22 @@ export function runOmniWorkerDoctor(): string {
     return "OmniWorker is not installed.";
   }
   try {
-    const output = execFileSync(OMNIWORKER_PYTHON, omniworkerCliArgs(["doctor"]), {
-      cwd: OMNIWORKER_REPO,
-      env: {
-        ...process.env,
-        PATH: getEnhancedPath(),
-        HOME: homedir(),
-        OMNIWORKER_HOME,
+    const output = execFileSync(
+      OMNIWORKER_PYTHON,
+      omniworkerCliArgs(["doctor"]),
+      {
+        cwd: OMNIWORKER_REPO,
+        env: {
+          ...process.env,
+          PATH: getEnhancedPath(),
+          HOME: homedir(),
+          OMNIWORKER_HOME,
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 30000,
+        ...HIDDEN_SUBPROCESS_OPTIONS,
       },
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 30000,
-      ...HIDDEN_SUBPROCESS_OPTIONS,
-    });
+    );
     return stripAnsi(output.toString());
   } catch (err) {
     const stderr = (err as { stderr?: Buffer }).stderr?.toString() || "";
@@ -326,7 +333,10 @@ export function runOmniWorkerDoctor(): string {
 
 const OPENCLAW_DIR_NAMES = [".omniworker", ".clawdbot", ".moldbot"];
 
-export function checkOmniWorkerExists(): { found: boolean; path: string | null } {
+export function checkOmniWorkerExists(): {
+  found: boolean;
+  path: string | null;
+} {
   for (const name of OPENCLAW_DIR_NAMES) {
     const dir = join(homedir(), name);
     if (existsSync(dir)) {
@@ -520,7 +530,8 @@ const STAGE_MARKERS: { pattern: RegExp; step: number; title: string }[] = [
   },
 ];
 
-export const SAAS_BASE_URL = process.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+export const SAAS_BASE_URL =
+  process.env.VITE_SAAS_URL || "https://worker.thelab.lat";
 
 export async function runInstall(
   onProgress: (progress: InstallProgress) => void,
@@ -594,38 +605,58 @@ export async function runInstall(
   // Production: download authenticated tarball from SaaS API
   // Development: use local repo path
   let localInstallScript = "";
-  
+
   if (authToken) {
     emit("Authenticating with OmniWorker servers...\n");
-    const tarballPath = join(tmpdir(), `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`);
-    
+    const tarballPath = join(
+      tmpdir(),
+      `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`,
+    );
+
     await new Promise<void>((res, rej) => {
       const url = `${SAAS_BASE_URL}/downloads/omniworker-agent.tar.gz`;
       const file = createWriteStream(tarballPath);
-      const req = https.get(url, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      }, (response: any) => {
-        if (response.statusCode === 401 || response.statusCode === 403) {
-          rej(new Error("Authentication failed. Please check your credentials or subscription status."));
-          return;
-        }
-        if (response.statusCode !== 200) {
-          rej(new Error(`Download failed (HTTP ${response.statusCode}). Please try again later.`));
-          return;
-        }
-        response.pipe(file);
-        file.on("finish", () => { file.close(); res(); });
-      });
+      const req = https.get(
+        url,
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        },
+        (response: any) => {
+          if (response.statusCode === 401 || response.statusCode === 403) {
+            rej(
+              new Error(
+                "Authentication failed. Please check your credentials or subscription status.",
+              ),
+            );
+            return;
+          }
+          if (response.statusCode !== 200) {
+            rej(
+              new Error(
+                `Download failed (HTTP ${response.statusCode}). Please try again later.`,
+              ),
+            );
+            return;
+          }
+          response.pipe(file);
+          file.on("finish", () => {
+            file.close();
+            res();
+          });
+        },
+      );
       req.on("error", rej);
     });
-    
+
     emit("Extracting agent package...\n");
     mkdirSync(OMNIWORKER_REPO, { recursive: true });
     await extract({ cwd: OMNIWORKER_REPO, file: tarballPath, strip: 1 });
-    
+
     localInstallScript = join(OMNIWORKER_REPO, "scripts", "install.sh");
     if (!existsSync(localInstallScript)) {
-      throw new Error("Downloaded agent package is missing install.sh. Please contact support.");
+      throw new Error(
+        "Downloaded agent package is missing install.sh. Please contact support.",
+      );
     }
     emit("Agent downloaded and ready.\n");
   } else {
@@ -643,8 +674,8 @@ export async function runInstall(
     if (!localInstallScript) {
       throw new Error(
         "Agent source not found. The desktop app does not bundle the agent code.\n" +
-        "In production, the agent is downloaded after login.\n" +
-        "In development, ensure the omniworker-agent repo is cloned alongside the desktop."
+          "In production, the agent is downloaded after login.\n" +
+          "In development, ensure the omniworker-agent repo is cloned alongside the desktop.",
       );
     }
   }
@@ -718,8 +749,6 @@ export async function runInstall(
   }
 }
 
-
-
 // Resolve a powershell executable. Prefer PowerShell 7 (`pwsh`) when present,
 // fall back to Windows PowerShell 5.1 (`powershell.exe`). Both ship the same
 // flags we use; pwsh is faster and writes UTF-8 without a BOM by default.
@@ -747,25 +776,43 @@ async function runInstallWindows(
 
   if (authToken) {
     emit("Authenticating with OmniWorker servers...\n");
-    const tarballPath = join(tmpdir(), `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`);
+    const tarballPath = join(
+      tmpdir(),
+      `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`,
+    );
 
     await new Promise<void>((res, rej) => {
       const url = `${SAAS_BASE_URL}/downloads/omniworker-agent.tar.gz`;
       const file = createWriteStream(tarballPath);
-      const req = https.get(url, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      }, (response: any) => {
-        if (response.statusCode === 401 || response.statusCode === 403) {
-          rej(new Error("Authentication failed. Please check your credentials or subscription status."));
-          return;
-        }
-        if (response.statusCode !== 200) {
-          rej(new Error(`Download failed (HTTP ${response.statusCode}). Please try again later.`));
-          return;
-        }
-        response.pipe(file);
-        file.on("finish", () => { file.close(); res(); });
-      });
+      const req = https.get(
+        url,
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        },
+        (response: any) => {
+          if (response.statusCode === 401 || response.statusCode === 403) {
+            rej(
+              new Error(
+                "Authentication failed. Please check your credentials or subscription status.",
+              ),
+            );
+            return;
+          }
+          if (response.statusCode !== 200) {
+            rej(
+              new Error(
+                `Download failed (HTTP ${response.statusCode}). Please try again later.`,
+              ),
+            );
+            return;
+          }
+          response.pipe(file);
+          file.on("finish", () => {
+            file.close();
+            res();
+          });
+        },
+      );
       req.on("error", rej);
     });
 
@@ -775,7 +822,9 @@ async function runInstallWindows(
 
     localInstallScript = join(OMNIWORKER_REPO, "scripts", "install.ps1");
     if (!existsSync(localInstallScript)) {
-      throw new Error("Downloaded agent package is missing install.ps1. Please contact support.");
+      throw new Error(
+        "Downloaded agent package is missing install.ps1. Please contact support.",
+      );
     }
     emit("Agent downloaded and ready.\n");
   } else {
@@ -793,8 +842,8 @@ async function runInstallWindows(
     if (!localInstallScript) {
       throw new Error(
         "Agent source not found. The desktop app does not bundle the agent code.\n" +
-        "In production, the agent is downloaded after login.\n" +
-        "In development, ensure the omniworker-agent repo is cloned alongside the desktop.",
+          "In production, the agent is downloaded after login.\n" +
+          "In development, ensure the omniworker-agent repo is cloned alongside the desktop.",
       );
     }
   }
@@ -858,11 +907,7 @@ async function runInstallWindows(
         );
         resolve();
       } else {
-        reject(
-          new Error(
-            `Installation failed (exit code ${code}).`,
-          ),
-        );
+        reject(new Error(`Installation failed (exit code ${code}).`));
       }
     });
 

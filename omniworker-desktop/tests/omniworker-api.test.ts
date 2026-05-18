@@ -2,29 +2,32 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ── Shared state for capturing HTTP requests (hoisted before mocks) ──
 
-const { capturedRequests, makeMockRequest, stopHealthPolling } = vi.hoisted(() => {
-  const capturedRequests: Array<{
-    url: string;
-    options: Record<string, unknown>;
-    body: string;
-  }> = [];
+const { capturedRequests, makeMockRequest, stopHealthPolling } = vi.hoisted(
+  () => {
+    const capturedRequests: Array<{
+      url: string;
+      options: Record<string, unknown>;
+      body: string;
+    }> = [];
 
-  function makeMockRequest(
-    url: string,
-    options: Record<string, unknown>,
-  ) {
+    function makeMockRequest(url: string, options: Record<string, unknown>) {
+      return {
+        write: (body: string) => {
+          capturedRequests.push({ url, options, body });
+        },
+        end: () => {},
+        on: (_event: string, _cb: () => void) => {},
+        destroy: () => {},
+      };
+    }
+
     return {
-      write: (body: string) => {
-        capturedRequests.push({ url, options, body });
-      },
-      end: () => {},
-      on: (_event: string, _cb: () => void) => {},
-      destroy: () => {},
+      capturedRequests,
+      makeMockRequest,
+      stopHealthPolling: () => capturedRequests.splice(0),
     };
-  }
-
-  return { capturedRequests, makeMockRequest, stopHealthPolling: () => capturedRequests.splice(0) };
-});
+  },
+);
 
 // ── Mock Node.js http/https modules ──
 
@@ -101,7 +104,10 @@ vi.mock("../src/main/process-options", () => ({
 
 // ── Import module under test ──
 
-import { sendMessage, stopHealthPolling as realStopHealthPolling } from "../src/main/omniworker";
+import {
+  sendMessage,
+  stopHealthPolling as realStopHealthPolling,
+} from "../src/main/omniworker";
 
 describe("sendMessageViaApi forwards resumeSessionId", () => {
   beforeEach(() => {

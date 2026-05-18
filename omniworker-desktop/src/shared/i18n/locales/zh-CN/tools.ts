@@ -20,9 +20,13 @@ export default {
   cronjob: { label: "计划任务", description: "创建和管理定时任务" },
   moa: { label: "多代理协作", description: "协调多个 AI 模型协同工作" },
   todo: { label: "任务规划", description: "为复杂任务创建和管理待办列表" },
-  ecommerce: { label: "电子商务", description: "管理 Shopify、WooCommerce 和 PrestaShop 的产品与订单" },
+  ecommerce: {
+    label: "电子商务",
+    description: "管理 Shopify、WooCommerce 和 PrestaShop 的产品与订单",
+  },
   mcpServers: "MCP 服务器",
-  mcpDescription: "在 config.yaml 中配置的模型上下文协议服务器。在终端中使用 <code>omniworker mcp add/remove</code> 管理。",
+  mcpDescription:
+    "在 config.yaml 中配置的模型上下文协议服务器。在终端中使用 <code>omniworker mcp add/remove</code> 管理。",
   http: "HTTP",
   stdio: "标准IO",
   disabled: "已禁用",

@@ -65,7 +65,8 @@ export default {
   },
   ecommerce: {
     label: "E-commerce",
-    description: "Kelola produk dan pesanan Shopify, WooCommerce, dan PrestaShop",
+    description:
+      "Kelola produk dan pesanan Shopify, WooCommerce, dan PrestaShop",
   },
   mcpServers: "Server MCP",
   mcpDescription:

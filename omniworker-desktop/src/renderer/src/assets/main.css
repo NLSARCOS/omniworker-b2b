@@ -5117,7 +5117,9 @@ body {
   flex-direction: column;
   gap: 6px;
   cursor: grab;
-  transition: border-color var(--transition), opacity var(--transition);
+  transition:
+    border-color var(--transition),
+    opacity var(--transition);
 }
 
 .kanban-card:hover {
@@ -5386,8 +5388,12 @@ body {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .account-card {
@@ -5605,4 +5611,3 @@ body {
     grid-template-columns: 1fr;
   }
 }
-

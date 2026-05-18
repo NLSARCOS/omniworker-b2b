@@ -45,7 +45,9 @@ export function normalizeProfileName(profile?: unknown): string | undefined {
  */
 export function profileHome(profile?: unknown): string {
   const normalized = normalizeProfileName(profile);
-  return normalized ? join(OMNIWORKER_HOME, "profiles", normalized) : OMNIWORKER_HOME;
+  return normalized
+    ? join(OMNIWORKER_HOME, "profiles", normalized)
+    : OMNIWORKER_HOME;
 }
 
 /**

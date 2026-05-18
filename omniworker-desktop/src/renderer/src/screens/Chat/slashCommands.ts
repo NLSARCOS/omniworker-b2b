@@ -77,7 +77,8 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     name: "/goal",
-    description: "Lock the agent onto a persistent cross-turn goal (Ralph loop)",
+    description:
+      "Lock the agent onto a persistent cross-turn goal (Ralph loop)",
     category: "agent",
   },
   {
@@ -132,5 +133,9 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   { name: "/memory", description: "Show agent memory", category: "info" },
   { name: "/persona", description: "Show current persona", category: "info" },
-  { name: "/version", description: "Show OmniWorker version", category: "info" },
+  {
+    name: "/version",
+    description: "Show OmniWorker version",
+    category: "info",
+  },
 ];

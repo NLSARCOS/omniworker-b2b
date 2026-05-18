@@ -64,7 +64,8 @@ export default {
     description: "Shopify、WooCommerce、PrestaShop の商品と注文を管理",
   },
   mcpServers: "MCP サーバ",
-  mcpDescription: "config.yaml で構成された Model Context Protocol サーバ。ターミナルで <code>omniworker mcp add/remove</code> から管理します。",
+  mcpDescription:
+    "config.yaml で構成された Model Context Protocol サーバ。ターミナルで <code>omniworker mcp add/remove</code> から管理します。",
   http: "HTTP",
   stdio: "stdio",
   disabled: "無効",

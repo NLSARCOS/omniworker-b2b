@@ -117,7 +117,6 @@ sudo dnf install ./omniworker-desktop-<version>.rpm
 - **i18n ready** — internationalization framework with English locale covering all screens, ready for community translations
 - **Test suite** — SSE parser, IPC handlers, preload API surface, installer utilities, and constants validation with Vitest
 
-
 ## How It Works
 
 On first launch, the app:
@@ -137,7 +136,7 @@ In local mode, chat requests go through `http://127.0.0.1:8642` with SSE streami
 | ------------- | ------------------------------------------------------------------------------------- |
 | **Chat**      | Streaming conversation UI with slash commands, tool progress, and token tracking      |
 | **Sessions**  | Browse, search, and resume past conversations                                         |
-| **Agents**    | Create, delete, and switch between OmniWorker profiles                                    |
+| **Agents**    | Create, delete, and switch between OmniWorker profiles                                |
 | **Skills**    | Browse, install, and manage bundled and installed skills                              |
 | **Models**    | Manage saved model configurations per provider                                        |
 | **Memory**    | View/edit memory entries, user profile, and configure memory providers                |

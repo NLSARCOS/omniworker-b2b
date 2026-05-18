@@ -4,7 +4,10 @@ import { join } from "path";
 
 const ROOT = join(__dirname, "..");
 const preloadSrc = readFileSync(join(ROOT, "src/preload/index.ts"), "utf-8");
-const preloadTypes = readFileSync(join(ROOT, "src/preload/index.d.ts"), "utf-8");
+const preloadTypes = readFileSync(
+  join(ROOT, "src/preload/index.d.ts"),
+  "utf-8",
+);
 
 /**
  * Extract method names from the omniworkerAPI object in preload/index.ts.
@@ -192,8 +195,9 @@ describe("Legacy APIs preserved (backward compat)", () => {
 
 describe("IPC channel consistency", () => {
   it("preload invoke calls use quoted string channel names", () => {
-    const invokeChannels = [...preloadSrc.matchAll(/ipcRenderer\.invoke\(\s*["']([^"']+)["']/g)]
-      .map((m) => m[1]);
+    const invokeChannels = [
+      ...preloadSrc.matchAll(/ipcRenderer\.invoke\(\s*["']([^"']+)["']/g),
+    ].map((m) => m[1]);
     expect(invokeChannels.length).toBeGreaterThan(30);
     // Every channel should be kebab-case
     for (const ch of invokeChannels) {
@@ -202,8 +206,9 @@ describe("IPC channel consistency", () => {
   });
 
   it("preload on/removeListener calls use quoted string channel names", () => {
-    const onChannels = [...preloadSrc.matchAll(/ipcRenderer\.on\(\s*["']([^"']+)["']/g)]
-      .map((m) => m[1]);
+    const onChannels = [
+      ...preloadSrc.matchAll(/ipcRenderer\.on\(\s*["']([^"']+)["']/g),
+    ].map((m) => m[1]);
     expect(onChannels.length).toBeGreaterThan(0);
     for (const ch of onChannels) {
       expect(ch).toMatch(/^[a-z][a-z0-9-]*$/);

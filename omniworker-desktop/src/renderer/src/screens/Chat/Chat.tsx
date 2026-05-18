@@ -32,7 +32,9 @@ function Chat({
   onNewChat,
 }: ChatProps): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
-  const [omniworkerSessionId, setOmniWorkerSessionId] = useState<string | null>(null);
+  const [omniworkerSessionId, setOmniWorkerSessionId] = useState<string | null>(
+    null,
+  );
   const [toolProgress, setToolProgress] = useState<string | null>(null);
   const [usage, setUsage] = useState<UsageState | null>(null);
   const chatInputRef = useRef<ChatInputHandle>(null);

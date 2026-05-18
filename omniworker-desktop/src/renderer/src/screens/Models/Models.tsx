@@ -201,7 +201,11 @@ function Models(): React.JSX.Element {
             >
               <div className="models-card-header">
                 <div className="models-card-title">
-                  <BrandLogo provider={m.provider} modelId={m.model} size={20} />
+                  <BrandLogo
+                    provider={m.provider}
+                    modelId={m.model}
+                    size={20}
+                  />
                   <div className="models-card-name">{m.name}</div>
                 </div>
                 <span className="models-card-provider">

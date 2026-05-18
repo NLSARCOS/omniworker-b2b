@@ -102,7 +102,8 @@ export function useLocalCommands({
         }
 
         case "/skills": {
-          const skills = await window.omniworkerAPI.listInstalledSkills(profile);
+          const skills =
+            await window.omniworkerAPI.listInstalledSkills(profile);
           if (!skills.length) {
             addAgentMessage("No skills installed.");
           } else {

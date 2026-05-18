@@ -114,7 +114,9 @@ interface OmniWorkerAPI {
   // Installation
   checkInstall: () => Promise<InstallStatus>;
   verifyInstall: () => Promise<boolean>;
-  startInstall: (authToken?: string) => Promise<{ success: boolean; error?: string }>;
+  startInstall: (
+    authToken?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   onInstallProgress: (
     callback: (progress: InstallProgress) => void,
   ) => () => void;
@@ -220,6 +222,7 @@ interface OmniWorkerAPI {
   // Smart Router (local SLM ↔ cloud routing)
   startSmartRouter: () => Promise<boolean>;
   stopSmartRouter: () => Promise<boolean>;
+  smartRouterStatus: () => Promise<boolean>;
   getSmartRouterUrl: (cloudFallback: string) => Promise<string>;
 
   // Platform toggles
@@ -620,15 +623,28 @@ interface OmniWorkerAPI {
   createBackup: (
     profile?: string,
     options?: { includeSessions?: boolean; includeKanban?: boolean },
-  ) => Promise<{ success: boolean; path?: string; size?: number; error?: string }>;
+  ) => Promise<{
+    success: boolean;
+    path?: string;
+    size?: number;
+    error?: string;
+  }>;
   readBackupManifest: () => Promise<{ manifest: any | null; error?: string }>;
   restoreBackup: (
     archivePath: string,
     profile?: string,
-    options?: { includeSessions?: boolean; includeKanban?: boolean; overwrite?: boolean },
+    options?: {
+      includeSessions?: boolean;
+      includeKanban?: boolean;
+      overwrite?: boolean;
+    },
   ) => Promise<{ success: boolean; error?: string; restoredItems: string[] }>;
   onBackupProgress: (
-    callback: (progress: { phase: string; currentFile: string; percent: number }) => void,
+    callback: (progress: {
+      phase: string;
+      currentFile: string;
+      percent: number;
+    }) => void,
   ) => () => void;
   onAppStateChanged: (callback: () => void) => () => void;
 

@@ -50,7 +50,10 @@ function normalizeUser(raw: any): UserData {
   };
 }
 
-export default function Account({ userData: loginData, authToken }: AccountProps) {
+export default function Account({
+  userData: loginData,
+  authToken,
+}: AccountProps) {
   const { t } = useI18n();
   const [user, setUser] = useState<UserData | null>(null);
   const [agents, setAgents] = useState<EdgeAgent[]>([]);
@@ -154,15 +157,38 @@ export default function Account({ userData: loginData, authToken }: AccountProps
     );
   }
 
-  const tokenPercent = displayUser.tokenBalance > 0
-    ? Math.min(100, (displayUser.tokenBalance / 100000) * 100)
-    : 0;
+  const tokenPercent =
+    displayUser.tokenBalance > 0
+      ? Math.min(100, (displayUser.tokenBalance / 100000) * 100)
+      : 0;
   const tokenBarColor =
     displayUser.tokenBalance > 50000
       ? "var(--success)"
       : displayUser.tokenBalance > 10000
         ? "var(--warning)"
         : "var(--error)";
+
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationOutput, setValidationOutput] = useState<string | null>(null);
+
+  const runValidation = async () => {
+    setIsValidating(true);
+    setValidationOutput(
+      "Validating system...\n1. SaaS Connection: OK\n2. Agent Configuration: Checking...\n3. Local Model: Checking...\n...",
+    );
+    try {
+      const isGateway = await window.omniworkerAPI.gatewayStatus();
+      const isRouter = await window.omniworkerAPI.smartRouterStatus();
+      const doctorOutput = await window.omniworkerAPI.runOmniWorkerDoctor();
+      setValidationOutput(
+        `--- Service Status ---\nGateway Running: ${isGateway ? "Yes" : "No"}\nSmart Router Running: ${isRouter ? "Yes" : "No"}\n\n--- OmniWorker Doctor ---\n${doctorOutput}`,
+      );
+    } catch (err: any) {
+      setValidationOutput("Error during validation: " + err.message);
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   return (
     <div className="account-screen">
@@ -185,22 +211,32 @@ export default function Account({ userData: loginData, authToken }: AccountProps
         </div>
         <div className="account-user-info">
           <div className="account-user-row">
-            <span className="account-label">{t("account.email") || "Email"}</span>
+            <span className="account-label">
+              {t("account.email") || "Email"}
+            </span>
             <span className="account-value">{displayUser.email}</span>
           </div>
           {displayUser.name && (
             <div className="account-user-row">
-              <span className="account-label">{t("account.name") || "Name"}</span>
+              <span className="account-label">
+                {t("account.name") || "Name"}
+              </span>
               <span className="account-value">{displayUser.name}</span>
             </div>
           )}
           <div className="account-user-row">
-            <span className="account-label">{t("account.organization") || "Organization"}</span>
-            <span className="account-value">{displayUser.tenantName || "—"}</span>
+            <span className="account-label">
+              {t("account.organization") || "Organization"}
+            </span>
+            <span className="account-value">
+              {displayUser.tenantName || "—"}
+            </span>
           </div>
           <div className="account-user-row">
             <span className="account-label">{t("account.role") || "Role"}</span>
-            <span className="account-value account-badge">{displayUser.role}</span>
+            <span className="account-value account-badge">
+              {displayUser.role}
+            </span>
           </div>
         </div>
       </div>
@@ -209,10 +245,16 @@ export default function Account({ userData: loginData, authToken }: AccountProps
       <div className="account-stats">
         <div className="account-stat-card">
           <div className="account-stat-top">
-            <span className="account-stat-label">{t("account.tokens") || "Tokens"}</span>
+            <span className="account-stat-label">
+              {t("account.tokens") || "Tokens"}
+            </span>
             <span
               className="account-stat-value"
-              style={{ color: displayUser.isLocked ? "var(--error)" : "var(--text-primary)" }}
+              style={{
+                color: displayUser.isLocked
+                  ? "var(--error)"
+                  : "var(--text-primary)",
+              }}
             >
               {displayUser.tokenBalance.toLocaleString()}
             </span>
@@ -220,7 +262,10 @@ export default function Account({ userData: loginData, authToken }: AccountProps
           <div className="account-stat-bar-track">
             <div
               className="account-stat-bar-fill"
-              style={{ width: `${tokenPercent}%`, backgroundColor: tokenBarColor }}
+              style={{
+                width: `${tokenPercent}%`,
+                backgroundColor: tokenBarColor,
+              }}
             />
           </div>
           {displayUser.isLocked && (
@@ -231,12 +276,18 @@ export default function Account({ userData: loginData, authToken }: AccountProps
         </div>
 
         <div className="account-stat-card">
-          <span className="account-stat-label">{t("account.plan") || "Plan"}</span>
-          <span className="account-stat-value">{displayUser.plan || "Free"}</span>
+          <span className="account-stat-label">
+            {t("account.plan") || "Plan"}
+          </span>
+          <span className="account-stat-value">
+            {displayUser.plan || "Free"}
+          </span>
         </div>
 
         <div className="account-stat-card">
-          <span className="account-stat-label">{t("account.agents") || "Active Agents"}</span>
+          <span className="account-stat-label">
+            {t("account.agents") || "Active Agents"}
+          </span>
           <span className="account-stat-value">{agents.length}</span>
         </div>
       </div>
@@ -250,7 +301,9 @@ export default function Account({ userData: loginData, authToken }: AccountProps
           </h2>
         </div>
         {agents.length === 0 ? (
-          <p className="account-empty">{t("account.noAgents") || "No connected agents"}</p>
+          <p className="account-empty">
+            {t("account.noAgents") || "No connected agents"}
+          </p>
         ) : (
           <div className="account-agents-list">
             {agents.map((agent) => (
@@ -279,7 +332,9 @@ export default function Account({ userData: loginData, authToken }: AccountProps
           </h2>
         </div>
         {apiKeys.length === 0 ? (
-          <p className="account-empty">{t("account.noKeys") || "No API keys"}</p>
+          <p className="account-empty">
+            {t("account.noKeys") || "No API keys"}
+          </p>
         ) : (
           <div className="account-keys-list">
             {apiKeys.map((key) => (
@@ -288,7 +343,8 @@ export default function Account({ userData: loginData, authToken }: AccountProps
                   <span className="account-key-name">{key.name}</span>
                   <span className="account-key-detail">
                     {key.keyPrefix}... &middot;{" "}
-                    {t("account.created") || "Created"}: {new Date(key.createdAt).toLocaleDateString()}
+                    {t("account.created") || "Created"}:{" "}
+                    {new Date(key.createdAt).toLocaleDateString()}
                   </span>
                 </div>
                 <span className="account-key-last">
@@ -318,18 +374,64 @@ export default function Account({ userData: loginData, authToken }: AccountProps
         </div>
         <div className="account-keys-list" style={{ padding: "16px" }}>
           <p style={{ color: "var(--text-muted)", marginBottom: "16px" }}>
-            Check if the local agent, smart router, and models are installed and running correctly.
+            Check if the local agent, smart router, and models are installed and
+            running correctly.
           </p>
-          <button 
-            className="btn btn-primary"
-            onClick={async () => {
-              alert("Validating system...\n1. SaaS Connection: OK\n2. Agent Configuration: Checking...\n3. Local Model: Checking...");
-              const doctorOutput = await window.omniworkerAPI.runOmniWorkerDoctor();
-              alert("Validation Results:\n\n" + doctorOutput.split("\n").slice(0, 10).join("\n") + "\n...");
-            }}
-          >
-            Run Validation Check
-          </button>
+          <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+            <button
+              className="btn btn-primary"
+              onClick={runValidation}
+              disabled={isValidating}
+            >
+              {isValidating ? "Running Check..." : "Run Validation Check"}
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={async () => {
+                setValidationOutput(
+                  "Starting installation of missing components...",
+                );
+                try {
+                  const res = await window.omniworkerAPI.startInstall(
+                    authToken || undefined,
+                  );
+                  if (res.success) {
+                    setValidationOutput(
+                      "Installation complete! Run validation again to verify.",
+                    );
+                  } else {
+                    setValidationOutput("Installation failed: " + res.error);
+                  }
+                } catch (err: any) {
+                  setValidationOutput(
+                    "Error starting installation: " + err.message,
+                  );
+                }
+              }}
+              disabled={isValidating}
+            >
+              Install / Fix Missing Components
+            </button>
+          </div>
+
+          {validationOutput && (
+            <div
+              style={{
+                background: "var(--bg-elevated)",
+                padding: "12px",
+                borderRadius: "6px",
+                fontFamily: "monospace",
+                fontSize: "12px",
+                whiteSpace: "pre-wrap",
+                overflowX: "auto",
+                maxHeight: "300px",
+                border: "1px solid var(--border-color)",
+                color: "var(--text-primary)",
+              }}
+            >
+              {validationOutput}
+            </div>
+          )}
         </div>
       </div>
     </div>

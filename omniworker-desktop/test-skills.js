@@ -1,2 +1,2 @@
-const { listBundledSkills } = require('./out/main/skills.js');
+const { listBundledSkills } = require("./out/main/skills.js");
 console.log(listBundledSkills());

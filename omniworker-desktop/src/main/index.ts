@@ -51,6 +51,7 @@ import {
   startSmartRouter,
   stopSmartRouter,
   getSmartRouterUrl,
+  isSmartRouterRunning,
 } from "./omniworker";
 import {
   startSshTunnel,
@@ -327,9 +328,13 @@ function setupIPC(): void {
 
   ipcMain.handle("start-install", async (event, authToken?: string) => {
     try {
-      await runInstall((progress: InstallProgress) => {
-        event.sender.send("install-progress", progress);
-      }, mainWindow, authToken);
+      await runInstall(
+        (progress: InstallProgress) => {
+          event.sender.send("install-progress", progress);
+        },
+        mainWindow,
+        authToken,
+      );
       return { success: true };
     } catch (err) {
       return { success: false, error: (err as Error).message };
@@ -339,12 +344,14 @@ function setupIPC(): void {
   // OmniWorker engine info
   ipcMain.handle("get-omniworker-version", async () => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetOmniWorkerVersion(conn.ssh);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetOmniWorkerVersion(conn.ssh);
     return getOmniWorkerVersion();
   });
   ipcMain.handle("refresh-omniworker-version", async () => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetOmniWorkerVersion(conn.ssh);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetOmniWorkerVersion(conn.ssh);
     clearVersionCache();
     return getOmniWorkerVersion();
   });
@@ -428,7 +435,8 @@ function setupIPC(): void {
 
   ipcMain.handle("get-config", (_event, key: string, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetConfigValue(conn.ssh, key, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetConfigValue(conn.ssh, key, profile);
     return getConfigValue(key, profile);
   });
 
@@ -447,13 +455,15 @@ function setupIPC(): void {
 
   ipcMain.handle("get-omniworker-home", (_event, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetOmniWorkerHome(conn.ssh, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetOmniWorkerHome(conn.ssh, profile);
     return getOmniWorkerHome(profile);
   });
 
   ipcMain.handle("get-model-config", (_event, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetModelConfig(conn.ssh, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetModelConfig(conn.ssh, profile);
     return getModelConfig(profile);
   });
 
@@ -471,7 +481,7 @@ function setupIPC(): void {
         const prev = await sshGetModelConfig(conn.ssh, profile);
         await sshSetModelConfig(conn.ssh, provider, model, baseUrl, profile);
         if (
-          await sshGatewayStatus(conn.ssh) &&
+          (await sshGatewayStatus(conn.ssh)) &&
           (prev.provider !== provider ||
             prev.model !== model ||
             prev.baseUrl !== baseUrl)
@@ -506,7 +516,12 @@ function setupIPC(): void {
 
   ipcMain.handle(
     "set-connection-config",
-    (_event, mode: "local" | "remote" | "ssh", remoteUrl: string, apiKey?: string) => {
+    (
+      _event,
+      mode: "local" | "remote" | "ssh",
+      remoteUrl: string,
+      apiKey?: string,
+    ) => {
       setConnectionConfig({
         mode,
         remoteUrl,
@@ -545,14 +560,28 @@ function setupIPC(): void {
 
   ipcMain.handle(
     "test-ssh-connection",
-    (_event, host: string, port: number, username: string, keyPath: string, remotePort: number) =>
-      testSshConnection({ host, port, username, keyPath, remotePort, localPort: 19642 }),
+    (
+      _event,
+      host: string,
+      port: number,
+      username: string,
+      keyPath: string,
+      remotePort: number,
+    ) =>
+      testSshConnection({
+        host,
+        port,
+        username,
+        keyPath,
+        remotePort,
+        localPort: 19642,
+      }),
   );
 
   ipcMain.handle("start-ssh-tunnel", async () => {
     const conn = getConnectionConfig();
     if (conn.mode !== "ssh") return false;
-    if (conn.ssh && !await sshGatewayStatus(conn.ssh)) {
+    if (conn.ssh && !(await sshGatewayStatus(conn.ssh))) {
       await sshStartGateway(conn.ssh);
     }
     await startSshTunnel(conn.ssh);
@@ -677,14 +706,20 @@ function setupIPC(): void {
   // Gateway
   ipcMain.handle("start-gateway", async () => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) { await sshStartGateway(conn.ssh); return true; }
-    startLocalLlmServer(); // Auto-start local LLM if installed
-    await startSmartRouter();    // Auto-start smart router (routes local SLM ↔ cloud)
+    if (conn.mode === "ssh" && conn.ssh) {
+      await sshStartGateway(conn.ssh);
+      return true;
+    }
+    await startLocalLlmServer(); // Auto-start local LLM if installed
+    await startSmartRouter(); // Auto-start smart router (routes local SLM ↔ cloud)
     return startGateway();
   });
   ipcMain.handle("stop-gateway", async () => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) { await sshStopGateway(conn.ssh); return true; }
+    if (conn.mode === "ssh" && conn.ssh) {
+      await sshStopGateway(conn.ssh);
+      return true;
+    }
     stopGateway(true);
     return true;
   });
@@ -695,14 +730,27 @@ function setupIPC(): void {
   });
 
   // Smart Router (local SLM ↔ cloud routing)
-  ipcMain.handle("start-smart-router", async () => await startSmartRouter());
-  ipcMain.handle("stop-smart-router", () => { stopSmartRouter(); return true; });
-  ipcMain.handle("smart-router-url", (_event, cloudFallback: string) => getSmartRouterUrl(cloudFallback));
+  ipcMain.handle("start-smart-router", async () => {
+    await startLocalLlmServer();
+    return await startSmartRouter();
+  });
+  ipcMain.handle("stop-smart-router", () => {
+    stopSmartRouter();
+    return true;
+  });
+  ipcMain.handle(
+    "smart-router-status",
+    async () => await isSmartRouterRunning(),
+  );
+  ipcMain.handle("smart-router-url", (_event, cloudFallback: string) =>
+    getSmartRouterUrl(cloudFallback),
+  );
 
   // Platform toggles (config.yaml platforms section)
   ipcMain.handle("get-platform-enabled", (_event, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetPlatformEnabled(conn.ssh, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetPlatformEnabled(conn.ssh, profile);
     return getPlatformEnabled(profile);
   });
   ipcMain.handle(
@@ -725,13 +773,15 @@ function setupIPC(): void {
   // Sessions
   ipcMain.handle("list-sessions", (_event, limit?: number, offset?: number) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListSessions(conn.ssh, limit, offset);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshListSessions(conn.ssh, limit, offset);
     return listSessions(limit, offset);
   });
 
   ipcMain.handle("get-session-messages", (_event, sessionId: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetSessionMessages(conn.ssh, sessionId);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetSessionMessages(conn.ssh, sessionId);
     return getSessionMessages(sessionId);
   });
 
@@ -743,12 +793,14 @@ function setupIPC(): void {
   });
   ipcMain.handle("create-profile", (_event, name: string, clone: boolean) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshCreateProfile(conn.ssh, name, clone);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshCreateProfile(conn.ssh, name, clone);
     return createProfile(name, clone);
   });
   ipcMain.handle("delete-profile", (_event, name: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshDeleteProfile(conn.ssh, name);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshDeleteProfile(conn.ssh, name);
     return deleteProfile(name);
   });
   ipcMain.handle("set-active-profile", (_event, name: string) => {
@@ -759,14 +811,16 @@ function setupIPC(): void {
   // Memory
   ipcMain.handle("read-memory", (_event, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshReadMemory(conn.ssh, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshReadMemory(conn.ssh, profile);
     return readMemory(profile);
   });
   ipcMain.handle(
     "add-memory-entry",
     (_event, content: string, profile?: string) => {
       const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshAddMemoryEntry(conn.ssh, content, profile);
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshAddMemoryEntry(conn.ssh, content, profile);
       return addMemoryEntry(content, profile);
     },
   );
@@ -774,7 +828,8 @@ function setupIPC(): void {
     "update-memory-entry",
     (_event, index: number, content: string, profile?: string) => {
       const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshUpdateMemoryEntry(conn.ssh, index, content, profile);
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshUpdateMemoryEntry(conn.ssh, index, content, profile);
       return updateMemoryEntry(index, content, profile);
     },
   );
@@ -782,7 +837,8 @@ function setupIPC(): void {
     "remove-memory-entry",
     (_event, index: number, profile?: string) => {
       const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshRemoveMemoryEntry(conn.ssh, index, profile);
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshRemoveMemoryEntry(conn.ssh, index, profile);
       return removeMemoryEntry(index, profile);
     },
   );
@@ -790,7 +846,8 @@ function setupIPC(): void {
     "write-user-profile",
     (_event, content: string, profile?: string) => {
       const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshWriteUserProfile(conn.ssh, content, profile);
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshWriteUserProfile(conn.ssh, content, profile);
       return writeUserProfile(content, profile);
     },
   );
@@ -803,7 +860,8 @@ function setupIPC(): void {
   });
   ipcMain.handle("write-soul", (_event, content: string, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshWriteSoul(conn.ssh, content, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshWriteSoul(conn.ssh, content, profile);
     return writeSoul(content, profile);
   });
   ipcMain.handle("reset-soul", (_event, profile?: string) => {
@@ -815,14 +873,16 @@ function setupIPC(): void {
   // Tools
   ipcMain.handle("get-toolsets", (_event, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetToolsets(conn.ssh, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetToolsets(conn.ssh, profile);
     return getToolsets(profile);
   });
   ipcMain.handle(
     "set-toolset-enabled",
     (_event, key: string, enabled: boolean, profile?: string) => {
       const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshSetToolsetEnabled(conn.ssh, key, enabled, profile);
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshSetToolsetEnabled(conn.ssh, key, enabled, profile);
       return setToolsetEnabled(key, enabled, profile);
     },
   );
@@ -830,7 +890,8 @@ function setupIPC(): void {
   // Skills
   ipcMain.handle("list-installed-skills", (_event, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListInstalledSkills(conn.ssh, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshListInstalledSkills(conn.ssh, profile);
     return listInstalledSkills(profile);
   });
   ipcMain.handle("list-bundled-skills", () => {
@@ -840,35 +901,43 @@ function setupIPC(): void {
   });
   ipcMain.handle("get-skill-content", (_event, skillPath: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetSkillContent(conn.ssh, skillPath);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshGetSkillContent(conn.ssh, skillPath);
     return getSkillContent(skillPath);
   });
   ipcMain.handle(
     "install-skill",
     (_event, identifier: string, _profile?: string) => {
       const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshInstallSkill(conn.ssh, identifier);
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshInstallSkill(conn.ssh, identifier);
       return installSkill(identifier, _profile);
     },
   );
-  ipcMain.handle("uninstall-skill", (_event, name: string, _profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshUninstallSkill(conn.ssh, name);
-    return uninstallSkill(name, _profile);
-  });
+  ipcMain.handle(
+    "uninstall-skill",
+    (_event, name: string, _profile?: string) => {
+      const conn = getConnectionConfig();
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshUninstallSkill(conn.ssh, name);
+      return uninstallSkill(name, _profile);
+    },
+  );
 
   // Session cache (fast local cache with generated titles)
   ipcMain.handle(
     "list-cached-sessions",
     (_event, limit?: number, offset?: number) => {
       const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshListCachedSessions(conn.ssh, limit, offset);
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshListCachedSessions(conn.ssh, limit, offset);
       return listCachedSessions(limit, offset);
     },
   );
   ipcMain.handle("sync-session-cache", () => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListCachedSessions(conn.ssh, 50);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshListCachedSessions(conn.ssh, 50);
     return syncSessionCache();
   });
   ipcMain.handle(
@@ -880,7 +949,8 @@ function setupIPC(): void {
   // Session search
   ipcMain.handle("search-sessions", (_event, query: string, limit?: number) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshSearchSessions(conn.ssh, query, limit);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshSearchSessions(conn.ssh, query, limit);
     return searchSessions(query, limit);
   });
 
@@ -1113,26 +1183,31 @@ function setupIPC(): void {
 
   // Enhanced Backup / Import (Electron-native, full data)
 
-  ipcMain.handle("scan-backup-data", (_event, profile?: string, options?: any) =>
-    scanBackupData(profile, options),
+  ipcMain.handle(
+    "scan-backup-data",
+    (_event, profile?: string, options?: any) =>
+      scanBackupData(profile, options),
   );
 
-  ipcMain.handle("create-backup", async (event, profile?: string, options?: any) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    const { dialog } = require("electron");
-    const result = await dialog.showSaveDialog(win, {
-      title: "Save OmniWorker Backup",
-      defaultPath: `omniworker-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`,
-      filters: [
-        { name: "OmniWorker Backup", extensions: ["tar.gz"] },
-        { name: "All Files", extensions: ["*"] },
-      ],
-    });
-    if (result.canceled) return { success: false, error: "Cancelled" };
-    return createBackup(result.filePath, profile, options, (p: any) => {
-      event.sender.send("backup-progress", p);
-    });
-  });
+  ipcMain.handle(
+    "create-backup",
+    async (event, profile?: string, options?: any) => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      const { dialog } = require("electron");
+      const result = await dialog.showSaveDialog(win, {
+        title: "Save OmniWorker Backup",
+        defaultPath: `omniworker-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`,
+        filters: [
+          { name: "OmniWorker Backup", extensions: ["tar.gz"] },
+          { name: "All Files", extensions: ["*"] },
+        ],
+      });
+      if (result.canceled) return { success: false, error: "Cancelled" };
+      return createBackup(result.filePath, profile, options, (p: any) => {
+        event.sender.send("backup-progress", p);
+      });
+    },
+  );
 
   ipcMain.handle("read-backup-manifest", async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -1152,9 +1227,14 @@ function setupIPC(): void {
   ipcMain.handle(
     "restore-backup",
     async (event, archivePath: string, profile?: string, options?: any) => {
-      const res = await restoreBackup(archivePath, profile, options, (p: any) => {
-        event.sender.send("backup-progress", p);
-      });
+      const res = await restoreBackup(
+        archivePath,
+        profile,
+        options,
+        (p: any) => {
+          event.sender.send("backup-progress", p);
+        },
+      );
       if (res.success) {
         // Notify renderer to refresh all state
         event.sender.send("app-state-changed");
@@ -1178,14 +1258,16 @@ function setupIPC(): void {
   // Memory providers
   ipcMain.handle("discover-memory-providers", (_event, profile?: string) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshDiscoverMemoryProviders(conn.ssh, profile);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshDiscoverMemoryProviders(conn.ssh, profile);
     return discoverMemoryProviders(profile);
   });
 
   // Log viewer
   ipcMain.handle("read-logs", (_event, logFile?: string, lines?: number) => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshReadLogs(conn.ssh, logFile, lines);
+    if (conn.mode === "ssh" && conn.ssh)
+      return sshReadLogs(conn.ssh, logFile, lines);
     return readLogs(logFile, lines);
   });
 }
@@ -1283,7 +1365,9 @@ function buildMenu(): void {
         {
           label: "Report an Issue",
           click: (): void => {
-            openExternalUrl("https://github.com/fathah/omniworker-desktop/issues");
+            openExternalUrl(
+              "https://github.com/fathah/omniworker-desktop/issues",
+            );
           },
         },
       ],
@@ -1388,7 +1472,7 @@ app.whenReady().then(() => {
   const conn = getConnectionConfig();
   if (conn.mode === "ssh" && conn.ssh.host) {
     (async () => {
-      if (!await sshGatewayStatus(conn.ssh)) {
+      if (!(await sshGatewayStatus(conn.ssh))) {
         await sshStartGateway(conn.ssh);
       }
       await startSshTunnel(conn.ssh);

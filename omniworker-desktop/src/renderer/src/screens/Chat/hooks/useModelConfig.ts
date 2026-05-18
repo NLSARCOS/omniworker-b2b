@@ -66,7 +66,12 @@ export function useModelConfig(profile?: string): UseModelConfigResult {
 
   const selectModel = useCallback(
     async (provider: string, model: string, baseUrl: string): Promise<void> => {
-      await window.omniworkerAPI.setModelConfig(provider, model, baseUrl, profile);
+      await window.omniworkerAPI.setModelConfig(
+        provider,
+        model,
+        baseUrl,
+        profile,
+      );
       setCurrentModel(model);
       setCurrentProvider(provider);
       setCurrentBaseUrl(baseUrl);

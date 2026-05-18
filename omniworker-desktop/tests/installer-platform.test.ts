@@ -21,7 +21,9 @@ describe("installer platform wiring", () => {
     if (process.platform === "win32") {
       expect(args).toEqual(["-m", "omniworker_cli.main", "--version"]);
       expect(OMNIWORKER_PYTHON).toMatch(/venv[\\/]Scripts[\\/]python\.exe$/);
-      expect(OMNIWORKER_SCRIPT).toMatch(/venv[\\/]Scripts[\\/]omniworker\.exe$/);
+      expect(OMNIWORKER_SCRIPT).toMatch(
+        /venv[\\/]Scripts[\\/]omniworker\.exe$/,
+      );
       return;
     }
 

@@ -337,8 +337,12 @@ function isAdapterRunning(): boolean {
 export async function getClaw3dStatus(): Promise<Claw3dStatus> {
   const bundled = getBundledOfficeDir();
   const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
-  const hasPackageJson = existsSync(join(OMNIWORKER_OFFICE_DIR, "package.json"));
-  const hasNodeModules = existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+  const hasPackageJson = existsSync(
+    join(OMNIWORKER_OFFICE_DIR, "package.json"),
+  );
+  const hasNodeModules = existsSync(
+    join(OMNIWORKER_OFFICE_DIR, "node_modules"),
+  );
   const installed = hasStandalone || hasNodeModules;
   const port = getSavedPort();
   const devRunning = isDevServerRunning();
@@ -443,35 +447,6 @@ function findNpm(envPath = getEnhancedPath()): ResolvedCommand {
 export async function setupClaw3d(
   onProgress: (progress: Claw3dSetupProgress) => void,
 ): Promise<void> {
-  const bundledDir = getBundledOfficeDir();
-  if (bundledDir) {
-    // Fast path: copy bundled standalone build shipped with the app
-    onProgress({
-      step: 1,
-      totalSteps: 1,
-      title: "Installing Claw3D...",
-      detail: "Copying from app bundle",
-      log: "Claw3D found in app bundle. Copying to workspace...\n",
-    });
-
-    const { cpSync, rmSync } = require("fs");
-    if (existsSync(OMNIWORKER_OFFICE_DIR)) {
-      rmSync(OMNIWORKER_OFFICE_DIR, { recursive: true, force: true });
-    }
-    cpSync(bundledDir, OMNIWORKER_OFFICE_DIR, { recursive: true });
-
-    writeClaw3dSettings();
-    onProgress({
-      step: 1,
-      totalSteps: 1,
-      title: "Claw3D ready",
-      detail: "Installed successfully",
-      log: "Claw3D installed from app bundle.\n",
-    });
-    return;
-  }
-
-  // Fallback: clone from GitHub (for development without bundle)
   const totalSteps = 2;
   let log = "";
 
@@ -492,105 +467,132 @@ export async function setupClaw3d(
     HOME: homedir(),
     TERM: "dumb",
   };
-  const git = resolveCommand("git", env.PATH);
 
-  // Step 1: Clone
-  const cloned = existsSync(join(OMNIWORKER_OFFICE_DIR, "package.json"));
+  const bundledDir = getBundledOfficeDir();
+  if (bundledDir) {
+    // Fast path: copy bundled standalone build shipped with the app
+    emit(
+      1,
+      "Installing Claw3D...",
+      "Claw3D found in app bundle. Copying to workspace...\n",
+    );
 
-  if (!cloned) {
-    emit(1, "Cloning Claw3D repository...", "Cloning from GitHub...\n");
-    await new Promise<void>((resolve, reject) => {
-      const gitClone = createCommandInvocation(git, [
-        "clone",
-        "https://github.com/iamlukethedev/Claw3D",
-        OMNIWORKER_OFFICE_DIR,
-      ]);
-      const proc = spawn(gitClone.command, gitClone.args, {
-        cwd: homedir(),
-        env,
-        stdio: ["ignore", "pipe", "pipe"],
-        windowsHide: true,
-        windowsVerbatimArguments: gitClone.windowsVerbatimArguments,
-      });
-
-      proc.stdout?.on("data", (data: Buffer) => {
-        emit(1, "Cloning Claw3D repository...", stripAnsi(data.toString()));
-      });
-      proc.stderr?.on("data", (data: Buffer) => {
-        emit(1, "Cloning Claw3D repository...", stripAnsi(data.toString()));
-      });
-
-      proc.on("close", (code) => {
-        if (code === 0) {
-          emit(1, "Cloning Claw3D repository...", "Clone complete.\n");
-          resolve();
-        } else {
-          reject(new Error(`git clone failed (exit code ${code})`));
-        }
-      });
-      proc.on("error", (err) =>
-        reject(new Error(`Failed to run git: ${err.message}`)),
-      );
-    });
+    const { cpSync, rmSync, renameSync } = require("fs");
+    if (existsSync(OMNIWORKER_OFFICE_DIR)) {
+      rmSync(OMNIWORKER_OFFICE_DIR, { recursive: true, force: true });
+    }
+    cpSync(bundledDir, OMNIWORKER_OFFICE_DIR, { recursive: true });
+    
+    // Restore node_modules if it was renamed to bypass electron-builder strips
+    const bundledNmPath = join(OMNIWORKER_OFFICE_DIR, "bundled_node_modules");
+    if (existsSync(bundledNmPath)) {
+      renameSync(bundledNmPath, join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+    }
+    
+    emit(1, "Claw3D copied", "Successfully copied from bundle.\n");
   } else {
-    emit(1, "Claw3D already cloned", "Pulling latest...\n");
-    await new Promise<void>((resolve) => {
-      const gitPull = createCommandInvocation(git, ["pull", "--ff-only"]);
-      const proc = spawn(gitPull.command, gitPull.args, {
+    // Fallback: clone from GitHub (for development without bundle)
+    const git = resolveCommand("git", env.PATH);
+    const cloned = existsSync(join(OMNIWORKER_OFFICE_DIR, "package.json"));
+
+    if (!cloned) {
+      emit(1, "Cloning Claw3D repository...", "Cloning from GitHub...\n");
+      await new Promise<void>((resolve, reject) => {
+        const gitClone = createCommandInvocation(git, [
+          "clone",
+          "https://github.com/iamlukethedev/Claw3D",
+          OMNIWORKER_OFFICE_DIR,
+        ]);
+        const proc = spawn(gitClone.command, gitClone.args, {
+          cwd: homedir(),
+          env,
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true,
+          windowsVerbatimArguments: gitClone.windowsVerbatimArguments,
+        });
+
+        proc.stdout?.on("data", (data: Buffer) => {
+          emit(1, "Cloning Claw3D repository...", stripAnsi(data.toString()));
+        });
+        proc.stderr?.on("data", (data: Buffer) => {
+          emit(1, "Cloning Claw3D repository...", stripAnsi(data.toString()));
+        });
+
+        proc.on("close", (code) => {
+          if (code === 0) {
+            emit(1, "Cloning Claw3D repository...", "Clone complete.\n");
+            resolve();
+          } else {
+            reject(new Error(`git clone failed (exit code ${code})`));
+          }
+        });
+        proc.on("error", (err) =>
+          reject(new Error(`Failed to run git: ${err.message}`)),
+        );
+      });
+    } else {
+      emit(1, "Claw3D already cloned", "Pulling latest...\n");
+      await new Promise<void>((resolve) => {
+        const gitPull = createCommandInvocation(git, ["pull", "--ff-only"]);
+        const proc = spawn(gitPull.command, gitPull.args, {
+          cwd: OMNIWORKER_OFFICE_DIR,
+          env,
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true,
+          windowsVerbatimArguments: gitPull.windowsVerbatimArguments,
+        });
+
+        proc.stdout?.on("data", (data: Buffer) => {
+          emit(1, "Updating Claw3D...", stripAnsi(data.toString()));
+        });
+        proc.stderr?.on("data", (data: Buffer) => {
+          emit(1, "Updating Claw3D...", stripAnsi(data.toString()));
+        });
+
+        proc.on("close", () => {
+          resolve();
+        });
+        proc.on("error", () => resolve());
+      });
+    }
+  }
+
+  // Step 2: npm install (run even for bundled if node_modules is missing)
+  if (!existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"))) {
+    emit(2, "Installing dependencies...", "Running npm install...\n");
+    const npm = createCommandInvocation(findNpm(env.PATH), ["install"]);
+
+    await new Promise<void>((resolve, reject) => {
+      const proc = spawn(npm.command, npm.args, {
         cwd: OMNIWORKER_OFFICE_DIR,
         env,
         stdio: ["ignore", "pipe", "pipe"],
         windowsHide: true,
-        windowsVerbatimArguments: gitPull.windowsVerbatimArguments,
+        windowsVerbatimArguments: npm.windowsVerbatimArguments,
       });
 
       proc.stdout?.on("data", (data: Buffer) => {
-        emit(1, "Updating Claw3D...", stripAnsi(data.toString()));
+        emit(2, "Installing dependencies...", stripAnsi(data.toString()));
       });
       proc.stderr?.on("data", (data: Buffer) => {
-        emit(1, "Updating Claw3D...", stripAnsi(data.toString()));
+        emit(2, "Installing dependencies...", stripAnsi(data.toString()));
       });
 
       proc.on("close", (code) => {
-        if (code === 0) resolve();
-        else resolve();
+        if (code === 0) {
+          emit(2, "Installing dependencies...", "Dependencies installed.\n");
+          resolve();
+        } else {
+          reject(new Error(`npm install failed (exit code ${code})`));
+        }
       });
-      proc.on("error", () => resolve());
+      proc.on("error", (err) =>
+        reject(new Error(`Failed to run npm: ${err.message}`)),
+      );
     });
+  } else {
+    emit(2, "Dependencies ready", "node_modules already exists.\n");
   }
-
-  // Step 2: npm install
-  emit(2, "Installing dependencies...", "Running npm install...\n");
-  const npm = createCommandInvocation(findNpm(env.PATH), ["install"]);
-
-  await new Promise<void>((resolve, reject) => {
-    const proc = spawn(npm.command, npm.args, {
-      cwd: OMNIWORKER_OFFICE_DIR,
-      env,
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true,
-      windowsVerbatimArguments: npm.windowsVerbatimArguments,
-    });
-
-    proc.stdout?.on("data", (data: Buffer) => {
-      emit(2, "Installing dependencies...", stripAnsi(data.toString()));
-    });
-    proc.stderr?.on("data", (data: Buffer) => {
-      emit(2, "Installing dependencies...", stripAnsi(data.toString()));
-    });
-
-    proc.on("close", (code) => {
-      if (code === 0) {
-        emit(2, "Installing dependencies...", "Dependencies installed.\n");
-        resolve();
-      } else {
-        reject(new Error(`npm install failed (exit code ${code})`));
-      }
-    });
-    proc.on("error", (err) =>
-      reject(new Error(`Failed to run npm: ${err.message}`)),
-    );
-  });
 
   writeClaw3dSettings();
 }
@@ -646,7 +648,9 @@ export async function startDevServer(): Promise<boolean> {
 
   // Check if we have a bundled standalone build
   const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
-  const hasNodeModules = existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+  const hasNodeModules = existsSync(
+    join(OMNIWORKER_OFFICE_DIR, "node_modules"),
+  );
 
   if (!hasStandalone && !hasNodeModules) return false;
 
@@ -807,16 +811,26 @@ export function stopAdapter(): void {
   cleanupPid(ADAPTER_PID_FILE);
 }
 
-export async function startAll(): Promise<{ success: boolean; error?: string }> {
+export async function startAll(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
-  const hasNodeModules = existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+  const hasNodeModules = existsSync(
+    join(OMNIWORKER_OFFICE_DIR, "node_modules"),
+  );
 
-  if (!hasStandalone && !hasNodeModules) {
-    // Auto-install from bundle if available
-    const bundledDir = getBundledOfficeDir();
+  // If we have a bundled dir, and the user is missing standalone or node_modules, we should install it.
+  // This also upgrades legacy installs (which lack server.js) to standalone automatically.
+  const bundledDir = getBundledOfficeDir();
+  const needsInstall = bundledDir ? (!hasStandalone || !hasNodeModules) : (!hasStandalone && !hasNodeModules);
+
+  if (needsInstall) {
     if (bundledDir) {
       try {
-        await setupClaw3d(() => { /* no-op progress for auto-install */ });
+        await setupClaw3d(() => {
+          /* no-op progress for auto-install */
+        });
       } catch (err) {
         return {
           success: false,

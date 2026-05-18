@@ -80,7 +80,8 @@ export default {
   modeLocal: "Lokal",
   modeRemote: "Remote",
   modeLocalHint: "Menggunakan OmniWorker yang terinstal di perangkat ini",
-  modeRemoteHint: "Hubungkan ke server OmniWorker API di jaringan atau cloud Anda",
+  modeRemoteHint:
+    "Hubungkan ke server OmniWorker API di jaringan atau cloud Anda",
   remoteUrl: "URL Remote",
   remoteUrlHint:
     "URL server OmniWorker API (harus mengekspos /health dan /v1/chat/completions)",

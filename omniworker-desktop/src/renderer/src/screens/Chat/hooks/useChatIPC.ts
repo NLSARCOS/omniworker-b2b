@@ -60,9 +60,11 @@ export function useChatIPC({
       setIsLoading(false);
     });
 
-    const cleanupToolProgress = window.omniworkerAPI.onChatToolProgress((tool) => {
-      setToolProgress(tool);
-    });
+    const cleanupToolProgress = window.omniworkerAPI.onChatToolProgress(
+      (tool) => {
+        setToolProgress(tool);
+      },
+    );
 
     const cleanupUsage = window.omniworkerAPI.onChatUsage((u) => {
       setUsage((prev) => ({

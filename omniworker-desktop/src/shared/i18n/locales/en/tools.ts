@@ -1,6 +1,7 @@
 export default {
   title: "Tools",
-  subtitle: "Enable or disable the toolsets your agent can use during conversations",
+  subtitle:
+    "Enable or disable the toolsets your agent can use during conversations",
   web: {
     label: "Web Search",
     description: "Search the web and extract content from URLs",
@@ -69,10 +70,12 @@ export default {
   },
   ecommerce: {
     label: "E-commerce",
-    description: "Manage Shopify, WooCommerce, and PrestaShop products and orders",
+    description:
+      "Manage Shopify, WooCommerce, and PrestaShop products and orders",
   },
   mcpServers: "MCP Servers",
-  mcpDescription: "Model Context Protocol servers configured in config.yaml. Manage via <code>omniworker mcp add/remove</code> in the terminal.",
+  mcpDescription:
+    "Model Context Protocol servers configured in config.yaml. Manage via <code>omniworker mcp add/remove</code> in the terminal.",
   http: "HTTP",
   stdio: "stdio",
   disabled: "disabled",

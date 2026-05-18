@@ -59,8 +59,8 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "agents", icon: Users, labelKey: "navigation.agents" },
   { view: "office", icon: Building, labelKey: "navigation.office" },
   { view: "kanban", icon: KanbanIcon, labelKey: "navigation.kanban" },
-//  { view: "models", icon: Layers, labelKey: "navigation.models" },
-//  { view: "providers", icon: KeyRound, labelKey: "navigation.providers" },
+  //  { view: "models", icon: Layers, labelKey: "navigation.models" },
+  //  { view: "providers", icon: KeyRound, labelKey: "navigation.providers" },
   { view: "skills", icon: Puzzle, labelKey: "navigation.skills" },
   { view: "soul", icon: Sparkles, labelKey: "navigation.soul" },
   { view: "memory", icon: Brain, labelKey: "navigation.memory" },
@@ -173,7 +173,8 @@ function Layout({
         const apiKey = envs?.CUSTOM_API_KEY;
         if (!apiKey || !apiKey.startsWith("tsto_")) return;
 
-        const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+        const saasUrl =
+          import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
 
         if (!registeredAgentId && !isRegistering) {
           isRegistering = true;
@@ -213,7 +214,10 @@ function Layout({
           if (data.success) {
             setSaasInfo({
               plan: data.plan || null,
-              tokenBalance: typeof data.tokenBalance === "number" ? data.tokenBalance : null,
+              tokenBalance:
+                typeof data.tokenBalance === "number"
+                  ? data.tokenBalance
+                  : null,
               tenantName: data.tenantName || null,
               licenseUsage: data.licenseUsage || undefined,
             });
@@ -287,7 +291,8 @@ function Layout({
 
   const handleResumeSession = useCallback(
     async (sessionId: string) => {
-      const dbMessages = await window.omniworkerAPI.getSessionMessages(sessionId);
+      const dbMessages =
+        await window.omniworkerAPI.getSessionMessages(sessionId);
       const chatMessages: ChatMessage[] = dbMessages.map((m) => ({
         id: `db-${m.id}`,
         role: m.role === "user" ? "user" : "agent",
@@ -304,7 +309,17 @@ function Layout({
     <div className="layout">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div style={{ color: "var(--accent-text)", fontSize: "20px", fontWeight: "900", letterSpacing: "1px", fontFamily: "var(--font-mono)", padding: "4px 8px", border: "2px solid var(--accent-text)" }}>
+          <div
+            style={{
+              color: "var(--accent-text)",
+              fontSize: "20px",
+              fontWeight: "900",
+              letterSpacing: "1px",
+              fontFamily: "var(--font-mono)",
+              padding: "4px 8px",
+              border: "2px solid var(--accent-text)",
+            }}
+          >
             OMNIWORKER
           </div>
         </div>
@@ -351,31 +366,90 @@ function Layout({
               )}
             </button>
           )}
-          <div className="sidebar-footer-text" style={{ padding: '8px', borderTop: '1px solid var(--border-subtle)', marginTop: 'auto' }}>
+          <div
+            className="sidebar-footer-text"
+            style={{
+              padding: "8px",
+              borderTop: "1px solid var(--border-subtle)",
+              marginTop: "auto",
+            }}
+          >
             {saasInfo ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                <div style={{ color: 'var(--text-primary)', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px' }}>
-                  {saasInfo.tenantName || 'Tenant'}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <div
+                  style={{
+                    color: "var(--text-primary)",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                    fontSize: "12px",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  {saasInfo.tenantName || "Tenant"}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ backgroundColor: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px' }}>
-                    {saasInfo.plan || 'Free'} Plan
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span
+                    style={{
+                      backgroundColor: "var(--bg-secondary)",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    {saasInfo.plan || "Free"} Plan
                   </span>
                   {saasInfo.licenseUsage && (
-                    <span style={{ backgroundColor: saasInfo.licenseUsage.active >= saasInfo.licenseUsage.max ? '#ef4444' : 'var(--bg-secondary)', padding: '2px 6px', borderRadius: '4px', color: saasInfo.licenseUsage.active >= saasInfo.licenseUsage.max ? '#fff' : 'inherit' }}>
-                      {saasInfo.licenseUsage.active} / {saasInfo.licenseUsage.max} INST
+                    <span
+                      style={{
+                        backgroundColor:
+                          saasInfo.licenseUsage.active >=
+                          saasInfo.licenseUsage.max
+                            ? "#ef4444"
+                            : "var(--bg-secondary)",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        color:
+                          saasInfo.licenseUsage.active >=
+                          saasInfo.licenseUsage.max
+                            ? "#fff"
+                            : "inherit",
+                      }}
+                    >
+                      {saasInfo.licenseUsage.active} /{" "}
+                      {saasInfo.licenseUsage.max} INST
                     </span>
                   )}
-                  <span style={{ 
-                    color: saasInfo.tokenBalance && saasInfo.tokenBalance > 1000 ? 'var(--text-primary)' : '#ef4444',
-                    fontWeight: 'bold' 
-                  }}>
+                  <span
+                    style={{
+                      color:
+                        saasInfo.tokenBalance && saasInfo.tokenBalance > 1000
+                          ? "var(--text-primary)"
+                          : "#ef4444",
+                      fontWeight: "bold",
+                    }}
+                  >
                     {saasInfo.tokenBalance?.toLocaleString()} TKS
                   </span>
                 </div>
               </div>
+            ) : activeProfile === "default" ? (
+              t("common.appName")
             ) : (
-              activeProfile === "default" ? t("common.appName") : activeProfile
+              activeProfile
             )}
           </div>
         </div>
@@ -506,10 +580,7 @@ function Layout({
             {remoteMode ? (
               <RemoteNotice feature="Kanban" />
             ) : (
-              <Kanban
-                profile={activeProfile}
-                visible={view === "kanban"}
-              />
+              <Kanban profile={activeProfile} visible={view === "kanban"} />
             )}
           </div>
         )}

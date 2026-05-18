@@ -5,8 +5,22 @@ import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const refreshToken = cookieStore.get("ow_refresh")?.value;
+    // Accept refresh token from body (desktop clients) OR cookie (web clients)
+    let refreshToken: string | undefined;
+
+    // Try body first (for Electron / desktop clients that can't use HTTP-only cookies)
+    try {
+      const body = await request.json();
+      refreshToken = body.refreshToken;
+    } catch {
+      // no body — fall through to cookie
+    }
+
+    // Fall back to cookie (for web browser sessions)
+    if (!refreshToken) {
+      const cookieStore = await cookies();
+      refreshToken = cookieStore.get("ow_refresh")?.value;
+    }
 
     if (!refreshToken) {
       return NextResponse.json(
@@ -24,10 +38,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Set cookies for web clients
     await setAuthCookies(result.accessToken!, result.refreshToken!);
 
+    // Also return tokens in body for desktop clients
     return NextResponse.json({
       success: true,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       user: result.user,
     });
   } catch (error) {

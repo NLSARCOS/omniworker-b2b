@@ -1033,17 +1033,17 @@ cleanup() → None
 
 Assembles the system prompt from multiple sources:
 
-| Component               | Source                                               |
-| ----------------------- | ---------------------------------------------------- |
-| Agent Identity          | `DEFAULT_AGENT_IDENTITY` or `SOUL.md`                |
-| Memory Guidance         | When/how to use memory tool                          |
-| Session Search Guidance | How to recall past conversations                     |
-| Skills Guidance         | When to create/patch skills                          |
-| Tool Use Enforcement    | Must execute tools, not describe actions             |
-| Skills Index            | `~/.omniworker/skills/.omniworker-skills.json`               |
-| Platform Hints          | OS, Python version, shell, available tools           |
+| Component               | Source                                                   |
+| ----------------------- | -------------------------------------------------------- |
+| Agent Identity          | `DEFAULT_AGENT_IDENTITY` or `SOUL.md`                    |
+| Memory Guidance         | When/how to use memory tool                              |
+| Session Search Guidance | How to recall past conversations                         |
+| Skills Guidance         | When to create/patch skills                              |
+| Tool Use Enforcement    | Must execute tools, not describe actions                 |
+| Skills Index            | `~/.omniworker/skills/.omniworker-skills.json`           |
+| Platform Hints          | OS, Python version, shell, available tools               |
 | Context Files           | `.omniworker.md`, `AGENTS.md`, `.cursorrules`, `SOUL.md` |
-| Model/Provider Info     | Current model and provider identity                  |
+| Model/Provider Info     | Current model and provider identity                      |
 
 **Context File Discovery:**
 
@@ -1189,7 +1189,7 @@ Format: [{role, content, timestamp}, ...]
 | ------------------ | -------------------------------------------------------------------------------------------------------- |
 | **Telegram**       | Polling + webhook mode, media handling, inline keyboards, forum topic isolation, group mention gating    |
 | **Discord**        | Server channels, threads, reactions (processing/done/error), button-based approval, @mention requirement |
-| **Slack**          | Multi-workspace OAuth, thread handling, app_mention, `/omniworker` subcommands                               |
+| **Slack**          | Multi-workspace OAuth, thread handling, app_mention, `/omniworker` subcommands                           |
 | **WhatsApp**       | Group & DM support, media captions, LID↔phone alias resolution                                           |
 | **Matrix**         | E2EE room encryption, threaded messages, trusted device flow, native voice messages                      |
 | **Signal**         | Encrypted DMs, group membership, SSE keepalive, phone URL encoding                                       |
@@ -1683,21 +1683,21 @@ omniworker_cli/main.py  (entry point — dispatches to all subsystems)
 
 ## 24. Key Design Patterns
 
-| Pattern                        | Description                                                                                        |
-| ------------------------------ | -------------------------------------------------------------------------------------------------- |
-| **Registry-based Tool System** | Single source of truth; plugins register at import time; dynamic (MCP) and static tools coexist    |
-| **Toolset Composition**        | Recursive resolution with cycle detection; platform-specific composites                            |
-| **Iteration Budget**           | Thread-safe shared budget across parent + subagents                                                |
-| **Streaming First**            | Preferred over non-streaming for health checking (stale connection detection)                      |
-| **Prefix Caching**             | System prompt cached across turns (Anthropic optimization); context never altered mid-conversation |
-| **Proactive Compression**      | Triggered at 50% context usage; structured summaries with iterative updates                        |
-| **Async Bridging**             | Persistent event loops prevent "Event loop is closed"; per-thread loops for workers                |
-| **Profile Isolation**          | OMNIWORKER_HOME env var set before imports; all state functions route through `get_omniworker_home()`      |
-| **Agent Caching**              | Gateway caches AIAgent per session to preserve prompt cache across turns                           |
-| **WAL Concurrency**            | SQLite WAL mode + jitter retry for concurrent readers + single writer                              |
-| **Plugin Architecture**        | Tools, toolsets, hooks, memory providers extensible via plugins                                    |
-| **Multi-Backend Execution**    | Pluggable terminal backends with unified BaseEnvironment interface                                 |
-| **Safety Layers**              | Approval system → sensitive path guards → injection detection → capability filtering               |
+| Pattern                        | Description                                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| **Registry-based Tool System** | Single source of truth; plugins register at import time; dynamic (MCP) and static tools coexist       |
+| **Toolset Composition**        | Recursive resolution with cycle detection; platform-specific composites                               |
+| **Iteration Budget**           | Thread-safe shared budget across parent + subagents                                                   |
+| **Streaming First**            | Preferred over non-streaming for health checking (stale connection detection)                         |
+| **Prefix Caching**             | System prompt cached across turns (Anthropic optimization); context never altered mid-conversation    |
+| **Proactive Compression**      | Triggered at 50% context usage; structured summaries with iterative updates                           |
+| **Async Bridging**             | Persistent event loops prevent "Event loop is closed"; per-thread loops for workers                   |
+| **Profile Isolation**          | OMNIWORKER_HOME env var set before imports; all state functions route through `get_omniworker_home()` |
+| **Agent Caching**              | Gateway caches AIAgent per session to preserve prompt cache across turns                              |
+| **WAL Concurrency**            | SQLite WAL mode + jitter retry for concurrent readers + single writer                                 |
+| **Plugin Architecture**        | Tools, toolsets, hooks, memory providers extensible via plugins                                       |
+| **Multi-Backend Execution**    | Pluggable terminal backends with unified BaseEnvironment interface                                    |
+| **Safety Layers**              | Approval system → sensitive path guards → injection detection → capability filtering                  |
 
 ---
 
@@ -1707,7 +1707,7 @@ omniworker_cli/main.py  (entry point — dispatches to all subsystems)
 
 | Variable              | Purpose                                                   |
 | --------------------- | --------------------------------------------------------- |
-| `OMNIWORKER_HOME`         | Override home directory (profiles set this automatically) |
+| `OMNIWORKER_HOME`     | Override home directory (profiles set this automatically) |
 | `OPENROUTER_API_KEY`  | OpenRouter provider key                                   |
 | `ANTHROPIC_API_KEY`   | Anthropic provider key                                    |
 | `OPENAI_API_KEY`      | OpenAI provider key                                       |
@@ -1724,8 +1724,8 @@ omniworker_cli/main.py  (entry point — dispatches to all subsystems)
 
 ### Config File Locations
 
-| File                          | Purpose                          |
-| ----------------------------- | -------------------------------- |
+| File                              | Purpose                          |
+| --------------------------------- | -------------------------------- |
 | `~/.omniworker/config.yaml`       | Main configuration (YAML)        |
 | `~/.omniworker/.env`              | API keys and secrets             |
 | `~/.omniworker/MEMORY.md`         | Persistent agent memory          |
@@ -1734,7 +1734,7 @@ omniworker_cli/main.py  (entry point — dispatches to all subsystems)
 | `~/.omniworker/sessions.db`       | SQLite session database          |
 | `~/.omniworker/cron/jobs.json`    | Cron job definitions             |
 | `.omniworker.md` (in project dir) | Per-project context file         |
-| `AGENTS.md` (in project dir)  | Developer instructions for agent |
+| `AGENTS.md` (in project dir)      | Developer instructions for agent |
 
 ---
 

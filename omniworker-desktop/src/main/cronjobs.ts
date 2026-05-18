@@ -2,7 +2,11 @@ import { existsSync } from "fs";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { execFile } from "child_process";
-import { OMNIWORKER_HOME, OMNIWORKER_PYTHON, omniworkerCliArgs } from "./installer";
+import {
+  OMNIWORKER_HOME,
+  OMNIWORKER_PYTHON,
+  omniworkerCliArgs,
+} from "./installer";
 import { profileHome } from "./utils";
 import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./omniworker";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
