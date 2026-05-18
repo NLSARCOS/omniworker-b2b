@@ -117,6 +117,9 @@ interface OmniWorkerAPI {
   startInstall: (
     authToken?: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  startSlmDownload: (
+    authToken?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   onInstallProgress: (
     callback: (progress: InstallProgress) => void,
   ) => () => void;

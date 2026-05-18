@@ -158,7 +158,7 @@ export async function PATCH(request: Request) {
     delete data.apiKey;
   }
 
-  const updatePayload: any = { ...data };
+  const updatePayload: Record<string, unknown> = { ...data };
 
   const updated = await prisma.masterProvider.update({ where: { id }, data: updatePayload });
 

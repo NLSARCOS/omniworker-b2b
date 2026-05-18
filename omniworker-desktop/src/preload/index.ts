@@ -26,6 +26,10 @@ const omniworkerAPI = {
     authToken?: string,
   ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("start-install", authToken),
+  startSlmDownload: (
+    authToken?: string,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("start-slm-download", authToken),
 
   onInstallProgress: (
     callback: (progress: {

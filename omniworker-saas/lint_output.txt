@@ -1,0 +1,120 @@
+
+> omniworker-saas@0.1.0 lint
+> eslint
+
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/scripts/create_admin.js
+  1:26  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  2:16  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/scripts/upgrade_plan.js
+  1:26  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/scripts/upgrade_plan2.js
+  1:26  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/admin/page.tsx
+   86:10  warning  'loading' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   99:5   error    Error: Cannot access variable before it is declared
+
+`loadAll` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/admin/page.tsx:99:5
+   97 |
+   98 |   useEffect(() => {
+>  99 |     loadAll();
+      |     ^^^^^^^ `loadAll` accessed before it is declared
+  100 |   }, []);
+  101 |
+  102 |   const loadAll = async () => {
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/admin/page.tsx:102:3
+  100 |   }, []);
+  101 |
+> 102 |   const loadAll = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 103 |     setLoading(true);
+      | ^^^^^^^^^^^^^^^^^^^^^
+> 104 |     try {
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^
+> 145 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^
+> 146 |   };
+      | ^^^^^ `loadAll` is declared here
+  147 |
+  148 |   const handleProviderCreate = async (e: React.FormEvent) => {
+  149 |     e.preventDefault();  react-hooks/immutability
+  120:18  warning  'e' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  199:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  230:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/api/admin/plans/route.ts
+  105:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/api/admin/providers/route.ts
+  161:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/api/admin/tenants/route.ts
+  164:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/api/v1/agent/download/route.ts
+  2:10  warning  'headers' is defined but never used  @typescript-eslint/no-unused-vars
+  4:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/api/v1/auth/logout/route.ts
+  6:28  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/api/v1/licenses/[id]/route.ts
+  91:12  warning  'apiKeysDeleted' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/dashboard/layout.tsx
+  21:7  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/dashboard/page.tsx
+  220:21  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/dashboard/page.tsx:220:21
+  218 |   };
+  219 |
+> 220 |   useEffect(() => { loadData(); }, []);
+      |                     ^^^^^^^^ Avoid calling setState() directly within an effect
+  221 |
+  222 |   const handleCreateLicense = async () => {
+  223 |     setCreatingLicense(true);  react-hooks/set-state-in-effect
+  314:9   warning  'onlineAgents' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/dashboard_current.tsx
+  214:21  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/app/dashboard_current.tsx:214:21
+  212 |   };
+  213 |
+> 214 |   useEffect(() => { loadData(); }, []);
+      |                     ^^^^^^^^ Avoid calling setState() directly within an effect
+  215 |
+  216 |   const handleCreateLicense = async () => {
+  217 |     setCreatingLicense(true);  react-hooks/set-state-in-effect
+  324:9   warning  'onlineAgents' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/src/middleware.ts
+  91:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/nelsonsarcos/Documents/Simplet Pyects/aass2/omniworker-saas/test-auth.js
+  1:9   warning  'signAccessToken' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  1:29  error    A `require()` style import is forbidden               @typescript-eslint/no-require-imports
+
+✖ 24 problems (13 errors, 11 warnings)
+

@@ -102,7 +102,7 @@ export async function PATCH(request: Request) {
   const { id, features, ...rest } = body;
   if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
 
-  const updateData: any = { ...rest };
+  const updateData: Record<string, unknown> = { ...rest };
   if (features !== undefined) updateData.features = JSON.stringify(features);
   if (rest.tokenLimit !== undefined) updateData.tokenLimit = typeof rest.tokenLimit === 'string' ? parseInt(rest.tokenLimit) : rest.tokenLimit;
   if (rest.maxAgents !== undefined) updateData.maxAgents = typeof rest.maxAgents === 'string' ? parseInt(rest.maxAgents) : rest.maxAgents;

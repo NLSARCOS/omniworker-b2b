@@ -1254,3 +1254,84 @@ export function readLogs(
     return { content: "", path: fullPath };
   }
 }
+
+export async function downloadSLM(
+  onProgress: (progress: InstallProgress) => void,
+  authToken?: string,
+): Promise<void> {
+  // Use resources/engine relative to the current directory
+  // Assuming this file is compiled to out/main/installer.js, the project root is 2 levels up
+  const modelDir = join(__dirname, "../../resources/engine");
+  const modelPath = join(modelDir, "slm.gguf");
+  
+  if (!existsSync(modelDir)) {
+    mkdirSync(modelDir, { recursive: true });
+  }
+
+  let log = "Preparing to download SLM model...\n";
+  let lastReportTime = Date.now();
+
+  function emit(text: string): void {
+    log += text;
+    onProgress({
+      step: 1,
+      totalSteps: 1,
+      title: "Downloading local SLM",
+      detail: text.trim().slice(0, 120),
+      log,
+    });
+  }
+
+  emit(`Destination: ${modelPath}\n`);
+
+  return new Promise<void>((resolve, reject) => {
+    const url = `${SAAS_BASE_URL}/downloads/slm.gguf`;
+    const file = createWriteStream(modelPath);
+
+    const headers: Record<string, string> = {};
+    if (authToken) {
+      headers["Authorization"] = `Bearer ${authToken}`;
+    }
+
+    https.get(url, { headers }, (response: any) => {
+      if (response.statusCode === 401 || response.statusCode === 403) {
+        reject(new Error("Authentication failed for model download."));
+        return;
+      }
+      if (response.statusCode === 404) {
+        // Soft fail if the model is not hosted yet
+        emit("SLM model not found on server (404), skipping.\n");
+        resolve();
+        return;
+      }
+      if (response.statusCode !== 200) {
+        reject(new Error(`Download failed (HTTP ${response.statusCode}).`));
+        return;
+      }
+
+      const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+      let downloadedBytes = 0;
+
+      response.on('data', (chunk: Buffer) => {
+        downloadedBytes += chunk.length;
+        const now = Date.now();
+        if (now - lastReportTime > 500 && totalBytes > 0) {
+          const percent = ((downloadedBytes / totalBytes) * 100).toFixed(1);
+          const mbDownloaded = (downloadedBytes / (1024 * 1024)).toFixed(1);
+          const mbTotal = (totalBytes / (1024 * 1024)).toFixed(1);
+          emit(`Downloading... ${percent}% (${mbDownloaded}MB / ${mbTotal}MB)\n`);
+          lastReportTime = now;
+        }
+      });
+
+      response.pipe(file);
+      file.on("finish", () => {
+        file.close();
+        emit("Download complete.\n");
+        resolve();
+      });
+    }).on("error", (err) => {
+      reject(new Error(`Failed to download SLM: ${err.message}`));
+    });
+  });
+}

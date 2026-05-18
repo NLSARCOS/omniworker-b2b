@@ -44,10 +44,25 @@ function Install({
 
     window.omniworkerAPI
       .startInstall(authToken || undefined)
-      .then((result) => {
+      .then(async (result) => {
         if (!isMounted) return;
         if (result.success) {
-          setDone(true);
+          try {
+            const slmResult = await window.omniworkerAPI.startSlmDownload(authToken || undefined);
+            if (!isMounted) return;
+            if (slmResult.success) {
+              setDone(true);
+            } else {
+              // Soft fail on SLM download, let them continue using cloud models
+              console.error("SLM download failed:", slmResult.error);
+              setProgress((p) => ({ ...p, log: p.log + `\nSLM download skipped: ${slmResult.error}` }));
+              setDone(true);
+            }
+          } catch (err: any) {
+            if (!isMounted) return;
+            console.error("SLM download error:", err);
+            setDone(true);
+          }
         } else {
           setFailed(result.error || t("install.installationFailedHint"));
         }

@@ -88,7 +88,7 @@ export async function middleware(request: NextRequest) {
     }
 
     return response;
-  } catch (error) {
+  } catch {
     // Token invalid or expired
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);

@@ -217,7 +217,10 @@ export default function DashboardPage() {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadData();
+  }, []);
 
   const handleCreateLicense = async () => {
     setCreatingLicense(true);
@@ -311,7 +314,6 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const onlineAgents = agents.filter(a => a.status === "online").length;
   const tokenPct = user.tokenBalance > 0 ? Math.min(100, (user.tokenBalance / 100000) * 100) : 0;
   const activeLicenses = licenses.filter(l => l.status === "ACTIVE");
 

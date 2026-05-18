@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-
-export async function GET(request: Request) {
+export async function GET() {
   // Opcional: Validar el token aquí si es necesario
   // const authHeader = headers().get("authorization");
   

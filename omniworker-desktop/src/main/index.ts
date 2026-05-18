@@ -34,6 +34,7 @@ import {
   discoverMemoryProviders,
   readLogs,
   InstallProgress,
+  downloadSLM,
 } from "./installer";
 import {
   isRemoteMode,
@@ -334,6 +335,20 @@ function setupIPC(): void {
         },
         mainWindow,
         authToken,
+      );
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
+    }
+  });
+
+  ipcMain.handle("start-slm-download", async (event, authToken?: string) => {
+    try {
+      await downloadSLM(
+        (progress: InstallProgress) => {
+          event.sender.send("install-progress", progress);
+        },
+        authToken
       );
       return { success: true };
     } catch (err) {

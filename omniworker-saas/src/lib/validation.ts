@@ -17,7 +17,10 @@ export const registerSchema = z.object({
 // ─── Chat / LLM ───
 export const chatCompletionSchema = z.object({
   model: z.string().optional(),
-  messages: z.array(z.any()).min(1, "Se requiere al menos un mensaje"),
+  messages: z.array(z.object({
+    role: z.string(),
+    content: z.string()
+  }).passthrough()).min(1, "Se requiere al menos un mensaje"),
   stream: z.boolean().optional(),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().positive().optional(),

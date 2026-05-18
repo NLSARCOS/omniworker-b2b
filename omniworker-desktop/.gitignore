@@ -37,3 +37,4 @@ resources/omniworker-office
 **/src-tauri/target/
 **/src-tauri/gen/
 **/src-tauri/WixTools/resources/engine/slm.gguf
+resources/engine/slm.gguf

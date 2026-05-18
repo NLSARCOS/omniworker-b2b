@@ -83,7 +83,6 @@ export default function SuperAdminCommandCenter() {
   const [showCreateTenant, setShowCreateTenant] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [selectedFormProvider, setSelectedFormProvider] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // Total model count across all OpenCode Go tiers
@@ -95,12 +94,7 @@ export default function SuperAdminCommandCenter() {
     return allIds.size;
   }, [opencodeGoTiers]);
 
-  useEffect(() => {
-    loadAll();
-  }, []);
-
   const loadAll = async () => {
-    setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${localStorage.getItem("ow_token")}` };
       
@@ -117,7 +111,7 @@ export default function SuperAdminCommandCenter() {
         }
         try {
           return JSON.parse(text);
-        } catch (e) {
+        } catch {
           console.error(`Invalid JSON from ${url}:`, text);
           return {};
         }
@@ -140,10 +134,13 @@ export default function SuperAdminCommandCenter() {
     } catch (err) {
       console.error(err);
       setError("SYSTEM_FAULT: Gataway connection failed.");
-    } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadAll();
+  }, []);
 
   const handleProviderCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,8 +193,8 @@ export default function SuperAdminCommandCenter() {
       setError("");
       form.reset();
       loadAll();
-    } catch (err: any) {
-      setError(err.message || "Network error during provisioning");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error during provisioning");
     }
   };
 
@@ -227,8 +224,8 @@ export default function SuperAdminCommandCenter() {
       setError("");
       setEditingTenant(null);
       loadAll();
-    } catch (err: any) {
-      setError(err.message || "Network error during update");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error during update");
     }
   };
 

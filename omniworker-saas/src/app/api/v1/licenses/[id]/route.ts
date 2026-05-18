@@ -88,7 +88,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (!existing) return notFound();
 
   // Revoke license + cascade-delete all its API keys immediately
-  const [, apiKeysDeleted] = await prisma.$transaction([
+  await prisma.$transaction([
     prisma.license.update({
       where: { id },
       data: { status: "REVOKED", revokedAt: new Date() },

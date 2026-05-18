@@ -3,6 +3,7 @@ import { authenticateRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { chatCompletionSchema } from "@/lib/validation";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { fetchWithBackoff } from "@/lib/fetch-backoff";
 
 // Provider → URL mapping
 const PROVIDER_URLS: Record<string, string> = {
@@ -288,7 +289,7 @@ export async function POST(request: Request) {
     const estimatedCost = 50;
 
     try {
-      const aiResponse = await fetch(resolvedUrl, {
+      const aiResponse = await fetchWithBackoff(resolvedUrl, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
@@ -379,7 +380,7 @@ export async function POST(request: Request) {
       headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
     }
 
-    const aiResponse = await fetch(targetUrl, {
+    const aiResponse = await fetchWithBackoff(targetUrl, {
       method: "POST",
       headers,
       body: JSON.stringify({ ...body, model: requestedModel }),

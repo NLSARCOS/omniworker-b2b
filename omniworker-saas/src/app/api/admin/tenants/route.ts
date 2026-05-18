@@ -161,7 +161,7 @@ export async function PATCH(request: Request) {
   const { id, subscriptionEndsAt, ...data } = body;
   if (!id) return NextResponse.json({ error: "ID requerido" }, { status: 400 });
 
-  const updatePayload: any = { ...data };
+  const updatePayload: Record<string, unknown> = { ...data };
   if (subscriptionEndsAt !== undefined) {
     updatePayload.subscriptionEndsAt = subscriptionEndsAt ? new Date(subscriptionEndsAt) : null;
   }
