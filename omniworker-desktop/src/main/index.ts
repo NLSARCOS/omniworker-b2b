@@ -240,10 +240,10 @@ function createWindow(): void {
   const rendererHtmlPath = join(__dirname, "../renderer/index.html");
 
   mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 850,
-    minWidth: 900,
-    minHeight: 820,
+    width: 1024,
+    height: 720,
+    minWidth: 800,
+    minHeight: 600,
     show: false,
     autoHideMenuBar: true,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : undefined,
