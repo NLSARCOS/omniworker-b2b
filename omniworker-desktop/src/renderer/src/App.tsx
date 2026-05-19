@@ -50,25 +50,31 @@ function App(): React.JSX.Element {
   const runPostLoginInstallCheck = async () => {
     try {
       const mode = await window.omniworkerAPI.isRemoteOnlyMode();
+      console.error(`[APP] mode: ${mode}`);
       if (mode) {
         setScreen("main");
         return;
       }
 
       const installStatus = await window.omniworkerAPI.checkInstall();
+      console.error(`[APP] installStatus:`, installStatus);
       let isVerified = false;
       if (installStatus.installed) {
         isVerified = await window.omniworkerAPI.verifyInstall();
       }
+      console.error(`[APP] isVerified:`, isVerified);
 
       if (installStatus.installed && isVerified) {
         setScreen("main");
+        console.error(`[APP] Screen set to main`);
       } else {
         setScreen("installing");
+        console.error(`[APP] Screen set to installing`);
       }
     } catch (err) {
       console.error("Install check failed:", err);
       setScreen("installing");
+      console.error(`[APP] Screen set to installing (catch)`);
     }
   };
 

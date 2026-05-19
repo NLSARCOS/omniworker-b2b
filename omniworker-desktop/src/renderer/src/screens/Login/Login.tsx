@@ -79,11 +79,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
     try {
       const data = await loginRequest(email, password);
-      onLoginSuccess(data.user, {
+      await onLoginSuccess(data.user, {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       });
     } catch (err: any) {
+      console.error("[Login] Error:", err);
       const isTimeout = err.name === "AbortError" || err.message?.includes("abort");
       setError(
         isTimeout

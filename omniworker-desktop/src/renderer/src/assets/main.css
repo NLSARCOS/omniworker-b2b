@@ -169,6 +169,8 @@ body {
 
 .app-content {
   flex: 1;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -837,6 +839,8 @@ body {
 .layout {
   display: flex;
   flex: 1;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -1006,6 +1010,8 @@ body {
 
 .content {
   flex: 1;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;

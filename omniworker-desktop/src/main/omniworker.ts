@@ -1,4 +1,4 @@
-import { ChildProcess, spawn } from "child_process";
+import { ChildProcess, spawn, execSync } from "child_process";
 import {
   existsSync,
   readFileSync,
@@ -1132,10 +1132,8 @@ import { SMART_ROUTER_SCRIPT } from "./smartRouterScript";
  * Must be called AFTER login (needs OPENAI_API_KEY and CLOUD_API_URL in env).
  */
 export async function startSmartRouter(): Promise<boolean> {
-  const isRunning = await isSmartRouterRunning();
-  if (isRunning) {
-    return true; // Already running
-  }
+  // Always stop any existing (zombie) router before starting a fresh one
+  stopSmartRouter();
 
   const routerScript = join(OMNIWORKER_REPO, "smart_router.py");
   if (!existsSync(routerScript)) {
@@ -1150,8 +1148,8 @@ export async function startSmartRouter(): Promise<boolean> {
   const conn = getConnectionConfig();
   const envConfig = readEnv();
 
-  let cloudApiUrl = process.env.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
-  if (conn.mode === "local") {
+  let cloudApiUrl = conn.remoteUrl || envConfig.CLOUD_API_URL || process.env.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
+  if (conn.mode === "local" && (!cloudApiUrl || cloudApiUrl === "https://api.openai.com")) {
     cloudApiUrl = envConfig.CUSTOM_BASE_URL || "https://api.openai.com";
   }
 
@@ -1171,6 +1169,7 @@ export async function startSmartRouter(): Promise<boolean> {
     apiKey = conn.apiKey;
   } else {
     apiKey =
+      conn.apiKey ||
       process.env.OPENAI_API_KEY ||
       envConfig.OPENAI_API_KEY ||
       envConfig.CUSTOM_API_KEY ||
@@ -1228,6 +1227,16 @@ export function stopSmartRouter(): void {
   if (smartRouterProcess && !smartRouterProcess.killed) {
     smartRouterProcess.kill("SIGTERM");
     smartRouterProcess = null;
+  }
+  try {
+    const isWindows = process.platform === "win32";
+    if (isWindows) {
+      execSync(`wmic process where "commandline like '%smart_router.py%'" call terminate`, { stdio: "ignore" });
+    } else {
+      execSync(`pkill -f smart_router.py`, { stdio: "ignore" });
+    }
+  } catch (e) {
+    // Ignore errors if no process was found
   }
 }
 
@@ -1401,7 +1410,9 @@ export function testRemoteConnection(
 export function restartGateway(profile?: string): void {
   if (!gatewayStartedByApp && !isGatewayRunning()) return;
   stopGateway(true);
+  stopSmartRouter();
   setTimeout(() => {
     startGateway(profile);
+    startSmartRouter().catch((e) => console.error("[SmartRouter] restart failed", e));
   }, 500);
 }
