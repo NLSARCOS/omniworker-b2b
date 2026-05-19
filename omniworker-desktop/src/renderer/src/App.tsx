@@ -91,7 +91,7 @@ function App(): React.JSX.Element {
       //    Esto evita depender de que el gateway Python local esté corriendo
       await window.omniworkerAPI.setConnectionConfig(
         "remote",
-        `${saasUrl}/api/v1`,
+        `${saasUrl}/api`,
         auth.accessToken,
       );
 
@@ -126,7 +126,7 @@ function App(): React.JSX.Element {
                 );
                 await window.omniworkerAPI.setConnectionConfig(
                   "remote",
-                  `${saasUrl}/api/v1`,
+                  `${saasUrl}/api`,
                   data.accessToken,
                 );
                 return data.refreshToken || refreshToken;
