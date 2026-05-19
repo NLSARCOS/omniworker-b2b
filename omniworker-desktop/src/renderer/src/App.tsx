@@ -101,18 +101,21 @@ function App(): React.JSX.Element {
       );
       console.error("[APP] Connection set to local mode");
 
-      // 3. Iniciar Smart Router para enrutar mensajes simples al SLM local
-      //    (no-fatal: si no está disponible el SLM, todo va al SaaS igual)
+      // 3. Iniciar Gateway y Smart Router DESPUÉS de escribir el JWT en env
+      //    El Smart Router lee OPENAI_API_KEY al arrancar, así que debe iniciarse
+      //    una vez que el token ya está escrito en disco.
       try {
         await window.omniworkerAPI.startGateway();
         console.error("[APP] Gateway started");
+        // Reiniciar (no sólo start) para que lea el JWT recién guardado
+        await window.omniworkerAPI.stopSmartRouter();
         await window.omniworkerAPI.startSmartRouter();
-        console.error("[APP] Smart Router started");
+        console.error("[APP] Smart Router started with fresh JWT");
       } catch (srErr: any) {
         console.error("[APP] Backend startup failed (non-fatal):", srErr?.message);
       }
 
-      // 4. Auto-refresh del JWT cada 12 minutos para mantener la sesión viva
+      // 4. Auto-refresh del JWT cada 10 minutos (token dura 15 min → margen de 5 min)
       if (auth.refreshToken) {
         const doRefresh = async (refreshToken: string) => {
           try {
@@ -125,16 +128,20 @@ function App(): React.JSX.Element {
               const data = await res.json();
               if (data.accessToken) {
                 setAuthToken(data.accessToken);
-                // Actualizar token en config para que el próximo mensaje use el nuevo JWT
-                await window.omniworkerAPI.setEnv(
-                  "OPENAI_API_KEY",
-                  data.accessToken,
-                );
+                // 1. Persistir en disco para que el gateway Python lo lea
+                await window.omniworkerAPI.setEnv("OPENAI_API_KEY", data.accessToken);
                 await window.omniworkerAPI.setConnectionConfig(
                   "local",
                   `${saasUrl}/api`,
                   data.accessToken,
                 );
+                // 2. Reiniciar Smart Router para que el proceso Python recoja el nuevo JWT
+                try {
+                  await window.omniworkerAPI.stopSmartRouter();
+                  await window.omniworkerAPI.startSmartRouter();
+                } catch {
+                  /* non-fatal */
+                }
                 return data.refreshToken || refreshToken;
               }
             }
@@ -149,7 +156,7 @@ function App(): React.JSX.Element {
           async () => {
             currentRefreshToken = await doRefresh(currentRefreshToken);
           },
-          12 * 60 * 1000,
+          10 * 60 * 1000, // cada 10 min — 5 min antes de que expire el JWT de 15 min
         );
 
         (window as any).__owRefreshInterval = interval;
