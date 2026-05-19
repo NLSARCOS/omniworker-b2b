@@ -90,18 +90,20 @@ function App(): React.JSX.Element {
       // 2. Configurar conexión LOCAL para usar el gateway Python y sus herramientas
       await window.omniworkerAPI.setConnectionConfig(
         "local",
-        "",
-        "",
+        `${saasUrl}/api`,
+        auth.accessToken,
       );
       console.error("[APP] Connection set to local mode");
 
       // 3. Iniciar Smart Router para enrutar mensajes simples al SLM local
       //    (no-fatal: si no está disponible el SLM, todo va al SaaS igual)
       try {
+        await window.omniworkerAPI.startGateway();
+        console.error("[APP] Gateway started");
         await window.omniworkerAPI.startSmartRouter();
         console.error("[APP] Smart Router started");
       } catch (srErr: any) {
-        console.error("[APP] Smart Router failed (non-fatal):", srErr?.message);
+        console.error("[APP] Backend startup failed (non-fatal):", srErr?.message);
       }
 
       // 4. Auto-refresh del JWT cada 12 minutos para mantener la sesión viva
@@ -124,8 +126,8 @@ function App(): React.JSX.Element {
                 );
                 await window.omniworkerAPI.setConnectionConfig(
                   "local",
-                  "",
-                  "",
+                  `${saasUrl}/api`,
+                  data.accessToken,
                 );
                 return data.refreshToken || refreshToken;
               }

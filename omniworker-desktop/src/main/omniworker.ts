@@ -72,7 +72,7 @@ export function getRemoteAuthHeader(): Record<string, string> {
       return { Authorization: `Bearer ${_sshRemoteApiKey}` };
     return {};
   }
-  if (conn.mode === "remote" && conn.apiKey) {
+  if (conn.apiKey) {
     return { Authorization: `Bearer ${conn.apiKey}` };
   }
   return {};
