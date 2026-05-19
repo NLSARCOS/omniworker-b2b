@@ -398,6 +398,10 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass  # Headers already sent during streaming
 
+    def address_string(self):
+        # Override to prevent reverse DNS lookup hangs
+        return self.client_address[0]
+
     def log_message(self, format, *args):
         # Suppress default access logs unless debug mode
         if ROUTER_LOG:
