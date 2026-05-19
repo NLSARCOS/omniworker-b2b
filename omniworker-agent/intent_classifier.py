@@ -12,8 +12,23 @@ _LOCAL_SLM_BASE_URL = os.getenv("OMNIWORKER_LOCAL_SLM_URL", "http://127.0.0.1:80
 _LOCAL_SLM_MODEL    = os.getenv("OMNIWORKER_LOCAL_SLM_MODEL", "slm")   # matches llama-server --alias
 
 # SaaS cloud gateway (injected by the desktop via ~/.omniworker/.env)
-_SAAS_BASE_URL = os.getenv("OMNIWORKER_SAAS_BASE_URL", "http://localhost:3000/api/v1")
-_SAAS_API_KEY  = os.getenv("OMNIWORKER_SAAS_API_KEY") or os.getenv("CUSTOM_API_KEY", "")
+_CLOUD_API_URL = os.getenv("CLOUD_API_URL")
+if _CLOUD_API_URL:
+    if _CLOUD_API_URL.endswith("/api"):
+        _SAAS_BASE_URL = f"{_CLOUD_API_URL}/v1"
+    elif _CLOUD_API_URL.endswith("/api/"):
+        _SAAS_BASE_URL = f"{_CLOUD_API_URL}v1"
+    else:
+        _SAAS_BASE_URL = _CLOUD_API_URL
+else:
+    _SAAS_BASE_URL = os.getenv("OMNIWORKER_SAAS_BASE_URL", "http://localhost:3000/api/v1")
+
+_SAAS_API_KEY  = (
+    os.getenv("OMNIWORKER_SAAS_API_KEY")
+    or os.getenv("OPENAI_API_KEY")
+    or os.getenv("CUSTOM_API_KEY")
+    or ""
+)
 _SAAS_MODEL    = os.getenv("OMNIWORKER_SAAS_MODEL", "omniworker-b2b")
 
 

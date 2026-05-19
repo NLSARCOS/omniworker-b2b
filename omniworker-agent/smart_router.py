@@ -338,7 +338,10 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         use_https = parsed.scheme == "https"
 
         # Build auth headers
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
 
         # Use env var (JWT from desktop app) as priority, fallback to original header
         api_key = os.environ.get("OPENAI_API_KEY", "")

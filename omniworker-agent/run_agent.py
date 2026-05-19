@@ -1679,6 +1679,10 @@ class AIAgent:
                 elif base_url_host_matches(effective_base, "chatgpt.com"):
                     from agent.auxiliary_client import _codex_cloudflare_headers
                     client_kwargs["default_headers"] = _codex_cloudflare_headers(api_key)
+                elif base_url_host_matches(effective_base, "thelab.lat") or (effective_base and "thelab.lat" in str(effective_base).lower()):
+                    client_kwargs["default_headers"] = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    }
                 elif "default_headers" not in client_kwargs:
                     # Fall back to profile.default_headers for providers that
                     # declare custom headers (e.g. Vercel AI Gateway attribution,
@@ -7310,6 +7314,10 @@ class AIAgent:
             self._client_kwargs["default_headers"] = _codex_cloudflare_headers(
                 self._client_kwargs.get("api_key", "")
             )
+        elif base_url_host_matches(base_url, "thelab.lat") or (base_url and "thelab.lat" in str(base_url).lower()):
+            self._client_kwargs["default_headers"] = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
         else:
             # No URL-specific headers — check profile.default_headers before clearing.
             _ph_headers = None

@@ -1284,6 +1284,18 @@ export function startGateway(profile?: string): boolean {
     gatewayEnv.API_SERVER_KEY = gatewayEnv.CUSTOM_API_KEY;
   }
 
+  // Inject OMNIWORKER_SAAS_BASE_URL derived from CLOUD_API_URL or SAAS_BASE_URL
+  const conn = getConnectionConfig();
+  const cloudApiUrl = conn.remoteUrl || profileEnv.CLOUD_API_URL || process.env.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
+  let saasBaseUrl = cloudApiUrl;
+  if (cloudApiUrl.endsWith("/api")) {
+    saasBaseUrl = `${cloudApiUrl}/v1`;
+  } else if (cloudApiUrl.endsWith("/api/")) {
+    saasBaseUrl = `${cloudApiUrl}v1`;
+  }
+  gatewayEnv.OMNIWORKER_SAAS_BASE_URL = saasBaseUrl;
+
+
   const fs = require("fs");
   const logFd = fs.openSync(join(OMNIWORKER_HOME, "gateway.log"), "a");
 
