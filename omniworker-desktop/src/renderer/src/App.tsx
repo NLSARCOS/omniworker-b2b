@@ -87,15 +87,13 @@ function App(): React.JSX.Element {
       await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
       await window.omniworkerAPI.setEnv("CLOUD_API_URL", `${saasUrl}/api`);
 
-      // 2. Configurar conexión DIRECTA al SaaS con JWT como Bearer token
-      //    Esto evita depender de que el gateway Python local esté corriendo
+      // 2. Configurar conexión LOCAL para usar el gateway Python y sus herramientas
       await window.omniworkerAPI.setConnectionConfig(
-        "remote",
-        `${saasUrl}/api`,
-        auth.accessToken,
+        "local",
+        "",
+        "",
       );
-
-      console.error("[APP] Connection set to SaaS remote mode");
+      console.error("[APP] Connection set to local mode");
 
       // 3. Iniciar Smart Router para enrutar mensajes simples al SLM local
       //    (no-fatal: si no está disponible el SLM, todo va al SaaS igual)
@@ -125,9 +123,9 @@ function App(): React.JSX.Element {
                   data.accessToken,
                 );
                 await window.omniworkerAPI.setConnectionConfig(
-                  "remote",
-                  `${saasUrl}/api`,
-                  data.accessToken,
+                  "local",
+                  "",
+                  "",
                 );
                 return data.refreshToken || refreshToken;
               }
