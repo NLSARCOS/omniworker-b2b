@@ -78,6 +78,17 @@ import {
   Claw3dSetupProgress,
 } from "./claw3d";
 import {
+  getWhatsAppBotStatus,
+  setupWhatsAppBot,
+  startWhatsAppBot,
+  stopWhatsAppBot,
+  getWhatsAppBotLogs,
+  getWhatsAppBotSettings,
+  setWhatsAppBotSettings,
+  testWhatsAppBot,
+  getWhatsAppBotConversations,
+} from "./whatsapp_bot";
+import {
   readEnv,
   setEnvValue,
   getConfigValue,
@@ -1044,6 +1055,48 @@ function setupIPC(): void {
     return true;
   });
 
+  // WhatsApp Bot
+  ipcMain.handle("whatsapp-bot-status", () => getWhatsAppBotStatus());
+
+  ipcMain.handle(
+    "whatsapp-bot-setup",
+    async (
+      event,
+      settings: Record<string, unknown>,
+    ): Promise<{ success: boolean; error?: string }> => {
+      try {
+        await setupWhatsAppBot(
+          settings as unknown as Parameters<typeof setupWhatsAppBot>[0],
+          (progress) => {
+            event.sender.send("whatsapp-bot-setup-progress", progress);
+          },
+        );
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: (err as Error).message };
+      }
+    },
+  );
+
+  ipcMain.handle("whatsapp-bot-start", () => startWhatsAppBot());
+  ipcMain.handle("whatsapp-bot-stop", () => {
+    stopWhatsAppBot();
+    return true;
+  });
+  ipcMain.handle("whatsapp-bot-get-logs", () => getWhatsAppBotLogs());
+  ipcMain.handle("whatsapp-bot-get-settings", () => getWhatsAppBotSettings());
+  ipcMain.handle(
+    "whatsapp-bot-set-settings",
+    (_event, settings: Record<string, unknown>) =>
+      setWhatsAppBotSettings(settings as unknown as import("./whatsapp_bot").WhatsAppBotSettings),
+  );
+  ipcMain.handle("whatsapp-bot-test", (_event, message: string) =>
+    testWhatsAppBot(message),
+  );
+  ipcMain.handle("whatsapp-bot-get-conversations", () =>
+    getWhatsAppBotConversations(),
+  );
+
   // Cron Jobs
   ipcMain.handle(
     "list-cron-jobs",
@@ -1522,4 +1575,5 @@ app.on("before-quit", () => {
   stopGateway();
   stopSshTunnel();
   stopClaw3d();
+  stopWhatsAppBot();
 });

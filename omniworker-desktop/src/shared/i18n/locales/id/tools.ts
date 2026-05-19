@@ -68,6 +68,10 @@ export default {
     description:
       "Kelola produk dan pesanan Shopify, WooCommerce, dan PrestaShop",
   },
+  whatsapp_bot: {
+    label: "Pembuat Bot WhatsApp",
+    description: "Buat bot layanan pelanggan WhatsApp bertenaga AI untuk bisnis",
+  },
   mcpServers: "Server MCP",
   mcpDescription:
     "Server Model Context Protocol yang dikonfigurasi di config.yaml. Kelola melalui <code>omniworker mcp add/remove</code> di terminal.",

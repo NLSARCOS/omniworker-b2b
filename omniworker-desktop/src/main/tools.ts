@@ -111,6 +111,11 @@ const TOOLSET_DEFS: {
     labelKey: "tools.ecommerce.label",
     descriptionKey: "tools.ecommerce.description",
   },
+  {
+    key: "whatsapp_bot",
+    labelKey: "tools.whatsapp_bot.label",
+    descriptionKey: "tools.whatsapp_bot.description",
+  },
 ];
 
 function localizeToolDefs(

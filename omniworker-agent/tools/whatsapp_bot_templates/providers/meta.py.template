@@ -1,0 +1,58 @@
+"""WhatsApp Bot — Meta Cloud API provider.
+
+Uses the official Meta WhatsApp Business API.
+"""
+
+import os
+import logging
+
+import aiohttp
+
+from .base import BaseProvider, IncomingMessage
+
+logger = logging.getLogger("whatsapp_bot.providers.meta")
+
+META_ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN", "${meta_access_token}")
+META_PHONE_NUMBER_ID = os.getenv("META_PHONE_NUMBER_ID", "${meta_phone_number_id}")
+META_API_URL = os.getenv(
+    "META_API_URL",
+    "https://graph.facebook.com/v21.0",
+)
+
+
+class MetaProvider(BaseProvider):
+    """Meta Cloud API WhatsApp provider."""
+
+    def parse_webhook(self, body: dict) -> list[IncomingMessage]:
+        messages = []
+        for entry in body.get("entry", []):
+            for change in entry.get("changes", []):
+                value = change.get("value", {})
+                for msg in value.get("messages", []):
+                    phone = msg.get("from", "")
+                    text = ""
+                    if msg.get("type") == "text":
+                        text = msg.get("text", {}).get("body", "")
+                    if phone and text:
+                        messages.append(IncomingMessage(sender=phone, text=text))
+        return messages
+
+    async def send_message(self, recipient: str, text: str) -> bool:
+        url = f"{META_API_URL}/{META_PHONE_NUMBER_ID}/messages"
+        headers = {
+            "Authorization": f"Bearer {META_ACCESS_TOKEN}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": recipient,
+            "type": "text",
+            "text": {"body": text},
+        }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload, headers=headers) as resp:
+                    return resp.status == 200
+        except Exception:
+            logger.exception("Error sending Meta message to %s", recipient)
+            return False

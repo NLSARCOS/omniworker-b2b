@@ -1,0 +1,23 @@
+"""WhatsApp Bot — Provider auto-selection.
+
+Selects the appropriate provider based on WHATSAPP_PROVIDER env var.
+"""
+
+from .base import BaseProvider
+from .whapi import WhapiProvider
+from .meta import MetaProvider
+from .twilio import TwilioProvider
+
+_PROVIDERS = {
+    "whapi": WhapiProvider,
+    "meta": MetaProvider,
+    "twilio": TwilioProvider,
+}
+
+
+def get_provider(name: str) -> BaseProvider:
+    """Get a provider instance by name."""
+    cls = _PROVIDERS.get(name)
+    if not cls:
+        raise ValueError(f"Unknown provider: {name}. Available: {list(_PROVIDERS.keys())}")
+    return cls()

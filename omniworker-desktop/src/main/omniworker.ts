@@ -1147,23 +1147,36 @@ export async function startSmartRouter(): Promise<boolean> {
   }
 
   // Get current env to pass auth credentials to router
+  const conn = getConnectionConfig();
+  const envConfig = readEnv();
+
+  let cloudApiUrl = process.env.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
+  if (conn.mode === "local") {
+    cloudApiUrl = envConfig.CUSTOM_BASE_URL || "https://api.openai.com";
+  }
+
   const routerEnv: Record<string, string> = {
     ...(process.env as Record<string, string>),
     PATH: getEnhancedPath(),
     HOME: homedir(),
     SMART_ROUTER_PORT: String(SMART_ROUTER_PORT),
     LOCAL_SLM_PORT: process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
-    CLOUD_API_URL: process.env.CLOUD_API_URL || `${SAAS_BASE_URL}/api`,
+    CLOUD_API_URL: cloudApiUrl,
     SMART_ROUTER_LOG: "1", // Enable logging
   };
 
-  // Forward the JWT token so the router can auth with cloud
-  const envConfig = readEnv();
-  const apiKey =
-    process.env.OPENAI_API_KEY ||
-    envConfig.OPENAI_API_KEY ||
-    envConfig.CUSTOM_API_KEY ||
-    "";
+  // Forward the JWT token or local API key so the router can auth with cloud
+  let apiKey = "";
+  if (conn.mode === "remote" && conn.apiKey) {
+    apiKey = conn.apiKey;
+  } else {
+    apiKey =
+      process.env.OPENAI_API_KEY ||
+      envConfig.OPENAI_API_KEY ||
+      envConfig.CUSTOM_API_KEY ||
+      "";
+  }
+
   if (apiKey) {
     routerEnv.OPENAI_API_KEY = apiKey;
   }

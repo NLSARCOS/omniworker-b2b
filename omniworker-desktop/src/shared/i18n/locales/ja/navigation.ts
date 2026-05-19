@@ -3,6 +3,7 @@ export default {
   sessions: "セッション",
   agents: "プロファイル",
   office: "オフィス",
+  whatsapp: "WhatsApp Bot",
   models: "モデル",
   providers: "プロバイダ",
   skills: "スキル",

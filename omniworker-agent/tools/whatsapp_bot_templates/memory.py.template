@@ -1,0 +1,79 @@
+"""WhatsApp Bot — Memory module.
+
+Stores conversation history per customer in SQLite.
+"""
+
+import json
+import sqlite3
+from pathlib import Path
+from typing import Optional
+
+DB_PATH = Path(__file__).resolve().parent.parent / "conversations.db"
+
+
+class MemoryStore:
+    """SQLite-backed conversation memory."""
+
+    def __init__(self, db_path: Optional[Path] = None):
+        self.db_path = db_path or DB_PATH
+        self._init_db()
+
+    def _init_db(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS conversations (
+                    sender TEXT NOT NULL,
+                    history TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (sender)
+                )
+            """)
+
+    def get_history(self, sender: str) -> list[dict[str, str]]:
+        """Load conversation history for a sender."""
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT history FROM conversations WHERE sender = ?",
+                (sender,),
+            ).fetchone()
+        if row:
+            return json.loads(row[0])
+        return []
+
+    def save_history(self, sender: str, history: list[dict[str, str]]):
+        """Save conversation history for a sender."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """INSERT INTO conversations (sender, history, updated_at)
+                   VALUES (?, ?, CURRENT_TIMESTAMP)
+                   ON CONFLICT(sender) DO UPDATE SET
+                     history = excluded.history,
+                     updated_at = CURRENT_TIMESTAMP
+                """,
+                (sender, json.dumps(history, ensure_ascii=False)),
+            )
+            conn.commit()
+
+    def get_recent_conversations(self, limit: int = 20) -> list[dict]:
+        """Get recent conversations with summary info."""
+        with sqlite3.connect(self.db_path) as conn:
+            rows = conn.execute(
+                """SELECT sender, history, updated_at
+                   FROM conversations
+                   ORDER BY updated_at DESC
+                   LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
+        result = []
+        for sender, history_json, updated_at in rows:
+            history = json.loads(history_json)
+            last_msg = history[-1]["content"] if history else ""
+            result.append({
+                "phone": sender,
+                "lastMessage": last_msg[:200],
+                "timestamp": updated_at,
+                "messageCount": len(history),
+            })
+        return result

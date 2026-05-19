@@ -1,0 +1,93 @@
+"""WhatsApp Bot — AI Brain module.
+
+Connects to Claude AI to generate intelligent responses using the business
+configuration and conversation history.
+"""
+
+import os
+import logging
+from pathlib import Path
+
+import anthropic
+import yaml
+
+logger = logging.getLogger("whatsapp_bot.brain")
+
+# ── Load configuration ────────────────────────────────────────
+_config_dir = Path(__file__).resolve().parent.parent / "config"
+
+with open(_config_dir / "business.yaml", encoding="utf-8") as f:
+    business_cfg = yaml.safe_load(f)
+
+with open(_config_dir / "prompts.yaml", encoding="utf-8") as f:
+    prompts_cfg = yaml.safe_load(f)
+
+# ── Anthropic client ──────────────────────────────────────────
+_client = anthropic.AsyncAnthropic(
+    api_key=os.getenv("ANTHROPIC_API_KEY", "${anthropic_api_key}"),
+)
+
+MODEL = os.getenv("BOT_MODEL", "claude-sonnet-4-6-20250514")
+MAX_TOKENS = int(os.getenv("BOT_MAX_TOKENS", "1024"))
+
+
+def _build_system_prompt() -> str:
+    """Build the system prompt from business config and prompts."""
+    b = business_cfg
+    p = prompts_cfg
+    return (
+        f"Eres {p.get('agent_name', '${agent_name}')}, "
+        f"el asistente virtual de {b.get('name', '${business_name}')}.\n\n"
+        f"## Sobre el negocio\n"
+        f"- Nombre: {b.get('name', '${business_name}')}\n"
+        f"- Descripcion: {b.get('description', '${business_description}')}\n"
+        f"- Horario: {b.get('hours', '${hours}')}\n\n"
+        f"## Tu proposito\n"
+        f"{b.get('purpose', '${agent_purpose}')}\n\n"
+        f"## Tono de comunicacion\n"
+        f"{p.get('tone', '${tone}')}\n\n"
+        f"## Reglas\n"
+        f"- Responde SOLO con informacion que conozcas del negocio.\n"
+        f"- Si no sabes algo, di: 'No tengo esa informacion, dejame conectarte con alguien del equipo.'\n"
+        f"- No inventes precios, productos ni servicios.\n"
+        f"- Se amable y profesional.\n"
+        f"- Mantene las respuestas concisas.\n"
+    )
+
+
+SYSTEM_PROMPT = _build_system_prompt()
+
+
+async def generate_response(
+    message: str,
+    history: list[dict[str, str]],
+    sender: str,
+) -> str:
+    """Generate a response using Claude AI.
+
+    Args:
+        message: The user's message text.
+        history: Conversation history (list of role/content dicts).
+        sender: Sender identifier (phone number).
+
+    Returns:
+        The AI-generated response text.
+    """
+    messages = []
+    for entry in history[-20:]:  # Keep last 20 messages for context
+        messages.append({"role": entry["role"], "content": entry["content"]})
+
+    try:
+        response = await _client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            system=SYSTEM_PROMPT,
+            messages=messages,
+        )
+        return response.content[0].text
+    except Exception:
+        logger.exception("Error generating response for %s", sender)
+        return (
+            "Lo siento, estoy teniendo problemas tecnicos. "
+            "Por favor intenta de nuevo en unos minutos."
+        )

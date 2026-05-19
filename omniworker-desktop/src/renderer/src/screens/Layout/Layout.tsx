@@ -9,6 +9,7 @@ import Memory from "../Memory/Memory";
 import Tools from "../Tools/Tools";
 import Gateway from "../Gateway/Gateway";
 import Office from "../Office/Office";
+import WhatsApp from "../WhatsApp/WhatsApp";
 import Models from "../Models/Models";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
@@ -32,6 +33,7 @@ import {
   Timer,
   Kanban as KanbanIcon,
   Download,
+  Bot,
 } from "../../assets/icons";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
@@ -41,6 +43,7 @@ type View =
   | "sessions"
   | "agents"
   | "office"
+  | "whatsapp"
   | "models"
   | "providers"
   | "skills"
@@ -58,6 +61,7 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "sessions", icon: Clock, labelKey: "navigation.sessions" },
   { view: "agents", icon: Users, labelKey: "navigation.agents" },
   { view: "office", icon: Building, labelKey: "navigation.office" },
+  { view: "whatsapp", icon: Bot, labelKey: "navigation.whatsapp" },
   { view: "kanban", icon: KanbanIcon, labelKey: "navigation.kanban" },
   //  { view: "models", icon: Layers, labelKey: "navigation.models" },
   //  { view: "providers", icon: KeyRound, labelKey: "navigation.providers" },
@@ -507,6 +511,16 @@ function Layout({
         {visitedViews.has("office") && (
           <div style={paneStyle("office")}>
             <Office visible={view === "office"} />
+          </div>
+        )}
+
+        {visitedViews.has("whatsapp") && (
+          <div style={paneStyle("whatsapp")}>
+            {remoteMode ? (
+              <RemoteNotice feature="WhatsApp Bot" />
+            ) : (
+              <WhatsApp visible={view === "whatsapp"} />
+            )}
           </div>
         )}
 

@@ -644,6 +644,7 @@ export async function startDevServer(): Promise<boolean> {
     HOME: homedir(),
     TERM: "dumb",
     PORT: String(port),
+    HOSTNAME: "127.0.0.1",
   };
 
   // Check if we have a bundled standalone build
@@ -658,12 +659,15 @@ export async function startDevServer(): Promise<boolean> {
 
   if (hasStandalone) {
     // Use production standalone server (no npm needed)
-    proc = spawn("node", ["server.js"], {
+    const nodeCmd = resolveCommand("node", env.PATH);
+    const nodeExec = nodeCmd ? nodeCmd.command : "node";
+    proc = spawn(nodeExec, ["server.js"], {
       cwd: OMNIWORKER_OFFICE_DIR,
       env,
       stdio: ["ignore", "pipe", "pipe"],
       detached: true,
       windowsHide: true,
+      windowsVerbatimArguments: nodeCmd?.windowsScript ? true : false,
     });
   } else {
     // Fallback: use npm run dev (legacy clone path)

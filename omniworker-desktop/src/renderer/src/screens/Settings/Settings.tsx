@@ -69,20 +69,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   >(null);
   const migrationLogRef = useRef<HTMLPreElement>(null);
 
-  // Connection mode
-  const [connMode, setConnMode] = useState<"local" | "remote" | "ssh">("local");
-  const [connRemoteUrl, setConnRemoteUrl] = useState("");
-  const [connApiKey, setConnApiKey] = useState("");
-  const [connTesting, setConnTesting] = useState(false);
-  const [connStatus, setConnStatus] = useState<string | null>(null);
-  const connLoaded = useRef(false);
 
-  // SSH connection state
-  const [sshHost, setSshHost] = useState("");
-  const [sshPort, setSshPort] = useState("");
-  const [sshUser, setSshUser] = useState("");
-  const [sshKeyPath, setSshKeyPath] = useState("");
-  const [sshRemotePort, setSshRemotePort] = useState("");
 
   // Backup / Import state
   const [backingUp, setBackingUp] = useState(false);
@@ -121,22 +108,12 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
 
   const loadConfig = useCallback(async (): Promise<void> => {
     // Load fast config first (cached in main process)
-    const [home, aVersion, conn] = await Promise.all([
+    const [home, aVersion] = await Promise.all([
       window.omniworkerAPI.getOmniWorkerHome(profile),
       window.omniworkerAPI.getAppVersion(),
-      window.omniworkerAPI.getConnectionConfig(),
     ]);
     setOmniWorkerHome(home);
     setAppVersion(aVersion);
-    setConnMode(conn.mode);
-    setConnRemoteUrl(conn.remoteUrl);
-    setConnApiKey(conn.apiKey);
-    setSshHost(conn.ssh?.host || "");
-    setSshPort(conn.ssh?.port ? String(conn.ssh.port) : "");
-    setSshUser(conn.ssh?.username || "");
-    setSshKeyPath(conn.ssh?.keyPath || "");
-    setSshRemotePort(conn.ssh?.remotePort ? String(conn.ssh.remotePort) : "");
-    connLoaded.current = true;
 
     // Load network settings from config.yaml
     window.omniworkerAPI.getConfig("network.force_ipv4", profile).then((v) => {
@@ -213,69 +190,6 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
     setMigrationDismissed(true);
   }
 
-  async function handleSaveConnection(): Promise<void> {
-    if (connMode === "ssh") {
-      await window.omniworkerAPI.setSshConfig(
-        sshHost.trim(),
-        parseInt(sshPort, 10) || 22,
-        sshUser.trim(),
-        sshKeyPath.trim(),
-        parseInt(sshRemotePort, 10) || 8642,
-        18642,
-      );
-    } else {
-      await window.omniworkerAPI.setConnectionConfig(
-        connMode,
-        connRemoteUrl,
-        connApiKey,
-      );
-    }
-    setConnStatus("Saved");
-    setTimeout(() => setConnStatus(null), 2000);
-  }
-
-  async function handleTestConnection(): Promise<void> {
-    if (connMode === "ssh") {
-      if (!sshHost.trim() || !sshUser.trim()) {
-        setConnStatus("Host and username are required");
-        return;
-      }
-      setConnTesting(true);
-      setConnStatus(null);
-      const ok = await window.omniworkerAPI.testSshConnection(
-        sshHost.trim(),
-        parseInt(sshPort, 10) || 22,
-        sshUser.trim(),
-        sshKeyPath.trim(),
-        parseInt(sshRemotePort, 10) || 8642,
-      );
-      setConnTesting(false);
-      setConnStatus(ok ? "SSH tunnel connected!" : "Could not connect via SSH");
-    } else {
-      const url = connRemoteUrl.trim();
-      if (!url) {
-        setConnStatus("Please enter a URL");
-        return;
-      }
-      setConnTesting(true);
-      setConnStatus(null);
-      const ok = await window.omniworkerAPI.testRemoteConnection(
-        url,
-        connApiKey.trim(),
-      );
-      setConnTesting(false);
-      setConnStatus(ok ? "Connected successfully!" : "Could not reach server");
-    }
-  }
-
-  async function handleSwitchToLocal(): Promise<void> {
-    setConnMode("local");
-    setConnRemoteUrl("");
-    setConnApiKey("");
-    await window.omniworkerAPI.setConnectionConfig("local", "", "");
-    setConnStatus(t("settings.switchedToLocal"));
-    setTimeout(() => setConnStatus(null), 2000);
-  }
 
   async function handleBackup(): Promise<void> {
     // Scan first to show what will be backed up
@@ -562,6 +476,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         </div>
       </div>
 
+      {/* 
       <div className="settings-section">
         <div className="settings-section-title">
           {t("settings.connectionSection")}
@@ -754,6 +669,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           </>
         )}
       </div>
+      */}
 
       {omniworkerFound && !migrationDismissed && (
         <div className="settings-migration-banner">
@@ -913,6 +829,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         </div>
       </div>
 
+      {/*
       {connMode === "remote" && (
         <div className="settings-section">
           <div className="settings-section-title">
@@ -924,6 +841,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           />
         </div>
       )}
+      */}
 
       <div className="settings-section">
         <div className="settings-section-title">

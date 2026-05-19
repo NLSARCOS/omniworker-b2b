@@ -10,7 +10,7 @@ ENGINE_DIR="$(cd "$SCRIPT_DIR/../engine" && pwd)"
 LLAMA_BIN="$ENGINE_DIR/llama-server"
 MODEL="$ENGINE_DIR/slm.gguf"
 PORT="${OMNIWORKER_LOCAL_SLM_PORT:-8080}"
-CTX="${OMNIWORKER_LOCAL_SLM_CTX:-4096}"    # context window
+CTX="${OMNIWORKER_LOCAL_SLM_CTX:-2048}"    # optimized for fast, short interactions
 THREADS="${OMNIWORKER_LOCAL_SLM_THREADS:-4}"
 
 if [ ! -f "$LLAMA_BIN" ] || [ ! -s "$LLAMA_BIN" ]; then

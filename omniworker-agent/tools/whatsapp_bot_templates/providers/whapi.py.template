@@ -1,0 +1,46 @@
+"""WhatsApp Bot — Whapi.cloud provider.
+
+Uses the Whapi.cloud API for sending and receiving WhatsApp messages.
+"""
+
+import os
+import logging
+
+import aiohttp
+
+from .base import BaseProvider, IncomingMessage
+
+logger = logging.getLogger("whatsapp_bot.providers.whapi")
+
+WHAPI_TOKEN = os.getenv("WHAPI_TOKEN", "${whapi_token}")
+WHAPI_API_URL = os.getenv("WHAPI_API_URL", "https://gate.whapi.cloud")
+
+
+class WhapiProvider(BaseProvider):
+    """Whapi.cloud WhatsApp provider."""
+
+    def parse_webhook(self, body: dict) -> list[IncomingMessage]:
+        messages = []
+        for event in body.get("messages", []:
+            if event.get("type") != "text":
+                continue
+            chat_id = event.get("chat_id", "")
+            text = event.get("text", {}).get("body", "")
+            if chat_id and text:
+                messages.append(IncomingMessage(sender=chat_id, text=text))
+        return messages
+
+    async def send_message(self, recipient: str, text: str) -> bool:
+        url = f"{WHAPI_API_URL}/messages/text"
+        headers = {
+            "Authorization": f"Bearer {WHAPI_TOKEN}",
+            "Content-Type": "application/json",
+        }
+        payload = {"to": recipient, "body": text}
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload, headers=headers) as resp:
+                    return resp.status == 200
+        except Exception:
+            logger.exception("Error sending Whapi message to %s", recipient)
+            return False

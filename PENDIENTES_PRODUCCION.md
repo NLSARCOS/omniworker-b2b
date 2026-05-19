@@ -13,21 +13,21 @@ Este documento detalla los pasos pendientes para completar el flujo de instalaci
 
 ---
 
-## 📋 Checklist de Tareas Pendientes (Mañana)
+### Estado Actual (v8.8 - Despliegue Desktop)
 
-### 1. Empaquetado del Agente (Backend Local)
-Actualmente, la App de Desktop buscará descargar un archivo `.tar.gz` desde el servidor en Nginx. Debemos prepararlo:
-- [ ] Entrar al directorio local `omniworker-agent`.
-- [ ] Crear el empaquetado del agente ignorando carpetas pesadas:
-  `tar -czvf omniworker-agent.tar.gz omniworker-agent/ --exclude="omniworker-agent/venv" --exclude="omniworker-agent/.venv" --exclude="omniworker-agent/__pycache__" --exclude="omniworker-agent/.git"`
-- [ ] Subir el archivo `omniworker-agent.tar.gz` al servidor de producción en la ruta de Nginx: `/opt/omniworker/downloads/omniworker-agent.tar.gz` (usar `scp`).
+*   **Agente Local (CLI):** ✅ Empaquetado y subido a `/opt/omniworker/downloads/omniworker-agent.tar.gz`.
+*   **Instalador macOS:** ✅ Compilado (v8.8) y subido a `/opt/omniworker/downloads/OmniWorker-v8.8.dmg`.
+*   **Ruteo (Smart Router):** ✅ Corregido fallo de `Invalid API key`. El token SaaS ahora se inyecta correctamente en el subproceso `smart_router.py`.
+*   **Optimizacion SLM:** ✅ Contexto reducido a 2048 para mitigar tiempo de "Cold Start". El modelo Qwen2.5-0.5B-Instruct es el más pequeño disponible (~397MB).
 
-### 2. Corrección del Script de Descarga de Modelos (Desktop App)
+## 🚀 Próximos Pasos (Pendientes)
+
+### 1. Corrección del Script de Descarga de Modelos (Desktop App)
 El script `scripts/download_slm.sh` de la App Desktop falla durante el empaquetado (`npm run build:mac`) porque las nuevas versiones de `llama-server` (ej. `b9190`) en GitHub ahora se distribuyen como `.tar.gz` para Unix/Mac en lugar de `.zip`.
 - [ ] Modificar `scripts/download_slm.sh` para extraer correctamente los archivos `.tar.gz` en Mac y Linux usando `tar -xzf` en lugar de `unzip`. (Dejando `unzip` únicamente para Windows).
 - [ ] Asegurarse de que el modelo local de inferencia rápida se descargue correctamente.
 
-### 3. Compilación Final del Instalador de Escritorio
+### 2. Compilación Final del Instalador de Escritorio
 - [ ] Ejecutar `npm run build:mac` de nuevo para generar el instalador final (`.dmg`).
 - [ ] Subir este `.dmg` a producción (`/opt/omniworker/downloads/OmniWorker-v5.dmg`) para que esté disponible para las descargas de los usuarios finales.
 

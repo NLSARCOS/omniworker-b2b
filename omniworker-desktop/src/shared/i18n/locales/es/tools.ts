@@ -79,6 +79,11 @@ export default {
     description:
       "Gestiona productos y órdenes de Shopify, WooCommerce y PrestaShop",
   },
+  whatsapp_bot: {
+    label: "Constructor de Bot de WhatsApp",
+    description:
+      "Crea bots de atencion al cliente con IA para WhatsApp",
+  },
   mcpServers: "Servidores MCP",
   mcpDescription:
     "Servidores Model Context Protocol configurados en config.yaml. Adminístralos con <code>omniworker mcp add/remove</code> en la terminal.",

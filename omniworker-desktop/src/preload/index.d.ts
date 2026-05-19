@@ -672,12 +672,56 @@ interface OmniWorkerAPI {
     Array<{ name: string; type: string; enabled: boolean; detail: string }>
   >;
 
+
   // Log viewer
   readLogs: (
     logFile?: string,
     lines?: number,
   ) => Promise<{ content: string; path: string }>;
+
+  // WhatsApp Bot
+  whatsappBotStatus: () => Promise<{
+    configured: boolean;
+    running: boolean;
+    port: number;
+    portInUse: boolean;
+    provider: string;
+    businessName: string;
+    agentName: string;
+    error: string;
+  }>;
+  whatsappBotSetup: (
+    settings: Record<string, unknown>,
+  ) => Promise<{ success: boolean; error?: string }>;
+  onWhatsappBotSetupProgress: (
+    callback: (progress: {
+      step: number;
+      totalSteps: number;
+      title: string;
+      detail: string;
+      log: string;
+    }) => void,
+  ) => () => void;
+  whatsappBotStart: () => Promise<{ success: boolean; error?: string }>;
+  whatsappBotStop: () => Promise<boolean>;
+  whatsappBotGetLogs: () => Promise<string>;
+  whatsappBotGetSettings: () => Promise<Record<string, unknown> | null>;
+  whatsappBotSetSettings: (
+    settings: Record<string, unknown>,
+  ) => Promise<{ success: boolean; error?: string }>;
+  whatsappBotTest: (
+    message: string,
+  ) => Promise<{ response: string; error?: string }>;
+  whatsappBotGetConversations: () => Promise<
+    Array<{
+      phone: string;
+      lastMessage: string;
+      timestamp: string;
+      messageCount: number;
+    }>
+  >;
 }
+
 
 declare global {
   interface Window {

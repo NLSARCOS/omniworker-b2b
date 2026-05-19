@@ -1,0 +1,42 @@
+"""WhatsApp Bot — Twilio provider.
+
+Uses the Twilio WhatsApp API for sending and receiving messages.
+"""
+
+import os
+import logging
+
+from twilio.rest import Client as TwilioClient
+
+from .base import BaseProvider, IncomingMessage
+
+logger = logging.getLogger("whatsapp_bot.providers.twilio")
+
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "${twilio_account_sid}")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "${twilio_auth_token}")
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "${twilio_phone_number}")
+
+
+class TwilioProvider(BaseProvider):
+    """Twilio WhatsApp provider."""
+
+    def parse_webhook(self, body: dict) -> list[IncomingMessage]:
+        messages = []
+        sender = body.get("From", "").replace("whatsapp:", "")
+        text = body.get("Body", "")
+        if sender and text:
+            messages.append(IncomingMessage(sender=sender, text=text))
+        return messages
+
+    async def send_message(self, recipient: str, text: str) -> bool:
+        try:
+            client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            client.messages.create(
+                from_=f"whatsapp:{TWILIO_PHONE_NUMBER}",
+                body=text,
+                to=f"whatsapp:{recipient}",
+            )
+            return True
+        except Exception:
+            logger.exception("Error sending Twilio message to %s", recipient)
+            return False

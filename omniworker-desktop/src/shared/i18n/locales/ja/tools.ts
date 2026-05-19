@@ -63,6 +63,10 @@ export default {
     label: "Eコマース",
     description: "Shopify、WooCommerce、PrestaShop の商品と注文を管理",
   },
+  whatsapp_bot: {
+    label: "WhatsApp Bot Builder",
+    description: "AI douinou no WhatsApp customer service bot wo sakusei",
+  },
   mcpServers: "MCP サーバ",
   mcpDescription:
     "config.yaml で構成された Model Context Protocol サーバ。ターミナルで <code>omniworker mcp add/remove</code> から管理します。",

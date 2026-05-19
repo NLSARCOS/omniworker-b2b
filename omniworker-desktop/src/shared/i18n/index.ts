@@ -27,6 +27,7 @@ import memoryEn from "./locales/en/memory";
 import installEn from "./locales/en/install";
 import constantsEn from "./locales/en/constants";
 import accountEn from "./locales/en/account";
+import whatsappEn from "./locales/en/whatsapp";
 import commonEs from "./locales/es/common";
 import navigationEs from "./locales/es/navigation";
 import welcomeEs from "./locales/es/welcome";
@@ -48,6 +49,7 @@ import memoryEs from "./locales/es/memory";
 import installEs from "./locales/es/install";
 import constantsEs from "./locales/es/constants";
 import accountEs from "./locales/es/account";
+import whatsappEs from "./locales/es/whatsapp";
 import commonId from "./locales/id/common";
 import navigationId from "./locales/id/navigation";
 import welcomeId from "./locales/id/welcome";
@@ -69,6 +71,7 @@ import memoryId from "./locales/id/memory";
 import installId from "./locales/id/install";
 import constantsId from "./locales/id/constants";
 import accountId from "./locales/id/account";
+import whatsappId from "./locales/id/whatsapp";
 import commonZh from "./locales/zh-CN/common";
 import navigationZh from "./locales/zh-CN/navigation";
 import welcomeZh from "./locales/zh-CN/welcome";
@@ -90,6 +93,7 @@ import memoryZh from "./locales/zh-CN/memory";
 import installZh from "./locales/zh-CN/install";
 import constantsZh from "./locales/zh-CN/constants";
 import accountZh from "./locales/zh-CN/account";
+import whatsappZh from "./locales/zh-CN/whatsapp";
 import commonJa from "./locales/ja/common";
 import navigationJa from "./locales/ja/navigation";
 import welcomeJa from "./locales/ja/welcome";
@@ -111,6 +115,7 @@ import memoryJa from "./locales/ja/memory";
 import installJa from "./locales/ja/install";
 import constantsJa from "./locales/ja/constants";
 import accountJa from "./locales/ja/account";
+import whatsappJa from "./locales/ja/whatsapp";
 import commonPt from "./locales/pt-BR/common";
 import navigationPt from "./locales/pt-BR/navigation";
 import welcomePt from "./locales/pt-BR/welcome";
@@ -132,6 +137,7 @@ import memoryPt from "./locales/pt-BR/memory";
 import installPt from "./locales/pt-BR/install";
 import constantsPt from "./locales/pt-BR/constants";
 import accountPt from "./locales/pt-BR/account";
+import whatsappPt from "./locales/pt-BR/whatsapp";
 
 export const resources = {
   en: {
@@ -157,6 +163,7 @@ export const resources = {
       install: installEn,
       constants: constantsEn,
       account: accountEn,
+      whatsapp: whatsappEn,
     },
   },
   es: {
@@ -182,6 +189,7 @@ export const resources = {
       install: installEs,
       constants: constantsEs,
       account: accountEs,
+      whatsapp: whatsappEs,
     },
   },
   id: {
@@ -207,6 +215,7 @@ export const resources = {
       install: installId,
       constants: constantsId,
       account: accountId,
+      whatsapp: whatsappId,
     },
   },
   "zh-CN": {
@@ -232,6 +241,7 @@ export const resources = {
       install: installZh,
       constants: constantsZh,
       account: accountZh,
+      whatsapp: whatsappZh,
     },
   },
   "pt-BR": {
@@ -257,6 +267,7 @@ export const resources = {
       install: installPt,
       constants: constantsPt,
       account: accountPt,
+      whatsapp: whatsappPt,
     },
   },
   ja: {
@@ -282,6 +293,7 @@ export const resources = {
       install: installJa,
       constants: constantsJa,
       account: accountJa,
+      whatsapp: whatsappJa,
     },
   },
 } satisfies Resource;

@@ -1,0 +1,8 @@
+services:
+  bot:
+    build: .
+    ports:
+      - "${port}:${port}"
+    env_file:
+      - .env
+    restart: unless-stopped

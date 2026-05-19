@@ -3,6 +3,7 @@ export default {
   sessions: "Sessions",
   agents: "Profiles",
   office: "Office",
+  whatsapp: "WhatsApp Bot",
   models: "Models",
   providers: "Providers",
   skills: "Skills",

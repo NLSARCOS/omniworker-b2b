@@ -24,6 +24,10 @@ export default {
     label: "电子商务",
     description: "管理 Shopify、WooCommerce 和 PrestaShop 的产品与订单",
   },
+  whatsapp_bot: {
+    label: "WhatsApp Bot Builder",
+    description: "wei qiye chuangjian AI qudong de WhatsApp kehu fuwu bot",
+  },
   mcpServers: "MCP 服务器",
   mcpDescription:
     "在 config.yaml 中配置的模型上下文协议服务器。在终端中使用 <code>omniworker mcp add/remove</code> 管理。",

@@ -80,6 +80,8 @@ _OMNIWORKER_CORE_TOOLS = [
     "shopify_list_products", "shopify_get_product", "shopify_list_orders", "shopify_get_order",
     "woocommerce_list_products", "woocommerce_get_product", "woocommerce_list_orders", "woocommerce_get_order",
     "prestashop_list_products", "prestashop_get_product", "prestashop_list_orders", "prestashop_get_order",
+    # WhatsApp Bot Builder (gated on bot project existing via check_fn)
+    "whatsapp_bot_create", "whatsapp_bot_configure", "whatsapp_bot_status", "whatsapp_bot_test",
 ]
 
 
@@ -334,6 +336,14 @@ TOOLSETS = {
             "shopify_list_products", "shopify_get_product", "shopify_list_orders", "shopify_get_order",
             "woocommerce_list_products", "woocommerce_get_product", "woocommerce_list_orders", "woocommerce_get_order",
             "prestashop_list_products", "prestashop_get_product", "prestashop_list_orders", "prestashop_get_order",
+        ],
+        "includes": []
+    },
+
+    "whatsapp_bot": {
+        "description": "WhatsApp Bot Builder: Create, configure, and test AI-powered WhatsApp customer service bots for businesses",
+        "tools": [
+            "whatsapp_bot_create", "whatsapp_bot_configure", "whatsapp_bot_status", "whatsapp_bot_test",
         ],
         "includes": []
     },

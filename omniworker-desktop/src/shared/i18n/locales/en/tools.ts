@@ -73,6 +73,11 @@ export default {
     description:
       "Manage Shopify, WooCommerce, and PrestaShop products and orders",
   },
+  whatsapp_bot: {
+    label: "WhatsApp Bot Builder",
+    description:
+      "Create AI-powered WhatsApp customer service bots for businesses",
+  },
   mcpServers: "MCP Servers",
   mcpDescription:
     "Model Context Protocol servers configured in config.yaml. Manage via <code>omniworker mcp add/remove</code> in the terminal.",

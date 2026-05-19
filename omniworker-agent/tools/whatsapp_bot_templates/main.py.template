@@ -1,0 +1,96 @@
+"""WhatsApp Bot — FastAPI webhook server.
+
+Receives messages from WhatsApp providers, routes them through the AI brain,
+and sends responses back.
+"""
+
+import os
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, Response
+from agent.brain import generate_response
+from agent.memory import MemoryStore
+from agent.providers import get_provider
+
+logger = logging.getLogger("whatsapp_bot")
+
+# ── Configuration ──────────────────────────────────────────────
+PROVIDER_NAME = os.getenv("WHATSAPP_PROVIDER", "${provider}")
+PORT = int(os.getenv("PORT", "${port}"))
+
+memory = MemoryStore()
+provider = get_provider(PROVIDER_NAME)
+
+
+# ── Lifespan ──────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("WhatsApp Bot starting (provider=%s)", PROVIDER_NAME)
+    yield
+    logger.info("WhatsApp Bot shutting down")
+
+
+app = FastAPI(title="${business_name} WhatsApp Bot", lifespan=lifespan)
+
+
+# ── Webhook endpoint ──────────────────────────────────────────
+@app.post("/webhook")
+async def webhook(request: Request) -> Response:
+    """Handle incoming WhatsApp messages."""
+    try:
+        body = await request.json()
+    except Exception:
+        return Response(status_code=400)
+
+    messages = provider.parse_webhook(body)
+    for msg in messages:
+        try:
+            history = memory.get_history(msg.sender)
+            history.append({"role": "user", "content": msg.text})
+            reply = await generate_response(msg.text, history, msg.sender)
+            history.append({"role": "assistant", "content": reply})
+            memory.save_history(msg.sender, history)
+            await provider.send_message(msg.sender, reply)
+        except Exception:
+            logger.exception("Error processing message from %s", msg.sender)
+
+    return Response(status_code=200)
+
+
+# ── Meta verification ─────────────────────────────────────────
+@app.get("/webhook")
+async def verify(request: Request) -> Response:
+    """Meta Cloud API verification endpoint."""
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token")
+    challenge = request.query_params.get("hub.challenge")
+    if mode == "subscribe" and token == os.getenv("META_VERIFY_TOKEN", "${meta_verify_token}"):
+        return Response(content=challenge, status_code=200)
+    return Response(status_code=403)
+
+
+# ── Health / test ─────────────────────────────────────────────
+@app.get("/health")
+async def health():
+    return {"status": "ok", "provider": PROVIDER_NAME}
+
+
+@app.post("/test")
+async def test_chat(request: Request):
+    """Test endpoint — chat without WhatsApp connection."""
+    body = await request.json()
+    message = body.get("message", "")
+    sender = body.get("sender", "test_user")
+    history = memory.get_history(sender)
+    history.append({"role": "user", "content": message})
+    reply = await generate_response(message, history, sender)
+    history.append({"role": "assistant", "content": reply})
+    memory.save_history(sender, history)
+    return {"response": reply}
+
+
+# ── Run ───────────────────────────────────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=PORT)

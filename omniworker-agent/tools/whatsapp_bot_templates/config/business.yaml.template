@@ -1,0 +1,4 @@
+name: "${business_name}"
+description: "${business_description}"
+purpose: "${agent_purpose}"
+hours: "${hours}"

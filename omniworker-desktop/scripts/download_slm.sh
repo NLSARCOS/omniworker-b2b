@@ -111,7 +111,7 @@ ENGINE_DIR="$(cd "$SCRIPT_DIR/../engine" && pwd)"
 LLAMA_BIN="$ENGINE_DIR/llama-server"
 MODEL="$ENGINE_DIR/slm.gguf"
 PORT="${OMNIWORKER_LOCAL_SLM_PORT:-8080}"
-CTX="${OMNIWORKER_LOCAL_SLM_CTX:-4096}"    # context window
+CTX="${OMNIWORKER_LOCAL_SLM_CTX:-2048}"    # optimized for fast, short interactions
 THREADS="${OMNIWORKER_LOCAL_SLM_THREADS:-4}"
 
 if [ ! -f "$LLAMA_BIN" ] || [ ! -s "$LLAMA_BIN" ]; then
@@ -152,7 +152,7 @@ if not exist "%LLAMA_BIN%" ( echo [local-llm] llama-server.exe not found. & exit
 if not exist "%MODEL%"      ( echo [local-llm] slm.gguf not found.        & exit /b 1 )
 
 echo [local-llm] Starting llama-server on port %OMNIWORKER_LOCAL_SLM_PORT%...
-"%LLAMA_BIN%" --model "%MODEL%" --alias slm --port %OMNIWORKER_LOCAL_SLM_PORT% --ctx-size 4096 --threads 4 --no-mmap --log-disable
+"%LLAMA_BIN%" --model "%MODEL%" --alias slm --port %OMNIWORKER_LOCAL_SLM_PORT% --ctx-size 2048 --threads 4 --no-mmap --log-disable
 WINSTARTSCRIPT
 
 echo "[OmniWorker B2B] Local SLM engine ready."

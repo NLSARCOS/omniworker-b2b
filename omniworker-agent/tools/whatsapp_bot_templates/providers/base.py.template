@@ -1,0 +1,29 @@
+"""WhatsApp Bot — Base provider interface.
+
+All WhatsApp providers implement this interface so the main server
+is provider-agnostic.
+"""
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
+
+@dataclass
+class IncomingMessage:
+    """Normalized incoming message."""
+    sender: str
+    text: str
+
+
+class BaseProvider(ABC):
+    """Abstract base class for WhatsApp providers."""
+
+    @abstractmethod
+    def parse_webhook(self, body: dict) -> list[IncomingMessage]:
+        """Parse an incoming webhook payload into normalized messages."""
+        ...
+
+    @abstractmethod
+    async def send_message(self, recipient: str, text: str) -> bool:
+        """Send a text message to a recipient."""
+        ...

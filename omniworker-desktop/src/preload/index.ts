@@ -558,6 +558,81 @@ const omniworkerAPI = {
   claw3dStopAdapter: (): Promise<boolean> =>
     ipcRenderer.invoke("claw3d-stop-adapter"),
 
+  // WhatsApp Bot
+  whatsappBotStatus: (): Promise<{
+    configured: boolean;
+    running: boolean;
+    port: number;
+    portInUse: boolean;
+    provider: string;
+    businessName: string;
+    agentName: string;
+    error: string;
+  }> => ipcRenderer.invoke("whatsapp-bot-status"),
+
+  whatsappBotSetup: (
+    settings: Record<string, unknown>,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("whatsapp-bot-setup", settings),
+
+  onWhatsappBotSetupProgress: (
+    callback: (progress: {
+      step: number;
+      totalSteps: number;
+      title: string;
+      detail: string;
+      log: string;
+    }) => void,
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      progress: unknown,
+    ): void =>
+      callback(
+        progress as {
+          step: number;
+          totalSteps: number;
+          title: string;
+          detail: string;
+          log: string;
+        },
+      );
+    ipcRenderer.on("whatsapp-bot-setup-progress", handler);
+    return () =>
+      ipcRenderer.removeListener("whatsapp-bot-setup-progress", handler);
+  },
+
+  whatsappBotStart: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("whatsapp-bot-start"),
+
+  whatsappBotStop: (): Promise<boolean> =>
+    ipcRenderer.invoke("whatsapp-bot-stop"),
+
+  whatsappBotGetLogs: (): Promise<string> =>
+    ipcRenderer.invoke("whatsapp-bot-get-logs"),
+
+  whatsappBotGetSettings: (): Promise<Record<string, unknown> | null> =>
+    ipcRenderer.invoke("whatsapp-bot-get-settings"),
+
+  whatsappBotSetSettings: (
+    settings: Record<string, unknown>,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("whatsapp-bot-set-settings", settings),
+
+  whatsappBotTest: (
+    message: string,
+  ): Promise<{ response: string; error?: string }> =>
+    ipcRenderer.invoke("whatsapp-bot-test", message),
+
+  whatsappBotGetConversations: (): Promise<
+    Array<{
+      phone: string;
+      lastMessage: string;
+      timestamp: string;
+      messageCount: number;
+    }>
+  > => ipcRenderer.invoke("whatsapp-bot-get-conversations"),
+
   // Updates
   checkForUpdates: (): Promise<string | null> =>
     ipcRenderer.invoke("check-for-updates"),
