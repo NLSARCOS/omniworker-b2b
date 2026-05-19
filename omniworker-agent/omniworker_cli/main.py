@@ -3,44 +3,44 @@
 OmniWorker CLI - Main entry point.
 
 Usage:
-    omniworker                     # Interactive chat (default)
-    omniworker chat                # Interactive chat
-    omniworker gateway             # Run gateway in foreground
-    omniworker gateway start       # Start gateway as service
-    omniworker gateway stop        # Stop gateway service
-    omniworker gateway status      # Show gateway status
-    omniworker gateway install     # Install gateway service
-    omniworker gateway uninstall   # Uninstall gateway service
-    omniworker setup               # Interactive setup wizard
-    omniworker logout              # Clear stored authentication
-    omniworker status              # Show status of all components
-    omniworker cron                # Manage cron jobs
-    omniworker cron list           # List cron jobs
-    omniworker cron status         # Check if cron scheduler is running
-    omniworker doctor              # Check configuration and dependencies
-    omniworker honcho setup                    # Configure Honcho AI memory integration
-    omniworker honcho status                   # Show Honcho config and connection status
-    omniworker honcho sessions                 # List directory → session name mappings
-    omniworker honcho map <name>               # Map current directory to a session name
-    omniworker honcho peer                     # Show peer names and dialectic settings
-    omniworker honcho peer --user NAME         # Set user peer name
-    omniworker honcho peer --ai NAME           # Set AI peer name
-    omniworker honcho peer --reasoning LEVEL   # Set dialectic reasoning level
-    omniworker honcho mode                     # Show current memory mode
-    omniworker honcho mode [hybrid|honcho|local]  # Set memory mode
-    omniworker honcho tokens                   # Show token budget settings
-    omniworker honcho tokens --context N       # Set session.context() token cap
-    omniworker honcho tokens --dialectic N     # Set dialectic result char cap
-    omniworker honcho identity                 # Show AI peer identity representation
-    omniworker honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
-    omniworker honcho migrate                  # Step-by-step migration guide: OmniWorker native → OmniWorker + Honcho
-    omniworker version             Show version
-    omniworker update              Update to latest version
-    omniworker uninstall           Uninstall OmniWorker Agent
-    omniworker acp                 Run as an ACP server for editor integration
-    omniworker sessions browse     Interactive session picker with search
+    hermes                     # Interactive chat (default)
+    hermes chat                # Interactive chat
+    hermes gateway             # Run gateway in foreground
+    hermes gateway start       # Start gateway as service
+    hermes gateway stop        # Stop gateway service
+    hermes gateway status      # Show gateway status
+    hermes gateway install     # Install gateway service
+    hermes gateway uninstall   # Uninstall gateway service
+    hermes setup               # Interactive setup wizard
+    hermes logout              # Clear stored authentication
+    hermes status              # Show status of all components
+    hermes cron                # Manage cron jobs
+    hermes cron list           # List cron jobs
+    hermes cron status         # Check if cron scheduler is running
+    hermes doctor              # Check configuration and dependencies
+    hermes honcho setup                    # Configure Honcho AI memory integration
+    hermes honcho status                   # Show Honcho config and connection status
+    hermes honcho sessions                 # List directory → session name mappings
+    hermes honcho map <name>               # Map current directory to a session name
+    hermes honcho peer                     # Show peer names and dialectic settings
+    hermes honcho peer --user NAME         # Set user peer name
+    hermes honcho peer --ai NAME           # Set AI peer name
+    hermes honcho peer --reasoning LEVEL   # Set dialectic reasoning level
+    hermes honcho mode                     # Show current memory mode
+    hermes honcho mode [hybrid|honcho|local]  # Set memory mode
+    hermes honcho tokens                   # Show token budget settings
+    hermes honcho tokens --context N       # Set session.context() token cap
+    hermes honcho tokens --dialectic N     # Set dialectic result char cap
+    hermes honcho identity                 # Show AI peer identity representation
+    hermes honcho identity <file>          # Seed AI peer identity from a file (SOUL.md etc.)
+    hermes honcho migrate                  # Step-by-step migration guide: OpenClaw native → OmniWorker + Honcho
+    hermes version             Show version
+    hermes update              Update to latest version
+    hermes uninstall           Uninstall OmniWorker Agent
+    hermes acp                 Run as an ACP server for editor integration
+    hermes sessions browse     Interactive session picker with search
 
-    omniworker claw migrate --dry-run  # Preview migration without changes
+    hermes claw migrate --dry-run  # Preview migration without changes
 """
 
 # IMPORTANT: omniworker_bootstrap must be the very first import — it sets up
@@ -49,12 +49,12 @@ Usage:
 #
 # Guarded against ModuleNotFoundError because ``omniworker_bootstrap`` is a
 # top-level module registered via pyproject.toml's ``py-modules`` list.
-# When the user upgrades code via ``git pull`` (or ``omniworker update``
+# When the user upgrades code via ``git pull`` (or ``hermes update``
 # crashes between ``git reset --hard`` and ``uv pip install -e .``), the
 # new code references ``omniworker_bootstrap`` but the editable install's
 # ``.pth`` file still points at the old set of top-level modules.  Without
-# this guard, omniworker crashes on import and the user can't run
-# ``omniworker update`` to recover.  Missing the bootstrap means UTF-8 stdio
+# this guard, hermes crashes on import and the user can't run
+# ``hermes update`` to recover.  Missing the bootstrap means UTF-8 stdio
 # setup is skipped on Windows — degraded, not broken.  POSIX is unaffected.
 try:
     import omniworker_bootstrap  # noqa: F401
@@ -88,13 +88,13 @@ def _add_accept_hooks_flag(parser) -> None:
 def _require_tty(command_name: str) -> None:
     """Exit with a clear error if stdin is not a terminal.
 
-    Interactive TUI commands (omniworker tools, omniworker setup, omniworker model) use
+    Interactive TUI commands (hermes tools, hermes setup, hermes model) use
     curses or input() prompts that spin at 100% CPU when stdin is a pipe.
     This guard prevents accidental non-interactive invocation.
     """
     if not sys.stdin.isatty():
         print(
-            f"Error: 'omniworker {command_name}' requires an interactive terminal.\n"
+            f"Error: 'hermes {command_name}' requires an interactive terminal.\n"
             f"It cannot be run through a pipe or non-interactive subprocess.\n"
             f"Run it directly in your terminal instead.",
             file=sys.stderr,
@@ -108,13 +108,13 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 
 # ---------------------------------------------------------------------------
-# Profile override — MUST happen before any omniworker module import.
+# Profile override — MUST happen before any hermes module import.
 #
 # Many modules cache OMNIWORKER_HOME at import time (module-level constants).
 # We intercept --profile/-p from sys.argv here and set the env var so that
 # every subsequent ``os.getenv("OMNIWORKER_HOME", ...)`` resolves correctly.
 # The flag is stripped from sys.argv so argparse never sees it.
-# Falls back to ~/.omniworker/active_profile for sticky default.
+# Falls back to ~/.hermes/active_profile for sticky default.
 # ---------------------------------------------------------------------------
 def _apply_profile_override() -> None:
     """Pre-parse --profile/-p and set OMNIWORKER_HOME before module imports."""
@@ -147,23 +147,23 @@ def _apply_profile_override() -> None:
     # 1.5 If OMNIWORKER_HOME is already set and no explicit flag was given, trust it
     # only when it already points to a specific profile directory.  The
     # distinguishing heuristic: a profile path has "profiles" as its immediate
-    # parent directory name (e.g. ~/.omniworker/profiles/coder or
-    # /opt/data/profiles/coder).  If OMNIWORKER_HOME points to the omniworker root
-    # instead (e.g. systemd hardcodes OMNIWORKER_HOME=/root/.omniworker), we must
+    # parent directory name (e.g. ~/.hermes/profiles/coder or
+    # /opt/data/profiles/coder).  If OMNIWORKER_HOME points to the hermes root
+    # instead (e.g. systemd hardcodes OMNIWORKER_HOME=/root/.hermes), we must
     # still read active_profile — the user may have switched profiles via
-    # `omniworker profile use` and the gateway should honour that choice.
+    # `hermes profile use` and the gateway should honour that choice.
     # See issue #22502.
     omniworker_home_env = os.environ.get("OMNIWORKER_HOME", "")
     if profile_name is None and omniworker_home_env:
         if Path(omniworker_home_env).parent.name == "profiles":
             return
 
-    # 2. If no flag, check active_profile in the omniworker root
+    # 2. If no flag, check active_profile in the hermes root
     if profile_name is None:
         try:
-            from omniworker_constants import get_default_omniworker_root
+            from omniworker_constants import get_default_hermes_root
 
-            active_path = get_default_omniworker_root() / "active_profile"
+            active_path = get_default_hermes_root() / "active_profile"
             if active_path.exists():
                 name = active_path.read_text().strip()
                 if name and name != "default":
@@ -182,7 +182,7 @@ def _apply_profile_override() -> None:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
         except Exception as exc:
-            # A bug in profiles.py must NEVER prevent omniworker from starting
+            # A bug in profiles.py must NEVER prevent hermes from starting
             print(
                 f"Warning: profile override failed ({exc}), using default",
                 file=sys.stderr,
@@ -204,12 +204,12 @@ def _apply_profile_override() -> None:
 
 _apply_profile_override()
 
-# Load .env from ~/.omniworker/.env first, then project root as dev fallback.
+# Load .env from ~/.hermes/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
 from omniworker_cli.config import get_omniworker_home
-from omniworker_cli.env_loader import load_omniworker_dotenv
+from omniworker_cli.env_loader import load_hermes_dotenv
 
-load_omniworker_dotenv(project_env=PROJECT_ROOT / ".env")
+load_hermes_dotenv(project_env=PROJECT_ROOT / ".env")
 
 # Bridge security.redact_secrets from config.yaml → OMNIWORKER_REDACT_SECRETS env
 # var BEFORE omniworker_logging imports agent.redact (which snapshots the flag at
@@ -233,7 +233,7 @@ try:
 except Exception:
     pass  # best-effort — redaction stays at default (enabled) on config errors
 
-# Initialize centralized file logging early — all `omniworker` subcommands
+# Initialize centralized file logging early — all `hermes` subcommands
 # (chat, setup, gateway, config, etc.) write to agent.log + errors.log.
 try:
     from omniworker_logging import setup_logging as _setup_logging
@@ -304,7 +304,7 @@ def _has_any_provider_configured() -> bool:
         _model_name = model_cfg.strip()
     else:
         _model_name = ""
-    _has_omniworker_config = _model_name and _model_name != _DEFAULT_MODEL
+    _has_hermes_config = _model_name and _model_name != _DEFAULT_MODEL
 
     # Check env vars (may be set by .env or shell).
     # OPENAI_BASE_URL alone counts — local models (vLLM, llama.cpp, etc.)
@@ -380,7 +380,7 @@ def _has_any_provider_configured() -> bool:
     # Check for Claude Code OAuth credentials (~/.claude/.credentials.json)
     # Only count these if OmniWorker has been explicitly configured — Claude Code
     # being installed doesn't mean the user wants OmniWorker to use their tokens.
-    if _has_omniworker_config:
+    if _has_hermes_config:
         try:
             from agent.anthropic_adapter import (
                 read_claude_code_credentials,
@@ -686,14 +686,14 @@ def _exec_in_container(container_info: dict, cli_args: list):
     On failure, OSError propagates naturally.
 
     Args:
-        container_info: dict with backend, container_name, exec_user, omniworker_bin
-        cli_args: the original CLI arguments (everything after 'omniworker')
+        container_info: dict with backend, container_name, exec_user, hermes_bin
+        cli_args: the original CLI arguments (everything after 'hermes')
     """
 
     backend = container_info["backend"]
     container_name = container_info["container_name"]
     exec_user = container_info["exec_user"]
-    omniworker_bin = container_info["omniworker_bin"]
+    hermes_bin = container_info["hermes_bin"]
 
     runtime = shutil.which(backend)
     if not runtime:
@@ -735,14 +735,14 @@ def _exec_in_container(container_info: dict, cli_args: list):
                     f'    commands = [{{ command = "{runtime}"; options = [ "NOPASSWD" ]; }}];\n'
                     f"  }}];\n"
                     f"\n"
-                    f"Or run: sudo omniworker {' '.join(cli_args)}",
+                    f"Or run: sudo hermes {' '.join(cli_args)}",
                     file=sys.stderr,
                 )
                 sys.exit(1)
         else:
             print(
                 f"Error: container '{container_name}' not found via {backend}.\n"
-                f"The container may be running under root. Try: sudo omniworker {' '.join(cli_args)}",
+                f"The container may be running under root. Try: sudo hermes {' '.join(cli_args)}",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -763,7 +763,7 @@ def _exec_in_container(container_info: dict, cli_args: list):
         + tty_flags
         + ["-u", exec_user]
         + env_flags
-        + [container_name, omniworker_bin]
+        + [container_name, hermes_bin]
         + cli_args
     )
 
@@ -866,9 +866,9 @@ def _print_tui_exit_summary(
 
     print()
     print("Resume this session with:")
-    print(f"  omniworker --tui --resume {target}")
+    print(f"  hermes --tui --resume {target}")
     if title:
-        print(f'  omniworker --tui -c "{title}"')
+        print(f'  hermes --tui -c "{title}"')
     print()
     print(f"Session:        {target}")
     if title:
@@ -895,7 +895,7 @@ to avoid false-positive reinstalls on every launch.
 
 
 def _tui_need_npm_install(root: Path) -> bool:
-    """True when @omniworker/ink is missing or node_modules is behind package-lock.json.
+    """True when @hermes/ink is missing or node_modules is behind package-lock.json.
 
     Prebuilt bundle mode: when ``dist/entry.js`` exists and there is no
     ``package-lock.json`` (nix install layout only ships ``dist/`` +
@@ -926,7 +926,7 @@ def _tui_need_npm_install(root: Path) -> bool:
     if entry.is_file() and not lock.is_file():
         return False
 
-    ink = root / "node_modules" / "@omniworker" / "ink" / "package.json"
+    ink = root / "node_modules" / "@hermes" / "ink" / "package.json"
     if not ink.is_file():
         return True
     if not lock.is_file():
@@ -989,7 +989,7 @@ def _ensure_tui_node() -> None:
     if not helper.is_file():
         return
 
-    omniworker_home = os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".omniworker")
+    omniworker_home = os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".hermes")
     try:
         # Helper writes logs to stderr; we ask bash to print `command -v node`
         # on stdout once ensure_node succeeds. Subshell PATH edits don't leak
@@ -1024,6 +1024,14 @@ def _ensure_tui_node() -> None:
     os.environ["PATH"] = os.pathsep.join(parts)
 
 
+def _find_bundled_tui(omniworker_cli_dir: Path | None = None) -> Path | None:
+    """Find a pre-built TUI entry.js bundled in the wheel."""
+    if omniworker_cli_dir is None:
+        omniworker_cli_dir = Path(__file__).parent
+    bundled = omniworker_cli_dir / "tui_dist" / "entry.js"
+    return bundled if bundled.is_file() else None
+
+
 def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
     """TUI: --dev → tsx src; else node dist (OMNIWORKER_TUI_DIR prebuilt or esbuild)."""
     _ensure_tui_node()
@@ -1034,6 +1042,13 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
             if env_node and os.path.isfile(env_node) and os.access(env_node, os.X_OK):
                 return env_node
         path = shutil.which(bin)
+        if not path and bin == "node":
+            try:
+                from omniworker_cli.dep_ensure import ensure_dependency
+                if ensure_dependency("node"):
+                    path = shutil.which("node")
+            except Exception:
+                pass
         if not path:
             print(f"{bin} not found — install Node.js to use the TUI.")
             sys.exit(1)
@@ -1058,8 +1073,14 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
                 node = _node_bin("node")
                 return [node, str(p / "dist" / "entry.js")], p
 
+        # 1b. Bundled in wheel (pip install)
+        bundled = _find_bundled_tui()
+        if bundled is not None:
+            node = _node_bin("node")
+            return [node, str(bundled)], bundled.parent
+
     # 2. Normal flow: npm install if needed, always esbuild, then node dist/entry.js.
-    #    --dev flow: npm install if needed, then tsx src/entry.tsx (no build).
+    #    --dev flow: npm install if needed, then tsx src/entry.tsx.
     if _tui_need_npm_install(tui_dir):
         npm = _node_bin("npm")
         if not os.environ.get("OMNIWORKER_QUIET"):
@@ -1081,10 +1102,30 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
             sys.exit(1)
 
     if tui_dev:
+        # Keep the local @hermes/ink package exports in sync with source.
+        # --dev runs src/entry.tsx directly, but @hermes/ink resolves through
+        # packages/hermes-ink/dist/entry-exports.js. If that dist bundle is
+        # stale after a pull, newer hooks/components can exist in src while
+        # being missing at runtime (e.g. useCursorAdvance). Prebuild it here.
+        npm = _node_bin("npm")
+        ink_dir = tui_dir / "packages" / "hermes-ink"
+        result = subprocess.run(
+            [npm, "run", "build"],
+            cwd=str(ink_dir),
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            combined = f"{result.stdout or ''}{result.stderr or ''}".strip()
+            preview = "\n".join(combined.splitlines()[-30:])
+            print("TUI dev prebuild failed.")
+            if preview:
+                print(preview)
+            sys.exit(1)
+
         tsx = tui_dir / "node_modules" / ".bin" / "tsx"
         if tsx.exists():
             return [str(tsx), "src/entry.tsx"], tui_dir
-        npm = _node_bin("npm")
         return [npm, "start"], tui_dir
 
     # Always rebuild — esbuild is fast and this avoids staleness-edge-case bugs.
@@ -1155,7 +1196,7 @@ def _launch_tui(
 
     env = os.environ.copy()
     active_session_fd, active_session_file = tempfile.mkstemp(
-        prefix="omniworker-tui-active-session-", suffix=".json"
+        prefix="hermes-tui-active-session-", suffix=".json"
     )
     os.close(active_session_fd)
     env["OMNIWORKER_TUI_ACTIVE_SESSION_FILE"] = active_session_file
@@ -1261,6 +1302,18 @@ def _launch_tui(
             except Exception:
                 pass
 
+    # Exit code 42 = TUI requested an update. Relaunch as `hermes update` so
+    # the user sees update output directly and gets the new version.
+    # preserve_inherited=False ensures --tui and other flags are NOT carried
+    # into the update subcommand.
+    if code == 42:
+        from omniworker_cli.relaunch import relaunch
+
+        print()
+        print("⚕ Launching update...")
+        print()
+        relaunch(["update"], preserve_inherited=False)
+
     sys.exit(code)
 
 
@@ -1268,9 +1321,9 @@ def _pin_kanban_board_env() -> None:
     """Pin the active kanban board into ``OMNIWORKER_KANBAN_BOARD`` for the chat session.
 
     Without this, in-process tools (``kanban_*``) and shelled-out CLI calls
-    (``omniworker kanban …``) resolve the board on different paths: the env-pin if
+    (``hermes kanban …``) resolve the board on different paths: the env-pin if
     set, otherwise the global ``<root>/kanban/current`` file. A concurrent
-    ``omniworker kanban boards switch`` from another session can flip the file
+    ``hermes kanban boards switch`` from another session can flip the file
     mid-turn, so the same chat sees its tool calls hit board A while its shell
     calls hit board B (#20074). Pinning at chat boot mirrors what the
     dispatcher already does for spawned workers.
@@ -1299,7 +1352,7 @@ def cmd_chat(args):
                 args.resume = resolved
             else:
                 print(f"No session found matching '{continue_val}'.")
-                print("Use 'omniworker sessions list' to see available sessions.")
+                print("Use 'hermes sessions list' to see available sessions.")
                 sys.exit(1)
         else:
             # -c with no argument — continue the most recent session
@@ -1330,7 +1383,7 @@ def cmd_chat(args):
             "It looks like OmniWorker isn't configured yet -- no API keys or providers found."
         )
         print()
-        print("  Run:  omniworker setup")
+        print("  Run:  hermes setup")
         print()
 
         from omniworker_cli.setup import (
@@ -1352,7 +1405,7 @@ def cmd_chat(args):
             cmd_setup(args)
             return
         print()
-        print("You can run 'omniworker setup' at any time to configure.")
+        print("You can run 'hermes setup' at any time to configure.")
         sys.exit(1)
 
     # Start update check in background (runs while other init happens)
@@ -1376,7 +1429,7 @@ def cmd_chat(args):
         os.environ["OMNIWORKER_YOLO_MODE"] = "1"
 
     # --ignore-user-config: make load_cli_config() / load_config() skip the
-    # user's ~/.omniworker/config.yaml and return built-in defaults. Set BEFORE
+    # user's ~/.hermes/config.yaml and return built-in defaults. Set BEFORE
     # importing cli (which runs `CLI_CONFIG = load_cli_config()` at module
     # import time). Credentials in .env are still loaded — this flag only
     # ignores behavioral/config settings.
@@ -1522,14 +1575,18 @@ def cmd_whatsapp(args):
         )
         print(f"\n✓ Mode: {mode_label}")
 
-    # ── Step 2: Enable WhatsApp ──────────────────────────────────────────
+    # ── Step 2: Mode is selected, will enable WhatsApp only after pairing ──
+    # We intentionally don't write WHATSAPP_ENABLED=true here.  If the user
+    # aborts the wizard later (Ctrl+C, failed npm install, missed QR scan),
+    # we'd otherwise leave .env claiming WhatsApp is ready when the bridge
+    # has no creds.json.  Every subsequent `hermes gateway` then paid a 30s
+    # bridge-bootstrap timeout and queued WhatsApp for indefinite retries.
+    # Now: aborted setup leaves WHATSAPP_ENABLED unset → gateway skips it.
+    # Re-runs that already have WHATSAPP_ENABLED=true (from a prior
+    # successful pairing) stay enabled — we just don't write it pre-emptively.
     print()
-    current = get_env_value("WHATSAPP_ENABLED")
-    if current and current.lower() == "true":
+    if (get_env_value("WHATSAPP_ENABLED") or "").lower() == "true":
         print("✓ WhatsApp is already enabled")
-    else:
-        save_env_value("WHATSAPP_ENABLED", "true")
-        print("✓ WhatsApp enabled")
 
     # ── Step 3: Allowed users ────────────────────────────────────────────
     current_users = get_env_value("WHATSAPP_ALLOWED_USERS") or ""
@@ -1619,8 +1676,14 @@ def cmd_whatsapp(args):
             session_dir.mkdir(parents=True, exist_ok=True)
             print("  ✓ Session cleared")
         else:
+            # Existing pairing — ensure WHATSAPP_ENABLED reflects that.
+            # (Older installs may have lost the env var; covers re-runs
+            # where the user picked "no, keep my session" but the var
+            # was never set or got removed.)
+            if (get_env_value("WHATSAPP_ENABLED") or "").lower() != "true":
+                save_env_value("WHATSAPP_ENABLED", "true")
             print("\n✓ WhatsApp is configured and paired!")
-            print("  Start the gateway with: omniworker gateway")
+            print("  Start the gateway with: hermes gateway")
             return
 
     # ── Step 6: QR code pairing ──────────────────────────────────────────
@@ -1647,27 +1710,32 @@ def cmd_whatsapp(args):
     # ── Step 7: Post-pairing ─────────────────────────────────────────────
     print()
     if (session_dir / "creds.json").exists():
+        # Only enable WhatsApp now that pairing actually succeeded.  If the
+        # user Ctrl+C'd at any earlier step, WHATSAPP_ENABLED stays unset
+        # and `hermes gateway` skips it cleanly instead of paying a 30s
+        # bridge timeout + queueing the platform for indefinite retries.
+        save_env_value("WHATSAPP_ENABLED", "true")
         print("✓ WhatsApp paired successfully!")
         print()
         if wa_mode == "bot":
             print("  Next steps:")
-            print("    1. Start the gateway:  omniworker gateway")
+            print("    1. Start the gateway:  hermes gateway")
             print("    2. Send a message to the bot's WhatsApp number")
             print("    3. The agent will reply automatically")
             print()
             print("  Tip: Agent responses are prefixed with '⚕ OmniWorker Agent'")
         else:
             print("  Next steps:")
-            print("    1. Start the gateway:  omniworker gateway")
+            print("    1. Start the gateway:  hermes gateway")
             print("    2. Open WhatsApp → Message Yourself")
             print("    3. Type a message — the agent will reply")
             print()
             print("  Tip: Agent responses are prefixed with '⚕ OmniWorker Agent'")
             print("  so you can tell them apart from your own messages.")
         print()
-        print("  Or install as a service: omniworker gateway install")
+        print("  Or install as a service: hermes gateway install")
     else:
-        print("⚠ Pairing may not have completed. Run 'omniworker whatsapp' to try again.")
+        print("⚠ Pairing may not have completed. Run 'hermes whatsapp' to try again.")
 
 
 def cmd_setup(args):
@@ -1675,6 +1743,27 @@ def cmd_setup(args):
     from omniworker_cli.setup import run_setup_wizard
 
     run_setup_wizard(args)
+
+
+def cmd_postinstall(args):
+    """One-shot bootstrap for pip users: install non-Python deps + run setup."""
+    from omniworker_cli.config import stamp_install_method
+    from omniworker_cli.dep_ensure import ensure_dependency
+
+    stamp_install_method("pip")
+
+    print("⚕ OmniWorker post-install bootstrap")
+    print()
+
+    for dep in ("node", "browser", "ripgrep", "ffmpeg"):
+        ensure_dependency(dep)
+
+    if not _has_any_provider_configured():
+        print()
+        cmd_setup(args)
+    else:
+        print()
+        print("✓ Post-install complete.")
 
 
 def cmd_model(args):
@@ -1701,7 +1790,7 @@ def _is_profile_api_key_provider(provider_id: str) -> bool:
 def select_provider_and_model(args=None):
     """Core provider selection + model picking logic.
 
-    Shared by ``cmd_model`` (``omniworker model``) and the setup wizard
+    Shared by ``cmd_model`` (``hermes model``) and the setup wizard
     (``setup_model_provider`` in setup.py).  Handles the full flow:
     provider picker, credential prompting, model selection, and config
     persistence.
@@ -1746,8 +1835,8 @@ def select_provider_and_model(args=None):
             active = active_def.id
         else:
             warning = (
-                f"Unknown provider '{effective_provider}'. Check 'omniworker model' for "
-                "available providers, or run 'omniworker doctor' to diagnose config "
+                f"Unknown provider '{effective_provider}'. Check 'hermes model' for "
+                "available providers, or run 'hermes doctor' to diagnose config "
                 "issues."
             )
             print(f"Warning: {warning} Falling back to auto provider detection.")
@@ -1932,6 +2021,8 @@ def select_provider_and_model(args=None):
         _model_flow_nous(config, current_model, args=args)
     elif selected_provider == "openai-codex":
         _model_flow_openai_codex(config, current_model)
+    elif selected_provider == "xai-oauth":
+        _model_flow_xai_oauth(config, current_model, args=args)
     elif selected_provider == "qwen-oauth":
         _model_flow_qwen_oauth(config, current_model)
     elif selected_provider == "minimax-oauth":
@@ -1993,7 +2084,7 @@ def select_provider_and_model(args=None):
 
     # ── Post-switch cleanup: clear stale OPENAI_BASE_URL ──────────────
     # When the user switches to a named provider (anything except "custom"),
-    # a leftover OPENAI_BASE_URL in ~/.omniworker/.env can poison auxiliary
+    # a leftover OPENAI_BASE_URL in ~/.hermes/.env can poison auxiliary
     # clients that use provider:auto. Clear it proactively.  (#5161)
     if selected_provider not in {
         "custom",
@@ -2004,7 +2095,7 @@ def select_provider_and_model(args=None):
 
 
 def _clear_stale_openai_base_url():
-    """Remove OPENAI_BASE_URL from ~/.omniworker/.env if the active provider is not 'custom'.
+    """Remove OPENAI_BASE_URL from ~/.hermes/.env if the active provider is not 'custom'.
 
     After a provider switch, a leftover OPENAI_BASE_URL causes auxiliary
     clients (compression, vision, delegation) with provider:auto to route
@@ -2041,9 +2132,9 @@ def _clear_stale_openai_base_url():
 # its own provider+model pair in config.yaml under `auxiliary.<task>`.
 #
 # The UI lives behind "Configure auxiliary models..." at the bottom of the
-# `omniworker model` provider picker. It does NOT re-run credential setup — it
+# `hermes model` provider picker. It does NOT re-run credential setup — it
 # only routes already-authenticated providers to specific aux tasks. Users
-# configure new providers through the normal `omniworker model` flow first.
+# configure new providers through the normal `hermes model` flow first.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # (task_key, display_name, short_description)
@@ -2051,7 +2142,6 @@ _AUX_TASKS: list[tuple[str, str, str]] = [
     ("vision", "Vision", "image/screenshot analysis"),
     ("compression", "Compression", "context summarization"),
     ("web_extract", "Web extract", "web page summarization"),
-    ("session_search", "Session search", "past-conversation recall"),
     ("approval", "Approval", "smart command approval"),
     ("mcp", "MCP", "MCP tool reasoning"),
     ("title_generation", "Title generation", "session titles"),
@@ -2204,7 +2294,7 @@ def _aux_select_for_task(task: str) -> None:
     Uses ``list_authenticated_providers()`` to only show providers the user
     has already configured. This avoids re-running OAuth/credential flows
     inside the aux picker — users set up new providers through the normal
-    ``omniworker model`` flow, then route aux tasks to them here.
+    ``hermes model`` flow, then route aux tasks to them here.
     """
     from omniworker_cli.config import load_config
     from omniworker_cli.model_switch import list_authenticated_providers
@@ -2433,9 +2523,9 @@ def _model_flow_openrouter(config, current_model=""):
     from omniworker_cli.config import get_env_value
 
     # Route through _prompt_api_key so users can replace a stale/broken key
-    # in-flow (K/R/C) instead of having to edit ~/.omniworker/.env by hand. The
+    # in-flow (K/R/C) instead of having to edit ~/.hermes/.env by hand. The
     # previous bypass-when-key-exists branch left no way to recover from a
-    # bad paste short of re-running `omniworker setup` from scratch. OpenRouter
+    # bad paste short of re-running `hermes setup` from scratch. OpenRouter
     # isn't in PROVIDER_REGISTRY so we synthesize a minimal pconfig.
     pconfig = ProviderConfig(
         id="openrouter",
@@ -2493,7 +2583,7 @@ def _model_flow_ai_gateway(config, current_model=""):
     from omniworker_cli.config import get_env_value
 
     # Route through _prompt_api_key so users can replace a stale/broken key
-    # in-flow (K/R/C) instead of having to edit ~/.omniworker/.env by hand.
+    # in-flow (K/R/C) instead of having to edit ~/.hermes/.env by hand.
     pconfig = PROVIDER_REGISTRY["ai-gateway"]
     existing_key = get_env_value("AI_GATEWAY_API_KEY") or ""
     if not existing_key:
@@ -2785,7 +2875,7 @@ def _model_flow_openai_codex(config, current_model=""):
             return
 
     _codex_token = None
-    # Prefer credential pool (where `omniworker auth` stores device_code tokens),
+    # Prefer credential pool (where `hermes auth` stores device_code tokens),
     # fall back to legacy provider state.
     try:
         _codex_status = get_codex_auth_status()
@@ -2809,6 +2899,99 @@ def _model_flow_openai_codex(config, current_model=""):
         _save_model_choice(selected)
         _update_config_for_provider("openai-codex", DEFAULT_CODEX_BASE_URL)
         print(f"Default model set to: {selected} (via OpenAI Codex)")
+    else:
+        print("No change.")
+
+
+def _model_flow_xai_oauth(_config, current_model="", *, args=None):
+    """xAI Grok OAuth (SuperGrok Subscription) provider: ensure logged in, then pick model."""
+    from omniworker_cli.auth import (
+        get_xai_oauth_auth_status,
+        _prompt_model_selection,
+        _save_model_choice,
+        _update_config_for_provider,
+        resolve_xai_oauth_runtime_credentials,
+        _login_xai_oauth,
+        DEFAULT_XAI_OAUTH_BASE_URL,
+        PROVIDER_REGISTRY,
+    )
+    from omniworker_cli.models import _PROVIDER_MODELS
+
+    status = get_xai_oauth_auth_status()
+    if status.get("logged_in"):
+        print("  xAI Grok OAuth (SuperGrok Subscription) credentials: ✓")
+        print()
+        print("    1. Use existing credentials")
+        print("    2. Reauthenticate (new OAuth login)")
+        print("    3. Cancel")
+        print()
+        try:
+            choice = input("  Choice [1/2/3]: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            choice = "1"
+
+        if choice == "2":
+            print("Starting a fresh xAI OAuth login...")
+            print()
+            try:
+                # Forward CLI flags from ``hermes model --manual-paste``
+                # / ``--no-browser`` / ``--timeout`` into the loopback
+                # login. Without this, browser-only remotes (#26923)
+                # can't reach the manual-paste path via ``hermes model``.
+                mock_args = argparse.Namespace(
+                    manual_paste=bool(getattr(args, "manual_paste", False)),
+                    no_browser=bool(getattr(args, "no_browser", False)),
+                    timeout=getattr(args, "timeout", None),
+                )
+                _login_xai_oauth(
+                    mock_args,
+                    PROVIDER_REGISTRY["xai-oauth"],
+                    force_new_login=True,
+                )
+            except SystemExit:
+                print("Login cancelled or failed.")
+                return
+            except Exception as exc:
+                print(f"Login failed: {exc}")
+                return
+        elif choice == "3":
+            return
+    else:
+        print("Not logged into xAI Grok OAuth (SuperGrok Subscription). Starting login...")
+        print()
+        try:
+            mock_args = argparse.Namespace(
+                manual_paste=bool(getattr(args, "manual_paste", False)),
+                no_browser=bool(getattr(args, "no_browser", False)),
+                timeout=getattr(args, "timeout", None),
+            )
+            _login_xai_oauth(mock_args, PROVIDER_REGISTRY["xai-oauth"])
+        except SystemExit:
+            print("Login cancelled or failed.")
+            return
+        except Exception as exc:
+            print(f"Login failed: {exc}")
+            return
+
+    # Resolve a usable base URL.  ``resolve_xai_oauth_runtime_credentials``
+    # only reads from the auth.json singleton — but credentials may legitimately
+    # live only in the pool (e.g. after ``hermes auth add xai-oauth``).  Fall
+    # back to the default base URL in that case so the model picker still
+    # completes successfully instead of bailing out with
+    # ``Could not resolve xAI OAuth credentials``.
+    base_url = DEFAULT_XAI_OAUTH_BASE_URL
+    try:
+        creds = resolve_xai_oauth_runtime_credentials()
+        base_url = (creds.get("base_url") or "").strip().rstrip("/") or base_url
+    except Exception:
+        pass
+
+    models = list(_PROVIDER_MODELS.get("xai-oauth") or _PROVIDER_MODELS.get("xai") or [])
+    selected = _prompt_model_selection(models, current_model=current_model or (models[0] if models else "grok-4.3"))
+    if selected:
+        _save_model_choice(selected)
+        _update_config_for_provider("xai-oauth", base_url)
+        print(f"Default model set to: {selected} (via xAI Grok OAuth — SuperGrok Subscription)")
     else:
         print("No change.")
 
@@ -2919,7 +3102,7 @@ def _model_flow_google_gemini_cli(_config, current_model=""):
       2. If creds missing, run PKCE browser OAuth via agent.google_oauth.
       3. Resolve project context (env -> config -> auto-discover -> free tier).
       4. Prompt user to pick a model.
-      5. Save to ~/.omniworker/config.yaml.
+      5. Save to ~/.hermes/config.yaml.
     """
     from omniworker_cli.auth import (
         DEFAULT_GEMINI_CLOUDCODE_BASE_URL,
@@ -3193,7 +3376,7 @@ def _model_flow_custom(config):
         else:
             _caller_model.pop("api_mode", None)
         config["model"] = _caller_model
-        print("Endpoint saved. Use `/model` in chat or `omniworker model` to set a model.")
+        print("Endpoint saved. Use `/model` in chat or `hermes model` to set a model.")
 
     # Auto-save to custom_providers so it appears in the menu next time
     _save_custom_provider(
@@ -3375,11 +3558,27 @@ def _save_custom_provider(
 
 
 def _model_flow_azure_foundry(config, current_model=""):
-    """Azure Foundry provider: configure endpoint, API mode, API key, and model.
+    """Azure Foundry provider: configure endpoint, auth mode, API mode, and model.
 
     Azure Foundry supports both OpenAI-style (``/v1/chat/completions``) and
-    Anthropic-style (``/v1/messages``) endpoints.  The wizard auto-detects
-    the transport and available models when possible:
+    Anthropic-style (``/v1/messages``) endpoints, and two authentication
+    modes:
+
+    * **API key** (default) — uses ``AZURE_FOUNDRY_API_KEY`` from .env.
+    * **Microsoft Entra ID** — keyless, RBAC-based auth via the
+      ``azure-identity`` SDK (Managed Identity / Workload Identity / az
+      login / VS Code / azd / service principal env vars). Works on both
+      OpenAI-style and Anthropic-style endpoints — Microsoft RBAC is
+      per-resource and the same ``Azure AI User`` role grants
+      both. For OpenAI-style the OpenAI SDK's native callable
+      ``api_key=`` contract is used; for Anthropic-style an
+      ``httpx.Client`` with a request event hook (built by
+      :func:`agent.azure_identity_adapter.build_bearer_http_client`)
+      mints a fresh JWT per request because the Anthropic SDK does not
+      accept a callable ``auth_token`` natively.
+
+    The wizard auto-detects the transport and available models when
+    possible:
 
     * URLs ending in ``/anthropic`` → Anthropic Messages API.
     * Successful ``GET <base>/models`` probe → OpenAI-style + populates
@@ -3406,9 +3605,14 @@ def _model_flow_azure_foundry(config, current_model=""):
     if isinstance(model_cfg, dict) and model_cfg.get("provider") == "azure-foundry":
         current_base_url = str(model_cfg.get("base_url", "") or "")
         current_api_mode = str(model_cfg.get("api_mode", "") or "")
+        current_auth_mode = str(model_cfg.get("auth_mode") or "api_key").strip().lower() or "api_key"
+        _cur_entra = model_cfg.get("entra") or {}
+        current_entra = _cur_entra if isinstance(_cur_entra, dict) else {}
     else:
         current_base_url = ""
         current_api_mode = ""
+        current_auth_mode = "api_key"
+        current_entra = {}
 
     current_api_key = get_env_value("AZURE_FOUNDRY_API_KEY") or ""
 
@@ -3423,22 +3627,29 @@ def _model_flow_azure_foundry(config, current_model=""):
     print()
 
     if current_base_url:
-        print(f"  Current endpoint: {current_base_url}")
+        print(f"  Current endpoint:  {current_base_url}")
     if current_api_mode:
         _lbl = (
             "OpenAI-style"
             if current_api_mode == "chat_completions"
             else "Anthropic-style"
         )
-        print(f"  Current API mode: {_lbl}")
-    if current_api_key:
-        print(f"  Current API key:  {current_api_key[:8]}...")
+        print(f"  Current API mode:  {_lbl}")
+    if current_auth_mode == "entra_id":
+        print(f"  Current auth mode: Microsoft Entra ID (keyless)")
+    elif current_api_key:
+        print(f"  Current auth mode: API key ({current_api_key[:8]}...)")
     print()
 
     # ── Step 1: endpoint URL ─────────────────────────────────────────
     try:
+        _placeholder = (
+            current_base_url
+            or "e.g. https://<resource>.openai.azure.com/openai/v1 "
+              "or https://<resource>.services.ai.azure.com/anthropic"
+        )
         base_url = input(
-            f"API endpoint URL [{current_base_url or 'e.g. https://your-resource.openai.azure.com/openai/v1'}]: "
+            f"API endpoint URL [{_placeholder}]: "
         ).strip()
     except (KeyboardInterrupt, EOFError):
         print("\nCancelled.")
@@ -3452,25 +3663,125 @@ def _model_flow_azure_foundry(config, current_model=""):
         print(f"Invalid URL: {effective_url} (must start with http:// or https://)")
         return
 
-    # ── Step 2: API key ──────────────────────────────────────────────
+    # ── Step 2: authentication mode ──────────────────────────────────
     print()
+    print("Authentication:")
+    print("  1. API key                  (AZURE_FOUNDRY_API_KEY in .env)")
+    print("  2. Microsoft Entra ID       (managed identity / workload identity / az login)")
+    print("     Recommended by Microsoft. Works for both OpenAI-style and Anthropic-style endpoints.")
+    print("     Requires the 'Azure AI User' role on the Foundry resource.")
     try:
-        api_key = getpass.getpass(
-            f"API key [{current_api_key[:8] + '...' if current_api_key else 'required'}]: "
-        ).strip()
+        _auth_default = "2" if current_auth_mode == "entra_id" else "1"
+        auth_choice = (
+            input(f"Authentication mode [1/2] ({_auth_default}): ").strip()
+            or _auth_default
+        )
     except (KeyboardInterrupt, EOFError):
         print("\nCancelled.")
         return
+    use_entra = auth_choice == "2"
+    auth_mode_label = "entra_id" if use_entra else "api_key"
 
-    effective_key = api_key or current_api_key
-    if not effective_key:
-        print("No API key provided. Cancelled.")
-        return
+    # ── Step 3: credentials (key OR Entra preflight) ─────────────────
+    effective_key: str = ""
+    entra_overrides: dict = {}
+    token_provider = None  # callable when entra
+    entra_scope = ""
 
-    # ── Step 3: auto-detect transport + models ───────────────────────
+    if use_entra:
+        try:
+            from agent.azure_identity_adapter import (
+                EntraIdentityConfig,
+                SCOPE_AI_AZURE_DEFAULT,
+                build_token_provider,
+                describe_active_credential,
+                has_azure_identity_installed,
+            )
+        except ImportError as exc:
+            print()
+            print(f"⚠ Could not import azure-identity adapter: {exc}")
+            print("  Falling back to API key auth.")
+            use_entra = False
+            auth_mode_label = "api_key"
+
+    if use_entra:
+        print()
+        if not has_azure_identity_installed():
+            print("◐ The 'azure-identity' package is not installed yet.")
+            print(
+                "  OmniWorker will install it now (the preflight below "
+                "triggers the lazy-install). To skip lazy installs, "
+                "run:  pip install azure-identity"
+            )
+
+        # Preserve only the optional scope override. Identity selection
+        # (tenant, user-assigned MI, workload identity, service principal)
+        # stays in Azure SDK env vars such as AZURE_CLIENT_ID.
+        _persisted_scope_override = str(current_entra.get("scope") or "").strip()
+        entra_scope = _persisted_scope_override or SCOPE_AI_AZURE_DEFAULT
+
+        entra_overrides = {}
+        if _persisted_scope_override:
+            entra_overrides["scope"] = _persisted_scope_override
+
+        print()
+        print("◐ Probing Microsoft Entra ID credential chain (up to 10s)...")
+        _config = EntraIdentityConfig(
+            scope=entra_scope,
+        )
+        info = describe_active_credential(config=_config, timeout_seconds=10.0)
+        if info.get("ok"):
+            env_sources = info.get("env_sources") or []
+            tag = ", ".join(env_sources) if env_sources else "default chain"
+            print(f"✓ Entra ID token acquired ({tag}, scope={entra_scope})")
+        else:
+            err = info.get("error") or "credential chain exhausted"
+            hint = info.get("hint") or (
+                "Run `az login`, attach a managed identity to this VM, or "
+                "set AZURE_TENANT_ID/AZURE_CLIENT_ID/AZURE_CLIENT_SECRET."
+            )
+            print(f"⚠ {err}")
+            print(f"  Hint: {hint}")
+            try:
+                ans = input("Save Entra config anyway and validate later? [Y/n]: ").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                print("\nCancelled.")
+                return
+            if ans and ans not in ("y", "yes"):
+                print("Cancelled.")
+                return
+
+        # Build the token provider for the detection probe (best-effort —
+        # if the credential chain failed above, this will silently return
+        # None inside azure_detect and the probe falls back to manual).
+        try:
+            token_provider = build_token_provider(config=_config)
+        except Exception as exc:
+            print(f"⚠ Could not build token provider for probing: {exc}")
+            token_provider = None
+    else:
+        print()
+        try:
+            api_key = getpass.getpass(
+                f"API key [{current_api_key[:8] + '...' if current_api_key else 'required'}]: "
+            ).strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nCancelled.")
+            return
+
+        effective_key = api_key or current_api_key
+        if not effective_key:
+            print("No API key provided. Cancelled.")
+            return
+
+    # ── Step 4: auto-detect transport + models ───────────────────────
     print()
     print("◐ Probing endpoint to auto-detect transport and models...")
-    detection = azure_detect.detect(effective_url, effective_key)
+    detection = azure_detect.detect(
+        effective_url,
+        api_key=effective_key,
+        token_provider=token_provider,
+    )
 
     discovered_models: list[str] = list(detection.models)
     api_mode: str = detection.api_mode or ""
@@ -3505,7 +3816,7 @@ def _model_flow_azure_foundry(config, current_model=""):
             return
         api_mode = "anthropic_messages" if mode_choice == "2" else "chat_completions"
 
-    # ── Step 4: model name ───────────────────────────────────────────
+    # ── Step 5: model name ───────────────────────────────────────────
     print()
     effective_model = ""
     if discovered_models:
@@ -3544,15 +3855,17 @@ def _model_flow_azure_foundry(config, current_model=""):
         print("No model name provided. Cancelled.")
         return
 
-    # ── Step 5: context-length lookup ────────────────────────────────
+    # ── Step 6: context-length lookup ────────────────────────────────
     ctx_len = azure_detect.lookup_context_length(
         effective_model,
         effective_url,
-        effective_key,
+        api_key=effective_key,
+        token_provider=token_provider,
     )
 
-    # ── Step 6: persist ──────────────────────────────────────────────
-    save_env_value("AZURE_FOUNDRY_API_KEY", effective_key)
+    # ── Step 7: persist ──────────────────────────────────────────────
+    if not use_entra:
+        save_env_value("AZURE_FOUNDRY_API_KEY", effective_key)
 
     cfg = load_config()
     model = cfg.get("model")
@@ -3564,6 +3877,22 @@ def _model_flow_azure_foundry(config, current_model=""):
     model["base_url"] = effective_url
     model["api_mode"] = api_mode
     model["default"] = effective_model
+    model["auth_mode"] = auth_mode_label
+    if use_entra:
+        # Persist only the non-default Entra scope so config.yaml stays tidy.
+        # Azure identity selection stays in standard AZURE_* env vars.
+        clean_entra: dict = {}
+        for key in ("scope",):
+            val = entra_overrides.get(key)
+            if val:
+                clean_entra[key] = val
+        if clean_entra:
+            model["entra"] = clean_entra
+        elif "entra" in model:
+            del model["entra"]
+    else:
+        if "entra" in model:
+            del model["entra"]
     if ctx_len:
         model["context_length"] = ctx_len
 
@@ -3579,10 +3908,14 @@ def _model_flow_azure_foundry(config, current_model=""):
         save_env_value("OPENAI_API_KEY", "")
 
     mode_label = "OpenAI-style" if api_mode == "chat_completions" else "Anthropic-style"
+    auth_label = (
+        "Microsoft Entra ID (keyless)" if use_entra else "API key"
+    )
     print()
     print("✓ Azure Foundry configured:")
     print(f"    Endpoint:       {effective_url}")
     print(f"    API mode:       {mode_label}")
+    print(f"    Auth:           {auth_label}")
     print(f"    Model:          {effective_model}")
     if ctx_len:
         print(f"    Context length: {ctx_len:,} tokens")
@@ -4236,11 +4569,11 @@ def _model_flow_copilot_acp(config, current_model=""):
 
 
 def _prompt_api_key(pconfig, existing_key: str, provider_id: str = "") -> tuple:
-    """Shared API-key entry point for ``omniworker setup`` / ``omniworker model``.
+    """Shared API-key entry point for ``hermes setup`` / ``hermes model``.
 
     Handles both first-time entry and the already-configured case.  When a key
     is already present, offers [K]eep / [R]eplace / [C]lear so the user can
-    recover from a malformed paste without editing ``~/.omniworker/.env`` by hand.
+    recover from a malformed paste without editing ``~/.hermes/.env`` by hand.
 
     Returns ``(resolved_key, abort)``.  ``abort=True`` means the caller should
     ``return`` immediately — the user cancelled entry, declined to replace, or
@@ -4307,7 +4640,7 @@ def _prompt_api_key(pconfig, existing_key: str, provider_id: str = "") -> tuple:
     if choice.startswith("c"):
         save_env_value(key_env, "")
         print(
-            f"  API key cleared.  Re-run `omniworker setup` to configure {pconfig.name} again."
+            f"  API key cleared.  Re-run `hermes setup` to configure {pconfig.name} again."
         )
         return "", True
 
@@ -4615,7 +4948,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
         bedrock_cfg["region"] = region
         cfg["bedrock"] = bedrock_cfg
 
-        # Save the API key env var name so omniworker knows where to find it
+        # Save the API key env var name so hermes knows where to find it
         save_env_value("OPENAI_API_KEY", existing_key)
         save_env_value("OPENAI_BASE_URL", mantle_base_url)
 
@@ -5169,7 +5502,7 @@ def _run_anthropic_oauth_flow(save_env_value):
         print("    1. Install Claude Code:  npm install -g @anthropic-ai/claude-code")
         print("    2. Run:                  claude setup-token")
         print("    3. Follow the browser prompts to authorize")
-        print("    4. Re-run:               omniworker model")
+        print("    4. Re-run:               hermes model")
         print()
         print("  Or paste an existing setup-token now (sk-ant-oat-...):")
         print()
@@ -5310,7 +5643,7 @@ def _model_flow_anthropic(config, current_model=""):
         # Update config with provider — clear base_url since
         # resolve_runtime_provider() always hardcodes Anthropic's URL.
         # Leaving a stale base_url in config can contaminate other
-        # providers if the user switches without running 'omniworker model'.
+        # providers if the user switches without running 'hermes model'.
         cfg = load_config()
         model = cfg.get("model")
         if not isinstance(model, dict):
@@ -5371,7 +5704,7 @@ def cmd_webhook(args):
 def cmd_slack(args):
     """Slack integration helpers.
 
-    Dispatches ``omniworker slack <subcommand>``. Currently supports:
+    Dispatches ``hermes slack <subcommand>``. Currently supports:
       manifest — print or write a Slack app manifest with every gateway
                  command registered as a first-class slash.
     """
@@ -5379,13 +5712,13 @@ def cmd_slack(args):
     if sub in {None, ""}:
         # No subcommand — print usage hint.
         print(
-            "usage: omniworker slack <subcommand>\n"
+            "usage: hermes slack <subcommand>\n"
             "\n"
             "subcommands:\n"
             "  manifest   Generate a Slack app manifest with every gateway\n"
             "             command registered as a native slash\n"
             "\n"
-            "Run `omniworker slack manifest -h` for details.",
+            "Run `hermes slack manifest -h` for details.",
             file=sys.stderr,
         )
         return 1
@@ -5541,7 +5874,7 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
     Writes a prompt marker file so the gateway can forward the question to the
     user, then polls for a response file.  Falls back to *default* on timeout.
 
-    Used by ``omniworker update --gateway`` so interactive prompts (stash restore,
+    Used by ``hermes update --gateway`` so interactive prompts (stash restore,
     config migration) are forwarded to the messenger instead of being silently
     skipped.
     """
@@ -5634,7 +5967,7 @@ def _run_npm_install_deterministic(
     falls back to ``npm install`` only if ``npm ci`` fails (e.g. lockfile out of
     sync on a WIP checkout).  Without this, ``npm install`` on npm ≥ 10 silently
     rewrites committed lockfiles (stripping ``"peer": true`` etc.), which leaves
-    the working tree dirty and causes the next ``omniworker update`` to stash the
+    the working tree dirty and causes the next ``hermes update`` to stash the
     lockfile — repeatedly.
     """
     lockfile = cwd / "package-lock.json"
@@ -5671,7 +6004,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     Args:
         web_dir: Path to the ``web/`` source directory.
         fatal: If True, print error guidance and return False on failure
-               instead of a soft warning (used by ``omniworker web``).
+               instead of a soft warning (used by ``hermes web``).
 
     Returns True if the build succeeded or was skipped (no package.json).
     """
@@ -5720,7 +6053,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     if r1.returncode != 0:
         _say(
             f"  {'✗' if fatal else '⚠'} Web UI npm install failed"
-            + ("" if fatal else " (omniworker web will not be available)")
+            + ("" if fatal else " (hermes web will not be available)")
         )
         _relay(r1)
         if fatal:
@@ -5766,7 +6099,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
 
         _say(
             f"  {'✗' if fatal else '⚠'} Web UI build failed"
-            + ("" if fatal else " (omniworker web will not be available)")
+            + ("" if fatal else " (hermes web will not be available)")
         )
         _relay(r2)
         if fatal:
@@ -5777,10 +6110,10 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
 
 
 def _find_stale_dashboard_pids() -> list[int]:
-    """Return PIDs of ``omniworker dashboard`` processes other than ourselves.
+    """Return PIDs of ``hermes dashboard`` processes other than ourselves.
 
-    ``omniworker dashboard`` is a long-lived server process commonly started and
-    forgotten.  When ``omniworker update`` replaces files on disk, the running
+    ``hermes dashboard`` is a long-lived server process commonly started and
+    forgotten.  When ``hermes update`` replaces files on disk, the running
     process keeps the old Python backend in memory while the JS bundle on
     disk is updated, causing a silent frontend/backend mismatch (e.g. new
     auth headers the old backend doesn't recognise → every API call 401s).
@@ -5794,7 +6127,7 @@ def _find_stale_dashboard_pids() -> list[int]:
     Returns an empty list on any scan error (missing ps/wmic, timeout, etc.).
     """
     patterns = [
-        "omniworker dashboard",
+        "hermes dashboard",
         "omniworker_cli.main dashboard",
         "omniworker_cli/main.py dashboard",
     ]
@@ -5838,7 +6171,7 @@ def _find_stale_dashboard_pids() -> list[int]:
         else:
             # Linux / macOS: scan the process table via ps and match against
             # the same explicit patterns list used on Windows.  Using ps
-            # (rather than `pgrep -f "omniworker.*dashboard"`) keeps us consistent
+            # (rather than `pgrep -f "hermes.*dashboard"`) keeps us consistent
             # with `omniworker_cli.gateway._scan_gateway_pids` and avoids the
             # greedy regex matching unrelated cmdlines that merely contain
             # both words (e.g. a chat session discussing "dashboard").
@@ -5870,7 +6203,7 @@ def _find_stale_dashboard_pids() -> list[int]:
 
 
 def _print_curator_first_run_notice() -> None:
-    """Print a short heads-up about the skill curator after `omniworker update`.
+    """Print a short heads-up about the skill curator after `hermes update`.
 
     Only fires when the curator is enabled AND has no recorded run yet, which
     is exactly the window where the gateway ticker used to fire Curator
@@ -5903,10 +6236,10 @@ def _print_curator_first_run_notice() -> None:
         f"~{days}d after installation; only agent-created skills are in "
         f"scope and nothing is ever auto-deleted (archive is recoverable)."
     )
-    print("  Preview now:  omniworker curator run --dry-run")
-    print("  Pause it:     omniworker curator pause")
+    print("  Preview now:  hermes curator run --dry-run")
+    print("  Pause it:     hermes curator pause")
     print(
-        "  Docs:         https://omniworker-agent.omniworker.com/docs/user-guide/features/curator"
+        "  Docs:         https://hermes-agent.nousresearch.com/docs/user-guide/features/curator"
     )
 
 
@@ -5915,11 +6248,11 @@ def _print_curator_recent_run_notice() -> None:
 
     The curator runs in the background (gateway tick + CLI session start),
     so users learn about skill consolidations only by stumbling into a
-    rename. ``omniworker update`` is a high-attention surface — surface the
+    rename. ``hermes update`` is a high-attention surface — surface the
     most recent run's rename map here, once.
 
     Show-once: state stamps ``last_run_summary_shown_at`` after printing.
-    Subsequent ``omniworker update`` invocations skip the block until a newer
+    Subsequent ``hermes update`` invocations skip the block until a newer
     curator run lands. Silent when the curator has never run, when the
     most recent summary has already been shown, or when the summary has
     no rename information to display (no archives).
@@ -5965,7 +6298,7 @@ def _print_curator_recent_run_notice() -> None:
         print(f"  {line}")
     print(
         "  (This message shows once per curator run. "
-        "View anytime: omniworker curator status)"
+        "View anytime: hermes curator status)"
     )
 
     # Stamp shown so we don't repeat on the next update.
@@ -5999,10 +6332,10 @@ def _format_time_ago(iso_ts: str) -> str:
 def _kill_stale_dashboard_processes(
     reason: str = "the running backend no longer matches the updated frontend",
 ) -> None:
-    """Kill running ``omniworker dashboard`` processes.
+    """Kill running ``hermes dashboard`` processes.
 
-    Called at the end of ``omniworker update`` (default ``reason``) and also
-    from ``omniworker dashboard --stop`` (which overrides ``reason``).  The
+    Called at the end of ``hermes update`` (default ``reason``) and also
+    from ``hermes dashboard --stop`` (which overrides ``reason``).  The
     dashboard has no service manager, so after a code update the running
     process is guaranteed to be serving stale Python against a
     freshly-updated JS bundle.  Leaving it alive produces silent
@@ -6092,7 +6425,7 @@ def _kill_stale_dashboard_processes(
 
     if killed:
         print("  Restart the dashboard when you're ready:")
-        print("    omniworker dashboard --port <port>")
+        print("    hermes dashboard --port <port>")
 
 
 # Back-compat alias: some tests and any external callers may import the old
@@ -6112,13 +6445,13 @@ def _update_via_zip(args):
 
     branch = "main"
     zip_url = (
-        f"https://github.com/OmniWorker/omniworker-agent/archive/refs/heads/{branch}.zip"
+        f"https://github.com/NousResearch/hermes-agent/archive/refs/heads/{branch}.zip"
     )
 
     print("→ Downloading latest version...")
     try:
-        tmp_dir = tempfile.mkdtemp(prefix="omniworker-update-")
-        zip_path = os.path.join(tmp_dir, f"omniworker-agent-{branch}.zip")
+        tmp_dir = tempfile.mkdtemp(prefix="hermes-update-")
+        zip_path = os.path.join(tmp_dir, f"hermes-agent-{branch}.zip")
         urlretrieve(zip_url, zip_path)
 
         print("→ Extracting...")
@@ -6136,8 +6469,8 @@ def _update_via_zip(args):
                     )
             zf.extractall(tmp_dir)
 
-        # GitHub ZIPs extract to omniworker-agent-<branch>/
-        extracted = os.path.join(tmp_dir, f"omniworker-agent-{branch}")
+        # GitHub ZIPs extract to hermes-agent-<branch>/
+        extracted = os.path.join(tmp_dir, f"hermes-agent-{branch}")
         if not os.path.isdir(extracted):
             # Try to find it
             for d in os.listdir(tmp_dir):
@@ -6276,7 +6609,7 @@ def _stash_local_changes_if_needed(git_cmd: list[str], cwd: Path) -> Optional[st
     from datetime import datetime, timezone
 
     stash_name = datetime.now(timezone.utc).strftime(
-        "omniworker-update-autostash-%Y%m%d-%H%M%S"
+        "hermes-update-autostash-%Y%m%d-%H%M%S"
     )
     print("→ Local changes detected — stashing before update...")
     subprocess.run(
@@ -6386,7 +6719,7 @@ def _restore_stashed_changes(
         print(f"  Stash ref: {stash_ref}")
 
         # Always reset to clean state — leaving conflict markers in source
-        # files makes omniworker completely unrunnable (SyntaxError on import).
+        # files makes hermes completely unrunnable (SyntaxError on import).
         # The user's changes are safe in the stash for manual recovery.
         subprocess.run(
             git_cmd + ["reset", "--hard", "HEAD"],
@@ -6435,16 +6768,16 @@ def _restore_stashed_changes(
 
 
 # =========================================================================
-# Fork detection and upstream management for `omniworker update`
+# Fork detection and upstream management for `hermes update`
 # =========================================================================
 
 OFFICIAL_REPO_URLS = {
-    "https://github.com/OmniWorker/omniworker-agent.git",
-    "git@github.com:OmniWorker/omniworker-agent.git",
-    "https://github.com/OmniWorker/omniworker-agent",
-    "git@github.com:OmniWorker/omniworker-agent",
+    "https://github.com/NousResearch/hermes-agent.git",
+    "git@github.com:NousResearch/hermes-agent.git",
+    "https://github.com/NousResearch/hermes-agent",
+    "git@github.com:NousResearch/hermes-agent",
 }
-OFFICIAL_REPO_URL = "https://github.com/OmniWorker/omniworker-agent.git"
+OFFICIAL_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
 
@@ -6578,7 +6911,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
         # Ask user if they want to add upstream
         print()
         print("ℹ Your fork is not tracking the official OmniWorker repository.")
-        print("  This means you may miss updates from OmniWorker/omniworker-agent.")
+        print("  This means you may miss updates from NousResearch/hermes-agent.")
         print()
         try:
             response = (
@@ -6592,7 +6925,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Added upstream: https://github.com/OmniWorker/omniworker-agent.git"
+                    "  ✓ Added upstream: https://github.com/NousResearch/hermes-agent.git"
                 )
                 has_upstream = True
             else:
@@ -6600,7 +6933,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Skipped. Run 'git remote add upstream https://github.com/OmniWorker/omniworker-agent.git' to add later."
+                "  Skipped. Run 'git remote add upstream https://github.com/NousResearch/hermes-agent.git' to add later."
             )
             _mark_skip_upstream_prompt()
             return
@@ -6678,13 +7011,13 @@ def _invalidate_update_cache():
     reports a stale "commits behind" count after a successful update.
 
     The git repo is shared across profiles — when one profile runs
-    ``omniworker update``, every profile is now current.
+    ``hermes update``, every profile is now current.
     """
     homes = []
     # Default profile home (Docker-aware — uses /opt/data in Docker)
-    from omniworker_constants import get_default_omniworker_root
+    from omniworker_constants import get_default_hermes_root
 
-    default_home = get_default_omniworker_root()
+    default_home = get_default_hermes_root()
     homes.append(default_home)
     # Named profiles under <root>/profiles/
     profiles_root = default_home / "profiles"
@@ -6740,7 +7073,7 @@ def _run_install_with_heartbeat(
 
     Some resolvers/build backends (especially when compiling Rust/C extensions)
     can stay quiet for minutes. Emit a simple elapsed-time heartbeat so users
-    know ``omniworker update`` is still progressing even if pip/uv itself is silent.
+    know ``hermes update`` is still progressing even if pip/uv itself is silent.
     """
     done = threading.Event()
     start = _time.time()
@@ -6782,7 +7115,7 @@ def _venv_scripts_dir() -> Path | None:
     return scripts if scripts.is_dir() else None
 
 
-def _omniworker_exe_shims(scripts_dir: Path) -> list[Path]:
+def _hermes_exe_shims(scripts_dir: Path) -> list[Path]:
     """Entry-point shims that uv may try to rewrite during ``pip install -e .``.
 
     On Windows these are .exe launchers generated by setuptools/uv. On POSIX
@@ -6792,23 +7125,23 @@ def _omniworker_exe_shims(scripts_dir: Path) -> list[Path]:
     if not _is_windows():
         return []
     return [
-        scripts_dir / "omniworker.exe",
-        scripts_dir / "omniworker-gateway.exe",
+        scripts_dir / "hermes.exe",
+        scripts_dir / "hermes-gateway.exe",
     ]
 
 
-def _quarantine_running_omniworker_exe(scripts_dir: Path) -> list[tuple[Path, Path]]:
-    """Pre-empt Windows file lock on the running ``omniworker.exe``.
+def _quarantine_running_hermes_exe(scripts_dir: Path) -> list[tuple[Path, Path]]:
+    """Pre-empt Windows file lock on the running ``hermes.exe``.
 
     Windows allows RENAMING a mapped/running executable (the kernel tracks the
     file by handle, not path), but blocks DELETE/REPLACE while it's loaded. uv
     needs to overwrite the entry-point shims during ``pip install -e .``;
-    when ``omniworker update`` runs, ``omniworker.exe`` IS the live process, and uv
+    when ``hermes update`` runs, ``hermes.exe`` IS the live process, and uv
     fails with ``Access is denied. (os error 5)``.
 
-    We rename live shims to ``omniworker.exe.old.<unix-ms>`` first. uv then writes
+    We rename live shims to ``hermes.exe.old.<unix-ms>`` first. uv then writes
     fresh shims at the original paths. The ``.old`` files are cleaned up on
-    the next omniworker invocation by ``_cleanup_quarantined_exes``.
+    the next hermes invocation by ``_cleanup_quarantined_exes``.
 
     Returns the list of (original, quarantined) pairs so the caller can roll
     back if the install itself fails before uv writes a replacement.
@@ -6819,7 +7152,7 @@ def _quarantine_running_omniworker_exe(scripts_dir: Path) -> list[tuple[Path, Pa
 
     import time
     stamp = int(time.time() * 1000)
-    for shim in _omniworker_exe_shims(scripts_dir):
+    for shim in _hermes_exe_shims(scripts_dir):
         if not shim.exists():
             continue
         target = shim.with_suffix(shim.suffix + f".old.{stamp}")
@@ -6834,7 +7167,7 @@ def _quarantine_running_omniworker_exe(scripts_dir: Path) -> list[tuple[Path, Pa
 
 
 def _restore_quarantined_exes(moved: list[tuple[Path, Path]]) -> None:
-    """Roll back ``_quarantine_running_omniworker_exe`` if uv didn't write replacements."""
+    """Roll back ``_quarantine_running_hermes_exe`` if uv didn't write replacements."""
     for original, quarantined in moved:
         try:
             if not original.exists() and quarantined.exists():
@@ -6844,9 +7177,9 @@ def _restore_quarantined_exes(moved: list[tuple[Path, Path]]) -> None:
 
 
 def _cleanup_quarantined_exes(scripts_dir: Path | None = None) -> None:
-    """Sweep ``omniworker.exe.old.*`` left by prior updates.
+    """Sweep ``hermes.exe.old.*`` left by prior updates.
 
-    Called early on every omniworker invocation. The .old files are unlocked once
+    Called early on every hermes invocation. The .old files are unlocked once
     their owning process exited, so deletion succeeds the next run. Silent
     no-op when nothing's there or on file-locked / permission errors.
     """
@@ -6871,7 +7204,7 @@ def _refresh_active_lazy_features() -> None:
 
     When pyproject.toml's ``[all]`` extra was slimmed down (May 2026), most
     optional backends moved to ``tools/lazy_deps.py`` and only install on
-    first use. ``omniworker update`` runs ``uv pip install -e .[all]`` which
+    first use. ``hermes update`` runs ``uv pip install -e .[all]`` which
     leaves those packages untouched — so if we bump a pin in
     :data:`LAZY_DEPS` (CVE response, transitive bug fix), users who already
     activated the backend keep the stale version forever.
@@ -6931,7 +7264,7 @@ def _refresh_active_lazy_features() -> None:
                 reason = reason[:200] + "..."
             print(f"  ⚠ {feature} failed to refresh: {reason}")
         print("  Backends keep their previously-installed version; rerun")
-        print("  `omniworker update` once the upstream issue is resolved.")
+        print("  `hermes update` once the upstream issue is resolved.")
 
 
 def _install_python_dependencies_with_optional_fallback(
@@ -6945,17 +7278,17 @@ def _install_python_dependencies_with_optional_fallback(
     By default this targets ``.[all]``; Termux callers can pass
     ``group='termux-all'`` to use the curated Android-compatible profile.
 
-    On Windows, pre-renames live ``omniworker.exe`` / ``omniworker-gateway.exe`` shims
+    On Windows, pre-renames live ``hermes.exe`` / ``hermes-gateway.exe`` shims
     in the venv Scripts dir before each install attempt so uv can write fresh
     copies (Windows blocks REPLACE on a running .exe but allows RENAME). See
-    ``_quarantine_running_omniworker_exe`` for the rationale.
+    ``_quarantine_running_hermes_exe`` for the rationale.
     """
     scripts_dir = _venv_scripts_dir() if _is_windows() else None
 
     def _install(args: list[str]) -> None:
         moved: list[tuple[Path, Path]] = []
         if scripts_dir is not None:
-            moved = _quarantine_running_omniworker_exe(scripts_dir)
+            moved = _quarantine_running_hermes_exe(scripts_dir)
         try:
             _run_install_with_heartbeat(install_cmd_prefix + args, env=env)
         except BaseException:
@@ -7089,28 +7422,35 @@ def _update_node_dependencies() -> None:
         if not (path / "package.json").exists():
             continue
 
+        # Stream npm output (no `--silent`, no `capture_output`) so any
+        # optional dependency postinstall scripts (e.g. `agent-browser`'s
+        # Chromium fetch on first install) print progress instead of
+        # appearing to hang silently for minutes (#18840).  The
+        # `_UpdateOutputStream` wrapper installed by the updater mirrors
+        # streamed output to ``~/.hermes/logs/update.log`` so nothing is lost.
         result = _run_npm_install_deterministic(
             npm,
             path,
-            extra_args=("--silent", "--no-fund", "--no-audit", "--progress=false"),
+            extra_args=("--no-fund", "--no-audit", "--progress=false"),
+            capture_output=False,
         )
         if result.returncode == 0:
             print(f"  ✓ {label}")
             continue
 
         print(f"  ⚠ npm install failed in {label}")
-        stderr = (result.stderr or "").strip()
+        stderr = (result.stderr or "").strip() if result.stderr else ""
         if stderr:
             print(f"    {stderr.splitlines()[-1]}")
 
 
 class _UpdateOutputStream:
-    """Stream wrapper used during ``omniworker update`` to survive terminal loss.
+    """Stream wrapper used during ``hermes update`` to survive terminal loss.
 
     Wraps the process's original stdout/stderr so that:
 
     * Every write is also mirrored to an append-only log file
-      (``~/.omniworker/logs/update.log``) that users can inspect after the
+      (``~/.hermes/logs/update.log``) that users can inspect after the
       terminal disconnects.
     * Writes to the original stream that fail with ``BrokenPipeError`` /
       ``OSError`` / ``ValueError`` (closed file) no longer cascade into
@@ -7118,7 +7458,7 @@ class _UpdateOutputStream:
       stops.
 
     Combined with ``SIGHUP -> SIG_IGN`` installed by
-    ``_install_hangup_protection``, this makes ``omniworker update`` safe to
+    ``_install_hangup_protection``, this makes ``hermes update`` safe to
     run in a plain SSH session that might disconnect mid-install.
     """
 
@@ -7180,7 +7520,7 @@ class _UpdateOutputStream:
 def _install_hangup_protection(gateway_mode: bool = False):
     """Protect ``cmd_update`` from SIGHUP and broken terminal pipes.
 
-    Users commonly run ``omniworker update`` in an SSH session or a terminal
+    Users commonly run ``hermes update`` in an SSH session or a terminal
     that may close mid-install.  Without protection, ``SIGHUP`` from the
     terminal kills the Python process during ``pip install`` and leaves
     the venv half-installed; the documented workaround ("use screen /
@@ -7192,14 +7532,14 @@ def _install_hangup_protection(gateway_mode: bool = False):
        across ``exec()``, so pip and git subprocesses also stop dying on
        hangup.
     2. ``sys.stdout`` / ``sys.stderr`` are wrapped to mirror output to
-       ``~/.omniworker/logs/update.log`` and to silently absorb
+       ``~/.hermes/logs/update.log`` and to silently absorb
        ``BrokenPipeError`` when the terminal vanishes.
 
     ``SIGINT`` (Ctrl-C) and ``SIGTERM`` (systemd shutdown) are
     **intentionally left alone** — those are legitimate cancellation
     signals the user or OS sent on purpose.
 
-    In gateway mode (``omniworker update --gateway``) the update is already
+    In gateway mode (``hermes update --gateway``) the update is already
     spawned detached from a terminal, so this function is a no-op.
 
     Returns a dict that ``cmd_update`` can pass to
@@ -7242,7 +7582,7 @@ def _install_hangup_protection(gateway_mode: bool = False):
         import datetime as _dt
 
         log_file.write(
-            f"\n=== omniworker update started "
+            f"\n=== hermes update started "
             f"{_dt.datetime.now().isoformat(timespec='seconds')} ===\n"
         )
 
@@ -7281,7 +7621,23 @@ def _finalize_update_output(state):
 
 
 def _cmd_update_check():
-    """Implement ``omniworker update --check``: fetch and report without installing."""
+    """Implement ``hermes update --check``: fetch and report without installing."""
+    from omniworker_cli.config import detect_install_method
+    method = detect_install_method(PROJECT_ROOT)
+    if method == "pip":
+        from omniworker_cli.config import recommended_update_command
+        from omniworker_cli.banner import check_via_pypi
+        result = check_via_pypi()
+        if result is None:
+            print("✗ Could not reach PyPI to check for updates.")
+            sys.exit(1)
+        elif result == 0:
+            print("✓ Already up to date.")
+        else:
+            print("⚕ Update available on PyPI.")
+            print(f"  Run '{recommended_update_command()}' to install.")
+        return
+
     git_dir = PROJECT_ROOT / ".git"
     if not git_dir.exists():
         print("✗ Not a git repository — cannot check for updates.")
@@ -7350,16 +7706,16 @@ def _ensure_fhs_path_guard() -> None:
 
     Mirrors the post-symlink probe added to ``scripts/install.sh`` so that
     existing FHS-layout root installs on RHEL/CentOS/Rocky/Alma 8+ get
-    repaired on ``omniworker update`` without requiring a reinstall.  The
+    repaired on ``hermes update`` without requiring a reinstall.  The
     installer's assumption that ``/usr/local/bin`` is on PATH for every
     standard shell breaks on those distros in non-login interactive shells
     (su, sudo -s, tmux panes, some web terminals): /etc/bashrc doesn't
     add /usr/local/bin and /root/.bash_profile doesn't either.  Symptom:
-    ``omniworker`` prints ``command not found`` even though the symlink lives
-    at /usr/local/bin/omniworker.
+    ``hermes`` prints ``command not found`` even though the symlink lives
+    at /usr/local/bin/hermes.
 
     Silent no-op on: non-Linux, non-root, non-FHS installs, and any system
-    where ``bash -i -c 'command -v omniworker'`` already resolves.  Idempotent.
+    where ``bash -i -c 'command -v hermes'`` already resolves.  Idempotent.
     """
     if sys.platform != "linux":
         return
@@ -7369,8 +7725,8 @@ def _ensure_fhs_path_guard() -> None:
     except AttributeError:
         return
     # Only act when this is actually an FHS-layout install (command link at
-    # /usr/local/bin/omniworker, code at /usr/local/lib/omniworker-agent).
-    fhs_link = Path("/usr/local/bin/omniworker")
+    # /usr/local/bin/hermes, code at /usr/local/lib/hermes-agent).
+    fhs_link = Path("/usr/local/bin/hermes")
     if not fhs_link.is_symlink() and not fhs_link.exists():
         return
 
@@ -7388,7 +7744,7 @@ def _ensure_fhs_path_guard() -> None:
                 "bash",
                 "-i",
                 "-c",
-                "command -v omniworker",
+                "command -v hermes",
             ],
             capture_output=True,
             text=True,
@@ -7439,7 +7795,7 @@ def _run_pre_update_backup(args) -> None:
 
     Gated on ``updates.pre_update_backup`` in config (default false).  Off
     by default because the zip can add minutes to every update on large
-    OMNIWORKER_HOME directories.  The ``--backup`` flag on ``omniworker update``
+    OMNIWORKER_HOME directories.  The ``--backup`` flag on ``hermes update``
     opts in for a single run; ``--no-backup`` forces it off when config
     has it enabled.  Never raises — a backup failure should not block the
     update itself.
@@ -7511,7 +7867,7 @@ def _run_pre_update_backup(args) -> None:
         size_bytes /= 1024
         size_str = f"{size_bytes:.1f} {unit}"
 
-    # Render path using display_omniworker_home so the user sees ~/.omniworker/...
+    # Render path using display_omniworker_home so the user sees ~/.hermes/...
     try:
         from omniworker_constants import get_omniworker_home, display_omniworker_home
 
@@ -7524,7 +7880,7 @@ def _run_pre_update_backup(args) -> None:
         display_path = str(out_path)
 
     print(f"  Saved:    {display_path} ({size_str}, {elapsed:.1f}s)")
-    print(f"  Restore:  omniworker import {out_path}")
+    print(f"  Restore:  hermes import {out_path}")
     print(f"  Disable:  omit --backup (backups are off by default)")
     print(f"            set updates.pre_update_backup: false in config.yaml")
     print()
@@ -7559,6 +7915,28 @@ def cmd_update(args):
         _finalize_update_output(_update_io_state)
 
 
+def _cmd_update_pip(args):
+    """Update OmniWorker via pip (for PyPI installs)."""
+    from omniworker_cli import __version__
+
+    print(f"→ Current version: {__version__}")
+    print("→ Checking PyPI for updates...")
+
+    uv = shutil.which("uv")
+    if uv:
+        cmd = [uv, "pip", "install", "--upgrade", "hermes-agent"]
+    else:
+        cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "hermes-agent"]
+
+    print(f"→ Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        print("✗ Update failed")
+        sys.exit(1)
+
+    print("✓ Update complete! Restart hermes to use the new version.")
+
+
 def _cmd_update_impl(args, gateway_mode: bool):
     """Body of ``cmd_update`` — kept separate so the wrapper can always
     restore stdio even on ``sys.exit``."""
@@ -7586,9 +7964,14 @@ def _cmd_update_impl(args, gateway_mode: bool):
         if sys.platform == "win32":
             use_zip_update = True
         else:
+            from omniworker_cli.config import detect_install_method
+            method = detect_install_method(PROJECT_ROOT)
+            if method == "pip":
+                _cmd_update_pip(args)
+                return
             print("✗ Not a git repository. Please reinstall:")
             print(
-                "  curl -fsSL https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scripts/install.sh | bash"
+                "  curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash"
             )
             sys.exit(1)
 
@@ -8017,10 +8400,10 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     print()
                     print("✓ Configuration updated!")
                 if (gateway_mode or assume_yes or response == "auto") and missing_env:
-                    print("  ℹ API keys require manual entry: omniworker config migrate")
+                    print("  ℹ API keys require manual entry: hermes config migrate")
             else:
                 print()
-                print("Skipped. Run 'omniworker config migrate' later to configure.")
+                print("Skipped. Run 'hermes config migrate' later to configure.")
         else:
             print("  ✓ Configuration is up to date")
 
@@ -8039,7 +8422,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # Most-recent curator run notice — show-once per run. Surfaces the
         # rename map (`old-name → umbrella`) on the high-attention update
         # surface so users learn about consolidations without having to
-        # check `omniworker curator status`. Self-stamps after printing so it
+        # check `hermes curator status`. Self-stamps after printing so it
         # never repeats for the same run.
         try:
             _print_curator_recent_run_notice()
@@ -8056,7 +8439,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # Refresh the cua-driver binary used by the Computer Use toolset.
         # The upstream installer is gated on macOS and on the binary already
         # being on PATH, so this is a no-op for users who don't have it.
-        # Tying the refresh to ``omniworker update`` gives users a predictable
+        # Tying the refresh to ``hermes update`` gives users a predictable
         # cadence (matches when they pull new agent code) without adding
         # startup latency or a per-launch GitHub API call.
         try:
@@ -8070,7 +8453,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             logger.debug("cua-driver refresh failed: %s", e)
 
         # Write exit code *before* the gateway restart attempt.
-        # When running as ``omniworker update --gateway`` (spawned by the gateway's
+        # When running as ``hermes update --gateway`` (spawned by the gateway's
         # /update command), this process lives inside the gateway's systemd
         # cgroup.  A graceful SIGUSR1 restart keeps the drain loop alive long
         # enough for the exit-code marker to be written below, but the
@@ -8225,7 +8608,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             relaunched_profiles = []
 
             # --- Systemd services (Linux) ---
-            # Discover all omniworker-gateway* units (default + profiles)
+            # Discover all hermes-gateway* units (default + profiles)
             if supports_systemd_services():
                 try:
                     _ensure_user_systemd_env()
@@ -8241,7 +8624,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                             scope_cmd
                             + [
                                 "list-units",
-                                "omniworker-gateway*",
+                                "hermes-gateway*",
                                 "--plain",
                                 "--no-legend",
                                 "--no-pager",
@@ -8256,7 +8639,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                                 continue
                             unit = parts[
                                 0
-                            ]  # e.g. omniworker-gateway.service or omniworker-gateway-coder.service
+                            ]  # e.g. hermes-gateway.service or hermes-gateway-coder.service
                             if not unit.endswith(".service"):
                                 continue
                             svc_name = unit.removesuffix(".service")
@@ -8397,7 +8780,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                             # the RestartSec backoff and leave the unit
                             # dead.  Clearing the failed state first makes
                             # the restart idempotent.  Mirrors the recovery
-                            # path in `omniworker gateway restart`
+                            # path in `hermes gateway restart`
                             # (`systemd_restart()`) as of PR #20949.
                             subprocess.run(
                                 scope_cmd + ["reset-failed", svc_name],
@@ -8545,10 +8928,10 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 unmapped_count = len(killed_pids) - len(relaunched_profiles)
                 if unmapped_count:
                     print(f"  → Stopped {unmapped_count} manual gateway process(es)")
-                    print("    Restart manually: omniworker gateway run")
+                    print("    Restart manually: hermes gateway run")
                     if unmapped_count > 1:
                         print(
-                            "    (or: omniworker -p <profile> gateway run  for each profile)"
+                            "    (or: hermes -p <profile> gateway run  for each profile)"
                         )
 
             if not restarted_services and not killed_pids:
@@ -8601,29 +8984,29 @@ def _cmd_update_impl(args, gateway_mode: bool):
             logger.debug("Gateway restart during update failed: %s", e)
 
         # Warn if legacy OmniWorker gateway unit files are still installed.
-        # When both omniworker.service (from a pre-rename install) and the
-        # current omniworker-gateway.service are enabled, they SIGTERM-fight
+        # When both hermes.service (from a pre-rename install) and the
+        # current hermes-gateway.service are enabled, they SIGTERM-fight
         # for the same bot token (see PR #11909). Flagging here means
-        # every `omniworker update` surfaces the issue until the user migrates.
+        # every `hermes update` surfaces the issue until the user migrates.
         try:
             from omniworker_cli.gateway import (
-                has_legacy_omniworker_units,
-                _find_legacy_omniworker_units,
+                has_legacy_hermes_units,
+                _find_legacy_hermes_units,
                 supports_systemd_services,
             )
 
-            if supports_systemd_services() and has_legacy_omniworker_units():
+            if supports_systemd_services() and has_legacy_hermes_units():
                 print()
                 print("⚠ Legacy OmniWorker gateway unit(s) detected:")
-                for name, path, is_sys in _find_legacy_omniworker_units():
+                for name, path, is_sys in _find_legacy_hermes_units():
                     scope = "system" if is_sys else "user"
                     print(f"    {path}  ({scope} scope)")
                 print()
-                print("  These pre-rename units (omniworker.service) fight the current")
-                print("  omniworker-gateway.service for the bot token and cause SIGTERM")
+                print("  These pre-rename units (hermes.service) fight the current")
+                print("  hermes-gateway.service for the bot token and cause SIGTERM")
                 print("  flap loops. Remove them with:")
                 print()
-                print("    omniworker gateway migrate-legacy")
+                print("    hermes gateway migrate-legacy")
                 print()
                 print("  (add `sudo` if any are in system scope)")
         except Exception as e:
@@ -8638,7 +9021,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         print()
         print("Tip: You can now select a provider and model:")
-        print("  omniworker model              # Select provider and model")
+        print("  hermes model              # Select provider and model")
 
     except subprocess.CalledProcessError as e:
         if sys.platform == "win32":
@@ -8654,7 +9037,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 def _coalesce_session_name_args(argv: list) -> list:
     """Join unquoted multi-word session names after -c/--continue and -r/--resume.
 
-    When a user types ``omniworker -c Pokemon Agent Dev`` without quoting the
+    When a user types ``hermes -c Pokemon Agent Dev`` without quoting the
     session name, argparse sees three separate tokens.  This function merges
     them into a single argument so argparse receives
     ``['-c', 'Pokemon Agent Dev']`` instead.
@@ -8745,7 +9128,7 @@ def cmd_profile(args):
     action = getattr(args, "profile_action", None)
 
     if action is None:
-        # Bare `omniworker profile` — show current profile status
+        # Bare `hermes profile` — show current profile status
         profile_name = get_active_profile_name()
         dhh = display_omniworker_home()
         print(f"\nActive profile: {profile_name}")
@@ -8764,7 +9147,7 @@ def cmd_profile(args):
                 )
                 print(f"Skills:         {p.skill_count} installed")
                 if p.alias_path:
-                    print(f"Alias:          {p.name} → omniworker -p {p.name}")
+                    print(f"Alias:          {p.name} → hermes -p {p.name}")
                 break
         print()
         return
@@ -8812,7 +9195,7 @@ def cmd_profile(args):
         try:
             set_active_profile(name)
             if name == "default":
-                print(f"Switched to: default (~/.omniworker)")
+                print(f"Switched to: default (~/.hermes)")
             else:
                 print(f"Switched to: {name}")
         except (ValueError, FileNotFoundError) as e:
@@ -8836,6 +9219,7 @@ def cmd_profile(args):
                 clone_config=clone,
                 no_alias=no_alias,
                 no_skills=no_skills,
+                description=getattr(args, "description", None),
             )
             print(f"\nProfile '{name}' created at {profile_dir}")
 
@@ -8886,9 +9270,9 @@ def cmd_profile(args):
                 if collision:
                     print(f"\n⚠ Cannot create alias '{name}' — {collision}")
                     print(
-                        f"  Choose a custom alias:  omniworker profile alias {name} --name <custom>"
+                        f"  Choose a custom alias:  hermes profile alias {name} --name <custom>"
                     )
-                    print(f"  Or access via flag:     omniworker -p {name} chat")
+                    print(f"  Or access via flag:     hermes -p {name} chat")
                 else:
                     wrapper_path = create_wrapper_script(name)
                     if wrapper_path:
@@ -8935,6 +9319,107 @@ def cmd_profile(args):
             print(f"Error: {e}")
             sys.exit(1)
 
+    elif action == "describe":
+        # Read or write a profile's description. The description is
+        # consumed by the kanban decomposer to route tasks based on
+        # role instead of name alone.
+        from omniworker_cli import profiles as _profiles_mod
+
+        all_flag = bool(getattr(args, "all_missing", False))
+        auto_flag = bool(getattr(args, "auto", False))
+        overwrite_flag = bool(getattr(args, "overwrite", False))
+        text_value = getattr(args, "text", None)
+        name = getattr(args, "profile_name", None)
+
+        if all_flag and not auto_flag:
+            print("profile describe: --all requires --auto", file=sys.stderr)
+            sys.exit(2)
+        if all_flag and (text_value or name):
+            print(
+                "profile describe: --all is mutually exclusive with a profile name / --text",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        if not all_flag and not name:
+            print("profile describe: profile name is required (or --all --auto)", file=sys.stderr)
+            sys.exit(2)
+        if text_value and auto_flag:
+            print(
+                "profile describe: --text is mutually exclusive with --auto",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+
+        # Show current description if no operation requested.
+        if name and not text_value and not auto_flag:
+            try:
+                if _profiles_mod.normalize_profile_name(name) == "default":
+                    from omniworker_constants import get_omniworker_home as _hh
+                    profile_dir = Path(_hh())
+                else:
+                    profile_dir = _profiles_mod.get_profile_dir(name)
+            except Exception as exc:
+                print(f"Error: {exc}", file=sys.stderr)
+                sys.exit(1)
+            if not profile_dir.is_dir():
+                print(f"Error: profile '{name}' not found", file=sys.stderr)
+                sys.exit(1)
+            meta = _profiles_mod.read_profile_meta(profile_dir)
+            desc = meta.get("description") or ""
+            if not desc:
+                print(f"(no description set for '{name}')")
+            else:
+                tag = "[auto] " if meta.get("description_auto") else ""
+                print(f"{tag}{desc}")
+            sys.exit(0)
+
+        # --text path: just write the user-authored description.
+        if text_value:
+            try:
+                if _profiles_mod.normalize_profile_name(name) == "default":
+                    from omniworker_constants import get_omniworker_home as _hh
+                    profile_dir = Path(_hh())
+                else:
+                    profile_dir = _profiles_mod.get_profile_dir(name)
+                _profiles_mod.write_profile_meta(
+                    profile_dir,
+                    description=text_value,
+                    description_auto=False,
+                )
+                print(f"Description updated for '{name}'.")
+            except Exception as exc:
+                print(f"Error: {exc}", file=sys.stderr)
+                sys.exit(1)
+            sys.exit(0)
+
+        # --auto path: invoke the LLM describer.
+        from omniworker_cli import profile_describer as _pd
+
+        if all_flag:
+            targets = _pd.list_describable_profiles(missing_only=True)
+            if not targets:
+                print("All profiles already have descriptions.")
+                sys.exit(0)
+        else:
+            targets = [name]
+
+        ok_count = 0
+        fail_count = 0
+        for tgt in targets:
+            outcome = _pd.describe_profile(tgt, overwrite=overwrite_flag)
+            if outcome.ok:
+                ok_count += 1
+                print(f"Described '{outcome.profile_name}': {outcome.description}")
+            else:
+                fail_count += 1
+                print(
+                    f"profile describe {outcome.profile_name}: {outcome.reason}",
+                    file=sys.stderr,
+                )
+        if not all_flag:
+            sys.exit(0 if ok_count == 1 else 1)
+        sys.exit(0 if ok_count > 0 else 1)
+
     elif action == "show":
         name = args.profile_name
         from omniworker_cli.profiles import (
@@ -8972,7 +9457,7 @@ def cmd_profile(args):
             print(f"Distribution: {dist_name}@{dist_version or '?'}")
             if dist_source:
                 print(f"Installed from: {dist_source}")
-            print(f"  (run `omniworker profile info {name}` for full manifest)")
+            print(f"  (run `hermes profile info {name}` for full manifest)")
         if wrapper.exists():
             print(f"Alias:   {wrapper}")
         print()
@@ -9004,7 +9489,7 @@ def cmd_profile(args):
             if wrapper_path:
                 # If custom name, write the profile name into the wrapper
                 if custom_name:
-                    wrapper_path.write_text(f'#!/bin/sh\nexec omniworker -p {name} "$@"\n')
+                    wrapper_path.write_text(f'#!/bin/sh\nexec hermes -p {name} "$@"\n')
                 print(f"✓ Alias created: {wrapper_path}")
                 if not _is_wrapper_dir_in_path():
                     print(f"⚠ {_get_wrapper_dir()} is not in your PATH.")
@@ -9065,7 +9550,7 @@ def cmd_profile(args):
             # Preview: stage the distribution into a scratch dir, show the
             # manifest, then do the real install.  The double-stage avoids
             # any side-effects if the user declines.
-            with tempfile.TemporaryDirectory(prefix="omniworker_dist_preview_") as tmp:
+            with tempfile.TemporaryDirectory(prefix="hermes_dist_preview_") as tmp:
                 plan = plan_install(
                     args.source,
                     Path(tmp),
@@ -9098,9 +9583,9 @@ def cmd_profile(args):
             if plan.has_cron:
                 print(
                     "  Cron jobs were included but are NOT scheduled automatically.\n"
-                    f"  Review them with:  omniworker -p {plan.manifest.name} cron list"
+                    f"  Review them with:  hermes -p {plan.manifest.name} cron list"
                 )
-            print(f"\n  Use with:      omniworker -p {plan.manifest.name} chat")
+            print(f"\n  Use with:      hermes -p {plan.manifest.name} chat")
         except (DistributionError, ValueError) as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -9120,7 +9605,7 @@ def cmd_profile(args):
             if current is None:
                 print(
                     f"Error: Profile '{canon}' is not a distribution (no distribution.yaml). "
-                    "Only profiles installed via `omniworker profile install` can be updated."
+                    "Only profiles installed via `hermes profile install` can be updated."
                 )
                 sys.exit(1)
 
@@ -9146,7 +9631,7 @@ def cmd_profile(args):
             if plan.has_cron:
                 print(
                     "  Cron files were refreshed.  Review with:  "
-                    f"omniworker -p {plan.manifest.name} cron list"
+                    f"hermes -p {plan.manifest.name} cron list"
                 )
         except (DistributionError, ValueError) as e:
             print(f"Error: {e}")
@@ -9174,8 +9659,8 @@ def cmd_profile(args):
             print(f"Author:       {data['author']}")
         if data.get("license"):
             print(f"License:      {data['license']}")
-        if data.get("omniworker_requires"):
-            print(f"Requires:     OmniWorker {data['omniworker_requires']}")
+        if data.get("hermes_requires"):
+            print(f"Requires:     OmniWorker {data['hermes_requires']}")
         if data.get("source"):
             print(f"Source:       {data['source']}")
         if data.get("installed_at"):
@@ -9203,8 +9688,8 @@ def _render_distribution_plan(plan) -> None:
         print(f"  {mf.description}")
     if mf.author:
         print(f"  Author:   {mf.author}")
-    if mf.omniworker_requires:
-        print(f"  Requires: OmniWorker {mf.omniworker_requires}")
+    if mf.hermes_requires:
+        print(f"  Requires: OmniWorker {mf.hermes_requires}")
     print(f"  Source:   {plan.provenance}")
     print(f"  Target:   {plan.target_dir}")
     if plan.existing:
@@ -9257,19 +9742,19 @@ def _render_distribution_plan(plan) -> None:
 
 
 def _report_dashboard_status() -> int:
-    """Print ``omniworker dashboard`` PIDs and return the count.
+    """Print ``hermes dashboard`` PIDs and return the count.
 
     Uses the same detection logic as ``_find_stale_dashboard_pids`` (the
-    current process is excluded, but since ``omniworker dashboard --status``
+    current process is excluded, but since ``hermes dashboard --status``
     runs in a short-lived CLI process that never matches the pattern,
     the exclusion is irrelevant here).
     """
     pids = _find_stale_dashboard_pids()
     if not pids:
-        print("No omniworker dashboard processes running.")
+        print("No hermes dashboard processes running.")
         return 0
 
-    print(f"{len(pids)} omniworker dashboard process(es) running:")
+    print(f"{len(pids)} hermes dashboard process(es) running:")
     for pid in pids:
         # Best-effort: show the full cmdline so users can tell profiles apart.
         cmdline = ""
@@ -9304,9 +9789,9 @@ def cmd_dashboard(args):
     if getattr(args, "stop", False):
         pids = _find_stale_dashboard_pids()
         if not pids:
-            print("No omniworker dashboard processes running.")
+            print("No hermes dashboard processes running.")
             sys.exit(0)
-        # Reuse the same SIGTERM-grace-SIGKILL path used after `omniworker update`.
+        # Reuse the same SIGTERM-grace-SIGKILL path used after `hermes update`.
         _kill_stale_dashboard_processes(reason="requested via --stop")
         # _kill_stale_dashboard_processes prints outcomes itself.  Exit 0 if
         # we killed at least one, 1 if they were all unkillable.
@@ -9400,7 +9885,7 @@ def _build_provider_choices() -> list[str]:
     except Exception:
         # Fallback: static list guarantees the CLI always works
         return [
-            "auto", "openrouter", "nous", "openai-codex", "copilot-acp", "copilot",
+            "auto", "openrouter", "nous", "openai-codex", "xai-oauth", "copilot-acp", "copilot",
             "anthropic", "gemini", "google-gemini-cli", "xai", "bedrock", "azure-foundry",
             "ollama-cloud", "huggingface", "zai", "kimi-coding", "kimi-coding-cn",
             "stepfun", "minimax", "minimax-cn", "kilocode", "novita", "xiaomi", "arcee",
@@ -9424,7 +9909,8 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "config", "cron", "curator", "dashboard", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
         "kanban", "login", "logout", "logs", "lsp", "mcp", "memory",
-        "model", "pairing", "plugins", "profile", "proxy", "sessions", "setup",
+        "model", "pairing", "plugins", "postinstall", "profile", "proxy",
+        "send", "sessions", "setup",
         "skills", "slack", "status", "tools", "uninstall", "update",
         "version", "webhook", "whatsapp", "chat",
         # Help-ish invocations — plugin commands not being listed in
@@ -9436,7 +9922,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
 
 
 # Top-level flags that take a value. Needed by ``_first_positional_argv``
-# so that in ``omniworker -m gpt5 chat``, ``gpt5`` is correctly skipped as a
+# so that in ``hermes -m gpt5 chat``, ``gpt5`` is correctly skipped as a
 # flag value rather than misclassified as a subcommand. Kept in sync with
 # the top-level flags declared in ``omniworker_cli/_parser.py``.
 #
@@ -9465,7 +9951,7 @@ def _first_positional_argv() -> str | None:
 
     Used by ``main()`` to decide whether plugin discovery has to run at
     argparse-setup time. Handles common invocations like
-    ``omniworker -m gpt5 --provider openai chat "msg"`` by skipping the
+    ``hermes -m gpt5 --provider openai chat "msg"`` by skipping the
     values attached to known top-level flags.
 
     Does NOT fully simulate argparse — unknown ``--foo=bar`` / ``--foo
@@ -9504,7 +9990,7 @@ def _plugin_cli_discovery_needed() -> bool:
     """
     first = _first_positional_argv()
     if first is None:
-        # Bare ``omniworker`` or only flags → defaults to ``chat``.
+        # Bare ``hermes`` or only flags → defaults to ``chat``.
         return False
     if first in _BUILTIN_SUBCOMMANDS:
         return False
@@ -9517,7 +10003,7 @@ def _plugin_cli_discovery_needed() -> bool:
 
 
 def main():
-    """Main entry point for omniworker CLI."""
+    """Main entry point for hermes CLI."""
     # Force UTF-8 stdio on Windows before anything prints.  No-op elsewhere.
     try:
         from omniworker_cli.stdio import configure_windows_stdio
@@ -9525,9 +10011,9 @@ def main():
     except Exception:
         pass
 
-    # Sweep stale ``omniworker.exe.old.*`` quarantine files left by previous
-    # ``omniworker update`` runs on Windows. Silent no-op on non-Windows or when
-    # there's nothing to clean. See ``_quarantine_running_omniworker_exe``.
+    # Sweep stale ``hermes.exe.old.*`` quarantine files left by previous
+    # ``hermes update`` runs on Windows. Silent no-op on non-Windows or when
+    # there's nothing to clean. See ``_quarantine_running_hermes_exe``.
     try:
         _cleanup_quarantined_exes()
     except Exception:
@@ -9557,7 +10043,7 @@ def main():
     model_parser.add_argument(
         "--client-id",
         default=None,
-        help="OAuth client id to use for Nous login (default: omniworker-cli)",
+        help="OAuth client id to use for Nous login (default: hermes-cli)",
     )
     model_parser.add_argument(
         "--scope", default=None, help="OAuth scope to request for Nous login"
@@ -9566,6 +10052,16 @@ def main():
         "--no-browser",
         action="store_true",
         help="Do not attempt to open the browser automatically during Nous login",
+    )
+    model_parser.add_argument(
+        "--manual-paste",
+        action="store_true",
+        help=(
+            "For loopback OAuth providers (xai-oauth, ...): skip the local "
+            "callback listener and paste the failed callback URL from your "
+            "browser instead. Use on browser-only remotes (Cloud Shell, "
+            "Codespaces, EC2 Instance Connect, ...). See #26923."
+        ),
     )
     model_parser.add_argument(
         "--timeout",
@@ -9595,7 +10091,7 @@ def main():
             "Manage the fallback provider chain.  Fallback providers are tried "
             "in order when the primary model fails with rate-limit, overload, or "
             "connection errors.  See: "
-            "https://omniworker-agent.omniworker.com/docs/user-guide/features/fallback-providers"
+            "https://hermes-agent.nousresearch.com/docs/user-guide/features/fallback-providers"
         ),
     )
     fallback_subparsers = fallback_parser.add_subparsers(dest="fallback_command")
@@ -9606,7 +10102,7 @@ def main():
     )
     fallback_subparsers.add_parser(
         "add",
-        help="Pick a provider + model (same picker as `omniworker model`) and append to the chain",
+        help="Pick a provider + model (same picker as `hermes model`) and append to the chain",
     )
     fallback_subparsers.add_parser(
         "remove",
@@ -9744,11 +10240,11 @@ def main():
     # gateway migrate-legacy
     gateway_migrate_legacy = gateway_subparsers.add_parser(
         "migrate-legacy",
-        help="Remove legacy omniworker.service units from pre-rename installs",
+        help="Remove legacy hermes.service units from pre-rename installs",
         description=(
             "Stop, disable, and remove legacy OmniWorker gateway unit files "
-            "(e.g. omniworker.service) left over from older installs. Profile "
-            "units (omniworker-gateway-<profile>.service) and unrelated "
+            "(e.g. hermes.service) left over from older installs. Profile "
+            "units (hermes-gateway-<profile>.service) and unrelated "
             "third-party services are never touched."
         ),
     )
@@ -9790,7 +10286,7 @@ def main():
     proxy_start.add_argument(
         "--provider",
         default="nous",
-        help="Upstream provider (default: nous). See `omniworker proxy providers`.",
+        help="Upstream provider: nous or xai (default: nous). See `hermes proxy providers`.",
     )
     proxy_start.add_argument(
         "--host",
@@ -9831,7 +10327,7 @@ def main():
         "setup",
         help="Interactive setup wizard",
         description="Configure OmniWorker Agent with an interactive wizard. "
-        "Run a specific section: omniworker setup model|tts|terminal|gateway|tools|agent",
+        "Run a specific section: hermes setup model|tts|terminal|gateway|tools|agent",
     )
     setup_parser.add_argument(
         "section",
@@ -9853,7 +10349,7 @@ def main():
         action="store_true",
         help="(Default on existing installs.) Re-run the full wizard, "
         "showing current values as defaults. Kept for backwards "
-        "compatibility — a bare 'omniworker setup' now does this.",
+        "compatibility — a bare 'hermes setup' now does this.",
     )
     setup_parser.add_argument(
         "--quick",
@@ -9862,6 +10358,17 @@ def main():
         "or unset, instead of running the full reconfigure wizard.",
     )
     setup_parser.set_defaults(func=cmd_setup)
+
+    # =========================================================================
+    # postinstall command
+    # =========================================================================
+    postinstall_parser = subparsers.add_parser(
+        "postinstall",
+        help="Bootstrap non-Python deps for pip installs (node, browser, ripgrep, ffmpeg)",
+        description="One-shot post-install for pip users. Installs system "
+        "dependencies that pip cannot provide, then runs setup if needed.",
+    )
+    postinstall_parser.set_defaults(func=cmd_postinstall)
 
     # =========================================================================
     # whatsapp command
@@ -9922,6 +10429,12 @@ def main():
     slack_parser.set_defaults(func=cmd_slack)
 
     # =========================================================================
+    # send command — pipe shell-script output to any configured platform
+    # =========================================================================
+    from omniworker_cli.send_cmd import register_send_subparser
+    register_send_subparser(subparsers)
+
+    # =========================================================================
     # login command
     # =========================================================================
     login_parser = subparsers.add_parser(
@@ -9931,7 +10444,7 @@ def main():
     )
     login_parser.add_argument(
         "--provider",
-        choices=["nous", "openai-codex"],
+        choices=["nous", "openai-codex", "xai-oauth"],
         default=None,
         help="Provider to authenticate with (default: nous)",
     )
@@ -9943,7 +10456,7 @@ def main():
         help="Inference API base URL (default: production inference API)",
     )
     login_parser.add_argument(
-        "--client-id", default=None, help="OAuth client id to use (default: omniworker-cli)"
+        "--client-id", default=None, help="OAuth client id to use (default: hermes-cli)"
     )
     login_parser.add_argument("--scope", default=None, help="OAuth scope to request")
     login_parser.add_argument(
@@ -9977,7 +10490,7 @@ def main():
     )
     logout_parser.add_argument(
         "--provider",
-        choices=["nous", "openai-codex", "spotify"],
+        choices=["nous", "openai-codex", "xai-oauth", "spotify"],
         default=None,
         help="Provider to log out from (default: active provider)",
     )
@@ -10011,6 +10524,17 @@ def main():
         "--no-browser",
         action="store_true",
         help="Do not auto-open a browser for OAuth login",
+    )
+    auth_add.add_argument(
+        "--manual-paste",
+        action="store_true",
+        help=(
+            "Skip the loopback callback listener and paste the failed "
+            "callback URL from your browser instead. Use this on "
+            "browser-only remotes (GCP Cloud Shell, GitHub Codespaces, "
+            "EC2 Instance Connect, ...) where 127.0.0.1 on the remote "
+            "isn't reachable from your laptop. See #26923."
+        ),
     )
     auth_add.add_argument(
         "--timeout", type=float, help="OAuth/network timeout in seconds"
@@ -10122,7 +10646,7 @@ def main():
     cron_create.add_argument(
         "--script",
         help=(
-            "Path to a script under ~/.omniworker/scripts/. Default mode: "
+            "Path to a script under ~/.hermes/scripts/. Default mode: "
             "script stdout is injected into the agent's prompt each run. "
             "With --no-agent: the script IS the job and its stdout is "
             "delivered verbatim. .sh/.bash files run via bash, everything "
@@ -10143,6 +10667,10 @@ def main():
     cron_create.add_argument(
         "--workdir",
         help="Absolute path for the job to run from. Injects AGENTS.md / CLAUDE.md / .cursorrules from that directory and uses it as the cwd for terminal/file/code_exec tools. Omit to preserve old behaviour (no project context files).",
+    )
+    cron_create.add_argument(
+        "--profile",
+        help="OmniWorker profile name to run the job under. Use 'default' for the root profile. Named profiles must already exist. Omit to preserve the scheduler's existing profile.",
     )
 
     # cron edit
@@ -10181,7 +10709,7 @@ def main():
     cron_edit.add_argument(
         "--script",
         help=(
-            "Path to a script under ~/.omniworker/scripts/. Pass empty string to clear. "
+            "Path to a script under ~/.hermes/scripts/. Pass empty string to clear. "
             "With --no-agent the script IS the job; otherwise its stdout is "
             "injected into the agent's prompt each run."
         ),
@@ -10207,6 +10735,10 @@ def main():
     cron_edit.add_argument(
         "--workdir",
         help="Absolute path for the job to run from (injects AGENTS.md etc. and sets terminal cwd). Pass empty string to clear.",
+    )
+    cron_edit.add_argument(
+        "--profile",
+        help="OmniWorker profile name to run the job under. Use 'default' for the root profile. Pass empty string to clear.",
     )
 
     # lifecycle actions
@@ -10315,9 +10847,9 @@ def main():
         "hooks",
         help="Inspect and manage shell-script hooks",
         description=(
-            "Inspect shell-script hooks declared in ~/.omniworker/config.yaml, "
+            "Inspect shell-script hooks declared in ~/.hermes/config.yaml, "
             "test them against synthetic payloads, and manage the first-use "
-            "consent allowlist at ~/.omniworker/shell-hooks-allowlist.json."
+            "consent allowlist at ~/.hermes/shell-hooks-allowlist.json."
         ),
     )
     hooks_subparsers = hooks_parser.add_subparsers(dest="hooks_action")
@@ -10392,7 +10924,7 @@ def main():
         default=None,
         help=(
             "Acknowledge a security advisory by ID and exit. After ack, the "
-            "advisory will no longer trigger startup banners. Run `omniworker "
+            "advisory will no longer trigger startup banners. Run `hermes "
             "doctor` first to see active advisories and their IDs."
         ),
     )
@@ -10420,18 +10952,18 @@ def main():
     debug_parser = subparsers.add_parser(
         "debug",
         help="Debug tools — upload logs and system info for support",
-        description="Debug utilities for OmniWorker Agent. Use 'omniworker debug share' to "
+        description="Debug utilities for OmniWorker Agent. Use 'hermes debug share' to "
         "upload a debug report (system info + recent logs) to a paste "
         "service and get a shareable URL.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-    omniworker debug share              Upload debug report and print URL
-    omniworker debug share --lines 500  Include more log lines
-    omniworker debug share --expire 30  Keep paste for 30 days
-    omniworker debug share --local      Print report locally (no upload)
-    omniworker debug share --no-redact  Disable upload-time secret redaction
-    omniworker debug delete <url>       Delete a previously uploaded paste
+    hermes debug share              Upload debug report and print URL
+    hermes debug share --lines 500  Include more log lines
+    hermes debug share --expire 30  Keep paste for 30 days
+    hermes debug share --local      Print report locally (no upload)
+    hermes debug share --no-redact  Disable upload-time secret redaction
+    hermes debug delete <url>       Delete a previously uploaded paste
 """,
     )
     debug_sub = debug_parser.add_subparsers(dest="debug_command")
@@ -10468,7 +11000,7 @@ Examples:
     )
     delete_parser = debug_sub.add_parser(
         "delete",
-        help="Delete a paste uploaded by 'omniworker debug share'",
+        help="Delete a paste uploaded by 'hermes debug share'",
     )
     delete_parser.add_argument(
         "urls",
@@ -10485,13 +11017,13 @@ Examples:
         "backup",
         help="Back up OmniWorker home directory to a zip file",
         description="Create a zip archive of your entire OmniWorker configuration, "
-        "skills, sessions, and data (excludes the omniworker-agent codebase). "
+        "skills, sessions, and data (excludes the hermes-agent codebase). "
         "Use --quick for a fast snapshot of just critical state files.",
     )
     backup_parser.add_argument(
         "-o",
         "--output",
-        help="Output path for the zip file (default: ~/omniworker-backup-<timestamp>.zip)",
+        help="Output path for the zip file (default: ~/hermes-backup-<timestamp>.zip)",
     )
     backup_parser.add_argument(
         "-q",
@@ -10509,9 +11041,9 @@ Examples:
     # =========================================================================
     checkpoints_parser = subparsers.add_parser(
         "checkpoints",
-        help="Inspect / prune / clear ~/.omniworker/checkpoints/",
+        help="Inspect / prune / clear ~/.hermes/checkpoints/",
         description="Manage the filesystem checkpoint store — the shadow git "
-        "repo omniworker uses to snapshot working directories before "
+        "repo hermes uses to snapshot working directories before "
         "write_file/patch/terminal calls. Lets you see how much "
         "space checkpoints occupy, force a prune, or wipe the base.",
     )
@@ -10731,8 +11263,8 @@ Examples:
         "reset",
         help="Reset a bundled skill — clears 'user-modified' tracking so updates work again",
         description=(
-            "Clear a bundled skill's entry from the sync manifest (~/.omniworker/skills/.bundled_manifest) "
-            "so future 'omniworker update' runs stop marking it as user-modified. Pass --restore to also "
+            "Clear a bundled skill's entry from the sync manifest (~/.hermes/skills/.bundled_manifest) "
+            "so future 'hermes update' runs stop marking it as user-modified. Pass --restore to also "
             "replace the current copy with the bundled version."
         ),
     )
@@ -10821,7 +11353,7 @@ Examples:
     )
     plugins_install.add_argument(
         "identifier",
-        help="Git URL or owner/repo shorthand (e.g. anpicasso/omniworker-plugin-chrome-profiles)",
+        help="Git URL or owner/repo shorthand (e.g. anpicasso/hermes-plugin-chrome-profiles)",
     )
     plugins_install.add_argument(
         "--force",
@@ -10838,7 +11370,7 @@ Examples:
     _install_enable_group.add_argument(
         "--no-enable",
         action="store_true",
-        help="Install disabled (skip confirmation prompt); enable later with `omniworker plugins enable <name>`",
+        help="Install disabled (skip confirmation prompt); enable later with `hermes plugins enable <name>`",
     )
 
     plugins_update = plugins_subparsers.add_parser(
@@ -10876,7 +11408,7 @@ Examples:
     # own argparse tree.  No hardcoded plugin commands in main.py.
     #
     # Skipped when the invocation is already targeting a known built-in
-    # subcommand — ``omniworker --help``, ``omniworker version``, ``omniworker logs``,
+    # subcommand — ``hermes --help``, ``hermes version``, ``hermes logs``,
     # etc.  This avoids eagerly importing every bundled plugin module
     # (google.cloud.pubsub_v1, aiohttp, grpc, PIL …) which costs
     # 500-650ms on typical installs.
@@ -11047,7 +11579,7 @@ Examples:
             "Enable, disable, or list tools for CLI, Telegram, Discord, etc.\n\n"
             "Built-in toolsets use plain names (e.g. web, memory).\n"
             "MCP tools use server:tool notation (e.g. github:create_issue).\n\n"
-            "Run 'omniworker tools' with no subcommand for the interactive configuration UI."
+            "Run 'hermes tools' with no subcommand for the interactive configuration UI."
         ),
     )
     tools_parser.add_argument(
@@ -11057,7 +11589,7 @@ Examples:
     )
     tools_sub = tools_parser.add_subparsers(dest="tools_action")
 
-    # omniworker tools list [--platform cli]
+    # hermes tools list [--platform cli]
     tools_list_p = tools_sub.add_parser(
         "list",
         help="Show all tools and their enabled/disabled status",
@@ -11068,7 +11600,7 @@ Examples:
         help="Platform to show (default: cli)",
     )
 
-    # omniworker tools disable <name...> [--platform cli]
+    # hermes tools disable <name...> [--platform cli]
     tools_disable_p = tools_sub.add_parser(
         "disable",
         help="Disable toolsets or MCP tools",
@@ -11085,7 +11617,7 @@ Examples:
         help="Platform to apply to (default: cli)",
     )
 
-    # omniworker tools enable <name...> [--platform cli]
+    # hermes tools enable <name...> [--platform cli]
     tools_enable_p = tools_sub.add_parser(
         "enable",
         help="Enable toolsets or MCP tools",
@@ -11125,9 +11657,9 @@ Examples:
         description=(
             "Install or check the cua-driver binary used by the\n"
             "`computer_use` toolset. macOS-only.\n\n"
-            "Use `omniworker computer-use install` to fetch and run the\n"
+            "Use `hermes computer-use install` to fetch and run the\n"
             "upstream cua-driver installer. This is equivalent to the\n"
-            "post-setup hook that `omniworker tools` runs when you first\n"
+            "post-setup hook that `hermes tools` runs when you first\n"
             "enable the Computer Use toolset, and is a stable target\n"
             "for re-running the install if it didn't fire (e.g. when\n"
             "toggling the toolset on a returning-user setup)."
@@ -11176,10 +11708,10 @@ Examples:
                     print(f"cua-driver: installed at {path} ({version})")
                 else:
                     print(f"cua-driver: installed at {path}")
-                print("  Refresh to latest: omniworker computer-use install --upgrade")
+                print("  Refresh to latest: hermes computer-use install --upgrade")
                 return
             print("cua-driver: not installed")
-            print("  Run: omniworker computer-use install")
+            print("  Run: hermes computer-use install")
             return
         # No subcommand → show help
         computer_use_parser.print_help()
@@ -11194,8 +11726,8 @@ Examples:
         description=(
             "Manage MCP server connections and run OmniWorker as an MCP server.\n\n"
             "MCP servers provide additional tools via the Model Context Protocol.\n"
-            "Use 'omniworker mcp add' to connect to a new server, or\n"
-            "'omniworker mcp serve' to expose OmniWorker conversations over MCP."
+            "Use 'hermes mcp add' to connect to a new server, or\n"
+            "'hermes mcp serve' to expose OmniWorker conversations over MCP."
         ),
     )
     mcp_sub = mcp_parser.add_subparsers(dest="mcp_action")
@@ -11221,7 +11753,7 @@ Examples:
     # subparser's args.command attribute, which the dispatcher reads to
     # route to cmd_mcp.  Without an explicit dest, argparse derives
     # dest="command" from the flag name and sets it to None when the
-    # flag is omitted, causing `omniworker mcp add ...` to fall through to
+    # flag is omitted, causing `hermes mcp add ...` to fall through to
     # interactive chat.
     mcp_add_p.add_argument(
         "--command", dest="mcp_command", help="Stdio command (e.g. npx)"
@@ -11478,7 +12010,7 @@ Examples:
                 print("Cancelled.")
                 return
 
-            # Launch omniworker --resume <id> by replacing the current process
+            # Launch hermes --resume <id> by replacing the current process
             print(f"Resuming session: {selected_id}")
             from omniworker_cli.relaunch import relaunch
 
@@ -11537,24 +12069,24 @@ Examples:
     insights_parser.set_defaults(func=cmd_insights)
 
     # =========================================================================
-    # claw command (OmniWorker migration)
+    # claw command (OpenClaw migration)
     # =========================================================================
     claw_parser = subparsers.add_parser(
         "claw",
-        help="OmniWorker migration tools",
-        description="Migrate settings, memories, skills, and API keys from OmniWorker to OmniWorker",
+        help="OpenClaw migration tools",
+        description="Migrate settings, memories, skills, and API keys from OpenClaw to OmniWorker",
     )
     claw_subparsers = claw_parser.add_subparsers(dest="claw_action")
 
     # claw migrate
     claw_migrate = claw_subparsers.add_parser(
         "migrate",
-        help="Migrate from OmniWorker to OmniWorker",
-        description="Import settings, memories, skills, and API keys from an OmniWorker installation. "
+        help="Migrate from OpenClaw to OmniWorker",
+        description="Import settings, memories, skills, and API keys from an OpenClaw installation. "
         "Always shows a preview before making changes.",
     )
     claw_migrate.add_argument(
-        "--source", help="Path to OmniWorker directory (default: ~/.omniworker)"
+        "--source", help="Path to OpenClaw directory (default: ~/.openclaw)"
     )
     claw_migrate.add_argument(
         "--dry-run",
@@ -11582,9 +12114,9 @@ Examples:
     claw_migrate.add_argument(
         "--no-backup",
         action="store_true",
-        help="Skip the pre-migration zip snapshot of ~/.omniworker/ (by default a "
-        "single restore-point archive is written to ~/.omniworker/backups/ "
-        "before apply; restorable with 'omniworker import').",
+        help="Skip the pre-migration zip snapshot of ~/.hermes/ (by default a "
+        "single restore-point archive is written to ~/.hermes/backups/ "
+        "before apply; restorable with 'hermes import').",
     )
     claw_migrate.add_argument(
         "--workspace-target", help="Absolute path to copy workspace instructions into"
@@ -11603,11 +12135,11 @@ Examples:
     claw_cleanup = claw_subparsers.add_parser(
         "cleanup",
         aliases=["clean"],
-        help="Archive leftover OmniWorker directories after migration",
-        description="Scan for and archive leftover OmniWorker directories to prevent state fragmentation",
+        help="Archive leftover OpenClaw directories after migration",
+        description="Scan for and archive leftover OpenClaw directories to prevent state fragmentation",
     )
     claw_cleanup.add_argument(
-        "--source", help="Path to a specific OmniWorker directory to clean up"
+        "--source", help="Path to a specific OpenClaw directory to clean up"
     )
     claw_cleanup.add_argument(
         "--dry-run",
@@ -11668,7 +12200,7 @@ Examples:
         "-y",
         action="store_true",
         default=False,
-        help="Assume yes for interactive prompts (config migration, stash restore). API-key entry is skipped; run 'omniworker config migrate' separately for those.",
+        help="Assume yes for interactive prompts (config migration, stash restore). API-key entry is skipped; run 'hermes config migrate' separately for those.",
     )
     update_parser.set_defaults(func=cmd_update)
 
@@ -11718,7 +12250,7 @@ Examples:
     acp_parser.add_argument(
         "--setup-browser",
         action="store_true",
-        help="Install agent-browser + Playwright Chromium into ~/.omniworker/node/ "
+        help="Install agent-browser + Playwright Chromium into ~/.hermes/node/ "
              "for browser tool support (idempotent).",
     )
     acp_parser.add_argument(
@@ -11796,13 +12328,54 @@ Examples:
     profile_create.add_argument(
         "--no-skills",
         action="store_true",
-        help="Create an empty profile with no bundled skills (opts out of `omniworker update` skill sync)",
+        help="Create an empty profile with no bundled skills (opts out of `hermes update` skill sync)",
+    )
+    profile_create.add_argument(
+        "--description",
+        default=None,
+        help="One- or two-sentence description of what this profile is good at. "
+             "Used by the kanban decomposer to route tasks based on role instead "
+             "of profile name alone. Skip and add later via `hermes profile describe`.",
     )
 
     profile_delete = profile_subparsers.add_parser("delete", help="Delete a profile")
     profile_delete.add_argument("profile_name", help="Profile to delete")
     profile_delete.add_argument(
         "-y", "--yes", action="store_true", help="Skip confirmation prompt"
+    )
+
+    profile_describe = profile_subparsers.add_parser(
+        "describe",
+        help="Read or set a profile's description (used by the kanban orchestrator)",
+    )
+    profile_describe.add_argument(
+        "profile_name",
+        nargs="?",
+        default=None,
+        help="Profile to describe (omit + use --all --auto to sweep)",
+    )
+    profile_describe.add_argument(
+        "--text",
+        default=None,
+        help="Set description to this exact text (overwrites any existing description)",
+    )
+    profile_describe.add_argument(
+        "--auto",
+        action="store_true",
+        help="Auto-generate description via the auxiliary LLM "
+             "(uses auxiliary.profile_describer)",
+    )
+    profile_describe.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="With --auto, replace user-authored descriptions too (default: only "
+             "fill in missing or previously-auto descriptions)",
+    )
+    profile_describe.add_argument(
+        "--all",
+        dest="all_missing",
+        action="store_true",
+        help="With --auto, run on every profile missing a description",
     )
 
     profile_show = profile_subparsers.add_parser("show", help="Show profile details")
@@ -11946,7 +12519,7 @@ Examples:
         "--tui",
         action="store_true",
         help=(
-            "Expose the in-browser Chat tab (embedded `omniworker --tui` via PTY/WebSocket). "
+            "Expose the in-browser Chat tab (embedded `hermes --tui` via PTY/WebSocket). "
             "Alternatively set OMNIWORKER_DASHBOARD_TUI=1."
         ),
     )
@@ -11963,17 +12536,17 @@ Examples:
     # start-a-server flags above (if both are passed, --stop / --status win
     # because they exit before the server is started).  The dashboard has
     # no service manager and no PID file, so these scan the process table
-    # for `omniworker dashboard` cmdlines and SIGTERM them directly — the same
-    # path `omniworker update` uses to clean up stale dashboards.
+    # for `hermes dashboard` cmdlines and SIGTERM them directly — the same
+    # path `hermes update` uses to clean up stale dashboards.
     dashboard_parser.add_argument(
         "--stop",
         action="store_true",
-        help="Stop all running omniworker dashboard processes and exit",
+        help="Stop all running hermes dashboard processes and exit",
     )
     dashboard_parser.add_argument(
         "--status",
         action="store_true",
-        help="List running omniworker dashboard processes and exit",
+        help="List running hermes dashboard processes and exit",
     )
     dashboard_parser.set_defaults(func=cmd_dashboard)
 
@@ -11987,16 +12560,16 @@ Examples:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-    omniworker logs                    Show last 50 lines of agent.log
-    omniworker logs -f                 Follow agent.log in real time
-    omniworker logs errors             Show last 50 lines of errors.log
-    omniworker logs gateway -n 100     Show last 100 lines of gateway.log
-    omniworker logs --level WARNING    Only show WARNING and above
-    omniworker logs --session abc123   Filter by session ID
-    omniworker logs --component tools  Only show tool-related lines
-    omniworker logs --since 1h         Lines from the last hour
-    omniworker logs --since 30m -f     Follow, starting from 30 min ago
-    omniworker logs list               List available log files with sizes
+    hermes logs                    Show last 50 lines of agent.log
+    hermes logs -f                 Follow agent.log in real time
+    hermes logs errors             Show last 50 lines of errors.log
+    hermes logs gateway -n 100     Show last 100 lines of gateway.log
+    hermes logs --level WARNING    Only show WARNING and above
+    hermes logs --session abc123   Filter by session ID
+    hermes logs --component tools  Only show tool-related lines
+    hermes logs --since 1h         Lines from the last hour
+    hermes logs --since 30m -f     Follow, starting from 30 min ago
+    hermes logs list               List available log files with sizes
 """,
     )
     logs_parser.add_argument(
@@ -12045,7 +12618,7 @@ Examples:
     # =========================================================================
     # Pre-process argv so unquoted multi-word session names after -c / -r
     # are merged into a single token before argparse sees them.
-    # e.g. ``omniworker -c Pokemon Agent Dev`` → ``omniworker -c 'Pokemon Agent Dev'``
+    # e.g. ``hermes -c Pokemon Agent Dev`` → ``hermes -c 'Pokemon Agent Dev'``
     # ── Container-aware routing ────────────────────────────────────────
     # When NixOS container mode is active, route ALL subcommands into
     # the managed container.  This MUST run before parse_args() so that
@@ -12070,7 +12643,7 @@ Examples:
     #
     # Fix: when argv contains a token matching a known subcommand, set
     # subparsers.required=True to force deterministic routing.  If that
-    # fails (e.g. 'omniworker -c model' where 'model' is consumed as the
+    # fails (e.g. 'hermes -c model' where 'model' is consumed as the
     # session name for --continue), fall back to the default behaviour.
     import io as _io
 
@@ -12110,7 +12683,7 @@ Examples:
 
     # Discover Python plugins and register shell hooks once, before any
     # command that can fire lifecycle hooks.  Both are idempotent; gated
-    # so introspection/management commands (omniworker hooks list, cron
+    # so introspection/management commands (hermes hooks list, cron
     # list, gateway status, mcp add, ...) don't pay discovery cost or
     # trigger consent prompts for hooks the user is still inspecting.
     # Groups with mixed admin/CRUD vs. agent-running entries narrow via
@@ -12131,7 +12704,7 @@ Examples:
 
             discover_plugins()
         except Exception:
-            logger.debug(
+            logger.warning(
                 "plugin discovery failed at CLI startup",
                 exc_info=True,
             )

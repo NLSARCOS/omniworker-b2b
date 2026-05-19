@@ -1,7 +1,7 @@
-"""CLI for the OmniWorker Kanban board — ``omniworker kanban …`` subcommand.
+"""CLI for the OmniWorker Kanban board — ``hermes kanban …`` subcommand.
 
 Exposes the full 15-verb surface documented in the design spec
-(``docs/omniworker-kanban-v1-spec.pdf``).  All DB work is delegated to
+(``docs/hermes-kanban-v1-spec.pdf``).  All DB work is delegated to
 ``kanban_db``.  This module adds:
 
   * Argparse subcommand construction (``build_parser``).
@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from omniworker_cli import kanban_db as kb
+from omniworker_cli.profiles import get_active_profile_name, get_profile_dir, seed_profile_skills
 
 
 # ---------------------------------------------------------------------------
@@ -106,7 +107,7 @@ def _check_dispatcher_presence() -> tuple[bool, str]:
       is running but the config flag is off. Message is human guidance
       explaining the next step.
 
-    Used by ``omniworker kanban create`` (and callers) to warn when a task
+    Used by ``hermes kanban create`` (and callers) to warn when a task
     will sit in ``ready`` because nothing is there to pick it up.
     Defensive against import failures and config-read errors — if the
     probe itself errors, we return ``(True, "")`` so we don't spam
@@ -137,13 +138,13 @@ def _check_dispatcher_presence() -> tuple[bool, str]:
             "Gateway is running but kanban.dispatch_in_gateway=false in "
             "config.yaml — the task will sit in 'ready' until you flip it "
             "back on and restart the gateway, OR run the legacy "
-            "standalone daemon (`omniworker kanban daemon --force`)."
+            "standalone daemon (`hermes kanban daemon --force`)."
         )
     return (
         False,
         "No gateway is running — the task will sit in 'ready' until you "
         "start it. Run:\n"
-        "    omniworker gateway start\n"
+        "    hermes gateway start\n"
         "The gateway hosts an embedded dispatcher (tick interval 60s by "
         "default); your task will be picked up on the next tick after "
         "the gateway comes up."
@@ -166,8 +167,8 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
             "Durable SQLite-backed task board shared across OmniWorker profiles. "
             "Tasks are claimed atomically, can depend on other tasks, and "
             "are executed by a named profile in an isolated workspace. "
-            "See https://omniworker-agent.omniworker.com/docs/user-guide/features/kanban "
-            "or docs/omniworker-kanban-v1-spec.pdf for the full design."
+            "See https://hermes-agent.nousresearch.com/docs/user-guide/features/kanban "
+            "or docs/hermes-kanban-v1-spec.pdf for the full design."
         ),
     )
     # --- global --board flag ---
@@ -181,8 +182,8 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         metavar="<slug>",
         help=(
             "Board slug to operate on. Defaults to the current board "
-            "(set via `omniworker kanban boards switch <slug>` or the "
-            "OMNIWORKER_KANBAN_BOARD env var). Use `omniworker kanban boards list` "
+            "(set via `hermes kanban boards switch <slug>` or the "
+            "OMNIWORKER_KANBAN_BOARD env var). Use `hermes kanban boards list` "
             "to see all boards."
         ),
     )
@@ -435,7 +436,15 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_unblock.add_argument("task_ids", nargs="+")
 
     p_archive = sub.add_parser("archive", help="Archive one or more tasks")
-    p_archive.add_argument("task_ids", nargs="+")
+    p_archive.add_argument("task_ids", nargs="*",
+                           help="Task ids to archive (default mode)")
+    p_archive.add_argument(
+        "--rm",
+        dest="purge_ids",
+        nargs="+",
+        default=None,
+        help="Permanently delete already-archived task ids from the board",
+    )
 
     # --- tail ---
     p_tail = sub.add_parser("tail", help="Follow a task's event stream")
@@ -460,7 +469,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     # --- daemon (deprecated) ---
     p_daemon = sub.add_parser(
         "daemon",
-        help="DEPRECATED — dispatcher now runs in the gateway. Use `omniworker gateway start`.",
+        help="DEPRECATED — dispatcher now runs in the gateway. Use `hermes gateway start`.",
     )
     p_daemon.add_argument("--interval", type=float, default=60.0,
                           help="Seconds between dispatch ticks (default: 60)")
@@ -562,7 +571,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_asg = sub.add_parser(
         "assignees",
         help="List known profiles + per-profile task counts "
-             "(union of ~/.omniworker/profiles/ and current assignees on the board)",
+             "(union of ~/.hermes/profiles/ and current assignees on the board)",
     )
     p_asg.add_argument("--json", action="store_true")
 
@@ -610,6 +619,43 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         help="Emit one JSON object per task on stdout",
     )
 
+    # --- decompose --- (triage → fan-out via auxiliary LLM + orchestrator)
+    p_decompose = sub.add_parser(
+        "decompose",
+        help="Decompose a triage-column task into a graph of child tasks "
+             "routed to specialist profiles by description. Falls back to "
+             "specify-style single-task promotion when the task doesn't "
+             "benefit from fan-out. Uses auxiliary.kanban_decomposer.",
+    )
+    p_decompose.add_argument(
+        "task_id",
+        nargs="?",
+        default=None,
+        help="Task id to decompose (required unless --all is given)",
+    )
+    p_decompose.add_argument(
+        "--all",
+        dest="all_triage",
+        action="store_true",
+        help="Decompose every task currently in the triage column",
+    )
+    p_decompose.add_argument(
+        "--tenant",
+        default=None,
+        help="When used with --all, restrict the sweep to this tenant",
+    )
+    p_decompose.add_argument(
+        "--author",
+        default=None,
+        help="Author name recorded on the audit comment "
+             "(default: $OMNIWORKER_PROFILE or 'decomposer')",
+    )
+    p_decompose.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit one JSON object per task on stdout",
+    )
+
     # --- gc ---
     p_gc = sub.add_parser(
         "gc", help="Garbage-collect archived-task workspaces, old events, and old logs",
@@ -628,7 +674,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
 # ---------------------------------------------------------------------------
 
 def kanban_command(args: argparse.Namespace) -> int:
-    """Entry point from ``omniworker kanban …`` argparse dispatch.
+    """Entry point from ``hermes kanban …`` argparse dispatch.
 
     Returns a shell-style exit code (0 on success, non-zero on error).
     """
@@ -640,11 +686,19 @@ def kanban_command(args: argparse.Namespace) -> int:
             parser.print_help()
         else:
             print(
-                "usage: omniworker kanban <action> [options]\n"
-                "Run 'omniworker kanban --help' for the full list of actions.",
+                "usage: hermes kanban <action> [options]\n"
+                "Run 'hermes kanban --help' for the full list of actions.",
                 file=sys.stderr,
             )
         return 0
+
+    # Board-management commands operate on board metadata and the persisted
+    # current-board pointer itself. They must ignore the shared `--board`
+    # task-routing override; otherwise `/kanban --board beta boards show`
+    # reports beta as the current board even when the on-disk pointer is
+    # alpha.
+    if action == "boards":
+        return _dispatch_boards(args)
 
     # `--board <slug>` applies to every subcommand below by way of an
     # env-var pin for the duration of this call. Using OMNIWORKER_KANBAN_BOARD
@@ -676,21 +730,12 @@ def kanban_command(args: argparse.Namespace) -> int:
         if normed != kb.DEFAULT_BOARD and not kb.board_exists(normed):
             print(
                 f"kanban: board {normed!r} does not exist. "
-                f"Create it with `omniworker kanban boards create {normed}`.",
+                f"Create it with `hermes kanban boards create {normed}`.",
                 file=sys.stderr,
             )
             return 1
         os.environ["OMNIWORKER_KANBAN_BOARD"] = normed
         restore_board_env = True
-
-    # Boards management doesn't touch the DB at all — dispatch early so
-    # fresh installs that haven't initialized any DB can still use
-    # `omniworker kanban boards create …`.
-    if action == "boards":
-        try:
-            return _dispatch_boards(args)
-        finally:
-            _restore_board_env()
 
     # Auto-initialize the DB before dispatching any subcommand. init_db
     # is idempotent, so running it every invocation is cheap (one
@@ -740,6 +785,7 @@ def kanban_command(args: argparse.Namespace) -> int:
         "notify-unsubscribe": _cmd_notify_unsubscribe,
         "context":  _cmd_context,
         "specify":  _cmd_specify,
+        "decompose":  _cmd_decompose,
         "gc":       _cmd_gc,
     }
     handler = handlers.get(action)
@@ -775,11 +821,11 @@ def _profile_author() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Boards management (omniworker kanban boards …)
+# Boards management (hermes kanban boards …)
 # ---------------------------------------------------------------------------
 
 def _dispatch_boards(args: argparse.Namespace) -> int:
-    """Handle ``omniworker kanban boards <action>``.
+    """Handle ``hermes kanban boards <action>``.
 
     Boards management is deliberately separate from the task-level
     commands: it operates on the filesystem (board directories,
@@ -833,7 +879,7 @@ def _cmd_boards_list(args: argparse.Namespace) -> int:
         return 0
     # Human table: marker (•) for current, slug, display name, counts.
     if not boards:
-        print("(no boards — create one with `omniworker kanban boards create <slug>`)")
+        print("(no boards — create one with `hermes kanban boards create <slug>`)")
         return 0
     print(f"{'':2s}  {'SLUG':24s}  {'NAME':28s}  COUNTS")
     for b in boards:
@@ -850,7 +896,7 @@ def _cmd_boards_list(args: argparse.Namespace) -> int:
     print()
     print(f"Current board: {current}")
     if len(boards) > 1:
-        print("Switch boards with `omniworker kanban boards switch <slug>`.")
+        print("Switch boards with `hermes kanban boards switch <slug>`.")
     return 0
 
 
@@ -879,7 +925,7 @@ def _cmd_boards_create(args: argparse.Namespace) -> int:
         kb.set_current_board(meta["slug"])
         print(f"  Switched to {meta['slug']!r}.")
     else:
-        print(f"  Use `omniworker kanban boards switch {meta['slug']}` to make it current.")
+        print(f"  Use `hermes kanban boards switch {meta['slug']}` to make it current.")
     return 0
 
 
@@ -910,7 +956,7 @@ def _cmd_boards_switch(args: argparse.Namespace) -> int:
     if not kb.board_exists(normed):
         print(
             f"kanban boards switch: board {normed!r} does not exist. "
-            f"Create it with `omniworker kanban boards create {normed}`.",
+            f"Create it with `hermes kanban boards create {normed}`.",
             file=sys.stderr,
         )
         return 1
@@ -981,12 +1027,28 @@ def _parse_duration(val) -> Optional[int]:
 def _cmd_init(args: argparse.Namespace) -> int:
     path = kb.init_db()
     print(f"Kanban DB initialized at {path}")
+
+    # Seed bundled skills (e.g. kanban-worker) into the active profile so
+    # the kanban dispatcher can use them without a separate `hermes profile
+    # create` step.  This is best-effort — a missing or broken profile is
+    # not fatal to `kanban init`.
+    try:
+        profile_name = get_active_profile_name() or "default"
+        profile_dir = get_profile_dir(profile_name)
+        result = seed_profile_skills(profile_dir, quiet=True)
+        if result:
+            copied = result.get("copied", [])
+            if copied:
+                print(f"Seeded skill(s) into profile {profile_name}: {', '.join(copied)}")
+    except Exception:
+        pass  # best-effort
+
     print()
     # Enumerate profiles on disk so the user knows what assignees are
     # already addressable. Multica does this auto-detection on its
     # daemon start; we do it here at init time instead because our
     # dispatcher doesn't need to enumerate — we just pass the name
-    # through to `omniworker -p <name>`.
+    # through to `hermes -p <name>`.
     try:
         profiles = kb.list_profiles_on_disk()
     except Exception:
@@ -997,11 +1059,11 @@ def _cmd_init(args: argparse.Namespace) -> int:
         for name in profiles:
             print(f"  {name}")
     else:
-        print("No profiles found under ~/.omniworker/profiles/.")
-        print("Create one with `omniworker -p <name> setup` before assigning tasks.")
+        print("No profiles found under ~/.hermes/profiles/.")
+        print("Create one with `hermes -p <name> setup` before assigning tasks.")
     print()
     print("Next step: start the gateway so ready tasks actually get picked up.")
-    print("  omniworker gateway start")
+    print("  hermes gateway start")
     print()
     print(
         "The gateway hosts an embedded dispatcher that ticks every 60 seconds\n"
@@ -1033,7 +1095,7 @@ def _cmd_assignees(args: argparse.Namespace) -> int:
         print(json.dumps(data, indent=2, ensure_ascii=False))
         return 0
     if not data:
-        print("(no assignees — create a profile with `omniworker -p <name> setup`)")
+        print("(no assignees — create a profile with `hermes -p <name> setup`)")
         return 0
     # Header
     print(f"{'NAME':20s}  {'ON DISK':8s}  COUNTS")
@@ -1129,7 +1191,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
         print(
             f"Board: {current} "
             f"({other_count} other board{'s' if other_count != 1 else ''} — "
-            f"`omniworker kanban boards list`)\n"
+            f"`hermes kanban boards list`)\n"
         )
     if not tasks:
         print("(no matching tasks)")
@@ -1265,7 +1327,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
         print(task.result)
     elif latest_summary:
         # Worker handoff lives on the latest run, not on tasks.result.
-        # Surface it at top-level so a glance at ``omniworker kanban show <id>``
+        # Surface it at top-level so a glance at ``hermes kanban show <id>``
         # tells you what the worker did even if tasks.result is empty.
         print()
         print("Latest summary:")
@@ -1355,6 +1417,9 @@ def _cmd_diagnostics(args: argparse.Namespace) -> int:
     the dashboard uses, so CLI output matches what the UI shows.
     """
     from omniworker_cli import kanban_diagnostics as kd
+    from omniworker_cli.config import load_config
+
+    diag_config = kd.config_from_runtime_config(load_config())
 
     with kb.connect() as conn:
         # Either one-task mode or fleet mode.
@@ -1368,6 +1433,7 @@ def _cmd_diagnostics(args: argparse.Namespace) -> int:
                     task,
                     kb.list_events(conn, args.task),
                     kb.list_runs(conn, args.task),
+                    config=diag_config,
                 )
             }
         else:
@@ -1395,7 +1461,12 @@ def _cmd_diagnostics(args: argparse.Namespace) -> int:
                 diags_by_task = {}
                 for r in rows:
                     tid = r["id"]
-                    dl = kd.compute_task_diagnostics(r, ev_by.get(tid, []), run_by.get(tid, []))
+                    dl = kd.compute_task_diagnostics(
+                        r,
+                        ev_by.get(tid, []),
+                        run_by.get(tid, []),
+                        config=diag_config,
+                    )
                     if dl:
                         diags_by_task[tid] = dl
 
@@ -1403,7 +1474,7 @@ def _cmd_diagnostics(args: argparse.Namespace) -> int:
         sev = getattr(args, "severity", None)
         if sev:
             for tid in list(diags_by_task.keys()):
-                kept = [d for d in diags_by_task[tid] if d.severity == sev]
+                kept = [d for d in diags_by_task[tid] if kd.SEVERITY_ORDER.index(d.severity) >= kd.SEVERITY_ORDER.index(sev)]
                 if kept:
                     diags_by_task[tid] = kept
                 else:
@@ -1645,11 +1716,23 @@ def _cmd_unblock(args: argparse.Namespace) -> int:
 
 def _cmd_archive(args: argparse.Namespace) -> int:
     ids = list(args.task_ids or [])
-    if not ids:
+    purge_ids = list(getattr(args, "purge_ids", None) or [])
+    if ids and purge_ids:
+        print("choose either task_ids to archive or --rm archived task_ids", file=sys.stderr)
+        return 1
+    if not ids and not purge_ids:
         print("at least one task_id is required", file=sys.stderr)
         return 1
     failed: list[str] = []
     with kb.connect() as conn:
+        if purge_ids:
+            for tid in purge_ids:
+                if not kb.delete_archived_task(conn, tid):
+                    failed.append(tid)
+                    print(f"cannot delete {tid} (must already be archived)", file=sys.stderr)
+                else:
+                    print(f"Deleted {tid}")
+            return 0 if not failed else 1
         for tid in ids:
             if not kb.archive_task(conn, tid):
                 failed.append(tid)
@@ -1742,10 +1825,10 @@ def _cmd_daemon(args: argparse.Namespace) -> int:
     # casually — intentional.
     if not getattr(args, "force", False):
         print(
-            "omniworker kanban daemon: DEPRECATED — the dispatcher now runs\n"
+            "hermes kanban daemon: DEPRECATED — the dispatcher now runs\n"
             "inside the gateway. To use kanban:\n"
             "\n"
-            "    omniworker gateway start       # starts the gateway + embedded dispatcher\n"
+            "    hermes gateway start       # starts the gateway + embedded dispatcher\n"
             "\n"
             "Ready tasks will be picked up on the next dispatcher tick\n"
             "(default: every 60 seconds). Configure via config.yaml:\n"
@@ -1811,8 +1894,8 @@ def _cmd_daemon(args: argparse.Namespace) -> int:
                     f"ready queue non-empty for {health_state['bad_ticks']} "
                     f"consecutive ticks but 0 workers spawned successfully. "
                     f"Check profile health (venv, PATH, credentials) and "
-                    f"`omniworker kanban list --status ready` / "
-                    f"`omniworker kanban list --status blocked` for recent "
+                    f"`hermes kanban list --status ready` / "
+                    f"`hermes kanban list --status blocked` for recent "
                     f"spawn_failed tasks.",
                     file=sys.stderr, flush=True,
                 )
@@ -2112,6 +2195,87 @@ def _cmd_specify(args: argparse.Namespace) -> int:
         return 0 if ok_count == 1 else 1
     # --all: succeed if at least one promotion landed; exit 1 only when
     # every candidate failed (honest signal for scripts).
+    return 0 if (ok_count > 0 or not ids) else 1
+
+
+def _cmd_decompose(args: argparse.Namespace) -> int:
+    """Fan a triage task (or all of them) out into a graph of child
+    tasks via the auxiliary LLM, routed to specialist profiles by
+    description. Thin wrapper over ``kanban_decompose``."""
+    from omniworker_cli import kanban_decompose as decomp
+
+    all_flag = bool(getattr(args, "all_triage", False))
+    tenant = getattr(args, "tenant", None)
+    author = getattr(args, "author", None) or _profile_author()
+    want_json = bool(getattr(args, "json", False))
+
+    if args.task_id and all_flag:
+        print(
+            "kanban: pass either a task id OR --all, not both",
+            file=sys.stderr,
+        )
+        return 2
+
+    if all_flag:
+        ids = decomp.list_triage_ids(tenant=tenant)
+        if not ids:
+            msg = (
+                "No triage tasks"
+                + (f" for tenant {tenant!r}" if tenant else "")
+                + "."
+            )
+            if want_json:
+                print(json.dumps({"decomposed": 0, "total": 0}))
+            else:
+                print(msg)
+            return 0
+    elif args.task_id:
+        ids = [args.task_id]
+    else:
+        print(
+            "kanban: decompose requires a task id or --all",
+            file=sys.stderr,
+        )
+        return 2
+
+    ok_count = 0
+    for tid in ids:
+        outcome = decomp.decompose_task(tid, author=author)
+        if outcome.ok:
+            ok_count += 1
+        if want_json:
+            print(json.dumps({
+                "task_id": outcome.task_id,
+                "ok": outcome.ok,
+                "reason": outcome.reason,
+                "fanout": outcome.fanout,
+                "child_ids": outcome.child_ids,
+                "new_title": outcome.new_title,
+            }))
+        elif outcome.ok:
+            if outcome.fanout and outcome.child_ids:
+                child_summary = ", ".join(outcome.child_ids)
+                print(
+                    f"Decomposed {outcome.task_id} → {len(outcome.child_ids)} "
+                    f"children ({child_summary}); root promoted to todo"
+                )
+            else:
+                title_suffix = (
+                    f" — retitled: {outcome.new_title!r}"
+                    if outcome.new_title
+                    else ""
+                )
+                print(
+                    f"Specified {outcome.task_id} → todo "
+                    f"(no fanout){title_suffix}"
+                )
+        else:
+            print(
+                f"kanban: decompose {outcome.task_id}: {outcome.reason}",
+                file=sys.stderr,
+            )
+    if not all_flag:
+        return 0 if ok_count == 1 else 1
     return 0 if (ok_count > 0 or not ids) else 1
 
 

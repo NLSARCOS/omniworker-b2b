@@ -4,7 +4,7 @@ In a fresh install the board lives at ``<root>/kanban.db`` where
 ``<root>`` is the **shared OmniWorker root** (the parent of any active
 profile). Profiles intentionally collapse onto a shared board: it IS
 the cross-profile coordination primitive. A worker spawned with
-``omniworker -p <profile>`` joins the same board as the dispatcher that
+``hermes -p <profile>`` joins the same board as the dispatcher that
 claimed the task. The same applies to ``<root>/kanban/workspaces/`` and
 ``<root>/kanban/logs/``.
 
@@ -33,12 +33,12 @@ Board resolution order (highest precedence first, all optional):
   override still honoured; highest precedence when the file path itself
   is what the caller wants to force).
 * ``<root>/kanban/current`` — a one-line text file holding the slug of
-  the "currently selected" board. Written by ``omniworker kanban boards
+  the "currently selected" board. Written by ``hermes kanban boards
   switch <slug>``. When absent, the active board is ``default``.
 
-In standard installs ``<root>`` is ``~/.omniworker``. In Docker / custom
-deployments where ``OMNIWORKER_HOME`` points outside ``~/.omniworker`` (e.g.
-``/opt/omniworker``), ``<root>`` is ``OMNIWORKER_HOME``. Legacy env-var
+In standard installs ``<root>`` is ``~/.hermes``. In Docker / custom
+deployments where ``OMNIWORKER_HOME`` points outside ``~/.hermes`` (e.g.
+``/opt/hermes``), ``<root>`` is ``OMNIWORKER_HOME``. Legacy env-var
 overrides still work:
 
 * ``OMNIWORKER_KANBAN_DB`` — pin the database file path directly.
@@ -55,7 +55,7 @@ Docker layouts.
 Schema is intentionally small: tasks, task_links, task_comments,
 task_events.  The ``workspace_kind`` field decouples coordination from git
 worktrees so that research / ops / digital-twin workloads work alongside
-coding workloads.  See ``docs/omniworker-kanban-v1-spec.pdf`` for the full
+coding workloads.  See ``docs/hermes-kanban-v1-spec.pdf`` for the full
 design specification.
 
 Concurrency strategy: WAL mode + ``BEGIN IMMEDIATE`` for write
@@ -93,6 +93,7 @@ from toolsets import get_toolset_names
 VALID_STATUSES = {"triage", "todo", "ready", "running", "blocked", "done", "archived"}
 VALID_WORKSPACE_KINDS = {"scratch", "worktree", "dir"}
 KNOWN_TOOLSET_NAMES = frozenset(name.casefold() for name in get_toolset_names())
+_IS_WINDOWS = sys.platform == "win32"
 
 # A running task's claim is valid for 15 minutes; after that the next
 # dispatcher tick reclaims it.  Workers that outlive this window should call
@@ -121,7 +122,7 @@ DEFAULT_BOARD = "default"
 
 # Slug validator: lowercase alphanumerics, digits, hyphens; 1–64 chars.
 # Strict enough to stop traversal (`..`) and embedded path separators, loose
-# enough that kebab-case names like ``atm10-server`` or ``omniworker-agent``
+# enough that kebab-case names like ``atm10-server`` or ``hermes-agent``
 # pass without fuss. Board names with display formatting (spaces, emoji)
 # live in ``board.json``; the slug is just the directory name.
 _BOARD_SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-_]{0,63}$")
@@ -149,7 +150,7 @@ def kanban_home() -> Path:
 
     1. ``OMNIWORKER_KANBAN_HOME`` env var when set and non-empty (explicit
        override for tests and unusual deployments).
-    2. ``get_default_omniworker_root()``, which already returns ``<root>``
+    2. ``get_default_hermes_root()``, which already returns ``<root>``
        when ``OMNIWORKER_HOME`` is ``<root>/profiles/<name>``, and returns
        ``OMNIWORKER_HOME`` directly for Docker / custom deployments.
 
@@ -161,8 +162,8 @@ def kanban_home() -> Path:
     override = os.environ.get("OMNIWORKER_KANBAN_HOME", "").strip()
     if override:
         return Path(override).expanduser()
-    from omniworker_constants import get_default_omniworker_root
-    return get_default_omniworker_root()
+    from omniworker_constants import get_default_hermes_root
+    return get_default_hermes_root()
 
 
 def boards_root() -> Path:
@@ -179,7 +180,7 @@ def boards_root() -> Path:
 def current_board_path() -> Path:
     """Return the path to ``<root>/kanban/current``.
 
-    One-line text file written by ``omniworker kanban boards switch <slug>``
+    One-line text file written by ``hermes kanban boards switch <slug>``
     to persist the user's board selection across CLI invocations. Absent
     by default (meaning: active board is ``default``).
     """
@@ -193,7 +194,7 @@ def get_current_board() -> str:
 
     1. ``OMNIWORKER_KANBAN_BOARD`` env var (set by the dispatcher on worker
        spawn, or manually for ad-hoc overrides).
-    2. ``<root>/kanban/current`` on disk (set by ``omniworker kanban boards
+    2. ``<root>/kanban/current`` on disk (set by ``hermes kanban boards
        switch``), but only when that board still exists.
     3. ``DEFAULT_BOARD`` (``"default"``).
 
@@ -205,7 +206,7 @@ def get_current_board() -> str:
     if env:
         try:
             normed = _normalize_board_slug(env)
-            if normed:
+            if normed and board_exists(normed):
                 return normed
         except ValueError:
             pass
@@ -230,7 +231,7 @@ def set_current_board(slug: str) -> Path:
 
     Writes ``<root>/kanban/current``. The caller should validate the slug
     exists first (via :func:`board_exists`) — this function does not —
-    so that ``omniworker kanban boards switch <typo>`` returns an error
+    so that ``hermes kanban boards switch <typo>`` returns an error
     instead of silently pointing at nothing.
     """
     normed = _normalize_board_slug(slug)
@@ -330,7 +331,7 @@ def worker_logs_dir(board: Optional[str] = None) -> Path:
 
     ``default`` keeps the legacy path ``<root>/kanban/logs/``. Other
     boards use ``<root>/kanban/boards/<slug>/logs/``. Logs follow the
-    board — makes ``omniworker kanban log`` unambiguous even when multiple
+    board — makes ``hermes kanban log`` unambiguous even when multiple
     boards have tasks with the same id.
     """
     slug = _normalize_board_slug(board)
@@ -533,6 +534,11 @@ def remove_board(slug: str, *, archive: bool = True) -> dict:
     if get_current_board() == normed:
         clear_current_board()
 
+    # A concurrent connect(board=normed) after the rename/delete recreates
+    # an empty sqlite file via mkdir(exist_ok=True); the cache entry must be
+    # dropped first so the schema init pass re-runs on that fresh file.
+    _INITIALIZED_PATHS.discard(str((d / "kanban.db").resolve()))
+
     if archive:
         archive_root = boards_root() / "_archived"
         archive_root.mkdir(parents=True, exist_ok=True)
@@ -598,6 +604,7 @@ class Task:
     # JSON array of skill names. None = use only the defaults; empty
     # list = explicitly no extra skills.
     skills: Optional[list] = None
+    model_override: Optional[str] = None
     # Per-task override for the consecutive-failure circuit breaker.
     # The value is the failure count at which the breaker trips — e.g.
     # ``max_retries=1`` blocks on the first failure (zero retries),
@@ -667,6 +674,7 @@ class Task:
                 row["current_step_key"] if "current_step_key" in keys else None
             ),
             skills=skills_value,
+            model_override=row["model_override"] if "model_override" in keys and row["model_override"] else None,
             max_retries=(
                 row["max_retries"] if "max_retries" in keys else None
             ),
@@ -791,6 +799,10 @@ CREATE TABLE IF NOT EXISTS tasks (
     -- Appended to the dispatcher's built-in `--skills kanban-worker`.
     -- NULL or empty array = no extras.
     skills               TEXT,
+    -- Per-task model override. When set, the dispatcher passes -m <model>
+    -- to the worker, overriding the profile's default model. NULL = use
+    -- the profile default.
+    model_override       TEXT,
     -- Per-task override for the consecutive-failure circuit breaker.
     -- The value is the failure count at which the breaker trips — e.g.
     -- ``max_retries=1`` blocks on the first failure. NULL (the common
@@ -945,7 +957,7 @@ def init_db(
 ) -> Path:
     """Create the schema if it doesn't exist; return the path used.
 
-    Kept as a public entry point so CLI ``omniworker kanban init`` and the
+    Kept as a public entry point so CLI ``hermes kanban init`` and the
     daemon have something explicit to call. Unlike :func:`connect`'s
     first-time auto-init (which caches by path), ``init_db`` always
     re-runs the migration pass. Callers that know the on-disk schema
@@ -1075,6 +1087,9 @@ def _migrate_add_optional_columns(conn: sqlite3.Connection) -> None:
         # which is the correct default (they keep the global behaviour
         # they were getting before the column existed).
         _add_column_if_missing(conn, "tasks", "max_retries", "max_retries INTEGER")
+
+    if "model_override" not in cols:
+        conn.execute("ALTER TABLE tasks ADD COLUMN model_override TEXT")
 
     # task_events gained a run_id column; back-fill it as NULL for
     # historical events (they predate runs and can't be attributed).
@@ -1264,7 +1279,7 @@ def create_task(
 
     ``skills`` is an optional list of skill names to force-load into
     the worker when dispatched. Stored as JSON; the dispatcher passes
-    each name to ``omniworker --skills ...`` alongside the built-in
+    each name to ``hermes --skills ...`` alongside the built-in
     ``kanban-worker``. Use this to pin a task to a specialist skill
     (e.g. ``skills=["translation"]`` so the worker loads the
     translation skill regardless of the profile's default config).
@@ -1282,7 +1297,7 @@ def create_task(
     # Normalise + validate skills: strip whitespace, drop empties, dedupe
     # (preserving order). Refuse commas inside a single name so we don't
     # invisibly splatter a comma-joined string into one argv slot — the
-    # `omniworker --skills X,Y` comma syntax is handled in the dispatcher,
+    # `hermes --skills X,Y` comma syntax is handled in the dispatcher,
     # not here.
     skills_list: Optional[list[str]] = None
     if skills is not None:
@@ -1579,7 +1594,7 @@ def unlink_tasks(conn: sqlite3.Connection, parent_id: str, child_id: str) -> boo
         # Dependency edge removed — re-evaluate promotion eligibility for the
         # child immediately.  Matches the contract of complete_task and
         # unblock_task; without this the child stays stuck in todo until the
-        # next dispatcher tick or a manual `omniworker kanban recompute` (issue #22459).
+        # next dispatcher tick or a manual `hermes kanban recompute` (issue #22459).
         recompute_ready(conn)
     return removed
 
@@ -1722,7 +1737,7 @@ def _end_run(
     timed_out / spawn_failed / gave_up / reclaimed). ``status`` is the
     run-row status (usually just ``outcome``, but callers can pass it
     explicitly). Returns the closed run_id or ``None`` if no active run
-    existed (e.g. a CLI user calling ``omniworker kanban complete`` on a
+    existed (e.g. a CLI user calling ``hermes kanban complete`` on a
     task that was never claimed).
     """
     now = int(time.time())
@@ -1782,7 +1797,7 @@ def _synthesize_ended_run(
     """Insert a zero-duration, already-closed run row.
 
     Used when a terminal transition happens on a task that was never
-    claimed (CLI user calling ``omniworker kanban complete <ready-task>
+    claimed (CLI user calling ``hermes kanban complete <ready-task>
     --summary X``, or dashboard "mark done" on a ready task). Without
     this, the handoff fields (summary / metadata / error) would be
     silently dropped: ``_end_run`` is a no-op because there's no
@@ -2361,7 +2376,7 @@ def complete_task(
     """Transition ``running|ready -> done`` and record ``result``.
 
     Accepts a task that is merely ``ready`` too, so a manual CLI
-    completion (``omniworker kanban complete <id>``) works without requiring
+    completion (``hermes kanban complete <id>``) works without requiring
     a claim/start/complete sequence.
 
     ``summary`` and ``metadata`` are stored on the closing run (if any)
@@ -2478,6 +2493,20 @@ def complete_task(
         }
         if verified_cards:
             completed_payload["verified_cards"] = verified_cards
+        # Carry artifact paths in the event payload so the gateway
+        # notifier can upload them as native attachments alongside the
+        # completion message. Workers pass these via
+        # ``kanban_complete(artifacts=[...])`` which stashes the list in
+        # ``metadata["artifacts"]`` — we promote it onto the event so
+        # consumers don't have to fetch the run row to find it.
+        if isinstance(metadata, dict):
+            md_artifacts = metadata.get("artifacts")
+            if isinstance(md_artifacts, (list, tuple)):
+                cleaned_artifacts = [
+                    str(p).strip() for p in md_artifacts if isinstance(p, str) and str(p).strip()
+                ]
+                if cleaned_artifacts:
+                    completed_payload["artifacts"] = cleaned_artifacts
         _append_event(
             conn, task_id, "completed",
             completed_payload,
@@ -2776,6 +2805,207 @@ def specify_triage_task(
     return True
 
 
+def decompose_triage_task(
+    conn: sqlite3.Connection,
+    task_id: str,
+    *,
+    root_assignee: Optional[str],
+    children: list[dict],
+    author: Optional[str] = None,
+    auto_promote: bool = True,
+) -> Optional[list[str]]:
+    """Fan a triage task out into child tasks and promote the root to ``todo``.
+
+    The root task stays alive and becomes the parent of every child —
+    when all children reach ``done``, the root promotes to ``ready`` and
+    its assignee (typically the orchestrator profile) wakes back up to
+    judge completion or spawn more work.
+
+    ``children`` is a list of dicts, each shaped like::
+
+        {
+            "title": "...",
+            "body": "...",                     # optional
+            "assignee": "profile-name",        # optional, None -> default fallback
+            "parents": [0, 2],                 # indices into this same children list
+        }
+
+    Returns the list of created child task ids (in input order) on
+    success. Returns ``None`` when:
+      - The root task does not exist
+      - The root task is not in ``triage``
+      - A cycle would result (caller built a bad graph)
+
+    Validation of titles/assignees happens inside the same write_txn as
+    the inserts so a malformed entry aborts the whole decomposition
+    cleanly (no orphan children).
+    """
+    if not children:
+        return None
+    if root_assignee is not None:
+        root_assignee = _canonical_assignee(root_assignee)
+
+    # Pre-validate the children list shape outside the txn. Cheap checks
+    # that don't need DB access. Bad input aborts before we touch the DB.
+    for idx, child in enumerate(children):
+        if not isinstance(child, dict):
+            raise ValueError(f"child[{idx}] is not a dict")
+        title = child.get("title")
+        if not isinstance(title, str) or not title.strip():
+            raise ValueError(f"child[{idx}].title is required")
+        parents_idx = child.get("parents") or []
+        if not isinstance(parents_idx, list):
+            raise ValueError(f"child[{idx}].parents must be a list")
+        for p in parents_idx:
+            if not isinstance(p, int) or p < 0 or p >= len(children):
+                raise ValueError(
+                    f"child[{idx}].parents[{p}] is not a valid index into children"
+                )
+            if p == idx:
+                raise ValueError(f"child[{idx}] cannot list itself as a parent")
+
+    # Detect cycles in the sibling parent graph (Kahn's topological sort).
+    # link_tasks() calls _would_cycle() for every new edge; here we check
+    # the entire sibling graph before touching the DB.  A cycle silently
+    # deadlocks every involved child in 'todo' because recompute_ready()
+    # can never promote them.
+    _in_deg = [0] * len(children)
+    _adj: list[list[int]] = [[] for _ in range(len(children))]
+    for _i, _c in enumerate(children):
+        for _p in (_c.get("parents") or []):
+            _adj[_p].append(_i)
+            _in_deg[_i] += 1
+    _queue = [_i for _i in range(len(children)) if _in_deg[_i] == 0]
+    _seen = 0
+    while _queue:
+        _node = _queue.pop()
+        _seen += 1
+        for _nb in _adj[_node]:
+            _in_deg[_nb] -= 1
+            if _in_deg[_nb] == 0:
+                _queue.append(_nb)
+    if _seen != len(children):
+        raise ValueError("cyclic dependency detected in decomposed children list")
+
+    # We do the full decomposition in a SINGLE write_txn so it's
+    # atomic: either every child is created AND the root flips to
+    # ``todo``, or nothing changes. We deliberately do NOT call any
+    # kb helper that opens its own write_txn (create_task, link_tasks,
+    # add_comment) from inside this block — see architecture.md
+    # write_txn pitfalls. Instead we inline the INSERTs and
+    # _append_event calls.
+    now = int(time.time())
+    child_ids: list[str] = []
+    with write_txn(conn):
+        root_row = conn.execute(
+            "SELECT id, status, tenant FROM tasks WHERE id = ?", (task_id,)
+        ).fetchone()
+        if root_row is None:
+            return None
+        if root_row["status"] != "triage":
+            return None
+        tenant = root_row["tenant"]
+
+        # Create children. Status is 'todo' regardless of parents — we
+        # link them under the root AFTER creation so the dispatcher
+        # sees a coherent state, and recompute_ready() at the end
+        # promotes parent-free children to 'ready'.
+        for idx, child in enumerate(children):
+            new_id = _new_task_id()
+            title = child["title"].strip()
+            body = child.get("body")
+            assignee = _canonical_assignee(child.get("assignee"))
+            conn.execute(
+                "INSERT INTO tasks "
+                "(id, title, body, assignee, status, workspace_kind, "
+                " tenant, created_at, created_by) "
+                "VALUES (?, ?, ?, ?, 'todo', 'scratch', ?, ?, ?)",
+                (
+                    new_id,
+                    title,
+                    body if isinstance(body, str) else None,
+                    assignee,
+                    tenant,
+                    now,
+                    (author or "decomposer"),
+                ),
+            )
+            _append_event(
+                conn, new_id, "created",
+                {"by": author or "decomposer", "from_decompose_of": task_id},
+            )
+            child_ids.append(new_id)
+
+        # Link children to their sibling parents (within the decomposed graph).
+        for idx, child in enumerate(children):
+            for p_idx in child.get("parents") or []:
+                parent_id = child_ids[p_idx]
+                child_id = child_ids[idx]
+                conn.execute(
+                    "INSERT OR IGNORE INTO task_links (parent_id, child_id) "
+                    "VALUES (?, ?)",
+                    (parent_id, child_id),
+                )
+                _append_event(
+                    conn, child_id, "linked",
+                    {"parent": parent_id, "child": child_id},
+                )
+
+        # Link the ROOT task as a child of every leaf child — i.e. the
+        # root waits for the whole graph. Simpler than computing leaves:
+        # link root under every child. Cycle-free because the root is
+        # only ever a child here, never a parent of children.
+        for cid in child_ids:
+            conn.execute(
+                "INSERT OR IGNORE INTO task_links (parent_id, child_id) "
+                "VALUES (?, ?)",
+                (cid, task_id),
+            )
+
+        # Flip the root: triage -> todo, set assignee to the orchestrator.
+        sets = ["status = 'todo'"]
+        params: list[Any] = []
+        if root_assignee is not None:
+            sets.append("assignee = ?")
+            params.append(root_assignee)
+        params.append(task_id)
+        conn.execute(
+            f"UPDATE tasks SET {', '.join(sets)} WHERE id = ?",
+            tuple(params),
+        )
+
+        # Audit comment + event on the root so the timeline shows the fan-out.
+        if author and author.strip():
+            conn.execute(
+                "INSERT INTO task_comments (task_id, author, body, created_at) "
+                "VALUES (?, ?, ?, ?)",
+                (
+                    task_id,
+                    author.strip(),
+                    "Decomposed into "
+                    + ", ".join(child_ids)
+                    + ". Root will wake when all children complete.",
+                    now,
+                ),
+            )
+        _append_event(
+            conn, task_id, "decomposed",
+            {
+                "child_ids": child_ids,
+                "root_assignee": root_assignee,
+            },
+        )
+
+    # Outside the write_txn: promote parent-free children to 'ready'
+    # so the dispatcher picks them up on its next tick. Same pattern
+    # specify_triage_task uses.  When auto_promote is False children
+    # stay in 'todo' until the user manually promotes them — useful
+    # for manual-review-first workflows.
+    if auto_promote:
+        recompute_ready(conn)
+    return child_ids
+
+
 def archive_task(conn: sqlite3.Connection, task_id: str) -> bool:
     with write_txn(conn):
         cur = conn.execute(
@@ -2796,6 +3026,32 @@ def archive_task(conn: sqlite3.Connection, task_id: str) -> bool:
         )
         _append_event(conn, task_id, "archived", None, run_id=run_id)
         return True
+
+
+def delete_archived_task(conn: sqlite3.Connection, task_id: str) -> bool:
+    """Permanently remove an already-archived task and its related rows.
+
+    Safety guard: only archived tasks can be deleted. Active / blocked / done
+    tasks must be explicitly archived first so accidental data loss requires a
+    second deliberate action.
+    """
+    with write_txn(conn):
+        row = conn.execute(
+            "SELECT status FROM tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
+        if not row or row["status"] != "archived":
+            return False
+        conn.execute(
+            "DELETE FROM task_links WHERE parent_id = ? OR child_id = ?",
+            (task_id, task_id),
+        )
+        conn.execute("DELETE FROM task_comments WHERE task_id = ?", (task_id,))
+        conn.execute("DELETE FROM task_events WHERE task_id = ?", (task_id,))
+        conn.execute("DELETE FROM task_runs WHERE task_id = ?", (task_id,))
+        conn.execute("DELETE FROM kanban_notify_subs WHERE task_id = ?", (task_id,))
+        cur = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        return cur.rowcount == 1
 
 
 # ---------------------------------------------------------------------------
@@ -2891,6 +3147,11 @@ DEFAULT_SPAWN_FAILURE_LIMIT = DEFAULT_FAILURE_LIMIT
 # Max bytes to keep in a single worker log file. The dispatcher truncates
 # and rotates on spawn if the file is larger than this at spawn time.
 DEFAULT_LOG_ROTATE_BYTES = 2 * 1024 * 1024   # 2 MiB
+DEFAULT_LOG_BACKUP_COUNT = 1
+
+# Keep a little wall-clock budget for the worker to observe a terminal timeout
+# and call kanban_block/kanban_complete before max_runtime_seconds kills it.
+KANBAN_TERMINAL_TIMEOUT_GRACE_SECONDS = 30
 
 
 @dataclass
@@ -3591,7 +3852,7 @@ def _record_spawn_failure(
 def _set_worker_pid(conn: sqlite3.Connection, task_id: str, pid: int) -> None:
     """Record the spawned child's pid + emit a ``spawned`` event.
 
-    The event's payload carries the pid so a human reading ``omniworker kanban
+    The event's payload carries the pid so a human reading ``hermes kanban
     tail`` can correlate log lines with OS-level traces without opening
     the drawer.
     """
@@ -3775,7 +4036,7 @@ def dispatch_once(
             result.skipped_unassigned.append(row["id"])
             continue
         # Skip ready tasks whose assignee is not a real OmniWorker profile.
-        # `_default_spawn` invokes ``omniworker -p <assignee>`` which fails
+        # `_default_spawn` invokes ``hermes -p <assignee>`` which fails
         # with "Profile 'X' does not exist" when the assignee names a
         # control-plane lane (e.g. an interactive Claude Code terminal
         # like ``orion-cc`` / ``orion-research``) rather than a OmniWorker
@@ -3850,56 +4111,145 @@ def dispatch_once(
     return result
 
 
-def _rotate_worker_log(log_path: Path, max_bytes: int) -> None:
-    """Rotate ``<log>`` to ``<log>.1`` if it exceeds ``max_bytes``.
+def _positive_int(value: Any, default: int, *, minimum: int = 1) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed >= minimum else default
 
-    Single-generation rotation — one old file kept, newer one replaces it.
-    Keeps disk usage bounded while still giving the user a chance to grab
-    the prior run's output.
+
+def worker_log_rotation_config(kanban_cfg: Optional[dict] = None) -> tuple[int, int]:
+    """Return ``(rotate_bytes, backup_count)`` for worker log rotation.
+
+    Defaults preserve the historical behavior: rotate at 2 MiB and keep one
+    backup generation (``.log.1``). Operators with long-running workers can
+    raise either value from ``config.yaml`` without changing dispatcher code.
+    """
+    if kanban_cfg is None:
+        try:
+            from omniworker_cli.config import load_config
+
+            kanban_cfg = (load_config().get("kanban") or {})
+        except Exception:
+            kanban_cfg = {}
+    max_bytes = _positive_int(
+        (kanban_cfg or {}).get("worker_log_rotate_bytes"),
+        DEFAULT_LOG_ROTATE_BYTES,
+        minimum=1,
+    )
+    backup_count = _positive_int(
+        (kanban_cfg or {}).get("worker_log_backup_count"),
+        DEFAULT_LOG_BACKUP_COUNT,
+        minimum=0,
+    )
+    return max_bytes, backup_count
+
+
+def _rotated_log_path(log_path: Path, generation: int) -> Path:
+    return log_path.with_suffix(log_path.suffix + f".{generation}")
+
+
+def _rotate_worker_log(
+    log_path: Path,
+    max_bytes: int,
+    backup_count: int = DEFAULT_LOG_BACKUP_COUNT,
+) -> None:
+    """Rotate ``<log>`` when it exceeds ``max_bytes``.
+
+    ``backup_count=1`` preserves the legacy single-generation behavior:
+    ``<log>`` moves to ``<log>.1`` and any previous ``.1`` is replaced.
+    Higher values shift older generations up to ``backup_count``.
     """
     try:
         if not log_path.exists():
             return
         if log_path.stat().st_size <= max_bytes:
             return
-        rotated = log_path.with_suffix(log_path.suffix + ".1")
+        backup_count = _positive_int(
+            backup_count,
+            DEFAULT_LOG_BACKUP_COUNT,
+            minimum=0,
+        )
+        if backup_count == 0:
+            log_path.unlink()
+            return
+        oldest = _rotated_log_path(log_path, backup_count)
         try:
-            if rotated.exists():
-                rotated.unlink()
+            if oldest.exists():
+                oldest.unlink()
         except OSError:
             pass
-        log_path.rename(rotated)
+        for generation in range(backup_count - 1, 0, -1):
+            src = _rotated_log_path(log_path, generation)
+            if not src.exists():
+                continue
+            try:
+                src.rename(_rotated_log_path(log_path, generation + 1))
+            except OSError:
+                pass
+        log_path.rename(_rotated_log_path(log_path, 1))
     except OSError:
         pass
 
 
-def _resolve_omniworker_argv() -> list[str]:
-    """Resolve the ``omniworker`` invocation as argv parts for ``Popen``.
+def _resolve_hermes_argv() -> list[str]:
+    """Resolve the ``hermes`` invocation as argv parts for ``Popen``.
 
     Tries in order:
 
-    1. ``shutil.which("omniworker")`` — the console-script shim, the same form
+    1. ``shutil.which("hermes")`` — the console-script shim, the same form
        that shows up in ``ps`` output and existing logs. Preferred so live
        systems' diagnostics stay familiar.
     2. ``sys.executable -m omniworker_cli.main`` — fallback for setups where
-       OmniWorker is launched from a venv and the ``omniworker`` shim is not on
+       OmniWorker is launched from a venv and the ``hermes`` shim is not on
        the dispatcher's ``$PATH`` (cron, systemd ``User=`` services,
        launchd jobs, detached processes, etc.). Goes through the running
        interpreter so the result is independent of ``$PATH``.
 
-    Mirrors ``gateway.run._resolve_omniworker_bin`` for the same reason. Kept
+    Mirrors ``gateway.run._resolve_hermes_bin`` for the same reason. Kept
     local (not imported from gateway) because ``omniworker_cli`` sits below
     ``gateway`` in the dependency order.
     """
     import shutil
 
-    omniworker_bin = shutil.which("omniworker")
-    if omniworker_bin:
-        return [omniworker_bin]
+    hermes_bin = shutil.which("hermes")
+    if hermes_bin:
+        return [hermes_bin]
     # Fallback to the module form. ``omniworker_cli.main`` is the actual
     # console-script target declared in pyproject.toml, NOT a top-level
-    # ``omniworker`` package — there is no ``omniworker`` package to import.
+    # ``hermes`` package — there is no ``hermes`` package to import.
     return [sys.executable, "-m", "omniworker_cli.main"]
+
+
+def _worker_terminal_timeout_env(
+    max_runtime_seconds: Optional[int],
+    current_timeout: Optional[str],
+) -> Optional[str]:
+    """Return a worker-scoped TERMINAL_TIMEOUT override, if needed.
+
+    Kanban's ``max_runtime_seconds`` bounds the whole worker attempt. The
+    terminal tool has its own default timeout via ``TERMINAL_TIMEOUT``; when
+    the worker runtime is longer, raise only the child process default so a
+    long command is not killed by the generic terminal default first.
+    """
+    if max_runtime_seconds is None:
+        return None
+    try:
+        runtime = int(max_runtime_seconds)
+    except (TypeError, ValueError):
+        return None
+    if runtime <= 0:
+        return None
+
+    desired = max(1, runtime - KANBAN_TERMINAL_TIMEOUT_GRACE_SECONDS)
+    try:
+        existing = int(str(current_timeout).strip()) if current_timeout else 0
+    except (TypeError, ValueError):
+        existing = 0
+    if existing >= desired:
+        return None
+    return str(desired)
 
 
 def _default_spawn(
@@ -3908,7 +4258,7 @@ def _default_spawn(
     *,
     board: Optional[str] = None,
 ) -> Optional[int]:
-    """Fire-and-forget ``omniworker -p <profile> chat -q ...`` subprocess.
+    """Fire-and-forget ``hermes -p <profile> chat -q ...`` subprocess.
 
     Returns the spawned child's PID so the dispatcher can detect crashes
     before the claim TTL expires. The child's completion is still observed
@@ -3934,10 +4284,10 @@ def _default_spawn(
     # Inject OMNIWORKER_HOME so the worker reads the profile-scoped config.yaml
     # (fallback_providers, toolsets, agent settings, etc.) instead of the root
     # config.  Without this, `env = dict(os.environ)` copies only the parent's
-    # env, and when the child process starts `omniworker -p <name>` the
+    # env, and when the child process starts `hermes -p <name>` the
     # _apply_profile_override() runs *before* omniworker_constants is imported.
     # If OMNIWORKER_HOME is absent from the child's env, get_omniworker_home() falls
-    # back to Path.home() / ".omniworker" (the DEFAULT profile root), ignoring the
+    # back to Path.home() / ".hermes" (the DEFAULT profile root), ignoring the
     # profile-specific config entirely.  Fixes profile-scoped fallback_providers
     # being invisible to kanban workers.
     from omniworker_cli.profiles import resolve_profile_env
@@ -3957,10 +4307,22 @@ def _default_spawn(
         env["OMNIWORKER_KANBAN_RUN_ID"] = str(task.current_run_id)
     if task.claim_lock:
         env["OMNIWORKER_KANBAN_CLAIM_LOCK"] = task.claim_lock
+    terminal_timeout = _worker_terminal_timeout_env(
+        task.max_runtime_seconds,
+        env.get("TERMINAL_TIMEOUT"),
+    )
+    if terminal_timeout is not None:
+        env["TERMINAL_TIMEOUT"] = terminal_timeout
+    foreground_timeout = _worker_terminal_timeout_env(
+        task.max_runtime_seconds,
+        env.get("TERMINAL_MAX_FOREGROUND_TIMEOUT"),
+    )
+    if foreground_timeout is not None:
+        env["TERMINAL_MAX_FOREGROUND_TIMEOUT"] = foreground_timeout
     # Pin the shared board + workspaces root the dispatcher resolved, so
-    # that even when the worker activates a profile (`omniworker -p <name>`
+    # that even when the worker activates a profile (`hermes -p <name>`
     # rewrites OMNIWORKER_HOME), its kanban paths still match the
-    # dispatcher's. Belt-and-braces with the `get_default_omniworker_root()`
+    # dispatcher's. Belt-and-braces with the `get_default_hermes_root()`
     # resolution in `kanban_home()` — symmetric resolution is the norm,
     # but unusual symlink / Docker layouts are caught here too.
     env["OMNIWORKER_KANBAN_DB"] = str(kanban_db_path(board=board))
@@ -3971,13 +4333,13 @@ def _default_spawn(
     resolved_board = _normalize_board_slug(board) or get_current_board()
     env["OMNIWORKER_KANBAN_BOARD"] = resolved_board
     # OMNIWORKER_PROFILE is the author the kanban_comment tool defaults to.
-    # `omniworker -p <assignee>` activates the profile, but the env var is
+    # `hermes -p <assignee>` activates the profile, but the env var is
     # what the tool reads — set it explicitly here so comments are
     # attributed correctly regardless of how the child loads config.
     env["OMNIWORKER_PROFILE"] = profile_arg
 
     cmd = [
-        *_resolve_omniworker_argv(),
+        *_resolve_hermes_argv(),
         "-p", profile_arg,
         # Auto-load the kanban-worker skill so every dispatched worker
         # has the pattern library (good summary/metadata shapes, retry
@@ -4000,18 +4362,21 @@ def _default_spawn(
         for sk in task.skills:
             if sk and sk != "kanban-worker":
                 cmd.extend(["--skills", sk])
+    if task.model_override:
+        cmd.extend(["-m", task.model_override])
     cmd.extend([
         "chat",
         "-q", prompt,
     ])
     # Redirect output to a per-task log under <board-root>/logs/.
     # Anchored at the board root (not the shared kanban root), so
-    # `omniworker kanban log` on a specific board reads its own file and
+    # `hermes kanban log` on a specific board reads its own file and
     # logs don't collide across boards that happen to share task ids.
     log_dir = worker_logs_dir(board=board)
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f"{task.id}.log"
-    _rotate_worker_log(log_path, DEFAULT_LOG_ROTATE_BYTES)
+    rotate_bytes, backup_count = worker_log_rotation_config()
+    _rotate_worker_log(log_path, rotate_bytes, backup_count)
 
     # Use 'a' so a re-run on unblock appends rather than overwrites.
     log_f = open(log_path, "ab")
@@ -4024,11 +4389,12 @@ def _default_spawn(
             stderr=subprocess.STDOUT,
             env=env,
             start_new_session=True,
+            creationflags=subprocess.CREATE_NO_WINDOW if _IS_WINDOWS else 0,
         )
     except FileNotFoundError:
         log_f.close()
         raise RuntimeError(
-            "`omniworker` executable not found on PATH. "
+            "`hermes` executable not found on PATH. "
             "Install OmniWorker Agent or activate its venv before running the kanban dispatcher."
         )
     # NOTE: we intentionally do NOT close log_f here — we want Popen's
@@ -4054,7 +4420,7 @@ def run_daemon(
     """Run the dispatcher in a loop until interrupted.
 
     Calls :func:`dispatch_once` every ``interval`` seconds. Exits cleanly
-    on SIGINT / SIGTERM so ``omniworker kanban daemon`` is systemd-friendly.
+    on SIGINT / SIGTERM so ``hermes kanban daemon`` is systemd-friendly.
     ``stop_event`` (a :class:`threading.Event`) and ``on_tick`` (a
     callable receiving the :class:`DispatchResult`) are test hooks.
     """
@@ -4146,6 +4512,15 @@ def build_worker_context(conn: sqlite3.Connection, task_id: str) -> str:
     if task.tenant:
         lines.append(f"Tenant:   {task.tenant}")
     lines.append(f"Workspace: {task.workspace_kind} @ {task.workspace_path or '(unresolved)'}")
+    if task.max_runtime_seconds is not None:
+        terminal_timeout = _worker_terminal_timeout_env(
+            task.max_runtime_seconds,
+            os.environ.get("TERMINAL_TIMEOUT"),
+        )
+        effective_terminal_timeout = terminal_timeout or os.environ.get("TERMINAL_TIMEOUT")
+        lines.append(f"Max runtime: {task.max_runtime_seconds}s")
+        if effective_terminal_timeout:
+            lines.append(f"Terminal timeout: {effective_terminal_timeout}s")
     lines.append("")
 
     if task.body and task.body.strip():
@@ -4280,7 +4655,7 @@ def build_worker_context(conn: sqlite3.Connection, task_id: str) -> str:
         for c in shown_c:
             ts = time.strftime("%Y-%m-%d %H:%M", time.localtime(c.created_at))
             # Render author with explicit "comment from worker" framing so
-            # operator-controlled OMNIWORKER_PROFILE values like "omniworker-system"
+            # operator-controlled OMNIWORKER_PROFILE values like "hermes-system"
             # or "operator" can't be misread by the next worker as a system
             # directive above the (attacker-influenceable) comment body.
             # Defense-in-depth — the LLM-controlled author-forgery surface
@@ -4671,8 +5046,8 @@ def list_profiles_on_disk() -> list[str]:
     path).
     """
     try:
-        from omniworker_constants import get_default_omniworker_root
-        default_root = get_default_omniworker_root()
+        from omniworker_constants import get_default_hermes_root
+        default_root = get_default_hermes_root()
         profiles_dir = default_root / "profiles"
     except Exception:
         return []
@@ -4701,7 +5076,7 @@ def known_assignees(conn: sqlite3.Connection) -> list[dict]:
     A name is included when it's a configured profile on disk OR when
     any non-archived task has it as the assignee. Used by:
 
-    - ``omniworker kanban assignees`` for the terminal.
+    - ``hermes kanban assignees`` for the terminal.
     - The dashboard assignee dropdown (so a fresh profile appears in
       the picker even before it's been given any task).
     - Router-profile heuristics ("who's overloaded?") without scanning

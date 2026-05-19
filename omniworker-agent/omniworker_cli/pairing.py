@@ -2,14 +2,14 @@
 CLI commands for the DM pairing system.
 
 Usage:
-    omniworker pairing list              # Show all pending + approved users
-    omniworker pairing approve <platform> <code>  # Approve a pairing code
-    omniworker pairing revoke <platform> <user_id> # Revoke user access
-    omniworker pairing clear-pending     # Clear all expired/pending codes
+    hermes pairing list              # Show all pending + approved users
+    hermes pairing approve <platform> <code>  # Approve a pairing code
+    hermes pairing revoke <platform> <user_id> # Revoke user access
+    hermes pairing clear-pending     # Clear all expired/pending codes
 """
 
 def pairing_command(args):
-    """Handle omniworker pairing subcommands."""
+    """Handle hermes pairing subcommands."""
     from gateway.pairing import PairingStore
 
     store = PairingStore()
@@ -24,8 +24,8 @@ def pairing_command(args):
     elif action == "clear-pending":
         _cmd_clear_pending(store)
     else:
-        print("Usage: omniworker pairing {list|approve|revoke|clear-pending}")
-        print("Run 'omniworker pairing --help' for details.")
+        print("Usage: hermes pairing {list|approve|revoke|clear-pending}")
+        print("Run 'hermes pairing --help' for details.")
 
 
 def _cmd_list(store):
@@ -89,11 +89,11 @@ def _cmd_approve(store, platform: str, code: str):
         print(f"  Lockout clears in ~{mins} minute(s).")
         print(
             "  To reset sooner, delete the '_lockout:{0}' entry from "
-            "~/.omniworker/platforms/pairing/_rate_limits.json\n".format(platform)
+            "~/.hermes/platforms/pairing/_rate_limits.json\n".format(platform)
         )
     else:
         print(f"\n  Code '{code}' not found or expired for platform '{platform}'.")
-        print("  Run 'omniworker pairing list' to see pending codes.\n")
+        print("  Run 'hermes pairing list' to see pending codes.\n")
 
 
 def _cmd_revoke(store, platform: str, user_id: str):

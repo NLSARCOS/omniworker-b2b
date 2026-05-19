@@ -21,7 +21,7 @@ Architecture follows the same pattern as ``anthropic_adapter.py``:
   - Messages/tools are converted between OpenAI format and Converse format.
   - Responses are normalized back to OpenAI-compatible objects for the agent loop.
 
-Reference: OmniWorker's ``extensions/amazon-bedrock/`` plugin, which implements
+Reference: OpenClaw's ``extensions/amazon-bedrock/`` plugin, which implements
 the same Converse API integration in TypeScript via ``@aws-sdk/client-bedrock``.
 
 Requires: ``boto3`` (optional dependency — only needed when using the Bedrock provider).
@@ -35,6 +35,19 @@ from types import SimpleNamespace
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Ensure boto3/botocore are installed before any code in this module runs.
+# Upstream removed boto3 from [all] extras (PRs #24220, #24515); lazy_deps
+# handles on-demand installation so the Bedrock provider still works in the
+# EKS deployment without baking boto3 into the base image.
+# ---------------------------------------------------------------------------
+try:
+    from tools.lazy_deps import ensure
+    ensure("provider.bedrock", prompt=False)
+except Exception:
+    pass  # lazy_deps unavailable or install failed — let downstream imports surface the real error
+
 
 # ---------------------------------------------------------------------------
 # Lazy boto3 import — only loaded when the Bedrock provider is actually used.
@@ -199,7 +212,7 @@ def is_stale_connection_error(exc: BaseException) -> bool:
 # AWS credential detection
 # ---------------------------------------------------------------------------
 
-# Priority order matches OmniWorker's resolveAwsSdkEnvVarName():
+# Priority order matches OpenClaw's resolveAwsSdkEnvVarName():
 #   1. AWS_BEARER_TOKEN_BEDROCK (Bedrock-specific bearer token)
 #   2. AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY (explicit IAM credentials)
 #   3. AWS_PROFILE (named profile → SSO, assume-role, etc.)
@@ -221,7 +234,7 @@ def resolve_aws_auth_env_var(env: Optional[Dict[str, str]] = None) -> Optional[s
     Checks environment variables first, then falls back to boto3's credential
     chain for implicit sources (EC2 IMDS, ECS task role, etc.).
 
-    This mirrors OmniWorker's ``resolveAwsSdkEnvVarName()`` — used to detect
+    This mirrors OpenClaw's ``resolveAwsSdkEnvVarName()`` — used to detect
     whether the user has any AWS credentials configured without actually
     attempting to authenticate.
     """
@@ -265,7 +278,7 @@ def has_aws_credentials(env: Optional[Dict[str, str]] = None) -> bool:
     Lambda execution roles, and other IMDS-based sources that don't set
     environment variables.
 
-    This two-tier approach mirrors the pattern from OmniWorker PR #62673:
+    This two-tier approach mirrors the pattern from OpenClaw PR #62673:
     cloud environments (EC2, ECS, Lambda) provide credentials via instance
     metadata, not environment variables. The env-var check is a fast path
     for local development; the boto3 fallback covers all cloud deployments.
@@ -1030,7 +1043,7 @@ def discover_bedrock_models(
 
     Caches results for 1 hour per region to avoid repeated API calls.
 
-    Mirrors OmniWorker's ``discoverBedrockModels()`` in
+    Mirrors OpenClaw's ``discoverBedrockModels()`` in
     ``extensions/amazon-bedrock/discovery.ts``.
     """
     import time
@@ -1169,7 +1182,7 @@ def get_bedrock_model_ids(region: str) -> List[str]:
 # ---------------------------------------------------------------------------
 # Error classification — Bedrock-specific exceptions
 # ---------------------------------------------------------------------------
-# Mirrors OmniWorker's classifyFailoverReason() and matchesContextOverflowError()
+# Mirrors OpenClaw's classifyFailoverReason() and matchesContextOverflowError()
 # in extensions/amazon-bedrock/register.sync.runtime.ts.
 
 # Patterns that indicate the input context exceeded the model's token limit.

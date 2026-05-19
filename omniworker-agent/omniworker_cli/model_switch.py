@@ -58,21 +58,21 @@ _OMNIWORKER_MODEL_WARNING = (
 )
 
 # Match only the real Nous Research OmniWorker 3 / OmniWorker 4 chat families.
-# The previous substring check (`"omniworker" in name.lower()`) false-positived on
-# unrelated local Modelfiles like ``omniworker-brain:qwen3-14b-ctx16k`` that just
-# happen to carry "omniworker" in their tag but are fully tool-capable.
+# The previous substring check (`"hermes" in name.lower()`) false-positived on
+# unrelated local Modelfiles like ``hermes-brain:qwen3-14b-ctx16k`` that just
+# happen to carry "hermes" in their tag but are fully tool-capable.
 #
 # Positive examples the regex must match:
-#   OmniWorker/OmniWorker-3-Llama-3.1-70B, omniworker-4-405b, openrouter/omniworker3:70b
+#   NousResearch/OmniWorker-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
 # Negative examples it must NOT match:
-#   omniworker-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
+#   hermes-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
 _NOUS_OMNIWORKER_NON_AGENTIC_RE = re.compile(
-    r"(?:^|[/:])omniworker[-_ ]?[34](?:[-_.:]|$)",
+    r"(?:^|[/:])hermes[-_ ]?[34](?:[-_.:]|$)",
     re.IGNORECASE,
 )
 
 
-def is_nous_omniworker_non_agentic(model_name: str) -> bool:
+def is_nous_hermes_non_agentic(model_name: str) -> bool:
     """Return True if *model_name* is a real Nous OmniWorker 3/4 chat model.
 
     Used to decide whether to surface the non-agentic warning at startup.
@@ -84,9 +84,9 @@ def is_nous_omniworker_non_agentic(model_name: str) -> bool:
     return bool(_NOUS_OMNIWORKER_NON_AGENTIC_RE.search(model_name))
 
 
-def _check_omniworker_model_warning(model_name: str) -> str:
+def _check_hermes_model_warning(model_name: str) -> str:
     """Return a warning string if *model_name* is a Nous OmniWorker 3/4 chat model."""
-    if is_nous_omniworker_non_agentic(model_name):
+    if is_nous_hermes_non_agentic(model_name):
         return _OMNIWORKER_MODEL_WARNING
     return ""
 
@@ -191,7 +191,7 @@ def _load_direct_aliases() -> dict[str, DirectAlias]:
             provider: custom
             base_url: "https://ollama.com/v1"
 
-    Also reads ``model.aliases`` (set by ``omniworker config set model.aliases.xxx``)
+    Also reads ``model.aliases`` (set by ``hermes config set model.aliases.xxx``)
     and converts simple string entries (``ds-flash: deepseek/deepseek-v4-flash``)
     into DirectAlias objects.  The provider is parsed from the ``provider/``
     prefix in the value; if no slash, the current provider is used.
@@ -685,7 +685,7 @@ def switch_model(
         if pdef is None:
             _switch_err = (
                 f"Unknown provider '{explicit_provider}'. "
-                f"Check 'omniworker model' for available providers, or define it "
+                f"Check 'hermes model' for available providers, or define it "
                 f"in config.yaml under 'providers:'."
             )
             # Check for common config issues that cause provider resolution failures
@@ -693,7 +693,7 @@ def switch_model(
                 from omniworker_cli.config import validate_config_structure
                 _cfg_issues = validate_config_structure()
                 if _cfg_issues:
-                    _switch_err += "\n\nRun 'omniworker doctor' — config issues detected:"
+                    _switch_err += "\n\nRun 'hermes doctor' — config issues detected:"
                     for _ci in _cfg_issues[:3]:
                         _switch_err += f"\n  • {_ci.message}"
             except Exception:
@@ -1018,9 +1018,9 @@ def switch_model(
     warnings: list[str] = []
     if validation.get("message"):
         warnings.append(validation["message"])
-    omniworker_warn = _check_omniworker_model_warning(new_model)
-    if omniworker_warn:
-        warnings.append(omniworker_warn)
+    hermes_warn = _check_hermes_model_warning(new_model)
+    if hermes_warn:
+        warnings.append(hermes_warn)
 
     # --- Build result ---
     return ModelSwitchResult(
@@ -1158,11 +1158,11 @@ def list_authenticated_providers(
 
     data = fetch_models_dev()
 
-    # Build curated model lists keyed by omniworker provider ID
+    # Build curated model lists keyed by hermes provider ID
     curated: dict[str, list[str]] = dict(_PROVIDER_MODELS)
     curated["openrouter"] = [mid for mid, _ in OPENROUTER_MODELS]
     # "nous" pulls from the remote model-catalog manifest published at
-    # https://omniworker-agent.omniworker.com/docs/api/model-catalog.json so
+    # https://hermes-agent.nousresearch.com/docs/api/model-catalog.json so
     # newly added Portal models surface in the /model picker without
     # requiring a OmniWorker release. Falls back to the in-repo
     # _PROVIDER_MODELS["nous"] snapshot when the manifest is unreachable.
@@ -1201,7 +1201,7 @@ def list_authenticated_providers(
         curated["lmstudio"] = live
 
     # --- 1. Check OmniWorker-mapped providers ---
-    for omniworker_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
+    for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
         # Skip aliases that map to the same models.dev provider (e.g.
         # kimi-coding and kimi-coding-cn both → kimi-for-coding).
         # The first one with valid credentials wins (#10526).
@@ -1214,7 +1214,7 @@ def list_authenticated_providers(
         # Prefer auth.py PROVIDER_REGISTRY for env var names — it's our
         # source of truth.  models.dev can have wrong mappings (e.g.
         # minimax-cn → MINIMAX_API_KEY instead of MINIMAX_CN_API_KEY).
-        pconfig = PROVIDER_REGISTRY.get(omniworker_id)
+        pconfig = PROVIDER_REGISTRY.get(hermes_id)
         # Skip non-API-key auth providers here — they are handled in
         # section 2 (OMNIWORKER_OVERLAYS) with proper auth store checking.
         if pconfig and pconfig.auth_type != "api_key":
@@ -1232,7 +1232,7 @@ def list_authenticated_providers(
             try:
                 from omniworker_cli.auth import _load_auth_store
                 store = _load_auth_store()
-                if store and omniworker_id in store.get("credential_pool", {}):
+                if store and store.get("credential_pool", {}).get(hermes_id):
                     has_creds = True
             except Exception:
                 pass
@@ -1243,13 +1243,13 @@ def list_authenticated_providers(
         # For preferred providers, merge models.dev entries into the curated
         # catalog so newly released models (e.g. mimo-v2.5-pro on opencode-go)
         # show up in the picker without requiring a OmniWorker release.
-        model_ids = curated.get(omniworker_id, [])
-        if omniworker_id in _MODELS_DEV_PREFERRED:
-            model_ids = _merge_with_models_dev(omniworker_id, model_ids)
+        model_ids = curated.get(hermes_id, [])
+        if hermes_id in _MODELS_DEV_PREFERRED:
+            model_ids = _merge_with_models_dev(hermes_id, model_ids)
         total = len(model_ids)
         top = model_ids[:max_models]
 
-        slug = omniworker_id
+        slug = hermes_id
         pinfo = _mdev_pinfo(mdev_id)
         display_name = pinfo.name if pinfo else mdev_id
 
@@ -1273,26 +1273,26 @@ def list_authenticated_providers(
     # Build reverse mapping: models.dev ID → OmniWorker provider ID.
     # OMNIWORKER_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot")
     # while _PROVIDER_MODELS and config.yaml use OmniWorker IDs ("copilot").
-    _mdev_to_omniworker = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
+    _mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
 
     for pid, overlay in OMNIWORKER_OVERLAYS.items():
         if pid.lower() in seen_slugs:
             continue
 
         # Resolve OmniWorker slug — e.g. "github-copilot" → "copilot"
-        omniworker_slug = _mdev_to_omniworker.get(pid, pid)
-        if omniworker_slug.lower() in seen_slugs:
+        hermes_slug = _mdev_to_hermes.get(pid, pid)
+        if hermes_slug.lower() in seen_slugs:
             continue
 
         # Check if credentials exist
         has_creds = False
         if overlay.auth_type == "aws_sdk":
-            has_creds = _has_aws_sdk_creds_for_listing(omniworker_slug)
+            has_creds = _has_aws_sdk_creds_for_listing(hermes_slug)
         elif overlay.extra_env_vars:
             has_creds = any(os.environ.get(ev) for ev in overlay.extra_env_vars)
         # Also check api_key_env_vars from PROVIDER_REGISTRY for api_key auth_type
         if not has_creds and overlay.auth_type == "api_key":
-            for _key in (pid, omniworker_slug):
+            for _key in (pid, hermes_slug):
                 pcfg = _auth_registry.get(_key)
                 if pcfg and pcfg.api_key_env_vars:
                     if any(os.environ.get(ev) for ev in pcfg.api_key_env_vars):
@@ -1307,7 +1307,7 @@ def list_authenticated_providers(
                 from omniworker_cli.auth import _load_auth_store
                 store = _load_auth_store()
                 providers_store = store.get("providers", {})
-                if store and (pid in providers_store or omniworker_slug in providers_store):
+                if store and (pid in providers_store or hermes_slug in providers_store):
                     has_creds = True
             except Exception as exc:
                 logger.debug("Auth store check failed for %s: %s", pid, exc)
@@ -1318,11 +1318,11 @@ def list_authenticated_providers(
         if not has_creds:
             try:
                 from agent.credential_pool import load_pool
-                pool = load_pool(omniworker_slug)
+                pool = load_pool(hermes_slug)
                 if pool.has_credentials():
                     has_creds = True
             except Exception as exc:
-                logger.debug("Credential pool check failed for %s: %s", omniworker_slug, exc)
+                logger.debug("Credential pool check failed for %s: %s", hermes_slug, exc)
         # Fallback: check external credential files directly.
         # The credential pool gates anthropic behind
         # is_provider_explicitly_configured() to prevent auxiliary tasks
@@ -1330,15 +1330,15 @@ def list_authenticated_providers(
         # But the /model picker is discovery-oriented — we WANT to show
         # providers the user can switch to, even if they aren't currently
         # configured.
-        if not has_creds and omniworker_slug == "anthropic":
+        if not has_creds and hermes_slug == "anthropic":
             try:
                 from agent.anthropic_adapter import (
                     read_claude_code_credentials,
-                    read_omniworker_oauth_credentials,
+                    read_hermes_oauth_credentials,
                 )
-                omniworker_creds = read_omniworker_oauth_credentials()
+                hermes_creds = read_hermes_oauth_credentials()
                 cc_creds = read_claude_code_credentials()
-                if (omniworker_creds and omniworker_creds.get("accessToken")) or \
+                if (hermes_creds and hermes_creds.get("accessToken")) or \
                    (cc_creds and cc_creds.get("accessToken")):
                     has_creds = True
             except Exception as exc:
@@ -1346,7 +1346,7 @@ def list_authenticated_providers(
         if not has_creds:
             continue
 
-        if omniworker_slug in {"openai-codex", "copilot", "copilot-acp"}:
+        if hermes_slug in {"openai-codex", "copilot", "copilot-acp"}:
             # Use live OAuth-backed discovery so the gateway /model picker
             # matches what the user's authenticated Codex/Copilot backend
             # actually serves — including ChatGPT-Pro-only Codex slugs
@@ -1354,42 +1354,42 @@ def list_authenticated_providers(
             # catalog. ``provider_model_ids()`` falls back to the curated
             # list when the live endpoint is unreachable, so this is safe
             # for unauthenticated and offline cases too.
-            model_ids = provider_model_ids(omniworker_slug)
+            model_ids = provider_model_ids(hermes_slug)
         # For aws_sdk providers (bedrock), use live discovery so the list
         # reflects the active region (eu.*, ap.*) not the static us.* list.
         elif overlay.auth_type == "aws_sdk":
             try:
                 from agent.bedrock_adapter import bedrock_model_ids_or_none
                 _ids = bedrock_model_ids_or_none()
-                model_ids = _ids if _ids is not None else (curated.get(omniworker_slug, []) or curated.get(pid, []))
+                model_ids = _ids if _ids is not None else (curated.get(hermes_slug, []) or curated.get(pid, []))
             except Exception:
-                model_ids = curated.get(omniworker_slug, []) or curated.get(pid, [])
+                model_ids = curated.get(hermes_slug, []) or curated.get(pid, [])
         else:
             # Use curated list — look up by OmniWorker slug, fall back to overlay key
-            model_ids = curated.get(omniworker_slug, []) or curated.get(pid, [])
+            model_ids = curated.get(hermes_slug, []) or curated.get(pid, [])
             # Merge with models.dev for preferred providers (same rationale as above).
-            if omniworker_slug in _MODELS_DEV_PREFERRED:
-                model_ids = _merge_with_models_dev(omniworker_slug, model_ids)
+            if hermes_slug in _MODELS_DEV_PREFERRED:
+                model_ids = _merge_with_models_dev(hermes_slug, model_ids)
         total = len(model_ids)
         top = model_ids[:max_models]
 
         results.append({
-            "slug": omniworker_slug,
-            "name": get_label(omniworker_slug),
-            "is_current": omniworker_slug == current_provider or pid == current_provider,
+            "slug": hermes_slug,
+            "name": get_label(hermes_slug),
+            "is_current": hermes_slug == current_provider or pid == current_provider,
             "is_user_defined": False,
             "models": top,
             "total_models": total,
-            "source": "omniworker",
+            "source": "hermes",
         })
         seen_slugs.add(pid.lower())
-        seen_slugs.add(omniworker_slug.lower())
-        _record_builtin_endpoint(omniworker_slug)
+        seen_slugs.add(hermes_slug.lower())
+        _record_builtin_endpoint(hermes_slug)
 
     # --- 2b. Cross-check canonical provider list ---
     # Catches providers that are in CANONICAL_PROVIDERS but weren't found
     # in PROVIDER_TO_MODELS_DEV or OMNIWORKER_OVERLAYS (keeps /model in sync
-    # with `omniworker model`).
+    # with `hermes model`).
     try:
         from omniworker_cli.models import CANONICAL_PROVIDERS as _canon_provs
     except ImportError:
@@ -1688,7 +1688,26 @@ def list_authenticated_providers(
                 continue
             # Live model discovery from custom provider endpoints (matches
             # Section 3 behavior for user ``providers:`` entries).
-            if api_url and api_key:
+            # Also probes when no api_key is set (e.g. local llama.cpp /
+            # Ollama servers) — the /models endpoint often works without
+            # auth.  The CLI's _model_flow_named_custom always probes, so
+            # the Telegram/Discord picker should do the same for parity.
+            # Live-discovery policy:
+            # - With an api_key, the user has explicitly opted into the
+            #   endpoint and live /models is the source of truth — replace
+            #   the (possibly partial) ``models:`` subset configured for
+            #   context-length overrides with the full live catalog.
+            #   This is the Bifrost / aggregator-gateway case.
+            # - Without an api_key but with an explicit ``models:`` list
+            #   (or top-level ``model:``), the user is narrowing a public
+            #   endpoint to a specific subset (e.g. ollama.com /v1/models
+            #   returns 35 models but the user only wants 4). Preserve the
+            #   explicit list and skip live discovery.
+            # - Without an api_key AND no explicit models, fall through to
+            #   live discovery so bare-endpoint custom providers (local
+            #   llama.cpp / Ollama servers) still appear populated.
+            should_probe = bool(api_url) and (bool(api_key) or not grp["models"])
+            if should_probe:
                 try:
                     from omniworker_cli.models import fetch_api_models
 

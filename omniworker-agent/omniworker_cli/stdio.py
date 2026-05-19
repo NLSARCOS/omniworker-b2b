@@ -131,7 +131,7 @@ def configure_windows_stdio() -> bool:
     # subprocess calls (bash, rg, grep, etc.) resolve even in sessions
     # that started before the User PATH broadcast reached them.  When
     # install.ps1 adds these to User PATH via SetEnvironmentVariable,
-    # already-running shells don't see the change — which means omniworker
+    # already-running shells don't see the change — which means hermes
     # launched from the install session won't find rg / bash / grep
     # even though they're "installed".  Prepending the known paths here
     # closes that gap.  No-op when the paths don't exist (e.g. system-Git
@@ -168,7 +168,7 @@ def _default_windows_editor() -> str:
        the user closes the window).  This is the "always-works" default.
 
     The prompt_toolkit buffer's ``open_in_editor`` and OmniWorker's
-    ``omniworker config edit`` both honour ``$EDITOR``.  Users who prefer a
+    ``hermes config edit`` both honour ``$EDITOR``.  Users who prefer a
     different editor can override:
 
     - VSCode: ``$env:EDITOR = "code --wait"``  (``--wait`` is critical;
@@ -197,10 +197,10 @@ def _augment_path_with_known_tools() -> None:
 
     Fixes the "User PATH was just updated but my process can't see it" gap on
     Windows.  When install.ps1 runs, it adds entries like
-    ``%LOCALAPPDATA%\\omniworker\\git\\bin`` to the User PATH via
+    ``%LOCALAPPDATA%\\hermes\\git\\bin`` to the User PATH via
     ``SetEnvironmentVariable(..., "User")``.  That write propagates to newly
     *spawned* processes only — already-running shells (including the one the
-    user invokes ``omniworker`` from right after install) retain their old PATH.
+    user invokes ``hermes`` from right after install) retain their old PATH.
 
     Any subprocess OmniWorker spawns — bash, ``rg``, ``grep``, ``npm`` — inherits
     that stale PATH and reports commands as missing even though they're on
@@ -227,13 +227,13 @@ def _augment_path_with_known_tools() -> None:
     # should match so this prefill fully mirrors what a fresh shell would
     # see on next launch.
     candidate_dirs = [
-        os.path.join(local_appdata, "omniworker", "git", "cmd"),
-        os.path.join(local_appdata, "omniworker", "git", "bin"),
-        os.path.join(local_appdata, "omniworker", "git", "usr", "bin"),
-        # OmniWorker venv Scripts directory — host of the omniworker.exe shim itself,
+        os.path.join(local_appdata, "hermes", "git", "cmd"),
+        os.path.join(local_appdata, "hermes", "git", "bin"),
+        os.path.join(local_appdata, "hermes", "git", "usr", "bin"),
+        # OmniWorker venv Scripts directory — host of the hermes.exe shim itself,
         # also where any pip-installed console scripts land.  Usually already
-        # on PATH when the user invokes omniworker, but harmless to include.
-        os.path.join(local_appdata, "omniworker", "omniworker-agent", "venv", "Scripts"),
+        # on PATH when the user invokes hermes, but harmless to include.
+        os.path.join(local_appdata, "hermes", "hermes-agent", "venv", "Scripts"),
         # WinGet packages directory — where ``winget install`` drops CLI
         # shims by default (ripgrep lands here as rg.exe).  Covers the case
         # of a system-Git install + ripgrep-via-winget that isn't yet on

@@ -1,5 +1,5 @@
 """
-Status command for omniworker CLI.
+Status command for hermes CLI.
 
 Shows the status of all OmniWorker Agent components.
 """
@@ -31,7 +31,7 @@ def redact_key(key: str) -> str:
     """Redact an API key for display.
 
     Thin wrapper over :func:`agent.redact.mask_secret`. Preserves the
-    "(not set)" placeholder in dim color to match ``omniworker config``'s
+    "(not set)" placeholder in dim color to match ``hermes config``'s
     output (previously this variant was missing the DIM color —
     consolidated via PR that also introduced ``mask_secret``).
     """
@@ -196,7 +196,7 @@ def show_status(args):
 
     nous_logged_in = bool(nous_status.get("logged_in"))
     nous_error = nous_status.get("error")
-    nous_label = "logged in" if nous_logged_in else "not logged in (run: omniworker auth add nous --type oauth)"
+    nous_label = "logged in" if nous_logged_in else "not logged in (run: hermes auth add nous --type oauth)"
     print(
         f"  {'Nous Portal':<12}  {check_mark(nous_logged_in)} "
         f"{nous_label}"
@@ -219,7 +219,7 @@ def show_status(args):
     codex_logged_in = bool(codex_status.get("logged_in"))
     print(
         f"  {'OpenAI Codex':<12}  {check_mark(codex_logged_in)} "
-        f"{'logged in' if codex_logged_in else 'not logged in (run: omniworker model)'}"
+        f"{'logged in' if codex_logged_in else 'not logged in (run: hermes model)'}"
     )
     codex_auth_file = codex_status.get("auth_store")
     if codex_auth_file:
@@ -248,7 +248,7 @@ def show_status(args):
     minimax_logged_in = bool(minimax_status.get("logged_in"))
     print(
         f"  {'MiniMax OAuth':<12}  {check_mark(minimax_logged_in)} "
-        f"{'logged in' if minimax_logged_in else 'not logged in (run: omniworker auth add minimax-oauth)'}"
+        f"{'logged in' if minimax_logged_in else 'not logged in (run: hermes auth add minimax-oauth)'}"
     )
     minimax_region = minimax_status.get("region")
     if minimax_logged_in and minimax_region:
@@ -258,6 +258,27 @@ def show_status(args):
         print(f"    Access exp: {minimax_exp}")
     if minimax_status.get("error") and not minimax_logged_in:
         print(f"    Error:      {minimax_status.get('error')}")
+
+    # xAI OAuth — separate try/except so an import failure here cannot
+    # disrupt the already-printed Nous/Codex/Qwen/MiniMax rows above.
+    try:
+        from omniworker_cli.auth import get_xai_oauth_auth_status
+        xai_oauth_status = get_xai_oauth_auth_status() or {}
+    except Exception:
+        xai_oauth_status = {}
+
+    xai_oauth_logged_in = bool(xai_oauth_status.get("logged_in"))
+    print(
+        f"  {'xAI OAuth':<12}  {check_mark(xai_oauth_logged_in)} "
+        f"{'logged in' if xai_oauth_logged_in else 'not logged in (run: hermes auth add xai-oauth)'}"
+    )
+    xai_auth_file = xai_oauth_status.get("auth_store")
+    if xai_auth_file:
+        print(f"    Auth file:  {xai_auth_file}")
+    if xai_oauth_status.get("last_refresh"):
+        print(f"    Refreshed:  {_format_iso_timestamp(xai_oauth_status.get('last_refresh'))}")
+    if xai_oauth_status.get("error") and not xai_oauth_logged_in:
+        print(f"    Error:      {xai_oauth_status.get('error')}")
 
     # =========================================================================
     # Nous Subscription Features
@@ -316,7 +337,7 @@ def show_status(args):
             if key_val:
                 break
         configured = bool(key_val)
-        label = "configured" if configured else "not configured (run: omniworker model)"
+        label = "configured" if configured else "not configured (run: hermes model)"
         print(f"  {pname:<16} {check_mark(configured)} {label}")
 
     # LM Studio reachability — only probe when it's the active provider so
@@ -368,7 +389,7 @@ def show_status(args):
             persist_enabled = persist.lower() in {"1", "true", "yes", "on"}
         auth_status = describe_vercel_auth()
         sdk_ok = importlib.util.find_spec("vercel") is not None
-        sdk_label = "installed" if sdk_ok else "missing (install: pip install 'omniworker-agent[vercel]')"
+        sdk_label = "installed" if sdk_ok else "missing (install: pip install 'hermes-agent[vercel]')"
         print(f"  Runtime:      {runtime}")
         print(f"  SDK:          {check_mark(sdk_ok)} {sdk_label}")
         print(f"  Auth:         {check_mark(auth_status.ok)} {auth_status.label}")
@@ -450,7 +471,7 @@ def show_status(args):
         if snapshot.has_process_service_mismatch:
             print("  Service:      installed but not managing the current running gateway")
         elif _is_termux() and not snapshot.gateway_pids:
-            print("  Start with:   omniworker gateway")
+            print("  Start with:   hermes gateway")
             print("  Note:         Android may stop background jobs when Termux is suspended")
         elif snapshot.service_installed and not snapshot.service_running:
             print("  Service:      installed but stopped")
@@ -544,6 +565,6 @@ def show_status(args):
 
     print()
     print(color("─" * 60, Colors.DIM))
-    print(color("  Run 'omniworker doctor' for detailed diagnostics", Colors.DIM))
-    print(color("  Run 'omniworker setup' to configure", Colors.DIM))
+    print(color("  Run 'hermes doctor' for detailed diagnostics", Colors.DIM))
+    print(color("  Run 'hermes setup' to configure", Colors.DIM))
     print()

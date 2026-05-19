@@ -1,15 +1,15 @@
-"""``omniworker slack ...`` CLI subcommands.
+"""``hermes slack ...`` CLI subcommands.
 
-Today only ``omniworker slack manifest`` is implemented — it generates the
+Today only ``hermes slack manifest`` is implemented — it generates the
 Slack app manifest JSON for registering every gateway command as a native
 Slack slash (``/btw``, ``/stop``, ``/model``, …) so users get the same
 first-class slash UX Discord and Telegram already have.
 
 Typical workflow::
 
-    $ omniworker slack manifest > slack-manifest.json
+    $ hermes slack manifest > slack-manifest.json
     # or:
-    $ omniworker slack manifest --write
+    $ hermes slack manifest --write
 
 Then paste the printed JSON into the Slack app config (Features → App
 Manifest → Edit) and click Save. Slack diffs the manifest and prompts
@@ -135,7 +135,7 @@ def slack_manifest_command(args) -> int:
 
                 target = Path(get_omniworker_home()) / "slack-manifest.json"
             except Exception:
-                target = Path(os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".omniworker")) / "slack-manifest.json"
+                target = Path(os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".hermes")) / "slack-manifest.json"
         else:
             target = Path(write_target).expanduser()
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -151,7 +151,7 @@ def slack_manifest_command(args) -> int:
             "     slash commands changed.\n"
             "  4. Make sure Socket Mode is enabled and you have a bot token\n"
             "     (xoxb-...) and app token (xapp-...) configured via\n"
-            "     `omniworker setup`.\n",
+            "     `hermes setup`.\n",
             file=sys.stderr,
         )
     else:

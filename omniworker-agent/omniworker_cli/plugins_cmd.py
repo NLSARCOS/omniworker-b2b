@@ -1,6 +1,6 @@
-"""``omniworker plugins`` CLI subcommand — install, update, remove, and list plugins.
+"""``hermes plugins`` CLI subcommand — install, update, remove, and list plugins.
 
-Plugins are installed from Git repositories into ``~/.omniworker/plugins/``.
+Plugins are installed from Git repositories into ``~/.hermes/plugins/``.
 Supports full URLs and ``owner/repo`` shorthand (resolves to GitHub).
 
 After install, if the plugin ships an ``after-install.md`` file it is
@@ -192,7 +192,7 @@ def _copy_example_files(plugin_dir: Path, console) -> None:
 
 
 def _missing_requires_env_names(manifest: dict) -> list[str]:
-    """Return declared ``requires_env`` names that are unset in ``~/.omniworker/.env``."""
+    """Return declared ``requires_env`` names that are unset in ``~/.hermes/.env``."""
     requires_env = manifest.get("requires_env") or []
     if not requires_env:
         return []
@@ -343,7 +343,7 @@ def _require_installed_plugin(name: str, plugins_dir: Path, console) -> Path:
 
 
 def _install_plugin_core(identifier: str, *, force: bool) -> tuple[Path, dict, str]:
-    """Clone Git plugin into ``~/.omniworker/plugins``.
+    """Clone Git plugin into ``~/.hermes/plugins``.
 
     Returns ``(target_dir, installed_manifest, canonical_name)``.
     Raises ``PluginOperationError`` on failure.
@@ -414,7 +414,7 @@ def _install_plugin_core(identifier: str, *, force: bool) -> tuple[Path, dict, s
             if not force:
                 raise PluginOperationError(
                     f"Plugin '{plugin_name}' already exists. Use force reinstall "
-                    f"or run `omniworker plugins update {plugin_name}`.",
+                    f"or run `hermes plugins update {plugin_name}`.",
                 )
             shutil.rmtree(target)
 
@@ -510,11 +510,11 @@ def cmd_install(
     else:
         console.print(
             f"[dim]Plugin installed but not enabled. "
-            f"Run `omniworker plugins enable {installed_name}` to activate.[/dim]",
+            f"Run `hermes plugins enable {installed_name}` to activate.[/dim]",
         )
 
     console.print("[dim]Restart the gateway for the plugin to take effect:[/dim]")
-    console.print("[dim]  omniworker gateway restart[/dim]")
+    console.print("[dim]  hermes gateway restart[/dim]")
     console.print()
 
 
@@ -708,55 +708,85 @@ def _plugin_exists(name: str) -> bool:
 
 
 def _discover_all_plugins() -> list:
-    """Return a list of (name, version, description, source, dir_path) for
-    every plugin the loader can see — user + bundled + project.
+    """Return a list of (key, version, description, source, dir_path) for
+    every plugin the loader can see — user + bundled.
 
-    Matches the ordering/dedup of ``PluginManager.discover_and_load``:
-    bundled first, then user, then project; user overrides bundled on
-    name collision.
+    Mirrors :meth:`PluginManager._scan_directory_level` so category-namespaced
+    plugins (``observability/langfuse``, ``image_gen/openai``) surface here
+    just like flat ones (``disk-cleanup``). A subdirectory with no
+    ``plugin.yaml`` of its own is treated as a category and recursed into
+    one level deeper (depth capped at 2, same as the loader).
+
+    The returned ``key`` is the path-derived registry key — the value the
+    user types into ``hermes plugins enable <key>``. For category-namespaced
+    plugins that's ``<category>/<dirname>``; for flat plugins it's the
+    manifest's ``name`` (or the directory name if the manifest omits it).
+
+    User entries override bundled on key collision, matching
+    ``PluginManager.discover_and_load``.
     """
     try:
         import yaml
     except ImportError:
         yaml = None
 
-    seen: dict = {}  # name -> (name, version, description, source, path)
+    seen: dict = {}  # key -> (key, version, description, source, path)
 
-    # Bundled (<repo>/plugins/<name>/), excluding memory/ and context_engine/
-    from omniworker_cli.plugins import get_bundled_plugins_dir
-    repo_plugins = get_bundled_plugins_dir()
-    for base, source in ((repo_plugins, "bundled"), (_plugins_dir(), "user")):
+    def _scan(base: Path, source: str, prefix: str, depth: int) -> None:
         if not base.is_dir():
-            continue
+            return
         for d in sorted(base.iterdir()):
             if not d.is_dir():
                 continue
-            if source == "bundled" and d.name in {"memory", "context_engine"}:
+            if (
+                depth == 0
+                and source == "bundled"
+                and d.name in {"memory", "context_engine"}
+            ):
                 continue
             manifest_file = d / "plugin.yaml"
             if not manifest_file.exists():
                 manifest_file = d / "plugin.yml"
-            if not manifest_file.exists():
+
+            if manifest_file.exists():
+                manifest_name = d.name
+                version = ""
+                description = ""
+                if yaml:
+                    try:
+                        with open(manifest_file, encoding="utf-8") as f:
+                            manifest = yaml.safe_load(f) or {}
+                        manifest_name = manifest.get("name", d.name)
+                        version = manifest.get("version", "")
+                        description = manifest.get("description", "")
+                    except Exception:
+                        pass
+                # Path-derived key, intentionally ignoring the manifest
+                # ``name:`` field for category-namespaced plugins — mirrors
+                # ``PluginManager._parse_manifest`` in plugins.py:1027-1028
+                # so renaming a directory (without touching plugin.yaml) shifts
+                # the registry key in both places consistently.
+                key = f"{prefix}/{d.name}" if prefix else manifest_name
+                src_label = source
+                if source == "user" and (d / ".git").exists():
+                    src_label = "git"
+                # Bundled is scanned before user, so the user pass overwrites
+                # bundled entries with the same key — matches
+                # PluginManager.discover_and_load's "user wins" semantics.
+                seen[key] = (key, version, description, src_label, d)
                 continue
-            name = d.name
-            version = ""
-            description = ""
-            if yaml:
-                try:
-                    with open(manifest_file, encoding="utf-8") as f:
-                        manifest = yaml.safe_load(f) or {}
-                    name = manifest.get("name", d.name)
-                    version = manifest.get("version", "")
-                    description = manifest.get("description", "")
-                except Exception:
-                    pass
-            # User plugins override bundled on name collision.
-            if name in seen and source == "bundled":
+
+            # No manifest at this level — treat as a category namespace and
+            # recurse one level deeper. Cap at depth 2 (same as the loader).
+            if depth >= 1:
                 continue
-            src_label = source
-            if source == "user" and (d / ".git").exists():
-                src_label = "git"
-            seen[name] = (name, version, description, src_label, d)
+            sub_prefix = f"{prefix}/{d.name}" if prefix else d.name
+            _scan(d, source, sub_prefix, depth + 1)
+
+    from omniworker_cli.plugins import get_bundled_plugins_dir
+    _scan(get_bundled_plugins_dir(), "bundled", "", 0)
+    _scan(_plugins_dir(), "user", "", 0)
+
     return list(seen.values())
 
 
@@ -769,7 +799,7 @@ def cmd_list() -> None:
     entries = _discover_all_plugins()
     if not entries:
         console.print("[dim]No plugins installed.[/dim]")
-        console.print("[dim]Install with:[/dim] omniworker plugins install owner/repo")
+        console.print("[dim]Install with:[/dim] hermes plugins install owner/repo")
         return
 
     enabled = _get_enabled_set()
@@ -794,8 +824,8 @@ def cmd_list() -> None:
     console.print()
     console.print(table)
     console.print()
-    console.print("[dim]Interactive toggle:[/dim] omniworker plugins")
-    console.print("[dim]Enable/disable:[/dim] omniworker plugins enable/disable <name>")
+    console.print("[dim]Interactive toggle:[/dim] hermes plugins")
+    console.print("[dim]Enable/disable:[/dim] hermes plugins enable/disable <name>")
     console.print("[dim]Plugins are opt-in by default — only 'enabled' plugins load.[/dim]")
 
 
@@ -981,7 +1011,7 @@ def cmd_toggle() -> None:
 
     if not has_plugins and not has_categories:
         console.print("[dim]No plugins installed and no provider categories available.[/dim]")
-        console.print("[dim]Install with:[/dim] omniworker plugins install owner/repo")
+        console.print("[dim]Install with:[/dim] hermes plugins install owner/repo")
         return
 
     # Non-TTY fallback
@@ -1475,7 +1505,7 @@ def dashboard_set_agent_plugin_enabled(name: str, *, enabled: bool) -> dict[str,
 
 
 def _user_installed_plugin_dir(name: str) -> Optional[Path]:
-    """Resolved path under ``~/.omniworker/plugins/<name>`` if it exists."""
+    """Resolved path under ``~/.hermes/plugins/<name>`` if it exists."""
     plugins_dir = _plugins_dir()
     try:
         target = _sanitize_plugin_name(name, plugins_dir)
@@ -1485,7 +1515,7 @@ def _user_installed_plugin_dir(name: str) -> Optional[Path]:
 
 
 def dashboard_update_user_plugin(name: str) -> dict[str, Any]:
-    """``git pull`` inside ``~/.omniworker/plugins/<name>``."""
+    """``git pull`` inside ``~/.hermes/plugins/<name>``."""
     target = _user_installed_plugin_dir(name)
     if target is None:
         return {
@@ -1534,7 +1564,7 @@ def _git_pull_plugin_dir(target: Path) -> tuple[bool, str]:
 
 
 def dashboard_remove_user_plugin(name: str) -> dict[str, Any]:
-    """Delete a plugin tree under ``~/.omniworker/plugins/`` only."""
+    """Delete a plugin tree under ``~/.hermes/plugins/`` only."""
     plugins_dir = _plugins_dir()
     for n, _ver, _d, src, _path in _discover_all_plugins():
         if n == name and src == "bundled":
@@ -1552,7 +1582,7 @@ def dashboard_remove_user_plugin(name: str) -> dict[str, Any]:
 
 
 def plugins_command(args) -> None:
-    """Dispatch omniworker plugins subcommands."""
+    """Dispatch hermes plugins subcommands."""
     action = getattr(args, "plugins_action", None)
 
     if action == "install":

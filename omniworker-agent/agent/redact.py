@@ -61,7 +61,7 @@ _SENSITIVE_BODY_KEYS = frozenset({
 # need raw credential values in tool output (e.g. working on the redactor
 # itself) can opt out via `security.redact_secrets: false` in config.yaml
 # (bridged to this env var in omniworker_cli/main.py, gateway/run.py, and
-# cli.py) or `OMNIWORKER_REDACT_SECRETS=false` in ~/.omniworker/.env. An opt-out
+# cli.py) or `OMNIWORKER_REDACT_SECRETS=false` in ~/.hermes/.env. An opt-out
 # warning is logged at gateway and CLI startup so operators see the
 # downgrade — see `_log_redaction_status()` in gateway/run.py and cli.py.
 _REDACT_ENABLED = os.getenv("OMNIWORKER_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
@@ -103,6 +103,7 @@ _PREFIX_PATTERNS = [
     r"hsk-[A-Za-z0-9]{10,}",            # Hindsight API key
     r"mem0_[A-Za-z0-9]{10,}",           # Mem0 Platform API key
     r"brv_[A-Za-z0-9]{10,}",            # ByteRover API key
+    r"xai-[A-Za-z0-9]{30,}",            # xAI (Grok) API key
 ]
 
 # ENV assignment patterns: KEY=value where KEY contains a secret-like name
@@ -199,7 +200,7 @@ def mask_secret(
     """Mask a secret for display, preserving ``head`` and ``tail`` characters.
 
     Canonical helper for display-time redaction across OmniWorker — used by
-    ``omniworker config``, ``omniworker status``, ``omniworker dump``, and anywhere
+    ``hermes config``, ``hermes status``, ``hermes dump``, and anywhere
     a secret needs to be shown truncated for debuggability while still
     keeping the bulk hidden.
 

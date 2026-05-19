@@ -1,9 +1,9 @@
 """
 Skills configuration for OmniWorker Agent.
-`omniworker skills` enters this module.
+`hermes skills` enters this module.
 
 Toggle individual skills or categories on/off, globally or per-platform.
-Config stored in ~/.omniworker/config.yaml under:
+Config stored in ~/.hermes/config.yaml under:
 
   skills:
     disabled: [skill-a, skill-b]          # global disabled list
@@ -123,7 +123,7 @@ def _toggle_by_category(skills: List[dict], disabled: Set[str]) -> Set[str]:
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
 def skills_command(args=None):
-    """Entry point for `omniworker skills`."""
+    """Entry point for `hermes skills`."""
     from omniworker_cli.curses_ui import curses_checklist
 
     config = load_config()

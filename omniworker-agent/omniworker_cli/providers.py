@@ -53,12 +53,18 @@ OMNIWORKER_OVERLAYS: Dict[str, OmniWorkerOverlay] = {
     "nous": OmniWorkerOverlay(
         transport="openai_chat",
         auth_type="oauth_device_code",
-        base_url_override="https://inference-api.omniworker.com/v1",
+        base_url_override="https://inference-api.nousresearch.com/v1",
     ),
     "openai-codex": OmniWorkerOverlay(
         transport="codex_responses",
         auth_type="oauth_external",
         base_url_override="https://chatgpt.com/backend-api/codex",
+    ),
+    "xai-oauth": OmniWorkerOverlay(
+        transport="codex_responses",
+        auth_type="oauth_external",
+        base_url_override="https://api.x.ai/v1",
+        base_url_env_var="XAI_BASE_URL",
     ),
     "qwen-oauth": OmniWorkerOverlay(
         transport="openai_chat",
@@ -192,6 +198,7 @@ OMNIWORKER_OVERLAYS: Dict[str, OmniWorkerOverlay] = {
     ),
     "ollama-cloud": OmniWorkerOverlay(
         transport="openai_chat",
+        base_url_override="https://ollama.com/v1",
         base_url_env_var="OLLAMA_BASE_URL",
     ),
     # Azure Foundry: supports both OpenAI-style and Anthropic-style endpoints.
@@ -223,7 +230,7 @@ class ProviderDef:
     is_aggregator: bool = False
     auth_type: str = "api_key"
     doc: str = ""
-    source: str = ""                      # "models.dev", "omniworker", "user-config"
+    source: str = ""                      # "models.dev", "hermes", "user-config"
 
 
 # -- Aliases ------------------------------------------------------------------
@@ -244,6 +251,10 @@ ALIASES: Dict[str, str] = {
     "x-ai": "xai",
     "x.ai": "xai",
     "grok": "xai",
+    "grok-oauth": "xai-oauth",
+    "xai-oauth": "xai-oauth",
+    "x-ai-oauth": "xai-oauth",
+    "xai-grok-oauth": "xai-oauth",
 
     # nvidia
     "nim": "nvidia",
@@ -428,7 +439,7 @@ def get_provider(name: str) -> Optional[ProviderDef]:
         base_url_env = overlay.base_url_env_var if overlay else ""
         base_url_override = overlay.base_url_override if overlay else ""
 
-        # Combine env vars: models.dev env + omniworker extra
+        # Combine env vars: models.dev env + hermes extra
         env_vars = list(mdev_info.env)
         if overlay and overlay.extra_env_vars:
             for ev in overlay.extra_env_vars:
@@ -459,7 +470,7 @@ def get_provider(name: str) -> Optional[ProviderDef]:
             base_url_env_var=overlay.base_url_env_var,
             is_aggregator=overlay.is_aggregator,
             auth_type=overlay.auth_type,
-            source="omniworker",
+            source="hermes",
         )
 
     return None

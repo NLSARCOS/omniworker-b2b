@@ -12,7 +12,7 @@ module:
   2. Queries codex's `plugin/list` for the openai-curated marketplace
      and writes [plugins."<name>@<marketplace>"] entries for any plugin
      the user has installed=true on their codex CLI. (This is what
-     OmniWorker calls "migrate native codex plugins" — the YouTube-video-
+     OpenClaw calls "migrate native codex plugins" — the YouTube-video-
      worthy bit Pash highlighted: Canva, GitHub, Calendar, Gmail
      pre-configured.)
   3. Writes a [permissions] default profile so users on this runtime
@@ -48,10 +48,10 @@ logger = logging.getLogger(__name__)
 # Marker comments wrapping the managed section so re-runs can detect
 # what's ours and what's user-edited. Both must appear or strip is a no-op.
 MIGRATION_MARKER = (
-    "# managed by omniworker-agent — `omniworker codex-runtime migrate` regenerates this section"
+    "# managed by hermes-agent — `hermes codex-runtime migrate` regenerates this section"
 )
 MIGRATION_END_MARKER = (
-    "# end omniworker-agent managed section"
+    "# end hermes-agent managed section"
 )
 
 
@@ -125,21 +125,21 @@ _KEYS_DROPPED_WITH_WARNING = {
 
 
 def _translate_one_server(
-    name: str, omniworker_cfg: dict
+    name: str, hermes_cfg: dict
 ) -> tuple[Optional[dict], list[str]]:
     """Translate one OmniWorker MCP server config to the codex inline-table dict
     representation. Returns (codex_entry, skipped_keys).
 
     codex_entry is a dict ready for TOML serialization, or None when the
     server can't be translated (e.g. neither command nor url present)."""
-    if not isinstance(omniworker_cfg, dict):
+    if not isinstance(hermes_cfg, dict):
         return None, []
 
     skipped: list[str] = []
     out: dict[str, Any] = {}
 
-    has_command = bool(omniworker_cfg.get("command"))
-    has_url = bool(omniworker_cfg.get("url"))
+    has_command = bool(hermes_cfg.get("command"))
+    has_url = bool(hermes_cfg.get("url"))
 
     if has_command and has_url:
         skipped.append("url (both command and url set; preferring stdio)")
@@ -147,47 +147,47 @@ def _translate_one_server(
 
     if has_command:
         # Stdio transport
-        out["command"] = str(omniworker_cfg["command"])
-        args = omniworker_cfg.get("args") or []
+        out["command"] = str(hermes_cfg["command"])
+        args = hermes_cfg.get("args") or []
         if args:
             out["args"] = [str(a) for a in args]
-        env = omniworker_cfg.get("env") or {}
+        env = hermes_cfg.get("env") or {}
         if env:
             # Codex expects string values
             out["env"] = {str(k): str(v) for k, v in env.items()}
-        cwd = omniworker_cfg.get("cwd")
+        cwd = hermes_cfg.get("cwd")
         if cwd:
             out["cwd"] = str(cwd)
     elif has_url:
         # streamable_http transport (codex covers both http and SSE here)
-        out["url"] = str(omniworker_cfg["url"])
-        headers = omniworker_cfg.get("headers") or {}
+        out["url"] = str(hermes_cfg["url"])
+        headers = hermes_cfg.get("headers") or {}
         if headers:
             out["http_headers"] = {str(k): str(v) for k, v in headers.items()}
         # OmniWorker' transport: sse hint is informational; codex auto-negotiates
-        if omniworker_cfg.get("transport") == "sse":
+        if hermes_cfg.get("transport") == "sse":
             skipped.append("transport=sse (codex auto-negotiates)")
     else:
         return None, ["no command or url field"]
 
     # Timeouts
-    if "timeout" in omniworker_cfg:
+    if "timeout" in hermes_cfg:
         try:
-            out["tool_timeout_sec"] = float(omniworker_cfg["timeout"])
+            out["tool_timeout_sec"] = float(hermes_cfg["timeout"])
         except (TypeError, ValueError):
             skipped.append("timeout (not numeric)")
-    if "connect_timeout" in omniworker_cfg:
+    if "connect_timeout" in hermes_cfg:
         try:
-            out["startup_timeout_sec"] = float(omniworker_cfg["connect_timeout"])
+            out["startup_timeout_sec"] = float(hermes_cfg["connect_timeout"])
         except (TypeError, ValueError):
             skipped.append("connect_timeout (not numeric)")
 
     # Enabled flag (codex defaults to true so we only emit when explicitly false)
-    if omniworker_cfg.get("enabled") is False:
+    if hermes_cfg.get("enabled") is False:
         out["enabled"] = False
 
     # Detect keys we explicitly drop with warning
-    for key in omniworker_cfg:
+    for key in hermes_cfg:
         if key in _KEYS_DROPPED_WITH_WARNING:
             skipped.append(f"{key} (no codex equivalent)")
         elif key not in _KNOWN_OMNIWORKER_KEYS:
@@ -471,7 +471,7 @@ def _query_codex_plugins(
         with CodexAppServerClient(
             codex_home=str(codex_home) if codex_home else None
         ) as client:
-            client.initialize(client_name="omniworker-migration")
+            client.initialize(client_name="hermes-migration")
             resp = client.request("plugin/list", {}, timeout=timeout)
     except Exception as exc:
         return [], f"plugin/list query failed: {exc}"
@@ -496,7 +496,7 @@ def _query_codex_plugins(
                 continue
             # Skip plugins codex itself reports as unavailable (broken
             # install, missing OAuth, removed from marketplace, etc.).
-            # Cf. omniworker/omniworker#80815 — OmniWorker learned to gate
+            # Cf. openclaw/openclaw#80815 — OpenClaw learned to gate
             # migration on app readiness to avoid writing config that
             # would fail at activation time. Our migration writes to
             # codex's config.toml directly, so a broken plugin would
@@ -518,7 +518,7 @@ def _query_codex_plugins(
                 continue
             seen.add(key)
             # Carry forward whatever 'enabled' codex reports — defaults to
-            # true for installed plugins. This is the same shape OmniWorker
+            # true for installed plugins. This is the same shape OpenClaw
             # writes when migrating native codex plugins.
             out.append({
                 "name": name,
@@ -536,10 +536,10 @@ def _looks_like_test_tempdir(path: str) -> bool:
     macOS routes ``/tmp`` through ``/private/var/folders/<…>/T`` which is
     what pytest's tempdir factory uses by default. If a OMNIWORKER_HOME pointing
     at one of those paths is burned into ``~/.codex/config.toml``, every
-    codex-routed omniworker-tools call fails silently once the directory is GC'd.
+    codex-routed hermes-tools call fails silently once the directory is GC'd.
 
     We err on the side of refusing — losing a (very unlikely) real
-    ``~/.omniworker`` symlink that happens to live under ``/private/var/folders``
+    ``~/.hermes`` symlink that happens to live under ``/private/var/folders``
     is much less harmful than silently bricking codex's tool surface.
     """
     if not path:
@@ -554,13 +554,13 @@ def _looks_like_test_tempdir(path: str) -> bool:
     return any(needle in normalized for needle in needles)
 
 
-def _build_omniworker_tools_mcp_entry() -> dict:
+def _build_hermes_tools_mcp_entry() -> dict:
     """Build the codex stdio-transport entry that launches OmniWorker' own
     tool surface as an MCP server. Codex's subprocess will call back into
     this for browser/web/delegate_task/vision/memory/skills tools.
 
     The command runs the worktree's Python via the current sys.executable
-    so a omniworker installed under /opt/, /usr/local/, or a venv all work.
+    so a hermes installed under /opt/, /usr/local/, or a venv all work.
     OMNIWORKER_HOME and PYTHONPATH are passed through so the spawned process
     sees the same config + module layout the user is running."""
     import sys
@@ -584,7 +584,7 @@ def _build_omniworker_tools_mcp_entry() -> dict:
         omniworker_home = ""
     if omniworker_home:
         env["OMNIWORKER_HOME"] = omniworker_home
-    # PYTHONPATH passes through so a worktree-launched omniworker finds the
+    # PYTHONPATH passes through so a worktree-launched hermes finds the
     # branch's modules instead of the installed package.
     pythonpath = os.environ.get("PYTHONPATH")
     if pythonpath:
@@ -595,7 +595,7 @@ def _build_omniworker_tools_mcp_entry() -> dict:
 
     out: dict[str, Any] = {
         "command": sys.executable,
-        "args": ["-m", "agent.transports.omniworker_tools_mcp_server"],
+        "args": ["-m", "agent.transports.hermes_tools_mcp_server"],
     }
     if env:
         out["env"] = env
@@ -607,19 +607,19 @@ def _build_omniworker_tools_mcp_entry() -> dict:
 
 
 def migrate(
-    omniworker_config: dict,
+    hermes_config: dict,
     *,
     codex_home: Optional[Path] = None,
     dry_run: bool = False,
     discover_plugins: bool = True,
     default_permission_profile: Optional[str] = ":workspace",
-    expose_omniworker_tools: bool = True,
+    expose_hermes_tools: bool = True,
 ) -> MigrationReport:
     """Translate OmniWorker mcp_servers config + Codex curated plugins into
     ~/.codex/config.toml.
 
     Args:
-        omniworker_config: full ~/.omniworker/config.yaml dict
+        hermes_config: full ~/.hermes/config.yaml dict
         codex_home: override CODEX_HOME (defaults to ~/.codex)
         dry_run: skip the actual write; report what would happen
         discover_plugins: when True (default), query `plugin/list` against
@@ -635,7 +635,7 @@ def migrate(
             configured in their own [permissions.<name>] table. Set None
             to leave permissions unset and let codex use its compiled-in
             default (which is read-only).
-        expose_omniworker_tools: when True (default), register OmniWorker' own
+        expose_hermes_tools: when True (default), register OmniWorker' own
             tool surface (web_search, browser_*, delegate_task, vision,
             memory, skills, etc.) as an MCP server in ~/.codex/config.toml
             so the codex subprocess can call back into OmniWorker for tools
@@ -646,15 +646,15 @@ def migrate(
     target = codex_home / "config.toml"
     report.target_path = target
 
-    omniworker_servers = (omniworker_config or {}).get("mcp_servers") or {}
-    if not isinstance(omniworker_servers, dict):
+    hermes_servers = (hermes_config or {}).get("mcp_servers") or {}
+    if not isinstance(hermes_servers, dict):
         report.errors.append(
             "mcp_servers in OmniWorker config is not a dict; cannot migrate."
         )
         return report
 
     translated: dict[str, dict] = {}
-    for name, cfg in omniworker_servers.items():
+    for name, cfg in hermes_servers.items():
         out, skipped = _translate_one_server(str(name), cfg or {})
         if out is None:
             report.errors.append(
@@ -691,12 +691,12 @@ def migrate(
     # codex subprocess can call back into OmniWorker for the tools codex
     # doesn't ship with — web_search, browser_*, delegate_task, vision,
     # memory, skills, session_search, image_generate, text_to_speech.
-    # The server itself is agent/transports/omniworker_tools_mcp_server.py
+    # The server itself is agent/transports/hermes_tools_mcp_server.py
     # and is launched on demand by codex (stdio MCP).
-    if expose_omniworker_tools:
-        translated["omniworker-tools"] = _build_omniworker_tools_mcp_entry()
-        if "omniworker-tools" not in report.migrated:
-            report.migrated.append("omniworker-tools")
+    if expose_hermes_tools:
+        translated["hermes-tools"] = _build_hermes_tools_mcp_entry()
+        if "hermes-tools" not in report.migrated:
+            report.migrated.append("hermes-tools")
 
     # Build the new managed block
     managed_block = render_codex_toml_section(

@@ -8,7 +8,7 @@ Modular wizard with independently-runnable sections:
   4. Messaging Platforms — connect Telegram, Discord, etc.
   5. Tools — configure TTS, web search, image generation, etc.
 
-Config files are stored in ~/.omniworker/ for easy access.
+Config files are stored in ~/.hermes/ for easy access.
 """
 
 import importlib.util
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://omniworker-agent.omniworker.com/docs"
+_DOCS_BASE = "https://hermes-agent.nousresearch.com/docs"
 
 
 def _model_config_dict(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -144,7 +144,7 @@ from omniworker_cli.config import (
     get_env_value,
     ensure_omniworker_home,
 )
-# display_omniworker_home imported lazily at call sites (stale-module safety during omniworker update)
+# display_omniworker_home imported lazily at call sites (stale-module safety during hermes update)
 
 from omniworker_cli.colors import Colors, color
 
@@ -184,12 +184,12 @@ def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     print_info("The interactive wizard cannot be used here.")
     print()
     print_info("Configure OmniWorker using environment variables or config commands:")
-    print_info("  omniworker config set model.provider custom")
-    print_info("  omniworker config set model.base_url http://localhost:8080/v1")
-    print_info("  omniworker config set model.default your-model-name")
+    print_info("  hermes config set model.provider custom")
+    print_info("  hermes config set model.base_url http://localhost:8080/v1")
+    print_info("  hermes config set model.default your-model-name")
     print()
     print_info("Or set OPENROUTER_API_KEY / OPENAI_API_KEY in your environment.")
-    print_info("Run 'omniworker setup' in an interactive terminal to use the full wizard.")
+    print_info("Run 'hermes setup' in an interactive terminal to use the full wizard.")
     print()
 
 
@@ -353,7 +353,7 @@ def _prompt_api_key(var: dict):
         save_env_value(var["name"], value)
         print_success("  ✓ Saved")
     else:
-        print_warning("  Skipped (configure later with 'omniworker setup')")
+        print_warning("  Skipped (configure later with 'hermes setup')")
 
 
 def _print_setup_summary(config: dict, omniworker_home):
@@ -376,7 +376,7 @@ def _print_setup_summary(config: dict, omniworker_home):
     if _vision_backends:
         tool_status.append(("Vision (image analysis)", True, None))
     else:
-        tool_status.append(("Vision (image analysis)", False, "run 'omniworker setup' to configure"))
+        tool_status.append(("Vision (image analysis)", False, "run 'hermes setup' to configure"))
 
     # Mixture of Agents — requires OpenRouter specifically (calls multiple models)
     if get_env_value("OPENROUTER_API_KEY"):
@@ -454,7 +454,7 @@ def _print_setup_summary(config: dict, omniworker_home):
         else:
             tool_status.append(("Image Generation", False, "FAL_KEY or OPENAI_API_KEY"))
 
-    # Video generation — opt-in via `omniworker tools` → Video Generation.
+    # Video generation — opt-in via `hermes tools` → Video Generation.
     # Only show the row when a plugin reports available so we don't badger
     # users who don't care about video gen with a "missing" status line.
     try:
@@ -498,7 +498,7 @@ def _print_setup_summary(config: dict, omniworker_home):
         if neutts_ok:
             tool_status.append(("Text-to-Speech (NeuTTS local)", True, None))
         else:
-            tool_status.append(("Text-to-Speech (NeuTTS — not installed)", False, "run 'omniworker setup tts'"))
+            tool_status.append(("Text-to-Speech (NeuTTS — not installed)", False, "run 'hermes setup tts'"))
     elif tts_provider == "kittentts":
         try:
             import importlib.util
@@ -508,7 +508,7 @@ def _print_setup_summary(config: dict, omniworker_home):
         if kittentts_ok:
             tool_status.append(("Text-to-Speech (KittenTTS local)", True, None))
         else:
-            tool_status.append(("Text-to-Speech (KittenTTS — not installed)", False, "run 'omniworker setup tts'"))
+            tool_status.append(("Text-to-Speech (KittenTTS — not installed)", False, "run 'hermes setup tts'"))
     else:
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
@@ -518,7 +518,7 @@ def _print_setup_summary(config: dict, omniworker_home):
         if subscription_features.modal.direct_override:
             tool_status.append(("Modal Execution (direct Modal)", True, None))
         else:
-            tool_status.append(("Modal Execution", False, "run 'omniworker setup terminal'"))
+            tool_status.append(("Modal Execution", False, "run 'hermes setup terminal'"))
     elif managed_nous_tools_enabled() and subscription_features.nous_auth_present:
         tool_status.append(("Modal Execution (optional via Nous subscription)", True, None))
 
@@ -526,7 +526,7 @@ def _print_setup_summary(config: dict, omniworker_home):
     if get_env_value("HASS_TOKEN"):
         tool_status.append(("Smart Home (Home Assistant)", True, None))
 
-    # Spotify (OAuth via omniworker auth spotify — check auth.json, not env vars)
+    # Spotify (OAuth via hermes auth spotify — check auth.json, not env vars)
     try:
         from omniworker_cli.auth import get_provider_auth_state
         _spotify_state = get_provider_auth_state("spotify") or {}
@@ -570,7 +570,7 @@ def _print_setup_summary(config: dict, omniworker_home):
     disabled_tools = [(name, var) for name, avail, var in tool_status if not avail]
     if disabled_tools:
         print_warning(
-            "Some tools are disabled. Run 'omniworker setup tools' to configure them,"
+            "Some tools are disabled. Run 'hermes setup tools' to configure them,"
         )
         from omniworker_constants import display_omniworker_home as _dhh
         print_warning(f"or edit {_dhh()}/.env directly to add the missing API keys.")
@@ -610,17 +610,17 @@ def _print_setup_summary(config: dict, omniworker_home):
     print()
     print(color("📝 To edit your configuration:", Colors.CYAN, Colors.BOLD))
     print()
-    print(f"   {color('omniworker setup', Colors.GREEN)}          Re-run the full wizard")
-    print(f"   {color('omniworker setup model', Colors.GREEN)}    Change model/provider")
-    print(f"   {color('omniworker setup terminal', Colors.GREEN)} Change terminal backend")
-    print(f"   {color('omniworker setup gateway', Colors.GREEN)}  Configure messaging")
-    print(f"   {color('omniworker setup tools', Colors.GREEN)}    Configure tool providers")
+    print(f"   {color('hermes setup', Colors.GREEN)}          Re-run the full wizard")
+    print(f"   {color('hermes setup model', Colors.GREEN)}    Change model/provider")
+    print(f"   {color('hermes setup terminal', Colors.GREEN)} Change terminal backend")
+    print(f"   {color('hermes setup gateway', Colors.GREEN)}  Configure messaging")
+    print(f"   {color('hermes setup tools', Colors.GREEN)}    Configure tool providers")
     print()
-    print(f"   {color('omniworker config', Colors.GREEN)}         View current settings")
+    print(f"   {color('hermes config', Colors.GREEN)}         View current settings")
     print(
-        f"   {color('omniworker config edit', Colors.GREEN)}    Open config in your editor"
+        f"   {color('hermes config edit', Colors.GREEN)}    Open config in your editor"
     )
-    print(f"   {color('omniworker config set <key> <value>', Colors.GREEN)}")
+    print(f"   {color('hermes config set <key> <value>', Colors.GREEN)}")
     print("                          Set a specific value")
     print()
     print("   Or edit the files directly:")
@@ -632,9 +632,9 @@ def _print_setup_summary(config: dict, omniworker_home):
     print()
     print(color("🚀 Ready to go!", Colors.CYAN, Colors.BOLD))
     print()
-    print(f"   {color('omniworker', Colors.GREEN)}              Start chatting")
-    print(f"   {color('omniworker gateway', Colors.GREEN)}      Start messaging gateway")
-    print(f"   {color('omniworker doctor', Colors.GREEN)}       Check for issues")
+    print(f"   {color('hermes', Colors.GREEN)}              Start chatting")
+    print(f"   {color('hermes gateway', Colors.GREEN)}      Start messaging gateway")
+    print(f"   {color('hermes doctor', Colors.GREEN)}       Check for issues")
     print()
 
 
@@ -777,7 +777,7 @@ def _read_nearest_vercel_project(start: Path | None = None) -> dict[str, str]:
 
 
 # Tool categories and provider config are now in tools_config.py (shared
-# between `omniworker tools` and `omniworker setup tools`).
+# between `hermes tools` and `hermes setup tools`).
 
 
 # =============================================================================
@@ -789,10 +789,10 @@ def _read_nearest_vercel_project(start: Path | None = None) -> dict[str, str]:
 def setup_model_provider(config: dict, *, quick: bool = False):
     """Configure the inference provider and default model.
 
-    Delegates to ``cmd_model()`` (the same flow used by ``omniworker model``)
+    Delegates to ``cmd_model()`` (the same flow used by ``hermes model``)
     for provider selection, credential prompting, and model picking.
     This ensures a single code path for all provider setup — any new
-    provider added to ``omniworker model`` is automatically available here.
+    provider added to ``hermes model`` is automatically available here.
 
     When *quick* is True, skips credential rotation, vision, and TTS
     configuration — used by the streamlined first-time quick setup.
@@ -804,7 +804,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     print_info(f"   Guide: {_DOCS_BASE}/integrations/providers")
     print()
 
-    # Delegate to the shared omniworker model flow — handles provider picker,
+    # Delegate to the shared hermes model flow — handles provider picker,
     # credential prompting, model selection, and config persistence.
     from omniworker_cli.main import select_provider_and_model
     try:
@@ -815,7 +815,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     except Exception as exc:
         logger.debug("select_provider_and_model error during setup: %s", exc)
         print_warning(f"Provider setup encountered an error: {exc}")
-        print_info("You can try again later with: omniworker model")
+        print_info("You can try again later with: hermes model")
 
     # Re-sync the wizard's config dict from what cmd_model saved to disk.
     # This is critical: cmd_model writes to disk via its own load/save cycle,
@@ -996,7 +996,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
             else:
                 print_info("Skipped — vision won't be available")
         else:
-            print_info("Skipped — add later with 'omniworker setup' or configure AUXILIARY_VISION_* settings")
+            print_info("Skipped — add later with 'hermes setup' or configure AUXILIARY_VISION_* settings")
 
 
     # Tool Gateway prompt is already shown by _model_flow_nous() above.
@@ -1091,6 +1091,58 @@ def _install_kittentts_deps() -> bool:
         return False
 
 
+def _xai_oauth_logged_in_for_setup() -> bool:
+    """True iff xAI Grok OAuth credentials are already stored locally.
+
+    Lets TTS / STT setup skip the API-key prompt for users who logged in
+    through ``hermes model`` -> xAI Grok OAuth (SuperGrok Subscription).
+    """
+    try:
+        from omniworker_cli.auth import get_xai_oauth_auth_status
+
+        return bool(get_xai_oauth_auth_status().get("logged_in"))
+    except Exception:
+        return False
+
+
+def _run_xai_oauth_login_from_setup() -> bool:
+    """Run the xAI Grok OAuth loopback login from inside the setup wizard.
+
+    Returns True on success, False on any failure (the caller falls back
+    to whatever the user picked next, e.g. Edge TTS).
+    """
+    try:
+        from omniworker_cli.auth import (
+            DEFAULT_XAI_OAUTH_BASE_URL,
+            _is_remote_session,
+            _save_xai_oauth_tokens,
+            _update_config_for_provider,
+            _xai_oauth_loopback_login,
+        )
+    except Exception as exc:
+        print_warning(f"xAI Grok OAuth helpers unavailable: {exc}")
+        return False
+
+    open_browser = not _is_remote_session()
+    print()
+    print_info("Signing in to xAI Grok OAuth (SuperGrok Subscription)...")
+    try:
+        creds = _xai_oauth_loopback_login(open_browser=open_browser)
+        _save_xai_oauth_tokens(
+            creds["tokens"],
+            discovery=creds.get("discovery"),
+            redirect_uri=creds.get("redirect_uri", ""),
+            last_refresh=creds.get("last_refresh"),
+        )
+        _update_config_for_provider(
+            "xai-oauth", creds.get("base_url", DEFAULT_XAI_OAUTH_BASE_URL)
+        )
+        return True
+    except Exception as exc:
+        print_warning(f"xAI Grok OAuth login failed: {exc}")
+        return False
+
+
 def _setup_tts_provider(config: dict):
     """Interactive TTS provider selection with install flow for NeuTTS."""
     tts_config = config.get("tts", {})
@@ -1125,7 +1177,7 @@ def _setup_tts_provider(config: dict):
             "Edge TTS (free, cloud-based, no setup needed)",
             "ElevenLabs (premium quality, needs API key)",
             "OpenAI TTS (good quality, needs API key)",
-            "xAI TTS (Grok voices, needs API key)",
+            "xAI TTS (Grok voices — OAuth login or API key)",
             "MiniMax TTS (high quality with voice cloning, needs API key)",
             "Mistral Voxtral TTS (multilingual, native Opus, needs API key)",
             "Google Gemini TTS (30 prebuilt voices, prompt-controllable, needs API key)",
@@ -1148,7 +1200,7 @@ def _setup_tts_provider(config: dict):
         print_info("OpenAI TTS will use the managed Nous gateway and bill to your subscription.")
         if get_env_value("VOICE_TOOLS_OPENAI_KEY") or get_env_value("OPENAI_API_KEY"):
             print_warning(
-                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.omniworker/.env."
+                "Direct OpenAI credentials are still configured and may take precedence until removed from ~/.hermes/.env."
             )
 
     if selected == "neutts":
@@ -1199,21 +1251,59 @@ def _setup_tts_provider(config: dict):
                 selected = "edge"
 
     elif selected == "xai":
-        existing = get_env_value("XAI_API_KEY")
-        if not existing:
+        # Resolution order: existing OAuth tokens (free for SuperGrok subscribers
+        # via the OmniWorker auth store) > existing XAI_API_KEY > prompt the user.
+        # When neither is configured, offer both options instead of forcing the
+        # API-key path — xAI TTS works fine with OAuth bearer tokens too.
+        oauth_logged_in = _xai_oauth_logged_in_for_setup()
+        existing_api_key = get_env_value("XAI_API_KEY")
+
+        if oauth_logged_in:
+            print_success(
+                "xAI TTS will use your xAI Grok OAuth (SuperGrok Subscription) "
+                "credentials"
+            )
+        elif existing_api_key:
+            print_success("xAI TTS will use your existing XAI_API_KEY")
+        else:
             print()
-            api_key = prompt("xAI API key for TTS", password=True)
-            if api_key:
-                save_env_value("XAI_API_KEY", api_key)
-                print_success("xAI TTS API key saved")
+            choice_idx = prompt_choice(
+                "How do you want xAI TTS to authenticate?",
+                choices=[
+                    "Sign in with xAI Grok OAuth (SuperGrok Subscription) — browser login",
+                    "Paste an xAI API key (console.x.ai)",
+                    "Skip → fallback to Edge TTS",
+                ],
+                default=0,
+            )
+            if choice_idx == 0:
+                if _run_xai_oauth_login_from_setup():
+                    print_success(
+                        "Logged in — xAI TTS will use these OAuth credentials"
+                    )
+                else:
+                    print_warning(
+                        "xAI Grok OAuth login did not complete. "
+                        "Falling back to Edge TTS."
+                    )
+                    selected = "edge"
+            elif choice_idx == 1:
+                api_key = prompt("xAI API key for TTS", password=True)
+                if api_key:
+                    save_env_value("XAI_API_KEY", api_key)
+                    print_success("xAI TTS API key saved")
+                else:
+                    from omniworker_constants import display_omniworker_home as _dhh
+                    print_warning(
+                        "No xAI API key provided for TTS. Configure XAI_API_KEY "
+                        f"via hermes setup model or {_dhh()}/.env to use xAI TTS. "
+                        "Falling back to Edge TTS."
+                    )
+                    selected = "edge"
             else:
-                from omniworker_constants import display_omniworker_home as _dhh
-                print_warning(
-                    "No xAI API key provided for TTS. Configure XAI_API_KEY via "
-                    f"omniworker setup model or {_dhh()}/.env to use xAI TTS. "
-                    "Falling back to Edge TTS."
-                )
+                print_warning("xAI TTS skipped. Falling back to Edge TTS.")
                 selected = "edge"
+
         if selected == "xai":
             print()
             voice_id = prompt("xAI voice_id (Enter for 'eve', or paste a custom voice ID)")
@@ -1291,7 +1381,7 @@ def _setup_tts_provider(config: dict):
 
 
 def setup_tts(config: dict):
-    """Standalone TTS setup (for 'omniworker setup tts')."""
+    """Standalone TTS setup (for 'hermes setup tts')."""
     _setup_tts_provider(config)
 
 
@@ -1573,7 +1663,7 @@ def setup_terminal_backend(config: dict):
     elif selected_backend == "vercel_sandbox":
         print_success("Terminal backend: Vercel Sandbox")
         print_info("Cloud microVM sandboxes with snapshot-backed filesystem persistence.")
-        print_info("Requires the optional SDK: pip install 'omniworker-agent[vercel]'")
+        print_info("Requires the optional SDK: pip install 'hermes-agent[vercel]'")
 
         try:
             __import__("vercel")
@@ -1597,7 +1687,7 @@ def setup_terminal_backend(config: dict):
             if result.returncode == 0:
                 print_success("vercel SDK installed")
             else:
-                print_warning("Install failed — run manually: pip install 'omniworker-agent[vercel]'")
+                print_warning("Install failed — run manually: pip install 'hermes-agent[vercel]'")
                 if result.stderr:
                     print_info(f"  Error: {result.stderr.strip().splitlines()[-1]}")
 
@@ -1694,7 +1784,7 @@ def _apply_default_agent_settings(config: dict):
     print_info("  Tool progress: all")
     print_info("  Compression threshold: 0.50")
     print_info("  Session reset: inactivity (1440 min) + daily (4:00)")
-    print_info("  Run `omniworker setup agent` later to customize.")
+    print_info("  Run `hermes setup agent` later to customize.")
 
 
 def setup_agent_settings(config: dict):
@@ -2024,7 +2114,7 @@ def _setup_slack():
             # new commands (e.g. /btw, /stop, ...) get registered in Slack.
             if prompt_yes_no(
                 "Regenerate the Slack app manifest with the latest command "
-                "list? (recommended after `omniworker update`)",
+                "list? (recommended after `hermes update`)",
                 True,
             ):
                 _write_slack_manifest_and_instruct()
@@ -2038,7 +2128,7 @@ def _setup_slack():
     print_info("   3. Install to Workspace: Settings → Install App")
     print_info("   4. After installing, invite the bot to channels: /invite @YourBot")
     print()
-    print_info("   Full guide: https://omniworker-agent.omniworker.com/docs/user-guide/messaging/slack/")
+    print_info("   Full guide: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/slack/")
     print()
 
     # Generate and write manifest up-front so the user can paste it into
@@ -2113,14 +2203,14 @@ def _write_slack_manifest_and_instruct():
             "reinstall if scopes or slash commands changed."
         )
         print_info(
-            "   Re-run `omniworker slack manifest --write` anytime to refresh after "
+            "   Re-run `hermes slack manifest --write` anytime to refresh after "
             "OmniWorker adds new commands."
         )
     except Exception as exc:  # pragma: no cover - best-effort UX helper
         print_warning(f"Couldn't write Slack manifest: {exc}")
         print_info(
             "   You can generate it manually later with: "
-            "omniworker slack manifest --write"
+            "hermes slack manifest --write"
         )
 
 
@@ -2251,7 +2341,7 @@ def _setup_mattermost():
     home_channel = prompt("Home channel ID (leave empty to set later with /set-home)")
     if home_channel:
         save_env_value("MATTERMOST_HOME_CHANNEL", home_channel)
-    print_info("   Open config in your editor:  omniworker config edit")
+    print_info("   Open config in your editor:  hermes config edit")
 
 
 def _setup_bluebubbles():
@@ -2339,7 +2429,7 @@ def _setup_webhooks():
     print_warning("   internet. For security, run the gateway in a sandboxed environment")
     print_warning("   (Docker, VM, etc.) to limit blast radius from prompt injection.")
     print()
-    print_info("   Full guide: https://omniworker-agent.omniworker.com/docs/user-guide/messaging/webhooks/")
+    print_info("   Full guide: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/")
     print()
 
     port = prompt("Webhook port (default 8644)")
@@ -2366,10 +2456,10 @@ def _setup_webhooks():
     print_info("      http://your-server:8644/webhooks/<route-name>")
     print()
     print_info("   Route configuration guide:")
-    print_info("   https://omniworker-agent.omniworker.com/docs/user-guide/messaging/webhooks/#configuring-routes")
+    print_info("   https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/#configuring-routes")
     print()
-    print_info("   Open config in your editor:  omniworker config edit")
-    print_info("   Open config in your editor:  omniworker config edit")
+    print_info("   Open config in your editor:  hermes config edit")
+    print_info("   Open config in your editor:  hermes config edit")
 
 
 def setup_gateway(config: dict):
@@ -2395,7 +2485,7 @@ def setup_gateway(config: dict):
     selected = prompt_checklist("Select platforms to configure:", items, pre_selected)
 
     if not selected:
-        print_info("No platforms selected. Run 'omniworker setup gateway' later to configure.")
+        print_info("No platforms selected. Run 'hermes setup gateway' later to configure.")
         return
 
     for idx in selected:
@@ -2448,7 +2538,7 @@ def setup_gateway(config: dict):
             print_info("   Set one later with /set-home in your chat, or:")
             for plat in missing_home:
                 print_info(
-                    f"     omniworker config set {plat.upper()}_HOME_CHANNEL <channel_id>"
+                    f"     hermes config set {plat.upper()}_HOME_CHANNEL <channel_id>"
                 )
 
         # Offer to install the gateway as a system service
@@ -2463,7 +2553,7 @@ def setup_gateway(config: dict):
             _is_service_running,
             supports_systemd_services,
             has_conflicting_systemd_units,
-            has_legacy_omniworker_units,
+            has_legacy_hermes_units,
             install_linux_gateway_from_setup,
             print_systemd_scope_conflict_warning,
             print_legacy_unit_warning,
@@ -2488,7 +2578,7 @@ def setup_gateway(config: dict):
             print_systemd_scope_conflict_warning()
             print()
 
-        if supports_systemd and has_legacy_omniworker_units():
+        if supports_systemd and has_legacy_hermes_units():
             print_legacy_unit_warning()
             print()
 
@@ -2585,24 +2675,24 @@ def setup_gateway(config: dict):
                             print_error(f"  Start failed: {e}")
                 except Exception as e:
                     print_error(f"  Install failed: {e}")
-                    print_info("  You can try manually: omniworker gateway install")
+                    print_info("  You can try manually: hermes gateway install")
             else:
-                print_info("  You can install later: omniworker gateway install")
+                print_info("  You can install later: hermes gateway install")
                 if supports_systemd:
-                    print_info("  Or as a boot-time service: sudo omniworker gateway install --system")
-                print_info("  Or run in foreground:  omniworker gateway")
+                    print_info("  Or as a boot-time service: sudo hermes gateway install --system")
+                print_info("  Or run in foreground:  hermes gateway")
         else:
             from omniworker_constants import is_container
             if is_container():
                 print_info("Start the gateway to bring your bots online:")
-                print_info("   omniworker gateway run          # Run as container main process")
+                print_info("   hermes gateway run          # Run as container main process")
                 print_info("")
                 print_info("For automatic restarts, use a Docker restart policy:")
                 print_info("   docker run --restart unless-stopped ...")
                 print_info("   docker restart <container>  # Manual restart")
             else:
                 print_info("Start the gateway to bring your bots online:")
-                print_info("   omniworker gateway              # Run in foreground")
+                print_info("   hermes gateway              # Run in foreground")
 
         print_info("━" * 50)
 
@@ -2615,7 +2705,7 @@ def setup_gateway(config: dict):
 def setup_tools(config: dict, first_install: bool = False):
     """Configure tools — delegates to the unified tools_command() in tools_config.py.
 
-    Both `omniworker setup tools` and `omniworker tools` use the same flow:
+    Both `hermes setup tools` and `hermes tools` use the same flow:
     platform selection → toolset toggles → provider/API key configuration.
 
     Args:
@@ -2703,7 +2793,7 @@ def _gateway_platform_short_label(label: str) -> str:
 def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]:
     """Return a short summary if a setup section is already configured, else None.
 
-    Used after OmniWorker migration to detect which sections can be skipped.
+    Used after OpenClaw migration to detect which sections can be skipped.
     ``get_env_value`` is the module-level import from omniworker_cli.config
     so that test patches on ``setup_mod.get_env_value`` take effect.
     """
@@ -2771,21 +2861,21 @@ def _skip_configured_section(
 
 
 # =============================================================================
-# OmniWorker Migration
+# OpenClaw Migration
 # =============================================================================
 
 
 _OPENCLAW_SCRIPT = (
     get_optional_skills_dir(PROJECT_ROOT / "optional-skills")
     / "migration"
-    / "omniworker-migration"
+    / "openclaw-migration"
     / "scripts"
-    / "omniworker_to_omniworker.py"
+    / "openclaw_to_hermes.py"
 )
 
 
-def _load_omniworker_migration_module():
-    """Load the omniworker_to_omniworker migration script as a module.
+def _load_openclaw_migration_module():
+    """Load the openclaw_to_hermes migration script as a module.
 
     Returns the loaded module, or None if the script can't be loaded.
     """
@@ -2793,7 +2883,7 @@ def _load_omniworker_migration_module():
         return None
 
     spec = importlib.util.spec_from_file_location(
-        "omniworker_to_omniworker", _OPENCLAW_SCRIPT
+        "openclaw_to_hermes", _OPENCLAW_SCRIPT
     )
     if spec is None or spec.loader is None:
         return None
@@ -2813,18 +2903,18 @@ def _load_omniworker_migration_module():
 
 # Item kinds that represent high-impact changes warranting explicit warnings.
 # Gateway tokens/channels can hijack messaging platforms from the old agent.
-# Config values may have different semantics between OmniWorker and OmniWorker.
+# Config values may have different semantics between OpenClaw and OmniWorker.
 # Instruction/context files (.md) can contain incompatible setup procedures.
 _HIGH_IMPACT_KIND_KEYWORDS = {
-    "gateway": "⚠ Gateway/messaging — this will configure OmniWorker to use your OmniWorker messaging channels",
-    "telegram": "⚠ Telegram — this will point OmniWorker at your OmniWorker Telegram bot",
-    "slack": "⚠ Slack — this will point OmniWorker at your OmniWorker Slack workspace",
-    "discord": "⚠ Discord — this will point OmniWorker at your OmniWorker Discord bot",
-    "whatsapp": "⚠ WhatsApp — this will point OmniWorker at your OmniWorker WhatsApp connection",
-    "config": "⚠ Config values — OmniWorker settings may not map 1:1 to OmniWorker equivalents",
-    "soul": "⚠ Instruction file — may contain OmniWorker-specific setup/restart procedures",
-    "memory": "⚠ Memory/context file — may reference OmniWorker-specific infrastructure",
-    "context": "⚠ Context file — may contain OmniWorker-specific instructions",
+    "gateway": "⚠ Gateway/messaging — this will configure OmniWorker to use your OpenClaw messaging channels",
+    "telegram": "⚠ Telegram — this will point OmniWorker at your OpenClaw Telegram bot",
+    "slack": "⚠ Slack — this will point OmniWorker at your OpenClaw Slack workspace",
+    "discord": "⚠ Discord — this will point OmniWorker at your OpenClaw Discord bot",
+    "whatsapp": "⚠ WhatsApp — this will point OmniWorker at your OpenClaw WhatsApp connection",
+    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to OmniWorker equivalents",
+    "soul": "⚠ Instruction file — may contain OpenClaw-specific setup/restart procedures",
+    "memory": "⚠ Memory/context file — may reference OpenClaw-specific infrastructure",
+    "context": "⚠ Context file — may contain OpenClaw-specific instructions",
 }
 
 
@@ -2886,36 +2976,36 @@ def _print_migration_preview(report: dict):
         for warning in sorted(warnings_shown):
             print(color(f"    {warning}", Colors.YELLOW))
         print()
-        print(color("  Note: OmniWorker config values may have different semantics in OmniWorker.", Colors.YELLOW))
-        print(color("  For example, OmniWorker's tool_call_execution: \"auto\" ≠ OmniWorker's yolo mode.", Colors.YELLOW))
-        print(color("  Instruction files (.md) from OmniWorker may contain incompatible procedures.", Colors.YELLOW))
+        print(color("  Note: OpenClaw config values may have different semantics in OmniWorker.", Colors.YELLOW))
+        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ OmniWorker's yolo mode.", Colors.YELLOW))
+        print(color("  Instruction files (.md) from OpenClaw may contain incompatible procedures.", Colors.YELLOW))
         print()
 
 
-def _offer_omniworker_migration(omniworker_home: Path) -> bool:
-    """Detect ~/.omniworker and offer to migrate during first-time setup.
+def _offer_openclaw_migration(omniworker_home: Path) -> bool:
+    """Detect ~/.openclaw and offer to migrate during first-time setup.
 
     Runs a dry-run first to show the user exactly what would be imported,
     overwritten, or taken over. Only executes after explicit confirmation.
 
     Returns True if migration ran successfully, False otherwise.
     """
-    omniworker_dir = Path.home() / ".omniworker"
-    if not omniworker_dir.is_dir():
+    openclaw_dir = Path.home() / ".openclaw"
+    if not openclaw_dir.is_dir():
         return False
 
     if not _OPENCLAW_SCRIPT.exists():
         return False
 
     print()
-    print_header("OmniWorker Installation Detected")
-    print_info(f"Found OmniWorker data at {omniworker_dir}")
+    print_header("OpenClaw Installation Detected")
+    print_info(f"Found OpenClaw data at {openclaw_dir}")
     print_info("OmniWorker can preview what would be imported before making any changes.")
     print()
 
     if not prompt_yes_no("Would you like to see what can be imported?", default=True):
         print_info(
-            "Skipping migration. You can run it later with: omniworker claw migrate --dry-run"
+            "Skipping migration. You can run it later with: hermes claw migrate --dry-run"
         )
         return False
 
@@ -2926,20 +3016,20 @@ def _offer_omniworker_migration(omniworker_home: Path) -> bool:
 
     # Load the migration module
     try:
-        mod = _load_omniworker_migration_module()
+        mod = _load_openclaw_migration_module()
         if mod is None:
             print_warning("Could not load migration script.")
             return False
     except Exception as e:
         print_warning(f"Could not load migration script: {e}")
-        logger.debug("OmniWorker migration module load error", exc_info=True)
+        logger.debug("OpenClaw migration module load error", exc_info=True)
         return False
 
     # ── Phase 1: Dry-run preview ──
     try:
         selected = mod.resolve_selected_options(None, None, preset="full")
         dry_migrator = mod.Migrator(
-            source_root=omniworker_dir.resolve(),
+            source_root=openclaw_dir.resolve(),
             target_root=omniworker_home.resolve(),
             execute=False,  # dry-run — no files modified
             workspace_target=None,
@@ -2952,7 +3042,7 @@ def _offer_omniworker_migration(omniworker_home: Path) -> bool:
         preview_report = dry_migrator.migrate()
     except Exception as e:
         print_warning(f"Migration preview failed: {e}")
-        logger.debug("OmniWorker migration preview error", exc_info=True)
+        logger.debug("OpenClaw migration preview error", exc_info=True)
         return False
 
     # Display the full preview
@@ -2961,7 +3051,7 @@ def _offer_omniworker_migration(omniworker_home: Path) -> bool:
 
     if preview_count == 0:
         print()
-        print_info("Nothing to import from OmniWorker.")
+        print_info("Nothing to import from OpenClaw.")
         return False
 
     print()
@@ -2973,7 +3063,7 @@ def _offer_omniworker_migration(omniworker_home: Path) -> bool:
     # ── Phase 2: Confirm and execute ──
     if not prompt_yes_no("Proceed with migration?", default=False):
         print_info(
-            "Migration cancelled. You can run it later with: omniworker claw migrate"
+            "Migration cancelled. You can run it later with: hermes claw migrate"
         )
         print_info(
             "Use --dry-run to preview again, or --preset minimal for a lighter import."
@@ -2984,7 +3074,7 @@ def _offer_omniworker_migration(omniworker_home: Path) -> bool:
     # preserved. The user saw the preview; conflicts are skipped by default.
     try:
         migrator = mod.Migrator(
-            source_root=omniworker_dir.resolve(),
+            source_root=openclaw_dir.resolve(),
             target_root=omniworker_home.resolve(),
             execute=True,
             workspace_target=None,
@@ -2997,7 +3087,7 @@ def _offer_omniworker_migration(omniworker_home: Path) -> bool:
         report = migrator.migrate()
     except Exception as e:
         print_warning(f"Migration failed: {e}")
-        logger.debug("OmniWorker migration error", exc_info=True)
+        logger.debug("OpenClaw migration error", exc_info=True)
         return False
 
     # Print final summary
@@ -3009,9 +3099,9 @@ def _offer_omniworker_migration(omniworker_home: Path) -> bool:
 
     print()
     if migrated:
-        print_success(f"Imported {migrated} item(s) from OmniWorker.")
+        print_success(f"Imported {migrated} item(s) from OpenClaw.")
     if conflicts:
-        print_info(f"Skipped {conflicts} item(s) that already exist in OmniWorker (use omniworker claw migrate --overwrite to force).")
+        print_info(f"Skipped {conflicts} item(s) that already exist in OmniWorker (use hermes claw migrate --overwrite to force).")
     if skipped:
         print_info(f"Skipped {skipped} item(s) (not found or unchanged).")
     if errors:
@@ -3043,13 +3133,13 @@ def run_setup_wizard(args):
     """Run the interactive setup wizard.
 
     Supports full, quick, and section-specific setup:
-      omniworker setup           — full or quick (auto-detected)
-      omniworker setup model     — just model/provider
-      omniworker setup tts       — just text-to-speech
-      omniworker setup terminal  — just terminal backend
-      omniworker setup gateway   — just messaging platforms
-      omniworker setup tools     — just tool configuration
-      omniworker setup agent     — just agent settings
+      hermes setup           — full or quick (auto-detected)
+      hermes setup model     — just model/provider
+      hermes setup tts       — just text-to-speech
+      hermes setup terminal  — just terminal backend
+      hermes setup gateway   — just messaging platforms
+      hermes setup tools     — just tool configuration
+      hermes setup agent     — just agent settings
     """
     from omniworker_cli.config import is_managed, managed_error
     if is_managed():
@@ -3174,7 +3264,7 @@ def run_setup_wizard(args):
         # Existing install — default is the full-wizard reconfigure flow.
         # Every prompt shows the current value as its default, so pressing
         # Enter keeps it.  Opt into `--quick` for the narrow "just fill in
-        # missing items" flow (useful after a partial OmniWorker migration
+        # missing items" flow (useful after a partial OpenClaw migration
         # or when a required API key got cleared).
         if quick_requested:
             _run_quick_setup(config, omniworker_home)
@@ -3186,7 +3276,7 @@ def run_setup_wizard(args):
         print_info("Running the full wizard — each prompt shows your current value.")
         print_info("Press Enter to keep it, or type a new value to change it.")
         print_info("")
-        print_info("Tip: jump straight to a section with 'omniworker setup model|terminal|")
+        print_info("Tip: jump straight to a section with 'hermes setup model|terminal|")
         print_info("     gateway|tools|agent', or fill only missing items with --quick.")
         # Fall through to the "Full Setup — run all sections" block below.
         # --reconfigure is now the default on existing installs; the flag
@@ -3201,8 +3291,8 @@ def run_setup_wizard(args):
             print_info("No existing configuration found — running first-time setup.")
             print()
 
-        # Offer OmniWorker migration before configuration begins
-        migration_ran = _offer_omniworker_migration(omniworker_home)
+        # Offer OpenClaw migration before configuration begins
+        migration_ran = _offer_openclaw_migration(omniworker_home)
         if migration_ran:
             config = load_config()
 
@@ -3222,11 +3312,11 @@ def run_setup_wizard(args):
     print_info(f"Data folder:  {omniworker_home}")
     print_info(f"Install dir:  {PROJECT_ROOT}")
     print()
-    print_info("You can edit these files directly or use 'omniworker config edit'")
+    print_info("You can edit these files directly or use 'hermes config edit'")
 
     if migration_ran:
         print()
-        print_info("Settings were imported from OmniWorker.")
+        print_info("Settings were imported from OpenClaw.")
         print_info("Each section below will show what was imported — press Enter to keep,")
         print_info("or choose to reconfigure if needed.")
 
@@ -3263,7 +3353,7 @@ def _run_first_time_quick_setup(config: dict, omniworker_home, is_existing: bool
     """Streamlined first-time setup: provider, model, terminal & messaging.
 
     Applies sensible defaults for TTS (Edge), agent settings, and tools —
-    the user can customize later via ``omniworker setup <section>``.
+    the user can customize later via ``hermes setup <section>``.
     """
     # Step 1: Model & Provider (essential — skips rotation/vision/TTS)
     setup_model_provider(config, quick=True)
@@ -3282,7 +3372,7 @@ def _run_first_time_quick_setup(config: dict, omniworker_home, is_existing: bool
         "Connect a messaging platform? (Telegram, Discord, etc.)",
         [
             "Set up messaging now (recommended)",
-            "Skip — set up later with 'omniworker setup gateway'",
+            "Skip — set up later with 'hermes setup gateway'",
         ],
         0,
     )
@@ -3294,9 +3384,9 @@ def _run_first_time_quick_setup(config: dict, omniworker_home, is_existing: bool
     print()
     print_success("Setup complete! You're ready to go.")
     print()
-    print_info("  Configure all settings:    omniworker setup")
+    print_info("  Configure all settings:    hermes setup")
     if gateway_choice != 0:
-        print_info("  Connect Telegram/Discord:  omniworker setup gateway")
+        print_info("  Connect Telegram/Discord:  hermes setup gateway")
     print()
 
     _print_setup_summary(config, omniworker_home)
@@ -3333,7 +3423,7 @@ def _run_quick_setup(config: dict, omniworker_home):
     if not has_anything_missing:
         print_success("Everything is configured! Nothing to do.")
         print()
-        print_info("Run 'omniworker setup' and choose 'Full Setup' to reconfigure,")
+        print_info("Run 'hermes setup' and choose 'Full Setup' to reconfigure,")
         print_info("or pick a specific section from the menu.")
         return
 
@@ -3396,7 +3486,7 @@ def _run_quick_setup(config: dict, omniworker_home):
         print()
         print_header("Messaging Platforms")
         print_info("Connect OmniWorker to messaging apps to chat from anywhere.")
-        print_info("You can configure these later with 'omniworker setup gateway'.")
+        print_info("You can configure these later with 'hermes setup gateway'.")
 
         # Group by platform (preserving order)
         platform_order = []

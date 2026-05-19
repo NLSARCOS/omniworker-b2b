@@ -2,20 +2,20 @@
 OmniWorker CLI - Unified command-line interface for OmniWorker Agent.
 
 Provides subcommands for:
-- omniworker chat          - Interactive chat (same as ./omniworker)
-- omniworker gateway       - Run gateway in foreground
-- omniworker gateway start - Start gateway service
-- omniworker gateway stop  - Stop gateway service
-- omniworker setup         - Interactive setup wizard
-- omniworker status        - Show status of all components
-- omniworker cron          - Manage cron jobs
+- hermes chat          - Interactive chat (same as ./hermes)
+- hermes gateway       - Run gateway in foreground
+- hermes gateway start - Start gateway service
+- hermes gateway stop  - Stop gateway service
+- hermes setup         - Interactive setup wizard
+- hermes status        - Show status of all components
+- hermes cron          - Manage cron jobs
 """
 
 import os
 import sys
 
-__version__ = "0.13.0"
-__release_date__ = "2026.5.7"
+__version__ = "0.14.0"
+__release_date__ = "2026.5.16"
 
 
 def _ensure_utf8():

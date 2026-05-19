@@ -1,5 +1,5 @@
 """
-Cron subcommand for omniworker CLI.
+Cron subcommand for hermes CLI.
 
 Handles standalone cron management commands like list, create, edit,
 pause/resume/run/remove, status, and tick.
@@ -46,7 +46,7 @@ def cron_list(show_all: bool = False):
 
     if not jobs:
         print(color("No scheduled jobs.", Colors.DIM))
-        print(color("Create one with 'omniworker cron create ...' or the /cron command in chat.", Colors.DIM))
+        print(color("Create one with 'hermes cron create ...' or the /cron command in chat.", Colors.DIM))
         return
 
     print()
@@ -98,6 +98,9 @@ def cron_list(show_all: bool = False):
         workdir = job.get("workdir")
         if workdir:
             print(f"    Workdir:   {workdir}")
+        profile = job.get("profile")
+        if profile:
+            print(f"    Profile:   {profile}")
 
         # Execution history
         last_status = job.get("last_status")
@@ -118,8 +121,8 @@ def cron_list(show_all: bool = False):
     from omniworker_cli.gateway import find_gateway_pids
     if not find_gateway_pids():
         print(color("  ⚠  Gateway is not running — jobs won't fire automatically.", Colors.YELLOW))
-        print(color("     Start it with: omniworker gateway install", Colors.DIM))
-        print(color("                    sudo omniworker gateway install --system  # Linux servers", Colors.DIM))
+        print(color("     Start it with: hermes gateway install", Colors.DIM))
+        print(color("                    sudo hermes gateway install --system  # Linux servers", Colors.DIM))
         print()
 
 
@@ -144,9 +147,9 @@ def cron_status():
         print(color("✗ Gateway is not running — cron jobs will NOT fire", Colors.RED))
         print()
         print("  To enable automatic execution:")
-        print("    omniworker gateway install    # Install as a user service")
-        print("    sudo omniworker gateway install --system  # Linux servers: boot-time system service")
-        print("    omniworker gateway            # Or run in foreground")
+        print("    hermes gateway install    # Install as a user service")
+        print("    sudo hermes gateway install --system  # Linux servers: boot-time system service")
+        print("    hermes gateway            # Or run in foreground")
 
     print()
 
@@ -174,6 +177,7 @@ def cron_create(args):
         skills=_normalize_skills(getattr(args, "skill", None), getattr(args, "skills", None)),
         script=getattr(args, "script", None),
         workdir=getattr(args, "workdir", None),
+        profile=getattr(args, "profile", None),
         no_agent=getattr(args, "no_agent", False) or None,
     )
     if not result.get("success"):
@@ -191,6 +195,8 @@ def cron_create(args):
         print("  Mode: no-agent (script stdout delivered directly)")
     if job_data.get("workdir"):
         print(f"  Workdir: {job_data['workdir']}")
+    if job_data.get("profile"):
+        print(f"  Profile: {job_data['profile']}")
     print(f"  Next run: {result['next_run_at']}")
     return 0
 
@@ -236,6 +242,7 @@ def cron_edit(args):
         skills=final_skills,
         script=getattr(args, "script", None),
         workdir=getattr(args, "workdir", None),
+        profile=getattr(args, "profile", None),
         no_agent=getattr(args, "no_agent", None),
     )
     if not result.get("success"):
@@ -256,6 +263,8 @@ def cron_edit(args):
         print("  Mode: no-agent (script stdout delivered directly)")
     if updated.get("workdir"):
         print(f"  Workdir: {updated['workdir']}")
+    if updated.get("profile"):
+        print(f"  Profile: {updated['profile']}")
     return 0
 
 
@@ -309,5 +318,5 @@ def cron_command(args):
         return _job_action("remove", args.job_id, "Removed")
 
     print(f"Unknown cron command: {subcmd}")
-    print("Usage: omniworker cron [list|create|edit|pause|resume|run|remove|status|tick]")
+    print("Usage: hermes cron [list|create|edit|pause|resume|run|remove|status|tick]")
     sys.exit(1)

@@ -45,7 +45,7 @@ def _get_allowed() -> set[str]:
 _config_passthrough: frozenset[str] | None = None
 
 
-def _is_omniworker_provider_credential(name: str) -> bool:
+def _is_hermes_provider_credential(name: str) -> bool:
     """True if ``name`` is a OmniWorker-managed provider credential (API key,
     token, or similar) per ``_OMNIWORKER_PROVIDER_ENV_BLOCKLIST``.
 
@@ -87,7 +87,7 @@ def register_env_passthrough(var_names: Iterable[str]) -> None:
         name = name.strip()
         if not name:
             continue
-        if _is_omniworker_provider_credential(name):
+        if _is_hermes_provider_credential(name):
             logger.warning(
                 "env passthrough: refusing to register OmniWorker provider "
                 "credential %r (blocked by _OMNIWORKER_PROVIDER_ENV_BLOCKLIST). "

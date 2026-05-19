@@ -55,7 +55,7 @@ def _resolve_omniworker_home() -> Path:
 
 def register_credential_file(
     relative_path: str,
-    container_base: str = "/root/.omniworker",
+    container_base: str = "/root/.hermes",
 ) -> bool:
     """Register a credential file for mounting into remote sandboxes.
 
@@ -105,7 +105,7 @@ def register_credential_file(
 
 def register_credential_files(
     entries: list,
-    container_base: str = "/root/.omniworker",
+    container_base: str = "/root/.hermes",
 ) -> List[str]:
     """Register multiple credential files from skill frontmatter entries.
 
@@ -161,7 +161,7 @@ def _load_config_files() -> List[Dict[str, str]]:
                         continue
                     resolved_path = host_path.resolve()
                     if resolved_path.is_file():
-                        container_path = f"/root/.omniworker/{rel}"
+                        container_path = f"/root/.hermes/{rel}"
                         result.append({
                             "host_path": str(resolved_path),
                             "container_path": container_path,
@@ -200,7 +200,7 @@ def get_credential_file_mounts() -> List[Dict[str, str]]:
 
 
 def get_skills_directory_mount(
-    container_base: str = "/root/.omniworker",
+    container_base: str = "/root/.hermes",
 ) -> list[Dict[str, str]]:
     """Return mount info for all skill directories (local + external).
 
@@ -267,7 +267,7 @@ def _safe_skills_path(skills_dir: Path) -> str:
     if _safe_skills_tempdir and _safe_skills_tempdir.is_dir():
         shutil.rmtree(_safe_skills_tempdir, ignore_errors=True)
 
-    safe_dir = Path(tempfile.mkdtemp(prefix="omniworker-skills-safe-"))
+    safe_dir = Path(tempfile.mkdtemp(prefix="hermes-skills-safe-"))
     _safe_skills_tempdir = safe_dir
 
     for item in skills_dir.rglob("*"):
@@ -291,7 +291,7 @@ def _safe_skills_path(skills_dir: Path) -> str:
 
 
 def iter_skills_files(
-    container_base: str = "/root/.omniworker",
+    container_base: str = "/root/.hermes",
 ) -> List[Dict[str, str]]:
     """Yield individual (host_path, container_path) entries for skills files.
 
@@ -341,7 +341,7 @@ def iter_skills_files(
 # ---------------------------------------------------------------------------
 
 # The four cache subdirectories that should be mirrored into remote backends.
-# Each tuple is (new_subpath, old_name) matching omniworker_constants.get_omniworker_dir().
+# Each tuple is (new_subpath, old_name) matching omniworker_constants.get_hermes_dir().
 _CACHE_DIRS: list[tuple[str, str]] = [
     ("cache/documents", "document_cache"),
     ("cache/images", "image_cache"),
@@ -351,19 +351,19 @@ _CACHE_DIRS: list[tuple[str, str]] = [
 
 
 def get_cache_directory_mounts(
-    container_base: str = "/root/.omniworker",
+    container_base: str = "/root/.hermes",
 ) -> List[Dict[str, str]]:
     """Return mount entries for each cache directory that exists on disk.
 
     Used by Docker to create bind mounts.  Each entry has ``host_path`` and
     ``container_path`` keys.  The host path is resolved via
-    ``get_omniworker_dir()`` for backward compatibility with old directory layouts.
+    ``get_hermes_dir()`` for backward compatibility with old directory layouts.
     """
-    from omniworker_constants import get_omniworker_dir
+    from omniworker_constants import get_hermes_dir
 
     mounts: List[Dict[str, str]] = []
     for new_subpath, old_name in _CACHE_DIRS:
-        host_dir = get_omniworker_dir(new_subpath, old_name)
+        host_dir = get_hermes_dir(new_subpath, old_name)
         if host_dir.is_dir():
             # Always map to the *new* container layout regardless of host layout.
             container_path = f"{container_base.rstrip('/')}/{new_subpath}"
@@ -376,7 +376,7 @@ def get_cache_directory_mounts(
 
 def to_agent_visible_cache_path(
     host_path: str,
-    container_base: str = "/root/.omniworker",
+    container_base: str = "/root/.hermes",
 ) -> str:
     """Translate a host cache path to its mounted path inside the sandbox.
 
@@ -403,18 +403,18 @@ def to_agent_visible_cache_path(
 
 
 def iter_cache_files(
-    container_base: str = "/root/.omniworker",
+    container_base: str = "/root/.hermes",
 ) -> List[Dict[str, str]]:
     """Return individual (host_path, container_path) entries for cache files.
 
     Used by Modal to upload files individually and resync before each command.
     Skips symlinks.  The container paths use the new ``cache/<subdir>`` layout.
     """
-    from omniworker_constants import get_omniworker_dir
+    from omniworker_constants import get_hermes_dir
 
     result: List[Dict[str, str]] = []
     for new_subpath, old_name in _CACHE_DIRS:
-        host_dir = get_omniworker_dir(new_subpath, old_name)
+        host_dir = get_hermes_dir(new_subpath, old_name)
         if not host_dir.is_dir():
             continue
         container_root = f"{container_base.rstrip('/')}/{new_subpath}"

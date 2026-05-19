@@ -13,7 +13,7 @@ def _omniworker_home_path() -> Path:
         from omniworker_constants import get_omniworker_home  # local import to avoid cycles
         return get_omniworker_home()
     except Exception:
-        return Path(os.path.expanduser("~/.omniworker"))
+        return Path(os.path.expanduser("~/.hermes"))
 
 
 def build_write_denied_paths(home: str) -> set[str]:

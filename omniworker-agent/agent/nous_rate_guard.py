@@ -32,7 +32,7 @@ def _state_path() -> str:
         from omniworker_constants import get_omniworker_home
         base = get_omniworker_home()
     except ImportError:
-        base = os.path.join(os.path.expanduser("~"), ".omniworker")
+        base = os.path.join(os.path.expanduser("~"), ".hermes")
     return os.path.join(base, _STATE_SUBDIR, _STATE_FILENAME)
 
 

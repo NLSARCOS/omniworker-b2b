@@ -5,7 +5,7 @@ Starts a stdio MCP server that lets any MCP client (Claude Code, Cursor, Codex,
 etc.) list conversations, read message history, send messages, poll for live
 events, and manage approval requests across all connected platforms.
 
-Matches OmniWorker's 9-tool MCP channel bridge surface:
+Matches OpenClaw's 9-tool MCP channel bridge surface:
   conversations_list, conversation_get, messages_read, attachments_fetch,
   events_poll, events_wait, messages_send, permissions_list_open,
   permissions_respond
@@ -13,14 +13,14 @@ Matches OmniWorker's 9-tool MCP channel bridge surface:
 Plus: channels_list (OmniWorker-specific extra)
 
 Usage:
-    omniworker mcp serve
-    omniworker mcp serve --verbose
+    hermes mcp serve
+    hermes mcp serve --verbose
 
 MCP client config (e.g. claude_desktop_config.json):
     {
         "mcpServers": {
-            "omniworker": {
-                "command": "omniworker",
+            "hermes": {
+                "command": "hermes",
                 "args": ["mcp", "serve"]
             }
         }
@@ -40,7 +40,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
-logger = logging.getLogger("omniworker.mcp_serve")
+logger = logging.getLogger("hermes.mcp_serve")
 
 # ---------------------------------------------------------------------------
 # Lazy MCP SDK import
@@ -65,7 +65,7 @@ def _get_sessions_dir() -> Path:
         from omniworker_constants import get_omniworker_home
         return get_omniworker_home() / "sessions"
     except ImportError:
-        return Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".omniworker")) / "sessions"
+        return Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")) / "sessions"
 
 
 def _get_session_db():
@@ -102,7 +102,7 @@ def _load_channel_directory() -> dict:
         directory_file = get_omniworker_home() / "channel_directory.json"
     except ImportError:
         directory_file = Path(
-            os.environ.get("OMNIWORKER_HOME", Path.home() / ".omniworker")
+            os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")
         ) / "channel_directory.json"
 
     if not directory_file.exists():
@@ -205,7 +205,7 @@ class EventBridge:
     """Background poller that watches SessionDB for new messages and
     maintains an in-memory event queue with waiter support.
 
-    This is the OmniWorker equivalent of OmniWorker's WebSocket gateway bridge.
+    This is the OmniWorker equivalent of OpenClaw's WebSocket gateway bridge.
     Instead of WebSocket events, we poll the SQLite database for changes.
     """
 
@@ -365,7 +365,7 @@ class EventBridge:
             from omniworker_constants import get_omniworker_home
             db_file = get_omniworker_home() / "state.db"
         except ImportError:
-            db_file = Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".omniworker")) / "state.db"
+            db_file = Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")) / "state.db"
 
         try:
             db_mtime = db_file.stat().st_mtime if db_file.exists() else 0.0
@@ -456,7 +456,7 @@ def create_mcp_server(event_bridge: Optional[EventBridge] = None) -> "FastMCP":
         )
 
     mcp = FastMCP(
-        "omniworker",
+        "hermes",
         instructions=(
             "OmniWorker Agent messaging bridge. Use these tools to interact with "
             "conversations across Telegram, Discord, Slack, WhatsApp, Signal, "

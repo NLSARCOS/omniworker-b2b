@@ -1,5 +1,5 @@
 """
-Top-level argparse construction for the omniworker CLI.
+Top-level argparse construction for the hermes CLI.
 
 Lives in its own module so other modules (e.g. ``relaunch.py``) can
 introspect the parser to discover which flags exist without running the
@@ -39,43 +39,43 @@ def _inherited_flag(parser, *args, **kwargs):
 
 _EPILOGUE = """
 Examples:
-    omniworker                        Start interactive chat
-    omniworker chat -q "Hello"        Single query mode
-    omniworker -c                     Resume the most recent session
-    omniworker -c "my project"        Resume a session by name (latest in lineage)
-    omniworker --resume <session_id>  Resume a specific session by ID
-    omniworker setup                  Run setup wizard
-    omniworker logout                 Clear stored authentication
-    omniworker auth add <provider>    Add a pooled credential
-    omniworker auth list              List pooled credentials
-    omniworker auth remove <p> <t>    Remove pooled credential by index, id, or label
-    omniworker auth reset <provider>  Clear exhaustion status for a provider
-    omniworker model                  Select default model
-    omniworker fallback [list]        Show fallback provider chain
-    omniworker fallback add           Add a fallback provider (same picker as `omniworker model`)
-    omniworker fallback remove        Remove a fallback provider from the chain
-    omniworker config                 View configuration
-    omniworker config edit            Edit config in $EDITOR
-    omniworker config set model gpt-4 Set a config value
-    omniworker gateway                Run messaging gateway
-    omniworker -s omniworker-agent-dev,github-auth
-    omniworker -w                     Start in isolated git worktree
-    omniworker gateway install        Install gateway background service
-    omniworker sessions list          List past sessions
-    omniworker sessions browse        Interactive session picker
-    omniworker sessions rename ID T   Rename/title a session
-    omniworker logs                   View agent.log (last 50 lines)
-    omniworker logs -f                Follow agent.log in real time
-    omniworker logs errors            View errors.log
-    omniworker logs --since 1h        Lines from the last hour
-    omniworker debug share             Upload debug report for support
-    omniworker update                 Update to latest version
-    omniworker dashboard              Start web UI dashboard (port 9119)
-    omniworker dashboard --stop       Stop running dashboard processes
-    omniworker dashboard --status     List running dashboard processes
+    hermes                        Start interactive chat
+    hermes chat -q "Hello"        Single query mode
+    hermes -c                     Resume the most recent session
+    hermes -c "my project"        Resume a session by name (latest in lineage)
+    hermes --resume <session_id>  Resume a specific session by ID
+    hermes setup                  Run setup wizard
+    hermes logout                 Clear stored authentication
+    hermes auth add <provider>    Add a pooled credential
+    hermes auth list              List pooled credentials
+    hermes auth remove <p> <t>    Remove pooled credential by index, id, or label
+    hermes auth reset <provider>  Clear exhaustion status for a provider
+    hermes model                  Select default model
+    hermes fallback [list]        Show fallback provider chain
+    hermes fallback add           Add a fallback provider (same picker as `hermes model`)
+    hermes fallback remove        Remove a fallback provider from the chain
+    hermes config                 View configuration
+    hermes config edit            Edit config in $EDITOR
+    hermes config set model gpt-4 Set a config value
+    hermes gateway                Run messaging gateway
+    hermes -s hermes-agent-dev,github-auth
+    hermes -w                     Start in isolated git worktree
+    hermes gateway install        Install gateway background service
+    hermes sessions list          List past sessions
+    hermes sessions browse        Interactive session picker
+    hermes sessions rename ID T   Rename/title a session
+    hermes logs                   View agent.log (last 50 lines)
+    hermes logs -f                Follow agent.log in real time
+    hermes logs errors            View errors.log
+    hermes logs --since 1h        Lines from the last hour
+    hermes debug share             Upload debug report for support
+    hermes update                 Update to latest version
+    hermes dashboard              Start web UI dashboard (port 9119)
+    hermes dashboard --stop       Stop running dashboard processes
+    hermes dashboard --status     List running dashboard processes
 
 For more help on a command:
-    omniworker <command> --help
+    hermes <command> --help
 """
 
 
@@ -87,7 +87,7 @@ def build_top_level_parser():
     other subparsers via ``subparsers.add_parser(...)``.
     """
     parser = argparse.ArgumentParser(
-        prog="omniworker",
+        prog="hermes",
         description="OmniWorker Agent - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_EPILOGUE,
@@ -112,7 +112,7 @@ def build_top_level_parser():
     # --model / --provider are accepted at the top level so they can pair
     # with -z without needing the `chat` subcommand.  If neither -z nor a
     # subcommand consumes them, they fall through harmlessly as None.
-    # Mirrors `omniworker chat --model ... --provider ...` semantics.
+    # Mirrors `hermes chat --model ... --provider ...` semantics.
     _inherited_flag(
         parser,
         "-m",
@@ -201,7 +201,7 @@ def build_top_level_parser():
         "--ignore-user-config",
         action="store_true",
         default=False,
-        help="Ignore ~/.omniworker/config.yaml and fall back to built-in defaults (credentials in .env are still loaded)",
+        help="Ignore ~/.hermes/config.yaml and fall back to built-in defaults (credentials in .env are still loaded)",
     )
     _inherited_flag(
         parser,
@@ -343,7 +343,7 @@ def build_top_level_parser():
         "--ignore-user-config",
         action="store_true",
         default=argparse.SUPPRESS,
-        help="Ignore ~/.omniworker/config.yaml and fall back to built-in defaults (credentials in .env are still loaded). Useful for isolated CI runs, reproduction, and third-party integrations.",
+        help="Ignore ~/.hermes/config.yaml and fall back to built-in defaults (credentials in .env are still loaded). Useful for isolated CI runs, reproduction, and third-party integrations.",
     )
     _inherited_flag(
         chat_parser,

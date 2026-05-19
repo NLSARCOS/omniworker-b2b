@@ -173,7 +173,7 @@ def _normalize_string_set(values) -> Set[str]:
 # (config_path_str, mtime_ns) -> resolved external dirs list.  Keyed by
 # mtime_ns so a config.yaml edit mid-run is picked up automatically;
 # otherwise every call would re-read + re-YAML-parse the 15KB config,
-# which becomes the dominant cost of ``omniworker`` startup when ~120 skills
+# which becomes the dominant cost of ``hermes`` startup when ~120 skills
 # each trigger a category lookup during banner construction (10+ seconds
 # of pure waste).
 _EXTERNAL_DIRS_CACHE: Dict[Tuple[str, int], List[Path]] = {}
@@ -189,11 +189,11 @@ def get_external_skills_dirs() -> List[Path]:
 
     Each entry is expanded (``~`` and ``${VAR}``) and resolved to an absolute
     path.  Only directories that actually exist are returned.  Duplicates and
-    paths that resolve to the local ``~/.omniworker/skills/`` are silently skipped.
+    paths that resolve to the local ``~/.hermes/skills/`` are silently skipped.
 
     Cached in-process, keyed on ``config.yaml`` mtime — the function is
     called once per skill during banner / tool-registry scans, and YAML
-    parsing a non-trivial config dominates ``omniworker`` cold-start time
+    parsing a non-trivial config dominates ``hermes`` cold-start time
     when the cache is absent.
     """
     config_path = get_config_path()
@@ -271,7 +271,7 @@ def get_external_skills_dirs() -> List[Path]:
 
 
 def get_all_skills_dirs() -> List[Path]:
-    """Return all skill directories: local ``~/.omniworker/skills/`` first, then external.
+    """Return all skill directories: local ``~/.hermes/skills/`` first, then external.
 
     The local dir is always first (and always included even if it doesn't exist
     yet — callers handle that).  External dirs follow in config order.
@@ -290,14 +290,14 @@ def extract_skill_conditions(frontmatter: Dict[str, Any]) -> Dict[str, List]:
     # Handle cases where metadata is not a dict (e.g., a string from malformed YAML)
     if not isinstance(metadata, dict):
         metadata = {}
-    omniworker = metadata.get("omniworker") or {}
-    if not isinstance(omniworker, dict):
-        omniworker = {}
+    hermes = metadata.get("hermes") or {}
+    if not isinstance(hermes, dict):
+        hermes = {}
     return {
-        "fallback_for_toolsets": omniworker.get("fallback_for_toolsets", []),
-        "requires_toolsets": omniworker.get("requires_toolsets", []),
-        "fallback_for_tools": omniworker.get("fallback_for_tools", []),
-        "requires_tools": omniworker.get("requires_tools", []),
+        "fallback_for_toolsets": hermes.get("fallback_for_toolsets", []),
+        "requires_toolsets": hermes.get("requires_toolsets", []),
+        "fallback_for_tools": hermes.get("fallback_for_tools", []),
+        "requires_tools": hermes.get("requires_tools", []),
     }
 
 
@@ -310,7 +310,7 @@ def extract_skill_config_vars(frontmatter: Dict[str, Any]) -> List[Dict[str, Any
     Skills declare config.yaml settings they need via::
 
         metadata:
-          omniworker:
+          hermes:
             config:
               - key: wiki.path
                 description: Path to the LLM Wiki knowledge base directory
@@ -323,10 +323,10 @@ def extract_skill_config_vars(frontmatter: Dict[str, Any]) -> List[Dict[str, Any
     metadata = frontmatter.get("metadata")
     if not isinstance(metadata, dict):
         return []
-    omniworker = metadata.get("omniworker")
-    if not isinstance(omniworker, dict):
+    hermes = metadata.get("hermes")
+    if not isinstance(hermes, dict):
         return []
-    raw = omniworker.get("config")
+    raw = hermes.get("config")
     if not raw:
         return []
     if isinstance(raw, dict):

@@ -5,7 +5,7 @@ Provides PID-file based detection of whether the gateway daemon is running,
 used by send_message's check_fn to gate availability in the CLI.
 
 The PID file lives at ``{OMNIWORKER_HOME}/gateway.pid``.  OMNIWORKER_HOME defaults to
-``~/.omniworker`` but can be overridden via the environment variable.  This means
+``~/.hermes`` but can be overridden via the environment variable.  This means
 separate OMNIWORKER_HOME directories naturally get separate PID files — a property
 that will be useful when we add named profiles (multiple agents running
 concurrently under distinct configurations).
@@ -28,7 +28,7 @@ if sys.platform == "win32":
 else:
     import fcntl
 
-_GATEWAY_KIND = "omniworker-gateway"
+_GATEWAY_KIND = "hermes-gateway"
 _RUNTIME_STATUS_FILE = "gateway_state.json"
 _LOCKS_DIRNAME = "gateway-locks"
 _IS_WINDOWS = sys.platform == "win32"
@@ -66,7 +66,7 @@ def _get_lock_dir() -> Path:
     if override:
         return Path(override)
     state_home = Path(os.getenv("XDG_STATE_HOME", Path.home() / ".local" / "state"))
-    return state_home / "omniworker" / _LOCKS_DIRNAME
+    return state_home / "hermes" / _LOCKS_DIRNAME
 
 
 def _utc_now_iso() -> str:
@@ -173,8 +173,8 @@ def _looks_like_gateway_process(pid: int) -> bool:
     patterns = (
         "omniworker_cli.main gateway",
         "omniworker_cli/main.py gateway",
-        "omniworker gateway",
-        "omniworker-gateway",
+        "hermes gateway",
+        "hermes-gateway",
         "gateway/run.py",
     )
     return any(pattern in cmdline for pattern in patterns)
@@ -194,7 +194,7 @@ def _record_looks_like_gateway(record: dict[str, Any]) -> bool:
     patterns = (
         "omniworker_cli.main gateway",
         "omniworker_cli/main.py gateway",
-        "omniworker gateway",
+        "hermes gateway",
         "gateway/run.py",
     )
     return any(pattern in cmdline for pattern in patterns)
@@ -747,7 +747,7 @@ def release_all_scoped_locks(
 # unexpected kills — but that also means a --replace takeover target
 # exits 1, which tricks systemd into reviving it 30 seconds later,
 # starting a flap loop against the replacer when both services are
-# enabled in the user's systemd (e.g. ``omniworker.service`` + ``omniworker-
+# enabled in the user's systemd (e.g. ``hermes.service`` + ``hermes-
 # gateway.service``).
 #
 # The takeover marker breaks the loop: the replacer writes a short-lived

@@ -1,4 +1,4 @@
-"""Shell completion script generation for omniworker CLI.
+"""Shell completion script generation for hermes CLI.
 
 Walks the live argparse parser tree to generate accurate, always-up-to-date
 completion scripts — no hardcoded subcommand lists, no extra dependencies.
@@ -72,7 +72,7 @@ def generate_bash(parser: argparse.ArgumentParser) -> str:
                 f"                    return\n"
                 f"                    ;;\n"
                 f"                {profile_actions.replace(' ', '|')})\n"
-                f"                    COMPREPLY=($(compgen -W \"$(_omniworker_profiles)\" -- \"$cur\"))\n"
+                f"                    COMPREPLY=($(compgen -W \"$(_hermes_profiles)\" -- \"$cur\"))\n"
                 f"                    return\n"
                 f"                    ;;\n"
                 f"            esac\n"
@@ -99,10 +99,10 @@ def generate_bash(parser: argparse.ArgumentParser) -> str:
 
     return f"""# OmniWorker Agent bash completion
 # Add to ~/.bashrc:
-#   eval "$(omniworker completion bash)"
+#   eval "$(hermes completion bash)"
 
-_omniworker_profiles() {{
-    local profiles_dir="$HOME/.omniworker/profiles"
+_hermes_profiles() {{
+    local profiles_dir="$HOME/.hermes/profiles"
     local profiles="default"
     if [ -d "$profiles_dir" ]; then
         profiles="$profiles $(ls "$profiles_dir" 2>/dev/null)"
@@ -110,7 +110,7 @@ _omniworker_profiles() {{
     echo "$profiles"
 }}
 
-_omniworker_completion() {{
+_hermes_completion() {{
     local cur prev
     COMPREPLY=()
     cur="${{COMP_WORDS[COMP_CWORD]}}"
@@ -118,7 +118,7 @@ _omniworker_completion() {{
 
     # Complete profile names after -p / --profile
     if [[ "$prev" == "-p" || "$prev" == "--profile" ]]; then
-        COMPREPLY=($(compgen -W "$(_omniworker_profiles)" -- "$cur"))
+        COMPREPLY=($(compgen -W "$(_hermes_profiles)" -- "$cur"))
         return
     fi
 
@@ -133,7 +133,7 @@ _omniworker_completion() {{
     fi
 }}
 
-complete -F _omniworker_completion omniworker
+complete -F _hermes_completion hermes
 """
 
 
@@ -167,7 +167,7 @@ def generate_zsh(parser: argparse.ArgumentParser) -> str:
                 f"                profile)\n"
                 f"                    case ${{line[2]}} in\n"
                 f"                        use|delete|show|alias|rename|export)\n"
-                f"                            _omniworker_profiles\n"
+                f"                            _hermes_profiles\n"
                 f"                            ;;\n"
                 f"                        *)\n"
                 f"                            local -a profile_cmds\n"
@@ -197,28 +197,28 @@ def generate_zsh(parser: argparse.ArgumentParser) -> str:
             )
     sub_cases_str = "\n".join(sub_cases)
 
-    return f"""#compdef omniworker
+    return f"""#compdef hermes
 # OmniWorker Agent zsh completion
 # Add to ~/.zshrc:
-#   eval "$(omniworker completion zsh)"
+#   eval "$(hermes completion zsh)"
 
-_omniworker_profiles() {{
+_hermes_profiles() {{
     local -a profiles
     profiles=(default)
-    if [[ -d "$HOME/.omniworker/profiles" ]]; then
-        profiles+=("${{(@f)$(ls $HOME/.omniworker/profiles 2>/dev/null)}}")
+    if [[ -d "$HOME/.hermes/profiles" ]]; then
+        profiles+=("${{(@f)$(ls $HOME/.hermes/profiles 2>/dev/null)}}")
     fi
     _describe 'profile' profiles
 }}
 
-_omniworker() {{
+_hermes() {{
     local context state line
     typeset -A opt_args
 
     _arguments -C \\
         '(-)'{{-h,--help}}'[Show help and exit]' \\
         '(-)'{{-V,--version}}'[Show version and exit]' \\
-        '(-)'{{-p,--profile}}'[Profile name]:profile:_omniworker_profiles' \\
+        '(-)'{{-p,--profile}}'[Profile name]:profile:_hermes_profiles' \\
         '1:command:->commands' \\
         '*::arg:->args'
 
@@ -228,7 +228,7 @@ _omniworker() {{
             subcmds=(
 {top_cmds_str}
             )
-            _describe 'omniworker command' subcmds
+            _describe 'hermes command' subcmds
             ;;
         args)
             case ${{line[1]}} in
@@ -238,7 +238,7 @@ _omniworker() {{
     esac
 }}
 
-compdef _omniworker omniworker
+compdef _hermes hermes
 """
 
 
@@ -254,22 +254,22 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
     lines: list[str] = [
         "# OmniWorker Agent fish completion",
         "# Add to your config:",
-        "#   omniworker completion fish | source",
+        "#   hermes completion fish | source",
         "",
         "# Helper: list available profiles",
-        "function __omniworker_profiles",
+        "function __hermes_profiles",
         "    echo default",
-        "    if test -d $HOME/.omniworker/profiles",
-        "        ls $HOME/.omniworker/profiles 2>/dev/null",
+        "    if test -d $HOME/.hermes/profiles",
+        "        ls $HOME/.hermes/profiles 2>/dev/null",
         "    end",
         "end",
         "",
         "# Disable file completion by default",
-        "complete -c omniworker -f",
+        "complete -c hermes -f",
         "",
         "# Complete profile names after -p / --profile",
-        "complete -c omniworker -f -s p -l profile"
-        " -d 'Profile name' -xa '(__omniworker_profiles)'",
+        "complete -c hermes -f -s p -l profile"
+        " -d 'Profile name' -xa '(__hermes_profiles)'",
         "",
         "# Top-level subcommands",
     ]
@@ -278,7 +278,7 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
         info = tree["subcommands"][cmd]
         help_text = _clean(info.get("help", ""))
         lines.append(
-            f"complete -c omniworker -f "
+            f"complete -c hermes -f "
             f"-n 'not __fish_seen_subcommand_from {top_cmds_str}' "
             f"-a {cmd} -d '{help_text}'"
         )
@@ -297,7 +297,7 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
             sinfo = info["subcommands"][sc]
             sh = _clean(sinfo.get("help", ""))
             lines.append(
-                f"complete -c omniworker -f "
+                f"complete -c hermes -f "
                 f"-n '__fish_seen_subcommand_from {cmd}' "
                 f"-a {sc} -d '{sh}'"
             )
@@ -305,10 +305,10 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
         if cmd == "profile":
             for action in sorted(profile_name_actions):
                 lines.append(
-                    f"complete -c omniworker -f "
+                    f"complete -c hermes -f "
                     f"-n '__fish_seen_subcommand_from {action}; "
                     f"and __fish_seen_subcommand_from profile' "
-                    f"-a '(__omniworker_profiles)' -d 'Profile name'"
+                    f"-a '(__hermes_profiles)' -d 'Profile name'"
                 )
 
     lines.append("")

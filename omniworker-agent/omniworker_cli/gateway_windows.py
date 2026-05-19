@@ -21,7 +21,7 @@ Design notes
   command keeps working regardless of which install path was taken.
 * Quoting is tricky: schtasks parses ``/TR`` itself and cmd.exe parses the
   generated ``gateway.cmd``. Those are DIFFERENT parsers. We keep two
-  separate quote helpers (same pattern OmniWorker uses) and never cross them.
+  separate quote helpers (same pattern OpenClaw uses) and never cross them.
 * All of this is Windows-only. ``import`` paths are still safe on POSIX but
   the functions raise if called on non-Windows.
 """
@@ -99,7 +99,7 @@ def _exec_schtasks(args: list[str]) -> tuple[int, str, str]:
     """Run ``schtasks.exe`` with a hard timeout. Return (code, stdout, stderr).
 
     If schtasks wedges, returns code=124 with a synthetic stderr string —
-    same convention OmniWorker uses, so the fallback detection regex matches.
+    same convention OpenClaw uses, so the fallback detection regex matches.
     """
     _assert_windows()
     schtasks = shutil.which("schtasks")
@@ -155,7 +155,7 @@ def _sanitize_filename(value: str) -> str:
 def get_task_script_path() -> Path:
     """The generated ``gateway.cmd`` wrapper that the schtasks entry invokes.
 
-    Lives under ``%LOCALAPPDATA%\\omniworker\\gateway-service\\<task_name>.cmd``
+    Lives under ``%LOCALAPPDATA%\\hermes\\gateway-service\\<task_name>.cmd``
     (or ``<OMNIWORKER_HOME>/gateway-service/<task_name>.cmd`` so per-profile
     OmniWorker installs stay self-contained).
     """
@@ -533,7 +533,7 @@ def _print_next_steps() -> None:
     omniworker_home = Path(get_omniworker_home()).resolve()
     print()
     print("Next steps:")
-    print("  omniworker gateway status                      # Check status")
+    print("  hermes gateway status                      # Check status")
     print(f"  type {omniworker_home}\\logs\\gateway.log       # View logs")
 
 
@@ -640,7 +640,7 @@ def status(deep: bool = False) -> None:
     if not task_installed and not startup_installed and not pids:
         print()
         print("To install:")
-        print("  omniworker gateway install")
+        print("  hermes gateway install")
 
 
 def start() -> None:

@@ -2,7 +2,7 @@
 
 Provides a single ``setup_logging()`` entry point that both the CLI and
 gateway call early in their startup path.  All log files live under
-``~/.omniworker/logs/`` (profile-aware via ``get_omniworker_home()``).
+``~/.hermes/logs/`` (profile-aware via ``get_omniworker_home()``).
 
 Log files produced:
     agent.log   — INFO+, all agent/tool/session activity (the main log)
@@ -101,7 +101,7 @@ def _install_session_record_factory() -> None:
     the module is reloaded.
     """
     current_factory = logging.getLogRecordFactory()
-    if getattr(current_factory, "_omniworker_session_injector", False):
+    if getattr(current_factory, "_hermes_session_injector", False):
         return  # already installed
 
     def _session_record_factory(*args, **kwargs):
@@ -110,7 +110,7 @@ def _install_session_record_factory() -> None:
         record.session_tag = f" [{sid}]" if sid else ""  # type: ignore[attr-defined]
         return record
 
-    _session_record_factory._omniworker_session_injector = True  # type: ignore[attr-defined]
+    _session_record_factory._hermes_session_injector = True  # type: ignore[attr-defined]
     logging.setLogRecordFactory(_session_record_factory)
 
 
@@ -139,9 +139,9 @@ class _ComponentFilter(logging.Filter):
 
 
 # Logger name prefixes that belong to each component.
-# Used by _ComponentFilter and exposed for ``omniworker logs --component``.
+# Used by _ComponentFilter and exposed for ``hermes logs --component``.
 COMPONENT_PREFIXES = {
-    "gateway": ("gateway",),
+    "gateway": ("gateway", "hermes_plugins"),
     "agent": ("agent", "run_agent", "model_tools", "batch_runner"),
     "tools": ("tools",),
     "cli": ("omniworker_cli", "cli"),
@@ -271,13 +271,13 @@ def setup_verbose_logging() -> None:
     # Avoid adding duplicate stream handlers.
     for h in root.handlers:
         if isinstance(h, logging.StreamHandler) and not isinstance(h, RotatingFileHandler):
-            if getattr(h, "_omniworker_verbose", False):
+            if getattr(h, "_hermes_verbose", False):
                 return
 
     handler = logging.StreamHandler()
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(RedactingFormatter(_LOG_FORMAT_VERBOSE, datefmt="%H:%M:%S"))
-    handler._omniworker_verbose = True  # type: ignore[attr-defined]
+    handler._hermes_verbose = True  # type: ignore[attr-defined]
     root.addHandler(handler)
 
     # Lower root logger level so DEBUG records reach all handlers.
@@ -299,7 +299,7 @@ class _ManagedRotatingFileHandler(RotatingFileHandler):
     """RotatingFileHandler that ensures group-writable perms in managed mode.
 
     In managed mode (NixOS), the stateDir uses setgid (2770) so new files
-    inherit the omniworker group. However, both _open() (initial creation) and
+    inherit the hermes group. However, both _open() (initial creation) and
     doRollover() create files via open(), which uses the process umask —
     typically 0022, producing 0644. This subclass applies chmod 0660 after
     both operations so the gateway and interactive users can share log files.

@@ -1,7 +1,7 @@
 """OmniWorker CLI skin/theme engine.
 
 A data-driven skin system that lets users customize the CLI's visual appearance.
-Skins are defined as YAML files in ~/.omniworker/skins/ or as built-in presets.
+Skins are defined as YAML files in ~/.hermes/skins/ or as built-in presets.
 No code changes are needed to add a new skin.
 
 SKIN YAML SCHEMA
@@ -93,7 +93,7 @@ USAGE
     print(skin.get_branding("agent_name"))  # "OmniWorker Agent"
 
     set_active_skin("ares")               # Switch to built-in ares skin
-    set_active_skin("mytheme")            # Switch to user skin from ~/.omniworker/skins/
+    set_active_skin("mytheme")            # Switch to user skin from ~/.hermes/skins/
 
 BUILT-IN SKINS
 ==============
@@ -108,7 +108,7 @@ BUILT-IN SKINS
 USER SKINS
 ==========
 
-Drop a YAML file in ``~/.omniworker/skins/<name>.yaml`` following the schema above.
+Drop a YAML file in ``~/.hermes/skins/<name>.yaml`` following the schema above.
 Activate with ``/skin <name>`` in the CLI or ``display.skin: <name>`` in config.yaml.
 """
 
@@ -572,7 +572,7 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
             "banner_border": "#C75B1D",
             "banner_title": "#FFD39A",
             "banner_accent": "#F29C38",
-            "banner_dim": "#7A3511",
+            "banner_dim": "#C58A45",
             "banner_text": "#FFF0D4",
             "ui_accent": "#F29C38",
             "ui_label": "#FFD39A",
@@ -592,6 +592,11 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
             "status_bar_critical": "#EF5350",
             "session_label": "#FFD39A",
             "session_border": "#6C4724",
+            "selection_bg": "#5A260D",
+            "completion_menu_bg": "#0B0503",
+            "completion_menu_current_bg": "#4A1B07",
+            "completion_menu_meta_bg": "#120806",
+            "completion_menu_meta_current_bg": "#5A260D",
         },
         "spinner": {
             "waiting_faces": ["(✦)", "(▲)", "(◇)", "(<>)", "(🔥)"],

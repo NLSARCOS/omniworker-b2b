@@ -17,7 +17,7 @@ from utils import atomic_replace
 _CREDENTIAL_SUFFIXES = ("_API_KEY", "_TOKEN", "_SECRET", "_KEY")
 
 # Names we've already warned about during this process, so repeated
-# load_omniworker_dotenv() calls (user env + project env, gateway hot-reload,
+# load_hermes_dotenv() calls (user env + project env, gateway hot-reload,
 # tests) don't spam the same warning multiple times.
 _WARNED_KEYS: set[str] = set()
 
@@ -75,7 +75,7 @@ def _sanitize_loaded_credentials() -> None:
             "rich-text editor, or web page that substituted lookalike\n"
             "  Unicode glyphs for ASCII letters. If authentication fails "
             "(e.g. \"API key not valid\"), re-copy the key from the\n"
-            "  provider's dashboard and run `omniworker setup` (or edit the "
+            "  provider's dashboard and run `hermes setup` (or edit the "
             ".env file in a plain-text editor).",
             file=sys.stderr,
         )
@@ -139,7 +139,7 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
         pass  # best-effort — don't block gateway startup
 
 
-def load_omniworker_dotenv(
+def load_hermes_dotenv(
     *,
     omniworker_home: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,
@@ -147,14 +147,14 @@ def load_omniworker_dotenv(
     """Load OmniWorker environment files with user config taking precedence.
 
     Behavior:
-    - `~/.omniworker/.env` overrides stale shell-exported values when present.
+    - `~/.hermes/.env` overrides stale shell-exported values when present.
     - project `.env` acts as a dev fallback and only fills missing values when
       the user env exists.
     - if no user env exists, the project `.env` also overrides stale shell vars.
     """
     loaded: list[Path] = []
 
-    home_path = Path(omniworker_home or os.getenv("OMNIWORKER_HOME", Path.home() / ".omniworker"))
+    home_path = Path(omniworker_home or os.getenv("OMNIWORKER_HOME", Path.home() / ".hermes"))
     user_env = home_path / ".env"
     project_env_path = Path(project_env) if project_env else None
 

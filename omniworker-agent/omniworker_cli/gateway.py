@@ -1,10 +1,11 @@
 """
-Gateway subcommand for omniworker CLI.
+Gateway subcommand for hermes CLI.
 
-Handles: omniworker gateway [run|start|stop|restart|status|install|uninstall|setup]
+Handles: hermes gateway [run|start|stop|restart|status|install|uninstall|setup]
 """
 
 import asyncio
+import logging
 import os
 import shutil
 import signal
@@ -31,13 +32,14 @@ from omniworker_cli.config import (
     save_env_value,
 )
 # display_omniworker_home is imported lazily at call sites to avoid ImportError
-# when omniworker_constants is cached from a pre-update version during `omniworker update`.
+# when omniworker_constants is cached from a pre-update version during `hermes update`.
 from omniworker_cli.setup import (
     print_header, print_info, print_success, print_warning, print_error,
     prompt, prompt_choice, prompt_yes_no,
 )
 from omniworker_cli.colors import Colors, color
 
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # Process Management (for manual gateway runs)
@@ -82,7 +84,7 @@ def _get_service_pids() -> set:
         for scope_args in [["systemctl", "--user"], ["systemctl"]]:
             try:
                 result = subprocess.run(
-                    scope_args + ["list-units", "omniworker-gateway*",
+                    scope_args + ["list-units", "hermes-gateway*",
                                   "--plain", "--no-legend", "--no-pager"],
                     capture_output=True, text=True, timeout=5,
                 )
@@ -137,7 +139,7 @@ def _get_parent_pid(pid: int) -> int | None:
     older implementation shelled out to ``ps -o ppid= -p <pid>``, which
     silently fails on Windows (no ``ps``) so the ancestor walk terminated
     at self — the caller's dedup / exclude logic then couldn't distinguish
-    "omniworker CLI that invoked this scan" from "real gateway process".
+    "hermes CLI that invoked this scan" from "real gateway process".
     """
     if pid <= 1:
         return None
@@ -260,7 +262,7 @@ def _get_ancestor_pids() -> set[int]:
 
     Walks from the current PID up to PID 1 (init) so that process-table scans
     never match the calling CLI process or any of its parents.  This prevents
-    ``omniworker gateway status`` from falsely counting the ``omniworker`` CLI that
+    ``hermes gateway status`` from falsely counting the ``hermes`` CLI that
     invoked it as a running gateway instance (see #13242).
     """
     ancestors: set[int] = set()
@@ -291,7 +293,7 @@ def _scan_gateway_pids(exclude_pids: set[int], all_profiles: bool = False) -> li
     discover gateways outside the current profile.
     """
     # Exclude the entire ancestor chain so the CLI process that invoked this
-    # scan (e.g. ``omniworker gateway status``) is never mistaken for a running
+    # scan (e.g. ``hermes gateway status``) is never mistaken for a running
     # gateway.  See #13242.
     exclude_pids = exclude_pids | _get_ancestor_pids()
     pids: list[int] = []
@@ -302,7 +304,7 @@ def _scan_gateway_pids(exclude_pids: set[int], all_profiles: bool = False) -> li
         "omniworker_cli/main.py gateway",
         "omniworker_cli/main.py --profile",
         "omniworker_cli/main.py -p",
-        "omniworker gateway",
+        "hermes gateway",
         "gateway/run.py",
     ]
     current_home = str(get_omniworker_home().resolve())
@@ -513,7 +515,7 @@ def find_gateway_pids(exclude_pids: set | None = None, all_profiles: bool = Fals
         exclude_pids: PIDs to exclude from the result (e.g. service-managed
             PIDs that should not be killed during a stale-process sweep).
         all_profiles: When ``True``, return gateway PIDs across **all**
-            profiles (the pre-7923 global behaviour).  ``omniworker update``
+            profiles (the pre-7923 global behaviour).  ``hermes update``
             needs this because a code update affects every profile.
             When ``False`` (default), only PIDs belonging to the current
             OmniWorker profile are returned.
@@ -582,8 +584,8 @@ def launch_detached_profile_gateway_restart(profile: str, old_pid: int) -> bool:
     #
     # Windows — ``start_new_session`` is silently accepted but does NOT
     # detach.  The watcher stays attached to the CLI's console and dies
-    # when the user closes the terminal, leaving ``omniworker update`` users
-    # with no running gateway until they re-invoke ``omniworker gateway``
+    # when the user closes the terminal, leaving ``hermes update`` users
+    # with no running gateway until they re-invoke ``hermes gateway``
     # manually.  The Win32 equivalent is the ``CREATE_NEW_PROCESS_GROUP |
     # DETACHED_PROCESS | CREATE_NO_WINDOW`` creationflags bundle.
     #
@@ -704,7 +706,7 @@ def _sync_omniworker_home_from_systemd_unit(system: bool) -> None:
     """When acting on a system-scope unit, adopt its ``OMNIWORKER_HOME``.
 
     Under ``sudo``, ``OMNIWORKER_HOME`` is stripped and ``HOME=/root``, so
-    :func:`get_omniworker_home` falls back to ``/root/.omniworker`` — the wrong
+    :func:`get_omniworker_home` falls back to ``/root/.hermes`` — the wrong
     profile. The unit file pins ``OMNIWORKER_HOME`` for the actual gateway
     process, so we mirror that into our own environment to make
     ``read_runtime_status`` / ``get_running_pid`` read the correct files.
@@ -852,7 +854,7 @@ def _wait_for_systemd_service_restart(
 
     print(
         f"⚠ {scope_label} service did not become active within {int(timeout)}s.\n"
-        f"  Check status: {'sudo ' if system else ''}omniworker gateway status\n"
+        f"  Check status: {'sudo ' if system else ''}hermes gateway status\n"
         f"  Check logs:   journalctl {'--user ' if not system else ''}-u {svc} -l --since '2 min ago'"
     )
     return False
@@ -893,7 +895,7 @@ def _print_systemd_start_limit_wait(system: bool = False) -> None:
     journal_prefix = "journalctl " if system else "journalctl --user "
     print(f"⏳ {scope_label} service is temporarily rate-limited by systemd.")
     print("  systemd is refusing another immediate start after repeated exits.")
-    print(f"  Wait for the start-limit window to expire, then run: {'sudo ' if system else ''}omniworker gateway restart{scope_flag}")
+    print(f"  Wait for the start-limit window to expire, then run: {'sudo ' if system else ''}hermes gateway restart{scope_flag}")
     print(f"  Or clear the failed state manually: {systemctl_prefix}reset-failed {svc}")
     print(f"  Check logs: {journal_prefix}-u {svc} -l --since '5 min ago'")
 
@@ -1023,14 +1025,14 @@ def _print_gateway_process_mismatch(snapshot: GatewayRuntimeSnapshot) -> None:
     print()
     print("⚠ Gateway process is running for this profile, but the service is not active")
     print(f"  PID(s): {_format_gateway_pids(snapshot.gateway_pids, limit=None)}")
-    print("  This is usually a manual foreground/tmux/nohup run, so `omniworker gateway`")
+    print("  This is usually a manual foreground/tmux/nohup run, so `hermes gateway`")
     print("  can refuse to start another copy until this process stops.")
 
 
 def _print_other_profiles_gateway_status() -> None:
     """Print a summary of gateway status across all profiles.
 
-    Shown at the bottom of ``omniworker gateway status`` output so users with
+    Shown at the bottom of ``hermes gateway status`` output so users with
     multiple profiles can tell at a glance which gateways are running and
     avoid confusing another profile's process with the current one.
     """
@@ -1230,7 +1232,7 @@ def is_windows() -> bool:
 def _windows_gateway_should_absorb_console_controls() -> bool:
     """Return True for detached Windows gateway runs that should ignore Ctrl+C.
 
-    Foreground ``omniworker gateway run`` must remain interruptible from
+    Foreground ``hermes gateway run`` must remain interruptible from
     PowerShell/CMD. Detached service-style launches opt in via
     ``OMNIWORKER_GATEWAY_DETACHED=1``; older wrappers without the env marker are
     treated as detached when no interactive stdin is attached.
@@ -1252,7 +1254,7 @@ def _windows_gateway_should_absorb_console_controls() -> bool:
 # Service Configuration
 # =============================================================================
 
-_SERVICE_BASE = "omniworker-gateway"
+_SERVICE_BASE = "hermes-gateway"
 SERVICE_DESCRIPTION = "OmniWorker Agent Gateway - Messaging Platform Integration"
 
 
@@ -1265,9 +1267,9 @@ def _profile_suffix() -> str:
     """
     import hashlib
     import re
-    from omniworker_constants import get_default_omniworker_root
+    from omniworker_constants import get_default_hermes_root
     home = get_omniworker_home().resolve()
-    default = get_default_omniworker_root().resolve()
+    default = get_default_hermes_root().resolve()
     if home == default:
         return ""
     # Detect <root>/profiles/<name> pattern → use the profile name
@@ -1286,7 +1288,7 @@ def _profile_suffix() -> str:
 def _profile_arg(omniworker_home: str | None = None) -> str:
     """Return ``--profile <name>`` only when OMNIWORKER_HOME is a named profile.
 
-    For ``~/.omniworker/profiles/<name>``, returns ``"--profile <name>"``.
+    For ``~/.hermes/profiles/<name>``, returns ``"--profile <name>"``.
     For the default profile or hash-based custom paths, returns the empty string.
 
     Args:
@@ -1295,9 +1297,9 @@ def _profile_arg(omniworker_home: str | None = None) -> str:
             service definition for a different user (e.g. system service).
     """
     import re
-    from omniworker_constants import get_default_omniworker_root
+    from omniworker_constants import get_default_hermes_root
     home = Path(omniworker_home or str(get_omniworker_home())).resolve()
-    default = get_default_omniworker_root().resolve()
+    default = get_default_hermes_root().resolve()
     if home == default:
         return ""
     profiles_root = (default / "profiles").resolve()
@@ -1314,8 +1316,8 @@ def _profile_arg(omniworker_home: str | None = None) -> str:
 def get_service_name() -> str:
     """Derive a systemd service name scoped to this OMNIWORKER_HOME.
 
-    Default ``~/.omniworker`` returns ``omniworker-gateway`` (backward compatible).
-    Profile ``~/.omniworker/profiles/coder`` returns ``omniworker-gateway-coder``.
+    Default ``~/.hermes`` returns ``hermes-gateway`` (backward compatible).
+    Profile ``~/.hermes/profiles/coder`` returns ``hermes-gateway-coder``.
     Any other OMNIWORKER_HOME appends a short hash for uniqueness.
     """
     suffix = _profile_suffix()
@@ -1521,7 +1523,7 @@ def _raise_user_systemd_unavailable(username: str, *, reason: str, fix_hint: str
         "\n"
         "  Alternative: run the gateway in the foreground (stays up until\n"
         "  you exit / close the terminal):\n"
-        "    omniworker gateway run"
+        "    hermes gateway run"
     )
     raise UserSystemdUnavailableError(msg)
 
@@ -1573,10 +1575,10 @@ def has_conflicting_systemd_units() -> bool:
 
 
 # Legacy service names from older OmniWorker installs that predate the
-# omniworker-gateway rename. Kept as an explicit allowlist (NOT a glob) so
-# profile units (omniworker-gateway-*.service) and unrelated third-party
-# "omniworker" units are never matched.
-_LEGACY_SERVICE_NAMES: tuple[str, ...] = ("omniworker.service",)
+# hermes-gateway rename. Kept as an explicit allowlist (NOT a glob) so
+# profile units (hermes-gateway-*.service) and unrelated third-party
+# "hermes" units are never matched.
+_LEGACY_SERVICE_NAMES: tuple[str, ...] = ("hermes.service",)
 
 # ExecStart content markers that identify a unit as running our gateway.
 # A legacy unit is only flagged when its file contains one of these.
@@ -1584,8 +1586,8 @@ _LEGACY_UNIT_EXECSTART_MARKERS: tuple[str, ...] = (
     "omniworker_cli.main gateway",
     "omniworker_cli/main.py gateway",
     "gateway/run.py",
-    " omniworker gateway ",
-    "/omniworker gateway ",
+    " hermes gateway ",
+    "/hermes gateway ",
 )
 
 
@@ -1601,23 +1603,23 @@ def _legacy_unit_search_paths() -> list[tuple[bool, Path]]:
     ]
 
 
-def _find_legacy_omniworker_units() -> list[tuple[str, Path, bool]]:
+def _find_legacy_hermes_units() -> list[tuple[str, Path, bool]]:
     """Return ``[(unit_name, unit_path, is_system)]`` for legacy OmniWorker gateway units.
 
     Detects unit files installed by older OmniWorker versions that used a
-    different service name (e.g. ``omniworker.service`` before the rename to
-    ``omniworker-gateway.service``). When both a legacy unit and the current
-    ``omniworker-gateway.service`` are active, they fight over the same bot
+    different service name (e.g. ``hermes.service`` before the rename to
+    ``hermes-gateway.service``). When both a legacy unit and the current
+    ``hermes-gateway.service`` are active, they fight over the same bot
     token — the PR #5646 signal-recovery change turns this into a 30-second
     SIGTERM flap loop.
 
     Safety guards:
 
     * Explicit allowlist of legacy names (no globbing). Profile units such
-      as ``omniworker-gateway-coder.service`` and unrelated third-party
-      ``omniworker-*`` services are never matched.
+      as ``hermes-gateway-coder.service`` and unrelated third-party
+      ``hermes-*`` services are never matched.
     * ExecStart content check — only flag units that invoke our gateway
-      entrypoint. A user-created ``omniworker.service`` running an unrelated
+      entrypoint. A user-created ``hermes.service`` running an unrelated
       binary is left untouched.
     * Results are returned purely for caller inspection; this function
       never mutates or removes anything.
@@ -1639,9 +1641,9 @@ def _find_legacy_omniworker_units() -> list[tuple[str, Path, bool]]:
     return results
 
 
-def has_legacy_omniworker_units() -> bool:
+def has_legacy_hermes_units() -> bool:
     """Return True when any legacy OmniWorker gateway unit files exist."""
-    return bool(_find_legacy_omniworker_units())
+    return bool(_find_legacy_hermes_units())
 
 
 def print_legacy_unit_warning() -> None:
@@ -1650,26 +1652,26 @@ def print_legacy_unit_warning() -> None:
     Idempotent: prints nothing when no legacy units are detected. Safe to
     call from any status/install/setup path.
     """
-    legacy = _find_legacy_omniworker_units()
+    legacy = _find_legacy_hermes_units()
     if not legacy:
         return
     print_warning("Legacy OmniWorker gateway unit(s) detected from an older install:")
     for name, path, is_system in legacy:
         scope = "system" if is_system else "user"
         print_info(f"    {path}  ({scope} scope)")
-    print_info("  These run alongside the current omniworker-gateway service and")
+    print_info("  These run alongside the current hermes-gateway service and")
     print_info("  cause SIGTERM flap loops — both try to use the same bot token.")
     print_info("  Remove them with:")
-    print_info("    omniworker gateway migrate-legacy")
+    print_info("    hermes gateway migrate-legacy")
 
 
-def remove_legacy_omniworker_units(
+def remove_legacy_hermes_units(
     interactive: bool = True,
     dry_run: bool = False,
 ) -> tuple[int, list[Path]]:
     """Stop, disable, and remove legacy OmniWorker gateway unit files.
 
-    Iterates over whatever ``_find_legacy_omniworker_units()`` returns — which is
+    Iterates over whatever ``_find_legacy_hermes_units()`` returns — which is
     an explicit allowlist of legacy names (not a glob). Profile units and
     unrelated third-party services are never touched.
 
@@ -1683,7 +1685,7 @@ def remove_legacy_omniworker_units(
         ``(removed_count, remaining_paths)`` — remaining includes units we
         couldn't remove (typically system-scope when not running as root).
     """
-    legacy = _find_legacy_omniworker_units()
+    legacy = _find_legacy_hermes_units()
     if not legacy:
         print("No legacy OmniWorker gateway units found.")
         return 0, []
@@ -1703,7 +1705,7 @@ def remove_legacy_omniworker_units(
         return 0, [p for _, p, _ in legacy]
 
     if interactive and not prompt_yes_no("Remove these legacy units?", True):
-        print("Skipped. Run again with: omniworker gateway migrate-legacy")
+        print("Skipped. Run again with: hermes gateway migrate-legacy")
         return 0, [p for _, p, _ in legacy]
 
     removed = 0
@@ -1732,7 +1734,7 @@ def remove_legacy_omniworker_units(
         if os.geteuid() != 0:  # windows-footgun: ok — Linux systemd removal path, guarded by `if system == "Linux"` / systemd-only branch
             print()
             print_warning("System-scope legacy units require root to remove.")
-            print_info("  Re-run with: sudo omniworker gateway migrate-legacy")
+            print_info("  Re-run with: sudo hermes gateway migrate-legacy")
             for _, path in system_units:
                 remaining.append(path)
         else:
@@ -1771,8 +1773,8 @@ def print_systemd_scope_conflict_warning() -> None:
     print_info("  This is confusing and can make start/stop/status behavior ambiguous.")
     print_info("  Default gateway commands target the user service unless you pass --system.")
     print_info("  Keep one of these:")
-    print_info("    omniworker gateway uninstall")
-    print_info("    sudo omniworker gateway uninstall --system")
+    print_info("    hermes gateway uninstall")
+    print_info("    sudo hermes gateway uninstall --system")
 
 
 def _require_root_for_system_service(action: str) -> None:
@@ -1847,10 +1849,10 @@ def install_linux_gateway_from_setup(force: bool = False) -> tuple[str | None, b
         if os.geteuid() != 0:  # windows-footgun: ok — Linux systemd install wizard, never invoked on Windows
             print_warning("  System service install requires sudo, so OmniWorker can't create it from this user session.")
             if run_as_user:
-                print_info(f"  After setup, run: sudo omniworker gateway install --system --run-as-user {run_as_user}")
+                print_info(f"  After setup, run: sudo hermes gateway install --system --run-as-user {run_as_user}")
             else:
-                print_info("  After setup, run: sudo omniworker gateway install --system --run-as-user <your-user>")
-            print_info("  Then start it with: sudo omniworker gateway start --system")
+                print_info("  After setup, run: sudo hermes gateway install --system --run-as-user <your-user>")
+            print_info("  Then start it with: sudo hermes gateway start --system")
             return scope, False
 
         if not run_as_user:
@@ -1944,11 +1946,11 @@ def _launchd_user_home() -> Path:
 def get_launchd_plist_path() -> Path:
     """Return the launchd plist path, scoped per profile.
 
-    Default ``~/.omniworker`` → ``ai.omniworker.gateway.plist`` (backward compatible).
-    Profile ``~/.omniworker/profiles/coder`` → ``ai.omniworker.gateway-coder.plist``.
+    Default ``~/.hermes`` → ``ai.hermes.gateway.plist`` (backward compatible).
+    Profile ``~/.hermes/profiles/coder`` → ``ai.hermes.gateway-coder.plist``.
     """
     suffix = _profile_suffix()
-    name = f"ai.omniworker.gateway-{suffix}" if suffix else "ai.omniworker.gateway"
+    name = f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
     return _launchd_user_home() / "Library" / "LaunchAgents" / f"{name}.plist"
 
 def _detect_venv_dir() -> Path | None:
@@ -2057,8 +2059,8 @@ def _remap_path_for_user(path: str, target_home_dir: str) -> str:
     If *path* lives under ``Path.home()`` the corresponding prefix is swapped
     to *target_home_dir*; otherwise the path is returned unchanged.
 
-      /root/.omniworker/omniworker-agent  -> /home/alice/.omniworker/omniworker-agent
-      /opt/omniworker                 -> /opt/omniworker  (kept as-is)
+      /root/.hermes/hermes-agent  -> /home/alice/.hermes/hermes-agent
+      /opt/hermes                 -> /opt/hermes  (kept as-is)
 
     Note: this function intentionally does NOT resolve symlinks. A venv's
     ``bin/python`` is typically a symlink to the base interpreter (e.g. a
@@ -2082,25 +2084,59 @@ def _omniworker_home_for_target_user(target_home_dir: str) -> str:
 
     When installing a system service via sudo, get_omniworker_home() resolves to
     root's home.  This translates it to the target user's equivalent path:
-      /root/.omniworker                    → /home/alice/.omniworker
-      /root/.omniworker/profiles/coder     → /home/alice/.omniworker/profiles/coder
-      /opt/custom-omniworker               → /opt/custom-omniworker  (kept as-is)
+      /root/.hermes                    → /home/alice/.hermes
+      /root/.hermes/profiles/coder     → /home/alice/.hermes/profiles/coder
+      /opt/custom-hermes               → /opt/custom-hermes  (kept as-is)
     """
-    current_omniworker = get_omniworker_home().resolve()
-    current_default = (Path.home() / ".omniworker").resolve()
-    target_default = Path(target_home_dir) / ".omniworker"
+    current_hermes = get_omniworker_home().resolve()
+    current_default = (Path.home() / ".hermes").resolve()
+    target_default = Path(target_home_dir) / ".hermes"
 
-    # Default ~/.omniworker → remap to target user's default
-    if current_omniworker == current_default:
+    # Default ~/.hermes → remap to target user's default
+    if current_hermes == current_default:
         return str(target_default)
 
-    # Profile or subdir of ~/.omniworker → preserve the relative structure
+    # Profile or subdir of ~/.hermes → preserve the relative structure
     try:
-        relative = current_omniworker.relative_to(current_default)
+        relative = current_hermes.relative_to(current_default)
         return str(target_default / relative)
     except ValueError:
-        # Completely custom path (not under ~/.omniworker) — keep as-is
-        return str(current_omniworker)
+        # Completely custom path (not under ~/.hermes) — keep as-is
+        return str(current_hermes)
+
+
+def _build_service_path_dirs(project_root: Path | None = None) -> list[str]:
+    """Build PATH directory list for service units, excluding non-existent dirs."""
+    if project_root is None:
+        project_root = PROJECT_ROOT
+
+    def _is_dir(path: Path) -> bool:
+        try:
+            return path.is_dir()
+        except OSError:
+            return False
+
+    candidates = []
+
+    venv_bin = project_root / "venv" / "bin"
+    if _is_dir(venv_bin):
+        candidates.append(str(venv_bin))
+    elif sys.prefix != sys.base_prefix:
+        candidates.append(str(Path(sys.prefix) / "bin"))
+
+    node_bin = project_root / "node_modules" / ".bin"
+    if _is_dir(node_bin):
+        candidates.append(str(node_bin))
+
+    omniworker_home = get_omniworker_home()
+    hermes_node = omniworker_home / "node" / "bin"
+    if _is_dir(hermes_node):
+        candidates.append(str(hermes_node))
+    hermes_nm = omniworker_home / "node_modules" / ".bin"
+    if _is_dir(hermes_nm):
+        candidates.append(str(hermes_nm))
+
+    return candidates
 
 
 def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) -> str:
@@ -2108,10 +2144,8 @@ def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) 
     working_dir = str(PROJECT_ROOT)
     detected_venv = _detect_venv_dir()
     venv_dir = str(detected_venv) if detected_venv else str(PROJECT_ROOT / "venv")
-    venv_bin = str(detected_venv / "bin") if detected_venv else str(PROJECT_ROOT / "venv" / "bin")
-    node_bin = str(PROJECT_ROOT / "node_modules" / ".bin")
 
-    path_entries = [venv_bin, node_bin]
+    path_entries = _build_service_path_dirs()
     resolved_node = shutil.which("node")
     if resolved_node:
         resolved_node_dir = str(Path(resolved_node).resolve().parent)
@@ -2138,8 +2172,6 @@ def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) 
         python_path = _remap_path_for_user(python_path, home_dir)
         working_dir = _remap_path_for_user(working_dir, home_dir)
         venv_dir = _remap_path_for_user(venv_dir, home_dir)
-        venv_bin = _remap_path_for_user(venv_bin, home_dir)
-        node_bin = _remap_path_for_user(node_bin, home_dir)
         path_entries = [_remap_path_for_user(p, home_dir) for p in path_entries]
         path_entries.extend(_build_user_local_paths(Path(home_dir), path_entries))
         path_entries.extend(_build_wsl_interop_paths(path_entries))
@@ -2262,7 +2294,7 @@ def refresh_systemd_unit_if_needed(system: bool = False) -> bool:
     # The user-scope unit path resolves under ``Path.home()``, which is NOT
     # sandboxed by the test conftest (only OMNIWORKER_HOME is). If a test
     # exercises ``run_gateway()`` with a pytest-tmp OMNIWORKER_HOME, the freshly
-    # generated unit bakes that ``/tmp/pytest-of-.../omniworker_test`` path into
+    # generated unit bakes that ``/tmp/pytest-of-.../hermes_test`` path into
     # ``Environment="OMNIWORKER_HOME=..."``. Writing that to the developer's
     # real user systemd unit file silently breaks their gateway on the next
     # reboot (systemd loads the polluted env, the gateway looks at an empty
@@ -2274,8 +2306,8 @@ def refresh_systemd_unit_if_needed(system: bool = False) -> bool:
     # still works.
     if not system and (
         "/pytest-of-" in new_unit
-        or "/omniworker_test\"" in new_unit
-        or "/omniworker_test/" in new_unit
+        or "/hermes_test\"" in new_unit
+        or "/hermes_test/" in new_unit
     ):
         return False
 
@@ -2386,9 +2418,9 @@ def _print_system_scope_remediation(action: str) -> None:
     else:
         print_info(f"         sudo systemctl {action} {svc}")
     print_info("    2. Switch to a per-user service (recommended for personal use):")
-    print_info("         sudo omniworker gateway uninstall --system")
-    print_info("         omniworker gateway install")
-    print_info("         omniworker gateway start")
+    print_info("         sudo hermes gateway uninstall --system")
+    print_info("         hermes gateway install")
+    print_info("         hermes gateway start")
 
 
 def _get_restart_drain_timeout() -> float:
@@ -2409,17 +2441,17 @@ def systemd_install(force: bool = False, system: bool = False, run_as_user: str 
     if system:
         _require_root_for_system_service("install")
 
-    # Offer to remove legacy units (omniworker.service from pre-rename installs)
-    # before installing the new omniworker-gateway.service. If both remain, they
+    # Offer to remove legacy units (hermes.service from pre-rename installs)
+    # before installing the new hermes-gateway.service. If both remain, they
     # flap-fight for the Telegram bot token on every gateway startup.
     # Only removes units matching _LEGACY_SERVICE_NAMES + our ExecStart
     # signature — profile units are never touched.
-    if has_legacy_omniworker_units():
+    if has_legacy_hermes_units():
         print()
         print_legacy_unit_warning()
         print()
         if prompt_yes_no("Remove the legacy unit(s) before installing?", True):
-            remove_legacy_omniworker_units(interactive=False)
+            remove_legacy_hermes_units(interactive=False)
             print()
 
     unit_path = get_systemd_unit_path(system=system)
@@ -2447,8 +2479,8 @@ def systemd_install(force: bool = False, system: bool = False, run_as_user: str 
     print(f"✓ {_service_scope_label(system).capitalize()} service installed and enabled!")
     print()
     print("Next steps:")
-    print(f"  {'sudo ' if system else ''}omniworker gateway start{scope_flag}              # Start the service")
-    print(f"  {'sudo ' if system else ''}omniworker gateway status{scope_flag}             # Check status")
+    print(f"  {'sudo ' if system else ''}hermes gateway start{scope_flag}              # Start the service")
+    print(f"  {'sudo ' if system else ''}hermes gateway status{scope_flag}             # Check status")
     print(f"  {'journalctl' if system else 'journalctl --user'} -u {get_service_name()} -f  # View logs")
     print()
 
@@ -2485,7 +2517,7 @@ def _require_service_installed(action: str, system: bool = False) -> None:
     if not unit_path.exists():
         scope_flag = " --system" if system else ""
         print(f"✗ Gateway service is not installed")
-        print(f"  Run: {'sudo ' if system else ''}omniworker gateway install{scope_flag}")
+        print(f"  Run: {'sudo ' if system else ''}hermes gateway install{scope_flag}")
         sys.exit(1)
 
 
@@ -2524,7 +2556,7 @@ def systemd_stop(system: bool = False):
         label = _service_scope_label(system)
         print(
             f"Gateway {label} service is still stopping after 90s; "
-            "check `omniworker gateway status` or logs for final shutdown state."
+            "check `hermes gateway status` or logs for final shutdown state."
         )
         return
     print(f"✓ {_service_scope_label(system).capitalize()} service stopped")
@@ -2592,7 +2624,7 @@ def systemd_restart(system: bool = False):
             label = _service_scope_label(system)
             print(
                 f"Gateway {label} service is still restarting after 90s; "
-                "check `omniworker gateway status` or logs for final state."
+                "check `hermes gateway status` or logs for final state."
             )
             return
         _wait_for_systemd_service_restart(system=system, previous_pid=pid)
@@ -2618,7 +2650,7 @@ def systemd_restart(system: bool = False):
         label = _service_scope_label(system)
         print(
             f"Gateway {label} service is still restarting after 90s; "
-            "check `omniworker gateway status` or logs for final state."
+            "check `hermes gateway status` or logs for final state."
         )
         return
     _wait_for_systemd_service_restart(system=system, previous_pid=pid)
@@ -2632,7 +2664,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
 
     if not unit_path.exists():
         print("✗ Gateway service is not installed")
-        print(f"  Run: {'sudo ' if system else ''}omniworker gateway install{scope_flag}")
+        print(f"  Run: {'sudo ' if system else ''}hermes gateway install{scope_flag}")
         return
 
     _sync_omniworker_home_from_systemd_unit(system=system)
@@ -2641,13 +2673,13 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
         print_systemd_scope_conflict_warning()
         print()
 
-    if has_legacy_omniworker_units():
+    if has_legacy_hermes_units():
         print_legacy_unit_warning()
         print()
 
     if not systemd_unit_is_current(system=system):
         print("⚠ Installed gateway service definition is outdated")
-        print(f"  Run: {'sudo ' if system else ''}omniworker gateway restart{scope_flag}  # auto-refreshes the unit")
+        print(f"  Run: {'sudo ' if system else ''}hermes gateway restart{scope_flag}  # auto-refreshes the unit")
         print()
 
     status_cmd = ["status", get_service_name(), "--no-pager"]
@@ -2675,7 +2707,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
         print(f"✓ {_service_scope_label(system).capitalize()} gateway service is running")
     else:
         print(f"✗ {_service_scope_label(system).capitalize()} gateway service is stopped")
-        print(f"  Run: {'sudo ' if system else ''}omniworker gateway start{scope_flag}")
+        print(f"  Run: {'sudo ' if system else ''}hermes gateway start{scope_flag}")
 
     configured_user = _read_systemd_user_from_unit(unit_path) if system else None
     if configured_user:
@@ -2697,11 +2729,11 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
         print("  ⏳ Restart pending: systemd is waiting to relaunch the gateway")
     elif _systemd_unit_is_start_limited(unit_props):
         print("  ⏳ Restart pending: systemd is temporarily rate-limiting starts")
-        print(f"  Run after the start-limit window expires: {'sudo ' if system else ''}omniworker gateway restart{scope_flag}")
+        print(f"  Run after the start-limit window expires: {'sudo ' if system else ''}hermes gateway restart{scope_flag}")
         print(f"  Or clear it manually: systemctl {'--user ' if not system else ''}reset-failed {get_service_name()}")
     elif active_state == "failed" and exec_main_status == str(GATEWAY_SERVICE_RESTART_EXIT_CODE):
         print("  ⚠ Planned restart is stuck in systemd failed state (exit 75)")
-        print(f"  Run: systemctl {'--user ' if not system else ''}reset-failed {get_service_name()} && {'sudo ' if system else ''}omniworker gateway start{scope_flag}")
+        print(f"  Run: systemctl {'--user ' if not system else ''}reset-failed {get_service_name()} && {'sudo ' if system else ''}hermes gateway start{scope_flag}")
     elif active_state == "failed" and result_code:
         print(f"  ⚠ Systemd unit result: {result_code}")
 
@@ -2733,7 +2765,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
 def get_launchd_label() -> str:
     """Return the launchd service label, scoped per profile."""
     suffix = _profile_suffix()
-    return f"ai.omniworker.gateway-{suffix}" if suffix else "ai.omniworker.gateway"
+    return f"ai.hermes.gateway-{suffix}" if suffix else "ai.hermes.gateway"
 
 
 def _launchd_domain() -> str:
@@ -2754,12 +2786,10 @@ def generate_launchd_plist() -> str:
     # the systemd unit), then capture the user's full shell PATH so every
     # user-installed tool (node, ffmpeg, …) is reachable.
     detected_venv = _detect_venv_dir()
-    venv_bin = str(detected_venv / "bin") if detected_venv else str(PROJECT_ROOT / "venv" / "bin")
     venv_dir = str(detected_venv) if detected_venv else str(PROJECT_ROOT / "venv")
-    node_bin = str(PROJECT_ROOT / "node_modules" / ".bin")
     # Resolve the directory containing the node binary (e.g. Homebrew, nvm)
     # so it's explicitly in PATH even if the user's shell PATH changes later.
-    priority_dirs = [venv_bin, node_bin]
+    priority_dirs = _build_service_path_dirs()
     resolved_node = shutil.which("node")
     if resolved_node:
         resolved_node_dir = str(Path(resolved_node).resolve().parent)
@@ -2882,7 +2912,7 @@ def launchd_install(force: bool = False):
     print("✓ Service installed and loaded!")
     print()
     print("Next steps:")
-    print("  omniworker gateway status             # Check status")
+    print("  hermes gateway status             # Check status")
     from omniworker_constants import display_omniworker_home as _dhh
     print(f"  tail -f {_dhh()}/logs/gateway.log  # View logs")
 
@@ -2935,7 +2965,7 @@ def launchd_stop():
     # bootout unloads the service definition so KeepAlive doesn't respawn
     # the process.  A plain `kill SIGTERM` only signals the process — launchd
     # immediately restarts it because KeepAlive.SuccessfulExit = false.
-    # `omniworker gateway start` re-bootstraps when it detects the job is unloaded.
+    # `hermes gateway start` re-bootstraps when it detects the job is unloaded.
     try:
         subprocess.run(["launchctl", "bootout", target], check=True, timeout=90)
     except subprocess.CalledProcessError as e:
@@ -3041,7 +3071,7 @@ def launchd_status(deep: bool = False):
         print("✓ Service definition matches the current OmniWorker install")
     else:
         print("⚠ Service definition is stale relative to the current OmniWorker install")
-        print("  Run: omniworker gateway start")
+        print("  Run: hermes gateway start")
 
     if loaded:
         print("✓ Gateway service is loaded")
@@ -3049,7 +3079,7 @@ def launchd_status(deep: bool = False):
     else:
         print("✗ Gateway service is not loaded")
         print("  Service definition exists locally but launchd has not loaded it.")
-        print("  Run: omniworker gateway start")
+        print("  Run: hermes gateway start")
     
     if deep:
         log_file = get_omniworker_home() / "logs" / "gateway.log"
@@ -3069,7 +3099,7 @@ def _truthy_env(value: str | None) -> bool:
 
 def _is_official_docker_checkout() -> bool:
     return (
-        str(PROJECT_ROOT) == "/opt/omniworker"
+        str(PROJECT_ROOT) == "/opt/hermes"
         and (PROJECT_ROOT / "docker" / "entrypoint.sh").is_file()
     )
 
@@ -3087,9 +3117,9 @@ def _guard_official_docker_root_gateway() -> None:
         "Refusing to run the OmniWorker gateway as root inside the official Docker image."
     )
     print(
-        "  The image entrypoint normally drops privileges to the 'omniworker' user. "
+        "  The image entrypoint normally drops privileges to the 'hermes' user. "
         "If you override entrypoint in Docker Compose, include "
-        "/opt/omniworker/docker/entrypoint.sh before the OmniWorker command."
+        "/opt/hermes/docker/entrypoint.sh before the OmniWorker command."
     )
     print(
         "  Running the gateway as root can leave root-owned files in "
@@ -3113,7 +3143,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False):
     sys.path.insert(0, str(PROJECT_ROOT))
 
     # Detached Windows gateway runs must ignore console-control broadcasts
-    # from sibling CLI processes, but foreground `omniworker gateway run` still
+    # from sibling CLI processes, but foreground `hermes gateway run` still
     # needs to obey the banner's "Press Ctrl+C to stop" contract.
     # Service-style launchers set OMNIWORKER_GATEWAY_DETACHED=1; older wrappers
     # without the marker are handled by the non-TTY fallback.
@@ -3154,10 +3184,10 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False):
     # Refresh the systemd unit definition on every boot so that restart
     # settings (RestartSec, StartLimitIntervalSec, etc.) stay current even
     # when the process was respawned via exit-code-75 (stale-code or
-    # /restart) rather than through `omniworker gateway restart` which already
+    # /restart) rather than through `hermes gateway restart` which already
     # calls refresh_systemd_unit_if_needed().  Without this, a code update
     # that ships new unit settings won't take effect until the next manual
-    # `omniworker gateway start/restart` — leaving the gateway vulnerable to
+    # `hermes gateway start/restart` — leaving the gateway vulnerable to
     # the exact failure mode the new settings were meant to prevent.
     if supports_systemd_services():
         try:
@@ -3369,7 +3399,7 @@ _PLATFORMS = [
             {"name": "MATRIX_ACCESS_TOKEN", "prompt": "Access token (leave empty to use password login instead)", "password": True,
              "help": "Paste your access token, or leave empty and provide user ID + password below."},
             {"name": "MATRIX_USER_ID", "prompt": "User ID (@bot:server — required for password login)", "password": False,
-             "help": "Full Matrix user ID, e.g. @omniworker:matrix.example.org"},
+             "help": "Full Matrix user ID, e.g. @hermes:matrix.example.org"},
             {"name": "MATRIX_ALLOWED_USERS", "prompt": "Allowed user IDs (comma-separated, e.g. @you:server)", "password": False,
              "is_allowlist": True,
              "help": "Matrix user IDs who can interact with the bot."},
@@ -3385,7 +3415,7 @@ _PLATFORMS = [
         "setup_instructions": [
             "1. In Mattermost: Integrations → Bot Accounts → Add Bot Account",
             "   (System Console → Integrations → Bot Accounts must be enabled)",
-            "2. Give it a username (e.g. omniworker) and copy the bot token",
+            "2. Give it a username (e.g. hermes) and copy the bot token",
             "3. Works with any self-hosted Mattermost instance — enter your server URL",
             "4. To find your user ID: click your avatar (top-left) → Profile",
             "   Your user ID is displayed there — click it to copy.",
@@ -3432,7 +3462,7 @@ _PLATFORMS = [
         ],
         "vars": [
             {"name": "EMAIL_ADDRESS", "prompt": "Email address", "password": False,
-             "help": "The email address OmniWorker will use (e.g., omniworker@gmail.com)."},
+             "help": "The email address OmniWorker will use (e.g., hermes@gmail.com)."},
             {"name": "EMAIL_PASSWORD", "prompt": "Email password (or app password)", "password": True,
              "help": "For Gmail, use an App Password (not your regular password)."},
             {"name": "EMAIL_IMAP_HOST", "prompt": "IMAP host", "password": False,
@@ -3592,7 +3622,7 @@ _PLATFORMS = [
             "4. The server URL is typically http://<your-mac-ip>:1234",
             "5. OmniWorker connects via the BlueBubbles REST API and receives",
             "   incoming messages via a local webhook",
-            "6. To authorize users, use DM pairing: omniworker pairing generate bluebubbles",
+            "6. To authorize users, use DM pairing: hermes pairing generate bluebubbles",
             "   Share the code — the user sends it via iMessage to get approved",
         ],
         "vars": [
@@ -3655,7 +3685,7 @@ def _all_platforms() -> list[dict]:
     Combines the built-in ``_PLATFORMS`` with plugin platforms registered via
     ``platform_registry``. Plugins are discovered on first call so bundled
     platforms (like IRC, which auto-load via ``kind: platform``) appear in
-    ``omniworker setup gateway`` without needing the gateway to be running.
+    ``hermes setup gateway`` without needing the gateway to be running.
     Built-ins keep their dict shape; plugin entries are adapted to the same
     shape with ``_registry_entry`` holding the source.
 
@@ -3665,13 +3695,13 @@ def _all_platforms() -> list[dict]:
         ``mautrix[encryption]`` -> ``python-olm``, which has no Windows
         wheel and needs ``make`` + libolm to build from sdist. There's
         no native Windows path that works, so we don't offer it in the
-        picker. Users who want Matrix on Windows can run omniworker under
+        picker. Users who want Matrix on Windows can run hermes under
         WSL.
     """
     # Populate the registry so plugin platforms are visible. Idempotent.
     # Bundled platform plugins (``kind: platform``) auto-load unconditionally,
     # so every shipped messaging channel appears in the setup menu by default.
-    # User-installed platform plugins under ~/.omniworker/plugins/ still require
+    # User-installed platform plugins under ~/.hermes/plugins/ still require
     # opt-in via ``plugins.enabled`` (untrusted code).
     try:
         from omniworker_cli.plugins import discover_plugins
@@ -3875,7 +3905,7 @@ def _setup_standard_platform(platform: dict):
                 print()
                 access_choices = [
                     "Enable open access (anyone can message the bot)",
-                    "Use DM pairing (unknown users request access, you approve with 'omniworker pairing approve')",
+                    "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
                     "Skip for now (bot will deny all users until configured)",
                 ]
                 access_idx = prompt_choice("  How should unauthorized users be handled?", access_choices, 1)
@@ -3884,9 +3914,9 @@ def _setup_standard_platform(platform: dict):
                     print_warning("  Open access enabled — anyone can use your bot!")
                 elif access_idx == 1:
                     print_success("  DM pairing mode — users will receive a code to request access.")
-                    print_info("  Approve with: omniworker pairing approve <platform> <code>")
+                    print_info("  Approve with: hermes pairing approve <platform> <code>")
                 else:
-                    print_info("  Skipped — configure later with 'omniworker gateway setup'")
+                    print_info("  Skipped — configure later with 'hermes gateway setup'")
             continue
 
         value = prompt(f"  {var['prompt']}", password=var.get("password", False))
@@ -4077,7 +4107,7 @@ def _setup_wecom():
         print()
         access_choices = [
             "Enable open access (anyone can message the bot)",
-            "Use DM pairing (unknown users request access, you approve with 'omniworker pairing approve')",
+            "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
             "Disable direct messages",
             "Skip for now (bot will deny all users until configured)",
         ]
@@ -4089,12 +4119,12 @@ def _setup_wecom():
         elif access_idx == 1:
             save_env_value("WECOM_DM_POLICY", "pairing")
             print_success("  DM pairing mode — users will receive a code to request access.")
-            print_info("  Approve with: omniworker pairing approve <platform> <code>")
+            print_info("  Approve with: hermes pairing approve <platform> <code>")
         elif access_idx == 2:
             save_env_value("WECOM_DM_POLICY", "disabled")
             print_warning("  Direct messages disabled.")
         else:
-            print_info("  Skipped — configure later with 'omniworker gateway setup'")
+            print_info("  Skipped — configure later with 'hermes gateway setup'")
 
     # ── Home channel (optional) ──
     print()
@@ -4181,7 +4211,7 @@ def _setup_weixin():
     print()
     print_info("  1. OmniWorker will open Tencent iLink QR login in this terminal.")
     print_info("  2. Use WeChat to scan and confirm the QR code.")
-    print_info("  3. OmniWorker will store the returned account_id/token in ~/.omniworker/.env.")
+    print_info("  3. OmniWorker will store the returned account_id/token in ~/.hermes/.env.")
     print_info("  4. This adapter supports native text, image, video, and document delivery.")
 
     existing_account = get_env_value("WEIXIN_ACCOUNT_ID")
@@ -4201,7 +4231,7 @@ def _setup_weixin():
 
     if not check_weixin_requirements():
         print_error("  Missing dependencies: Weixin needs aiohttp and cryptography.")
-        print_info("  Install them, then rerun `omniworker gateway setup`.")
+        print_info("  Install them, then rerun `hermes gateway setup`.")
         return
 
     print()
@@ -4248,7 +4278,7 @@ def _setup_weixin():
         save_env_value("WEIXIN_ALLOW_ALL_USERS", "false")
         save_env_value("WEIXIN_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
-        print_info("  Unknown DM users can request access and you approve them with `omniworker pairing approve`.")
+        print_info("  Unknown DM users can request access and you approve them with `hermes pairing approve`.")
     elif access_idx == 1:
         save_env_value("WEIXIN_DM_POLICY", "open")
         save_env_value("WEIXIN_ALLOW_ALL_USERS", "true")
@@ -4438,7 +4468,7 @@ def _setup_feishu():
         save_env_value("FEISHU_ALLOW_ALL_USERS", "false")
         save_env_value("FEISHU_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
-        print_info("  Unknown users can request access; approve with `omniworker pairing approve`.")
+        print_info("  Unknown users can request access; approve with `hermes pairing approve`.")
     elif access_idx == 1:
         save_env_value("FEISHU_ALLOW_ALL_USERS", "true")
         save_env_value("FEISHU_ALLOWED_USERS", "")
@@ -4556,7 +4586,7 @@ def _setup_qqbot():
         else:
             save_env_value("QQ_ALLOWED_USERS", "")
         print_success("  DM pairing enabled.")
-        print_info("  Unknown users can request access; approve with `omniworker pairing approve`.")
+        print_info("  Unknown users can request access; approve with `hermes pairing approve`.")
     elif access_idx == 1:
         save_env_value("QQ_ALLOW_ALL_USERS", "true")
         save_env_value("QQ_ALLOWED_USERS", "")
@@ -4733,7 +4763,7 @@ def _configure_platform(platform: dict) -> None:
       4. Env-var hint fallback for plugins that offer no setup helper.
 
     Bundled platform plugins (e.g. IRC) auto-load, so no plugin enable step
-    is needed here. User-installed platform plugins under ~/.omniworker/plugins/
+    is needed here. User-installed platform plugins under ~/.hermes/plugins/
     must already be in ``plugins.enabled`` before they appear in this menu.
     """
     entry = platform.get("_registry_entry")
@@ -4758,7 +4788,7 @@ def _configure_platform(platform: dict) -> None:
     print(color(f"  ─── {emoji} {label} Setup ───", Colors.CYAN))
     required = entry.required_env if entry else []
     if required:
-        print_info(f"  Set these env vars in ~/.omniworker/.env: {', '.join(required)}")
+        print_info(f"  Set these env vars in ~/.hermes/.env: {', '.join(required)}")
     else:
         print_info(f"  Configure {label} in config.yaml under gateway.platforms.{platform['key']}")
     if platform.get("install_hint"):
@@ -4788,7 +4818,7 @@ def gateway_setup():
         print_systemd_scope_conflict_warning()
         print()
 
-    if supports_systemd_services() and has_legacy_omniworker_units():
+    if supports_systemd_services() and has_legacy_hermes_units():
         print_legacy_unit_warning()
         print()
 
@@ -4876,7 +4906,7 @@ def gateway_setup():
                         gateway_windows.restart()
                     else:
                         stop_profile_gateway()
-                        print_info("Start manually: omniworker gateway")
+                        print_info("Start manually: hermes gateway")
                 except UserSystemdUnavailableError as e:
                     print_error("  Restart failed — user systemd not reachable:")
                     for line in str(e).splitlines():
@@ -4950,28 +4980,28 @@ def gateway_setup():
                                 print_error(f"  Start failed: {e}")
                     except subprocess.CalledProcessError as e:
                         print_error(f"  Install failed: {e}")
-                        print_info("  You can try manually: omniworker gateway install")
+                        print_info("  You can try manually: hermes gateway install")
                 else:
-                    print_info("  You can install later: omniworker gateway install")
+                    print_info("  You can install later: hermes gateway install")
                     if supports_systemd_services():
-                        print_info("  Or as a boot-time service: sudo omniworker gateway install --system")
-                    print_info("  Or run in foreground:  omniworker gateway run")
+                        print_info("  Or as a boot-time service: sudo hermes gateway install --system")
+                    print_info("  Or run in foreground:  hermes gateway run")
             elif is_wsl():
                 print_info("  WSL detected but systemd is not running.")
-                print_info("  Run in foreground: omniworker gateway run")
-                print_info("  For persistence:   tmux new -s omniworker 'omniworker gateway run'")
+                print_info("  Run in foreground: hermes gateway run")
+                print_info("  For persistence:   tmux new -s hermes 'hermes gateway run'")
                 print_info("  To enable systemd: add systemd=true to /etc/wsl.conf, then 'wsl --shutdown'")
             elif is_termux():
                 from omniworker_constants import display_omniworker_home as _dhh
                 print_info("  Termux does not use systemd/launchd services.")
-                print_info("  Run in foreground: omniworker gateway run")
-                print_info(f"  Or start it manually in the background (best effort): nohup omniworker gateway run >{_dhh()}/logs/gateway.log 2>&1 &")
+                print_info("  Run in foreground: hermes gateway run")
+                print_info(f"  Or start it manually in the background (best effort): nohup hermes gateway run >{_dhh()}/logs/gateway.log 2>&1 &")
             else:
                 print_info("  Service install not supported on this platform.")
-                print_info("  Run in foreground: omniworker gateway run")
+                print_info("  Run in foreground: hermes gateway run")
     else:
         print()
-        print_info("No platforms configured. Run 'omniworker gateway setup' when ready.")
+        print_info("No platforms configured. Run 'hermes gateway setup' when ready.")
 
     print()
 
@@ -4992,7 +5022,7 @@ def gateway_command(args):
             print(f"  {line}")
         sys.exit(1)
     except SystemScopeRequiresRootError as e:
-        # The direct ``omniworker gateway install|uninstall|start|stop|restart``
+        # The direct ``hermes gateway install|uninstall|start|stop|restart``
         # path lands here when the user typed a system-scope action without
         # sudo. Same exit code as before — just gives the wizard a way to
         # intercept the same condition with friendlier guidance before the
@@ -5026,13 +5056,13 @@ def _gateway_command_inner(args):
         run_as_user = getattr(args, 'run_as_user', None)
         if is_termux():
             print("Gateway service installation is not supported on Termux.")
-            print("Run manually: omniworker gateway")
+            print("Run manually: hermes gateway")
             sys.exit(1)
         if supports_systemd_services():
             if is_wsl():
                 print_warning("WSL detected — systemd services may not survive WSL restarts.")
-                print_info("  Consider running in foreground instead: omniworker gateway run")
-                print_info("  Or use tmux/screen for persistence: tmux new -s omniworker 'omniworker gateway run'")
+                print_info("  Consider running in foreground instead: hermes gateway run")
+                print_info("  Or use tmux/screen for persistence: tmux new -s hermes 'hermes gateway run'")
                 print()
             systemd_install(force=force, system=system, run_as_user=run_as_user)
         elif is_macos():
@@ -5045,9 +5075,9 @@ def _gateway_command_inner(args):
             print("Either enable systemd (add systemd=true to /etc/wsl.conf and restart WSL)")
             print("or run the gateway in foreground mode:")
             print()
-            print("  omniworker gateway run                              # direct foreground")
-            print("  tmux new -s omniworker 'omniworker gateway run'         # persistent via tmux")
-            print("  nohup omniworker gateway run > ~/.omniworker/logs/gateway.log 2>&1 &  # background")
+            print("  hermes gateway run                              # direct foreground")
+            print("  tmux new -s hermes 'hermes gateway run'         # persistent via tmux")
+            print("  nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background")
             sys.exit(1)
         elif is_container():
             print("Service installation is not needed inside a Docker container.")
@@ -5056,11 +5086,11 @@ def _gateway_command_inner(args):
             print("  docker run --restart unless-stopped ...   # auto-restart on crash/reboot")
             print("  docker restart <container>                # manual restart")
             print()
-            print("To run the gateway: omniworker gateway run")
+            print("To run the gateway: hermes gateway run")
             sys.exit(0)
         else:
             print("Service installation not supported on this platform.")
-            print("Run manually: omniworker gateway run")
+            print("Run manually: hermes gateway run")
             sys.exit(1)
     
     elif subcmd == "uninstall":
@@ -5070,7 +5100,7 @@ def _gateway_command_inner(args):
         system = getattr(args, 'system', False)
         if is_termux():
             print("Gateway service uninstall is not supported on Termux because there is no managed service to remove.")
-            print("Stop manual runs with: omniworker gateway stop")
+            print("Stop manual runs with: hermes gateway stop")
             sys.exit(1)
         if supports_systemd_services():
             systemd_uninstall(system=system)
@@ -5103,7 +5133,7 @@ def _gateway_command_inner(args):
 
         if is_termux():
             print("Gateway service start is not supported on Termux because there is no system service manager.")
-            print("Run manually: omniworker gateway")
+            print("Run manually: hermes gateway")
             sys.exit(1)
         if supports_systemd_services():
             systemd_start(system=system)
@@ -5116,9 +5146,9 @@ def _gateway_command_inner(args):
             print("WSL detected but systemd is not available.")
             print("Run the gateway in foreground mode instead:")
             print()
-            print("  omniworker gateway run                              # direct foreground")
-            print("  tmux new -s omniworker 'omniworker gateway run'         # persistent via tmux")
-            print("  nohup omniworker gateway run > ~/.omniworker/logs/gateway.log 2>&1 &  # background")
+            print("  hermes gateway run                              # direct foreground")
+            print("  tmux new -s hermes 'hermes gateway run'         # persistent via tmux")
+            print("  nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background")
             print()
             print("To enable systemd: add systemd=true to /etc/wsl.conf and run 'wsl --shutdown' from PowerShell.")
             sys.exit(1)
@@ -5129,7 +5159,7 @@ def _gateway_command_inner(args):
             print("  docker start <container>     # start a stopped container")
             print("  docker restart <container>   # restart a running container")
             print()
-            print("Or run the gateway directly: omniworker gateway run")
+            print("Or run the gateway directly: hermes gateway run")
             sys.exit(0)
         else:
             print("Not supported on this platform.")
@@ -5291,14 +5321,14 @@ def _gateway_command_inner(args):
                     print(f"  Run:  sudo loginctl enable-linger {_username}")
                     print()
                     print("  Then restart the gateway:")
-                    print("    omniworker gateway restart")
+                    print("    hermes gateway restart")
                     return
 
             if service_configured:
                 print()
                 print("✗ Gateway service restart failed.")
                 print("  The service definition exists, but the service manager did not recover it.")
-                print("  Fix the service, then retry: omniworker gateway start")
+                print("  Fix the service, then retry: hermes gateway start")
                 sys.exit(1)
 
             # Manual restart: stop only this profile's gateway
@@ -5354,11 +5384,11 @@ def _gateway_command_inner(args):
                     print("  Use tmux or screen for persistence across terminal closes.")
                 elif is_windows():
                     print("To install as a Windows Scheduled Task (auto-start on login):")
-                    print("  omniworker gateway install")
+                    print("  hermes gateway install")
                 else:
                     print("To install as a service:")
-                    print("  omniworker gateway install")
-                    print("  sudo omniworker gateway install --system")
+                    print("  hermes gateway install")
+                    print("  sudo hermes gateway install --system")
             else:
                 print("✗ Gateway is not running")
                 runtime_lines = _runtime_health_lines()
@@ -5369,17 +5399,17 @@ def _gateway_command_inner(args):
                         print(f"  {line}")
                 print()
                 print("To start:")
-                print("  omniworker gateway run      # Run in foreground")
+                print("  hermes gateway run      # Run in foreground")
                 if is_termux():
-                    print("  nohup omniworker gateway run > ~/.omniworker/logs/gateway.log 2>&1 &  # Best-effort background start")
+                    print("  nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # Best-effort background start")
                 elif is_wsl():
-                    print("  tmux new -s omniworker 'omniworker gateway run'         # persistent via tmux")
-                    print("  nohup omniworker gateway run > ~/.omniworker/logs/gateway.log 2>&1 &  # background")
+                    print("  tmux new -s hermes 'hermes gateway run'         # persistent via tmux")
+                    print("  nohup hermes gateway run > ~/.hermes/logs/gateway.log 2>&1 &  # background")
                 elif is_windows():
-                    print("  omniworker gateway install  # Install as Windows Scheduled Task (auto-start on login)")
+                    print("  hermes gateway install  # Install as Windows Scheduled Task (auto-start on login)")
                 else:
-                    print("  omniworker gateway install  # Install as user service")
-                    print("  sudo omniworker gateway install --system  # Install as boot-time system service")
+                    print("  hermes gateway install  # Install as user service")
+                    print("  sudo hermes gateway install --system  # Install as boot-time system service")
 
         # Show other profiles' gateway status for multi-profile awareness
         _print_other_profiles_gateway_status()
@@ -5389,11 +5419,11 @@ def _gateway_command_inner(args):
 
     elif subcmd == "migrate-legacy":
         # Stop, disable, and remove legacy OmniWorker gateway unit files from
-        # pre-rename installs (e.g. omniworker.service). Profile units and
+        # pre-rename installs (e.g. hermes.service). Profile units and
         # unrelated third-party services are never touched.
         dry_run = getattr(args, 'dry_run', False)
         yes = getattr(args, 'yes', False)
         if not supports_systemd_services() and not is_macos():
             print("Legacy unit migration only applies to systemd-based Linux hosts.")
             return
-        remove_legacy_omniworker_units(interactive=not yes, dry_run=dry_run)
+        remove_legacy_hermes_units(interactive=not yes, dry_run=dry_run)

@@ -705,8 +705,8 @@ class GeminiCloudCodeClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
             "Authorization": f"Bearer {access_token}",
-            "User-Agent": "omniworker-agent (gemini-cli-compat)",
-            "X-Goog-Api-Client": "gl-python/omniworker",
+            "User-Agent": "hermes-agent (gemini-cli-compat)",
+            "X-Goog-Api-Client": "gl-python/hermes",
             "x-activity-request-id": str(uuid.uuid4()),
         }
         headers.update(self._default_headers)

@@ -1,10 +1,10 @@
 """
-Backup and import commands for omniworker CLI.
+Backup and import commands for hermes CLI.
 
-`omniworker backup` creates a zip archive of the entire ~/.omniworker/ directory
-(excluding the omniworker-agent repo and transient files).
+`hermes backup` creates a zip archive of the entire ~/.hermes/ directory
+(excluding the hermes-agent repo and transient files).
 
-`omniworker import` restores from a backup zip, overlaying onto the current
+`hermes import` restores from a backup zip, overlaying onto the current
 OMNIWORKER_HOME root.
 """
 
@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from omniworker_constants import get_default_omniworker_root, get_omniworker_home, display_omniworker_home
+from omniworker_constants import get_default_hermes_root, get_omniworker_home, display_omniworker_home
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # Directory names to skip entirely (matched against each path component)
 _EXCLUDED_DIRS = {
-    "omniworker-agent",     # the codebase repo — re-clone instead
+    "hermes-agent",     # the codebase repo — re-clone instead
     "__pycache__",      # bytecode caches — regenerated on import
     ".git",             # nested git dirs (profiles shouldn't have these, but safety)
     "node_modules",     # js deps if website/ somehow leaks in
@@ -66,7 +66,7 @@ _SECRET_FILE_NAMES = {".env", "auth.json", "state.db"}
 
 
 def _should_exclude(rel_path: Path) -> bool:
-    """Return True if *rel_path* (relative to omniworker root) should be skipped."""
+    """Return True if *rel_path* (relative to hermes root) should be skipped."""
     parts = rel_path.parts
 
     # Any path component matches an excluded dir name
@@ -127,10 +127,10 @@ def _format_size(nbytes: int) -> str:
 
 def run_backup(args) -> None:
     """Create a zip backup of the OmniWorker home directory."""
-    omniworker_root = get_default_omniworker_root()
+    hermes_root = get_default_hermes_root()
 
-    if not omniworker_root.is_dir():
-        print(f"Error: OmniWorker home directory not found at {omniworker_root}")
+    if not hermes_root.is_dir():
+        print(f"Error: OmniWorker home directory not found at {hermes_root}")
         sys.exit(1)
 
     # Determine output path
@@ -139,10 +139,10 @@ def run_backup(args) -> None:
         # If user gave a directory, put the zip inside it
         if out_path.is_dir():
             stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-            out_path = out_path / f"omniworker-backup-{stamp}.zip"
+            out_path = out_path / f"hermes-backup-{stamp}.zip"
     else:
         stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-        out_path = Path.home() / f"omniworker-backup-{stamp}.zip"
+        out_path = Path.home() / f"hermes-backup-{stamp}.zip"
 
     # Ensure the suffix is .zip
     if out_path.suffix.lower() != ".zip":
@@ -156,9 +156,9 @@ def run_backup(args) -> None:
     files_to_add: list[tuple[Path, Path]] = []  # (absolute, relative)
     skipped_dirs = set()
 
-    for dirpath, dirnames, filenames in os.walk(omniworker_root, followlinks=False):
+    for dirpath, dirnames, filenames in os.walk(hermes_root, followlinks=False):
         dp = Path(dirpath)
-        rel_dir = dp.relative_to(omniworker_root)
+        rel_dir = dp.relative_to(hermes_root)
 
         # Prune excluded directories in-place so os.walk doesn't descend
         orig_dirnames = dirnames[:]
@@ -171,12 +171,12 @@ def run_backup(args) -> None:
 
         for fname in filenames:
             fpath = dp / fname
-            rel = fpath.relative_to(omniworker_root)
+            rel = fpath.relative_to(hermes_root)
 
             if _should_exclude(rel):
                 continue
 
-            # Skip the output zip itself if it happens to be inside omniworker root
+            # Skip the output zip itself if it happens to be inside hermes root
             try:
                 if fpath.resolve() == out_path.resolve():
                     continue
@@ -246,7 +246,7 @@ def run_backup(args) -> None:
         if len(errors) > 10:
             print(f"  ... and {len(errors) - 10} more")
 
-    print(f"\nRestore with: omniworker import {out_path.name}")
+    print(f"\nRestore with: hermes import {out_path.name}")
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +262,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
     if not names:
         return False, "zip archive is empty"
 
-    # Look for telltale files that a omniworker home would have
+    # Look for telltale files that a hermes home would have
     markers = {"config.yaml", ".env", "state.db"}
     found = set()
     for n in names:
@@ -283,7 +283,7 @@ def _validate_backup_zip(zf: zipfile.ZipFile) -> tuple[bool, str]:
 def _detect_prefix(zf: zipfile.ZipFile) -> str:
     """Detect if the zip has a common directory prefix wrapping all entries.
 
-    Some tools zip as `.omniworker/config.yaml` instead of `config.yaml`.
+    Some tools zip as `.hermes/config.yaml` instead of `config.yaml`.
     Returns the prefix to strip (empty string if none).
     """
     names = [n for n in zf.namelist() if not n.endswith("/")]
@@ -297,8 +297,8 @@ def _detect_prefix(zf: zipfile.ZipFile) -> str:
     first_parts = {p[0] for p in parts_list if len(p) > 1}
     if len(first_parts) == 1:
         prefix = first_parts.pop()
-        # Only strip if it looks like a omniworker dir name
-        if prefix in {".omniworker", "omniworker"}:
+        # Only strip if it looks like a hermes dir name
+        if prefix in {".hermes", "hermes"}:
             return prefix + "/"
 
     return ""
@@ -316,7 +316,7 @@ def run_import(args) -> None:
         print(f"Error: Not a valid zip file: {zip_path}")
         sys.exit(1)
 
-    omniworker_root = get_default_omniworker_root()
+    hermes_root = get_default_hermes_root()
 
     with zipfile.ZipFile(zip_path, "r") as zf:
         # Validate
@@ -336,8 +336,8 @@ def run_import(args) -> None:
             print(f"Detected archive prefix: {prefix!r} (will be stripped)")
 
         # Check for existing installation
-        has_config = (omniworker_root / "config.yaml").exists()
-        has_env = (omniworker_root / ".env").exists()
+        has_config = (hermes_root / "config.yaml").exists()
+        has_env = (hermes_root / ".env").exists()
 
         if (has_config or has_env) and not args.force:
             print()
@@ -355,7 +355,7 @@ def run_import(args) -> None:
 
         # Extract
         print(f"\nImporting {file_count} files ...")
-        omniworker_root.mkdir(parents=True, exist_ok=True)
+        hermes_root.mkdir(parents=True, exist_ok=True)
 
         errors = []
         restored = 0
@@ -371,11 +371,11 @@ def run_import(args) -> None:
             if not rel:
                 continue
 
-            target = omniworker_root / rel
+            target = hermes_root / rel
 
             # Security: reject absolute paths and traversals
             try:
-                target.resolve().relative_to(omniworker_root.resolve())
+                target.resolve().relative_to(hermes_root.resolve())
             except ValueError:
                 errors.append(f"  {rel}: path traversal blocked")
                 continue
@@ -408,7 +408,7 @@ def run_import(args) -> None:
                 print(f"  ... and {len(errors) - 10} more")
 
         # Post-import: restore profile wrapper scripts
-        profiles_dir = omniworker_root / "profiles"
+        profiles_dir = hermes_root / "profiles"
         restored_profiles = []
         if profiles_dir.is_dir():
             try:
@@ -446,25 +446,25 @@ def run_import(args) -> None:
                 # omniworker_cli.profiles might not be available (fresh install)
                 if any(profiles_dir.iterdir()):
                     print(f"\n  Profiles detected but aliases could not be created.")
-                    print(f"  Run: omniworker profile list  (after installing omniworker)")
+                    print(f"  Run: hermes profile list  (after installing hermes)")
 
         # Guidance
         print()
-        if not (omniworker_root / "omniworker-agent").is_dir():
-            print("Note: The omniworker-agent codebase was not included in the backup.")
-            print("  If this is a fresh install, run: omniworker update")
+        if not (hermes_root / "hermes-agent").is_dir():
+            print("Note: The hermes-agent codebase was not included in the backup.")
+            print("  If this is a fresh install, run: hermes update")
 
         if restored_profiles:
             gw_profiles = [n for n, _ in restored_profiles]
             print("\nTo re-enable gateway services for profiles:")
             for pname in gw_profiles:
-                print(f"  omniworker -p {pname} gateway install")
+                print(f"  hermes -p {pname} gateway install")
 
         print("Done. Your OmniWorker configuration has been restored.")
 
 
 # ---------------------------------------------------------------------------
-# Quick state snapshots (used by /snapshot slash command and omniworker backup --quick)
+# Quick state snapshots (used by /snapshot slash command and hermes backup --quick)
 # ---------------------------------------------------------------------------
 
 # Critical state files to include in quick snapshots (relative to OMNIWORKER_HOME).
@@ -474,7 +474,7 @@ def run_import(args) -> None:
 # Entries may be individual files OR directories.  Directories are captured
 # recursively; missing entries are silently skipped.  Pairing data lives in
 # platform-specific JSON blobs outside state.db, so it's listed here explicitly
-# — `omniworker update` snapshots this set before pulling so approved-user lists
+# — `hermes update` snapshots this set before pulling so approved-user lists
 # are recoverable if anything goes wrong (issue #15733).
 _QUICK_STATE_FILES = (
     "state.db",
@@ -689,7 +689,7 @@ def prune_quick_snapshots(
 
 
 def run_quick_backup(args) -> None:
-    """CLI entry point for omniworker backup --quick."""
+    """CLI entry point for hermes backup --quick."""
     label = getattr(args, "label", None)
     snap_id = create_quick_snapshot(label=label)
     if snap_id:
@@ -705,8 +705,8 @@ def run_quick_backup(args) -> None:
 # Shared full-zip backup helper
 # ---------------------------------------------------------------------------
 
-def _write_full_zip_backup(out_path: Path, omniworker_root: Path) -> Optional[Path]:
-    """Write a full zip snapshot of ``omniworker_root`` to ``out_path``.
+def _write_full_zip_backup(out_path: Path, hermes_root: Path) -> Optional[Path]:
+    """Write a full zip snapshot of ``hermes_root`` to ``out_path``.
 
     Uses the same exclusion rules and SQLite safe-copy as :func:`run_backup`.
     Returns the output path on success, None on failure (nothing to back up,
@@ -714,7 +714,7 @@ def _write_full_zip_backup(out_path: Path, omniworker_root: Path) -> Optional[Pa
     """
     files_to_add: list[tuple[Path, Path]] = []
     try:
-        for dirpath, dirnames, filenames in os.walk(omniworker_root, followlinks=False):
+        for dirpath, dirnames, filenames in os.walk(hermes_root, followlinks=False):
             dp = Path(dirpath)
             # Prune excluded directories in-place so os.walk doesn't descend
             dirnames[:] = [d for d in dirnames if d not in _EXCLUDED_DIRS]
@@ -722,7 +722,7 @@ def _write_full_zip_backup(out_path: Path, omniworker_root: Path) -> Optional[Pa
             for fname in filenames:
                 fpath = dp / fname
                 try:
-                    rel = fpath.relative_to(omniworker_root)
+                    rel = fpath.relative_to(hermes_root)
                 except ValueError:
                     continue
 
@@ -836,13 +836,13 @@ def create_pre_update_backup(
 
     Returns the path to the created zip, or ``None`` if no files were
     found or the backup could not be created.  Never raises — the caller
-    (``omniworker update``) should continue even if the backup fails.
+    (``hermes update``) should continue even if the backup fails.
     """
-    omniworker_root = omniworker_home or get_default_omniworker_root()
-    if not omniworker_root.is_dir():
+    hermes_root = omniworker_home or get_default_hermes_root()
+    if not hermes_root.is_dir():
         return None
 
-    backup_dir = _pre_update_backup_dir(omniworker_root)
+    backup_dir = _pre_update_backup_dir(hermes_root)
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
@@ -852,7 +852,7 @@ def create_pre_update_backup(
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
     out_path = backup_dir / f"{_PRE_UPDATE_PREFIX}{stamp}.zip"
 
-    result = _write_full_zip_backup(out_path, omniworker_root)
+    result = _write_full_zip_backup(out_path, hermes_root)
     if result is None:
         return None
 
@@ -861,7 +861,7 @@ def create_pre_update_backup(
 
 
 # ---------------------------------------------------------------------------
-# Pre-migration auto-backup (used by `omniworker claw migrate`)
+# Pre-migration auto-backup (used by `hermes claw migrate`)
 # ---------------------------------------------------------------------------
 
 _PRE_MIGRATION_PREFIX = "pre-migration-"
@@ -901,11 +901,11 @@ def create_pre_migration_backup(
     keep: int = _PRE_MIGRATION_DEFAULT_KEEP,
 ) -> Optional[Path]:
     """Create a full zip backup of OMNIWORKER_HOME under ``backups/`` before a
-    ``omniworker claw migrate`` apply.
+    ``hermes claw migrate`` apply.
 
     Shares implementation with :func:`create_pre_update_backup` via
     ``_write_full_zip_backup`` — same exclusions, same SQLite safe-copy,
-    restorable with ``omniworker import <archive>``.  Writes to
+    restorable with ``hermes import <archive>``.  Writes to
     ``<OMNIWORKER_HOME>/backups/pre-migration-<timestamp>.zip`` and auto-prunes
     old pre-migration backups.
 
@@ -913,13 +913,13 @@ def create_pre_migration_backup(
     to back up (fresh install) or the write failed.  Never raises — the
     caller decides whether to abort or proceed.
     """
-    omniworker_root = omniworker_home or get_default_omniworker_root()
-    if not omniworker_root.is_dir():
+    hermes_root = omniworker_home or get_default_hermes_root()
+    if not hermes_root.is_dir():
         return None
 
-    # Reuses the shared backups/ directory so `omniworker import` and the
+    # Reuses the shared backups/ directory so `hermes import` and the
     # update-backup listing pick up pre-migration archives too.
-    backup_dir = _pre_update_backup_dir(omniworker_root)
+    backup_dir = _pre_update_backup_dir(hermes_root)
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
@@ -929,7 +929,7 @@ def create_pre_migration_backup(
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
     out_path = backup_dir / f"{_PRE_MIGRATION_PREFIX}{stamp}.zip"
 
-    result = _write_full_zip_backup(out_path, omniworker_root)
+    result = _write_full_zip_backup(out_path, hermes_root)
     if result is None:
         return None
 

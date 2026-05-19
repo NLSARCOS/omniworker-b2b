@@ -62,7 +62,7 @@ RECENT_DIALOGS_MAX = 20
 # Magic host the injected dialog bridge XHRs to.  Intercepted via the CDP
 # Fetch domain before any network resolution happens, so the hostname never
 # has to exist.  Keep this ASCII + URL-safe; we also gate Fetch patterns on it.
-DIALOG_BRIDGE_HOST = "omniworker-dialog-bridge.invalid"
+DIALOG_BRIDGE_HOST = "hermes-dialog-bridge.invalid"
 DIALOG_BRIDGE_URL_PATTERN = f"http://{DIALOG_BRIDGE_HOST}/*"
 
 # Script injected into every frame via Page.addScriptToEvaluateOnNewDocument.
@@ -72,9 +72,9 @@ DIALOG_BRIDGE_URL_PATTERN = f"http://{DIALOG_BRIDGE_HOST}/*"
 # in the first place — the overrides take precedence.
 _DIALOG_BRIDGE_SCRIPT = r"""
 (() => {
-  if (window.__omniworkerDialogBridgeInstalled) return;
-  window.__omniworkerDialogBridgeInstalled = true;
-  const ENDPOINT = "http://omniworker-dialog-bridge.invalid/";
+  if (window.__hermesDialogBridgeInstalled) return;
+  window.__hermesDialogBridgeInstalled = true;
+  const ENDPOINT = "http://hermes-dialog-bridge.invalid/";
   function ask(kind, message, defaultPrompt) {
     try {
       const xhr = new XMLHttpRequest();
@@ -368,11 +368,13 @@ class CDPSupervisor:
                         pass
 
             try:
-                fut = asyncio.run_coroutine_threadsafe(_close_ws(), loop)
-                try:
-                    fut.result(timeout=2.0)
-                except Exception:
-                    pass
+                from agent.async_utils import safe_schedule_threadsafe
+                fut = safe_schedule_threadsafe(_close_ws(), loop)
+                if fut is not None:
+                    try:
+                        fut.result(timeout=2.0)
+                    except Exception:
+                        pass
             except RuntimeError:
                 pass  # loop already shutting down
         if self._thread is not None:
@@ -451,7 +453,10 @@ class CDPSupervisor:
             )
 
         try:
-            fut = asyncio.run_coroutine_threadsafe(_do_respond(), loop)
+            from agent.async_utils import safe_schedule_threadsafe
+            fut = safe_schedule_threadsafe(_do_respond(), loop)
+            if fut is None:
+                return {"ok": False, "error": "Browser supervisor loop unavailable"}
             fut.result(timeout=timeout)
         except Exception as e:
             return {"ok": False, "error": f"{type(e).__name__}: {e}"}
@@ -507,7 +512,10 @@ class CDPSupervisor:
             )
 
         try:
-            fut = asyncio.run_coroutine_threadsafe(_do_eval(), loop)
+            from agent.async_utils import safe_schedule_threadsafe
+            fut = safe_schedule_threadsafe(_do_eval(), loop)
+            if fut is None:
+                return {"ok": False, "error": "Browser supervisor loop unavailable"}
             response = fut.result(timeout=timeout + 1)
         except Exception as exc:
             return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}

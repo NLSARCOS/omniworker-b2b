@@ -57,7 +57,7 @@ class StreamConsumerConfig:
     # this many seconds.  This makes the platform's visible timestamp
     # reflect completion time instead of first-token time for long-running
     # responses (e.g. reasoning models that stream slowly).  Ported from
-    # omniworker/omniworker#72038.  Default 0 = always edit in place (legacy
+    # openclaw/openclaw#72038.  Default 0 = always edit in place (legacy
     # behavior).  The gateway enables this selectively per-platform.
     fresh_final_after_seconds: float = 0.0
     # Streaming transport selection:
@@ -139,7 +139,7 @@ class GatewayStreamConsumer:
         # first assigned from a successful first-send.  Used by the
         # fresh-final logic to detect long-lived previews whose edit
         # timestamps would be stale by completion time.  Ported from
-        # omniworker/omniworker#72038.
+        # openclaw/openclaw#72038.
         self._message_created_ts: Optional[float] = None
         self._already_sent = False
         self._edit_supported = True  # Disabled when progressive edits are no longer usable
@@ -228,7 +228,7 @@ class GatewayStreamConsumer:
         # Native draft streaming: bump the draft_id so the next text segment
         # animates as a fresh preview below the tool-progress bubbles, not
         # over the prior segment's already-finalized draft.  This is how
-        # we avoid the "inter-tool-call text leak" failure mode omniworker
+        # we avoid the "inter-tool-call text leak" failure mode openclaw
         # documented in their issue #32535 — each text block becomes its
         # own visible message via the finalize, then a new draft animates
         # for the next one.
@@ -983,7 +983,7 @@ class GatewayStreamConsumer:
             # Commentary messages are interim status updates (e.g. "Using browser
             # tool..."), not the final response. Setting already_sent would cause
             # the final response to be incorrectly suppressed when there are
-            # multiple tool calls. See: https://github.com/OmniWorker/omniworker-agent/issues/10454
+            # multiple tool calls. See: https://github.com/NousResearch/hermes-agent/issues/10454
             if result.success:
                 # Commentary counts as fresh content — close off any
                 # stale tool bubble above it so the next tool starts a
@@ -1004,7 +1004,7 @@ class GatewayStreamConsumer:
           and not ``None``).
         - The preview has been visible for at least the configured threshold.
 
-        Ported from omniworker/omniworker#72038.
+        Ported from openclaw/openclaw#72038.
         """
         threshold = getattr(self.cfg, "fresh_final_after_seconds", 0.0) or 0.0
         if threshold <= 0:
@@ -1022,7 +1022,7 @@ class GatewayStreamConsumer:
         time.  Returns True on successful delivery, False on any failure so
         the caller falls back to the normal edit path.
 
-        Ported from omniworker/omniworker#72038.
+        Ported from openclaw/openclaw#72038.
         """
         old_message_id = self._message_id
         try:
@@ -1158,7 +1158,7 @@ class GatewayStreamConsumer:
                     # timestamp reflects completion time instead of the
                     # preview creation time.  Best-effort cleanup of the
                     # old preview follows.  Ported from
-                    # omniworker/omniworker#72038.  Gated by config so the
+                    # openclaw/openclaw#72038.  Gated by config so the
                     # legacy edit-in-place path stays the default.
                     if (
                         finalize

@@ -10,7 +10,7 @@ Synthesized from:
 - clawdbot/extensions/google/ — refresh-token rotation, VPC-SC handling reference
 - PRs #10176 (@sliverp) and #10779 (@newarthur) — PKCE module structure, cross-process lock
 
-Storage (``~/.omniworker/auth/google_oauth.json``, chmod 0o600):
+Storage (``~/.hermes/auth/google_oauth.json``, chmod 0o600):
 
     {
       "refresh": "refreshToken|projectId|managedProjectId",
@@ -363,7 +363,7 @@ def _require_client_id() -> str:
             "OmniWorker looks for a locally installed gemini-cli to source the OAuth client. "
             "Either:\n"
             "  1. Install it: npm install -g @google/gemini-cli  (or brew install gemini-cli)\n"
-            "  2. Set OMNIWORKER_GEMINI_CLIENT_ID and OMNIWORKER_GEMINI_CLIENT_SECRET in ~/.omniworker/.env\n"
+            "  2. Set OMNIWORKER_GEMINI_CLIENT_ID and OMNIWORKER_GEMINI_CLIENT_SECRET in ~/.hermes/.env\n"
             "\n"
             "Register a Desktop OAuth client at:\n"
             "  https://console.cloud.google.com/apis/credentials\n"
@@ -658,7 +658,7 @@ def get_valid_access_token(*, force_refresh: bool = False) -> str:
     creds = load_credentials()
     if creds is None:
         raise GoogleOAuthError(
-            "No Google OAuth credentials found. Run `omniworker login --provider google-gemini-cli` first.",
+            "No Google OAuth credentials found. Run `hermes login --provider google-gemini-cli` first.",
             code="google_oauth_not_logged_in",
         )
 
@@ -887,7 +887,7 @@ def start_oauth_flow(
         "access_type": "offline",
         "prompt": "consent",
     }
-    auth_url = AUTH_ENDPOINT + "?" + urllib.parse.urlencode(params) + "#omniworker"
+    auth_url = AUTH_ENDPOINT + "?" + urllib.parse.urlencode(params) + "#hermes"
 
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
@@ -964,7 +964,7 @@ def _paste_mode_login(
         "access_type": "offline",
         "prompt": "consent",
     }
-    auth_url = AUTH_ENDPOINT + "?" + urllib.parse.urlencode(params) + "#omniworker"
+    auth_url = AUTH_ENDPOINT + "?" + urllib.parse.urlencode(params) + "#hermes"
 
     print()
     print("Open this URL in a browser on any device:")

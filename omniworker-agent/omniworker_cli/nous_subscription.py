@@ -22,7 +22,7 @@ from tools.tool_backend_helpers import (
 
 
 _DEFAULT_PLATFORM_TOOLSETS = {
-    "cli": "omniworker-cli",
+    "cli": "hermes-cli",
 }
 
 
@@ -272,7 +272,7 @@ def get_nous_subscription_features(
     )
 
     # use_gateway flags — when True, the user explicitly opted into the
-    # Tool Gateway via `omniworker model`, so direct credentials should NOT
+    # Tool Gateway via `hermes model`, so direct credentials should NOT
     # prevent gateway routing.
     web_use_gateway = _uses_gateway(web_cfg)
     tts_use_gateway = _uses_gateway(tts_cfg)

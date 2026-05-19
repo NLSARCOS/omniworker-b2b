@@ -39,15 +39,11 @@ _OMNIWORKER_CORE_TOOLS = [
     "vision_analyze", "image_generate",
     # Skills
     "skills_list", "skill_view", "skill_manage",
-    # Browser automation (screenshot-based)
+    # Browser automation
     "browser_navigate", "browser_snapshot", "browser_click",
     "browser_type", "browser_scroll", "browser_back",
     "browser_press", "browser_get_images",
     "browser_vision", "browser_console", "browser_cdp", "browser_dialog",
-    # Browser automation (text-DOM / screenshot-free, inspired by page-agent)
-    "browser_dom_navigate", "browser_dom_read", "browser_dom_click",
-    "browser_dom_type", "browser_dom_select", "browser_dom_scroll",
-    "browser_dom_eval",
     # Text-to-speech
     "text_to_speech",
     # Planning & memory
@@ -74,14 +70,6 @@ _OMNIWORKER_CORE_TOOLS = [
     "kanban_unblock",
     # Computer use (macOS, gated on cua-driver being installed via check_fn)
     "computer_use",
-    # Third-party integrations
-    "cli_anything_hub", "scrapling_fetch",
-    # E-commerce integrations (gated on env vars via check_fn)
-    "shopify_list_products", "shopify_get_product", "shopify_list_orders", "shopify_get_order",
-    "woocommerce_list_products", "woocommerce_get_product", "woocommerce_list_orders", "woocommerce_get_order",
-    "prestashop_list_products", "prestashop_get_product", "prestashop_list_orders", "prestashop_get_order",
-    # WhatsApp Bot Builder (gated on bot project existing via check_fn)
-    "whatsapp_bot_create", "whatsapp_bot_configure", "whatsapp_bot_status", "whatsapp_bot_test",
 ]
 
 
@@ -98,6 +86,17 @@ TOOLSETS = {
     "search": {
         "description": "Web search only (no content extraction/scraping)",
         "tools": ["web_search"],
+        "includes": []
+    },
+
+    "x_search": {
+        "description": (
+            "Search X (Twitter) posts and threads via xAI's built-in "
+            "x_search Responses tool. Available when xAI credentials are "
+            "configured (SuperGrok OAuth or XAI_API_KEY). Off by default; "
+            "enable in `hermes tools` → X (Twitter) Search."
+        ),
+        "tools": ["x_search"],
         "includes": []
     },
     
@@ -124,7 +123,7 @@ TOOLSETS = {
             "Video generation tools. Single ``video_generate`` tool covers "
             "text-to-video (prompt only) and image-to-video (prompt + "
             "image_url) — the active backend auto-routes. Configure via "
-            "``omniworker tools`` → Video Generation."
+            "``hermes tools`` → Video Generation."
         ),
         "tools": ["video_generate"],
         "includes": []
@@ -152,18 +151,6 @@ TOOLSETS = {
         "includes": []
     },
     
-    "scrapling": {
-        "description": "Advanced stealth web scraping utilizing Scrapling to bypass protections",
-        "tools": ["scrapling_fetch"],
-        "includes": []
-    },
-
-    "cli_anything": {
-        "description": "Interact with desktop apps via CLI wrappers.",
-        "tools": ["cli_anything_hub"],
-        "includes": []
-    },
-
     "skills": {
         "description": "Access, create, edit, and manage skill documents with specialized instructions and knowledge",
         "tools": ["skills_list", "skill_view", "skill_manage"],
@@ -171,24 +158,13 @@ TOOLSETS = {
     },
     
     "browser": {
-        "description": (
-            "Browser automation: screenshot-based tools (navigate, click, type, scroll, vision) "
-            "plus text-DOM tools (browser_dom_*) for screenshot-free, token-efficient interaction. "
-            "Prefer browser_dom_* for form filling and ERP/CRM tasks."
-        ),
+        "description": "Browser automation for web interaction (navigate, click, type, scroll, iframes, hold-click) with web search for finding URLs",
         "tools": [
-            # Screenshot-based
             "browser_navigate", "browser_snapshot", "browser_click",
             "browser_type", "browser_scroll", "browser_back",
             "browser_press", "browser_get_images",
             "browser_vision", "browser_console", "browser_cdp",
-            "browser_dialog",
-            # Text-DOM (screenshot-free, page-agent style)
-            "browser_dom_navigate", "browser_dom_read", "browser_dom_click",
-            "browser_dom_type", "browser_dom_select", "browser_dom_scroll",
-            "browser_dom_eval",
-            # Web search
-            "web_search"
+            "browser_dialog", "web_search"
         ],
         "includes": []
     },
@@ -330,24 +306,6 @@ TOOLSETS = {
         "includes": []
     },
 
-    "ecommerce": {
-        "description": "E-commerce integrations: Shopify, WooCommerce, and PrestaShop product and order management",
-        "tools": [
-            "shopify_list_products", "shopify_get_product", "shopify_list_orders", "shopify_get_order",
-            "woocommerce_list_products", "woocommerce_get_product", "woocommerce_list_orders", "woocommerce_get_order",
-            "prestashop_list_products", "prestashop_get_product", "prestashop_list_orders", "prestashop_get_order",
-        ],
-        "includes": []
-    },
-
-    "whatsapp_bot": {
-        "description": "WhatsApp Bot Builder: Create, configure, and test AI-powered WhatsApp customer service bots for businesses",
-        "tools": [
-            "whatsapp_bot_create", "whatsapp_bot_configure", "whatsapp_bot_status", "whatsapp_bot_test",
-        ],
-        "includes": []
-    },
-
 
     # Scenario-specific toolsets
     
@@ -370,7 +328,7 @@ TOOLSETS = {
     # which is gated on gateway running via its check_fn).
     # ==========================================================================
 
-    "omniworker-acp": {
+    "hermes-acp": {
         "description": "Editor integration (VS Code, Zed, JetBrains) — coding-focused tools without messaging, audio, or clarify UI",
         "tools": [
             "web_search", "web_extract",
@@ -389,7 +347,7 @@ TOOLSETS = {
         "includes": []
     },
 
-    "omniworker-api-server": {
+    "hermes-api-server": {
         "description": "OpenAI-compatible API server — full agent tools accessible via HTTP (no interactive UI tools like clarify or send_message)",
         "tools": [
             # Web
@@ -422,30 +380,30 @@ TOOLSETS = {
         "includes": []
     },
     
-    "omniworker-cli": {
+    "hermes-cli": {
         "description": "Full interactive CLI toolset - all default tools plus cronjob management",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-cron": {
-        # Mirrors omniworker-cli so cron's "default" toolset is the same set of
-        # core tools users see interactively — then `omniworker tools` filters
+    "hermes-cron": {
+        # Mirrors hermes-cli so cron's "default" toolset is the same set of
+        # core tools users see interactively — then `hermes tools` filters
         # them down per the platform config. _DEFAULT_OFF_TOOLSETS (moa,
         # homeassistant) are excluded by _get_platform_tools() unless
         # the user explicitly enables them.
-        "description": "Default cron toolset - same core tools as omniworker-cli; gated by `omniworker tools`",
+        "description": "Default cron toolset - same core tools as hermes-cli; gated by `hermes tools`",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-telegram": {
+    "hermes-telegram": {
         "description": "Telegram bot toolset - full access for personal use (terminal has safety checks)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
     
-    "omniworker-discord": {
+    "hermes-discord": {
         "description": "Discord bot toolset - full access (terminal has safety checks via dangerous command approval)",
         "tools": _OMNIWORKER_CORE_TOOLS + [
             "discord",
@@ -454,61 +412,61 @@ TOOLSETS = {
         "includes": []
     },
     
-    "omniworker-whatsapp": {
+    "hermes-whatsapp": {
         "description": "WhatsApp bot toolset - similar to Telegram (personal messaging, more trusted)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
     
-    "omniworker-slack": {
+    "hermes-slack": {
         "description": "Slack bot toolset - full access for workspace use (terminal has safety checks)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
     
-    "omniworker-signal": {
+    "hermes-signal": {
         "description": "Signal bot toolset - encrypted messaging platform (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-bluebubbles": {
+    "hermes-bluebubbles": {
         "description": "BlueBubbles iMessage bot toolset - Apple iMessage via local BlueBubbles server",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-homeassistant": {
+    "hermes-homeassistant": {
         "description": "Home Assistant bot toolset - smart home event monitoring and control",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-email": {
+    "hermes-email": {
         "description": "Email bot toolset - interact with OmniWorker via email (IMAP/SMTP)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-mattermost": {
+    "hermes-mattermost": {
         "description": "Mattermost bot toolset - self-hosted team messaging (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-matrix": {
+    "hermes-matrix": {
         "description": "Matrix bot toolset - decentralized encrypted messaging (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-dingtalk": {
+    "hermes-dingtalk": {
         "description": "DingTalk bot toolset - enterprise messaging platform (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-feishu": {
+    "hermes-feishu": {
         "description": "Feishu/Lark bot toolset - enterprise messaging via Feishu/Lark (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS + [
             "feishu_doc_read",
@@ -520,31 +478,31 @@ TOOLSETS = {
         "includes": []
     },
 
-    "omniworker-weixin": {
+    "hermes-weixin": {
         "description": "Weixin bot toolset - personal WeChat messaging via iLink (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-qqbot": {
+    "hermes-qqbot": {
         "description": "QQBot toolset - QQ messaging via Official Bot API v2 (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-wecom": {
+    "hermes-wecom": {
         "description": "WeCom bot toolset - enterprise WeChat messaging (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-wecom-callback": {
+    "hermes-wecom-callback": {
         "description": "WeCom callback toolset - enterprise self-built app messaging (full access)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-yuanbao": {
+    "hermes-yuanbao": {
         "description": "Yuanbao Bot 元宝消息平台工具集 - 群信息、成员查询、私聊、贴纸表情",
         "tools": _OMNIWORKER_CORE_TOOLS + [
             "yb_query_group_info",
@@ -557,22 +515,22 @@ TOOLSETS = {
         "includes": []
     },
 
-    "omniworker-sms": {
+    "hermes-sms": {
         "description": "SMS bot toolset - interact with OmniWorker via SMS (Twilio)",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-webhook": {
+    "hermes-webhook": {
         "description": "Webhook toolset - receive and process external webhook events",
         "tools": _OMNIWORKER_CORE_TOOLS,
         "includes": []
     },
 
-    "omniworker-gateway": {
+    "hermes-gateway": {
         "description": "Gateway toolset - union of all messaging platform tools",
         "tools": [],
-        "includes": ["omniworker-telegram", "omniworker-discord", "omniworker-whatsapp", "omniworker-slack", "omniworker-signal", "omniworker-bluebubbles", "omniworker-homeassistant", "omniworker-email", "omniworker-sms", "omniworker-mattermost", "omniworker-matrix", "omniworker-dingtalk", "omniworker-feishu", "omniworker-wecom", "omniworker-wecom-callback", "omniworker-weixin", "omniworker-qqbot", "omniworker-webhook", "omniworker-yuanbao"]
+        "includes": ["hermes-telegram", "hermes-discord", "hermes-whatsapp", "hermes-slack", "hermes-signal", "hermes-bluebubbles", "hermes-homeassistant", "hermes-email", "hermes-sms", "hermes-mattermost", "hermes-matrix", "hermes-dingtalk", "hermes-feishu", "hermes-wecom", "hermes-wecom-callback", "hermes-weixin", "hermes-qqbot", "hermes-webhook", "hermes-yuanbao"]
     }
 }
 
@@ -667,11 +625,11 @@ def resolve_toolset(name: str, visited: Set[str] = None) -> List[str]:
     # Get toolset definition
     toolset = get_toolset(name)
     if not toolset:
-        # Auto-generate a toolset for plugin platforms (omniworker-<name>).
+        # Auto-generate a toolset for plugin platforms (hermes-<name>).
         # Gives them _OMNIWORKER_CORE_TOOLS plus any tools the plugin registered
         # into a toolset matching the platform name.
-        if name.startswith("omniworker-"):
-            platform_name = name[len("omniworker-"):]
+        if name.startswith("hermes-"):
+            platform_name = name[len("hermes-"):]
             try:
                 from gateway.platform_registry import platform_registry
                 if platform_registry.is_registered(platform_name):

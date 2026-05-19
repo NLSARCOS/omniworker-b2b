@@ -33,7 +33,7 @@ from omniworker_constants import OPENROUTER_BASE_URL
 
 
 # Providers that support OAuth login in addition to API keys.
-_OAUTH_CAPABLE_PROVIDERS = {"anthropic", "nous", "openai-codex", "qwen-oauth", "google-gemini-cli", "minimax-oauth"}
+_OAUTH_CAPABLE_PROVIDERS = {"anthropic", "nous", "openai-codex", "xai-oauth", "qwen-oauth", "google-gemini-cli", "minimax-oauth"}
 
 
 def _get_custom_provider_names() -> list:
@@ -77,6 +77,8 @@ def _normalize_provider(provider: str) -> str:
     normalized = (provider or "").strip().lower()
     if normalized in {"or", "open-router"}:
         return "openrouter"
+    if normalized in {"grok-oauth", "xai-oauth", "x-ai-oauth", "xai-grok-oauth"}:
+        return "xai-oauth"
     # Check if it matches a custom provider name
     custom_key = _resolve_custom_provider_input(normalized)
     if custom_key:
@@ -170,7 +172,7 @@ def auth_add_command(args) -> None:
         if provider.startswith(CUSTOM_POOL_PREFIX):
             requested_type = AUTH_TYPE_API_KEY
         else:
-            requested_type = AUTH_TYPE_OAUTH if provider in {"anthropic", "nous", "openai-codex", "qwen-oauth", "google-gemini-cli", "minimax-oauth"} else AUTH_TYPE_API_KEY
+            requested_type = AUTH_TYPE_OAUTH if provider in _OAUTH_CAPABLE_PROVIDERS else AUTH_TYPE_API_KEY
 
     pool = load_pool(provider)
 
@@ -221,7 +223,7 @@ def auth_add_command(args) -> None:
     if provider == "anthropic":
         from agent import anthropic_adapter as anthropic_mod
 
-        creds = anthropic_mod.run_omniworker_oauth_login_pure()
+        creds = anthropic_mod.run_hermes_oauth_login_pure()
         if not creds:
             raise SystemExit("Anthropic OAuth login did not return credentials.")
         label = (getattr(args, "label", None) or "").strip() or label_from_token(
@@ -234,7 +236,7 @@ def auth_add_command(args) -> None:
             label=label,
             auth_type=AUTH_TYPE_OAUTH,
             priority=0,
-            source=f"{SOURCE_MANUAL}:omniworker_pkce",
+            source=f"{SOURCE_MANUAL}:hermes_pkce",
             access_token=creds["access_token"],
             refresh_token=creds.get("refresh_token"),
             expires_at_ms=creds.get("expires_at_ms"),
@@ -246,9 +248,9 @@ def auth_add_command(args) -> None:
 
     if provider == "nous":
         # Codex-style auto-import: if a shared Nous credential lives at
-        # <omniworker-root>/shared/nous_auth.json (written by any previous
+        # <hermes-root>/shared/nous_auth.json (written by any previous
         # successful login), offer to import it instead of running the
-        # full device-code flow. This makes `omniworker --profile <name>
+        # full device-code flow. This makes `hermes --profile <name>
         # auth add nous --type oauth` a one-tap operation for users who
         # run multiple profiles.
         shared = auth_mod._read_shared_nous_state()
@@ -309,7 +311,7 @@ def auth_add_command(args) -> None:
         return
 
     if provider == "openai-codex":
-        # Clear any existing suppression marker so a re-link after `omniworker auth
+        # Clear any existing suppression marker so a re-link after `hermes auth
         # remove openai-codex` works without the new tokens being skipped.
         auth_mod.unsuppress_credential_source(provider, "device_code")
         creds = auth_mod._codex_device_code_login()
@@ -324,6 +326,32 @@ def auth_add_command(args) -> None:
             auth_type=AUTH_TYPE_OAUTH,
             priority=0,
             source=f"{SOURCE_MANUAL}:device_code",
+            access_token=creds["tokens"]["access_token"],
+            refresh_token=creds["tokens"].get("refresh_token"),
+            base_url=creds.get("base_url"),
+            last_refresh=creds.get("last_refresh"),
+        )
+        pool.add_entry(entry)
+        print(f'Added {provider} OAuth credential #{len(pool.entries())}: "{entry.label}"')
+        return
+
+    if provider == "xai-oauth":
+        creds = auth_mod._xai_oauth_loopback_login(
+            timeout_seconds=getattr(args, "timeout", None) or 20.0,
+            open_browser=not getattr(args, "no_browser", False),
+            manual_paste=bool(getattr(args, "manual_paste", False)),
+        )
+        label = (getattr(args, "label", None) or "").strip() or label_from_token(
+            creds["tokens"]["access_token"],
+            _oauth_default_label(provider, len(pool.entries()) + 1),
+        )
+        entry = PooledCredential(
+            provider=provider,
+            id=uuid.uuid4().hex[:6],
+            label=label,
+            auth_type=AUTH_TYPE_OAUTH,
+            priority=0,
+            source=f"{SOURCE_MANUAL}:xai_pkce",
             access_token=creds["tokens"]["access_token"],
             refresh_token=creds["tokens"].get("refresh_token"),
             base_url=creds.get("base_url"),
@@ -398,7 +426,7 @@ def auth_add_command(args) -> None:
         print(f'Added {provider} OAuth credential #{len(pool.entries())}: "{entry.label}"')
         return
 
-    raise SystemExit(f"`omniworker auth add {provider}` is not implemented for auth type {requested_type} yet.")
+    raise SystemExit(f"`hermes auth add {provider}` is not implemented for auth type {requested_type} yet.")
 
 
 def auth_list_command(args) -> None:
@@ -476,7 +504,7 @@ def auth_reset_command(args) -> None:
 def auth_status_command(args) -> None:
     provider = _normalize_provider(getattr(args, "provider", "") or "")
     if not provider:
-        raise SystemExit("Provider is required. Example: `omniworker auth status spotify`.")
+        raise SystemExit("Provider is required. Example: `hermes auth status spotify`.")
     status = auth_mod.get_auth_status(provider)
     if not status.get("logged_in"):
         reason = status.get("error")
@@ -512,7 +540,7 @@ def auth_spotify_command(args) -> None:
 
 
 def _interactive_auth() -> None:
-    """Interactive credential pool management when `omniworker auth` is called bare."""
+    """Interactive credential pool management when `hermes auth` is called bare."""
     # Show current pool status first
     print("Credential Pool Status")
     print("=" * 50)
@@ -539,6 +567,54 @@ def _interactive_auth() -> None:
             print()
     except ImportError:
         pass  # boto3 or bedrock_adapter not available
+
+    # Show Azure Foundry Entra ID status
+    try:
+        from omniworker_cli.config import load_config
+        _cfg = load_config()
+        _model_cfg = _cfg.get("model") if isinstance(_cfg, dict) else None
+        if isinstance(_model_cfg, dict):
+            _cfg_provider = str(_model_cfg.get("provider") or "").strip().lower()
+            _cfg_auth_mode = str(_model_cfg.get("auth_mode") or "").strip().lower()
+            if _cfg_provider == "azure-foundry" and _cfg_auth_mode == "entra_id":
+                from agent.azure_identity_adapter import (
+                    EntraIdentityConfig,
+                    SCOPE_AI_AZURE_DEFAULT,
+                    describe_active_credential,
+                    has_azure_identity_installed,
+                )
+                _base_url = str(_model_cfg.get("base_url") or "").strip()
+                _entra = _model_cfg.get("entra") or {}
+                if not isinstance(_entra, dict):
+                    _entra = {}
+                _scope = (
+                    str(_entra.get("scope") or "").strip()
+                    or SCOPE_AI_AZURE_DEFAULT
+                )
+                print(f"azure-foundry (Microsoft Entra ID):")
+                print(f"  Endpoint: {_base_url or '(not configured)'}")
+                print(f"  Scope: {_scope}")
+                if not has_azure_identity_installed():
+                    print("  Status: ⚠ azure-identity not installed "
+                          "(pip install azure-identity)")
+                else:
+                    _entra_cfg = EntraIdentityConfig(
+                        scope=_scope,
+                    )
+                    _info = describe_active_credential(config=_entra_cfg, timeout_seconds=10.0)
+                    _env_sources = _info.get("env_sources") or []
+                    if _info.get("ok"):
+                        _tag = ", ".join(_env_sources) if _env_sources else "default chain"
+                        print(f"  Status: ✓ token acquired ({_tag})")
+                    else:
+                        _err = _info.get("error") or "credential chain exhausted"
+                        print(f"  Status: ⚠ {_err}")
+                        _hint = _info.get("hint")
+                        if _hint:
+                            print(f"  Hint: {_hint}")
+                print()
+    except Exception:
+        pass
     print()
 
     # Main menu
