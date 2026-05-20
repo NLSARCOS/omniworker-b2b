@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+
 const DOWNLOADS_DIR = process.env.DOWNLOADS_DIR || "/opt/omniworker-downloads";
 
 export async function GET(
