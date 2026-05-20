@@ -1,1 +1,520 @@
-export const SMART_ROUTER_SCRIPT = "#!/usr/bin/env python3\n\"\"\"\nOmniWorker Smart Router — Routes LLM inference between local SLM and cloud SaaS.\n\nArchitecture:\n  Desktop App → Agent Gateway → Smart Router (this, port 8341)\n                                      │\n                                      ├─ Local SLM (port 8080) — simple/fast\n                                      └─ Cloud SaaS (worker.thelab.lat) — complex/capable\n\nClassification logic:\n  Level 1: Quick message classification (desktop app) — already handled.\n  Level 2: Tool-aware routing — if tools are involved, check if local SLM can handle.\n  Level 3: Inference complexity — analyze prompt to decide model power needed.\n\nRuns as a transparent HTTP proxy. The agent configures base_url to this router.\n\"\"\"\n\nimport json\nimport logging\nimport os\nimport re\nimport signal\nimport sys\nimport threading\nfrom http.client import HTTPConnection, HTTPSConnection\nfrom http.server import HTTPServer, BaseHTTPRequestHandler\nfrom socket import timeout as SocketTimeout\nfrom urllib.parse import urlparse\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [smart-router] %(levelname)s: %(message)s\",\n)\nlogger = logging.getLogger(\"smart-router\")\n\n# ────────────────────────────────────────────────────\n# Configuration\n# ────────────────────────────────────────────────────\n\nROUTER_PORT = int(os.environ.get(\"SMART_ROUTER_PORT\", \"8341\"))\nLOCAL_SLM_HOST = \"127.0.0.1\"\nLOCAL_SLM_PORT = int(os.environ.get(\"LOCAL_SLM_PORT\", \"8080\"))\nCLOUD_API_URL = os.environ.get(\n    \"CLOUD_API_URL\", \"https://worker.thelab.lat/api\"\n)\nROUTER_LOG = os.environ.get(\"SMART_ROUTER_LOG\", \"\").lower() in (\"1\", \"true\", \"yes\")\n\n# ────────────────────────────────────────────────────\n# Message Classification\n# ────────────────────────────────────────────────────\n\n# Patterns that indicate complex tasks requiring cloud\nCOMPLEX_PATTERNS = [\n    # Code-related\n    r\"```\",\n    r\"\\bfunction\\b\\s\",\n    r\"\\bclass\\b\\s\",\n    r\"\\bimport\\b\\s\",\n    r\"\\bdef\\b\\s\",\n    r\"\\basync\\b\\s\",\n    r\"\\bawait\\b\\s\",\n    r\"\\breturn\\b\\s\",\n    # Database\n    r\"\\bSELECT\\b\\s\",\n    r\"\\bCREATE\\b\\s\",\n    r\"\\bINSERT\\b\\s\",\n    r\"\\bALTER\\b\\s\",\n    # Dev tools\n    r\"\\bnpm\\b\",\n    r\"\\bgit\\b\",\n    r\"\\bpip\\b\",\n    r\"\\bpython\\b\",\n    r\"\\bnode\\b\",\n    r\"\\bdocker\\b\",\n    # Error/debugging\n    r\"\\berror\\b\",\n    r\"\\btraceback\\b\",\n    r\"\\bexception\\b\",\n    r\"\\bdebug\\b\",\n    r\"\\bfix\\b\",\n    r\"\\bbug\\b\",\n    # Complex instructions\n    r\"\\banalyze\\b\",\n    r\"\\banalyse\\b\",\n    r\"\\bexplain\\b\",\n    r\"\\bcompare\\b\",\n    r\"\\bcreate\\b\",\n    r\"\\bwrite\\b\",\n    r\"\\bimplement\\b\",\n    r\"\\brefactor\\b\",\n    r\"\\bbuild\\b\",\n    r\"\\bgenerate\\b\",\n    r\"\\bdesign\\b\",\n    r\"\\bdeploy\\b\",\n    r\"\\bconfigur\",\n    r\"\\binstall\\b\",\n    r\"\\bstep.?by.?step\\b\",\n    r\"\\bhow\\s+to\\b\",\n    r\"\\bc[oó]mo\\b\\s+(hacer|crear|config|instal|usar|puedo)\",\n    # File operations that need analysis\n    r\"\\barchivo\\b.*\\barchivo\\b\",  # mentions files multiple times\n]\n\nCOMPLEX_RE = re.compile(\"|\".join(COMPLEX_PATTERNS), re.IGNORECASE)\n\n# Simple greeting/thanks patterns — always route to local\nSIMPLE_PATTERNS = re.compile(\n    r\"^(hola|hi|hello|hey|buenos?\\s*d[ií]as|buenas|gracias|thanks|thank you|\"\n    r\"bye|adi[oó]s|ok|s[ií]|no|yes|nope|sure|claro|dale|listo|yo|\"\n    r\"qu[eé]\\s*tal|qu[eé]\\s*haces|c[oó]mo\\s*est[aá]s|how\\s*are\\s*you|\"\n    r\"what'?s\\s*up|sup|good\\s*morning|good\\s*night|buenas\\s*noches|\"\n    r\"bien|perfecto|excelente|genial|cool|nice|great|awesome)\"\n    r\"[\\s!.?¡¿]*$\",\n    re.IGNORECASE,\n)\n\n\ndef classify_request(data: dict) -> str:\n    \"\"\"Classify a chat completion request.\n\n    Returns:\n        \"local\" — route to local SLM (fast, free, limited)\n        \"cloud\" — route to cloud SaaS (capable, costs tokens)\n\n    Classification levels:\n        1. Tool presence → always cloud (SLM can't do tool calling)\n        2. System prompt complexity → cloud if complex instructions\n        3. Multi-turn depth → cloud if conversation is deep\n        4. Message content → complex patterns → cloud, simple → local\n    \"\"\"\n    messages = data.get(\"messages\", [])\n    if not messages:\n        return \"cloud\"\n\n    # ── Level 2: Tool-aware routing ──\n    has_tool_calls = False\n    has_tool_results = False\n    for msg in messages:\n        if msg.get(\"tool_calls\"):\n            has_tool_calls = True\n        if msg.get(\"role\") == \"tool\":\n            has_tool_results = True\n\n    # Tool calling requires a capable model — always cloud\n    if has_tool_calls:\n        return \"cloud\"\n\n    # If there are tools defined in the request, the agent expects tool calling\n    if data.get(\"tools\"):\n        return \"cloud\"\n\n    # ── Analyze message content ──\n    last_user_msg = \"\"\n    total_content_len = 0\n    system_complexity = 0\n\n    for msg in messages:\n        content = msg.get(\"content\", \"\") or \"\"\n        total_content_len += len(content)\n\n        if msg.get(\"role\") == \"user\":\n            last_user_msg = content\n\n        if msg.get(\"role\") == \"system\":\n            # Count complexity indicators in system prompt\n            system_complexity += len(COMPLEX_RE.findall(content))\n            # Long system prompts are complex\n            if len(content) > 500:\n                system_complexity += 2\n\n    # ── Level 3: Inference complexity routing ──\n\n    # Multi-turn: more than 4 messages (2+ exchanges) → cloud\n    if len(messages) > 4:\n        return \"cloud\"\n\n    # Complex system prompt → cloud\n    if system_complexity >= 2:\n        return \"cloud\"\n\n    # Very short last user message + no complex context → local\n    trimmed_last = last_user_msg.strip()\n    if len(trimmed_last) <= 15:\n        return \"local\"\n\n    # Simple greeting/thanks → local\n    if SIMPLE_PATTERNS.match(trimmed_last):\n        return \"local\"\n\n    # Medium messages (15-100 chars) without complex patterns → local\n    if len(trimmed_last) <= 100:\n        if not COMPLEX_RE.search(trimmed_last):\n            return \"local\"\n        else:\n            return \"cloud\"\n\n    # Messages 100-300 chars → check complexity\n    if len(trimmed_last) <= 300:\n        complex_count = len(COMPLEX_RE.findall(trimmed_last))\n        if complex_count == 0:\n            return \"local\"\n        return \"cloud\"\n\n    # Long messages → cloud\n    return \"cloud\"\n\n\n# ────────────────────────────────────────────────────\n# TCP health probe\n# ────────────────────────────────────────────────────\n\ndef is_local_slm_alive() -> bool:\n    \"\"\"Quick TCP probe to check if local SLM is accepting connections.\"\"\"\n    import socket\n    try:\n        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n        s.settimeout(0.5)\n        s.connect((LOCAL_SLM_HOST, LOCAL_SLM_PORT))\n        s.close()\n        return True\n    except (OSError, SocketTimeout):\n        return False\n\n\n# ────────────────────────────────────────────────────\n# HTTP Proxy Handler\n# ────────────────────────────────────────────────────\n\nclass SmartRouterHandler(BaseHTTPRequestHandler):\n    \"\"\"Transparent HTTP proxy with smart routing.\"\"\"\n\n    def do_POST(self):\n        # Read request body\n        try:\n            content_length = int(self.headers.get(\"Content-Length\", 0))\n            body = self.rfile.read(content_length)\n            data = json.loads(body)\n        except Exception as e:\n            self.send_error(400, f\"Invalid request: {e}\")\n            return\n\n        messages = data.get(\"messages\", [])\n        stream = data.get(\"stream\", False)\n\n        # Classify the request\n        target = classify_request(data)\n\n        last_user = \"\"\n        for msg in reversed(messages):\n            if msg.get(\"role\") == \"user\":\n                last_user = (msg.get(\"content\") or \"\")[:100]\n                break\n\n        if ROUTER_LOG:\n            logger.info(\n                f\"→ {target.upper()} | msgs={len(messages)} | \"\n                f\"stream={stream} | user={last_user!r}\"\n            )\n\n        # Route to target\n        if target == \"local\":\n            if is_local_slm_alive():\n                success = self._proxy_to_local(body, stream)\n                if success:\n                    return\n                # Local failed — fall back to cloud\n                if ROUTER_LOG:\n                    logger.info(\"Local SLM failed, falling back to cloud\")\n            else:\n                if ROUTER_LOG:\n                    logger.info(\"Local SLM not available, routing to cloud\")\n\n        self._proxy_to_cloud(body, stream)\n\n    def do_GET(self):\n        \"\"\"Health check endpoint.\"\"\"\n        if self.path == \"/health\":\n            slm_alive = is_local_slm_alive()\n            status = {\n                \"status\": \"ok\",\n                \"local_slm\": \"available\" if slm_alive else \"unavailable\",\n                \"cloud_url\": CLOUD_API_URL,\n                \"router_port\": ROUTER_PORT,\n            }\n            self.send_response(200)\n            self.send_header(\"Content-Type\", \"application/json\")\n            self.end_headers()\n            self.wfile.write(json.dumps(status).encode())\n            return\n        self.send_error(404, \"Not found\")\n\n    def _proxy_to_local(self, body: bytes, stream: bool) -> bool:\n        \"\"\"Proxy request to local SLM. Returns False on failure (before sending response).\"\"\"\n        try:\n            conn = HTTPConnection(LOCAL_SLM_HOST, LOCAL_SLM_PORT, timeout=30)\n            conn.request(\n                \"POST\",\n                \"/v1/chat/completions\",\n                body=body,\n                headers={\"Content-Type\": \"application/json\"},\n            )\n            resp = conn.getresponse()\n\n            # Check status BEFORE sending anything to client\n            if resp.status != 200:\n                error_body = resp.read(1024).decode(errors=\"replace\")\n                logger.warning(f\"Local SLM returned {resp.status}: {error_body[:200]}\")\n                conn.close()\n                return False\n\n            # OK — forward response to client\n            self.send_response(200)\n            content_type = \"text/event-stream\" if stream else \"application/json\"\n            self.send_header(\"Content-Type\", content_type)\n            self.send_header(\"Cache-Control\", \"no-cache\")\n            self.send_header(\"Connection\", \"keep-alive\")\n            self.end_headers()\n\n            # Stream chunks\n            while True:\n                chunk = resp.read(4096)\n                if not chunk:\n                    break\n                self.wfile.write(chunk)\n                self.wfile.flush()\n\n            conn.close()\n            return True\n\n        except Exception as e:\n            logger.warning(f\"Local SLM proxy error: {e}\")\n            return False\n\n    def _proxy_to_cloud(self, body: bytes, stream: bool):\n        \"\"\"Proxy request to cloud SaaS.\"\"\"\n        parsed = urlparse(CLOUD_API_URL)\n        use_https = parsed.scheme == \"https\"\n\n        # Build auth headers\n        headers = {\n            \"Content-Type\": \"application/json\",\n            \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\"\n        }\n\n        # Use env var (JWT from desktop app) as priority, fallback to original header\n        api_key = os.environ.get(\"OPENAI_API_KEY\", \"\")\n        if api_key:\n            headers[\"Authorization\"] = f\"Bearer {api_key}\"\n        else:\n            auth = self.headers.get(\"Authorization\", \"\")\n            if auth:\n                headers[\"Authorization\"] = auth\n\n        try:\n            if use_https:\n                conn = HTTPSConnection(\n                    parsed.hostname,\n                    port=parsed.port or 443,\n                    timeout=120,\n                )\n            else:\n                conn = HTTPConnection(\n                    parsed.hostname,\n                    port=parsed.port or 80,\n                    timeout=120,\n                )\n\n            path = f\"{parsed.path.rstrip('/')}/v1/chat/completions\"\n            conn.request(\"POST\", path, body=body, headers=headers)\n            resp = conn.getresponse()\n\n            # Forward response\n            self.send_response(resp.status)\n\n            # Forward relevant headers\n            for key, val in resp.getheaders():\n                lower = key.lower()\n                if lower in (\"transfer-encoding\", \"connection\", \"server\"):\n                    continue\n                self.send_header(key, val)\n            self.end_headers()\n\n            # Stream response\n            while True:\n                chunk = resp.read(4096)\n                if not chunk:\n                    break\n                self.wfile.write(chunk)\n                self.wfile.flush()\n\n            conn.close()\n\n        except Exception as e:\n            logger.error(f\"Cloud proxy error: {e}\")\n            try:\n                self.send_error(502, f\"Cloud API error: {e}\")\n            except Exception:\n                pass  # Headers already sent during streaming\n\n    def address_string(self):\n        # Override to prevent reverse DNS lookup hangs\n        return self.client_address[0]\n\n    def log_message(self, format, *args):\n        # Suppress default access logs unless debug mode\n        if ROUTER_LOG:\n            logger.info(format % args)\n\n\n# ────────────────────────────────────────────────────\n# Server\n# ────────────────────────────────────────────────────\n\nclass ThreadedHTTPServer(HTTPServer):\n    \"\"\"Handle each request in a separate thread for concurrent streaming.\"\"\"\n    daemon_threads = True\n\n    def process_request(self, request, client_address):\n        thread = threading.Thread(\n            target=self.process_request_thread,\n            args=(request, client_address),\n            daemon=True,\n        )\n        thread.start()\n\n    def process_request_thread(self, request, client_address):\n        try:\n            self.finish_request(request, client_address)\n        except Exception:\n            self.handle_error(request, client_address)\n        finally:\n            self.shutdown_request(request)\n\n\ndef main():\n    server = ThreadedHTTPServer((\"127.0.0.1\", ROUTER_PORT), SmartRouterHandler)\n\n    logger.info(f\"🧠 Smart Router started on port {ROUTER_PORT}\")\n    logger.info(f\"   Local SLM: {LOCAL_SLM_HOST}:{LOCAL_SLM_PORT}\")\n    logger.info(f\"   Cloud SaaS: {CLOUD_API_URL}\")\n\n    # Graceful shutdown\n    def shutdown(sig, frame):\n        logger.info(\"Shutting down...\")\n        server.shutdown()\n        sys.exit(0)\n\n    signal.signal(signal.SIGTERM, shutdown)\n    signal.signal(signal.SIGINT, shutdown)\n\n    try:\n        server.serve_forever()\n    except KeyboardInterrupt:\n        shutdown(None, None)\n\n\nif __name__ == \"__main__\":\n    main()\n";
+export const SMART_ROUTER_SCRIPT = `#!/usr/bin/env python3
+"""
+OmniWorker Smart Router — Routes LLM inference between local SLM and cloud SaaS.
+
+Architecture:
+  Desktop App → Agent Gateway → Smart Router (this, port 8341)
+                                      │
+                                      ├─ Local SLM (port 8080) — simple/fast
+                                      └─ Cloud SaaS (worker.thelab.lat) — complex/capable
+
+Classification logic:
+  Level 1: Quick message classification (desktop app) — already handled.
+  Level 2: Tool-aware routing — if tools are involved, check if local SLM can handle.
+  Level 3: Inference complexity — analyze prompt to decide model power needed.
+
+Runs as a transparent HTTP proxy. The agent configures base_url to this router.
+"""
+
+import json
+import logging
+import os
+import re
+import signal
+import sys
+import threading
+from http.client import HTTPConnection, HTTPSConnection
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from socket import timeout as SocketTimeout
+from urllib.parse import urlparse
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [smart-router] %(levelname)s: %(message)s",
+)
+logger = logging.getLogger("smart-router")
+
+# ────────────────────────────────────────────────────
+# Configuration
+# ────────────────────────────────────────────────────
+
+ROUTER_PORT = int(os.environ.get("SMART_ROUTER_PORT", "8341"))
+LOCAL_SLM_HOST = "127.0.0.1"
+LOCAL_SLM_PORT = int(os.environ.get("LOCAL_SLM_PORT", "8080"))
+CLOUD_API_URL = os.environ.get(
+    "CLOUD_API_URL", "https://worker.thelab.lat/api"
+)
+ROUTER_LOG = os.environ.get("SMART_ROUTER_LOG", "").lower() in ("1", "true", "yes")
+
+# ────────────────────────────────────────────────────
+# Dynamic Token Retrieval
+# ────────────────────────────────────────────────────
+
+def get_latest_api_key() -> str:
+    """Read the latest OPENAI_API_KEY / CUSTOM_API_KEY from ~/.omniworker/.env dynamically to avoid stale keys after JWT refresh."""
+    env_path = os.path.expanduser("~/.omniworker/.env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    trimmed = line.strip()
+                    if trimmed.startswith("#") or "=" not in trimmed:
+                        continue
+                    key, val = trimmed.split("=", 1)
+                    key = key.strip()
+                    val = val.strip().strip("'").strip('"')
+                    if key in ("OPENAI_API_KEY", "CUSTOM_API_KEY") and val:
+                        return val
+        except Exception as e:
+            logger.warning(f"Error reading dynamic API key from .env: {e}")
+    return os.environ.get("OPENAI_API_KEY", "")
+
+# ────────────────────────────────────────────────────
+# Message Classification
+# ────────────────────────────────────────────────────
+
+# Patterns that indicate complex tasks requiring cloud
+COMPLEX_PATTERNS = [
+    # Code-related (English)
+    r"\`\`\`",
+    r"\\bfunction\\b\\s",
+    r"\\bclass\\b\\s",
+    r"\\bimport\\b\\s",
+    r"\\bdef\\b\\s",
+    r"\\basync\\b\\s",
+    r"\\bawait\\b\\s",
+    r"\\breturn\\b\\s",
+    # Code-related (Spanish)
+    r"\\bfuncion\\b",
+    r"\\bfunción\\b",
+    r"\\bclase\\b",
+    r"\\bimportar\\b",
+    r"\\bretornar\\b",
+    r"\\bretorna\\b",
+    r"\\bdevuelve\\b",
+    # Database
+    r"\\bSELECT\\b\\s",
+    r"\\bCREATE\\b\\s",
+    r"\\bINSERT\\b\\s",
+    r"\\bALTER\\b\\s",
+    # Dev tools
+    r"\\bnpm\\b",
+    r"\\bgit\\b",
+    r"\\bpip\\b",
+    r"\\bpython\\b",
+    r"\\bnode\\b",
+    r"\\bdocker\\b",
+    # Error/debugging
+    r"\\berror\\b",
+    r"\\btraceback\\b",
+    r"\\bexception\\b",
+    r"\\bdebug\\b",
+    r"\\bfix\\b",
+    r"\\bbug\\b",
+    r"\\bdepura\\b",
+    r"\\bdepurar\\b",
+    r"\\bfallo\\b",
+    # Complex instructions (English)
+    r"\\banalyze\\b",
+    r"\\banalyse\\b",
+    r"\\bexplain\\b",
+    r"\\bcompare\\b",
+    r"\\bcreate\\b",
+    r"\\bwrite\\b",
+    r"\\bimplement\\b",
+    r"\\brefactor\\b",
+    r"\\bbuild\\b",
+    r"\\bgenerate\\b",
+    r"\\bdesign\\b",
+    r"\\bdeploy\\b",
+    r"\\bconfigur",
+    r"\\binstall\\b",
+    r"\\bstep.?by.?step\\b",
+    r"\\bhow\\s+to\\b",
+    # Complex instructions (Spanish)
+    r"\\banaliza\\b",
+    r"\\banalizar\\b",
+    r"\\bexplica\\b",
+    r"\\bexplicar\\b",
+    r"\\bcompara\\b",
+    r"\\bcomparar\\b",
+    r"\\bcrear\\b",
+    r"\\bcrea\\b",
+    r"\\bescribe\\b",
+    r"\\bescribir\\b",
+    r"\\bimplementa\\b",
+    r"\\bimplementar\\b",
+    r"\\brefactorizar\\b",
+    r"\\brefactoriza\\b",
+    r"\\bconstruir\\b",
+    r"\\bconstruye\\b",
+    r"\\bgenerar\\b",
+    r"\\bgenera\\b",
+    r"\\bdiseñar\\b",
+    r"\\bdiseña\\b",
+    r"\\bdesplegar\\b",
+    r"\\bdespliega\\b",
+    r"\\bconfigurar\\b",
+    r"\\bconfigura\\b",
+    r"\\binstalar\\b",
+    r"\\binstala\\b",
+    r"\\bpaso\\s+a\\s+paso\\b",
+    r"\\bcómo\\s+hacer\\b",
+    r"\\bcomo\\s+hacer\\b",
+    r"\\bc[oó]mo\\b\\s+(hacer|crear|config|instal|usar|puedo)",
+    # File operations that need analysis
+    r"\\barchivo\\b.*\\barchivo\\b",  # mentions files multiple times
+]
+
+COMPLEX_RE = re.compile("|".join(COMPLEX_PATTERNS), re.IGNORECASE)
+
+# Simple greeting/thanks patterns — always route to local
+SIMPLE_PATTERNS = re.compile(
+    r"^(hola|hi|hello|hey|buenos?\\s*d[ií]as|buenas|gracias|thanks|thank you|"
+    r"bye|adi[oó]s|ok|s[ií]|no|yes|nope|sure|claro|dale|listo|yo|"
+    r"qu[eé]\\s*tal|qu[eé]\\s*haces|c[oó]mo\\s*est[aá]s|how\\s*are\\s*you|"
+    r"what'?s\\s*up|sup|good\\s*morning|good\\s*night|buenas\\s*noches|"
+    r"bien|perfecto|excelente|genial|cool|nice|great|awesome)"
+    r"[\\s!.?¡¿]*$",
+    re.IGNORECASE,
+)
+
+
+def classify_request(data: dict) -> str:
+    """Classify a chat completion request.
+
+    Returns:
+        "local" — route to local SLM (fast, free, limited)
+        "cloud" — route to cloud SaaS (capable, costs tokens)
+
+    Classification levels:
+        1. Tool presence → always cloud (SLM can't do tool calling)
+        2. System prompt complexity → cloud if complex instructions
+        3. Multi-turn depth → cloud if conversation is deep
+        4. Message content → complex patterns → cloud, simple → local
+    """
+    messages = data.get("messages", [])
+    if not messages:
+        return "cloud"
+
+    # ── Level 2: Tool-aware routing ──
+    has_tool_calls = False
+    has_tool_results = False
+    for msg in messages:
+        if msg.get("tool_calls"):
+            has_tool_calls = True
+        if msg.get("role") == "tool":
+            has_tool_results = True
+
+    # Tool calling requires a capable model — always cloud
+    if has_tool_calls:
+        return "cloud"
+
+    # If there are tools defined in the request, the agent expects tool calling
+    if data.get("tools"):
+        return "cloud"
+
+    # ── Analyze message content ──
+    last_user_msg = ""
+    total_content_len = 0
+    system_complexity = 0
+
+    for msg in messages:
+        content = msg.get("content", "") or ""
+        total_content_len += len(content)
+
+        if msg.get("role") == "user":
+            last_user_msg = content
+
+        if msg.get("role") == "system":
+            # Count complexity indicators in system prompt
+            system_complexity += len(COMPLEX_RE.findall(content))
+            # Long system prompts are complex
+            if len(content) > 500:
+                system_complexity += 2
+
+    # ── Level 3: Inference complexity routing ──
+
+    # Multi-turn: more than 4 messages (2+ exchanges) → cloud
+    if len(messages) > 4:
+        return "cloud"
+
+    # Complex system prompt → cloud
+    if system_complexity >= 2:
+        return "cloud"
+
+    trimmed_last = last_user_msg.strip()
+
+    # Simple greeting/thanks (starts & ends with greeting words) → local
+    if SIMPLE_PATTERNS.match(trimmed_last):
+        return "local"
+
+    # Any real question (?) that is not a simple greeting -> cloud
+    if "?" in trimmed_last or "¿" in trimmed_last:
+        return "cloud"
+
+    # Very short last user message (<= 15 chars) + no complex context → local
+    if len(trimmed_last) <= 15:
+        if COMPLEX_RE.search(trimmed_last):
+            return "cloud"
+        return "local"
+
+    # Medium messages (15-50 chars) without complex patterns → local
+    if len(trimmed_last) <= 50:
+        if not COMPLEX_RE.search(trimmed_last):
+            return "local"
+        else:
+            return "cloud"
+
+    # Messages > 50 chars or matching complex patterns → cloud
+    return "cloud"
+
+
+# ────────────────────────────────────────────────────
+# TCP health probe
+# ────────────────────────────────────────────────────
+
+def is_local_slm_alive() -> bool:
+    """Quick TCP probe to check if local SLM is accepting connections."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        s.connect((LOCAL_SLM_HOST, LOCAL_SLM_PORT))
+        s.close()
+        return True
+    except (OSError, SocketTimeout):
+        return False
+
+
+# ────────────────────────────────────────────────────
+# HTTP Proxy Handler
+# ────────────────────────────────────────────────────
+
+class SmartRouterHandler(BaseHTTPRequestHandler):
+    """Transparent HTTP proxy with smart routing."""
+
+    def do_POST(self):
+        # Read request body
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body)
+        except Exception as e:
+            self.send_error(400, f"Invalid request: {e}")
+            return
+
+        messages = data.get("messages", [])
+        stream = data.get("stream", False)
+
+        # Classify the request
+        target = classify_request(data)
+
+        last_user = ""
+        for msg in reversed(messages):
+            if msg.get("role") == "user":
+                last_user = (msg.get("content") or "")[:100]
+                break
+
+        if ROUTER_LOG:
+            logger.info(
+                f"→ {target.upper()} | msgs={len(messages)} | "
+                f"stream={stream} | user={last_user!r}"
+            )
+
+        # Route to target
+        if target == "local":
+            if is_local_slm_alive():
+                success = self._proxy_to_local(body, stream)
+                if success:
+                    return
+                # Local failed — fall back to cloud
+                if ROUTER_LOG:
+                    logger.info("Local SLM failed, falling back to cloud")
+            else:
+                if ROUTER_LOG:
+                    logger.info("Local SLM not available, routing to cloud")
+
+        self._proxy_to_cloud(body, stream)
+
+    def do_GET(self):
+        """Health check endpoint."""
+        if self.path == "/health":
+            slm_alive = is_local_slm_alive()
+            status = {
+                "status": "ok",
+                "local_slm": "available" if slm_alive else "unavailable",
+                "cloud_url": CLOUD_API_URL,
+                "router_port": ROUTER_PORT,
+            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(status).encode())
+            return
+        self.send_error(404, "Not found")
+
+    def _proxy_to_local(self, body: bytes, stream: bool) -> bool:
+        """Proxy request to local SLM. Returns False on failure (before sending response)."""
+        try:
+            conn = HTTPConnection(LOCAL_SLM_HOST, LOCAL_SLM_PORT, timeout=30)
+            conn.request(
+                "POST",
+                "/v1/chat/completions",
+                body=body,
+                headers={"Content-Type": "application/json"},
+            )
+            resp = conn.getresponse()
+
+            # Check status BEFORE sending anything to client
+            if resp.status != 200:
+                error_body = resp.read(1024).decode(errors="replace")
+                logger.warning(f"Local SLM returned {resp.status}: {error_body[:200]}")
+                conn.close()
+                return False
+
+            # OK — forward response to client
+            self.send_response(200)
+            content_type = "text/event-stream" if stream else "application/json"
+            self.send_header("Content-Type", content_type)
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.end_headers()
+
+            # Stream chunks
+            while True:
+                chunk = resp.read(4096)
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                self.wfile.flush()
+
+            conn.close()
+            return True
+
+        except Exception as e:
+            logger.warning(f"Local SLM proxy error: {e}")
+            return False
+
+    def _proxy_to_cloud(self, body: bytes, stream: bool):
+        """Proxy request to cloud SaaS."""
+        parsed = urlparse(CLOUD_API_URL)
+        use_https = parsed.scheme == "https"
+
+        # Build auth headers with modern user agent to prevent Cloudflare blocks
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        }
+
+        # Prefer incoming Authorization header unless it is generic/absent
+        auth = self.headers.get("Authorization", "")
+        if auth and "no-key-required" not in auth and auth.strip() != "Bearer":
+            headers["Authorization"] = auth
+        else:
+            api_key = get_latest_api_key()
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+        try:
+            if use_https:
+                conn = HTTPSConnection(
+                    parsed.hostname,
+                    port=parsed.port or 443,
+                    timeout=120,
+                )
+            else:
+                conn = HTTPConnection(
+                    parsed.hostname,
+                    port=parsed.port or 80,
+                    timeout=120,
+                )
+
+            path = f"{parsed.path.rstrip('/')}/v1/chat/completions"
+            conn.request("POST", path, body=body, headers=headers)
+            resp = conn.getresponse()
+
+            # Forward response
+            self.send_response(resp.status)
+
+            # Forward relevant headers
+            for key, val in resp.getheaders():
+                lower = key.lower()
+                if lower in ("transfer-encoding", "connection", "server"):
+                    continue
+                self.send_header(key, val)
+            self.end_headers()
+
+            # Stream response
+            while True:
+                chunk = resp.read(4096)
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                self.wfile.flush()
+
+            conn.close()
+
+        except Exception as e:
+            logger.error(f"Cloud proxy error: {e}")
+            try:
+                self.send_error(502, f"Cloud API error: {e}")
+            except Exception:
+                pass  # Headers already sent during streaming
+
+    def log_message(self, format, *args):
+        # Suppress default access logs unless debug mode
+        if ROUTER_LOG:
+            logger.info(format % args)
+
+
+# ────────────────────────────────────────────────────
+# Server
+# ────────────────────────────────────────────────────
+
+class ThreadedHTTPServer(HTTPServer):
+    """Handle each request in a separate thread for concurrent streaming."""
+    daemon_threads = True
+
+    def process_request(self, request, client_address):
+        thread = threading.Thread(
+            target=self.process_request_thread,
+            args=(request, client_address),
+            daemon=True,
+        )
+        thread.start()
+
+    def process_request_thread(self, request, client_address):
+        try:
+            self.finish_request(request, client_address)
+        except Exception:
+            self.handle_error(request, client_address)
+        finally:
+            self.shutdown_request(request)
+
+
+def main():
+    server = ThreadedHTTPServer(("127.0.0.1", ROUTER_PORT), SmartRouterHandler)
+
+    logger.info(f"🧠 Smart Router started on port {ROUTER_PORT}")
+    logger.info(f"   Local SLM: {LOCAL_SLM_HOST}:{LOCAL_SLM_PORT}")
+    logger.info(f"   Cloud SaaS: {CLOUD_API_URL}")
+
+    # Graceful shutdown
+    def shutdown(sig, frame):
+        logger.info("Shutting down...")
+        server.shutdown()
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        shutdown(None, None)
+
+
+if __name__ == "__main__":
+    main()
+`;

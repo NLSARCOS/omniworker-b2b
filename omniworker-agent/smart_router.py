@@ -47,12 +47,35 @@ CLOUD_API_URL = os.environ.get(
 ROUTER_LOG = os.environ.get("SMART_ROUTER_LOG", "").lower() in ("1", "true", "yes")
 
 # ────────────────────────────────────────────────────
+# Dynamic Token Retrieval
+# ────────────────────────────────────────────────────
+
+def get_latest_api_key() -> str:
+    """Read the latest OPENAI_API_KEY / CUSTOM_API_KEY from ~/.omniworker/.env dynamically to avoid stale keys after JWT refresh."""
+    env_path = os.path.expanduser("~/.omniworker/.env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    trimmed = line.strip()
+                    if trimmed.startswith("#") or "=" not in trimmed:
+                        continue
+                    key, val = trimmed.split("=", 1)
+                    key = key.strip()
+                    val = val.strip().strip("'").strip('"')
+                    if key in ("OPENAI_API_KEY", "CUSTOM_API_KEY") and val:
+                        return val
+        except Exception as e:
+            logger.warning(f"Error reading dynamic API key from .env: {e}")
+    return os.environ.get("OPENAI_API_KEY", "")
+
+# ────────────────────────────────────────────────────
 # Message Classification
 # ────────────────────────────────────────────────────
 
 # Patterns that indicate complex tasks requiring cloud
 COMPLEX_PATTERNS = [
-    # Code-related
+    # Code-related (English)
     r"```",
     r"\bfunction\b\s",
     r"\bclass\b\s",
@@ -61,6 +84,14 @@ COMPLEX_PATTERNS = [
     r"\basync\b\s",
     r"\bawait\b\s",
     r"\breturn\b\s",
+    # Code-related (Spanish)
+    r"\bfuncion\b",
+    r"\bfunción\b",
+    r"\bclase\b",
+    r"\bimportar\b",
+    r"\bretornar\b",
+    r"\bretorna\b",
+    r"\bdevuelve\b",
     # Database
     r"\bSELECT\b\s",
     r"\bCREATE\b\s",
@@ -80,7 +111,10 @@ COMPLEX_PATTERNS = [
     r"\bdebug\b",
     r"\bfix\b",
     r"\bbug\b",
-    # Complex instructions
+    r"\bdepura\b",
+    r"\bdepurar\b",
+    r"\bfallo\b",
+    # Complex instructions (English)
     r"\banalyze\b",
     r"\banalyse\b",
     r"\bexplain\b",
@@ -97,6 +131,36 @@ COMPLEX_PATTERNS = [
     r"\binstall\b",
     r"\bstep.?by.?step\b",
     r"\bhow\s+to\b",
+    # Complex instructions (Spanish)
+    r"\banaliza\b",
+    r"\banalizar\b",
+    r"\bexplica\b",
+    r"\bexplicar\b",
+    r"\bcompara\b",
+    r"\bcomparar\b",
+    r"\bcrear\b",
+    r"\bcrea\b",
+    r"\bescribe\b",
+    r"\bescribir\b",
+    r"\bimplementa\b",
+    r"\bimplementar\b",
+    r"\brefactorizar\b",
+    r"\brefactoriza\b",
+    r"\bconstruir\b",
+    r"\bconstruye\b",
+    r"\bgenerar\b",
+    r"\bgenera\b",
+    r"\bdiseñar\b",
+    r"\bdiseña\b",
+    r"\bdesplegar\b",
+    r"\bdespliega\b",
+    r"\bconfigurar\b",
+    r"\bconfigura\b",
+    r"\binstalar\b",
+    r"\binstala\b",
+    r"\bpaso\s+a\s+paso\b",
+    r"\bcómo\s+hacer\b",
+    r"\bcomo\s+hacer\b",
     r"\bc[oó]mo\b\s+(hacer|crear|config|instal|usar|puedo)",
     # File operations that need analysis
     r"\barchivo\b.*\barchivo\b",  # mentions files multiple times
@@ -106,12 +170,12 @@ COMPLEX_RE = re.compile("|".join(COMPLEX_PATTERNS), re.IGNORECASE)
 
 # Simple greeting/thanks patterns — always route to local
 SIMPLE_PATTERNS = re.compile(
-    r"^(hola|hi|hello|hey|buenos?\s*d[ií]as|buenas|gracias|thanks|thank you|"
+    r"^(hola|hi|hello|hey|buenos?\\s*d[ií]as|buenas|gracias|thanks|thank you|"
     r"bye|adi[oó]s|ok|s[ií]|no|yes|nope|sure|claro|dale|listo|yo|"
-    r"qu[eé]\s*tal|qu[eé]\s*haces|c[oó]mo\s*est[aá]s|how\s*are\s*you|"
-    r"what'?s\s*up|sup|good\s*morning|good\s*night|buenas\s*noches|"
+    r"qu[eé]\\s*tal|qu[eé]\\s*haces|c[oó]mo\\s*est[aá]s|how\\s*are\\s*you|"
+    r"what'?s\\s*up|sup|good\\s*morning|good\\s*night|buenas\\s*noches|"
     r"bien|perfecto|excelente|genial|cool|nice|great|awesome)"
-    r"[\s!.?¡¿]*$",
+    r"[\\s!.?¡¿]*$",
     re.IGNORECASE,
 )
 
@@ -179,30 +243,30 @@ def classify_request(data: dict) -> str:
     if system_complexity >= 2:
         return "cloud"
 
-    # Very short last user message + no complex context → local
     trimmed_last = last_user_msg.strip()
-    if len(trimmed_last) <= 15:
-        return "local"
 
-    # Simple greeting/thanks → local
+    # Simple greeting/thanks (starts & ends with greeting words) → local
     if SIMPLE_PATTERNS.match(trimmed_last):
         return "local"
 
-    # Medium messages (15-100 chars) without complex patterns → local
-    if len(trimmed_last) <= 100:
+    # Any real question (?) that is not a simple greeting -> cloud
+    if "?" in trimmed_last or "¿" in trimmed_last:
+        return "cloud"
+
+    # Very short last user message (<= 15 chars) + no complex context → local
+    if len(trimmed_last) <= 15:
+        if COMPLEX_RE.search(trimmed_last):
+            return "cloud"
+        return "local"
+
+    # Medium messages (15-50 chars) without complex patterns → local
+    if len(trimmed_last) <= 50:
         if not COMPLEX_RE.search(trimmed_last):
             return "local"
         else:
             return "cloud"
 
-    # Messages 100-300 chars → check complexity
-    if len(trimmed_last) <= 300:
-        complex_count = len(COMPLEX_RE.findall(trimmed_last))
-        if complex_count == 0:
-            return "local"
-        return "cloud"
-
-    # Long messages → cloud
+    # Messages > 50 chars or matching complex patterns → cloud
     return "cloud"
 
 
@@ -337,20 +401,20 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         parsed = urlparse(CLOUD_API_URL)
         use_https = parsed.scheme == "https"
 
-        # Build auth headers
+        # Build auth headers with modern user agent to prevent Cloudflare blocks
         headers = {
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         }
 
-        # Use env var (JWT from desktop app) as priority, fallback to original header
-        api_key = os.environ.get("OPENAI_API_KEY", "")
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
+        # Prefer incoming Authorization header unless it is generic/absent
+        auth = self.headers.get("Authorization", "")
+        if auth and "no-key-required" not in auth and auth.strip() != "Bearer":
+            headers["Authorization"] = auth
         else:
-            auth = self.headers.get("Authorization", "")
-            if auth:
-                headers["Authorization"] = auth
+            api_key = get_latest_api_key()
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
 
         try:
             if use_https:
@@ -397,10 +461,6 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                 self.send_error(502, f"Cloud API error: {e}")
             except Exception:
                 pass  # Headers already sent during streaming
-
-    def address_string(self):
-        # Override to prevent reverse DNS lookup hangs
-        return self.client_address[0]
 
     def log_message(self, format, *args):
         # Suppress default access logs unless debug mode

@@ -11870,29 +11870,35 @@ class AIAgent:
             import os
             import sys
             import logging
-            # Añadir ruta si no está
-            agent_dir = os.path.dirname(__file__)
-            if agent_dir not in sys.path:
-                sys.path.append(agent_dir)
-            from intent_classifier import get_routing_config
             
-            new_url, new_model, new_key = get_routing_config(
-                user_message, 
-                getattr(self, "base_url", ""), 
-                getattr(self, "model", ""), 
-                getattr(self, "api_key", "")
-            )
-            
-            # Aplicar la nueva configuración de la ruta elegida (Local vs SaaS)
-            self.base_url = new_url
-            self.model = new_model
-            self.api_key = new_key
-            
-            # Limpiar clientes oxidados si cambiamos de proveedor
-            self._primary_openai_client = None
-            self._primary_async_openai_client = None
-            
-            logging.getLogger(__name__).info(f"OmniWorker Router -> Model: {self.model} | URL: {self.base_url}")
+            # Si base_url ya apunta al Smart Router (puerto 8341) o USE_SMART_ROUTER está activo, no sobreescribimos
+            base_url_str = getattr(self, "base_url", "") or ""
+            if "8341" in base_url_str or os.environ.get("USE_SMART_ROUTER") == "true":
+                logging.getLogger(__name__).info("Bypassing intent classifier: Smart Router is active as base_url")
+            else:
+                # Añadir ruta si no está
+                agent_dir = os.path.dirname(__file__)
+                if agent_dir not in sys.path:
+                    sys.path.append(agent_dir)
+                from intent_classifier import get_routing_config
+                
+                new_url, new_model, new_key = get_routing_config(
+                    user_message, 
+                    getattr(self, "base_url", ""), 
+                    getattr(self, "model", ""), 
+                    getattr(self, "api_key", "")
+                )
+                
+                # Aplicar la nueva configuración de la ruta elegida (Local vs SaaS)
+                self.base_url = new_url
+                self.model = new_model
+                self.api_key = new_key
+                
+                # Limpiar clientes oxidados si cambiamos de proveedor
+                self._primary_openai_client = None
+                self._primary_async_openai_client = None
+                
+                logging.getLogger(__name__).info(f"OmniWorker Router -> Model: {self.model} | URL: {self.base_url}")
         except Exception as e:
             import logging
             logging.getLogger(__name__).warning(f"Error en OmniWorker Intent Classifier: {e}")

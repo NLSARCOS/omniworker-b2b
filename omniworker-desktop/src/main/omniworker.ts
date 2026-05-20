@@ -1,4 +1,4 @@
-import { ChildProcess, spawn, execSync } from "child_process";
+import { ChildProcess, spawn } from "child_process";
 import {
   existsSync,
   readFileSync,
@@ -45,6 +45,9 @@ export function getApiUrl(): string {
   if (conn.mode === "remote" && conn.remoteUrl) {
     return conn.remoteUrl.replace(/\/+$/, "");
   }
+  // Local mode: use the local OmniWorker gateway (port 8642).
+  // The gateway runs the full agent with tools (file system, terminal, etc.)
+  // and uses the SaaS for LLM inference via the model config's base_url.
   return LOCAL_API_URL;
 }
 
@@ -65,15 +68,22 @@ export function setSshRemoteApiKey(key: string): void {
   _sshRemoteApiKey = key;
 }
 
-export function getRemoteAuthHeader(): Record<string, string> {
+export function getRemoteAuthHeader(profile?: string): Record<string, string> {
   const conn = getConnectionConfig();
   if (conn.mode === "ssh") {
     if (_sshRemoteApiKey)
       return { Authorization: `Bearer ${_sshRemoteApiKey}` };
     return {};
   }
-  if (conn.apiKey) {
+  if (conn.mode === "remote" && conn.apiKey) {
     return { Authorization: `Bearer ${conn.apiKey}` };
+  }
+  if (conn.mode === "local") {
+    const envConfig = readEnv(profile);
+    const localKey = envConfig.CUSTOM_API_KEY || envConfig.OPENAI_API_KEY;
+    if (localKey) {
+      return { Authorization: `Bearer ${localKey}` };
+    }
   }
   return {};
 }
@@ -115,13 +125,17 @@ interface ChatHandle {
   abort: () => void;
 }
 
+function cleanBaseUrl(url: string): string {
+  return url.replace(/\/v1\/?$/, "");
+}
+
 // ────────────────────────────────────────────────────
 //  API Server health check
 // ────────────────────────────────────────────────────
 
 function isApiServerReady(): Promise<boolean> {
   return new Promise((resolve) => {
-    const url = `${getApiUrl()}/health`;
+    const url = `${cleanBaseUrl(getApiUrl())}/health`;
     const mod = url.startsWith("https") ? https : http;
     const req = mod.request(
       url,
@@ -216,7 +230,7 @@ function sendMessageViaApi(
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...getRemoteAuthHeader(),
+    ...getRemoteAuthHeader(profile),
   };
 
   let sessionId = _resumeSessionId || "";
@@ -243,7 +257,7 @@ function sendMessageViaApi(
       messages: [{ role: "user", content: message }],
       stream: false,
     });
-    const probeUrl = `${getApiUrl()}/v1/chat/completions`;
+    const probeUrl = `${cleanBaseUrl(getApiUrl())}/v1/chat/completions`;
     const probeMod = probeUrl.startsWith("https") ? https : http;
     const probeReq = probeMod.request(
       probeUrl,
@@ -251,7 +265,7 @@ function sendMessageViaApi(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getRemoteAuthHeader(),
+          ...getRemoteAuthHeader(profile),
         },
       },
       (res) => {
@@ -353,7 +367,7 @@ function sendMessageViaApi(
     return false;
   }
 
-  const chatUrl = `${getApiUrl()}/v1/chat/completions`;
+  const chatUrl = `${cleanBaseUrl(getApiUrl())}/v1/chat/completions`;
   const requester = chatUrl.startsWith("https") ? https.request : http.request;
   const req = requester(
     chatUrl,
@@ -1132,8 +1146,10 @@ import { SMART_ROUTER_SCRIPT } from "./smartRouterScript";
  * Must be called AFTER login (needs OPENAI_API_KEY and CLOUD_API_URL in env).
  */
 export async function startSmartRouter(): Promise<boolean> {
-  // Always stop any existing (zombie) router before starting a fresh one
-  stopSmartRouter();
+  const isRunning = await isSmartRouterRunning();
+  if (isRunning) {
+    return true; // Already running
+  }
 
   const routerScript = join(OMNIWORKER_REPO, "smart_router.py");
   if (!existsSync(routerScript)) {
@@ -1148,9 +1164,9 @@ export async function startSmartRouter(): Promise<boolean> {
   const conn = getConnectionConfig();
   const envConfig = readEnv();
 
-  let cloudApiUrl = conn.remoteUrl || envConfig.CLOUD_API_URL || process.env.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
-  if (conn.mode === "local" && (!cloudApiUrl || cloudApiUrl === "https://api.openai.com")) {
-    cloudApiUrl = envConfig.CUSTOM_BASE_URL || "https://api.openai.com";
+  let cloudApiUrl = process.env.CLOUD_API_URL || envConfig.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
+  if (conn.mode === "local") {
+    cloudApiUrl = envConfig.CUSTOM_BASE_URL || envConfig.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
   }
 
   const routerEnv: Record<string, string> = {
@@ -1169,7 +1185,6 @@ export async function startSmartRouter(): Promise<boolean> {
     apiKey = conn.apiKey;
   } else {
     apiKey =
-      conn.apiKey ||
       process.env.OPENAI_API_KEY ||
       envConfig.OPENAI_API_KEY ||
       envConfig.CUSTOM_API_KEY ||
@@ -1228,16 +1243,6 @@ export function stopSmartRouter(): void {
     smartRouterProcess.kill("SIGTERM");
     smartRouterProcess = null;
   }
-  try {
-    const isWindows = process.platform === "win32";
-    if (isWindows) {
-      execSync(`wmic process where "commandline like '%smart_router.py%'" call terminate`, { stdio: "ignore" });
-    } else {
-      execSync(`pkill -f smart_router.py`, { stdio: "ignore" });
-    }
-  } catch (e) {
-    // Ignore errors if no process was found
-  }
 }
 
 /**
@@ -1279,22 +1284,34 @@ export function startGateway(profile?: string): boolean {
       gatewayEnv[key] = value;
     }
   }
-  // Ensure the gateway gets the API_SERVER_KEY
-  if (!gatewayEnv.API_SERVER_KEY && gatewayEnv.CUSTOM_API_KEY) {
-    gatewayEnv.API_SERVER_KEY = gatewayEnv.CUSTOM_API_KEY;
-  }
+  // NOTE: Do NOT set API_SERVER_KEY for the local gateway.
+  // The gateway binds to 127.0.0.1 and its _check_auth allows all requests
+  // when no key is configured ("local-only use"). Setting it from CUSTOM_API_KEY
+  // causes permanent auth desync because the JWT rotates every ~12 min but the
+  // gateway process keeps the stale token in memory → 401 on every request.
+  delete gatewayEnv.API_SERVER_KEY;
 
-  // Inject OMNIWORKER_SAAS_BASE_URL derived from CLOUD_API_URL or SAAS_BASE_URL
-  const conn = getConnectionConfig();
-  const cloudApiUrl = conn.remoteUrl || profileEnv.CLOUD_API_URL || process.env.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
-  let saasBaseUrl = cloudApiUrl;
-  if (cloudApiUrl.endsWith("/api")) {
-    saasBaseUrl = `${cloudApiUrl}/v1`;
-  } else if (cloudApiUrl.endsWith("/api/")) {
-    saasBaseUrl = `${cloudApiUrl}v1`;
+  // Sync the current JWT into config.yaml so the agent's "custom" provider
+  // uses the fresh token for SaaS API calls. The JWT rotates on login/refresh,
+  // and the agent reads api_key from config.yaml at startup.
+  const jwtToken = profileEnv.CUSTOM_API_KEY || profileEnv.OPENAI_API_KEY;
+  if (jwtToken) {
+    try {
+      const configPath = join(OMNIWORKER_HOME, "config.yaml");
+      const fsSync = require("fs") as typeof import("fs");
+      if (fsSync.existsSync(configPath)) {
+        let yaml = fsSync.readFileSync(configPath, "utf-8");
+        // Replace api_key line under model section (matches any quoted value)
+        yaml = yaml.replace(
+          /^(\s+api_key:\s*)"[^"]*".*$/m,
+          `$1"${jwtToken}"  # Auto-synced JWT from desktop login`,
+        );
+        fsSync.writeFileSync(configPath, yaml, "utf-8");
+      }
+    } catch {
+      /* Non-fatal — gateway can still start without config sync */
+    }
   }
-  gatewayEnv.OMNIWORKER_SAAS_BASE_URL = saasBaseUrl;
-
 
   const fs = require("fs");
   const logFd = fs.openSync(join(OMNIWORKER_HOME, "gateway.log"), "a");
@@ -1422,9 +1439,7 @@ export function testRemoteConnection(
 export function restartGateway(profile?: string): void {
   if (!gatewayStartedByApp && !isGatewayRunning()) return;
   stopGateway(true);
-  stopSmartRouter();
   setTimeout(() => {
     startGateway(profile);
-    startSmartRouter().catch((e) => console.error("[SmartRouter] restart failed", e));
   }, 500);
 }

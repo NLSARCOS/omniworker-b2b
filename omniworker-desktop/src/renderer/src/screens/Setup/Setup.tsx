@@ -62,11 +62,12 @@ function Setup({
       // Guardamos la apikey como CUSTOM_API_KEY
       await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", apiKey.trim());
 
-      // Configuramos el provider a "custom" apuntando a nuestro SaaS
+      // Configuramos el provider a "custom" apuntando al Smart Router local
+      const routerUrl = `http://127.0.0.1:8341/v1`;
       await window.omniworkerAPI.setModelConfig(
         "custom",
         "omniworker", // Modelo por defecto (OmniWorker Normal)
-        gatewayUrl,
+        routerUrl,
       );
 
       onComplete();
