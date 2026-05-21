@@ -1,12 +1,9 @@
 import { join } from "path";
-import { existsSync } from "fs";
-import { readFile } from "fs/promises";
 import {
   OMNIWORKER_HOME,
   OMNIWORKER_PYTHON,
   omniworkerCliArgs,
 } from "./installer";
-import { profileHome } from "./utils";
 import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./omniworker";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { execFile } from "child_process";
