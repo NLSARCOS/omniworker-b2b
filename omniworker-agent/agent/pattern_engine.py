@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 _TIME_RE = re.compile(r"\b\d{1,2}:\d{2}(?::\d{2})?\b")
 _RELATIVE_DATE_RE = re.compile(
-    r"\b(?:hoy|ayer|mañana|today|yesterday|tomorrow|este|esta|estos|estas|this|next|last)\b",
+    r"\b(?:hoy|ayer|mañana|today|yesterday|tomorrow|este|esta|estos|estas|next|last)\b",
     re.IGNORECASE,
 )
 _NUMBER_RE = re.compile(r"\b\d+\b")

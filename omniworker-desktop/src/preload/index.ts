@@ -335,8 +335,21 @@ const omniworkerAPI = {
   readMemory: (
     profile?: string,
   ): Promise<{
-    memory: { content: string; exists: boolean; lastModified: number | null };
-    user: { content: string; exists: boolean; lastModified: number | null };
+    memory: {
+      content: string;
+      exists: boolean;
+      lastModified: number | null;
+      entries: Array<{ index: number; content: string }>;
+      charCount: number;
+      charLimit: number;
+    };
+    user: {
+      content: string;
+      exists: boolean;
+      lastModified: number | null;
+      charCount: number;
+      charLimit: number;
+    };
     stats: { totalSessions: number; totalMessages: number };
   }> => ipcRenderer.invoke("read-memory", profile),
 
@@ -358,6 +371,22 @@ const omniworkerAPI = {
     profile?: string,
   ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("write-user-profile", content, profile),
+
+  subscribeMemoryChanges: (
+    profile: string | undefined,
+    callback: (payload: { changed: "memory" | "user"; profile?: string }) => void,
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: { changed: "memory" | "user"; profile?: string },
+    ): void => callback(payload);
+    ipcRenderer.on("memory-changed", handler);
+    void ipcRenderer.invoke("subscribe-memory-changes", profile);
+    return () => {
+      ipcRenderer.removeListener("memory-changed", handler);
+      ipcRenderer.send("unsubscribe-memory-changes");
+    };
+  },
 
   // Soul
   readSoul: (profile?: string): Promise<string> =>

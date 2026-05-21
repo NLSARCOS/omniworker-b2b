@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, Trash, Refresh } from "../../assets/icons";
 import { useI18n } from "../../components/useI18n";
-import { Check, ExternalLink } from "lucide-react";
+
 
 interface MemoryEntry {
   index: number;
@@ -66,40 +66,21 @@ function CapacityBar({
   );
 }
 
-interface MemoryProviderInfo {
-  name: string;
-  description: string;
-  installed: boolean;
-  active: boolean;
-  envVars: string[];
-}
 
-const PROVIDER_URLS: Record<string, string> = {
-  honcho: "https://app.honcho.dev",
-  hindsight: "https://ui.hindsight.vectorize.io",
-  mem0: "https://app.mem0.ai",
-  retaindb: "https://retaindb.com",
-  supermemory: "https://supermemory.ai",
-  byterover: "https://app.byterover.dev",
-};
 
 function Memory({ profile }: { profile?: string }): React.JSX.Element {
   const { t } = useI18n();
   const [data, setData] = useState<MemoryData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"entries" | "profile" | "providers">(
+  const [tab, setTab] = useState<"entries" | "profile">(
     "entries",
   );
   const [error, setError] = useState("");
-  const [memoryProvider, setMemoryProvider] = useState<string | null>(null);
-  const [providers, setProviders] = useState<MemoryProviderInfo[]>([]);
-  const [providerEnv, setProviderEnv] = useState<Record<string, string>>({});
-  const [providerSavedKey, setProviderSavedKey] = useState<string | null>(null);
-  const [activating, setActivating] = useState<string | null>(null);
 
   // Entry management
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [editOriginalContent, setEditOriginalContent] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [newEntry, setNewEntry] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
@@ -110,24 +91,30 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   const [userSaved, setUserSaved] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [d, provider, provs, env] = await Promise.all([
-      window.omniworkerAPI.readMemory(profile),
-      window.omniworkerAPI.getConfig("memory.provider", profile),
-      window.omniworkerAPI.discoverMemoryProviders(profile),
-      window.omniworkerAPI.getEnv(profile),
-    ]);
+    const d = await window.omniworkerAPI.readMemory(profile);
     setData(d as MemoryData);
     setUserContent(d.user.content);
-    setMemoryProvider(provider);
-    setProviders(provs);
-    setProviderEnv(env);
     setLoading(false);
   }, [profile]);
+
+  // Ref for event-driven refresh — avoid stale closures.
+  const isEditingRef = useRef(false);
+
+  useEffect(() => {
+    isEditingRef.current = editingIndex !== null || userEditing || showAdd;
+  }, [editingIndex, userEditing, showAdd]);
 
   useEffect(() => {
     setLoading(true);
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    return window.omniworkerAPI.subscribeMemoryChanges(profile, () => {
+      if (isEditingRef.current) return;
+      void loadData();
+    });
+  }, [loadData, profile]);
 
   async function handleAddEntry(): Promise<void> {
     if (!newEntry.trim()) return;
@@ -148,6 +135,21 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   async function handleSaveEdit(): Promise<void> {
     if (editingIndex === null) return;
     setError("");
+
+    const latest = (await window.omniworkerAPI.readMemory(profile)) as MemoryData;
+    const currentEntry = latest.memory.entries.find(
+      (entry) => entry.index === editingIndex,
+    );
+    if (!currentEntry || currentEntry.content !== editOriginalContent) {
+      setError(`${t("memory.updateFailed")}: memory changed in the background`);
+      setEditingIndex(null);
+      setEditContent("");
+      setEditOriginalContent("");
+      setData(latest);
+      setUserContent(latest.user.content);
+      return;
+    }
+
     const result = await window.omniworkerAPI.updateMemoryEntry(
       editingIndex,
       editContent.trim(),
@@ -156,6 +158,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
     if (result.success) {
       setEditingIndex(null);
       setEditContent("");
+      setEditOriginalContent("");
       await loadData();
     } else {
       setError(result.error || t("memory.updateFailed"));
@@ -265,15 +268,6 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
             </span>
           )}
         </button>
-        <button
-          className={`memory-tab ${tab === "providers" ? "active" : ""}`}
-          onClick={() => setTab("providers")}
-        >
-          {t("memory.providersTitle")}
-          {memoryProvider && (
-            <span className="memory-tab-time">{memoryProvider}</span>
-          )}
-        </button>
       </div>
 
       {error && <div className="memory-error">{error}</div>}
@@ -351,7 +345,10 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
                       </span>
                       <button
                         className="btn btn-secondary btn-sm"
-                        onClick={() => setEditingIndex(null)}
+                        onClick={() => {
+                          setEditingIndex(null);
+                          setEditOriginalContent("");
+                        }}
                       >
                         {t("memory.cancel")}
                       </button>
@@ -372,6 +369,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
                         onClick={() => {
                           setEditingIndex(entry.index);
                           setEditContent(entry.content);
+                          setEditOriginalContent(entry.content);
                         }}
                       >
                         {t("memory.edit")}
@@ -454,164 +452,6 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
               </button>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Memory Providers */}
-      {tab === "providers" && (
-        <div className="memory-providers">
-          <div className="memory-providers-hint">
-            {t("memory.providersHint")}
-            {memoryProvider ? (
-              <span
-                dangerouslySetInnerHTML={{
-                  __html: t("memory.providersHintActive", {
-                    provider: memoryProvider,
-                  }),
-                }}
-              />
-            ) : (
-              <span> {t("memory.providersHintInactive")}</span>
-            )}
-          </div>
-
-          {providers.length === 0 ? (
-            <div className="memory-empty">
-              <p>{t("memory.noProvidersFound")}</p>
-            </div>
-          ) : (
-            <div className="memory-providers-grid">
-              {providers.map((p) => (
-                <div
-                  key={p.name}
-                  className={`memory-provider-card ${p.active ? "memory-provider-active" : ""}`}
-                >
-                  <div className="memory-provider-header">
-                    <div className="memory-provider-name">
-                      {p.name}
-                      {p.active && (
-                        <span className="memory-provider-badge">
-                          <Check size={10} /> {t("memory.active")}
-                        </span>
-                      )}
-                    </div>
-                    {PROVIDER_URLS[p.name] && (
-                      <button
-                        className="btn-ghost"
-                        style={{ padding: 2, opacity: 0.6 }}
-                        onClick={() =>
-                          window.omniworkerAPI.openExternal(
-                            PROVIDER_URLS[p.name],
-                          )
-                        }
-                        title={t("memory.openProviderWebsite")}
-                      >
-                        <ExternalLink size={12} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="memory-provider-desc">{t(p.description)}</div>
-
-                  {/* Env var config fields */}
-                  {p.envVars.length > 0 && (
-                    <div className="memory-provider-fields">
-                      {p.envVars.map((envKey) => (
-                        <div key={envKey} className="memory-provider-field">
-                          <label className="memory-provider-field-label">
-                            {envKey}
-                            {providerSavedKey === envKey && (
-                              <span
-                                style={{
-                                  color: "var(--success)",
-                                  fontSize: 10,
-                                  marginLeft: 6,
-                                }}
-                              >
-                                {t("common.saved")}
-                              </span>
-                            )}
-                          </label>
-                          <input
-                            className="input"
-                            type="password"
-                            value={providerEnv[envKey] || ""}
-                            onChange={(e) =>
-                              setProviderEnv((prev) => ({
-                                ...prev,
-                                [envKey]: e.target.value,
-                              }))
-                            }
-                            onBlur={async () => {
-                              await window.omniworkerAPI.setEnv(
-                                envKey,
-                                providerEnv[envKey] || "",
-                                profile,
-                              );
-                              setProviderSavedKey(envKey);
-                              setTimeout(() => setProviderSavedKey(null), 2000);
-                            }}
-                            placeholder={t("memory.enterEnvKey", {
-                              key: envKey,
-                            })}
-                            style={{ fontSize: 12 }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="memory-provider-actions">
-                    {p.active ? (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={async () => {
-                          setActivating(p.name);
-                          await window.omniworkerAPI.setConfig(
-                            "memory.provider",
-                            "",
-                            profile,
-                          );
-                          setMemoryProvider(null);
-                          setProviders((prev) =>
-                            prev.map((pr) => ({ ...pr, active: false })),
-                          );
-                          setActivating(null);
-                        }}
-                        disabled={activating !== null}
-                      >
-                        {t("memory.deactivate")}
-                      </button>
-                    ) : (
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={async () => {
-                          setActivating(p.name);
-                          await window.omniworkerAPI.setConfig(
-                            "memory.provider",
-                            p.name,
-                            profile,
-                          );
-                          setMemoryProvider(p.name);
-                          setProviders((prev) =>
-                            prev.map((pr) => ({
-                              ...pr,
-                              active: pr.name === p.name,
-                            })),
-                          );
-                          setActivating(null);
-                        }}
-                        disabled={activating !== null}
-                      >
-                        {activating === p.name
-                          ? t("memory.activating")
-                          : t("memory.activate")}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
     </div>

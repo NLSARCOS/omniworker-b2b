@@ -67,6 +67,7 @@
 ## 📝 Session Notes
 
 - 2026-03-31 | Added self-check and doctor workflows, upgraded preview management, and reinforced safe parallel-subagent guidance
+- 2026-05-21 | Compiled desktop version 0.4.3 installers and successfully deployed (DMG, EXE, AppImage, deb) to the VPS with Apple Silicon symlink support
 
 ---
 

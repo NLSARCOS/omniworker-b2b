@@ -2589,6 +2589,110 @@ class APIServerAdapter(BasePlatformAdapter):
             return web.json_response({"error": str(e)}, status=500)
 
     # ------------------------------------------------------------------
+    # Patterns / Autolearning
+    # ------------------------------------------------------------------
+
+    async def _handle_list_patterns(self, request: "web.Request") -> "web.Response":
+        """GET /api/patterns — list detected behavior patterns."""
+        auth_err = self._check_auth(request)
+        if auth_err:
+            return auth_err
+        try:
+            from agent.pattern_store import PatternStore
+            store = PatternStore()
+            try:
+                rows = store.list_all(limit=100)
+                return web.json_response({"patterns": rows})
+            finally:
+                store.close()
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def _handle_approve_pattern(
+        self, request: "web.Request",
+    ) -> "web.Response":
+        """POST /api/patterns/{pattern_id}/approve — approve a pattern."""
+        auth_err = self._check_auth(request)
+        if auth_err:
+            return auth_err
+        pattern_id = request.match_info.get("pattern_id", "")
+        if not pattern_id:
+            return web.json_response({"error": "pattern_id is required"}, status=400)
+        try:
+            import json as _json
+            from agent.pattern_store import PatternStore
+            from tools.cronjob_tools import cronjob
+
+            store = PatternStore()
+            try:
+                row = store.get(pattern_id)
+                if not row:
+                    return web.json_response({"error": "Pattern not found"}, status=404)
+                if row.get("status") == "active" and row.get("auto_created_job_id"):
+                    return web.json_response({
+                        "success": True,
+                        "job_id": row["auto_created_job_id"],
+                    })
+
+                prompt = row["canonical_prompt"]
+                inferred = row.get("schedule_inferred")
+                if not inferred:
+                    return web.json_response(
+                        {"error": "Pattern has no inferred schedule"},
+                        status=400,
+                    )
+
+                name = f"🧠 {prompt[:47]}{'...' if len(prompt) > 47 else ''}"
+                deliver = "local"
+                if row.get("source_platform") and row.get("source_chat_id"):
+                    deliver = f"{row['source_platform']}:{row['source_chat_id']}"
+
+                result = _json.loads(cronjob(
+                    action="create",
+                    prompt=prompt,
+                    schedule=inferred,
+                    name=name,
+                    deliver=deliver,
+                ))
+                if result.get("success"):
+                    job_id = result.get("job_id")
+                    store.mark_auto_created(pattern_id, job_id)
+                    return web.json_response({"success": True, "job_id": job_id})
+                return web.json_response(
+                    {"error": result.get("error", "Failed to create job")},
+                    status=500,
+                )
+            finally:
+                store.close()
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def _handle_reject_pattern(
+        self, request: "web.Request",
+    ) -> "web.Response":
+        """POST /api/patterns/{pattern_id}/reject — reject a pattern."""
+        auth_err = self._check_auth(request)
+        if auth_err:
+            return auth_err
+        pattern_id = request.match_info.get("pattern_id", "")
+        if not pattern_id:
+            return web.json_response({"error": "pattern_id is required"}, status=400)
+        try:
+            from agent.pattern_store import PatternStore
+
+            store = PatternStore()
+            try:
+                row = store.get(pattern_id)
+                if not row:
+                    return web.json_response({"error": "Pattern not found"}, status=404)
+                store.update_status(pattern_id, "rejected")
+                return web.json_response({"success": True})
+            finally:
+                store.close()
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+    # ------------------------------------------------------------------
     # Output extraction helper
     # ------------------------------------------------------------------
 
@@ -3391,6 +3495,10 @@ class APIServerAdapter(BasePlatformAdapter):
             self._app.router.add_post("/api/jobs/{job_id}/pause", self._handle_pause_job)
             self._app.router.add_post("/api/jobs/{job_id}/resume", self._handle_resume_job)
             self._app.router.add_post("/api/jobs/{job_id}/run", self._handle_run_job)
+            # Patterns / Autolearning
+            self._app.router.add_get("/api/patterns", self._handle_list_patterns)
+            self._app.router.add_post("/api/patterns/{pattern_id}/approve", self._handle_approve_pattern)
+            self._app.router.add_post("/api/patterns/{pattern_id}/reject", self._handle_reject_pattern)
             # Structured event streaming
             self._app.router.add_post("/v1/runs", self._handle_runs)
             self._app.router.add_get("/v1/runs/{run_id}", self._handle_get_run)

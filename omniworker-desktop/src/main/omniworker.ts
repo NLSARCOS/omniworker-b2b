@@ -23,6 +23,7 @@ import {
   SAAS_BASE_URL,
 } from "./installer";
 import { getModelConfig, readEnv, getConnectionConfig } from "./config";
+import { ensureMemoryConfig } from "./memory";
 import {
   getSshTunnelUrl,
   isSshTunnelActive,
@@ -918,6 +919,9 @@ export async function sendMessage(
     return sendMessageViaApi(message, cb, profile, resumeSessionId, history);
   }
 
+  // Ensure memory config defaults are set for local/gateway paths
+  ensureMemoryConfig(profile);
+
   // Check API server availability (cache the result, re-check periodically)
   if (apiServerAvailable === null || apiServerAvailable === false) {
     apiServerAvailable = await isApiServerReady();
@@ -1267,6 +1271,10 @@ let gatewayStartedByApp = false;
 export function startGateway(profile?: string): boolean {
   ensureInitialized();
   if (isGatewayRunning()) return false;
+
+  // Ensure memory config defaults are present before gateway starts.
+  // This guarantees background memory review works in local mode.
+  ensureMemoryConfig(profile);
 
   // Build gateway env with profile API keys
   const gatewayEnv: Record<string, string> = {

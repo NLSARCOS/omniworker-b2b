@@ -139,7 +139,7 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
         pass  # best-effort — don't block gateway startup
 
 
-def load_hermes_dotenv(
+def load_omniworker_dotenv(
     *,
     omniworker_home: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,
@@ -173,3 +173,7 @@ def load_hermes_dotenv(
         loaded.append(project_env_path)
 
     return loaded
+
+
+# Backward-compatible alias while the Hermes -> OmniWorker rename is in flight.
+load_hermes_dotenv = load_omniworker_dotenv

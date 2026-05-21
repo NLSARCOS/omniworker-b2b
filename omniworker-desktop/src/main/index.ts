@@ -122,6 +122,9 @@ import {
   updateMemoryEntry,
   removeMemoryEntry,
   writeUserProfile,
+  subscribeMemoryChanges,
+  cleanupMemoryWatchers,
+  type MemoryChangeTarget,
 } from "./memory";
 import { readSoul, writeSoul, resetSoul } from "./soul";
 import { getToolsets, setToolsetEnabled } from "./tools";
@@ -230,6 +233,14 @@ process.on("unhandledRejection", (reason) => {
 
 let mainWindow: BrowserWindow | null = null;
 let currentChatAbort: (() => void) | null = null;
+const memoryChangeSubscriptions = new Map<number, () => void>();
+
+function unsubscribeMemoryChangesForWebContents(webContentsId: number): void {
+  const unsubscribe = memoryChangeSubscriptions.get(webContentsId);
+  if (!unsubscribe) return;
+  unsubscribe();
+  memoryChangeSubscriptions.delete(webContentsId);
+}
 
 function openExternalUrl(rawUrl: unknown): void {
   if (!isAllowedExternalUrl(rawUrl)) {
@@ -841,6 +852,36 @@ function setupIPC(): void {
   });
 
   // Memory
+  ipcMain.handle("subscribe-memory-changes", (event, profile?: string) => {
+    const conn = getConnectionConfig();
+    const webContentsId = event.sender.id;
+    unsubscribeMemoryChangesForWebContents(webContentsId);
+
+    if (conn.mode !== "local") {
+      return false;
+    }
+
+    const unsubscribe = subscribeMemoryChanges(
+      profile,
+      (changed: MemoryChangeTarget) => {
+        if (event.sender.isDestroyed()) {
+          unsubscribeMemoryChangesForWebContents(webContentsId);
+          return;
+        }
+        event.sender.send("memory-changed", { changed, profile });
+      },
+    );
+    memoryChangeSubscriptions.set(webContentsId, unsubscribe);
+    event.sender.once("destroyed", () => {
+      unsubscribeMemoryChangesForWebContents(webContentsId);
+    });
+    return true;
+  });
+
+  ipcMain.on("unsubscribe-memory-changes", (event) => {
+    unsubscribeMemoryChangesForWebContents(event.sender.id);
+  });
+
   ipcMain.handle("read-memory", (_event, profile?: string) => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh)
@@ -1592,6 +1633,10 @@ app.on("before-quit", () => {
     currentChatAbort = null;
   }
   stopSmartRouter();
+  for (const webContentsId of memoryChangeSubscriptions.keys()) {
+    unsubscribeMemoryChangesForWebContents(webContentsId);
+  }
+  cleanupMemoryWatchers();
   stopGateway();
   stopSshTunnel();
   stopClaw3d();

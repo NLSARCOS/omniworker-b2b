@@ -287,14 +287,23 @@ interface OmniWorkerAPI {
 
   // Memory
   readMemory: (profile?: string) => Promise<{
-    memory: { content: string; exists: boolean; lastModified: number | null };
-    user: { content: string; exists: boolean; lastModified: number | null };
+    memory: {
+      content: string;
+      exists: boolean;
+      lastModified: number | null;
+      entries: Array<{ index: number; content: string }>;
+      charCount: number;
+      charLimit: number;
+    };
+    user: {
+      content: string;
+      exists: boolean;
+      lastModified: number | null;
+      charCount: number;
+      charLimit: number;
+    };
     stats: { totalSessions: number; totalMessages: number };
   }>;
-  extractMemories: (
-    messages: Array<{ role: string; content: string }>,
-    profile?: string,
-  ) => Promise<{ extracted: number }>;
 
   addMemoryEntry: (
     content: string,
@@ -310,6 +319,10 @@ interface OmniWorkerAPI {
     content: string,
     profile?: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  subscribeMemoryChanges: (
+    profile: string | undefined,
+    callback: (payload: { changed: "memory" | "user"; profile?: string }) => void,
+  ) => () => void;
 
   // Soul
   readSoul: (profile?: string) => Promise<string>;
