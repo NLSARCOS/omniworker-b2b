@@ -16,7 +16,7 @@ interface DetectedPattern {
   schedule_inferred: string | null;
   confidence: number;
   occurrence_count: number;
-  status: "detected" | "active" | "rejected";
+  status: string;
   first_seen_at: number;
   last_seen_at: number;
   auto_created_job_id: string | null;
