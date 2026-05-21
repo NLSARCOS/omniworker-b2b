@@ -127,6 +127,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const [detail, setDetail] = useState<KanbanTaskDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [newCommentText, setNewCommentText] = useState("");
   const [remoteUnsupported, setRemoteUnsupported] = useState(false);
   const [profileOptions, setProfileOptions] = useState<string[]>([]);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
@@ -325,6 +326,28 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
     setNewBoardSlug("");
     setNewBoardName("");
     loadAll();
+  }
+
+  async function handleAddComment(): Promise<void> {
+    if (!newCommentText.trim() || !detailTaskId) return;
+    setActionBusy("add-comment");
+    const res = await window.omniworkerAPI.kanbanCommentTask(
+      detailTaskId,
+      newCommentText.trim(),
+      profile,
+    );
+    setActionBusy(null);
+    if (!res.success) {
+      setError(res.error || "Failed to add comment");
+      return;
+    }
+    setNewCommentText("");
+    const detailRes = await window.omniworkerAPI.kanbanGetTask(
+      detailTaskId,
+      profile,
+    );
+    if (detailRes.success && detailRes.data) setDetail(detailRes.data);
+    loadAll(true);
   }
 
   async function handleMove(task: KanbanTask, target: string): Promise<void> {
@@ -938,6 +961,74 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                       </pre>
                     </div>
                   )}
+                  {detail.task.status === "blocked" && (
+                    <div className="kanban-detail-section kanban-blocked-actions-card">
+                      <div className="kanban-blocked-header">
+                        <Alert size={16} />
+                        <span>Tarea bloqueada. Proporciona instrucciones para ayudar a la IA a reanudar:</span>
+                      </div>
+                      <div className="kanban-blocked-body">
+                        <textarea
+                          className="kanban-comment-textarea"
+                          placeholder="Instrucciones para la IA (ej. 'Usa la herramienta de terminal para guardar el archivo...')"
+                          value={newCommentText}
+                          onChange={(e) => setNewCommentText(e.target.value)}
+                          rows={3}
+                        />
+                        <div className="kanban-blocked-buttons-row">
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={async () => {
+                              setActionBusy("unblock");
+                              const res = await window.omniworkerAPI.kanbanUnblockTask(detail.task.id, profile);
+                              setActionBusy(null);
+                              if (res.success) {
+                                const detailRes = await window.omniworkerAPI.kanbanGetTask(detail.task.id, profile);
+                                if (detailRes.success && detailRes.data) setDetail(detailRes.data);
+                                loadAll(true);
+                              } else {
+                                setError(res.error || "Failed to unblock task");
+                              }
+                            }}
+                            disabled={actionBusy !== null}
+                          >
+                            Desbloquear Silenciosamente
+                          </button>
+                          <button
+                            className="btn btn-primary btn-sm btn-sparkle"
+                            onClick={async () => {
+                              if (!newCommentText.trim()) return;
+                              setActionBusy("unblock-comment");
+                              const commentRes = await window.omniworkerAPI.kanbanCommentTask(
+                                detail.task.id,
+                                newCommentText.trim(),
+                                profile,
+                              );
+                              if (!commentRes.success) {
+                                setError(commentRes.error || "Failed to add instruction comment");
+                                setActionBusy(null);
+                                return;
+                              }
+                              const unblockRes = await window.omniworkerAPI.kanbanUnblockTask(detail.task.id, profile);
+                              setActionBusy(null);
+                              if (unblockRes.success) {
+                                setNewCommentText("");
+                                const detailRes = await window.omniworkerAPI.kanbanGetTask(detail.task.id, profile);
+                                if (detailRes.success && detailRes.data) setDetail(detailRes.data);
+                                loadAll(true);
+                              } else {
+                                setError(unblockRes.error || "Failed to unblock task");
+                              }
+                            }}
+                            disabled={!newCommentText.trim() || actionBusy !== null}
+                          >
+                            <Sparkles size={12} />
+                            Reanudar con Instrucciones
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {detail.task.result && (
                     <div className="kanban-detail-section">
                       <label>Result</label>
@@ -946,19 +1037,42 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                       </pre>
                     </div>
                   )}
-                  {detail.comments.length > 0 && (
-                    <div className="kanban-detail-section">
-                      <label>Comments ({detail.comments.length})</label>
-                      {detail.comments.map((c) => (
-                        <div key={c.id} className="kanban-comment">
-                          <div className="kanban-comment-author">
-                            {c.author || "anon"}
+                  <div className="kanban-detail-section">
+                    <label>Comments ({detail.comments.length})</label>
+                    {detail.comments.length > 0 && (
+                      <div className="kanban-comments-list">
+                        {detail.comments.map((c) => (
+                          <div key={c.id} className="kanban-comment-card">
+                            <div className="kanban-comment-header">
+                              <span className="kanban-comment-user">{c.author || "anon"}</span>
+                              <span className="kanban-comment-time">
+                                {ageLabel(c.created_at)}
+                              </span>
+                            </div>
+                            <div className="kanban-comment-text">{c.body}</div>
                           </div>
-                          <div className="kanban-comment-body">{c.body}</div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    )}
+                    <div className="kanban-comment-form">
+                      <textarea
+                        className="kanban-comment-textarea"
+                        placeholder="Escribe un comentario o instrucción para la IA..."
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        rows={3}
+                      />
+                      <div className="kanban-comment-submit-row">
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={handleAddComment}
+                          disabled={!newCommentText.trim() || actionBusy === "add-comment"}
+                        >
+                          {actionBusy === "add-comment" ? "Sending..." : "Comment"}
+                        </button>
+                      </div>
                     </div>
-                  )}
+                  </div>
                   {detail.events.length > 0 && (
                     <div className="kanban-detail-section">
                       <label>Events ({detail.events.length})</label>

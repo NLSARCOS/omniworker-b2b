@@ -34,6 +34,7 @@ interface ApiKeyData {
 interface AccountProps {
   userData?: any;
   authToken?: string | null;
+  onLogout?: () => void;
 }
 
 function normalizeUser(raw: any): UserData {
@@ -53,6 +54,7 @@ function normalizeUser(raw: any): UserData {
 export default function Account({
   userData: loginData,
   authToken,
+  onLogout,
 }: AccountProps) {
   const { t } = useI18n();
   const [user, setUser] = useState<UserData | null>(null);
@@ -194,14 +196,44 @@ export default function Account({
     <div className="account-screen">
       <div className="account-header">
         <h1 className="account-title">{t("account.title") || "Account"}</h1>
-        <button
-          className={`account-refresh-btn ${refreshing ? "spinning" : ""}`}
-          onClick={handleRefresh}
-          disabled={refreshing}
-          title={t("common.refresh") || "Refresh"}
-        >
-          <Refresh size={16} />
-        </button>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <button
+            className={`account-refresh-btn ${refreshing ? "spinning" : ""}`}
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title={t("common.refresh") || "Refresh"}
+          >
+            <Refresh size={16} />
+          </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              style={{
+                background: "rgba(239, 68, 68, 0.08)",
+                color: "#f87171",
+                border: "1px solid rgba(239, 68, 68, 0.25)",
+                borderRadius: "6px",
+                padding: "6px 12px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease-in-out",
+                fontFamily: "var(--font-mono)",
+                textTransform: "uppercase",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.45)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(239, 68, 68, 0.08)";
+                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.25)";
+              }}
+            >
+              Cerrar Sesión
+            </button>
+          )}
+        </div>
       </div>
 
       {/* User Info Card */}

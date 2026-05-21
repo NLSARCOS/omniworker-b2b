@@ -166,10 +166,14 @@ def cron_status():
 
 
 def cron_create(args):
+    prompt = getattr(args, "prompt_option", None)
+    if prompt is None:
+        prompt = getattr(args, "prompt_positional", None)
+
     result = _cron_api(
         action="create",
         schedule=args.schedule,
-        prompt=args.prompt,
+        prompt=prompt,
         name=getattr(args, "name", None),
         deliver=getattr(args, "deliver", None),
         repeat=getattr(args, "repeat", None),

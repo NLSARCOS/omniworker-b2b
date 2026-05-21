@@ -129,6 +129,32 @@ from cron.jobs import get_due_jobs, mark_job_run, save_job_output, advance_next_
 # locally for audit.
 SILENT_MARKER = "[SILENT]"
 
+
+def _ensure_cron_session_assistant_message(session_db, session_id: str, content: str) -> None:
+    """Ensure cron sessions show a terminal assistant message in history.
+
+    The agent loop normally persists successful final responses itself, but
+    exceptions raised around the model call can leave the cron session with only
+    the synthetic user prompt. Cron still writes an output markdown file in that
+    case; mirror the terminal success/error content into state.db so the Desktop
+    Sessions screen is useful for scheduled runs too.
+    """
+    if not session_db or not session_id or not (content or "").strip():
+        return
+    try:
+        existing = session_db.get_messages(session_id)
+        if any(m.get("role") == "assistant" and (m.get("content") or "").strip() for m in existing):
+            return
+        session_db.append_message(
+            session_id=session_id,
+            role="assistant",
+            content=content.strip(),
+            finish_reason="cron_complete",
+        )
+    except Exception as exc:
+        logger.debug("Cron session %s: failed to persist assistant message: %s", session_id, exc)
+
+
 # Backward-compatible module override used by tests and emergency monkeypatches.
 _omniworker_home: Path | None = None
 
@@ -1587,6 +1613,7 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
 
 {logged_response}
 """
+        _ensure_cron_session_assistant_message(_session_db, _cron_session_id, final_response or logged_response)
         
         logger.info("Job '%s' completed successfully", job_name)
         return True, output, final_response, None
@@ -1611,6 +1638,7 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
 {error_msg}
 ```
 """
+        _ensure_cron_session_assistant_message(_session_db, _cron_session_id, output)
         return False, output, "", error_msg
 
     finally:

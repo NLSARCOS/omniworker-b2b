@@ -138,7 +138,7 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
       wv.removeEventListener("dom-ready", onLoad);
       wv.removeEventListener("did-fail-load", onFail);
     };
-  }, [webviewRef.current]);
+  }, [running, showLogs]);
 
   async function handleInstall(): Promise<void> {
     setState("installing");

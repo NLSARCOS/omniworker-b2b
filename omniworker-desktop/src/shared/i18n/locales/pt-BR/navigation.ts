@@ -11,6 +11,7 @@ export default {
   memory: "Memória",
   tools: "Ferramentas",
   schedules: "Agendamentos",
+  smartpatterns: "Padrões Inteligentes",
   kanban: "Kanban",
   gateway: "Gateway",
   settings: "Configurações",

@@ -5694,6 +5694,13 @@ def cmd_cron(args):
     cron_command(args)
 
 
+def cmd_patterns(args):
+    """Auto-detected behavior pattern management."""
+    from omniworker_cli.autolearning import patterns_command
+
+    patterns_command(args)
+
+
 def cmd_webhook(args):
     """Webhook subscription management."""
     from omniworker_cli.webhook import webhook_command
@@ -10629,7 +10636,12 @@ def main():
         "schedule", help="Schedule like '30m', 'every 2h', or '0 9 * * *'"
     )
     cron_create.add_argument(
-        "prompt", nargs="?", help="Optional self-contained prompt or task instruction"
+        "prompt_positional", nargs="?", help="Optional self-contained prompt or task instruction"
+    )
+    cron_create.add_argument(
+        "--prompt",
+        dest="prompt_option",
+        help="Optional self-contained prompt or task instruction",
     )
     cron_create.add_argument("--name", help="Optional human-friendly job name")
     cron_create.add_argument(
@@ -10767,6 +10779,41 @@ def main():
     _add_accept_hooks_flag(cron_tick)
     _add_accept_hooks_flag(cron_parser)
     cron_parser.set_defaults(func=cmd_cron)
+
+    # =========================================================================
+    # patterns command
+    # =========================================================================
+    patterns_parser = subparsers.add_parser(
+        "patterns",
+        help="Manage auto-detected user behavior patterns",
+        description="View, approve, or reject patterns discovered by the autolearning engine.",
+    )
+    patterns_subparsers = patterns_parser.add_subparsers(dest="patterns_command")
+
+    # patterns list
+    patterns_list_parser = patterns_subparsers.add_parser("list", help="List detected patterns")
+    patterns_list_parser.add_argument("--all", action="store_true", help="Include rejected patterns")
+    patterns_list_parser.add_argument("--user-id", help="Filter by user ID")
+    patterns_list_parser.add_argument("--platform", help="Filter by platform")
+    patterns_list_parser.add_argument("--limit", type=int, default=50, help="Max patterns to show")
+
+    # patterns scan
+    patterns_subparsers.add_parser("scan", help="Force an immediate pattern scan")
+
+    # patterns approve
+    patterns_approve_parser = patterns_subparsers.add_parser(
+        "approve", aliases=["activate"], help="Approve a pattern and create its cron job"
+    )
+    patterns_approve_parser.add_argument("pattern_id", help="Pattern ID to approve")
+    patterns_approve_parser.add_argument("--schedule", help="Override schedule expression")
+
+    # patterns reject
+    patterns_reject_parser = patterns_subparsers.add_parser(
+        "reject", aliases=["disable"], help="Reject a pattern so it is never auto-activated"
+    )
+    patterns_reject_parser.add_argument("pattern_id", help="Pattern ID to reject")
+
+    patterns_parser.set_defaults(func=cmd_patterns)
 
     # =========================================================================
     # webhook command

@@ -33,7 +33,7 @@ T = TypeVar("T")
 
 DEFAULT_DB_PATH = get_omniworker_home() / "state.db"
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 # ---------------------------------------------------------------------------
 # WAL-compatibility fallback
@@ -248,6 +248,30 @@ CREATE INDEX IF NOT EXISTS idx_sessions_source ON sessions(source);
 CREATE INDEX IF NOT EXISTS idx_sessions_parent ON sessions(parent_session_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, timestamp);
+
+CREATE TABLE IF NOT EXISTS detected_patterns (
+    id TEXT PRIMARY KEY,
+    pattern_hash TEXT NOT NULL,
+    pattern_type TEXT NOT NULL,
+    canonical_prompt TEXT NOT NULL,
+    sample_prompts TEXT,
+    schedule_inferred TEXT,
+    confidence REAL NOT NULL,
+    occurrence_count INTEGER DEFAULT 0,
+    first_seen_at REAL NOT NULL,
+    last_seen_at REAL NOT NULL,
+    status TEXT DEFAULT 'detected',
+    auto_created_job_id TEXT,
+    user_id TEXT,
+    source_platform TEXT,
+    source_chat_id TEXT,
+    metadata TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_patterns_status ON detected_patterns(status);
+CREATE INDEX IF NOT EXISTS idx_patterns_hash ON detected_patterns(pattern_hash);
+CREATE INDEX IF NOT EXISTS idx_patterns_user ON detected_patterns(user_id, source_platform);
+CREATE INDEX IF NOT EXISTS idx_patterns_job ON detected_patterns(auto_created_job_id);
 """
 
 FTS_SQL = """

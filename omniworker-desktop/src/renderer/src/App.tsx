@@ -25,29 +25,23 @@ function App(): React.JSX.Element {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const isMac = window.electron?.process?.platform === "darwin";
 
-  const runInstallCheck = useCallback(async () => {
-    const startedAt = Date.now();
-    let next: Screen = "login"; // OMNIWORKER B2B: Siempre empezamos en Login
+  const handleLogout = useCallback(() => {
+    console.error("[APP] Logging out user and clearing local storage...");
+    setUserData(null);
+    setAuthToken(null);
+    localStorage.removeItem("ow_user");
+    localStorage.removeItem("ow_auth");
 
-    // TODO: Comprobar JWT guardado localmente para auto-login
-
-    const elapsed = Date.now() - startedAt;
-    const wait = Math.max(0, SPLASH_MIN_MS - elapsed);
-    if (wait > 0) {
-      await new Promise((r) => setTimeout(r, wait));
+    // Clear auto-refresh interval if active
+    if ((window as any).__owRefreshInterval) {
+      clearInterval((window as any).__owRefreshInterval);
+      delete (window as any).__owRefreshInterval;
     }
-    setScreen(next);
+
+    setScreen("login");
   }, []);
 
-  useEffect(() => {
-    runInstallCheck();
-  }, [runInstallCheck]);
-
-  const handleSplashFinished = useCallback(() => {
-    /* splash transition is driven by the install check, not a timer */
-  }, []);
-
-  const runPostLoginInstallCheck = async () => {
+  const runPostLoginInstallCheck = useCallback(async () => {
     try {
       const mode = await window.omniworkerAPI.isRemoteOnlyMode();
       if (mode) {
@@ -70,15 +64,19 @@ function App(): React.JSX.Element {
       console.error("Install check failed:", err);
       setScreen("installing");
     }
-  };
+  }, []);
 
-  const handleLoginSuccess = async (user: any, auth: any) => {
+  const handleLoginSuccess = useCallback(async (user: any, auth: any) => {
     console.error("[APP] handleLoginSuccess started");
     setUserData(user);
 
     if (auth?.accessToken) {
       console.error("[APP] Got accessToken, setting auth token");
       setAuthToken(auth.accessToken);
+
+      // Guardar en localStorage para auto-login
+      localStorage.setItem("ow_user", JSON.stringify(user));
+      localStorage.setItem("ow_auth", JSON.stringify(auth));
 
       const saasUrl =
         import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
@@ -127,6 +125,13 @@ function App(): React.JSX.Element {
               const data = await res.json();
               if (data.accessToken) {
                 setAuthToken(data.accessToken);
+                // Guardar el nuevo token refrescado en localStorage
+                const updatedAuth = {
+                  accessToken: data.accessToken,
+                  refreshToken: data.refreshToken || refreshToken,
+                };
+                localStorage.setItem("ow_auth", JSON.stringify(updatedAuth));
+
                 // Actualizar token en config para que el próximo mensaje use el nuevo JWT
                 await window.omniworkerAPI.setEnv(
                   "OPENAI_API_KEY",
@@ -144,14 +149,29 @@ function App(): React.JSX.Element {
                 );
                 return data.refreshToken || refreshToken;
               }
+            } else if (res.status === 401) {
+              // Si el refresh token es inválido o expiró, cerrar sesión de inmediato
+              console.error("[APP] Refresh token invalid or expired (401). Logging out...");
+              handleLogout();
             }
-          } catch {
-            /* silent — will retry next cycle */
+          } catch (err) {
+            console.error("[APP] Failed to refresh token:", err);
           }
           return refreshToken;
         };
 
         let currentRefreshToken = auth.refreshToken;
+
+        // Limpiar intervalo previo existente para evitar fugas
+        if ((window as any).__owRefreshInterval) {
+          clearInterval((window as any).__owRefreshInterval);
+        }
+
+        // Ejecutar refresh de inmediato en startup/login para asegurar un token fresco y evitar 401s
+        doRefresh(currentRefreshToken).then((newRefresh) => {
+          currentRefreshToken = newRefresh;
+        });
+
         const interval = setInterval(
           async () => {
             currentRefreshToken = await doRefresh(currentRefreshToken);
@@ -166,7 +186,48 @@ function App(): React.JSX.Element {
     console.error("[APP] Running post login install check...");
     await runPostLoginInstallCheck();
     console.error("[APP] handleLoginSuccess finished");
-  };
+  }, [runPostLoginInstallCheck]);
+
+  const runInstallCheck = useCallback(async () => {
+    const startedAt = Date.now();
+    let next: Screen = "login"; // OMNIWORKER B2B: Siempre empezamos en Login
+
+    let autoLoggedIn = false;
+    const savedUser = localStorage.getItem("ow_user");
+    const savedAuth = localStorage.getItem("ow_auth");
+
+    if (savedUser && savedAuth) {
+      try {
+        const user = JSON.parse(savedUser);
+        const auth = JSON.parse(savedAuth);
+        if (auth?.accessToken) {
+          console.error("[APP] Found saved credentials, auto-logging in user:", user.email);
+          await handleLoginSuccess(user, auth);
+          autoLoggedIn = true;
+        }
+      } catch (err) {
+        console.error("[APP] Error parsing saved login session:", err);
+      }
+    }
+
+    const elapsed = Date.now() - startedAt;
+    const wait = Math.max(0, SPLASH_MIN_MS - elapsed);
+    if (wait > 0) {
+      await new Promise((r) => setTimeout(r, wait));
+    }
+
+    if (!autoLoggedIn) {
+      setScreen(next);
+    }
+  }, [handleLoginSuccess]);
+
+  useEffect(() => {
+    runInstallCheck();
+  }, [runInstallCheck]);
+
+  const handleSplashFinished = useCallback(() => {
+    /* splash transition is driven by the install check, not a timer */
+  }, []);
 
   async function handleInstallComplete(): Promise<void> {
     setInstallError(null);
@@ -231,7 +292,7 @@ function App(): React.JSX.Element {
               Por favor, contacta a tu administrador para reactivar la cuenta.
             </p>
             <button
-              onClick={() => setUserData(null)}
+              onClick={handleLogout}
               className="mt-8 bg-white text-black px-6 py-2 font-bold uppercase hover:bg-gray-200"
             >
               Cerrar Sesión
@@ -281,6 +342,7 @@ function App(): React.JSX.Element {
             onDismissVerifyWarning={handleDismissVerifyWarning}
             userData={userData}
             authToken={authToken}
+            onLogout={handleLogout}
           />
         );
     }

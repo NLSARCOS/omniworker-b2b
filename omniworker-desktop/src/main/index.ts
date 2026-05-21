@@ -141,6 +141,12 @@ import {
   triggerCronJob,
 } from "./cronjobs";
 import {
+  listDetectedPatterns,
+  approvePattern,
+  rejectPattern,
+  toggleAutoLearning,
+} from "./patterns";
+import {
   listBoards as kanbanListBoards,
   currentBoard as kanbanCurrentBoard,
   switchBoard as kanbanSwitchBoard,
@@ -1126,6 +1132,20 @@ function setupIPC(): void {
   ipcMain.handle(
     "trigger-cron-job",
     (_event, jobId: string, profile?: string) => triggerCronJob(jobId, profile),
+  );
+
+  // Patterns / Autolearning
+  ipcMain.handle("list-detected-patterns", (_event, profile?: string) =>
+    listDetectedPatterns(profile),
+  );
+  ipcMain.handle("approve-pattern", (_event, patternId: string, profile?: string) =>
+    approvePattern(patternId, profile),
+  );
+  ipcMain.handle("reject-pattern", (_event, patternId: string, profile?: string) =>
+    rejectPattern(patternId, profile),
+  );
+  ipcMain.handle("toggle-auto-learning", (_event, enabled: boolean, profile?: string) =>
+    toggleAutoLearning(enabled, profile),
   );
 
   // Kanban

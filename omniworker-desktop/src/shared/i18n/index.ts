@@ -19,6 +19,7 @@ import providersEn from "./locales/en/providers";
 import officeEn from "./locales/en/office";
 import errorsEn from "./locales/en/errors";
 import schedulesEn from "./locales/en/schedules";
+import smartpatternsEn from "./locales/en/smartpatterns";
 import skillsEn from "./locales/en/skills";
 import gatewayEn from "./locales/en/gateway";
 import agentsEn from "./locales/en/agents";
@@ -41,6 +42,7 @@ import providersEs from "./locales/es/providers";
 import officeEs from "./locales/es/office";
 import errorsEs from "./locales/es/errors";
 import schedulesEs from "./locales/es/schedules";
+import smartpatternsEs from "./locales/es/smartpatterns";
 import skillsEs from "./locales/es/skills";
 import gatewayEs from "./locales/es/gateway";
 import agentsEs from "./locales/es/agents";
@@ -63,6 +65,7 @@ import providersId from "./locales/id/providers";
 import officeId from "./locales/id/office";
 import errorsId from "./locales/id/errors";
 import schedulesId from "./locales/id/schedules";
+import smartpatternsId from "./locales/id/smartpatterns";
 import skillsId from "./locales/id/skills";
 import gatewayId from "./locales/id/gateway";
 import agentsId from "./locales/id/agents";
@@ -85,6 +88,7 @@ import providersZh from "./locales/zh-CN/providers";
 import officeZh from "./locales/zh-CN/office";
 import errorsZh from "./locales/zh-CN/errors";
 import schedulesZh from "./locales/zh-CN/schedules";
+import smartpatternsZh from "./locales/zh-CN/smartpatterns";
 import skillsZh from "./locales/zh-CN/skills";
 import gatewayZh from "./locales/zh-CN/gateway";
 import agentsZh from "./locales/zh-CN/agents";
@@ -107,6 +111,7 @@ import providersJa from "./locales/ja/providers";
 import officeJa from "./locales/ja/office";
 import errorsJa from "./locales/ja/errors";
 import schedulesJa from "./locales/ja/schedules";
+import smartpatternsJa from "./locales/ja/smartpatterns";
 import skillsJa from "./locales/ja/skills";
 import gatewayJa from "./locales/ja/gateway";
 import agentsJa from "./locales/ja/agents";
@@ -129,6 +134,7 @@ import providersPt from "./locales/pt-BR/providers";
 import officePt from "./locales/pt-BR/office";
 import errorsPt from "./locales/pt-BR/errors";
 import schedulesPt from "./locales/pt-BR/schedules";
+import smartpatternsPt from "./locales/pt-BR/smartpatterns";
 import skillsPt from "./locales/pt-BR/skills";
 import gatewayPt from "./locales/pt-BR/gateway";
 import agentsPt from "./locales/pt-BR/agents";
@@ -155,6 +161,7 @@ export const resources = {
       office: officeEn,
       errors: errorsEn,
       schedules: schedulesEn,
+      smartpatterns: smartpatternsEn,
       skills: skillsEn,
       gateway: gatewayEn,
       agents: agentsEn,
@@ -181,6 +188,7 @@ export const resources = {
       office: officeEs,
       errors: errorsEs,
       schedules: schedulesEs,
+      smartpatterns: smartpatternsEs,
       skills: skillsEs,
       gateway: gatewayEs,
       agents: agentsEs,
@@ -207,6 +215,7 @@ export const resources = {
       office: officeId,
       errors: errorsId,
       schedules: schedulesId,
+      smartpatterns: smartpatternsId,
       skills: skillsId,
       gateway: gatewayId,
       agents: agentsId,
@@ -233,6 +242,7 @@ export const resources = {
       office: officeZh,
       errors: errorsZh,
       schedules: schedulesZh,
+      smartpatterns: smartpatternsZh,
       skills: skillsZh,
       gateway: gatewayZh,
       agents: agentsZh,
@@ -259,6 +269,7 @@ export const resources = {
       office: officePt,
       errors: errorsPt,
       schedules: schedulesPt,
+      smartpatterns: smartpatternsPt,
       skills: skillsPt,
       gateway: gatewayPt,
       agents: agentsPt,
@@ -285,6 +296,7 @@ export const resources = {
       office: officeJa,
       errors: errorsJa,
       schedules: schedulesJa,
+      smartpatterns: smartpatternsJa,
       skills: skillsJa,
       gateway: gatewayJa,
       agents: agentsJa,

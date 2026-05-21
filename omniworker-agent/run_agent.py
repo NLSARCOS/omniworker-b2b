@@ -15739,6 +15739,15 @@ class AIAgent:
             except Exception:
                 pass  # Background review is best-effort
 
+        # Pattern Engine — auto-detect user habits and proactively schedule
+        # recurring tasks. Runs in the background so it never blocks the user.
+        if final_response and not interrupted:
+            try:
+                from agent.pattern_engine import spawn_background_scan
+                spawn_background_scan()
+            except Exception:
+                pass  # Pattern scan is best-effort
+
         # Note: Memory provider on_session_end() + shutdown_all() are NOT
         # called here — run_conversation() is called once per user message in
         # multi-turn sessions. Shutting down after every turn would kill the

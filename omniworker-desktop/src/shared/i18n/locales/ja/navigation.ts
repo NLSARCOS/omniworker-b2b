@@ -11,6 +11,7 @@ export default {
   memory: "メモリ",
   tools: "ツール",
   schedules: "スケジュール",
+  smartpatterns: "スマートパターン",
   kanban: "カンバン",
   gateway: "ゲートウェイ",
   settings: "設定",

@@ -750,6 +750,42 @@ const omniworkerAPI = {
   ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("trigger-cron-job", jobId, profile),
 
+  // Patterns / Autolearning
+  listDetectedPatterns: (
+    profile?: string,
+  ): Promise<
+    Array<{
+      id: string;
+      canonical_prompt: string;
+      pattern_type: string;
+      schedule_inferred: string | null;
+      confidence: number;
+      occurrence_count: number;
+      status: string;
+      first_seen_at: number;
+      last_seen_at: number;
+      auto_created_job_id: string | null;
+    }>
+  > => ipcRenderer.invoke("list-detected-patterns", profile),
+
+  approvePattern: (
+    patternId: string,
+    profile?: string,
+  ): Promise<{ success: boolean; error?: string; job_id?: string }> =>
+    ipcRenderer.invoke("approve-pattern", patternId, profile),
+
+  rejectPattern: (
+    patternId: string,
+    profile?: string,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("reject-pattern", patternId, profile),
+
+  toggleAutoLearning: (
+    enabled: boolean,
+    profile?: string,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("toggle-auto-learning", enabled, profile),
+
   // Kanban
   kanbanListBoards: (includeArchived?: boolean, profile?: string) =>
     ipcRenderer.invoke("kanban-list-boards", includeArchived, profile),

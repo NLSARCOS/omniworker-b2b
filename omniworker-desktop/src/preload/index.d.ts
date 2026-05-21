@@ -291,6 +291,10 @@ interface OmniWorkerAPI {
     user: { content: string; exists: boolean; lastModified: number | null };
     stats: { totalSessions: number; totalMessages: number };
   }>;
+  extractMemories: (
+    messages: Array<{ role: string; content: string }>,
+    profile?: string,
+  ) => Promise<{ extracted: number }>;
 
   addMemoryEntry: (
     content: string,
@@ -522,6 +526,34 @@ interface OmniWorkerAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   triggerCronJob: (
     jobId: string,
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+
+  // Patterns / Autolearning
+  listDetectedPatterns: (profile?: string) => Promise<
+    Array<{
+      id: string;
+      canonical_prompt: string;
+      pattern_type: string;
+      schedule_inferred: string | null;
+      confidence: number;
+      occurrence_count: number;
+      status: string;
+      first_seen_at: number;
+      last_seen_at: number;
+      auto_created_job_id: string | null;
+    }>
+  >;
+  approvePattern: (
+    patternId: string,
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string; job_id?: string }>;
+  rejectPattern: (
+    patternId: string,
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  toggleAutoLearning: (
+    enabled: boolean,
     profile?: string,
   ) => Promise<{ success: boolean; error?: string }>;
 

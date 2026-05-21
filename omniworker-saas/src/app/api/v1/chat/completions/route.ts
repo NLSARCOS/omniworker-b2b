@@ -44,7 +44,7 @@ interface ModelTier {
 const OPENCODE_GO_CATALOG: ModelTier[] = [
   // Tier: REASONING — heavy tasks, complex code, long context
   { id: "glm-5.1",         label: "GLM-5.1",         tier: "reasoning", weight: 3, endpoint: "chat_completions" },
-  { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro",  tier: "reasoning", weight: 3, endpoint: "chat_completions" },
+  { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro",  tier: "reasoning", weight: 0, endpoint: "chat_completions" },
   { id: "kimi-k2.6",       label: "Kimi K2.6",        tier: "reasoning", weight: 2, endpoint: "chat_completions" },
   { id: "mimo-v2.5-pro",   label: "MiMo-V2.5-Pro",    tier: "reasoning", weight: 2, endpoint: "chat_completions" },
   { id: "qwen3.6-plus",    label: "Qwen3.6 Plus",     tier: "reasoning", weight: 2, endpoint: "chat_completions" },

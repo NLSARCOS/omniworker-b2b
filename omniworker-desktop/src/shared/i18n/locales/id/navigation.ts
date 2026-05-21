@@ -11,6 +11,7 @@ export default {
   memory: "Memori",
   tools: "Alat",
   schedules: "Jadwal",
+  smartpatterns: "Pola Pintar",
   kanban: "Kanban",
   gateway: "Gateway",
   settings: "Pengaturan",

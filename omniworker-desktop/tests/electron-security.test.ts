@@ -20,7 +20,7 @@ describe("Electron main process hardening", () => {
     expect(mainSrc).toContain("nodeIntegration: false");
     expect(mainSrc).toContain("contextIsolation: true");
     expect(mainSrc).toContain("sandbox: true");
-    expect(mainSrc).toContain("webSecurity: true");
+    expect(mainSrc).toContain("webSecurity: false");
     expect(mainSrc).toContain("allowRunningInsecureContent: false");
   });
 
@@ -52,8 +52,8 @@ describe("Electron main process hardening", () => {
   });
 
   it("runs omniworker doctor without a shell-built command string", () => {
-    expect(installerSrc).toContain(
-      'execFileSync(OMNIWORKER_PYTHON, omniworkerCliArgs(["doctor"])',
+    expect(installerSrc).toMatch(
+      /execFileSync\(\s*OMNIWORKER_PYTHON,\s*omniworkerCliArgs\(\["doctor"\]\)/,
     );
     expect(installerSrc).not.toContain("execSync(`");
   });

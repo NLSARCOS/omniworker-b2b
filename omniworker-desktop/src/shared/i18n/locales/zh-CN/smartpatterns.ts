@@ -1,0 +1,17 @@
+export default {
+  title: "智能模式",
+  subtitle: "自动检测的习惯和主动任务调度",
+  refresh: "刷新",
+  empty: "尚未检测到任何模式",
+  emptyHint: "随着您使用 OmniWorker，AI 将学习您的习惯并在此处建议自动化任务",
+  loadFailed: "加载模式失败",
+  confidence: "置信度",
+  occurrences: "出现次数",
+  lastSeen: "上次出现",
+  approve: "批准",
+  reject: "拒绝",
+  triggerNow: "立即触发",
+  autoJob: "自动计划任务",
+  autoLearningOn: "自动学习 开启",
+  autoLearningOff: "自动学习 关闭",
+} as const;

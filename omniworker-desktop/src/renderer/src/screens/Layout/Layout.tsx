@@ -13,6 +13,7 @@ import WhatsApp from "../WhatsApp/WhatsApp";
 import Models from "../Models/Models";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
+import SmartPatterns from "../SmartPatterns/SmartPatterns";
 import Kanban from "../Kanban/Kanban";
 import Account from "../Account/Account";
 import RemoteNotice from "../../components/RemoteNotice";
@@ -51,6 +52,7 @@ type View =
   | "memory"
   | "tools"
   | "schedules"
+  | "smartpatterns"
   | "kanban"
   | "gateway"
   | "settings"
@@ -70,6 +72,7 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "memory", icon: Brain, labelKey: "navigation.memory" },
   { view: "tools", icon: Wrench, labelKey: "navigation.tools" },
   { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
+  { view: "smartpatterns", icon: Brain, labelKey: "navigation.smartpatterns" },
   { view: "gateway", icon: Signal, labelKey: "navigation.gateway" },
   { view: "settings", icon: SettingsIcon, labelKey: "navigation.settings" },
   { view: "account", icon: User, labelKey: "navigation.account" },
@@ -81,6 +84,7 @@ interface LayoutProps {
   onDismissVerifyWarning?: () => void;
   userData?: any;
   authToken?: string | null;
+  onLogout?: () => void;
 }
 
 function Layout({
@@ -89,6 +93,7 @@ function Layout({
   onDismissVerifyWarning,
   userData,
   authToken,
+  onLogout,
 }: LayoutProps = {}): React.JSX.Element {
   const { t } = useI18n();
   const [view, setView] = useState<View>("chat");
@@ -589,6 +594,12 @@ function Layout({
           </div>
         )}
 
+        {visitedViews.has("smartpatterns") && (
+          <div style={paneStyle("smartpatterns")}>
+            <SmartPatterns profile={activeProfile} />
+          </div>
+        )}
+
         {visitedViews.has("kanban") && (
           <div style={paneStyle("kanban")}>
             {remoteMode ? (
@@ -617,7 +628,7 @@ function Layout({
 
         {visitedViews.has("account") && (
           <div style={paneStyle("account")}>
-            <Account userData={userData} authToken={authToken} />
+            <Account userData={userData} authToken={authToken} onLogout={onLogout} />
           </div>
         )}
       </main>

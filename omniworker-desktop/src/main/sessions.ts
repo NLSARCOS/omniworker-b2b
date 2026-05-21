@@ -1,9 +1,35 @@
 import Database from "better-sqlite3";
 import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { OMNIWORKER_HOME } from "./installer";
 
 const DB_PATH = join(OMNIWORKER_HOME, "state.db");
+
+function getCronOutputMessage(sessionId: string): SessionMessage | null {
+  const match = /^cron_([^_]+)_/.exec(sessionId);
+  if (!match) return null;
+
+  const outputDir = join(OMNIWORKER_HOME, "cron", "output", match[1]);
+  if (!existsSync(outputDir)) return null;
+
+  try {
+    const files = readdirSync(outputDir)
+      .filter((name) => name.endsWith(".md"))
+      .map((name) => join(outputDir, name))
+      .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
+    if (files.length === 0) return null;
+
+    const stat = statSync(files[0]);
+    return {
+      id: Number.MAX_SAFE_INTEGER,
+      role: "assistant",
+      content: readFileSync(files[0], "utf-8"),
+      timestamp: stat.mtimeMs / 1000,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export interface SessionSummary {
   id: string;
@@ -169,12 +195,22 @@ export function getSessionMessages(sessionId: string): SessionMessage[] {
       timestamp: number;
     }>;
 
-    return rows.map((r) => ({
+    const messages: SessionMessage[] = rows.map((r) => ({
       id: r.id,
       role: r.role as "user" | "assistant",
       content: r.content,
       timestamp: r.timestamp,
     }));
+
+    if (
+      sessionId.startsWith("cron_") &&
+      !messages.some((m) => m.role === "assistant" && m.content.trim())
+    ) {
+      const cronOutput = getCronOutputMessage(sessionId);
+      if (cronOutput) messages.push(cronOutput);
+    }
+
+    return messages;
   } finally {
     db.close();
   }

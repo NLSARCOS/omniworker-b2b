@@ -119,6 +119,8 @@ async def _handle_create_bot(args: dict, **kw) -> str:
         "twilio_account_sid": "",
         "twilio_auth_token": "",
         "twilio_phone_number": "",
+        "openwa_server_url": "http://localhost:2785",
+        "openwa_api_key": "",
         "anthropic_api_key": "",
     }
 
@@ -127,7 +129,8 @@ async def _handle_create_bot(args: dict, **kw) -> str:
     for key in [
         "whapi_token", "meta_access_token", "meta_phone_number_id",
         "meta_verify_token", "twilio_account_sid", "twilio_auth_token",
-        "twilio_phone_number", "anthropic_api_key",
+        "twilio_phone_number", "openwa_server_url", "openwa_api_key",
+        "anthropic_api_key",
     ]:
         if key in credentials:
             variables[key] = credentials[key]
@@ -154,6 +157,7 @@ async def _handle_create_bot(args: dict, **kw) -> str:
         ("providers/whapi.py.template", providers_dir / "whapi.py"),
         ("providers/meta.py.template", providers_dir / "meta.py"),
         ("providers/twilio.py.template", providers_dir / "twilio.py"),
+        ("providers/openwa.py.template", providers_dir / "openwa.py"),
         ("config/business.yaml.template", config_dir / "business.yaml"),
         ("config/prompts.yaml.template", config_dir / "prompts.yaml"),
         ("requirements.txt.template", BOT_DIR / "requirements.txt"),
@@ -189,6 +193,11 @@ async def _handle_create_bot(args: dict, **kw) -> str:
             f"TWILIO_ACCOUNT_SID={variables['twilio_account_sid']}",
             f"TWILIO_AUTH_TOKEN={variables['twilio_auth_token']}",
             f"TWILIO_PHONE_NUMBER={variables['twilio_phone_number']}",
+        ])
+    elif provider == "openwa":
+        env_lines.extend([
+            f"OPENWA_SERVER_URL={variables['openwa_server_url']}",
+            f"OPENWA_API_KEY={variables['openwa_api_key']}",
         ])
     (BOT_DIR / ".env").write_text("\n".join(env_lines) + "\n", encoding="utf-8")
 
@@ -255,6 +264,8 @@ async def _handle_configure_bot(args: dict, **kw) -> str:
         "twilio_account_sid": settings.get("credentials", {}).get("twilio_account_sid", ""),
         "twilio_auth_token": settings.get("credentials", {}).get("twilio_auth_token", ""),
         "twilio_phone_number": settings.get("credentials", {}).get("twilio_phone_number", ""),
+        "openwa_server_url": settings.get("credentials", {}).get("openwa_server_url", "http://localhost:2785"),
+        "openwa_api_key": settings.get("credentials", {}).get("openwa_api_key", ""),
         "anthropic_api_key": settings.get("credentials", {}).get("anthropic_api_key", ""),
     }
 
@@ -290,6 +301,11 @@ async def _handle_configure_bot(args: dict, **kw) -> str:
                 f"TWILIO_ACCOUNT_SID={variables['twilio_account_sid']}",
                 f"TWILIO_AUTH_TOKEN={variables['twilio_auth_token']}",
                 f"TWILIO_PHONE_NUMBER={variables['twilio_phone_number']}",
+            ])
+        elif provider == "openwa":
+            env_lines.extend([
+                f"OPENWA_SERVER_URL={variables['openwa_server_url']}",
+                f"OPENWA_API_KEY={variables['openwa_api_key']}",
             ])
         env_path.write_text("\n".join(env_lines) + "\n", encoding="utf-8")
 
@@ -388,7 +404,7 @@ WHATSAPP_BOT_CREATE_SCHEMA = {
             "provider": {
                 "type": "string",
                 "description": "WhatsApp provider to use",
-                "enum": ["whapi", "meta", "twilio"],
+                "enum": ["whapi", "meta", "twilio", "openwa"],
                 "default": "whapi",
             },
             "port": {
@@ -411,6 +427,8 @@ WHATSAPP_BOT_CREATE_SCHEMA = {
                     "twilio_account_sid": {"type": "string"},
                     "twilio_auth_token": {"type": "string"},
                     "twilio_phone_number": {"type": "string"},
+                    "openwa_server_url": {"type": "string"},
+                    "openwa_api_key": {"type": "string"},
                 },
             },
         },
@@ -436,7 +454,7 @@ WHATSAPP_BOT_CONFIGURE_SCHEMA = {
             "hours": {"type": "string", "description": "Updated business hours"},
             "provider": {
                 "type": "string",
-                "enum": ["whapi", "meta", "twilio"],
+                "enum": ["whapi", "meta", "twilio", "openwa"],
                 "description": "Switch WhatsApp provider",
             },
             "port": {"type": "integer", "description": "Updated server port"},

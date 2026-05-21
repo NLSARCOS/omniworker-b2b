@@ -3528,6 +3528,164 @@ body {
   color: var(--text-secondary);
 }
 
+/* ── SmartPatterns ─────────────────────────────────────────────── */
+
+.smartpatterns-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px 32px;
+}
+
+.smartpatterns-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.smartpatterns-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.smartpatterns-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.smartpatterns-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.smartpatterns-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.smartpatterns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 20px;
+}
+
+.smartpatterns-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: border-color var(--transition);
+}
+
+.smartpatterns-card:hover {
+  border-color: var(--border-bright);
+}
+
+.smartpatterns-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.smartpatterns-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.smartpatterns-card-prompt {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.smartpatterns-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.smartpatterns-schedule {
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.smartpatterns-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.smartpatterns-confidence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.smartpatterns-confidence-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.smartpatterns-confidence-bar {
+  font-family: monospace;
+  letter-spacing: 1px;
+  color: var(--accent-text);
+}
+
+.smartpatterns-confidence-value {
+  font-weight: 600;
+  min-width: 36px;
+  text-align: right;
+}
+
+.smartpatterns-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.smartpatterns-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 40px 0;
+}
+
+.smartpatterns-empty-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.smartpatterns-empty-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .schedules-empty-hint {
   font-size: 13px;
   color: var(--text-muted);
@@ -6036,3 +6194,228 @@ body {
   display: flex;
   gap: 8px;
 }
+
+/* Premium Kanban Comments Styling */
+.kanban-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  padding-right: 6px;
+}
+
+.kanban-comments-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.kanban-comments-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.kanban-comment-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.kanban-comment-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.kanban-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.kanban-comment-user {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.3px;
+}
+
+.kanban-comment-time {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.kanban-comment-text {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.kanban-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+.kanban-comment-textarea {
+  width: 100%;
+  min-height: 70px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 12.5px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kanban-comment-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.2);
+}
+
+.kanban-comment-submit-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Glassmorphic Blocked Actions Card */
+.kanban-blocked-actions-card {
+  background: rgba(217, 119, 6, 0.05);
+  border: 1.5px solid rgba(217, 119, 6, 0.25);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin: 16px 0;
+  backdrop-filter: blur(12px);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 15px rgba(217, 119, 6, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: cardGlowEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.kanban-blocked-actions-card:hover {
+  background: rgba(217, 119, 6, 0.07);
+  border-color: rgba(217, 119, 6, 0.4);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 25px rgba(217, 119, 6, 0.12);
+  transform: translateY(-2px);
+}
+
+.kanban-blocked-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fbbf24;
+  margin-bottom: 12px;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.2);
+}
+
+.kanban-blocked-header svg {
+  color: #fbbf24;
+  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.3));
+  animation: pulseWarning 2s infinite ease-in-out;
+}
+
+.kanban-blocked-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kanban-blocked-buttons-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Sparkle & Glowing Buttons */
+.btn-sparkle {
+  position: relative;
+  background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%);
+  color: #000 !important;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.4);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-sparkle:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fbbf24 0%, #fef08a 100%);
+  box-shadow: 
+    0 6px 20px rgba(217, 119, 6, 0.6),
+    0 0 10px rgba(251, 191, 36, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-sparkle:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+}
+
+.btn-sparkle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 120%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+}
+
+.btn-sparkle:hover::before {
+  left: 150%;
+  transition: left 0.6s ease;
+}
+
+/* Keyframe Animations */
+@keyframes cardGlowEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes pulseWarning {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.3));
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+  }
+}
+

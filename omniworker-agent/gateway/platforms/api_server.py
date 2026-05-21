@@ -2733,6 +2733,19 @@ class APIServerAdapter(BasePlatformAdapter):
                 tool_complete_callback=tool_complete_callback,
                 gateway_session_key=gateway_session_key,
             )
+            # Restore memory turn counter from conversation history so
+            # background review triggers correctly across API calls.
+            # Without this, the counter stays at 0 (reset on each new
+            # AIAgent) and the nudge interval is never reached, so the
+            # background memory review never fires in API server mode.
+            if agent._memory_nudge_interval > 0 and conversation_history:
+                user_turn_count = sum(
+                    1 for m in conversation_history
+                    if m.get("role") == "user"
+                )
+                agent._turns_since_memory = (
+                    user_turn_count % agent._memory_nudge_interval
+                )
             if agent_ref is not None:
                 agent_ref[0] = agent
             effective_task_id = session_id or str(uuid.uuid4())
