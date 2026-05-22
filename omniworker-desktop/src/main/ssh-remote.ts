@@ -263,6 +263,42 @@ export async function sshUninstallSkill(
   }
 }
 
+export async function sshCreateCustomSkill(
+  config: SshConfig,
+  name: string,
+  category: string,
+  description: string,
+  content: string,
+  profile?: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const cleanCategory = category.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+    const cleanName = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+
+    if (!cleanName) {
+      return { success: false, error: "El nombre de la skill no es válido." };
+    }
+
+    const profileSegment = profile && profile !== "default" ? `profiles/${profile}/` : "";
+    const targetDir = cleanCategory
+      ? `~/.omniworker/${profileSegment}skills/${cleanCategory}/${cleanName}`
+      : `~/.omniworker/${profileSegment}skills/${cleanName}`;
+
+    const skillFile = `${targetDir}/SKILL.md`;
+    const skillContent = `---
+name: "${name.replace(/"/g, '\\"')}"
+description: "${description.replace(/"/g, '\\"')}"
+---
+
+${content}
+`;
+    await sshWriteFile(config, skillFile, skillContent);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
 export async function sshSearchSkills(
   config: SshConfig,
   query: string,
@@ -829,8 +865,8 @@ export async function sshGetModelConfig(
   profile?: string,
 ): Promise<{ provider: string; model: string; baseUrl: string }> {
   return {
-    provider: (await sshGetConfigValue(config, "provider", profile)) || "auto",
-    model: (await sshGetConfigValue(config, "default", profile)) || "",
+    provider: (await sshGetConfigValue(config, "provider", profile)) || "custom",
+    model: (await sshGetConfigValue(config, "default", profile)) || "omniworker",
     baseUrl: (await sshGetConfigValue(config, "base_url", profile)) || "",
   };
 }
@@ -1010,15 +1046,15 @@ profiles_dir = os.path.join(omniworker_home, "profiles")
 profiles = []
 
 def read_config(path):
-    model, provider = "", "auto"
+    model, provider = "omniworker", "custom"
     config_file = os.path.join(path, "config.yaml")
     if os.path.exists(config_file):
         content = open(config_file).read()
         import re
         m = re.search(r'^\\s*default:\\s*["\\'\\']?([^"\\'\\' \\n#]+)["\\'\\']?', content, re.M)
-        if m: model = m.group(1).strip()
+        if m and m.group(1).strip(): model = m.group(1).strip()
         p = re.search(r'^\\s*provider:\\s*["\\'\\']?([^"\\'\\' \\n#]+)["\\'\\']?', content, re.M)
-        if p: provider = p.group(1).strip()
+        if p and p.group(1).strip(): provider = p.group(1).strip()
     return model, provider
 
 def count_skills(path):
@@ -1080,8 +1116,8 @@ print(json.dumps(profiles))
         path: "~/.omniworker",
         isDefault: true,
         isActive: true,
-        model: "",
-        provider: "auto",
+        model: "omniworker",
+        provider: "custom",
         hasEnv: false,
         hasSoul: false,
         skillCount: 0,

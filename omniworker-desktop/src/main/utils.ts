@@ -84,3 +84,21 @@ export function safeWriteFile(filePath: string, content: string): void {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(filePath, content, "utf-8");
 }
+
+/**
+ * Extract a clean error message from a child_process error.
+ * Checks stderr first, then stdout (since some Python CLI subcommands print errors to stdout),
+ * and falls back to the system message or raw error string.
+ */
+export function getExecErrorMessage(err: unknown): string {
+  if (err && typeof err === "object") {
+    const execErr = err as { stderr?: Buffer; stdout?: Buffer; message?: string };
+    const stderr = execErr.stderr?.toString().trim();
+    if (stderr) return stderr;
+    const stdout = execErr.stdout?.toString().trim();
+    if (stdout) return stdout;
+    if (execErr.message) return execErr.message.trim();
+  }
+  return String(err).trim();
+}
+

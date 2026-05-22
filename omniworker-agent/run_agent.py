@@ -2544,6 +2544,61 @@ class AIAgent:
                 "Session DB creation failed (will retry next turn): %s", e
             )
 
+    def _refresh_tools_for_session(self) -> None:
+        """Re-query get_tool_definitions to dynamically refresh enabled tools in session.
+        
+        Applies overrides from the session and re-adds memory/context-compressor wrappers.
+        """
+        # Re-fetch base tool definitions applying session overrides
+        from model_tools import get_tool_definitions
+        self.tools = get_tool_definitions(
+            enabled_toolsets=self.enabled_toolsets,
+            disabled_toolsets=self.disabled_toolsets,
+            quiet_mode=True,
+            session_id=self.session_id,
+        )
+        
+        # Recalculate valid_tool_names
+        self.valid_tool_names = set()
+        if self.tools:
+            self.valid_tool_names = {tool["function"]["name"] for tool in self.tools}
+            
+        # Re-inject memory provider tools if enabled
+        if self._memory_manager and self.tools is not None:
+            _existing_tool_names = {
+                t.get("function", {}).get("name")
+                for t in self.tools
+                if isinstance(t, dict)
+            }
+            for _schema in self._memory_manager.get_all_tool_schemas():
+                _tname = _schema.get("name", "")
+                if _tname and _tname in _existing_tool_names:
+                    continue
+                _wrapped = {"type": "function", "function": _schema}
+                self.tools.append(_wrapped)
+                if _tname:
+                    self.valid_tool_names.add(_tname)
+                    _existing_tool_names.add(_tname)
+                    
+        # Re-inject context engine tools if enabled
+        if hasattr(self, "context_compressor") and self.context_compressor and self.tools is not None:
+            _existing_tool_names = {
+                t.get("function", {}).get("name")
+                for t in self.tools
+                if isinstance(t, dict)
+            }
+            for _schema in self.context_compressor.get_tool_schemas():
+                _tname = _schema.get("name", "")
+                if _tname and _tname in _existing_tool_names:
+                    continue
+                _wrapped = {"type": "function", "function": _schema}
+                self.tools.append(_wrapped)
+                if _tname:
+                    self.valid_tool_names.add(_tname)
+                    if hasattr(self, "_context_engine_tool_names"):
+                        self._context_engine_tool_names.add(_tname)
+                    _existing_tool_names.add(_tname)
+
     def reset_session_state(self):
         """Reset all session-scoped token counters to 0 for a fresh session.
         
@@ -12319,6 +12374,9 @@ class AIAgent:
             )
 
         while (api_call_count < self.max_iterations and self.iteration_budget.remaining > 0) or self._budget_grace_call:
+            # Refresh session tools dynamically so any activation/deactivation override takes effect immediately
+            self._refresh_tools_for_session()
+
             # Reset per-turn checkpoint dedup so each iteration can take one snapshot
             self._checkpoint_mgr.new_turn()
 

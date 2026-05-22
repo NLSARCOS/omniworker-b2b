@@ -85,7 +85,7 @@ export function useModelConfig(profile?: string): UseModelConfigResult {
         ? currentModel.split("/").pop() || currentModel
         : currentProvider === "auto"
           ? t("chat.auto")
-          : t("chat.noModel"),
+          : "omniworker",
     [currentModel, currentProvider, t],
   );
 

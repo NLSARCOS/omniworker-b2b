@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, X, Download, Trash, Refresh } from "../../assets/icons";
+import { Search, X, Download, Trash, Refresh, Plus, Upload } from "../../assets/icons";
 import { AgentMarkdown } from "../../components/AgentMarkdown";
 import { useI18n } from "../../components/useI18n";
 
@@ -36,7 +36,18 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
   const [detailContent, setDetailContent] = useState("");
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [error, setError] = useState("");
+  
+  // Custom skills state
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createCategory, setCreateCategory] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createContent, setCreateContent] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const searchRef = useRef<HTMLInputElement>(null);
+
 
   const loadInstalled = useCallback(async (): Promise<void> => {
     const list = await window.omniworkerAPI.listInstalledSkills(profile);
@@ -89,6 +100,82 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
     }
   }
 
+  const handleFileContent = (text: string) => {
+    let name = "";
+    let description = "";
+    let content = text;
+    
+    if (text.startsWith("---")) {
+      const endIdx = text.indexOf("---", 3);
+      if (endIdx !== -1) {
+        const frontmatter = text.slice(3, endIdx);
+        content = text.slice(endIdx + 3).trim();
+        
+        const nameMatch = frontmatter.match(/^\s*name:\s*["']?([^"'\n]+)["']?\s*$/m);
+        if (nameMatch) name = nameMatch[1].trim();
+        
+        const descMatch = frontmatter.match(/^\s*description:\s*["']?([^"'\n]+)["']?\s*$/m);
+        if (descMatch) description = descMatch[1].trim();
+      }
+    } else {
+      const headingMatch = text.match(/^#\s+(.+)/m);
+      if (headingMatch) {
+        name = headingMatch[1].trim();
+      }
+    }
+    
+    setCreateName(name);
+    setCreateDescription(description);
+    setCreateContent(content);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) handleFileContent(text);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCreateSkillSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError("");
+    
+    if (!createName.trim()) {
+      setCreateError("El nombre de la skill es obligatorio.");
+      return;
+    }
+    if (!createContent.trim()) {
+      setCreateError("Las instrucciones (contenido) de la skill son obligatorias.");
+      return;
+    }
+    
+    setActionInProgress("creating-skill");
+    const result = await window.omniworkerAPI.createCustomSkill(
+      createName,
+      createCategory,
+      createDescription,
+      createContent,
+      profile
+    );
+    setActionInProgress(null);
+    
+    if (result.success) {
+      setIsCreateOpen(false);
+      setCreateName("");
+      setCreateCategory("");
+      setCreateDescription("");
+      setCreateContent("");
+      await loadInstalled();
+    } else {
+      setCreateError(result.error || "Ocurrió un error al crear la skill.");
+    }
+  };
+
+
   const installedNames = new Set(
     installedSkills.map((s) => s.name.toLowerCase()),
   );
@@ -121,10 +208,17 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
     return matches;
   });
 
-  // Get unique categories for filter pills
   const categories = Array.from(
     new Set(bundledSkills.map((s) => s.category)),
   ).sort();
+
+  const allCategories = Array.from(
+    new Set([
+      ...bundledSkills.map((s) => s.category),
+      ...installedSkills.map((s) => s.category)
+    ])
+  ).filter(Boolean).sort();
+
 
   if (loading) {
     return (
@@ -138,6 +232,207 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
 
   return (
     <div className="skills-container">
+      <style>{`
+        .skills-upload-dropzone {
+          border: 2px dashed var(--border);
+          border-radius: var(--radius-md);
+          padding: 20px;
+          text-align: center;
+          background: var(--bg-secondary);
+          transition: all var(--transition);
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          margin-bottom: 20px;
+          position: relative;
+        }
+        .skills-upload-dropzone.dragover {
+          border-color: var(--accent);
+          background: var(--accent-subtle);
+          transform: scale(1.02);
+        }
+        .skills-upload-dropzone p {
+          font-size: 13px;
+          color: var(--text-secondary);
+          margin: 0;
+        }
+        .skills-upload-dropzone .upload-icon {
+          color: var(--text-muted);
+          transition: color var(--transition);
+        }
+        .skills-upload-dropzone:hover .upload-icon {
+          color: var(--accent);
+        }
+        .file-input-hidden {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          cursor: pointer;
+        }
+        .skills-form-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 16px;
+        }
+        .skills-form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .skills-form-group.full-width {
+          grid-column: span 2;
+        }
+        .skills-form-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+        .skills-form-input, .skills-form-textarea {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 8px 12px;
+          font-size: 13px;
+          font-family: var(--font-sans);
+          color: var(--text-primary);
+          outline: none;
+          transition: border-color var(--transition);
+        }
+        .skills-form-input:focus, .skills-form-textarea:focus {
+          border-color: var(--border-focus);
+        }
+        .skills-form-textarea {
+          min-height: 140px;
+          resize: vertical;
+          font-family: var(--font-mono, monospace);
+        }
+      `}</style>
+
+      {/* Create / Upload Custom Skill Modal */}
+      {isCreateOpen && (
+        <div className="skills-detail-overlay" onClick={() => setIsCreateOpen(false)}>
+          <div className="skills-detail" style={{ maxWidth: "680px", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
+            <div className="skills-detail-header">
+              <div>
+                <div className="skills-detail-name">Crear Nueva Skill</div>
+                <div className="skills-detail-category">Añadir instrucciones personalizadas al agente</div>
+              </div>
+              <button className="btn-ghost" onClick={() => setIsCreateOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateSkillSubmit} className="skills-detail-content" style={{ padding: "20px", overflowY: "auto" }}>
+              {createError && (
+                <div className="skills-error" style={{ marginBottom: "16px" }}>
+                  {createError}
+                  <button type="button" className="btn-ghost" onClick={() => setCreateError("")}>
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              {/* Drag & Drop Zone */}
+              <div 
+                className={`skills-upload-dropzone ${isDragOver ? "dragover" : ""}`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragEnter={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDragOver(false); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                      const text = evt.target?.result as string;
+                      if (text) handleFileContent(text);
+                    };
+                    reader.readAsText(file);
+                  }
+                }}
+              >
+                <Upload size={24} className="upload-icon" />
+                <p>Arrastra tu archivo SKILL.md o haz clic para subir</p>
+                <input 
+                  type="file" 
+                  accept=".md,.txt" 
+                  onChange={handleFileUpload} 
+                  className="file-input-hidden" 
+                />
+              </div>
+
+              {/* Form Fields */}
+              <div className="skills-form-grid">
+                <div className="skills-form-group">
+                  <label className="skills-form-label">Nombre del Skill *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="ej: mi-nuevo-skill" 
+                    className="skills-form-input"
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                  />
+                </div>
+
+                <div className="skills-form-group">
+                  <label className="skills-form-label">Categoría</label>
+                  <input 
+                    type="text" 
+                    placeholder="ej: web, system, dev" 
+                    className="skills-form-input"
+                    value={createCategory}
+                    onChange={(e) => setCreateCategory(e.target.value)}
+                    list="categories-list"
+                  />
+                  <datalist id="categories-list">
+                    {allCategories.map(cat => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div className="skills-form-group full-width">
+                  <label className="skills-form-label">Descripción Corta</label>
+                  <input 
+                    type="text" 
+                    placeholder="Una breve explicación de lo que hace este skill..." 
+                    className="skills-form-input"
+                    value={createDescription}
+                    onChange={(e) => setCreateDescription(e.target.value)}
+                  />
+                </div>
+
+                <div className="skills-form-group full-width">
+                  <label className="skills-form-label">Instrucciones del Skill (Markdown) *</label>
+                  <textarea 
+                    required 
+                    placeholder="# Instrucciones del Skill&#10;&#10;Cuando el usuario te pida..." 
+                    className="skills-form-textarea"
+                    value={createContent}
+                    onChange={(e) => setCreateContent(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px" }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsCreateOpen(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={actionInProgress === "creating-skill"}>
+                  {actionInProgress === "creating-skill" ? "Guardando..." : "Guardar Skill"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Detail Panel */}
       {detailSkill && (
         <div
@@ -187,11 +482,22 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
           <h2 className="skills-title">{t("skills.title")}</h2>
           <p className="skills-subtitle">{t("skills.subtitle")}</p>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={loadAll}>
-          <Refresh size={14} />
-          {t("skills.refresh")}
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button className="btn btn-primary btn-sm" onClick={() => setIsCreateOpen(true)}>
+            <Plus size={14} />
+            Crear Skill
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setIsCreateOpen(true)}>
+            <Upload size={14} />
+            Importar Skill
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={loadAll}>
+            <Refresh size={14} />
+            {t("skills.refresh")}
+          </button>
+        </div>
       </div>
+
 
       {error && (
         <div className="skills-error">

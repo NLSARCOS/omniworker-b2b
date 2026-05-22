@@ -1143,6 +1143,49 @@ export function isSmartRouterRunning(): Promise<boolean> {
   }
 }
 
+export async function forceKillPort(port: number): Promise<boolean> {
+  const { execSync } = require("child_process") as typeof import("child_process");
+  const isWin = process.platform === "win32";
+
+  try {
+    if (isWin) {
+      const output = execSync(`netstat -ano -p tcp`).toString();
+      const lines = output.split("\n");
+      const pidRegex = new RegExp(`:${port}\\s+.*LISTENING\\s+(\\d+)`, "i");
+      for (const line of lines) {
+        const match = pidRegex.exec(line);
+        if (match && match[1]) {
+          const pid = parseInt(match[1], 10);
+          if (pid > 0) {
+            console.log(`[SmartRouter] Force killing stale process PID ${pid} on port ${port} via taskkill`);
+            execSync(`taskkill /F /PID ${pid}`);
+            return true;
+          }
+        }
+      }
+    } else {
+      try {
+        const pidStr = execSync(`lsof -t -i :${port}`).toString().trim();
+        if (pidStr) {
+          const pids = pidStr.split("\n").map(p => parseInt(p.trim(), 10)).filter(p => !isNaN(p));
+          for (const pid of pids) {
+            if (pid > 0) {
+              console.log(`[SmartRouter] Force killing stale process PID ${pid} on port ${port} via SIGKILL`);
+              process.kill(pid, "SIGKILL");
+            }
+          }
+          return true;
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+  } catch (error) {
+    console.error(`[SmartRouter] Failed to force-kill port ${port}:`, error);
+  }
+  return false;
+}
+
 import { SMART_ROUTER_SCRIPT } from "./smartRouterScript";
 
 /**
@@ -1152,7 +1195,14 @@ import { SMART_ROUTER_SCRIPT } from "./smartRouterScript";
 export async function startSmartRouter(): Promise<boolean> {
   const isRunning = await isSmartRouterRunning();
   if (isRunning) {
-    return true; // Already running
+    if (smartRouterProcess) {
+      return true; // Already running and managed by this session
+    }
+    // It's running but NOT managed by this session (meaning it's a stale orphan process!)
+    console.log("[SmartRouter] Stale orphan router process detected on port", SMART_ROUTER_PORT);
+    await forceKillPort(SMART_ROUTER_PORT);
+    // Give it a brief moment to release the port
+    await new Promise((r) => setTimeout(r, 500));
   }
 
   const routerScript = join(OMNIWORKER_REPO, "smart_router.py");

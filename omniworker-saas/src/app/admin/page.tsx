@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Terminal, Box, ShieldAlert, Cpu, Activity, Database, DollarSign, Zap } from "lucide-react";
+import { Terminal, Box, ShieldAlert, Cpu, Activity, Database, DollarSign, Zap, Download } from "lucide-react";
 
 interface Provider {
   id: string;
@@ -68,7 +68,18 @@ interface AuditLog {
   createdAt: string;
 }
 
-type View = "dashboard" | "providers" | "tenants" | "plans" | "audit";
+interface AppUpdate {
+  id: string;
+  version: string;
+  urlWindows: string;
+  urlMac: string;
+  urlLinux: string;
+  releaseNotes: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+type View = "dashboard" | "providers" | "tenants" | "plans" | "audit" | "updates";
 
 export default function SuperAdminCommandCenter() {
   const [view, setView] = useState<View>("dashboard");
@@ -84,6 +95,8 @@ export default function SuperAdminCommandCenter() {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [selectedFormProvider, setSelectedFormProvider] = useState("");
   const [error, setError] = useState("");
+  const [updates, setUpdates] = useState<AppUpdate[]>([]);
+  const [showCreateUpdate, setShowCreateUpdate] = useState(false);
 
   // Total model count across all OpenCode Go tiers
   const opencodeGoModelCount = useMemo(() => {
@@ -117,12 +130,13 @@ export default function SuperAdminCommandCenter() {
         }
       };
 
-      const [pRes, tRes, plRes, auditRes, metricsRes] = await Promise.all([
+      const [pRes, tRes, plRes, auditRes, metricsRes, upRes] = await Promise.all([
         fetchJson("/api/admin/providers"),
         fetchJson("/api/admin/tenants"),
         fetchJson("/api/admin/plans"),
         fetchJson("/api/admin/audit"),
-        fetchJson("/api/admin/metrics")
+        fetchJson("/api/admin/metrics"),
+        fetchJson("/api/admin/updates")
       ]);
       setProviders(pRes.providers || []);
       setProviderOptions(pRes.availableProviders || []);
@@ -131,6 +145,7 @@ export default function SuperAdminCommandCenter() {
       setPlans(plRes.plans || []);
       setAuditLogs(auditRes.logs || []);
       setModelMetrics(metricsRes.models || []);
+      setUpdates(upRes.updates || []);
     } catch (err) {
       console.error(err);
       setError("SYSTEM_FAULT: Gataway connection failed.");
@@ -141,6 +156,71 @@ export default function SuperAdminCommandCenter() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAll();
   }, []);
+
+  const handleUpdateCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const version = (form.elements.namedItem("version") as HTMLInputElement).value;
+    const urlWindows = (form.elements.namedItem("urlWindows") as HTMLInputElement).value;
+    const urlMac = (form.elements.namedItem("urlMac") as HTMLInputElement).value;
+    const urlLinux = (form.elements.namedItem("urlLinux") as HTMLInputElement).value;
+    const releaseNotes = (form.elements.namedItem("releaseNotes") as HTMLTextAreaElement).value;
+    const isActive = (form.elements.namedItem("isActive") as HTMLInputElement).checked;
+
+    try {
+      const res = await fetch("/api/admin/updates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+        body: JSON.stringify({ version, urlWindows, urlMac, urlLinux, releaseNotes, isActive }),
+      });
+      if (res.ok) {
+        form.reset();
+        setShowCreateUpdate(false);
+        loadAll();
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to create update");
+      }
+    } catch {
+      setError("Network error while creating update");
+    }
+  };
+
+  const handleUpdateToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch("/api/admin/updates", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+        body: JSON.stringify({ id, isActive: !currentStatus }),
+      });
+      if (res.ok) {
+        loadAll();
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to toggle status");
+      }
+    } catch {
+      setError("Network error toggling status");
+    }
+  };
+
+  const handleUpdateDelete = async (id: string) => {
+    if (!confirm("WARN: Destructive action. Delete update?")) return;
+    try {
+      const res = await fetch(`/api/admin/updates?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+      });
+      if (res.ok) {
+        loadAll();
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to delete update");
+      }
+    } catch {
+      setError("Network error deleting update");
+    }
+  };
 
   const handleProviderCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,6 +357,9 @@ export default function SuperAdminCommandCenter() {
           </button>
           <button onClick={() => setView("audit")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "audit" ? "bg-zinc-800 text-lime-400" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
             <ShieldAlert size={18} /> Security & Audit
+          </button>
+          <button onClick={() => setView("updates")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "updates" ? "bg-zinc-800 text-lime-400" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
+            <Download size={18} /> System Updates
           </button>
         </nav>
 
@@ -893,6 +976,149 @@ export default function SuperAdminCommandCenter() {
                  </tbody>
                </table>
              </div>
+          </div>
+        )}
+
+        {/* --- VIEW: SYSTEM UPDATES --- */}
+        {view === "updates" && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight uppercase flex items-center gap-3">
+                  <Download size={28} className="text-lime-500" />
+                  System Updates Manager
+                </h1>
+                <p className="text-zinc-500 font-mono text-sm mt-1">Publish new desktop/agent version payloads with targeted OS links.</p>
+              </div>
+              <button 
+                onClick={() => setShowCreateUpdate(!showCreateUpdate)} 
+                className="bg-lime-500 text-black px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-lime-400 transition-colors"
+              >
+                {showCreateUpdate ? "Cancel" : "Publish Update"}
+              </button>
+            </div>
+
+            {showCreateUpdate && (
+              <div className="bg-zinc-900 border border-zinc-800 p-6 animate-in slide-in-from-top-2 duration-300">
+                 <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2">
+                   <Download size={16}/> Release Update Payload
+                 </h2>
+                 <form onSubmit={handleUpdateCreate} className="space-y-5">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div>
+                       <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Software Version (e.g. 1.0.4) *</label>
+                       <input name="version" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-850" placeholder="e.g. 1.0.4" />
+                     </div>
+                     <div className="flex items-end pb-3">
+                       <label className="flex items-center gap-3 cursor-pointer">
+                         <input type="checkbox" name="isActive" defaultChecked={true} className="w-5 h-5 accent-lime-500 bg-zinc-950 border border-zinc-800" />
+                         <span className="text-sm font-mono text-zinc-300 uppercase tracking-widest">Mark Active (deactivates others)</span>
+                       </label>
+                     </div>
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                     <div>
+                       <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Windows Download URL *</label>
+                       <input name="urlWindows" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors font-mono placeholder:text-zinc-850" placeholder="https://..." />
+                     </div>
+                     <div>
+                       <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">macOS Download URL *</label>
+                       <input name="urlMac" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors font-mono placeholder:text-zinc-850" placeholder="https://..." />
+                     </div>
+                     <div>
+                       <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Linux Download URL *</label>
+                       <input name="urlLinux" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors font-mono placeholder:text-zinc-850" placeholder="https://..." />
+                     </div>
+                   </div>
+
+                   <div>
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Release Notes & Instructions (Markdown supported)</label>
+                     <textarea name="releaseNotes" rows={4} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-lime-500 transition-colors placeholder:text-zinc-800" placeholder="Describe the updates, improvements, bug fixes..." />
+                   </div>
+
+                   <div className="flex justify-end">
+                     <button type="submit" className="bg-lime-500 text-black px-8 py-3 font-bold uppercase tracking-wider text-sm hover:bg-lime-400 transition-colors">
+                       Deploy System Update
+                     </button>
+                   </div>
+                 </form>
+              </div>
+            )}
+
+            {/* Registered Updates List */}
+            <div className="bg-zinc-900 border border-zinc-800">
+              <div className="p-4 border-b border-zinc-800 bg-zinc-950/40 text-xs font-mono text-zinc-500 uppercase tracking-widest">
+                System Update History
+              </div>
+              
+              {updates.length === 0 ? (
+                <div className="p-12 text-center text-zinc-600 font-mono text-sm uppercase tracking-widest">
+                  No system updates have been released yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-zinc-800">
+                  {updates.map(up => (
+                    <div key={up.id} className="p-6 hover:bg-zinc-850/10 transition-colors space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold text-white font-mono">v{up.version}</span>
+                          {up.isActive ? (
+                            <span className="bg-lime-500/10 text-lime-400 border border-lime-500/35 px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider animate-pulse">
+                              Active Update
+                            </span>
+                          ) : (
+                            <span className="bg-zinc-850 text-zinc-500 border border-zinc-800 px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <button 
+                            onClick={() => handleUpdateToggleActive(up.id, up.isActive)}
+                            className={`text-xs font-mono uppercase tracking-widest px-3 py-1 border transition-colors ${up.isActive ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10" : "border-lime-500/40 text-lime-400 hover:bg-lime-500/10"}`}
+                          >
+                            {up.isActive ? "Deactivate" : "Activate"}
+                          </button>
+                          <button 
+                            onClick={() => handleUpdateDelete(up.id)}
+                            className="text-xs font-mono text-red-500 hover:text-red-400 uppercase tracking-widest transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+                        <div className="bg-zinc-950 p-3 border border-zinc-800">
+                          <span className="text-zinc-600 block mb-1 uppercase text-[10px]">Windows Link</span>
+                          <a href={up.urlWindows} target="_blank" rel="noreferrer" className="text-lime-400 hover:underline break-all">{up.urlWindows}</a>
+                        </div>
+                        <div className="bg-zinc-950 p-3 border border-zinc-800">
+                          <span className="text-zinc-600 block mb-1 uppercase text-[10px]">macOS Link</span>
+                          <a href={up.urlMac} target="_blank" rel="noreferrer" className="text-lime-400 hover:underline break-all">{up.urlMac}</a>
+                        </div>
+                        <div className="bg-zinc-950 p-3 border border-zinc-800">
+                          <span className="text-zinc-600 block mb-1 uppercase text-[10px]">Linux Link</span>
+                          <a href={up.urlLinux} target="_blank" rel="noreferrer" className="text-lime-400 hover:underline break-all">{up.urlLinux}</a>
+                        </div>
+                      </div>
+
+                      {up.releaseNotes && (
+                        <div className="bg-zinc-950/60 p-4 border border-zinc-800/80 rounded-sm">
+                          <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest block mb-2 font-mono">Release Notes:</span>
+                          <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">{up.releaseNotes}</div>
+                        </div>
+                      )}
+
+                      <div className="text-right text-[10px] font-mono text-zinc-600">
+                        Released on {new Date(up.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

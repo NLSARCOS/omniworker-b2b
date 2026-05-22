@@ -39,6 +39,7 @@ export const edgeHeartbeatSchema = z.object({
   agentId: z.string().min(1, "agentId es obligatorio"),
   status: z.enum(["online", "offline", "busy"]).optional(),
   capabilities: z.array(z.string()).optional(),
+  version: z.string().optional(),
 });
 
 // ─── Admin ───

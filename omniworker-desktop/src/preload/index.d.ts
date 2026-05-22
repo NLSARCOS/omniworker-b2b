@@ -120,6 +120,7 @@ interface OmniWorkerAPI {
   startSlmDownload: (
     authToken?: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  downloadAndInstallEngram: () => Promise<{ success: boolean; error?: string }>;
   onInstallProgress: (
     callback: (progress: InstallProgress) => void,
   ) => () => void;
@@ -279,6 +280,7 @@ interface OmniWorkerAPI {
   createProfile: (
     name: string,
     clone: boolean,
+    options?: { soulPrompt?: string; disabledToolsets?: string[] },
   ) => Promise<{ success: boolean; error?: string }>;
   deleteProfile: (
     name: string,
@@ -319,6 +321,30 @@ interface OmniWorkerAPI {
     content: string,
     profile?: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  searchObservations: (
+    query: string,
+    limit?: number,
+    project?: string,
+    scope?: string,
+  ) => Promise<any[]>;
+  getTimeline: (
+    observationId?: number,
+    before?: number,
+    after?: number,
+  ) => Promise<any>;
+  getConflicts: (
+    project?: string,
+    status?: string,
+    limit?: number,
+  ) => Promise<any>;
+  judgeConflict: (
+    judgmentId: string,
+    relation: string,
+    reason?: string,
+    confidence?: number,
+  ) => Promise<any>;
+  getSyncStatus: (project?: string) => Promise<any>;
+  triggerSync: (project?: string) => Promise<any>;
   subscribeMemoryChanges: (
     profile: string | undefined,
     callback: (payload: { changed: "memory" | "user"; profile?: string }) => void,
@@ -365,6 +391,14 @@ interface OmniWorkerAPI {
     name: string,
     profile?: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  createCustomSkill: (
+    name: string,
+    category: string,
+    description: string,
+    content: string,
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+
 
   // Session cache
   listCachedSessions: (
@@ -677,7 +711,7 @@ interface OmniWorkerAPI {
     size?: number;
     error?: string;
   }>;
-  readBackupManifest: () => Promise<{ manifest: any | null; error?: string }>;
+  readBackupManifest: () => Promise<{ manifest: any | null; error?: string; path?: string | null }>;
   restoreBackup: (
     archivePath: string,
     profile?: string,
@@ -765,6 +799,22 @@ interface OmniWorkerAPI {
       messageCount: number;
     }>
   >;
+
+  // OpenWA Local Installer
+  startOpenwaInstall: () => Promise<{ success: boolean; error?: string }>;
+  onOpenwaInstallProgress: (
+    callback: (progress: { step: number; total: number; message: string }) => void,
+  ) => () => void;
+
+  // SMTP Settings
+  getSmtpSettings: (profile?: string) => Promise<any>;
+  saveSmtpSettings: (settings: any, profile?: string) => Promise<boolean>;
+  testSmtpConnection: (
+    host: string,
+    port: number,
+    encryption: "none" | "ssl" | "tls",
+    type: "smtp" | "imap",
+  ) => Promise<{ success: boolean; message: string }>;
 }
 
 

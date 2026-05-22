@@ -92,6 +92,7 @@ vi.mock("../src/main/ssh-tunnel", () => ({
 
 vi.mock("../src/main/utils", () => ({
   stripAnsi: (s: string) => s,
+  safeWriteFile: () => {},
 }));
 
 vi.mock("../src/main/models", () => ({

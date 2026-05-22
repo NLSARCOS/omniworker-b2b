@@ -50,11 +50,67 @@ ROUTER_LOG = os.environ.get("SMART_ROUTER_LOG", "").lower() in ("1", "true", "ye
 # Dynamic Token Retrieval
 # ────────────────────────────────────────────────────
 
+ENV_CACHE_LOCK = threading.Lock()
+CACHED_API_KEY = None
+CACHED_ENV_MTIME = 0.0
+
+# Connection Pool/Cache for Cloud
+CLOUD_CONN = None
+CLOUD_CONN_LOCK = threading.Lock()
+
+def get_resilient_ssl_context():
+    """Load a resilient SSL context, preferring system certs, with certifi fallback and unverified fallback if all else fails."""
+    import ssl
+    try:
+        context = ssl.create_default_context()
+        try:
+            import certifi
+            context.load_verify_locations(certifi.where())
+            logger.info("SSL context loaded successfully using certifi bundle.")
+        except ImportError:
+            pass
+        return context
+    except Exception as e:
+        logger.warning(f"Could not create default SSL context: {e}. Attempting unverified fallback.")
+        try:
+            return ssl._create_unverified_context()
+        except Exception as e2:
+            logger.error(f"Failed to create even unverified SSL context: {e2}")
+            raise e2
+
+def get_cloud_connection(use_https, host, port):
+    """Get or create the cached cloud connection, ensuring thread-safety."""
+    global CLOUD_CONN
+    if CLOUD_CONN is None:
+        if use_https:
+            context = get_resilient_ssl_context()
+            CLOUD_CONN = HTTPSConnection(
+                host,
+                port=port,
+                timeout=120,
+                context=context
+            )
+        else:
+            CLOUD_CONN = HTTPConnection(
+                host,
+                port=port,
+                timeout=120,
+            )
+    return CLOUD_CONN
+
 def get_latest_api_key() -> str:
-    """Read the latest OPENAI_API_KEY / CUSTOM_API_KEY from ~/.omniworker/.env dynamically to avoid stale keys after JWT refresh."""
+    """Read the latest OPENAI_API_KEY / CUSTOM_API_KEY from ~/.omniworker/.env dynamically to avoid stale keys after JWT refresh. Uses mtime to cache and avoid redundant disk I/O."""
+    global CACHED_API_KEY, CACHED_ENV_MTIME
     env_path = os.path.expanduser("~/.omniworker/.env")
     if os.path.exists(env_path):
         try:
+            mtime = os.path.getmtime(env_path)
+            with ENV_CACHE_LOCK:
+                if CACHED_API_KEY is not None and mtime == CACHED_ENV_MTIME:
+                    return CACHED_API_KEY
+            
+            # Otherwise read and update cache
+            key_val = None
             with open(env_path, "r", encoding="utf-8") as f:
                 for line in f:
                     trimmed = line.strip()
@@ -64,7 +120,12 @@ def get_latest_api_key() -> str:
                     key = key.strip()
                     val = val.strip().strip("'").strip('"')
                     if key in ("OPENAI_API_KEY", "CUSTOM_API_KEY") and val:
-                        return val
+                        key_val = val
+            if key_val:
+                with ENV_CACHE_LOCK:
+                    CACHED_API_KEY = key_val
+                    CACHED_ENV_MTIME = mtime
+                return key_val
         except Exception as e:
             logger.warning(f"Error reading dynamic API key from .env: {e}")
     return os.environ.get("OPENAI_API_KEY", "")
@@ -274,17 +335,32 @@ def classify_request(data: dict) -> str:
 # TCP health probe
 # ────────────────────────────────────────────────────
 
+SLM_ALIVE_STATUS = False
+LAST_SLM_CHECK = 0.0
+SLM_CACHE_LOCK = threading.Lock()
+
 def is_local_slm_alive() -> bool:
-    """Quick TCP probe to check if local SLM is accepting connections."""
+    """Quick TCP probe with a short timeout and 8-second caching to prevent slow connection attempts when offline."""
+    global SLM_ALIVE_STATUS, LAST_SLM_CHECK
+    import time
     import socket
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(0.5)
-        s.connect((LOCAL_SLM_HOST, LOCAL_SLM_PORT))
-        s.close()
-        return True
-    except (OSError, SocketTimeout):
-        return False
+    
+    with SLM_CACHE_LOCK:
+        now = time.time()
+        if now - LAST_SLM_CHECK < 8.0:
+            return SLM_ALIVE_STATUS
+        
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.2)  # Reduced to 0.2s for faster response
+            s.connect((LOCAL_SLM_HOST, LOCAL_SLM_PORT))
+            s.close()
+            SLM_ALIVE_STATUS = True
+        except (OSError, SocketTimeout):
+            SLM_ALIVE_STATUS = False
+        
+        LAST_SLM_CHECK = now
+        return SLM_ALIVE_STATUS
 
 
 # ────────────────────────────────────────────────────
@@ -373,20 +449,29 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                 conn.close()
                 return False
 
-            # OK — forward response to client
-            self.send_response(200)
-            content_type = "text/event-stream" if stream else "application/json"
-            self.send_header("Content-Type", content_type)
-            self.send_header("Cache-Control", "no-cache")
-            self.send_header("Connection", "keep-alive")
-            self.end_headers()
+            if stream:
+                # OK — forward response to client
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "close")
+                self.end_headers()
 
-            # Stream chunks
-            while True:
-                chunk = resp.read(4096)
-                if not chunk:
-                    break
-                self.wfile.write(chunk)
+                # Stream chunks line by line to prevent SSE buffering/hangs
+                while True:
+                    line = resp.readline()
+                    if not line:
+                        break
+                    self.wfile.write(line)
+                    self.wfile.flush()
+            else:
+                resp_body = resp.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(resp_body)))
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(resp_body)
                 self.wfile.flush()
 
             conn.close()
@@ -397,14 +482,18 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
             return False
 
     def _proxy_to_cloud(self, body: bytes, stream: bool):
-        """Proxy request to cloud SaaS."""
+        """Proxy request to cloud SaaS with connection reuse and error resilience."""
+        global CLOUD_CONN
         parsed = urlparse(CLOUD_API_URL)
         use_https = parsed.scheme == "https"
+        host = parsed.hostname
+        port = parsed.port or (443 if use_https else 80)
 
         # Build auth headers with modern user agent to prevent Cloudflare blocks
         headers = {
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Connection": "keep-alive",
         }
 
         # Prefer incoming Authorization header unless it is generic/absent
@@ -416,44 +505,79 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
 
+        acquired = CLOUD_CONN_LOCK.acquire(blocking=False)
+        conn = None
         try:
-            if use_https:
-                conn = HTTPSConnection(
-                    parsed.hostname,
-                    port=parsed.port or 443,
-                    timeout=120,
-                )
+            if acquired:
+                conn = get_cloud_connection(use_https, host, port)
             else:
-                conn = HTTPConnection(
-                    parsed.hostname,
-                    port=parsed.port or 80,
-                    timeout=120,
-                )
+                # Create ad-hoc connection for concurrent request
+                if use_https:
+                    context = get_resilient_ssl_context()
+                    conn = HTTPSConnection(host, port=port, timeout=120, context=context)
+                else:
+                    conn = HTTPConnection(host, port=port, timeout=120)
 
             path = f"{parsed.path.rstrip('/')}/v1/chat/completions"
-            conn.request("POST", path, body=body, headers=headers)
-            resp = conn.getresponse()
 
-            # Forward response
+            # Execute with a retry if stale
+            max_attempts = 2
+            for attempt in range(max_attempts):
+                try:
+                    conn.request("POST", path, body=body, headers=headers)
+                    resp = conn.getresponse()
+                    break
+                except (Exception, OSError) as req_err:
+                    if acquired and attempt == 0:
+                        logger.info(f"Cached cloud connection failed ({req_err}), resetting and retrying...")
+                        try:
+                            conn.close()
+                        except Exception:
+                            pass
+                        CLOUD_CONN = None
+                        conn = get_cloud_connection(use_https, host, port)
+                        continue
+                    else:
+                        raise req_err
+
+            # Forward response status
             self.send_response(resp.status)
 
-            # Forward relevant headers
-            for key, val in resp.getheaders():
-                lower = key.lower()
-                if lower in ("transfer-encoding", "connection", "server"):
-                    continue
-                self.send_header(key, val)
-            self.end_headers()
+            if stream and resp.status == 200:
+                # Forward relevant headers
+                for key, val in resp.getheaders():
+                    lower = key.lower()
+                    if lower in ("transfer-encoding", "connection", "server"):
+                        continue
+                    self.send_header(key, val)
+                self.send_header("Connection", "close")
+                self.end_headers()
 
-            # Stream response
-            while True:
-                chunk = resp.read(4096)
-                if not chunk:
-                    break
-                self.wfile.write(chunk)
+                # Stream response line by line to prevent SSE buffering/hangs
+                while True:
+                    line = resp.readline()
+                    if not line:
+                        break
+                    self.wfile.write(line)
+                    self.wfile.flush()
+            else:
+                # Read entire body first so we can determine Content-Length
+                resp_body = resp.read()
+
+                # Forward relevant headers
+                for key, val in resp.getheaders():
+                    lower = key.lower()
+                    if lower in ("transfer-encoding", "connection", "server", "content-length"):
+                        continue
+                    self.send_header(key, val)
+                
+                # Send explicit Content-Length and close connection
+                self.send_header("Content-Length", str(len(resp_body)))
+                self.send_header("Connection", "close")
+                self.end_headers()
+
+                self.wfile.write(resp_body)
                 self.wfile.flush()
-
-            conn.close()
 
         except Exception as e:
             logger.error(f"Cloud proxy error: {e}")
@@ -461,6 +585,22 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                 self.send_error(502, f"Cloud API error: {e}")
             except Exception:
                 pass  # Headers already sent during streaming
+
+        finally:
+            if acquired:
+                # If exception occurred, connection is bad. Reset it.
+                if sys.exc_info()[0] is not None:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                    CLOUD_CONN = None
+                CLOUD_CONN_LOCK.release()
+            else:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def log_message(self, format, *args):
         # Suppress default access logs unless debug mode

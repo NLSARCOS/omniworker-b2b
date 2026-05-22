@@ -28,6 +28,7 @@ import logging
 import os
 import re
 import tempfile
+import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 from omniworker_constants import get_omniworker_home
@@ -104,6 +105,24 @@ def _scan_memory_content(content: str) -> Optional[str]:
     return None
 
 
+ENGRAM_URL = "http://127.0.0.1:7437"
+
+def _engram_request(method: str, path: str, data: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+    url = f"{ENGRAM_URL}{path}"
+    req = urllib.request.Request(url, method=method)
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+        json_data = json.dumps(data).encode("utf-8")
+        req.data = json_data
+    try:
+        with urllib.request.urlopen(req, timeout=2.0) as response:
+            if response.status >= 200 and response.status < 300:
+                body = response.read().decode("utf-8")
+                return json.loads(body) if body else {}
+    except Exception as e:
+        logger.debug(f"[Engram] REST request {method} {path} failed: {e}")
+    return None
+
 class MemoryStore:
     """
     Bounded curated memory with file persistence. One instance per AIAgent.
@@ -124,12 +143,35 @@ class MemoryStore:
         self._system_prompt_snapshot: Dict[str, str] = {"memory": "", "user": ""}
 
     def load_from_disk(self):
-        """Load entries from MEMORY.md and USER.md, capture system prompt snapshot."""
+        """Load entries from Engram server, with fallback to MEMORY.md and USER.md."""
         mem_dir = get_memory_dir()
         mem_dir.mkdir(parents=True, exist_ok=True)
 
-        self.memory_entries = self._read_file(mem_dir / "MEMORY.md")
-        self.user_entries = self._read_file(mem_dir / "USER.md")
+        engram_loaded = False
+        obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
+        if obs is not None and isinstance(obs, list):
+            try:
+                mem_list = []
+                user_content = ""
+                for o in obs:
+                    if o.get("topic_key") == "user-profile" or o.get("type") == "user-profile":
+                        user_content = o.get("content") or ""
+                    else:
+                        mem_list.append(o)
+                
+                # Sort facts ascending by ID
+                mem_list.sort(key=lambda x: x.get("id", 0))
+                self.memory_entries = [o.get("content", "").strip() for o in mem_list if o.get("content", "").strip()]
+                self.user_entries = [e.strip() for e in user_content.split(ENTRY_DELIMITER) if e.strip()]
+                
+                engram_loaded = True
+                logger.info("[Engram] Successfully loaded memory entries from local server.")
+            except Exception as e:
+                logger.warning(f"[Engram] Parsing observations failed, falling back to disk: {e}")
+
+        if not engram_loaded:
+            self.memory_entries = self._read_file(mem_dir / "MEMORY.md")
+            self.user_entries = self._read_file(mem_dir / "USER.md")
 
         # Deduplicate entries (preserves order, keeps first occurrence)
         self.memory_entries = list(dict.fromkeys(self.memory_entries))
@@ -232,6 +274,44 @@ class MemoryStore:
         if scan_error:
             return {"success": False, "error": scan_error}
 
+        # Try writing to Engram
+        try:
+            if target == "user":
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
+                existing_profile = None
+                if obs is not None and isinstance(obs, list):
+                    existing_profile = next((o for o in obs if o.get("topic_key") == "user-profile" or o.get("type") == "user-profile"), None)
+                
+                current_profile_content = existing_profile.get("content") or "" if existing_profile else ""
+                current_entries = [e.strip() for e in current_profile_content.split(ENTRY_DELIMITER) if e.strip()]
+                if content not in current_entries:
+                    current_entries.append(content)
+                new_profile_content = ENTRY_DELIMITER.join(current_entries)
+                
+                if existing_profile:
+                    _engram_request("PATCH", f"/observations/{existing_profile['id']}", {"content": new_profile_content})
+                else:
+                    _engram_request("POST", "/observations", {
+                        "session_id": "desktop-session-default",
+                        "type": "user-profile",
+                        "title": "User Profile",
+                        "content": new_profile_content,
+                        "topic_key": "user-profile",
+                        "scope": "personal"
+                    })
+            else:
+                _engram_request("POST", "/observations", {
+                    "session_id": "desktop-session-default",
+                    "type": "fact",
+                    "title": content[:40] + ("..." if len(content) > 40 else ""),
+                    "content": content,
+                    "project": "omniworker",
+                    "scope": "personal"
+                })
+        except Exception as e:
+            logger.warning(f"[Engram] add observation failed: {e}")
+
+        # Always replicate to flat files
         with self._file_lock(self._path_for(target)):
             # Re-read from disk under lock to pick up writes from other sessions
             self._reload_target(target)
@@ -280,6 +360,35 @@ class MemoryStore:
         if scan_error:
             return {"success": False, "error": scan_error}
 
+        # Try writing to Engram
+        try:
+            if target == "user":
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
+                existing_profile = None
+                if obs is not None and isinstance(obs, list):
+                    existing_profile = next((o for o in obs if o.get("topic_key") == "user-profile" or o.get("type") == "user-profile"), None)
+                
+                if existing_profile:
+                    current_profile_content = existing_profile.get("content") or ""
+                    current_entries = [e.strip() for e in current_profile_content.split(ENTRY_DELIMITER) if e.strip()]
+                    matches = [i for i, e in enumerate(current_entries) if old_text in e]
+                    if matches:
+                        current_entries[matches[0]] = new_content
+                        new_profile_content = ENTRY_DELIMITER.join(current_entries)
+                        _engram_request("PATCH", f"/observations/{existing_profile['id']}", {"content": new_profile_content})
+            else:
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
+                if obs is not None and isinstance(obs, list):
+                    matching_obs = next((o for o in obs if o.get("type") == "fact" and old_text in (o.get("content") or "")), None)
+                    if matching_obs:
+                        _engram_request("PATCH", f"/observations/{matching_obs['id']}", {
+                            "content": new_content,
+                            "title": new_content[:40] + ("..." if len(new_content) > 40 else "")
+                        })
+        except Exception as e:
+            logger.warning(f"[Engram] replace observation failed: {e}")
+
+        # Always replicate to flat files
         with self._file_lock(self._path_for(target)):
             self._reload_target(target)
 
@@ -330,6 +439,32 @@ class MemoryStore:
         if not old_text:
             return {"success": False, "error": "old_text cannot be empty."}
 
+        # Try writing to Engram
+        try:
+            if target == "user":
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
+                existing_profile = None
+                if obs is not None and isinstance(obs, list):
+                    existing_profile = next((o for o in obs if o.get("topic_key") == "user-profile" or o.get("type") == "user-profile"), None)
+                
+                if existing_profile:
+                    current_profile_content = existing_profile.get("content") or ""
+                    current_entries = [e.strip() for e in current_profile_content.split(ENTRY_DELIMITER) if e.strip()]
+                    matches = [i for i, e in enumerate(current_entries) if old_text in e]
+                    if matches:
+                        current_entries.pop(matches[0])
+                        new_profile_content = ENTRY_DELIMITER.join(current_entries)
+                        _engram_request("PATCH", f"/observations/{existing_profile['id']}", {"content": new_profile_content})
+            else:
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
+                if obs is not None and isinstance(obs, list):
+                    matching_obs = next((o for o in obs if o.get("type") == "fact" and old_text in (o.get("content") or "")), None)
+                    if matching_obs:
+                        _engram_request("DELETE", f"/observations/{matching_obs['id']}?hard=true")
+        except Exception as e:
+            logger.warning(f"[Engram] remove observation failed: {e}")
+
+        # Always replicate to flat files
         with self._file_lock(self._path_for(target)):
             self._reload_target(target)
 

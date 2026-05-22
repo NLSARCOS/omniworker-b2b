@@ -116,6 +116,11 @@ const TOOLSET_DEFS: {
     labelKey: "tools.whatsapp_bot.label",
     descriptionKey: "tools.whatsapp_bot.description",
   },
+  {
+    key: "smtp_client",
+    labelKey: "tools.smtp_client.label",
+    descriptionKey: "tools.smtp_client.description",
+  },
 ];
 
 function localizeToolDefs(

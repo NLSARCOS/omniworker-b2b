@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
 
 interface LoginProps {
   onLoginSuccess: (userData: any, authData: any) => void;
@@ -56,6 +57,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [statusIdx, setStatusIdx] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // Cycle through status messages while loading
   useEffect(() => {
@@ -71,6 +73,15 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isLoading]);
+
+  // Premium GSAP entrance animation for the login card
+  useEffect(() => {
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, y: 50, scale: 0.96 },
+      { opacity: 1, y: 0, scale: 1, duration: 1.4, ease: "power4.out", delay: 0.15 }
+    );
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,45 +115,101 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         alignItems: "center",
         justifyContent: "center",
         height: "100vh",
-        background: "var(--bg-primary, #0d0d0d)",
+        width: "100vw",
+        background: "radial-gradient(circle at center, var(--bg-primary) 0%, var(--bg-secondary) 100%)",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {/* Background soft ambient radial lights */}
       <div
+        style={{
+          position: "absolute",
+          width: "450px",
+          height: "450px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, var(--accent-subtle) 0%, transparent 70%)",
+          top: "10%",
+          left: "10%",
+          filter: "blur(50px)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: "550px",
+          height: "550px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(221, 183, 255, 0.04) 0%, transparent 70%)",
+          bottom: "10%",
+          right: "10%",
+          filter: "blur(60px)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        ref={cardRef}
         style={{
           width: "100%",
           maxWidth: "400px",
-          padding: "36px 32px",
-          backgroundColor: "var(--bg-secondary, #1a1a1a)",
-          border: "1px solid var(--border, #2a2a2a)",
-          borderRadius: "14px",
-          boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
+          padding: "40px 36px",
+          background: "rgba(31, 31, 34, 0.45)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--glass-shadow)",
+          fontFamily: "var(--font-sans)",
+          zIndex: 10,
         }}
       >
         {/* Logo / Brand */}
-        <div style={{ textAlign: "center", marginBottom: "28px" }}>
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div
             style={{
-              width: 52,
-              height: 52,
+              width: 56,
+              height: 56,
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #4f8ef7, #a855f7)",
-              margin: "0 auto 14px",
+              background: "var(--accent)",
+              boxShadow: "0 0 15px var(--accent-subtle)",
+              margin: "0 auto 16px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: 22,
-              fontWeight: 800,
-              color: "#fff",
-              letterSpacing: -1,
+              fontWeight: 900,
+              color: "var(--accent-btn-text)",
+              letterSpacing: "-0.5px",
+              fontFamily: "var(--font-mono)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
             }}
           >
             OW
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: "var(--text-primary, #fff)" }}>
+          <h1
+            style={{
+              fontSize: "24px",
+              fontWeight: 800,
+              margin: 0,
+              color: "var(--text-primary)",
+              fontFamily: "var(--font-sans)",
+              letterSpacing: "-0.5px",
+            }}
+          >
             OmniWorker
           </h1>
-          <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--text-muted, #666)" }}>
-            Agent-as-a-Service · B2B
+          <p
+            style={{
+              margin: "6px 0 0",
+              fontSize: "12px",
+              color: "var(--text-secondary)",
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "1px",
+            }}
+          >
+            AGENT-AS-A-SERVICE · B2B
           </p>
         </div>
 
@@ -150,11 +217,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         {error && (
           <div
             style={{
-              background: "rgba(239,68,68,0.1)",
-              color: "#f87171",
-              border: "1px solid rgba(239,68,68,0.35)",
+              background: "var(--error-bg)",
+              color: "var(--error)",
+              border: "1px solid var(--error)",
               padding: "11px 14px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-sm)",
               marginBottom: "18px",
               fontSize: "13px",
               lineHeight: 1.5,
@@ -164,9 +231,18 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <div>
-            <label style={{ display: "block", marginBottom: "6px", fontSize: 13, color: "var(--text-muted, #888)" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontSize: "13px",
+                color: "var(--text-secondary)",
+                fontFamily: "var(--font-sans)",
+                fontWeight: 600,
+              }}
+            >
               Email corporativo
             </label>
             <input
@@ -176,21 +252,24 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               placeholder="admin@empresa.com"
               required
               disabled={isLoading}
+              className="input"
               style={{
-                width: "100%",
-                padding: "10px 12px",
-                background: "var(--bg-tertiary, #111)",
-                border: "1px solid var(--border, #2a2a2a)",
-                borderRadius: "8px",
-                color: "var(--text-primary, #fff)",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
+                background: "var(--bg-primary)",
+                fontFamily: "var(--font-sans)",
               }}
             />
           </div>
           <div>
-            <label style={{ display: "block", marginBottom: "6px", fontSize: 13, color: "var(--text-muted, #888)" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                fontSize: "13px",
+                color: "var(--text-secondary)",
+                fontFamily: "var(--font-sans)",
+                fontWeight: 600,
+              }}
+            >
               Contraseña
             </label>
             <input
@@ -200,16 +279,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               placeholder="••••••••"
               required
               disabled={isLoading}
+              className="input"
               style={{
-                width: "100%",
-                padding: "10px 12px",
-                background: "var(--bg-tertiary, #111)",
-                border: "1px solid var(--border, #2a2a2a)",
-                borderRadius: "8px",
-                color: "var(--text-primary, #fff)",
-                fontSize: 14,
-                outline: "none",
-                boxSizing: "border-box",
+                background: "var(--bg-primary)",
+                fontFamily: "var(--font-sans)",
               }}
             />
           </div>
@@ -217,25 +290,18 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           <button
             type="submit"
             disabled={isLoading}
+            className="btn btn-primary"
             style={{
-              marginTop: "6px",
-              padding: "12px",
+              marginTop: "12px",
+              padding: "14px 24px",
               width: "100%",
-              background: isLoading
-                ? "linear-gradient(135deg, #3b6fd4, #8b44d4)"
-                : "linear-gradient(135deg, #4f8ef7, #a855f7)",
-              border: "none",
-              borderRadius: "8px",
-              color: "#fff",
-              fontWeight: 600,
-              fontSize: 15,
-              cursor: isLoading ? "not-allowed" : "pointer",
-              opacity: isLoading ? 0.85 : 1,
-              transition: "opacity 0.2s, transform 0.1s",
+              fontSize: "15px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 10,
+              fontFamily: "var(--font-sans)",
+              borderRadius: "var(--radius-md)",
             }}
           >
             {isLoading ? (
@@ -247,7 +313,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     width: 16,
                     height: 16,
                     border: "2px solid rgba(255,255,255,0.3)",
-                    borderTopColor: "#fff",
+                    borderTopColor: "var(--accent-btn-text)",
                     borderRadius: "50%",
                     animation: "spin 0.7s linear infinite",
                   }}
@@ -260,10 +326,33 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           </button>
         </form>
 
-        <p style={{ marginTop: "22px", fontSize: "12px", textAlign: "center", color: "var(--text-muted, #555)" }}>
+        <p
+          style={{
+            marginTop: "24px",
+            fontSize: "12px",
+            textAlign: "center",
+            color: "var(--text-muted)",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.5px",
+          }}
+        >
           Acceso exclusivo B2B · Contacta a tu administrador
         </p>
       </div>
+
+      {/* Decorative fine-line border stitch */}
+      <div
+        style={{
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          right: "20px",
+          bottom: "20px",
+          border: "1px dashed rgba(255, 255, 255, 0.03)",
+          pointerEvents: "none",
+          borderRadius: "16px",
+        }}
+      />
 
       {/* Spinner keyframe */}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

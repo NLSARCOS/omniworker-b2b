@@ -35,7 +35,13 @@ import {
   readLogs,
   InstallProgress,
   downloadSLM,
+  downloadAndInstallOpenwa,
 } from "./installer";
+import {
+  getSmtpSettings,
+  saveSmtpSettings,
+  testConnection,
+} from "./smtp_settings";
 import {
   isRemoteMode,
   isRemoteOnlyMode,
@@ -125,6 +131,14 @@ import {
   subscribeMemoryChanges,
   cleanupMemoryWatchers,
   type MemoryChangeTarget,
+  EngramDaemonManager,
+  searchObservations,
+  getTimeline,
+  getConflicts,
+  judgeConflict,
+  getSyncStatus,
+  triggerSync,
+  bootstrapEngram,
 } from "./memory";
 import { readSoul, writeSoul, resetSoul } from "./soul";
 import { getToolsets, setToolsetEnabled } from "./tools";
@@ -134,6 +148,7 @@ import {
   getSkillContent,
   installSkill,
   uninstallSkill,
+  createCustomSkill,
 } from "./skills";
 import {
   listCronJobs,
@@ -183,6 +198,7 @@ import {
   sshGetSkillContent,
   sshInstallSkill,
   sshUninstallSkill,
+  sshCreateCustomSkill,
   sshListBundledSkills,
   sshReadMemory,
   sshAddMemoryEntry,
@@ -379,6 +395,23 @@ function setupIPC(): void {
         authToken
       );
       return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
+    }
+  });
+
+  ipcMain.handle("download-and-install-engram", async (event) => {
+    try {
+      const success = await bootstrapEngram((detail, step) => {
+        event.sender.send("install-progress", {
+          step,
+          totalSteps: 3,
+          title: "Configurando Memoria Engram",
+          detail,
+          log: `\n[Engram] ${detail}`
+        });
+      });
+      return { success };
     } catch (err) {
       return { success: false, error: (err as Error).message };
     }
@@ -834,11 +867,11 @@ function setupIPC(): void {
     if (conn.mode === "ssh" && conn.ssh) return sshListProfiles(conn.ssh);
     return listProfiles();
   });
-  ipcMain.handle("create-profile", (_event, name: string, clone: boolean) => {
+  ipcMain.handle("create-profile", (_event, name: string, clone: boolean, options?: { soulPrompt?: string; disabledToolsets?: string[] }) => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh)
       return sshCreateProfile(conn.ssh, name, clone);
-    return createProfile(name, clone);
+    return createProfile(name, clone, options);
   });
   ipcMain.handle("delete-profile", (_event, name: string) => {
     const conn = getConnectionConfig();
@@ -846,8 +879,11 @@ function setupIPC(): void {
       return sshDeleteProfile(conn.ssh, name);
     return deleteProfile(name);
   });
-  ipcMain.handle("set-active-profile", (_event, name: string) => {
-    if (getConnectionConfig().mode !== "ssh") setActiveProfile(name);
+  ipcMain.handle("set-active-profile", async (_event, name: string) => {
+    if (getConnectionConfig().mode !== "ssh") {
+      setActiveProfile(name);
+      await EngramDaemonManager.startDaemon(name);
+    }
     return true;
   });
 
@@ -925,6 +961,42 @@ function setupIPC(): void {
     },
   );
 
+  ipcMain.handle(
+    "search-observations",
+    (_event, query: string, limit?: number, project?: string, scope?: string) => {
+      return searchObservations(query, limit, project, scope);
+    },
+  );
+
+  ipcMain.handle(
+    "get-timeline",
+    (_event, observationId?: number, before?: number, after?: number) => {
+      return getTimeline(observationId, before, after);
+    },
+  );
+
+  ipcMain.handle(
+    "get-conflicts",
+    (_event, project?: string, status?: string, limit?: number) => {
+      return getConflicts(project, status, limit);
+    },
+  );
+
+  ipcMain.handle(
+    "judge-conflict",
+    (_event, judgmentId: string, relation: string, reason?: string, confidence?: number) => {
+      return judgeConflict(judgmentId, relation, reason, confidence);
+    },
+  );
+
+  ipcMain.handle("get-sync-status", (_event, project?: string) => {
+    return getSyncStatus(project);
+  });
+
+  ipcMain.handle("trigger-sync", (_event, project?: string) => {
+    return triggerSync(project);
+  });
+
   // Soul
   ipcMain.handle("read-soul", (_event, profile?: string) => {
     const conn = getConnectionConfig();
@@ -994,6 +1066,29 @@ function setupIPC(): void {
       if (conn.mode === "ssh" && conn.ssh)
         return sshUninstallSkill(conn.ssh, name);
       return uninstallSkill(name, _profile);
+    },
+  );
+  ipcMain.handle(
+    "create-custom-skill",
+    (
+      _event,
+      name: string,
+      category: string,
+      description: string,
+      content: string,
+      profile?: string,
+    ) => {
+      const conn = getConnectionConfig();
+      if (conn.mode === "ssh" && conn.ssh)
+        return sshCreateCustomSkill(
+          conn.ssh,
+          name,
+          category,
+          description,
+          content,
+          profile,
+        );
+      return createCustomSkill(name, category, description, content, profile);
     },
   );
 
@@ -1142,6 +1237,39 @@ function setupIPC(): void {
   );
   ipcMain.handle("whatsapp-bot-get-conversations", () =>
     getWhatsAppBotConversations(),
+  );
+
+  // OpenWA Local Installer
+  ipcMain.handle("start-openwa-install", async (event) => {
+    try {
+      await downloadAndInstallOpenwa((progress) => {
+        event.sender.send("openwa-install-progress", progress);
+      });
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  // SMTP Settings
+  ipcMain.handle("get-smtp-settings", (_event, profile?: string) => {
+    return getSmtpSettings(profile);
+  });
+
+  ipcMain.handle(
+    "save-smtp-settings",
+    (_event, settings: Partial<import("./smtp_settings").SmtpSettings>, profile?: string) => {
+      saveSmtpSettings(settings, profile);
+      setToolsetEnabled("smtp_client", true, profile);
+      return true;
+    }
+  );
+
+  ipcMain.handle(
+    "test-smtp-settings",
+    async (_event, host: string, port: number, encryption: "none" | "ssl" | "tls", type: "smtp" | "imap") => {
+      return testConnection(host, port, encryption, type);
+    }
   );
 
   // Cron Jobs
@@ -1349,8 +1477,13 @@ function setupIPC(): void {
       ],
       properties: ["openFile"],
     });
-    if (result.canceled) return { manifest: null, error: "Cancelled" };
-    return readBackupManifest(result.filePaths[0]);
+    if (result.canceled) return { manifest: null, error: "Cancelled", path: null };
+    const res = await readBackupManifest(result.filePaths[0]);
+    return {
+      manifest: res.manifest,
+      error: res.error,
+      path: result.filePaths[0]
+    };
   });
 
   ipcMain.handle(
@@ -1597,7 +1730,7 @@ app.whenReady().then(() => {
   createWindow();
   setupUpdater();
 
-  // Auto-start SSH tunnel if configured
+  // Auto-start SSH tunnel or local gateway on launch
   const conn = getConnectionConfig();
   if (conn.mode === "ssh" && conn.ssh.host) {
     (async () => {
@@ -1609,6 +1742,16 @@ app.whenReady().then(() => {
       setSshRemoteApiKey(key);
     })().catch((err) => {
       console.error("[SSH TUNNEL] Failed to start on launch:", err);
+    });
+  } else if (conn.mode === "local") {
+    (async () => {
+      if (!isGatewayRunning()) {
+        await startLocalLlmServer();
+        await startSmartRouter();
+        startGateway();
+      }
+    })().catch((err) => {
+      console.error("[LOCAL GATEWAY] Failed to start on launch:", err);
     });
   }
 
@@ -1637,6 +1780,7 @@ app.on("before-quit", () => {
     unsubscribeMemoryChangesForWebContents(webContentsId);
   }
   cleanupMemoryWatchers();
+  EngramDaemonManager.stopDaemon();
   stopGateway();
   stopSshTunnel();
   stopClaw3d();

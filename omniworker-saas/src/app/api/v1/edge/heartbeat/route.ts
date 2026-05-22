@@ -38,17 +38,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { agentId, status, capabilities } = body;
+  const { agentId, status, capabilities, version } = body;
 
   if (!user.tenantId) {
     return NextResponse.json({ error: "Sin tenant" }, { status: 400 });
   }
 
-
   const agent = await prisma.edgeAgent.findFirst({
     where: { id: agentId, tenantId: user.tenantId },
   });
-
 
   if (!agent) {
     return NextResponse.json({ error: "Agente no encontrado" }, { status: 404 });
@@ -82,6 +80,36 @@ export async function POST(request: Request) {
   });
   const maxLicenses = tenantWithPlan?.plan?.maxLicenses ?? 1;
 
+  // Check for SaaS-controlled software updates
+  let updateAvailable = false;
+  let updatePayload = null;
+
+  try {
+    const latestUpdate = await prisma.appUpdate.findFirst({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (latestUpdate && version) {
+      if (isNewerVersion(version, latestUpdate.version)) {
+        updateAvailable = true;
+        let downloadUrl = latestUpdate.urlWindows; // fallback
+        if (agent.platform === "darwin") {
+          downloadUrl = latestUpdate.urlMac;
+        } else if (agent.platform === "linux") {
+          downloadUrl = latestUpdate.urlLinux;
+        }
+        updatePayload = {
+          version: latestUpdate.version,
+          downloadUrl,
+          releaseNotes: latestUpdate.releaseNotes,
+        };
+      }
+    }
+  } catch (err) {
+    console.error("Failed to check for updates during heartbeat:", err);
+  }
+
   return NextResponse.json({
     success: true,
     commands: [],
@@ -89,5 +117,28 @@ export async function POST(request: Request) {
     tokenBalance: user.tokenBalance,
     tenantName: user.tenantName,
     licenseUsage: { active: activeLicenseCount, max: maxLicenses },
+    updateAvailable,
+    updatePayload,
   });
 }
+
+function isNewerVersion(current: string, latest: string): boolean {
+  try {
+    const cleanCurr = current.replace(/[^0-9.]/g, "");
+    const cleanLat = latest.replace(/[^0-9.]/g, "");
+
+    const currParts = cleanCurr.split(".").map(Number);
+    const latParts = cleanLat.split(".").map(Number);
+
+    for (let i = 0; i < Math.max(currParts.length, latParts.length); i++) {
+      const currPart = currParts[i] || 0;
+      const latPart = latParts[i] || 0;
+      if (latPart > currPart) return true;
+      if (currPart > latPart) return false;
+    }
+    return false;
+  } catch {
+    return latest !== current;
+  }
+}
+

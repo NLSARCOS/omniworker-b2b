@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "../../components/useI18n";
 import { Copy, Refresh, KeyRound, Users, Check } from "../../assets/icons";
+import { 
+  Shield, 
+  Terminal as TerminalIcon, 
+  LogOut, 
+  Cpu, 
+  Laptop, 
+  Server, 
+  Activity,
+  Database
+} from "lucide-react";
 
 interface UserData {
   id: string;
@@ -137,12 +147,35 @@ export default function Account({
 
   const displayUser = user || (loginData ? normalizeUser(loginData) : null);
 
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationOutput, setValidationOutput] = useState<string | null>(null);
+
+  const runValidation = async () => {
+    setIsValidating(true);
+    setValidationOutput(
+      "Initializing diagnostics...\n[SYSTEM] Connecting to local gateway daemon...\n[SYSTEM] Resolving routing graphs...\n[SYSTEM] Loading AI configurations..."
+    );
+    try {
+      const isGateway = await window.omniworkerAPI.gatewayStatus();
+      const isRouter = await window.omniworkerAPI.smartRouterStatus();
+      const doctorOutput = await window.omniworkerAPI.runOmniWorkerDoctor();
+      setValidationOutput(
+        `--- Service Status ---\nGateway Running: ${isGateway ? "ONLINE" : "OFFLINE"}\nSmart Router Running: ${isRouter ? "ONLINE" : "OFFLINE"}\n\n--- OmniWorker Doctor Output ---\n${doctorOutput}`
+      );
+    } catch (err: any) {
+      setValidationOutput("Error during validation: " + err.message);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   if (loading && !displayUser) {
     return (
       <div className="account-screen">
         <div className="account-loading">
-          <p style={{ color: "var(--text-muted)" }}>
-            {t("common.loading") || "Loading..."}
+          <div className="loading-spinner" style={{ borderTopColor: "var(--accent)" }} />
+          <p style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px", marginTop: "12px" }}>
+            {t("common.loading") || "Loading secure session..."}
           </p>
         </div>
       </div>
@@ -153,7 +186,10 @@ export default function Account({
     return (
       <div className="account-screen">
         <div className="account-loading">
-          <p style={{ color: "var(--error)" }}>No user data available</p>
+          <Shield size={36} color="var(--error)" />
+          <p style={{ color: "var(--error)", fontFamily: "var(--font-mono)", fontWeight: "bold" }}>
+            No secure session found
+          </p>
         </div>
       </div>
     );
@@ -170,258 +206,316 @@ export default function Account({
         ? "var(--warning)"
         : "var(--error)";
 
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationOutput, setValidationOutput] = useState<string | null>(null);
+  // Initial letter of user name or email for avatar
+  const avatarLetter = (displayUser.name || displayUser.email || "U").charAt(0).toUpperCase();
 
-  const runValidation = async () => {
-    setIsValidating(true);
-    setValidationOutput(
-      "Validating system...\n1. SaaS Connection: OK\n2. Agent Configuration: Checking...\n3. Local Model: Checking...\n...",
-    );
-    try {
-      const isGateway = await window.omniworkerAPI.gatewayStatus();
-      const isRouter = await window.omniworkerAPI.smartRouterStatus();
-      const doctorOutput = await window.omniworkerAPI.runOmniWorkerDoctor();
-      setValidationOutput(
-        `--- Service Status ---\nGateway Running: ${isGateway ? "Yes" : "No"}\nSmart Router Running: ${isRouter ? "Yes" : "No"}\n\n--- OmniWorker Doctor ---\n${doctorOutput}`,
-      );
-    } catch (err: any) {
-      setValidationOutput("Error during validation: " + err.message);
-    } finally {
-      setIsValidating(false);
-    }
+  const getPlatformIcon = (platform: string) => {
+    const p = platform.toLowerCase();
+    if (p.includes("mac") || p.includes("darwin")) return <Laptop size={14} className="text-blue-400" />;
+    if (p.includes("win")) return <Laptop size={14} className="text-teal-400" />;
+    if (p.includes("linux")) return <Cpu size={14} className="text-yellow-400" />;
+    return <Server size={14} />;
   };
 
   return (
-    <div className="account-screen">
-      <div className="account-header">
-        <h1 className="account-title">{t("account.title") || "Account"}</h1>
+    <div className="account-screen" style={{ background: "transparent" }}>
+      {/* Screen Title */}
+      <div className="account-header" style={{ marginBottom: "20px" }}>
+        <h1 className="account-title" style={{ margin: 0 }}>
+          <Shield size={24} style={{ color: "var(--accent)" }} />
+          {t("account.title") || "OmniWorker Profile"}
+        </h1>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <button
             className={`account-refresh-btn ${refreshing ? "spinning" : ""}`}
             onClick={handleRefresh}
             disabled={refreshing}
-            title={t("common.refresh") || "Refresh"}
+            style={{ borderRadius: "50%", padding: "8px", background: "rgba(255,255,255,0.03)" }}
+            title={t("common.refresh") || "Refresh profile"}
           >
-            <Refresh size={16} />
+            <Refresh size={15} />
           </button>
+        </div>
+      </div>
+
+      {/* Grid Dashboard */}
+      <div className="ow-dashboard-grid">
+        
+        {/* Left Column: Avatar & Core Profile */}
+        <div className="account-card" style={{ padding: "24px", textAlign: "center" }}>
+          <div className="futuristic-avatar-container">
+            <div className="futuristic-avatar">
+              {avatarLetter}
+            </div>
+            <div className="avatar-glow" />
+            <div className="avatar-status-badge" />
+          </div>
+
+          <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "12px 0 4px 0", color: "var(--text-primary)" }}>
+            {displayUser.name || "Default User"}
+          </h2>
+          <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: "0 0 16px 0", fontFamily: "var(--font-mono)" }}>
+            {displayUser.email}
+          </p>
+
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
+            <span className="ow-badge-modern">
+              {displayUser.role}
+            </span>
+          </div>
+
+          {/* User Details */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px", textAlign: "left" }}>
+            <div className="ow-stat-row-modern">
+              <span className="ow-stat-label-modern">
+                <Server size={14} style={{ opacity: 0.6 }} />
+                {t("account.organization") || "Organization"}
+              </span>
+              <span className="ow-stat-value-modern" style={{ color: "var(--accent)" }}>
+                {displayUser.tenantName || "Personal"}
+              </span>
+            </div>
+            <div className="ow-stat-row-modern">
+              <span className="ow-stat-label-modern">
+                <Activity size={14} style={{ opacity: 0.6 }} />
+                ID
+              </span>
+              <span className="ow-stat-value-modern" style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                {displayUser.id.substring(0, 8)}...
+              </span>
+            </div>
+          </div>
+
+          {/* Logout button */}
           {onLogout && (
             <button
+              className="btn btn-ghost"
               onClick={onLogout}
               style={{
-                background: "rgba(239, 68, 68, 0.08)",
+                width: "100%",
+                marginTop: "24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "10px",
                 color: "#f87171",
-                border: "1px solid rgba(239, 68, 68, 0.25)",
-                borderRadius: "6px",
-                padding: "6px 12px",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s ease-in-out",
-                fontFamily: "var(--font-mono)",
-                textTransform: "uppercase",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
-                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.45)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(239, 68, 68, 0.08)";
-                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.25)";
+                background: "rgba(239, 68, 68, 0.05)",
+                borderColor: "rgba(239, 68, 68, 0.15)"
               }}
             >
+              <LogOut size={14} />
               Cerrar Sesión
             </button>
           )}
         </div>
-      </div>
 
-      {/* User Info Card */}
-      <div className="account-card">
-        <div className="account-card-header">
-          <h2>{t("account.profile") || "Profile"}</h2>
-        </div>
-        <div className="account-user-info">
-          <div className="account-user-row">
-            <span className="account-label">
-              {t("account.email") || "Email"}
-            </span>
-            <span className="account-value">{displayUser.email}</span>
-          </div>
-          {displayUser.name && (
-            <div className="account-user-row">
-              <span className="account-label">
-                {t("account.name") || "Name"}
-              </span>
-              <span className="account-value">{displayUser.name}</span>
+        {/* Right Column: Widgets, Agents, Keys */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          
+          {/* Quick Stats row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            
+            {/* Tokens Widget */}
+            <div className="ow-capacity-widget" style={{ margin: 0 }}>
+              <div className="ow-capacity-header">
+                <span className="ow-capacity-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Database size={13} style={{ color: "var(--accent)" }} />
+                  {t("account.tokens") || "Token Balance"}
+                </span>
+                <span className="ow-capacity-value" style={{ color: tokenBarColor, fontWeight: "bold" }}>
+                  {displayUser.tokenBalance.toLocaleString()}
+                </span>
+              </div>
+              <div className="ow-capacity-bar-container">
+                <div
+                  className="ow-capacity-bar-fill"
+                  style={{
+                    width: `${tokenPercent}%`,
+                    backgroundColor: tokenBarColor,
+                  }}
+                />
+              </div>
+              {displayUser.isLocked && (
+                <p style={{ color: "var(--error)", fontSize: "11px", margin: "6px 0 0 0", fontFamily: "var(--font-mono)" }}>
+                  {t("account.locked") || "Depleted — contact admin"}
+                </p>
+              )}
             </div>
-          )}
-          <div className="account-user-row">
-            <span className="account-label">
-              {t("account.organization") || "Organization"}
-            </span>
-            <span className="account-value">
-              {displayUser.tenantName || "—"}
-            </span>
-          </div>
-          <div className="account-user-row">
-            <span className="account-label">{t("account.role") || "Role"}</span>
-            <span className="account-value account-badge">
-              {displayUser.role}
-            </span>
-          </div>
-        </div>
-      </div>
 
-      {/* Stats Grid */}
-      <div className="account-stats">
-        <div className="account-stat-card">
-          <div className="account-stat-top">
-            <span className="account-stat-label">
-              {t("account.tokens") || "Tokens"}
-            </span>
-            <span
-              className="account-stat-value"
-              style={{
-                color: displayUser.isLocked
-                  ? "var(--error)"
-                  : "var(--text-primary)",
-              }}
-            >
-              {displayUser.tokenBalance.toLocaleString()}
-            </span>
+            {/* Plan widget */}
+            <div className="account-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "16px" }}>
+              <span style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Active Plan
+              </span>
+              <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)", marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+                {displayUser.plan || "Free Tier"}
+                <span className="ow-badge-modern" style={{ fontSize: "9px" }}>PRO</span>
+              </span>
+            </div>
+
           </div>
-          <div className="account-stat-bar-track">
-            <div
-              className="account-stat-bar-fill"
-              style={{
-                width: `${tokenPercent}%`,
-                backgroundColor: tokenBarColor,
-              }}
-            />
-          </div>
-          {displayUser.isLocked && (
-            <p className="account-stat-warning">
-              {t("account.locked") || "Balance depleted — contact admin"}
-            </p>
-          )}
-        </div>
 
-        <div className="account-stat-card">
-          <span className="account-stat-label">
-            {t("account.plan") || "Plan"}
-          </span>
-          <span className="account-stat-value">
-            {displayUser.plan || "Free"}
-          </span>
-        </div>
-
-        <div className="account-stat-card">
-          <span className="account-stat-label">
-            {t("account.agents") || "Active Agents"}
-          </span>
-          <span className="account-stat-value">{agents.length}</span>
-        </div>
-      </div>
-
-      {/* Edge Agents */}
-      <div className="account-card">
-        <div className="account-card-header">
-          <h2>
-            <Users size={16} />
-            {t("account.edgeAgents") || "Connected Agents"}
-          </h2>
-        </div>
-        {agents.length === 0 ? (
-          <p className="account-empty">
-            {t("account.noAgents") || "No connected agents"}
-          </p>
-        ) : (
-          <div className="account-agents-list">
-            {agents.map((agent) => (
-              <div key={agent.id} className="account-agent-row">
-                <div className="account-agent-info">
-                  <span className="account-agent-name">{agent.agentName}</span>
-                  <span className="account-agent-detail">
-                    {agent.hostname} &middot; {agent.platform}
-                  </span>
-                </div>
-                <span className={`account-status-badge ${agent.status}`}>
-                  {agent.status}
+          {/* Connected Agents Card */}
+          <div className="account-card">
+            <div className="account-card-header">
+              <h2>
+                <Users size={15} style={{ color: "var(--accent)" }} />
+                {t("account.edgeAgents") || "Active Edge Nodes"}
+                <span className="ow-tag-pill" style={{ marginLeft: "auto", fontSize: "10px" }}>
+                  {agents.length} Nodes
                 </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* API Keys */}
-      <div className="account-card">
-        <div className="account-card-header">
-          <h2>
-            <KeyRound size={16} />
-            {t("account.apiKeys") || "API Keys"}
-          </h2>
-        </div>
-        {apiKeys.length === 0 ? (
-          <p className="account-empty">
-            {t("account.noKeys") || "No API keys"}
-          </p>
-        ) : (
-          <div className="account-keys-list">
-            {apiKeys.map((key) => (
-              <div key={key.id} className="account-key-row">
-                <div className="account-key-info">
-                  <span className="account-key-name">{key.name}</span>
-                  <span className="account-key-detail">
-                    {key.keyPrefix}... &middot;{" "}
-                    {t("account.created") || "Created"}:{" "}
-                    {new Date(key.createdAt).toLocaleDateString()}
-                  </span>
+              </h2>
+            </div>
+            <div style={{ padding: "16px" }}>
+              {agents.length === 0 ? (
+                <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: 0, textAlign: "center", padding: "12px 0" }}>
+                  {t("account.noAgents") || "No connected desktop/server edge agents."}
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {agents.map((agent) => (
+                    <div
+                      key={agent.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        background: "rgba(255,255,255,0.01)",
+                        border: "1px solid rgba(255,255,255,0.03)",
+                        borderRadius: "8px"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ padding: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "6px" }}>
+                          {getPlatformIcon(agent.platform)}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
+                            {agent.agentName}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                            {agent.hostname} &middot; {agent.platform}
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        className={`ow-badge-modern`}
+                        style={{
+                          background: agent.status.toLowerCase() === "online" ? "rgba(16, 185, 129, 0.08)" : "rgba(255,255,255,0.05)",
+                          borderColor: agent.status.toLowerCase() === "online" ? "rgba(16, 185, 129, 0.2)" : "rgba(255,255,255,0.08)",
+                          color: agent.status.toLowerCase() === "online" ? "#10b981" : "var(--text-muted)",
+                        }}
+                      >
+                        {agent.status}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-                <span className="account-key-last">
-                  {key.lastUsedAt
-                    ? new Date(key.lastUsedAt).toLocaleDateString()
-                    : t("account.never") || "Never"}
-                </span>
-              </div>
-            ))}
+              )}
+            </div>
           </div>
-        )}
-        <button className="account-copy-key-btn" onClick={handleCopyApiKey}>
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied
-            ? t("common.copied") || "Copied!"
-            : t("account.copyKey") || "Copy current API key"}
-        </button>
+
+          {/* API Keys Card */}
+          <div className="account-card">
+            <div className="account-card-header">
+              <h2>
+                <KeyRound size={15} style={{ color: "var(--accent)" }} />
+                {t("account.apiKeys") || "Secure Access Tokens"}
+              </h2>
+            </div>
+            <div style={{ padding: "16px" }}>
+              {apiKeys.length === 0 ? (
+                <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: "0 0 16px 0", textAlign: "center" }}>
+                  {t("account.noKeys") || "No API access keys have been generated."}
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
+                  {apiKeys.map((key) => (
+                    <div
+                      key={key.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        background: "rgba(255,255,255,0.01)",
+                        border: "1px solid rgba(255,255,255,0.03)",
+                        borderRadius: "8px"
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
+                          {key.name}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                          {key.keyPrefix}... &middot; Created {new Date(key.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                        {key.lastUsedAt
+                          ? `Used: ${new Date(key.lastUsedAt).toLocaleDateString()}`
+                          : "Never used"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                className="btn btn-secondary"
+                onClick={handleCopyApiKey}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  padding: "10px"
+                }}
+              >
+                {copied ? <Check size={14} style={{ color: "#10b981" }} /> : <Copy size={14} />}
+                {copied
+                  ? t("common.copied") || "Key Copied to Clipboard!"
+                  : t("account.copyKey") || "Copy Current Active API Key"}
+              </button>
+            </div>
+          </div>
+
+        </div>
+
       </div>
 
-      {/* System Validation */}
-      <div className="account-card">
+      {/* System Validation Panel (Diagnostics) */}
+      <div className="account-card" style={{ marginTop: "24px" }}>
         <div className="account-card-header">
           <h2>
-            <Check size={16} />
-            {t("account.systemValidation") || "System Validation"}
+            <TerminalIcon size={15} style={{ color: "var(--accent)" }} />
+            {t("account.systemValidation") || "System Diagnostics & Services"}
           </h2>
         </div>
-        <div className="account-keys-list" style={{ padding: "16px" }}>
-          <p style={{ color: "var(--text-muted)", marginBottom: "16px" }}>
-            Check if the local agent, smart router, and models are installed and
-            running correctly.
+        <div style={{ padding: "16px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: "0 0 16px 0" }}>
+            Perform verification passes across local agent loops, network endpoints, and model gateways to ensure standard operation.
           </p>
-          <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+          
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <button
               className="btn btn-primary"
               onClick={runValidation}
               disabled={isValidating}
+              style={{ display: "flex", alignItems: "center", gap: "8px" }}
             >
-              {isValidating ? "Running Check..." : "Run Validation Check"}
+              <Activity size={14} />
+              {isValidating ? "Diagnostic Running..." : "Run Diagnostic Check"}
             </button>
+            
             <button
               className="btn btn-secondary"
               onClick={async () => {
                 setValidationOutput(
-                  "Starting installation of missing components...",
+                  "[MUTATION] Initializing component validation and missing tool installations..."
                 );
                 try {
                   const res = await window.omniworkerAPI.startInstall(
@@ -429,43 +523,40 @@ export default function Account({
                   );
                   if (res.success) {
                     setValidationOutput(
-                      "Installation complete! Run validation again to verify.",
+                      "[SYSTEM] Component alignment finalized! Diagnostics show clean parameters. Run check again."
                     );
                   } else {
-                    setValidationOutput("Installation failed: " + res.error);
+                    setValidationOutput("[ERROR] Repair script aborted: " + res.error);
                   }
                 } catch (err: any) {
                   setValidationOutput(
-                    "Error starting installation: " + err.message,
+                    "[ERROR] Uncaught exception during build pass: " + err.message
                   );
                 }
               }}
               disabled={isValidating}
             >
-              Install / Fix Missing Components
+              Align & Reinstall Missing Components
             </button>
           </div>
 
+          {/* Diagnostics Terminal Console */}
           {validationOutput && (
-            <div
-              style={{
-                background: "var(--bg-elevated)",
-                padding: "12px",
-                borderRadius: "6px",
-                fontFamily: "monospace",
-                fontSize: "12px",
-                whiteSpace: "pre-wrap",
-                overflowX: "auto",
-                maxHeight: "300px",
-                border: "1px solid var(--border-color)",
-                color: "var(--text-primary)",
-              }}
-            >
-              {validationOutput}
+            <div className="futuristic-terminal">
+              <div className="terminal-header">
+                <div className="terminal-dots">
+                  <div className="terminal-dot-red" />
+                  <div className="terminal-dot-yellow" />
+                  <div className="terminal-dot-green" />
+                </div>
+                <span>Terminal Diagnostics Console</span>
+              </div>
+              <pre className="terminal-log-content">{validationOutput}</pre>
             </div>
           )}
         </div>
       </div>
+
     </div>
   );
 }

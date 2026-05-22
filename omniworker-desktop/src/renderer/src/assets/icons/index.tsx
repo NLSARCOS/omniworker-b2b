@@ -25,6 +25,7 @@ export {
   User,
   Wrench,
   X,
+  Upload,
 } from "lucide-react";
 
 export { RefreshCw as Refresh } from "lucide-react";

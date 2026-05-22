@@ -78,6 +78,11 @@ export default {
     description:
       "Create AI-powered WhatsApp customer service bots for businesses",
   },
+  smtp_client: {
+    label: "SMTP & IMAP Mail Client",
+    description:
+      "Connect and automate sending, receiving, and responding to emails through SMTP/IMAP",
+  },
   mcpServers: "MCP Servers",
   mcpDescription:
     "Model Context Protocol servers configured in config.yaml. Manage via <code>omniworker mcp add/remove</code> in the terminal.",

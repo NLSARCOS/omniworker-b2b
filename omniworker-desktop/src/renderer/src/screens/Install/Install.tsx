@@ -47,6 +47,37 @@ function Install({
       .then(async (result) => {
         if (!isMounted) return;
         if (result.success) {
+          // 1. Download and install Engram (Memory Engine)
+          try {
+            setProgress((p) => ({
+              ...p,
+              title: "Configurando Memoria Engram...",
+              detail: "Iniciando instalación del motor de memoria...",
+              log: p.log + "\n[Installer] Iniciando instalación de Engram..."
+            }));
+            const engramResult = await window.omniworkerAPI.downloadAndInstallEngram();
+            if (!isMounted) return;
+            if (engramResult.success) {
+              setProgress((p) => ({
+                ...p,
+                log: p.log + "\n[Installer] ¡Engram instalado con éxito!"
+              }));
+            } else {
+              console.error("Engram installation failed:", engramResult.error);
+              setProgress((p) => ({
+                ...p,
+                log: p.log + `\n[Installer] Advertencia: La instalación de Engram falló (${engramResult.error}). Continuando...`
+              }));
+            }
+          } catch (err: any) {
+            console.error("Engram install error:", err);
+            setProgress((p) => ({
+              ...p,
+              log: p.log + `\n[Installer] Advertencia: Error instalando Engram (${err.message || err}). Continuando...`
+            }));
+          }
+
+          // 2. Local SLM download
           try {
             const slmResult = await window.omniworkerAPI.startSlmDownload(authToken || undefined);
             if (!isMounted) return;

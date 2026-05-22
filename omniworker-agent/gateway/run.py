@@ -5767,9 +5767,9 @@ class GatewayRunner:
                     if adapter:
                         await adapter.send(
                             source.chat_id,
-                            f"Hi~ I don't recognize you yet!\n\n"
-                            f"Here's your pairing code: `{code}`\n\n"
-                            f"Ask the bot owner to run:\n"
+                            f"¡Hola!~ ¡Aún no te conozco! 🤖✨\n\n"
+                            f"Aquí tienes tu código de vinculación: `{code}`\n\n"
+                            f"Por favor, copia y ejecuta en la terminal este comando exactamente para autorizar el acceso:\n\n"
                             f"`omniworker pairing approve {platform_name} {code}`"
                         )
                 else:
@@ -5777,8 +5777,8 @@ class GatewayRunner:
                     if adapter:
                         await adapter.send(
                             source.chat_id,
-                            "Too many pairing requests right now~ "
-                            "Please try again later!"
+                            "¡Demasiadas solicitudes de vinculación en este momento!~\n"
+                            "Por favor, ¡inténtalo de nuevo más tarde!"
                         )
                     # Record rate limit so subsequent messages are silently ignored
                     self.pairing_store._record_rate_limit(platform_name, source.user_id)

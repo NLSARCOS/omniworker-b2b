@@ -1,5 +1,5 @@
 import { execFileSync } from "child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 import {
@@ -9,7 +9,7 @@ import {
   omniworkerCliArgs,
   getEnhancedPath,
 } from "./installer";
-import { profileHome } from "./utils";
+import { profileHome, getExecErrorMessage } from "./utils";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 
 export interface InstalledSkill {
@@ -259,9 +259,8 @@ export function installSkill(
     });
     return { success: true };
   } catch (err) {
-    const msg =
-      (err as { stderr?: Buffer }).stderr?.toString() || (err as Error).message;
-    return { success: false, error: msg.trim() };
+    const msg = getExecErrorMessage(err);
+    return { success: false, error: msg };
   }
 }
 
@@ -289,8 +288,51 @@ export function uninstallSkill(
     });
     return { success: true };
   } catch (err) {
-    const msg =
-      (err as { stderr?: Buffer }).stderr?.toString() || (err as Error).message;
-    return { success: false, error: msg.trim() };
+    const msg = getExecErrorMessage(err);
+    return { success: false, error: msg };
   }
 }
+
+export function createCustomSkill(
+  name: string,
+  category: string,
+  description: string,
+  content: string,
+  profile?: string,
+): { success: boolean; error?: string } {
+  try {
+    const pHome = profileHome(profile);
+    const skillsDir = join(pHome, "skills");
+
+    const cleanCategory = category.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+    const cleanName = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+
+    if (!cleanName) {
+      return { success: false, error: "El nombre de la skill no es válido." };
+    }
+
+    const targetDir = cleanCategory
+      ? join(skillsDir, cleanCategory, cleanName)
+      : join(skillsDir, cleanName);
+
+    if (!existsSync(targetDir)) {
+      mkdirSync(targetDir, { recursive: true });
+    }
+
+    const skillFile = join(targetDir, "SKILL.md");
+
+    const skillContent = `---
+name: "${name.replace(/"/g, '\\"')}"
+description: "${description.replace(/"/g, '\\"')}"
+---
+
+${content}
+`;
+
+    writeFileSync(skillFile, skillContent, "utf-8");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+

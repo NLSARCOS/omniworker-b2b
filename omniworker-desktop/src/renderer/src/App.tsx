@@ -12,7 +12,7 @@ type Screen = "splash" | "login" | "welcome" | "installing" | "setup" | "main";
 
 // Minimum time the splash stays visible so the brand animation plays
 // through. Tracks the splash logo fade-in duration in main.css.
-const SPLASH_MIN_MS = 1300;
+const SPLASH_MIN_MS = 2800;
 
 function App(): React.JSX.Element {
   const [screen, setScreen] = useState<Screen>("splash");

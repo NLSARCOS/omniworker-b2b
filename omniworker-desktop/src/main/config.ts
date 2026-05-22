@@ -226,7 +226,7 @@ export function getModelConfig(profile?: string): {
   if (cached) return cached;
 
   const { configFile } = profilePaths(profile);
-  const defaults = { provider: "auto", model: "", baseUrl: "" };
+  const defaults = { provider: "custom", model: "omniworker", baseUrl: "" };
   if (!existsSync(configFile)) return defaults;
 
   const content = readFileSync(configFile, "utf-8");
@@ -236,8 +236,8 @@ export function getModelConfig(profile?: string): {
   const baseUrlMatch = content.match(/^\s*base_url:\s*["']?([^"'\n#]+)["']?/m);
 
   const result = {
-    provider: providerMatch ? providerMatch[1].trim() : defaults.provider,
-    model: modelMatch ? modelMatch[1].trim() : defaults.model,
+    provider: providerMatch && providerMatch[1].trim() ? providerMatch[1].trim() : defaults.provider,
+    model: modelMatch && modelMatch[1].trim() ? modelMatch[1].trim() : defaults.model,
     baseUrl: baseUrlMatch ? baseUrlMatch[1].trim() : defaults.baseUrl,
   };
 

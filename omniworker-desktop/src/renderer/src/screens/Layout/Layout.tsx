@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import gsap from "gsap";
 import Chat, { ChatMessage } from "../Chat/Chat";
 import Sessions from "../Sessions/Sessions";
 import Agents from "../Agents/Agents";
@@ -8,7 +9,6 @@ import Soul from "../Soul/Soul";
 import Memory from "../Memory/Memory";
 import Tools from "../Tools/Tools";
 import Gateway from "../Gateway/Gateway";
-import Office from "../Office/Office";
 import WhatsApp from "../WhatsApp/WhatsApp";
 import Models from "../Models/Models";
 import Providers from "../Providers/Providers";
@@ -30,7 +30,6 @@ import {
   Brain,
   Wrench,
   Signal,
-  Building,
   Timer,
   Kanban as KanbanIcon,
   Download,
@@ -43,7 +42,6 @@ type View =
   | "chat"
   | "sessions"
   | "agents"
-  | "office"
   | "whatsapp"
   | "models"
   | "providers"
@@ -62,7 +60,6 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "chat", icon: ChatBubble, labelKey: "navigation.chat" },
   { view: "sessions", icon: Clock, labelKey: "navigation.sessions" },
   { view: "agents", icon: Users, labelKey: "navigation.agents" },
-  { view: "office", icon: Building, labelKey: "navigation.office" },
   { view: "whatsapp", icon: Bot, labelKey: "navigation.whatsapp" },
   { view: "kanban", icon: KanbanIcon, labelKey: "navigation.kanban" },
   //  { view: "models", icon: Layers, labelKey: "navigation.models" },
@@ -99,6 +96,25 @@ function Layout({
   const [view, setView] = useState<View>("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Premium floating cards layout reveal transition
+  useEffect(() => {
+    const tl = gsap.timeline();
+    tl.fromTo(
+      sidebarRef.current,
+      { opacity: 0, x: -30, scale: 0.98 },
+      { opacity: 1, x: 0, scale: 1, duration: 1.0, ease: "power4.out", delay: 0.05 }
+    );
+    tl.fromTo(
+      contentRef.current,
+      { opacity: 0, x: 30, scale: 0.98 },
+      { opacity: 1, x: 0, scale: 1, duration: 1.0, ease: "power4.out" },
+      "-=0.75"
+    );
+  }, []);
   const [activeProfile, setActiveProfile] = useState("default");
   // Tabs lazy-mount on first visit, then stay mounted (display:none toggle).
   // Keeps IPC refetch / DOM rebuild off the tab-switch hot path.
@@ -107,6 +123,22 @@ function Layout({
   );
   // Remote-only mode — SSH tunnel has full access; only pure HTTP remote mode restricts screens
   const [remoteMode, setRemoteMode] = useState(false);
+  const [whatsappBotEnabled, setWhatsappBotEnabled] = useState(false);
+
+  const checkWhatsappBotEnabled = useCallback(async (profileName: string) => {
+    try {
+      const toolsets = await window.omniworkerAPI.getToolsets(profileName);
+      const isEnabled = toolsets.some((t) => t.key === "whatsapp_bot" && t.enabled);
+      setWhatsappBotEnabled(isEnabled);
+    } catch (e) {
+      console.error("Failed to check whatsapp bot status:", e);
+      setWhatsappBotEnabled(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkWhatsappBotEnabled(activeProfile);
+  }, [activeProfile, checkWhatsappBotEnabled, view]);
 
   const paneStyle = (target: View): React.CSSProperties => ({
     display: view === target ? "flex" : "none",
@@ -132,6 +164,9 @@ function Layout({
   >(null);
   const [downloadPercent, setDownloadPercent] = useState(0);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [saasDownloadUrl, setSaasDownloadUrl] = useState<string | null>(null);
+  const [saasReleaseNotes, setSaasReleaseNotes] = useState<string | null>(null);
 
   useEffect(() => {
     const cleanupAvailable = window.omniworkerAPI.onUpdateAvailable((info) => {
@@ -139,6 +174,9 @@ function Layout({
       setUpdateState("available");
       setUpdateError(null);
       setDownloadPercent(0);
+      setSaasDownloadUrl(null);
+      setSaasReleaseNotes(null);
+      setShowUpdateModal(true);
     });
     const cleanupProgress = window.omniworkerAPI.onUpdateDownloadProgress(
       (info) => {
@@ -148,6 +186,7 @@ function Layout({
     const cleanupDownloaded = window.omniworkerAPI.onUpdateDownloaded(() => {
       setUpdateState("ready");
       setUpdateError(null);
+      setShowUpdateModal(true);
     });
     const cleanupError = window.omniworkerAPI.onUpdateError((message) => {
       setUpdateState("error");
@@ -185,6 +224,14 @@ function Layout({
         const saasUrl =
           import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
 
+        // Obtener la versión de la aplicación de escritorio
+        let appVersion = "1.0.0";
+        try {
+          appVersion = await window.omniworkerAPI.getAppVersion();
+        } catch (e) {
+          console.error("Failed to get app version", e);
+        }
+
         if (!registeredAgentId && !isRegistering) {
           isRegistering = true;
           const res = await fetch(`${saasUrl}/api/v1/edge/register`, {
@@ -217,6 +264,7 @@ function Layout({
             body: JSON.stringify({
               agentId: registeredAgentId,
               status: "online",
+              version: appVersion,
             }),
           });
           const data = await res.json();
@@ -230,6 +278,16 @@ function Layout({
               tenantName: data.tenantName || null,
               licenseUsage: data.licenseUsage || undefined,
             });
+
+            // Si hay una actualización disponible controlada por SaaS
+            if (data.updateAvailable && data.updatePayload) {
+              setUpdateVersion(data.updatePayload.version);
+              setSaasDownloadUrl(data.updatePayload.downloadUrl);
+              setSaasReleaseNotes(data.updatePayload.releaseNotes || null);
+              setUpdateState("available");
+              setUpdateError(null);
+              setShowUpdateModal(true);
+            }
           }
         }
       } catch (err) {
@@ -245,6 +303,17 @@ function Layout({
   }, []);
 
   async function handleUpdate(): Promise<void> {
+    if (saasDownloadUrl) {
+      try {
+        await window.omniworkerAPI.openExternal(saasDownloadUrl);
+        setShowUpdateModal(false);
+      } catch (err) {
+        setUpdateError("No se pudo abrir el enlace de descarga.");
+        setUpdateState("error");
+      }
+      return;
+    }
+
     if (updateState === "available" || updateState === "error") {
       setUpdateError(null);
       setDownloadPercent(0);
@@ -316,25 +385,18 @@ function Layout({
 
   return (
     <div className="layout">
-      <aside className="sidebar">
+      <aside ref={sidebarRef} className="sidebar">
         <div className="sidebar-brand">
-          <div
-            style={{
-              color: "var(--accent-text)",
-              fontSize: "20px",
-              fontWeight: "900",
-              letterSpacing: "1px",
-              fontFamily: "var(--font-mono)",
-              padding: "4px 8px",
-              border: "2px solid var(--accent-text)",
-            }}
-          >
+          <div className="sidebar-brand-badge">
             OMNIWORKER
           </div>
         </div>
 
         <nav className="sidebar-nav">
-          {NAV_ITEMS.map(({ view: v, icon: Icon, labelKey }) => (
+          {NAV_ITEMS.filter(({ view: v }) => {
+            if (v === "whatsapp") return whatsappBotEnabled;
+            return true;
+          }).map(({ view: v, icon: Icon, labelKey }) => (
             <button
               key={v}
               className={`sidebar-nav-item ${view === v ? "active" : ""}`}
@@ -351,9 +413,8 @@ function Layout({
             <button
               className={`sidebar-update-btn ${
                 updateState === "error" ? "error" : ""
-              }`}
-              onClick={handleUpdate}
-              disabled={updateState === "downloading"}
+              } ${updateState === "downloading" ? "downloading" : ""}`}
+              onClick={() => setShowUpdateModal(true)}
               title={updateError ?? undefined}
             >
               <Download size={13} />
@@ -364,7 +425,7 @@ function Layout({
               )}
               {updateState === "downloading" && (
                 <span>
-                  {t("common.downloading", { percent: downloadPercent })}
+                  {t("common.downloading", { percent: Math.round(downloadPercent) })}
                 </span>
               )}
               {updateState === "ready" && (
@@ -464,7 +525,7 @@ function Layout({
         </div>
       </aside>
 
-      <main className="content">
+      <main ref={contentRef} className="content">
         {verifyWarning && onReinstall && onDismissVerifyWarning && (
           <VerifyWarningBanner
             onReinstall={onReinstall}
@@ -513,11 +574,7 @@ function Layout({
           </div>
         )}
 
-        {visitedViews.has("office") && (
-          <div style={paneStyle("office")}>
-            <Office visible={view === "office"} />
-          </div>
-        )}
+
 
         {visitedViews.has("whatsapp") && (
           <div style={paneStyle("whatsapp")}>
@@ -583,7 +640,14 @@ function Layout({
             {remoteMode ? (
               <RemoteNotice feature="Tools" />
             ) : (
-              <Tools profile={activeProfile} />
+              <Tools
+                profile={activeProfile}
+                onToggleToolset={(key, enabled) => {
+                  if (key === "whatsapp_bot") {
+                    setWhatsappBotEnabled(enabled);
+                  }
+                }}
+              />
             )}
           </div>
         )}
@@ -632,6 +696,147 @@ function Layout({
           </div>
         )}
       </main>
+
+      {/* Modal de Actualización Premium */}
+      {showUpdateModal && updateState && (
+        <div className="update-modal-overlay">
+          <div className="update-modal-card">
+            <div className="update-modal-header">
+              <div className="update-modal-icon-wrapper">
+                <Download size={22} />
+              </div>
+              <div className="update-modal-title-container">
+                <h3 className="update-modal-title">
+                  {updateState === "available" && "Nueva versión disponible"}
+                  {updateState === "downloading" && "Descargando OmniWorker"}
+                  {updateState === "ready" && "¡Actualización Lista!"}
+                  {updateState === "error" && "Error en la actualización"}
+                </h3>
+                {updateVersion && (
+                  <span className="update-modal-version-tag">
+                    v{updateVersion}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="update-modal-body">
+              {updateState === "available" && (
+                <div className="space-y-3">
+                  <p>
+                    Una nueva versión de OmniWorker está disponible para su descarga. Incluye mejoras de rendimiento, parches de seguridad y nuevas capacidades inteligentes para tus agentes.
+                  </p>
+                  {saasReleaseNotes && (
+                    <div className="mt-3 p-3 bg-zinc-950/60 border border-zinc-800 rounded-sm text-left font-mono">
+                      <span className="text-[10px] text-zinc-500 uppercase tracking-widest block mb-1">Notas de la versión:</span>
+                      <div className="text-xs text-zinc-400 whitespace-pre-wrap leading-relaxed">{saasReleaseNotes}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {updateState === "downloading" && (
+                "Se está descargando la nueva versión. Puedes minimizar esta ventana y continuar trabajando; el proceso se completará en segundo plano."
+              )}
+              {updateState === "ready" && (
+                "La nueva versión se ha descargado correctamente. Reinicia la aplicación ahora para aplicar la actualización y disfrutar de las últimas novedades."
+              )}
+              {updateState === "error" && (
+                "Ha ocurrido un problema al intentar descargar la nueva versión. Por favor, verifica tu conexión a internet o inténtalo de nuevo."
+              )}
+
+              {updateState === "error" && updateError && (
+                <div className="update-modal-error-box">
+                  <code>{updateError}</code>
+                </div>
+              )}
+            </div>
+
+            {updateState === "downloading" && (
+              <div className="update-modal-progress-container">
+                <div className="update-modal-progress-info">
+                  <span>Descargando...</span>
+                  <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {Math.round(downloadPercent)}%
+                  </span>
+                </div>
+                <div className="update-modal-progress-bar">
+                  <div
+                    className="update-modal-progress-fill"
+                    style={{ width: `${downloadPercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="update-modal-actions">
+              {updateState === "available" && (
+                <>
+                  <button
+                    className="update-modal-btn-secondary"
+                    onClick={() => setShowUpdateModal(false)}
+                  >
+                    Recordar más tarde
+                  </button>
+                  <button
+                    className="update-modal-btn-primary"
+                    onClick={handleUpdate}
+                  >
+                    Actualizar ahora
+                  </button>
+                </>
+              )}
+
+              {updateState === "downloading" && (
+                <button
+                  className="update-modal-btn-secondary"
+                  onClick={() => setShowUpdateModal(false)}
+                  style={{ width: "100%" }}
+                >
+                  Minimizar y continuar en segundo plano
+                </button>
+              )}
+
+              {updateState === "ready" && (
+                <>
+                  <button
+                    className="update-modal-btn-secondary"
+                    onClick={() => setShowUpdateModal(false)}
+                  >
+                    Más tarde
+                  </button>
+                  <button
+                    className="update-modal-btn-primary"
+                    onClick={handleUpdate}
+                    style={{
+                      boxShadow: "0 0 16px rgba(212, 255, 0, 0.4)",
+                      border: "1px solid var(--accent)",
+                    }}
+                  >
+                    Reiniciar y Aplicar
+                  </button>
+                </>
+              )}
+
+              {updateState === "error" && (
+                <>
+                  <button
+                    className="update-modal-btn-secondary"
+                    onClick={() => setShowUpdateModal(false)}
+                  >
+                    Cerrar
+                  </button>
+                  <button
+                    className="update-modal-btn-primary"
+                    onClick={handleUpdate}
+                  >
+                    Reintentar
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

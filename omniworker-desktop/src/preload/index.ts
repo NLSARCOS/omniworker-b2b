@@ -31,6 +31,9 @@ const omniworkerAPI = {
   ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("start-slm-download", authToken),
 
+  downloadAndInstallEngram: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("download-and-install-engram"),
+
   onInstallProgress: (
     callback: (progress: {
       step: number;
@@ -320,8 +323,9 @@ const omniworkerAPI = {
   createProfile: (
     name: string,
     clone: boolean,
+    options?: { soulPrompt?: string; disabledToolsets?: string[] },
   ): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke("create-profile", name, clone),
+    ipcRenderer.invoke("create-profile", name, clone, options),
 
   deleteProfile: (
     name: string,
@@ -371,6 +375,42 @@ const omniworkerAPI = {
     profile?: string,
   ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("write-user-profile", content, profile),
+
+  searchObservations: (
+    query: string,
+    limit?: number,
+    project?: string,
+    scope?: string,
+  ): Promise<any[]> =>
+    ipcRenderer.invoke("search-observations", query, limit, project, scope),
+
+  getTimeline: (
+    observationId?: number,
+    before?: number,
+    after?: number,
+  ): Promise<any> =>
+    ipcRenderer.invoke("get-timeline", observationId, before, after),
+
+  getConflicts: (
+    project?: string,
+    status?: string,
+    limit?: number,
+  ): Promise<any> =>
+    ipcRenderer.invoke("get-conflicts", project, status, limit),
+
+  judgeConflict: (
+    judgmentId: string,
+    relation: string,
+    reason?: string,
+    confidence?: number,
+  ): Promise<any> =>
+    ipcRenderer.invoke("judge-conflict", judgmentId, relation, reason, confidence),
+
+  getSyncStatus: (project?: string): Promise<any> =>
+    ipcRenderer.invoke("get-sync-status", project),
+
+  triggerSync: (project?: string): Promise<any> =>
+    ipcRenderer.invoke("trigger-sync", project),
 
   subscribeMemoryChanges: (
     profile: string | undefined,
@@ -436,6 +476,22 @@ const omniworkerAPI = {
     profile?: string,
   ): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("uninstall-skill", name, profile),
+  createCustomSkill: (
+    name: string,
+    category: string,
+    description: string,
+    content: string,
+    profile?: string,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke(
+      "create-custom-skill",
+      name,
+      category,
+      description,
+      content,
+      profile,
+    ),
+
 
   // Session cache (fast local cache with generated titles)
   listCachedSessions: (
@@ -661,6 +717,36 @@ const omniworkerAPI = {
       messageCount: number;
     }>
   > => ipcRenderer.invoke("whatsapp-bot-get-conversations"),
+
+  // OpenWA Local Installer
+  startOpenwaInstall: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("start-openwa-install"),
+
+  onOpenwaInstallProgress: (
+    callback: (progress: { step: number; total: number; message: string }) => void,
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      progress: { step: number; total: number; message: string },
+    ): void => callback(progress);
+    ipcRenderer.on("openwa-install-progress", handler);
+    return () => ipcRenderer.removeListener("openwa-install-progress", handler);
+  },
+
+  // SMTP Settings
+  getSmtpSettings: (profile?: string): Promise<any> =>
+    ipcRenderer.invoke("get-smtp-settings", profile),
+
+  saveSmtpSettings: (settings: any, profile?: string): Promise<boolean> =>
+    ipcRenderer.invoke("save-smtp-settings", settings, profile),
+
+  testSmtpConnection: (
+    host: string,
+    port: number,
+    encryption: "none" | "ssl" | "tls",
+    type: "smtp" | "imap",
+  ): Promise<{ success: boolean; message: string }> =>
+    ipcRenderer.invoke("test-smtp-settings", host, port, encryption, type),
 
   // Updates
   checkForUpdates: (): Promise<string | null> =>
@@ -910,7 +996,7 @@ const omniworkerAPI = {
     error?: string;
   }> => ipcRenderer.invoke("create-backup", profile, options),
 
-  readBackupManifest: (): Promise<{ manifest: any | null; error?: string }> =>
+  readBackupManifest: (): Promise<{ manifest: any | null; error?: string; path?: string | null }> =>
     ipcRenderer.invoke("read-backup-manifest"),
 
   restoreBackup: (

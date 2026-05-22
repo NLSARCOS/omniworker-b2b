@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { join } from "path";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "fs";
 
 // `vi.hoisted` runs before module imports, so we can't reference imported
 // `join` / `tmpdir` here — use the bare Node modules via require, which is
@@ -38,6 +38,7 @@ const PROFILES_DIR = join(TEST_HOME, "profiles");
 beforeEach(() => {
   mkdirSync(TEST_HOME, { recursive: true });
   mkdirSync(PROFILES_DIR, { recursive: true });
+  mkdirSync(join(TEST_HOME, "omniworker-agent"), { recursive: true });
 });
 
 afterEach(() => {
@@ -139,5 +140,38 @@ describe("listProfiles", () => {
     expect(() => setActiveProfile("../outside")).toThrow(
       "Profile names may contain lowercase letters",
     );
+  });
+
+  it("customizes soulPrompt and disabledToolsets options during profile creation", () => {
+    const profileName = "customized-agent";
+    const pHome = join(PROFILES_DIR, profileName);
+    
+    // Pre-create the directory and config.yaml as if the CLI created it
+    mkdirSync(pHome, { recursive: true });
+    const initialConfig = "agent:\n  model: gpt-4o\n  disabled_toolsets: []\n";
+    writeFileSync(join(pHome, "config.yaml"), initialConfig, "utf-8");
+
+    const soulPrompt = "Eres un agente de ventas enfocado en vender.";
+    const disabledToolsets = ["terminal", "web"];
+
+    const res = createProfile(profileName, false, {
+      soulPrompt,
+      disabledToolsets
+    });
+
+    expect(res.success).toBe(true);
+
+    // Verify SOUL.md was written
+    const soulFile = join(pHome, "SOUL.md");
+    expect(existsSync(soulFile)).toBe(true);
+    expect(readFileSync(soulFile, "utf-8")).toBe(soulPrompt);
+
+    // Verify config.yaml was updated with disabled_toolsets
+    const configFile = join(pHome, "config.yaml");
+    expect(existsSync(configFile)).toBe(true);
+    const updatedConfig = readFileSync(configFile, "utf-8");
+    expect(updatedConfig).toContain("disabled_toolsets:");
+    expect(updatedConfig).toContain("- terminal");
+    expect(updatedConfig).toContain("- web");
   });
 });

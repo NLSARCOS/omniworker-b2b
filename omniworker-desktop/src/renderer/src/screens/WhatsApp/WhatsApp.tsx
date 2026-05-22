@@ -66,7 +66,42 @@ export default function WhatsApp({ visible }: WhatsAppProps): React.JSX.Element 
   const [testLoading, setTestLoading] = useState(false);
   const testMessagesEnd = useRef<HTMLDivElement>(null);
 
+  // Local OpenWA Installer states
+  const [openwaInstalling, setOpenwaInstalling] = useState(false);
+  const [openwaInstallProgress, setOpenwaInstallProgress] = useState(0);
+  const [openwaInstallStepMessage, setOpenwaInstallStepMessage] = useState("");
+  const [openwaInstallError, setOpenwaInstallError] = useState("");
+
   const api = window.omniworkerAPI;
+
+  const handleInstallOpenwa = async (): Promise<void> => {
+    if (openwaInstalling) return;
+    setOpenwaInstalling(true);
+    setOpenwaInstallProgress(0);
+    setOpenwaInstallStepMessage("Iniciando descarga de OpenWA Server...");
+    setOpenwaInstallError("");
+
+    const cleanup = api.onOpenwaInstallProgress((progress) => {
+      setOpenwaInstallProgress(Math.floor((progress.step / progress.total) * 100));
+      setOpenwaInstallStepMessage(progress.message);
+    });
+
+    try {
+      const res = await api.startOpenwaInstall();
+      if (res.success) {
+        setOpenwaInstallProgress(100);
+        setOpenwaInstallStepMessage("¡Instalación local completada con éxito!");
+        setOpenwaServerUrl("http://localhost:2785");
+      } else {
+        setOpenwaInstallError(res.error || "Ocurrió un error inesperado al descargar o extraer.");
+      }
+    } catch (err: any) {
+      setOpenwaInstallError(err.message || "Error de conexión con el instalador.");
+    } finally {
+      setOpenwaInstalling(false);
+      cleanup();
+    }
+  };
 
   // Status polling
   const checkStatus = useCallback(async () => {
@@ -450,6 +485,100 @@ export default function WhatsApp({ visible }: WhatsAppProps): React.JSX.Element 
             )}
             {provider === "openwa" && (
               <>
+                <div style={{
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  marginBottom: "20px",
+                  backdropFilter: "blur(10px)"
+                }}>
+                  <h4 style={{ margin: "0 0 6px 0", color: "#f3f4f6", fontSize: "14px", fontWeight: "600" }}>
+                    Instalador de Servidor OpenWA Local
+                  </h4>
+                  <p style={{ margin: "0 0 14px 0", color: "var(--text-muted)", fontSize: "12px", lineHeight: "1.4" }}>
+                    Descarga e instala de forma automática el servidor local de OpenWA para ejecutar el bot de forma nativa en tu computadora.
+                  </p>
+
+                  {openwaInstalling ? (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", fontSize: "12px" }}>
+                        <span style={{ color: "#38bdf8", fontWeight: "500", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <Spinner size={14} /> {openwaInstallStepMessage}
+                        </span>
+                        <span style={{ color: "#f3f4f6", fontWeight: "600" }}>{openwaInstallProgress}%</span>
+                      </div>
+                      <div className="whatsapp-progress-bar" style={{ height: "6px", background: "rgba(255, 255, 255, 0.1)", borderRadius: "4px", overflow: "hidden" }}>
+                        <div className="whatsapp-progress-fill" style={{ width: `${openwaInstallProgress}%`, height: "100%", background: "linear-gradient(90deg, #38bdf8, #818cf8)", transition: "width 0.3s ease" }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      {openwaInstallError && (
+                        <div style={{
+                          background: "rgba(239, 68, 68, 0.1)",
+                          border: "1px solid rgba(239, 68, 68, 0.2)",
+                          color: "#f87171",
+                          borderRadius: "8px",
+                          padding: "10px",
+                          marginBottom: "12px",
+                          fontSize: "12px"
+                        }}>
+                          <strong>Error de instalación:</strong> {openwaInstallError}
+                        </div>
+                      )}
+
+                      {openwaInstallProgress === 100 && !openwaInstallError && (
+                        <div style={{
+                          background: "rgba(34, 197, 94, 0.1)",
+                          border: "1px solid rgba(34, 197, 94, 0.2)",
+                          color: "#4ade80",
+                          borderRadius: "8px",
+                          padding: "10px",
+                          marginBottom: "12px",
+                          fontSize: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px"
+                        }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                          <span>Instalado localmente con éxito en <code>~/.omniworker/openwa</code>.</span>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handleInstallOpenwa}
+                        className="whatsapp-toolbar-btn primary"
+                        style={{
+                          width: "100%",
+                          justifyContent: "center",
+                          padding: "10px 16px",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                          fontWeight: "500",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          background: "linear-gradient(135deg, #4f46e5, #06b6d4)",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "white",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Descargar e Instalar Localmente
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="whatsapp-field">
                   <label>OpenWA Server URL</label>
                   <input
@@ -467,7 +596,7 @@ export default function WhatsApp({ visible }: WhatsAppProps): React.JSX.Element 
                     type="password"
                     value={openwaApiKey}
                     onChange={(e) => setOpenwaApiKey(e.target.value)}
-                    placeholder="Tu X-API-Key de OpenWA"
+                    placeholder="Tu X-API-Key de OpenWA (dejar en blanco si se instaló localmente)"
                   />
                 </div>
               </>

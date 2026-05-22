@@ -252,6 +252,11 @@ _LEGACY_TOOLSET_MAP = {
 # daemon start/stop, env var changes, etc.) on a 30 s horizon.
 _tool_defs_cache: Dict[tuple, List[Dict[str, Any]]] = {}
 
+# Session-level toggles for dynamic toolset activation/deactivation.
+# Keyed by session_id, value is a Set of toolset names.
+_session_enabled_toolsets: Dict[str, Set[str]] = {}
+_session_disabled_toolsets: Dict[str, Set[str]] = {}
+
 
 def _clear_tool_defs_cache() -> None:
     """Drop memoized get_tool_definitions() results. Called when dynamic
@@ -260,10 +265,116 @@ def _clear_tool_defs_cache() -> None:
     _tool_defs_cache.clear()
 
 
+def toggle_session_toolset(session_id: str, toolset: str, enable: bool) -> bool:
+    """Enable or disable a toolset for a specific session.
+    
+    Returns True if the state changed, False otherwise.
+    """
+    if not session_id:
+        return False
+        
+    global _session_enabled_toolsets, _session_disabled_toolsets
+    
+    if enable:
+        if session_id not in _session_enabled_toolsets:
+            _session_enabled_toolsets[session_id] = set()
+        if session_id in _session_disabled_toolsets:
+            _session_disabled_toolsets[session_id].discard(toolset)
+        
+        if toolset not in _session_enabled_toolsets[session_id]:
+            _session_enabled_toolsets[session_id].add(toolset)
+            _clear_tool_defs_cache()
+            return True
+    else:
+        if session_id not in _session_disabled_toolsets:
+            _session_disabled_toolsets[session_id] = set()
+        if session_id in _session_enabled_toolsets:
+            _session_enabled_toolsets[session_id].discard(toolset)
+            
+        if toolset not in _session_disabled_toolsets[session_id]:
+            _session_disabled_toolsets[session_id].add(toolset)
+            _clear_tool_defs_cache()
+            return True
+            
+    return False
+
+
+def is_toolset_enabled_in_session(
+    session_id: str,
+    toolset: str,
+    default_enabled: Optional[List[str]] = None,
+    default_disabled: Optional[List[str]] = None,
+) -> bool:
+    """Check if a toolset is currently active/enabled in a given session."""
+    eff_enabled, eff_disabled = get_effective_toolsets(
+        default_enabled, default_disabled, session_id=session_id
+    )
+    if eff_enabled is not None:
+        return toolset in eff_enabled
+    if eff_disabled is not None:
+        return toolset not in eff_disabled
+    return True
+
+
+def get_session_toolset_status(
+    session_id: str,
+    default_enabled: Optional[List[str]] = None,
+    default_disabled: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Get the current activation and requirement status for all toolsets in a session."""
+    available_toolsets = get_available_toolsets()
+    from toolsets import TOOLSETS
+    
+    result = {}
+    for ts, meta in available_toolsets.items():
+        is_active = is_toolset_enabled_in_session(
+            session_id, ts, default_enabled, default_disabled
+        )
+        desc = meta.get("description") or (TOOLSETS.get(ts) or {}).get("description") or ""
+        result[ts] = {
+            "active": is_active,
+            "available": meta.get("available", True),
+            "tools": meta.get("tools", []),
+            "description": desc,
+            "requirements": meta.get("requirements", []),
+        }
+    return result
+
+
+def get_effective_toolsets(
+    enabled_toolsets: Optional[List[str]],
+    disabled_toolsets: Optional[List[str]],
+    session_id: Optional[str] = None
+) -> Tuple[Optional[List[str]], Optional[List[str]]]:
+    """Resolve effective enabled/disabled toolsets applying session-specific dynamic overrides."""
+    if not session_id:
+        return enabled_toolsets, disabled_toolsets
+        
+    eff_enabled = list(enabled_toolsets) if enabled_toolsets is not None else None
+    eff_disabled = list(disabled_toolsets) if disabled_toolsets is not None else []
+    
+    if session_id in _session_enabled_toolsets:
+        for ts in _session_enabled_toolsets[session_id]:
+            if eff_enabled is not None and ts not in eff_enabled:
+                eff_enabled.append(ts)
+            if ts in eff_disabled:
+                eff_disabled.remove(ts)
+                
+    if session_id in _session_disabled_toolsets:
+        for ts in _session_disabled_toolsets[session_id]:
+            if eff_enabled is not None and ts in eff_enabled:
+                eff_enabled.remove(ts)
+            if ts not in eff_disabled:
+                eff_disabled.append(ts)
+                
+    return eff_enabled, eff_disabled
+
+
 def get_tool_definitions(
     enabled_toolsets: List[str] = None,
     disabled_toolsets: List[str] = None,
     quiet_mode: bool = False,
+    session_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Get tool definitions for model API calls with toolset-based filtering.
@@ -274,18 +385,18 @@ def get_tool_definitions(
         enabled_toolsets: Only include tools from these toolsets.
         disabled_toolsets: Exclude tools from these toolsets (if enabled_toolsets is None).
         quiet_mode: Suppress status prints.
+        session_id: Optional session identifier for dynamic toolset state.
 
     Returns:
         Filtered list of OpenAI-format tool definitions.
     """
+    # Resolve dynamic session overrides if session_id is provided
+    if session_id:
+        enabled_toolsets, disabled_toolsets = get_effective_toolsets(
+            enabled_toolsets, disabled_toolsets, session_id=session_id
+        )
+
     # Fast path: memoized result when the caller doesn't need stdout prints.
-    # The cache key captures every argument-level input; the registry
-    # generation captures registry mutations (MCP refresh, plugin load).
-    # check_fn results are TTL-cached one level down, inside
-    # registry.get_definitions. The config-mtime fingerprint below captures
-    # user-visible config edits that affect dynamic schemas (execute_code
-    # mode, discord action allowlist, etc.) without needing an explicit
-    # invalidate hook on every config-writer.
     if quiet_mode:
         try:
             from omniworker_cli.config import get_config_path
@@ -299,6 +410,7 @@ def get_tool_definitions(
             frozenset(disabled_toolsets) if disabled_toolsets else None,
             registry._generation,
             cfg_fp,
+            session_id,
         )
         cached = _tool_defs_cache.get(cache_key)
         if cached is not None:
@@ -312,13 +424,6 @@ def get_tool_definitions(
 
     result = _compute_tool_definitions(enabled_toolsets, disabled_toolsets, quiet_mode)
     if quiet_mode:
-        # Cache the freshly-computed list, but hand callers a shallow copy so
-        # downstream mutations (e.g. run_agent appending memory/LCM tool
-        # schemas to self.tools) don't poison the cache. Without this, a
-        # long-lived Gateway process accumulates duplicate tool names across
-        # agent inits and providers that enforce unique tool names
-        # (DeepSeek, Xiaomi MiMo, Moonshot Kimi) reject the request with
-        # HTTP 400. Mirrors the cache-hit path above. (issue #17335)
         _tool_defs_cache[cache_key] = result
         return list(result)
     return result
@@ -827,12 +932,14 @@ def handle_function_call(
                 function_name, function_args,
                 task_id=task_id,
                 enabled_tools=sandbox_enabled,
+                session_id=session_id,
             )
         else:
             result = registry.dispatch(
                 function_name, function_args,
                 task_id=task_id,
                 user_task=user_task,
+                session_id=session_id,
             )
         duration_ms = int((time.monotonic() - _dispatch_start) * 1000)
 

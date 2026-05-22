@@ -10,6 +10,7 @@ interface ToolsetInfo {
 
 interface ToolsProps {
   profile?: string;
+  onToggleToolset?: (key: string, enabled: boolean) => void;
 }
 
 // SVG icons per toolset key
@@ -242,6 +243,19 @@ const TOOL_ICONS: Record<string, React.JSX.Element> = {
       <path d="M16 10a4 4 0 0 1-8 0" />
     </svg>
   ),
+  smtp_client: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7M19 19H5" />
+    </svg>
+  ),
 };
 
 function ToolIcon({ toolKey }: { toolKey: string }): React.JSX.Element {
@@ -270,26 +284,126 @@ interface McpServer {
   detail: string;
 }
 
-function Tools({ profile }: ToolsProps): React.JSX.Element {
+function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
   const { t } = useI18n();
   const [toolsets, setToolsets] = useState<ToolsetInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
 
+  // SMTP Config panel state
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState(587);
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [smtpEncryption, setSmtpEncryption] = useState<"none" | "ssl" | "tls">("tls");
+
+  const [imapHost, setImapHost] = useState("");
+  const [imapPort, setImapPort] = useState(993);
+  const [imapUser, setImapUser] = useState("");
+  const [imapPassword, setImapPassword] = useState("");
+  const [imapEncryption, setImapEncryption] = useState<"none" | "ssl" | "tls">("ssl");
+
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [testingImap, setTestingImap] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [imapTestResult, setImapTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [isSmtpPanelExpanded, setIsSmtpPanelExpanded] = useState(false);
+
   const loadToolsets = useCallback(async (): Promise<void> => {
     setLoading(true);
-    const [list, mcp] = await Promise.all([
+    const [list, mcp, settings] = await Promise.all([
       window.omniworkerAPI.getToolsets(profile),
       window.omniworkerAPI.listMcpServers(profile),
+      window.omniworkerAPI.getSmtpSettings(profile),
     ]);
     setToolsets(list);
     setMcpServers(mcp);
+    if (settings) {
+      setSmtpHost(settings.smtp_host || "");
+      setSmtpPort(settings.smtp_port || 587);
+      setSmtpUser(settings.smtp_user || "");
+      setSmtpPassword(settings.smtp_password || "");
+      setSmtpEncryption(settings.smtp_encryption || "tls");
+
+      setImapHost(settings.imap_host || "");
+      setImapPort(settings.imap_port || 993);
+      setImapUser(settings.imap_user || "");
+      setImapPassword(settings.imap_password || "");
+      setImapEncryption(settings.imap_encryption || "ssl");
+    }
     setLoading(false);
   }, [profile]);
 
   useEffect(() => {
     loadToolsets();
   }, [loadToolsets]);
+
+  const testSmtp = async () => {
+    setTestingSmtp(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await window.omniworkerAPI.testSmtpConnection(
+        smtpHost,
+        smtpPort,
+        smtpEncryption,
+        "smtp"
+      );
+      setSmtpTestResult(res);
+    } catch (err: any) {
+      setSmtpTestResult({ success: false, message: err.message || "Error al conectar." });
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
+
+  const testImap = async () => {
+    setTestingImap(true);
+    setImapTestResult(null);
+    try {
+      const res = await window.omniworkerAPI.testSmtpConnection(
+        imapHost,
+        imapPort,
+        imapEncryption,
+        "imap"
+      );
+      setImapTestResult(res);
+    } catch (err: any) {
+      setImapTestResult({ success: false, message: err.message || "Error al conectar." });
+    } finally {
+      setTestingImap(false);
+    }
+  };
+
+  const handleSaveSmtpSettings = async () => {
+    setSaveStatus("saving");
+    try {
+      await window.omniworkerAPI.saveSmtpSettings({
+        smtp_host: smtpHost,
+        smtp_port: Number(smtpPort),
+        smtp_user: smtpUser,
+        smtp_password: smtpPassword,
+        smtp_encryption: smtpEncryption,
+        imap_host: imapHost,
+        imap_port: Number(imapPort),
+        imap_user: imapUser,
+        imap_password: imapPassword,
+        imap_encryption: imapEncryption,
+      }, profile);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 3000);
+      
+      const list = await window.omniworkerAPI.getToolsets(profile);
+      setToolsets(list);
+
+      if (onToggleToolset) {
+        onToggleToolset("smtp_client", true);
+      }
+    } catch (err) {
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 4000);
+    }
+  };
 
   async function handleToggle(
     key: string,
@@ -299,6 +413,9 @@ function Tools({ profile }: ToolsProps): React.JSX.Element {
       prev.map((t) => (t.key === key ? { ...t, enabled: !currentEnabled } : t)),
     );
     await window.omniworkerAPI.setToolsetEnabled(key, !currentEnabled, profile);
+    if (onToggleToolset) {
+      onToggleToolset(key, !currentEnabled);
+    }
   }
 
   if (loading) {
@@ -343,6 +460,403 @@ function Tools({ profile }: ToolsProps): React.JSX.Element {
             <div className="tools-card-description">{t.description}</div>
           </div>
         ))}
+      </div>
+
+      {/* SMTP/IMAP Mail Client Credentials Panel */}
+      <div style={{
+        marginTop: "32px",
+        background: "rgba(255, 255, 255, 0.02)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        borderRadius: "16px",
+        overflow: "hidden",
+        backdropFilter: "blur(12px)",
+        transition: "all 0.3s ease"
+      }}>
+        {/* Panel Header */}
+        <div 
+          onClick={() => setIsSmtpPanelExpanded(!isSmtpPanelExpanded)}
+          style={{
+            padding: "20px 24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            cursor: "pointer",
+            background: "rgba(255, 255, 255, 0.01)",
+            borderBottom: isSmtpPanelExpanded ? "1px solid rgba(255, 255, 255, 0.08)" : "none",
+            userSelect: "none",
+            transition: "all 0.2s ease"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(6, 182, 212, 0.2))",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#38bdf8"
+            }}>
+              {TOOL_ICONS.smtp_client}
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#f3f4f6" }}>
+                Configuración de Servidor SMTP & IMAP
+              </h3>
+              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
+                Conecta tus cuentas de correo electrónico para automatizar tareas, enviar alertas y responder emails con IA
+              </p>
+            </div>
+          </div>
+          <div style={{
+            transform: isSmtpPanelExpanded ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.3s ease",
+            color: "var(--text-muted)"
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        {/* Panel Content */}
+        {isSmtpPanelExpanded && (
+          <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px", textAlign: "left" }}>
+            {/* Split layout for SMTP (left) and IMAP (right) */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+              {/* SMTP CONFIG */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h4 style={{ margin: "0 0 4px 0", color: "#38bdf8", fontWeight: "600", fontSize: "13px", letterSpacing: "0.5px", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#38bdf8" }} /> Servidor de Salida (SMTP)
+                </h4>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>SMTP Host</label>
+                  <input
+                    value={smtpHost}
+                    onChange={(e) => setSmtpHost(e.target.value)}
+                    placeholder="smtp.gmail.com o mail.tuempresa.com"
+                    style={{
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      color: "#f3f4f6",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Puerto SMTP</label>
+                    <input
+                      type="number"
+                      value={smtpPort}
+                      onChange={(e) => setSmtpPort(Number(e.target.value))}
+                      placeholder="587 o 465"
+                      style={{
+                        background: "rgba(0, 0, 0, 0.2)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                        color: "#f3f4f6",
+                        fontSize: "13px",
+                        outline: "none"
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Cifrado SMTP</label>
+                    <select
+                      value={smtpEncryption}
+                      onChange={(e) => setSmtpEncryption(e.target.value as any)}
+                      style={{
+                        background: "#18181b",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                        color: "#f3f4f6",
+                        fontSize: "13px",
+                        outline: "none",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <option value="none">Ninguno (TCP plano)</option>
+                      <option value="ssl">SSL / TLS Directo</option>
+                      <option value="tls">STARTTLS / TLS</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Usuario SMTP (Email)</label>
+                  <input
+                    value={smtpUser}
+                    onChange={(e) => setSmtpUser(e.target.value)}
+                    placeholder="usuario@dominio.com"
+                    style={{
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      color: "#f3f4f6",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Contraseña SMTP</label>
+                  <input
+                    type="password"
+                    value={smtpPassword}
+                    onChange={(e) => setSmtpPassword(e.target.value)}
+                    placeholder="Contraseña del correo o app password"
+                    style={{
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      color: "#f3f4f6",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+                  <button
+                    onClick={testSmtp}
+                    disabled={testingSmtp}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.04)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      borderRadius: "8px",
+                      padding: "10px 16px",
+                      color: "#f3f4f6",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {testingSmtp ? "Probando..." : "Probar Conexión SMTP"}
+                  </button>
+
+                  {smtpTestResult && (
+                    <div style={{
+                      background: smtpTestResult.success ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
+                      border: smtpTestResult.success ? "1px solid rgba(34, 197, 94, 0.2)" : "1px solid rgba(239, 68, 68, 0.2)",
+                      color: smtpTestResult.success ? "#4ade80" : "#f87171",
+                      borderRadius: "8px",
+                      padding: "10px",
+                      fontSize: "11px",
+                      lineHeight: "1.4"
+                    }}>
+                      <strong>{smtpTestResult.success ? "Éxito" : "Fallo"}:</strong> {smtpTestResult.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* IMAP CONFIG */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", borderLeft: "1px solid rgba(255, 255, 255, 0.06)", paddingLeft: "24px" }}>
+                <h4 style={{ margin: "0 0 4px 0", color: "#818cf8", fontWeight: "600", fontSize: "13px", letterSpacing: "0.5px", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#818cf8" }} /> Servidor de Entrada (IMAP)
+                </h4>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>IMAP Host</label>
+                  <input
+                    value={imapHost}
+                    onChange={(e) => setImapHost(e.target.value)}
+                    placeholder="imap.gmail.com o mail.tuempresa.com"
+                    style={{
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      color: "#f3f4f6",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Puerto IMAP</label>
+                    <input
+                      type="number"
+                      value={imapPort}
+                      onChange={(e) => setImapPort(Number(e.target.value))}
+                      placeholder="993 o 143"
+                      style={{
+                        background: "rgba(0, 0, 0, 0.2)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                        color: "#f3f4f6",
+                        fontSize: "13px",
+                        outline: "none"
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Cifrado IMAP</label>
+                    <select
+                      value={imapEncryption}
+                      onChange={(e) => setImapEncryption(e.target.value as any)}
+                      style={{
+                        background: "#18181b",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                        color: "#f3f4f6",
+                        fontSize: "13px",
+                        outline: "none",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <option value="none">Ninguno (TCP plano)</option>
+                      <option value="ssl">SSL / TLS Directo</option>
+                      <option value="tls">STARTTLS / TLS</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Usuario IMAP (Email)</label>
+                  <input
+                    value={imapUser}
+                    onChange={(e) => setImapUser(e.target.value)}
+                    placeholder="usuario@dominio.com"
+                    style={{
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      color: "#f3f4f6",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Contraseña IMAP</label>
+                  <input
+                    type="password"
+                    value={imapPassword}
+                    onChange={(e) => setImapPassword(e.target.value)}
+                    placeholder="Contraseña del correo o app password"
+                    style={{
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      color: "#f3f4f6",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+                  <button
+                    onClick={testImap}
+                    disabled={testingImap}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.04)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      borderRadius: "8px",
+                      padding: "10px 16px",
+                      color: "#f3f4f6",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {testingImap ? "Probando..." : "Probar Conexión IMAP"}
+                  </button>
+
+                  {imapTestResult && (
+                    <div style={{
+                      background: imapTestResult.success ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
+                      border: imapTestResult.success ? "1px solid rgba(34, 197, 94, 0.2)" : "1px solid rgba(239, 68, 68, 0.2)",
+                      color: imapTestResult.success ? "#4ade80" : "#f87171",
+                      borderRadius: "8px",
+                      padding: "10px",
+                      fontSize: "11px",
+                      lineHeight: "1.4"
+                    }}>
+                      <strong>{imapTestResult.success ? "Éxito" : "Fallo"}:</strong> {imapTestResult.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: "12px",
+              borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+              paddingTop: "20px"
+            }}>
+              {saveStatus === "saved" && (
+                <span style={{ color: "#4ade80", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  ¡Configuración guardada y activada!
+                </span>
+              )}
+              {saveStatus === "error" && (
+                <span style={{ color: "#f87171", fontSize: "13px" }}>
+                  Error al guardar los ajustes.
+                </span>
+              )}
+
+              <button
+                onClick={handleSaveSmtpSettings}
+                disabled={saveStatus === "saving"}
+                style={{
+                  background: "linear-gradient(135deg, #4f46e5, #818cf8)",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 24px",
+                  color: "white",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  transition: "all 0.2s"
+                }}
+              >
+                {saveStatus === "saving" ? "Guardando..." : "Guardar y Habilitar Cliente"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {mcpServers.length > 0 && (

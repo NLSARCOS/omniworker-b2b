@@ -1335,3 +1335,74 @@ export async function downloadSLM(
     });
   });
 }
+
+export async function downloadAndInstallOpenwa(
+  onProgress: (progress: InstallProgress) => void,
+): Promise<void> {
+  const openwaDir = join(OMNIWORKER_HOME, "openwa");
+  const tempTarball = join(tmpdir(), `openwa-${randomBytes(4).toString("hex")}.tar.gz`);
+
+  if (!existsSync(openwaDir)) {
+    mkdirSync(openwaDir, { recursive: true });
+  }
+
+  let log = "Iniciando instalación del servidor OpenWA...\n";
+  let lastReportTime = Date.now();
+
+  function emit(text: string, step = 1, totalSteps = 2): void {
+    log += text;
+    onProgress({
+      step,
+      totalSteps,
+      title: "Instalando OpenWA",
+      detail: text.trim().slice(0, 120),
+      log,
+    });
+  }
+
+  emit(`Descargando tarball a: ${tempTarball}\n`, 1, 2);
+
+  return new Promise<void>((resolve, reject) => {
+    const url = "https://worker.thelab.lat/downloads/openwa-server.tar.gz";
+    const file = createWriteStream(tempTarball);
+
+    https.get(url, (response: any) => {
+      if (response.statusCode !== 200) {
+        reject(new Error(`Error de descarga OpenWA (HTTP ${response.statusCode}).`));
+        return;
+      }
+
+      const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+      let downloadedBytes = 0;
+
+      response.on('data', (chunk: Buffer) => {
+        downloadedBytes += chunk.length;
+        const now = Date.now();
+        if (now - lastReportTime > 500 && totalBytes > 0) {
+          const percent = ((downloadedBytes / totalBytes) * 100).toFixed(1);
+          const mbDownloaded = (downloadedBytes / (1024 * 1024)).toFixed(1);
+          const mbTotal = (totalBytes / (1024 * 1024)).toFixed(1);
+          emit(`Descargando... ${percent}% (${mbDownloaded}MB / ${mbTotal}MB)\n`, 1, 2);
+          lastReportTime = now;
+        }
+      });
+
+      response.pipe(file);
+      file.on("finish", async () => {
+        file.close();
+        emit("Descarga completada con éxito. Iniciando extracción...\n", 2, 2);
+
+        try {
+          await extract({ cwd: openwaDir, file: tempTarball });
+          emit("Extracción completada. OpenWA instalado exitosamente.\n", 2, 2);
+          resolve();
+        } catch (err: any) {
+          reject(new Error(`Error al extraer OpenWA: ${err.message}`));
+        }
+      });
+    }).on("error", (err) => {
+      reject(new Error(`Error al conectar para descargar OpenWA: ${err.message}`));
+    });
+  });
+}
+

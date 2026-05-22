@@ -2,7 +2,7 @@ import { execFileSync } from "child_process";
 import { join } from "path";
 import { homedir } from "os";
 import { promises as fs } from "fs";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import {
   OMNIWORKER_HOME,
   OMNIWORKER_PYTHON,
@@ -13,6 +13,9 @@ import {
   isValidNamedProfileName,
   isValidProfileName,
   PROFILE_NAME_ERROR,
+  getExecErrorMessage,
+  profileHome,
+  safeWriteFile,
 } from "./utils";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 
@@ -31,6 +34,75 @@ export interface ProfileInfo {
   gatewayRunning: boolean;
 }
 
+function updateDisabledToolsetsInConfig(content: string, disabledToolsets: string[]): string {
+  let block = "";
+  if (disabledToolsets.length === 0) {
+    block = "  disabled_toolsets: []";
+  } else {
+    block = "  disabled_toolsets:\n" + disabledToolsets.map(ts => `    - ${ts}`).join("\n");
+  }
+
+  const agentIndex = content.search(/^agent:\s*$/m);
+  if (agentIndex === -1) {
+    return content + `\nagent:\n${block}\n`;
+  }
+
+  const lines = content.split("\n");
+  let agentLineIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^agent:\s*$/.test(lines[i])) {
+      agentLineIndex = i;
+      break;
+    }
+  }
+
+  if (agentLineIndex === -1) return content;
+
+  let agentEndIndex = lines.length;
+  let disabledToolsetsStartLineIndex = -1;
+  let disabledToolsetsEndLineIndex = -1;
+
+  for (let i = agentLineIndex + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() !== "" && !line.startsWith(" ") && !line.startsWith("#")) {
+      agentEndIndex = i;
+      break;
+    }
+
+    if (/^\s*disabled_toolsets\s*:/.test(line)) {
+      disabledToolsetsStartLineIndex = i;
+    }
+  }
+
+  if (disabledToolsetsStartLineIndex !== -1) {
+    disabledToolsetsEndLineIndex = disabledToolsetsStartLineIndex + 1;
+    while (disabledToolsetsEndLineIndex < agentEndIndex) {
+      const line = lines[disabledToolsetsEndLineIndex];
+      if (line.trim() === "" || line.startsWith("#")) {
+        disabledToolsetsEndLineIndex++;
+        continue;
+      }
+      if (/^ {2}[a-zA-Z_][a-zA-Z0-9_]*\s*:/.test(line)) {
+        break;
+      }
+      if (!line.startsWith(" ")) {
+        break;
+      }
+      disabledToolsetsEndLineIndex++;
+    }
+
+    lines.splice(
+      disabledToolsetsStartLineIndex,
+      disabledToolsetsEndLineIndex - disabledToolsetsStartLineIndex,
+      block
+    );
+  } else {
+    lines.splice(agentLineIndex + 1, 0, block);
+  }
+
+  return lines.join("\n");
+}
+
 async function readProfileConfig(profilePath: string): Promise<{
   model: string;
   provider: string;
@@ -42,12 +114,14 @@ async function readProfileConfig(profilePath: string): Promise<{
     const providerMatch = content.match(
       /^\s*provider:\s*["']?([^"'\n#]+)["']?/m,
     );
+    const model = modelMatch ? modelMatch[1].trim() : "";
+    const provider = providerMatch ? providerMatch[1].trim() : "";
     return {
-      model: modelMatch ? modelMatch[1].trim() : "",
-      provider: providerMatch ? providerMatch[1].trim() : "auto",
+      model: model || "omniworker",
+      provider: provider || "custom",
     };
   } catch {
-    return { model: "", provider: "" };
+    return { model: "omniworker", provider: "custom" };
   }
 }
 
@@ -193,9 +267,79 @@ export async function listProfiles(): Promise<ProfileInfo[]> {
   return profiles;
 }
 
+function copyModelBlock(srcConfigPath: string, dstConfigPath: string): void {
+  try {
+    let modelBlock = "";
+    if (existsSync(srcConfigPath)) {
+      const srcContent = readFileSync(srcConfigPath, "utf-8");
+      const lines = srcContent.split("\n");
+      let inModel = false;
+      const modelLines: string[] = [];
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^model:\s*$/.test(line)) {
+          inModel = true;
+          modelLines.push(line);
+          continue;
+        }
+        if (inModel) {
+          if (line.trim() !== "" && !line.startsWith(" ") && !line.startsWith("#")) {
+            break;
+          }
+          modelLines.push(line);
+        }
+      }
+      if (modelLines.length > 0) {
+        modelBlock = modelLines.join("\n");
+      }
+    }
+
+    if (!modelBlock) {
+      modelBlock = "model:\n  default: \"omniworker\"\n  provider: \"custom\"";
+    }
+    
+    let dstContent = "";
+    if (existsSync(dstConfigPath)) {
+      dstContent = readFileSync(dstConfigPath, "utf-8");
+    }
+    
+    const dstModelIndex = dstContent.search(/^model:\s*$/m);
+    if (dstModelIndex !== -1) {
+      const dstLines = dstContent.split("\n");
+      let dstModelLineIndex = -1;
+      for (let i = 0; i < dstLines.length; i++) {
+        if (/^model:\s*$/.test(dstLines[i])) {
+          dstModelLineIndex = i;
+          break;
+        }
+      }
+      if (dstModelLineIndex !== -1) {
+        let dstModelEndLineIndex = dstLines.length;
+        for (let i = dstModelLineIndex + 1; i < dstLines.length; i++) {
+          const line = dstLines[i];
+          if (line.trim() !== "" && !line.startsWith(" ") && !line.startsWith("#")) {
+            dstModelEndLineIndex = i;
+            break;
+          }
+        }
+        dstLines.splice(dstModelLineIndex, dstModelEndLineIndex - dstModelLineIndex, modelBlock);
+        dstContent = dstLines.join("\n");
+      }
+    } else {
+      dstContent = modelBlock + "\n\n" + dstContent;
+    }
+    
+    safeWriteFile(dstConfigPath, dstContent);
+  } catch (e) {
+    console.error("Failed to copy model block to new profile:", e);
+  }
+}
+
 export function createProfile(
   name: string,
   clone: boolean,
+  options?: { soulPrompt?: string; disabledToolsets?: string[] }
 ): { success: boolean; error?: string } {
   if (name === "default") {
     return { success: false, error: "Cannot create the default profile" };
@@ -217,14 +361,37 @@ export function createProfile(
         OMNIWORKER_HOME,
       },
       stdio: "pipe",
-      timeout: 15000,
+      timeout: 90000, // Safe generous timeout for skill seeding
       ...HIDDEN_SUBPROCESS_OPTIONS,
     });
+
+    const pHome = profileHome(name);
+    const configFile = join(pHome, "config.yaml");
+    const defaultConfigFile = join(OMNIWORKER_HOME, "config.yaml");
+    copyModelBlock(defaultConfigFile, configFile);
+
+    if (options) {
+      if (options.soulPrompt) {
+        const soulFile = join(pHome, "SOUL.md");
+        safeWriteFile(soulFile, options.soulPrompt);
+      }
+      if (options.disabledToolsets) {
+        if (existsSync(configFile)) {
+          try {
+            const content = readFileSync(configFile, "utf-8");
+            const updated = updateDisabledToolsetsInConfig(content, options.disabledToolsets);
+            safeWriteFile(configFile, updated);
+          } catch (e) {
+            console.error("Failed to update config.yaml with disabled toolsets:", e);
+          }
+        }
+      }
+    }
+
     return { success: true };
   } catch (err) {
-    const msg =
-      (err as { stderr?: Buffer }).stderr?.toString() || (err as Error).message;
-    return { success: false, error: msg.trim() };
+    const msg = getExecErrorMessage(err);
+    return { success: false, error: msg };
   }
 }
 
@@ -251,15 +418,14 @@ export function deleteProfile(name: string): {
           OMNIWORKER_HOME,
         },
         stdio: "pipe",
-        timeout: 15000,
+        timeout: 30000, // Robust timeout for service cleanup
         ...HIDDEN_SUBPROCESS_OPTIONS,
       },
     );
     return { success: true };
   } catch (err) {
-    const msg =
-      (err as { stderr?: Buffer }).stderr?.toString() || (err as Error).message;
-    return { success: false, error: msg.trim() };
+    const msg = getExecErrorMessage(err);
+    return { success: false, error: msg };
   }
 }
 
@@ -281,7 +447,7 @@ export function setActiveProfile(name: string): void {
           OMNIWORKER_HOME,
         },
         stdio: "pipe",
-        timeout: 10000,
+        timeout: 20000, // Robust timeout for switching active profiles
         ...HIDDEN_SUBPROCESS_OPTIONS,
       },
     );
