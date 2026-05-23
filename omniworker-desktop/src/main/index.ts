@@ -1719,6 +1719,14 @@ app.whenReady().then(() => {
   app.name = "OmniWorker";
   electronApp.setAppUserModelId("com.omniworker.omniworker");
 
+  // Initialize power monitoring for resume catch-up ticks
+  try {
+    const { setupPowerMonitor } = require("./power");
+    setupPowerMonitor();
+  } catch (err) {
+    console.error("[POWER] Failed to initialize setupPowerMonitor:", err);
+  }
+
   app.on("browser-window-created", (_, window) => {
     optimizer.watchWindowShortcuts(window);
   });

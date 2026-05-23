@@ -143,7 +143,7 @@ export async function listCronJobs(
 /**
  * Run a omniworker cron CLI command and return the result.
  */
-function runCronCommand(
+export function runCronCommand(
   args: string[],
   profile?: string,
 ): Promise<{ success: boolean; output: string; error?: string }> {
@@ -152,6 +152,14 @@ function runCronCommand(
     cliArgs.push("-p", profile);
   }
   cliArgs.push("cron", ...args);
+
+  // Prevent sleep during active cron command runs
+  try {
+    const { PowerManager } = require("./power");
+    PowerManager.startBlocking();
+  } catch (e) {
+    console.error("[CRON] Failed to start PowerManager block:", e);
+  }
 
   return new Promise((resolve) => {
     execFile(
@@ -163,6 +171,14 @@ function runCronCommand(
         ...HIDDEN_SUBPROCESS_OPTIONS,
       },
       (err, stdout, stderr) => {
+        // Release power block upon completion
+        try {
+          const { PowerManager } = require("./power");
+          PowerManager.stopBlocking();
+        } catch (e) {
+          console.error("[CRON] Failed to stop PowerManager block:", e);
+        }
+
         if (err) {
           resolve({
             success: false,
