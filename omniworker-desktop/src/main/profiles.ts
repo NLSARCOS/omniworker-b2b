@@ -459,19 +459,16 @@ export function setActiveProfile(name: string): void {
 export interface OnboardingData {
   userName: string;
   language: string;
-  role: "developer" | "gateway" | "executive" | "creative";
+  role: "normal" | "coder";
   tone: "direct" | "collaborative" | "academic";
   proactivity: boolean;
-  engine: "local" | "cloud";
 }
 
 export function saveOnboardingData(data: OnboardingData): { success: boolean; error?: string } {
   try {
     const roleNames: Record<string, string> = {
-      developer: "Software Engineer",
-      gateway: "Gateway Automator",
-      executive: "Executive & Data Assistant",
-      creative: "General Creative Co-Pilot"
+      normal: "Asistente Normal",
+      coder: "Agente Coder"
     };
 
     const toneNames: Record<string, string> = {
@@ -481,15 +478,13 @@ export function saveOnboardingData(data: OnboardingData): { success: boolean; er
     };
 
     const enabledToolsetsMap: Record<string, string> = {
-      developer: "terminal, file, web, skills, todo",
-      gateway: "smtp_client, terminal, file, web, skills, cronjob",
-      executive: "smtp_client, file, web, browser, todo",
-      creative: "file, web, skills, todo, tts"
+      normal: "smtp_client, file, web, browser, todo",
+      coder: "terminal, file, web, skills, todo"
     };
 
-    const roleName = roleNames[data.role] || "General Co-Pilot";
+    const roleName = roleNames[data.role] || "Asistente Normal";
     const toneName = toneNames[data.tone] || "Collaborative Pair-Programmer";
-    const enabledToolsets = enabledToolsetsMap[data.role] || "file, web, skills, todo";
+    const enabledToolsets = enabledToolsetsMap[data.role] || "file, web, todo";
     const proactivityText = data.proactivity ? "Proactive" : "Reactive";
 
     const soulContent = `# OmniWorker Soul Configuration
@@ -527,10 +522,8 @@ export function saveOnboardingData(data: OnboardingData): { success: boolean; er
       let configContent = readFileSync(defaultConfigPath, "utf-8");
 
       const disabledToolsetsMap: Record<string, string[]> = {
-        developer: ["smtp_client", "browser", "tts", "cronjob"],
-        gateway: ["browser", "tts", "todo"],
-        executive: ["terminal", "skills", "tts", "cronjob"],
-        creative: ["smtp_client", "terminal", "browser", "cronjob"]
+        normal: ["terminal", "skills", "tts", "cronjob"],
+        coder: ["smtp_client", "browser", "tts", "cronjob"]
       };
       const disabledList = disabledToolsetsMap[data.role] || [];
 

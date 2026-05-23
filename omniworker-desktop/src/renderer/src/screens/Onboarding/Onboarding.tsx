@@ -6,21 +6,20 @@ interface OnboardingProps {
   onComplete: () => void;
 }
 
-type OnboardingRole = "developer" | "gateway" | "executive" | "creative";
+type OnboardingRole = "normal" | "coder";
 type OnboardingTone = "direct" | "collaborative" | "academic";
 
 export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
   const [step, setStep] = useState(0);
   const [userName, setUserName] = useState("");
   const [language, setLanguage] = useState("Español");
-  const [role, setRole] = useState<OnboardingRole>("developer");
+  const [role, setRole] = useState<OnboardingRole>("normal");
   const [tone, setTone] = useState<OnboardingTone>("collaborative");
   const [proactivity, setProactivity] = useState(true);
-  const [engine, setEngine] = useState<"local" | "cloud">("local");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   const handleNext = (): void => {
     if (step === 1 && !userName.trim()) {
@@ -50,7 +49,6 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
         role,
         tone,
         proactivity,
-        engine,
       });
 
       if (res.success) {
@@ -95,8 +93,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
             <div className="onboarding-step-content step-fade-in">
               <h1 className="onboarding-title">Alineación de Alma</h1>
               <p className="onboarding-description">
-                Bienvenido a OmniWorker, tu compañero inteligente de auto-aprendizaje.
-                Antes de comenzar a trabajar, configuremos tu agente para que se adapte exactamente a tus necesidades, lenguaje y estilo personal.
+                Bienvenido a tu OmniWorker. Configuremos tu agente para que se adapte exactamente a ti, tu lenguaje y tu estilo de trabajo preferido desde el primer segundo.
               </p>
               <div className="onboarding-actions" style={{ justifyContent: "center", marginTop: 32 }}>
                 <button className="btn btn-primary welcome-button animate-pulse" onClick={handleNext}>
@@ -159,60 +156,38 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
             </div>
           )}
 
-          {/* STEP 2: Mission & Role */}
+          {/* STEP 2: Mission & Role (Normal vs Coder) */}
           {step === 2 && (
             <div className="onboarding-step-content step-fade-in">
-              <h1 className="onboarding-title">¿Cuál será mi misión?</h1>
+              <h1 className="onboarding-title">¿Cuál será mi enfoque?</h1>
               <p className="onboarding-description">
-                Elige mi entorno principal de especialidad. Esto inyectará el conjunto de herramientas (toolsets) correspondiente de forma optimizada.
+                Selecciona la especialidad de tu OmniWorker. Esto habilitará solo las herramientas y capacidades óptimas para tus tareas.
               </p>
               
-              <div className="onboarding-grid-roles">
-                {/* Developer */}
+              <div className="onboarding-grid-roles" style={{ gridTemplateColumns: "1fr 1fr" }}>
+                {/* Normal Agent */}
                 <div 
-                  className={`onboarding-role-card ${role === "developer" ? "active" : ""}`}
-                  onClick={() => setRole("developer")}
-                >
-                  <div className="role-accent-dot color-dev"></div>
-                  <h3 className="role-title">Ingeniero de Software</h3>
-                  <p className="role-desc">
-                    Optimizado para escribir código limpio, refactorizar, diagnosticar errores y automatizar testing.
-                  </p>
-                </div>
-
-                {/* Gateway */}
-                <div 
-                  className={`onboarding-role-card ${role === "gateway" ? "active" : ""}`}
-                  onClick={() => setRole("gateway")}
-                >
-                  <div className="role-accent-dot color-gateway"></div>
-                  <h3 className="role-title">Coordinador de Canales</h3>
-                  <p className="role-desc">
-                    Especializado en automatizaciones con Telegram y WhatsApp. Ideal para bots autónomos.
-                  </p>
-                </div>
-
-                {/* Executive */}
-                <div 
-                  className={`onboarding-role-card ${role === "executive" ? "active" : ""}`}
-                  onClick={() => setRole("executive")}
+                  className={`onboarding-role-card ${role === "normal" ? "active" : ""}`}
+                  onClick={() => setRole("normal")}
+                  style={{ minHeight: 180 }}
                 >
                   <div className="role-accent-dot color-exec"></div>
-                  <h3 className="role-title">Asistente de Datos</h3>
+                  <h3 className="role-title">💼 Agente Normal</h3>
                   <p className="role-desc">
-                    Generación de reportes de ventas, lectura de documentación densa, manejo de correos e investigación web.
+                    Optimizado para labores administrativas de oficina, envíos de correo, automatización de mensajería, gestión de archivos y búsquedas web.
                   </p>
                 </div>
 
-                {/* Creative */}
+                {/* Coder Agent */}
                 <div 
-                  className={`onboarding-role-card ${role === "creative" ? "active" : ""}`}
-                  onClick={() => setRole("creative")}
+                  className={`onboarding-role-card ${role === "coder" ? "active" : ""}`}
+                  onClick={() => setRole("coder")}
+                  style={{ minHeight: 180 }}
                 >
-                  <div className="role-accent-dot color-creative"></div>
-                  <h3 className="role-title">Co-Piloto Creativo</h3>
+                  <div className="role-accent-dot color-dev"></div>
+                  <h3 className="role-title">💻 Agente Coder</h3>
                   <p className="role-desc">
-                    Alineado para tormentas de ideas, explicaciones paso a paso de conceptos complejos y edición de texto.
+                    Especializado en ingeniería de software. Optimizado para escribir código limpio, ejecutar comandos en consola, debugging y testing.
                   </p>
                 </div>
               </div>
@@ -230,12 +205,12 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
             </div>
           )}
 
-          {/* STEP 3: Tone & Proactivity */}
+          {/* STEP 3: Tone, Proactivity & Finalize */}
           {step === 3 && (
             <div className="onboarding-step-content step-fade-in">
-              <h1 className="onboarding-title">Personalidad y Comunicación</h1>
+              <h1 className="onboarding-title">Personalidad y Alineación</h1>
               <p className="onboarding-description">
-                Elige el tono en el que debo expresarme y mi nivel de autonomía para hacerte sugerencias en caliente.
+                Elige el tono en el que debo expresarme y mi nivel de autonomía para hacerte sugerencias como copiloto.
               </p>
 
               <div className="onboarding-form-group">
@@ -245,22 +220,22 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
                     className={`onboarding-role-card ${tone === "direct" ? "active" : ""}`}
                     onClick={() => setTone("direct")}
                   >
-                    <h4 className="role-title" style={{ fontSize: 14 }}>⚡ Directo (No-Fluff)</h4>
-                    <p className="role-desc" style={{ fontSize: 11 }}>Code-first, respuestas sin rodeos, sin disculpas de relleno.</p>
+                    <h4 className="role-title" style={{ fontSize: 14 }}>⚡ Directo</h4>
+                    <p className="role-desc" style={{ fontSize: 11 }}>Respuestas cortas y enfocadas. Va directo al código o respuesta.</p>
                   </div>
                   <div 
                     className={`onboarding-role-card ${tone === "collaborative" ? "active" : ""}`}
                     onClick={() => setTone("collaborative")}
                   >
                     <h4 className="role-title" style={{ fontSize: 14 }}>🤝 Colaborador</h4>
-                    <p className="role-desc" style={{ fontSize: 11 }}>Par de programación. Comparte su lógica antes de cambiar código.</p>
+                    <p className="role-desc" style={{ fontSize: 11 }}>Co-piloto activo. Explica su enfoque y pide feedback.</p>
                   </div>
                   <div 
                     className={`onboarding-role-card ${tone === "academic" ? "active" : ""}`}
                     onClick={() => setTone("academic")}
                   >
                     <h4 className="role-title" style={{ fontSize: 14 }}>🎓 Académico</h4>
-                    <p className="role-desc" style={{ fontSize: 11 }}>Explicativo. Detalla cada parte del fondo teórico e implicaciones.</p>
+                    <p className="role-desc" style={{ fontSize: 11 }}>Explicativo. Detalla fundamentos teóricos y mejores prácticas.</p>
                   </div>
                 </div>
 
@@ -269,7 +244,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
                     <label className="onboarding-label" style={{ margin: 0 }}>Autonomía Proactiva</label>
                     <p className="role-desc" style={{ fontSize: 12, marginTop: 4 }}>
                       {proactivity 
-                        ? "Buscaré errores de seguridad y optimizaciones proactivamente en tu código." 
+                        ? "Te sugeriré proactivamente mejoras de optimización, seguridad y estilo." 
                         : "Me limitaré estrictamente a responder lo que me preguntes directamente."}
                     </p>
                   </div>
@@ -279,51 +254,6 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
                   >
                     <div className="toggle-slider"></div>
                   </button>
-                </div>
-              </div>
-
-              <div className="onboarding-actions" style={{ marginTop: 32 }}>
-                <button className="btn-ghost" onClick={handleBack}>
-                  <ArrowLeft size={16} />
-                  Atrás
-                </button>
-                <button className="btn btn-primary" onClick={handleNext}>
-                  Siguiente
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: Engine Selection & Finalize */}
-          {step === 4 && (
-            <div className="onboarding-step-content step-fade-in">
-              <h1 className="onboarding-title">Selección del Motor LLM</h1>
-              <p className="onboarding-description">
-                Elige dónde vivirá mi capacidad de procesamiento inicial. Puedes agregar otros modelos y llaves más adelante.
-              </p>
-
-              <div className="onboarding-grid-roles" style={{ gridTemplateColumns: "1fr 1fr" }}>
-                <div 
-                  className={`onboarding-role-card ${engine === "local" ? "active" : ""}`}
-                  onClick={() => setEngine("local")}
-                >
-                  <div className="role-accent-dot color-exec"></div>
-                  <h3 className="role-title">🏠 Motor Local Offline (SLM)</h3>
-                  <p className="role-desc">
-                    100% privado y seguro. Los datos no salen de tu máquina. Utiliza la GPU/CPU de tu dispositivo local mediante Llama-server.
-                  </p>
-                </div>
-
-                <div 
-                  className={`onboarding-role-card ${engine === "cloud" ? "active" : ""}`}
-                  onClick={() => setEngine("cloud")}
-                >
-                  <div className="role-accent-dot color-gateway"></div>
-                  <h3 className="role-title">☁️ Motor en la Nube (API)</h3>
-                  <p className="role-desc">
-                    Modelos de alta inteligencia y velocidad a través del gateway (OpenAI GPT-4o, Claude 3.5 Sonnet). Requiere conexión.
-                  </p>
                 </div>
               </div>
 
@@ -342,7 +272,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
                 >
                   {saving ? (
                     <>
-                      Guardando...
+                      Alineando...
                       <Spinner size={14} className="animate-spin" />
                     </>
                   ) : (

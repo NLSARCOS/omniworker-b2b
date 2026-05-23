@@ -821,10 +821,9 @@ interface OmniWorkerAPI {
   saveOnboardingData: (data: {
     userName: string;
     language: string;
-    role: "developer" | "gateway" | "executive" | "creative";
+    role: "normal" | "coder";
     tone: "direct" | "collaborative" | "academic";
     proactivity: boolean;
-    engine: "local" | "cloud";
   }) => Promise<{ success: boolean; error?: string }>;
 }
 
