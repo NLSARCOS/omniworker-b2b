@@ -14,31 +14,31 @@
   --bg-elevated: #2a2a2d; /* modal or popup background */
   --bg-hover: #262629; /* hover list item */
   --bg-active: #333336;
-  --accent: #d4ff00; /* vibrant neon lime */
-  --accent-hover: #b0d500;
-  --accent-subtle: rgba(212, 255, 0, 0.08); /* elegant soft neon glow background */
-  --accent-text: #d4ff00; /* neon text */
-  --accent-btn-text: #0e0e11; /* dark contrast text for neon lime buttons */
+  --accent: #ffffff; /* pure white highlight */
+  --accent-hover: #e4e4e7; /* zinc-200 */
+  --accent-subtle: rgba(255, 255, 255, 0.08); /* elegant soft white glow background */
+  --accent-text: #ffffff; /* white text */
+  --accent-btn-text: #09090b; /* dark contrast text for white buttons */
   --text-primary: #e4e1e6; /* clean off-white */
-  --text-secondary: #c5c9ac; /* soft outline variant style text */
-  --text-muted: #8f9378; /* muted grey outline */
+  --text-secondary: #a1a1aa; /* soft zinc-400 grey */
+  --text-muted: #71717a; /* muted zinc-500 grey */
   --border: rgba(255, 255, 255, 0.05); /* extra-fine elegant glass borders */
   --border-bright: rgba(255, 255, 255, 0.1);
-  --border-focus: #d4ff00; /* lime focus */
+  --border-focus: #ffffff; /* white focus */
   --success: #3cddc7; /* neon teal */
   --success-bg: rgba(60, 221, 199, 0.1);
   --error: #ffb4ab; /* soft warm error red */
   --error-bg: rgba(255, 180, 171, 0.1);
   --warning: #ddb7ff; /* vibrant secondary purple */
   --warning-bg: rgba(221, 183, 255, 0.1);
-  --user-bubble: #caf300; /* bright lime user chat bubble */
-  --user-bubble-text: #0e0e11; /* deep contrast user text */
+  --user-bubble: #ffffff; /* white user chat bubble */
+  --user-bubble-text: #09090b; /* deep contrast user text */
   --agent-bubble: #1f1f22; /* slate chat bubble */
   --agent-bubble-text: #e4e1e6;
   --code-bg: #0e0e11;
   --scrollbar-thumb: #353438;
-  --scrollbar-hover: #444932;
-  --selection: rgba(212, 255, 0, 0.25);
+  --scrollbar-hover: #52525b;
+  --selection: rgba(255, 255, 255, 0.2);
 
   /* Neon extra shades */
   --neon-pink: #ff4d8d;
@@ -48,13 +48,12 @@
   --panel-bg: rgba(14, 14, 17, 0.55);
   --panel-border: rgba(255, 255, 255, 0.05);
   --panel-glow: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
-  --layout-bg: radial-gradient(circle at 10% 20%, rgba(212, 255, 0, 0.04) 0%, transparent 45%),
-               radial-gradient(circle at 90% 80%, rgba(60, 221, 199, 0.04) 0%, transparent 45%),
-               radial-gradient(circle at 50% 50%, rgba(221, 183, 255, 0.02) 0%, transparent 60%),
+  --layout-bg: radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 45%),
+               radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.01) 0%, transparent 45%),
                #131316;
 }
 
-/* ----- Light Theme (Milk + Royal Violet) ----- */
+/* ----- Light Theme (Milk + Monochrome Dark) ----- */
 [data-theme="light"] {
   --bg-primary: #fbfbfe; /* clean elegant white-milk */
   --bg-secondary: #f3f3f7; /* soft grey-blue sidebar */
@@ -62,41 +61,40 @@
   --bg-elevated: #eaeaf1;
   --bg-hover: #f1f1f6;
   --bg-active: #e2e2ec;
-  --accent: #6f00be; /* rich royal violet */
-  --accent-hover: #490080;
-  --accent-subtle: rgba(111, 0, 190, 0.06); /* soft violet active background */
-  --accent-text: #6f00be;
-  --accent-btn-text: #ffffff; /* white contrast text for violet buttons */
+  --accent: #09090b; /* deep black-zinc */
+  --accent-hover: #27272a; /* zinc-800 */
+  --accent-subtle: rgba(9, 9, 11, 0.05); /* soft zinc active background */
+  --accent-text: #09090b;
+  --accent-btn-text: #ffffff; /* white contrast text for dark buttons */
   --text-primary: #0e0e11; /* deep rich charcoal */
   --text-secondary: #4f4f5a; /* midtone cool grey-slate text */
   --text-muted: #828292;
   --border: rgba(0, 0, 0, 0.06); /* soft borders */
   --border-bright: rgba(0, 0, 0, 0.12);
-  --border-focus: #6f00be;
+  --border-focus: #09090b;
   --success: #007a6e; /* rich teal forest green */
   --success-bg: rgba(0, 122, 110, 0.08);
   --error: #b3000f; /* sophisticated red crimson */
   --error-bg: rgba(179, 0, 15, 0.06);
   --warning: #a15c00; /* rich amber */
   --warning-bg: rgba(161, 92, 0, 0.08);
-  --user-bubble: #6f00be; /* royal violet user chat bubble */
+  --user-bubble: #09090b; /* black user chat bubble */
   --user-bubble-text: #ffffff;
   --agent-bubble: #ffffff;
   --agent-bubble-text: #0e0e11;
   --code-bg: #f3f3f7;
   --scrollbar-thumb: #dcdce4;
-  --scrollbar-hover: #c4c4d0;
-  --selection: rgba(111, 0, 190, 0.15);
+  --scrollbar-hover: #a1a1aa;
+  --selection: rgba(9, 9, 11, 0.1);
 
   --neon-pink: #d81b60;
   --neon-teal: #00796b;
-  --neon-purple: #6f00be;
-  --glass-shadow: 0 8px 32px 0 rgba(111, 0, 190, 0.05);
+  --neon-purple: #09090b;
+  --glass-shadow: 0 8px 32px 0 rgba(9, 9, 11, 0.05);
   --panel-bg: rgba(255, 255, 255, 0.7);
   --panel-border: rgba(0, 0, 0, 0.06);
-  --panel-glow: 0 12px 40px 0 rgba(111, 0, 190, 0.03);
-  --layout-bg: radial-gradient(circle at 10% 20%, rgba(111, 0, 190, 0.03) 0%, transparent 45%),
-               radial-gradient(circle at 90% 80%, rgba(0, 122, 110, 0.03) 0%, transparent 45%),
+  --panel-glow: 0 12px 40px 0 rgba(9, 9, 11, 0.03);
+  --layout-bg: radial-gradient(circle at 10% 20%, rgba(0, 0, 0, 0.02) 0%, transparent 45%),
                #fbfbfe;
 }
 

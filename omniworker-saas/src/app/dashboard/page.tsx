@@ -13,6 +13,8 @@ interface UserData {
   tokenBalance: number;
   plan: string | null;
   isLocked: boolean;
+  isPlanExpired?: boolean;
+  subscriptionEndsAt?: string | null;
 }
 
 interface LicenseData {
@@ -159,6 +161,7 @@ export default function DashboardPage() {
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
   const [licenses, setLicenses] = useState<LicenseData[]>([]);
   const [licenseUsage, setLicenseUsage] = useState({ active: 0, max: 1 });
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Generate key state
@@ -195,16 +198,20 @@ export default function DashboardPage() {
       if (meData.success) {
         setUser(meData.user);
         if (meData.user.tenantId) {
-          const [agentsRes, keysRes, licensesRes] = await Promise.allSettled([
+          const [agentsRes, keysRes, licensesRes, invoicesRes] = await Promise.allSettled([
             fetch("/api/v1/edge/status", { headers: { Authorization: "Bearer " + token } }).then(r => r.json()),
             fetch("/api/v1/apikeys", { headers: { Authorization: "Bearer " + token } }).then(r => r.json()),
             fetch("/api/v1/licenses", { headers: { Authorization: "Bearer " + token } }).then(r => r.json()),
+            fetch("/api/v1/invoices", { headers: { Authorization: "Bearer " + token } }).then(r => r.json()),
           ]);
           if (agentsRes.status === "fulfilled" && agentsRes.value?.success) setAgents(agentsRes.value.agents || []);
           if (keysRes.status === "fulfilled" && keysRes.value?.success) setApiKeys(keysRes.value.keys || []);
           if (licensesRes.status === "fulfilled" && licensesRes.value?.success) {
             setLicenses(licensesRes.value.licenses || []);
             setLicenseUsage(licensesRes.value.usage || { active: 0, max: 1 });
+          }
+          if (invoicesRes.status === "fulfilled" && invoicesRes.value?.success) {
+            setInvoices(invoicesRes.value.invoices || []);
           }
         }
       } else {
@@ -325,9 +332,16 @@ export default function DashboardPage() {
       />
 
       {/* Subscription warning */}
-      {user.isLocked && (
-        <div style={{ marginBottom: 32, padding: "16px 20px", background: "rgba(255,100,100,0.1)", border: "3px solid #ff0000" }}>
-          <strong style={{ textTransform: "uppercase" }}>Saldo Insuficiente</strong>
+      {user.isPlanExpired && (
+        <div style={{ marginBottom: 32, padding: "16px 20px", background: "rgba(255,100,100,0.05)", border: "3px solid #ff0000", boxShadow: "4px 4px 0 0 #ff0000" }}>
+          <strong style={{ textTransform: "uppercase", color: "#ff0000" }}>⚠️ Plan de Suscripción Expirado</strong>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>Tu plan de OmniWorker ha vencido. Ponte en contacto con tu administrador para registrar un nuevo pago y reactivar tu cuenta.</p>
+        </div>
+      )}
+
+      {user.isLocked && !user.isPlanExpired && (
+        <div style={{ marginBottom: 32, padding: "16px 20px", background: "rgba(255,100,100,0.05)", border: "3px solid #ff0000", boxShadow: "4px 4px 0 0 #ff0000" }}>
+          <strong style={{ textTransform: "uppercase", color: "#ff0000" }}>Saldo Insuficiente</strong>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>Tu balance de tokens está agotado. Contacta a tu administrador.</p>
         </div>
       )}
@@ -512,19 +526,62 @@ export default function DashboardPage() {
         </div>
       </Section>
 
+      {/* Historial de Facturación */}
+      <Section title="HISTORIAL DE FACTURACIÓN — PAGOS B2B MANUALES" id="billing">
+        {invoices.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
+            <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin facturas</p>
+            <p style={{ fontSize: 13, margin: 0 }}>No hay cobros o pagos manuales registrados en tu cuenta.</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Factura</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Fecha Pago</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Concepto</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Monto</th>
+                  <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: 2, borderBottom: "3px solid #111", fontFamily: "'Space Mono', monospace" }}>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoices.map((inv) => (
+                  <tr key={inv.id} style={{ borderBottom: "1px solid #e0e0e0" }}>
+                    <td style={{ padding: "12px 16px", fontWeight: 600, fontFamily: "'Space Mono', monospace" }}>{inv.invoiceNumber}</td>
+                    <td style={{ padding: "12px 16px" }}>{new Date(inv.paidAt).toLocaleDateString()}</td>
+                    <td style={{ padding: "12px 16px" }}>{inv.description || "Pago de suscripción manual"}</td>
+                    <td style={{ padding: "12px 16px", fontWeight: 700 }}>${inv.amount.toFixed(2)} USD</td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <Badge variant="success">PAGADO</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
+
       {/* Platform Status */}
       <Section title="ESTADO DE PLATAFORMA">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
-          <div style={{ borderRight: "3px solid #111" }}>
-            <span style={{ color: "#555", fontSize: 13 }}>Plan</span><br />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, border: "2px solid #111" }}>
+          <div style={{ borderRight: "2px solid #111", padding: 16 }}>
+            <span style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>Plan</span><br />
             <strong style={{ fontSize: 16 }}>{(user.plan || "Free").toUpperCase()}</strong>
           </div>
-          <div style={{ borderRight: "3px solid #111" }}>
-            <span style={{ color: "#555", fontSize: 13 }}>Cuenta</span><br />
-            <Badge variant={user.isLocked ? "danger" : "success"}>{user.isLocked ? "BLOQUEADA" : "ACTIVA"}</Badge>
+          <div style={{ borderRight: "2px solid #111", padding: 16 }}>
+            <span style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>Cuenta</span><br />
+            <Badge variant={user.isPlanExpired ? "danger" : "success"}>{user.isPlanExpired ? "EXPIRADA" : "ACTIVA"}</Badge>
           </div>
-          <div>
-            <span style={{ color: "#555", fontSize: 13 }}>Organización</span><br />
+          <div style={{ borderRight: "2px solid #111", padding: 16 }}>
+            <span style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>Vencimiento</span><br />
+            <strong style={{ fontSize: 14 }}>
+              {user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt).toLocaleDateString() : "Ilimitado"}
+            </strong>
+          </div>
+          <div style={{ padding: 16 }}>
+            <span style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>Organización</span><br />
             <strong style={{ fontSize: 16 }}>{user.tenantName || "—"}</strong>
           </div>
         </div>

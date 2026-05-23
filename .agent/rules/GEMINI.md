@@ -92,6 +92,15 @@ When auto-applying an agent, inform the user:
 [Continue with specialized response]
 ```
 
+### Dynamic Specialist Autogeneration (SaaS Key Only)
+
+If a highly specific user request is received that does not map to any pre-configured specialist in `.agent/agents/` (e.g. `web-designer`, `copywriter`, `auditor`):
+1. The **Orchestrator** acts as a meta-programming coordinator.
+2. It runs `omniworker profile create <name> --clone` via CLI. Cloning is mandatory to ensure it strictly inherits the unified SaaS API Key and SaaS Gateway endpoints from the `default` profile. External credentials (OpenAI, Claude) are strictly disabled.
+3. It writes the specialist persona system prompt to `~/.omniworker/profiles/<name>/SOUL.md`.
+4. It restricts its toolsets in `~/.omniworker/profiles/<name>/config.yaml`.
+5. It delegates the specific tasks to the new specialist using `delegate_task`.
+
 ### OpenSpec Awareness
 
 **When to suggest OpenSpec planning:**

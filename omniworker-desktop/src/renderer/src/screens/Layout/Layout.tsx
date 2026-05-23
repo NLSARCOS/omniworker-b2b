@@ -383,9 +383,35 @@ function Layout({
     [goTo],
   );
 
+  const isPlanExpired = !!userData?.isPlanExpired;
+
+  const handleOpenSaaS = useCallback(() => {
+    const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+    window.omniworkerAPI.openExternal(`${saasUrl}/dashboard`);
+  }, []);
+
   return (
-    <div className="layout">
-      <aside ref={sidebarRef} className="sidebar">
+    <div className="flex flex-col flex-1 h-full w-full overflow-hidden">
+      {isPlanExpired && (
+        <div 
+          className="bg-red-950/90 border-b border-red-800/80 text-red-200 px-6 py-3 flex items-center justify-between text-sm shadow-lg backdrop-blur-md z-50 cursor-pointer hover:bg-red-900/95 transition-all duration-300"
+          onClick={handleOpenSaaS}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-base">⚠️</span>
+            <span className="font-semibold tracking-wide">
+              Tu plan de OmniWorker ha vencido. Por favor, actualiza tu suscripción en el panel del SaaS para continuar usando la IA local y remota.
+            </span>
+          </div>
+          <button 
+            className="bg-red-800 hover:bg-red-700 text-white font-bold py-1 px-4 rounded border border-red-600 transition-colors shadow-sm text-xs uppercase tracking-wider"
+          >
+            Actualizar Plan
+          </button>
+        </div>
+      )}
+      <div className="layout" style={{ height: "auto", flex: 1 }}>
+        <aside ref={sidebarRef} className="sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-brand-badge">
             OMNIWORKER
@@ -539,6 +565,7 @@ function Layout({
             sessionId={currentSessionId}
             profile={activeProfile}
             onNewChat={handleNewChat}
+            isPlanExpired={isPlanExpired}
           />
         </div>
 
@@ -837,6 +864,7 @@ function Layout({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

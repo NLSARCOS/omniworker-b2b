@@ -81,6 +81,15 @@ function App(): React.JSX.Element {
     console.error("[APP] handleLoginSuccess started");
     setUserData(user);
 
+    // Sync B2B subscription plan state to Main process
+    const isExpired = !!user?.isPlanExpired;
+    try {
+      await window.omniworkerAPI.setPlanExpired(isExpired);
+      console.error(`[APP] Enforced plan expiration in main process: ${isExpired}`);
+    } catch (err: any) {
+      console.error("[APP] Failed to sync plan expiration to main process:", err?.message);
+    }
+
     if (auth?.accessToken) {
       console.error("[APP] Got accessToken, setting auth token");
       setAuthToken(auth.accessToken);
@@ -127,10 +136,16 @@ function App(): React.JSX.Element {
       if (auth.refreshToken) {
         const doRefresh = async (refreshToken: string) => {
           try {
+            let fingerprint: string | undefined;
+            try {
+              fingerprint = await window.omniworkerAPI.getDeviceFingerprint();
+            } catch (fpErr) {
+              console.error("[APP] Failed to get fingerprint for token refresh:", fpErr);
+            }
             const res = await fetch(`${saasUrl}/api/v1/auth/refresh`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ refreshToken }),
+              body: JSON.stringify({ refreshToken, deviceFingerprint: fingerprint }),
             });
             if (res.ok) {
               const data = await res.json();
@@ -142,6 +157,15 @@ function App(): React.JSX.Element {
                   refreshToken: data.refreshToken || refreshToken,
                 };
                 localStorage.setItem("ow_auth", JSON.stringify(updatedAuth));
+
+                if (data.user) {
+                  setUserData(data.user);
+                  try {
+                    await window.omniworkerAPI.setPlanExpired(!!data.user.isPlanExpired);
+                  } catch (err: any) {
+                    console.error("[APP] Failed to update plan expiration during refresh:", err?.message);
+                  }
+                }
 
                 // Actualizar token en config para que el próximo mensaje use el nuevo JWT
                 await window.omniworkerAPI.setEnv(
@@ -293,7 +317,7 @@ function App(): React.JSX.Element {
 
   function renderScreen(): React.JSX.Element {
     // BLOQUEO B2B
-    if (userData?.isLocked) {
+    if (userData?.isLocked && !userData?.isPlanExpired) {
       return (
         <div className="flex h-screen w-full items-center justify-center bg-black text-white font-mono z-50 fixed top-0 left-0">
           <div className="border-8 border-white p-12 text-center max-w-lg">

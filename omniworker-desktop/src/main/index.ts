@@ -59,6 +59,8 @@ import {
   stopSmartRouter,
   getSmartRouterUrl,
   isSmartRouterRunning,
+  setPlanExpired,
+  getPlanExpired,
 } from "./omniworker";
 import {
   startSshTunnel,
@@ -109,6 +111,8 @@ import {
   getPlatformEnabled,
   setPlatformEnabled,
   getOnboardingCompleted,
+  getDeviceFingerprint,
+  getDeviceName,
 } from "./config";
 import { listSessions, getSessionMessages, searchSessions } from "./sessions";
 import {
@@ -240,6 +244,9 @@ import {
   sshRunDump,
   sshDiscoverMemoryProviders,
 } from "./ssh-remote";
+
+// Force global secrets redaction across all spawned subprocesses and agents for SaaS compliance and B2B security.
+process.env.OMNIWORKER_REDACT_SECRETS = "true";
 
 process.on("uncaughtException", (err) => {
   console.error("[MAIN UNCAUGHT]", err);
@@ -536,6 +543,14 @@ function setupIPC(): void {
     if (conn.mode === "ssh" && conn.ssh)
       return sshGetOmniWorkerHome(conn.ssh, profile);
     return getOmniWorkerHome(profile);
+  });
+
+  ipcMain.handle("get-device-fingerprint", () => {
+    return getDeviceFingerprint();
+  });
+
+  ipcMain.handle("get-device-name", () => {
+    return getDeviceName();
   });
 
   ipcMain.handle("get-model-config", (_event, profile?: string) => {
@@ -1306,6 +1321,15 @@ function setupIPC(): void {
     "trigger-cron-job",
     (_event, jobId: string, profile?: string) => triggerCronJob(jobId, profile),
   );
+
+  // Plan Enforcement IPCs
+  ipcMain.handle("set-plan-expired", (_event, expired: boolean) => {
+    setPlanExpired(expired);
+    return true;
+  });
+  ipcMain.handle("check-plan-expired", () => {
+    return getPlanExpired();
+  });
 
   // Patterns / Autolearning
   ipcMain.handle("list-detected-patterns", (_event, profile?: string) =>

@@ -157,6 +157,8 @@ interface OmniWorkerAPI {
   // Connection mode (local / remote / ssh)
   isRemoteMode: () => Promise<boolean>;
   isRemoteOnlyMode: () => Promise<boolean>;
+  getDeviceFingerprint: () => Promise<string>;
+  getDeviceName: () => Promise<string>;
   getConnectionConfig: () => Promise<{
     mode: "local" | "remote" | "ssh";
     remoteUrl: string;
@@ -830,6 +832,10 @@ interface OmniWorkerAPI {
     autolearning: boolean;
     gatewayEnabled?: boolean;
   }) => Promise<{ success: boolean; error?: string }>;
+
+  // Plan Enforcement
+  setPlanExpired: (expired: boolean) => Promise<boolean>;
+  checkPlanExpired: () => Promise<boolean>;
 }
 
 

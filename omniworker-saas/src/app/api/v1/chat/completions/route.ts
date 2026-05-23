@@ -305,10 +305,17 @@ export async function POST(request: Request) {
       }
 
       // Deduct tokens + log
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { tokenBalance: { decrement: estimatedCost } },
-      });
+      if (auth.user.licenseId) {
+        await prisma.license.update({
+          where: { id: auth.user.licenseId },
+          data: { tokenBalance: { decrement: estimatedCost } },
+        });
+      } else {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { tokenBalance: { decrement: estimatedCost } },
+        });
+      }
 
       await prisma.taskLog.create({
         data: {
@@ -395,10 +402,17 @@ export async function POST(request: Request) {
       );
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { tokenBalance: { decrement: estimatedCost } },
-    });
+    if (auth.user.licenseId) {
+      await prisma.license.update({
+        where: { id: auth.user.licenseId },
+        data: { tokenBalance: { decrement: estimatedCost } },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { tokenBalance: { decrement: estimatedCost } },
+      });
+    }
 
     await prisma.taskLog.create({
       data: {

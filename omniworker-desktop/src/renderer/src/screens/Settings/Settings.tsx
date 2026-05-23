@@ -364,8 +364,8 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .cockpit-card:hover {
-          border-color: rgba(212, 255, 0, 0.25);
-          box-shadow: 0 0 24px rgba(212, 255, 0, 0.04), 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+          border-color: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 0 24px rgba(255, 255, 255, 0.02), 0 8px 32px 0 rgba(0, 0, 0, 0.35);
         }
         .theme-btn {
           border: 1px solid rgba(255, 255, 255, 0.05);
@@ -374,9 +374,9 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         }
         .theme-btn.active {
           background: var(--accent);
-          color: #0e0e11;
+          color: var(--accent-btn-text);
           border-color: var(--accent);
-          box-shadow: 0 0 12px rgba(212, 255, 0, 0.2);
+          box-shadow: 0 0 12px var(--accent-subtle);
           font-weight: 600;
         }
         .theme-btn:not(.active):hover {
@@ -393,7 +393,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         }
         .custom-toggle input:checked ~ .toggle-track::after {
           transform: translateX(14px);
-          background-color: #0e0e11;
+          background-color: var(--accent-btn-text);
         }
         .toggle-track {
           width: 32px;
@@ -421,7 +421,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       <div className="flex items-center justify-between border-b border-[var(--border)] pb-5">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-[var(--text-primary)] flex items-center gap-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] animate-pulse inline-block shadow-[0_0_10px_#d4ff00]"></span>
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] animate-pulse inline-block shadow-[0_0_10px_var(--accent)]"></span>
             SYSTEM SETTINGS COCKPIT
           </h1>
           <p className="text-xs text-[var(--text-muted)] mt-1">Audit, optimize, and customize the core AI agent runtime settings</p>

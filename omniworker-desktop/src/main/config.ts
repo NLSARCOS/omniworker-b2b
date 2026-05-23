@@ -1,5 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
+import { randomUUID } from "crypto";
+import { hostname, platform } from "os";
 import { OMNIWORKER_HOME } from "./installer";
 import { profilePaths, escapeRegex, safeWriteFile } from "./utils";
 
@@ -464,5 +466,24 @@ export function setOnboardingCompleted(completed: boolean): void {
   const data = readDesktopConfig();
   data.onboardingCompleted = completed;
   writeDesktopConfig(data);
+}
+
+export function getDeviceFingerprint(): string {
+  const data = readDesktopConfig();
+  if (data.deviceFingerprint && typeof data.deviceFingerprint === "string") {
+    return data.deviceFingerprint;
+  }
+  const fp = randomUUID();
+  data.deviceFingerprint = fp;
+  writeDesktopConfig(data);
+  return fp;
+}
+
+export function getDeviceName(): string {
+  try {
+    return hostname() || `${platform()} Device`;
+  } catch {
+    return "Desktop App";
+  }
 }
 

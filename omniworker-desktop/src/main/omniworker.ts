@@ -34,6 +34,17 @@ import { stripAnsi } from "./utils";
 import { readModels } from "./models";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 
+let isPlanExpired = false;
+
+export function setPlanExpired(expired: boolean): void {
+  isPlanExpired = expired;
+  console.log(`[PlanEnforcement] Subscription plan expiration status updated to: ${isPlanExpired}`);
+}
+
+export function getPlanExpired(): boolean {
+  return isPlanExpired;
+}
+
 const LOCAL_API_URL = "http://127.0.0.1:8642";
 
 export function getApiUrl(): string {
@@ -894,6 +905,14 @@ export async function sendMessage(
   history?: Array<{ role: string; content: string }>,
 ): Promise<ChatHandle> {
   ensureInitialized();
+
+  // Enforce B2B subscription plan lock
+  if (isPlanExpired) {
+    setTimeout(() => {
+      cb.onError("PLAN_EXPIRED: Tu suscripción de OmniWorker ha vencido. Por favor, actualiza tu plan en el panel del SaaS.");
+    }, 100);
+    return { abort: () => {} };
+  }
 
   // ── LOCAL SLM FAST PATH ──
   // Simple messages (greetings, short Qs) go to local llama-server when available.

@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OmniWorker — Agente autónomo local, razonamiento en la nube",
+  title: "OmniWorker — Agentes de IA que ejecutan, no solo conversan",
   description:
-    "Agente de IA autónomo que se ejecuta en tu equipo. Privacidad total con razonamiento en la nube cuando lo necesitas.",
+    "OmniWorker es la plataforma de agentes autónomos de IA para operaciones empresariales. Se ejecuta localmente para máxima privacidad, con gateway en la nube opcional. Automatiza documentos, datos, comunicaciones y flujos de trabajo sin equipo técnico.",
 };
 
 export default function RootLayout({
@@ -26,9 +26,11 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased bg-[#050505]`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#050505] text-white">
+        {children}
+      </body>
     </html>
   );
 }

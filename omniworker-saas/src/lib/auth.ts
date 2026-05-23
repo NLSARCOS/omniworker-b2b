@@ -27,6 +27,7 @@ export interface JWTPayload {
   email: string;
   role: string;
   tenantId: string | null;
+  deviceFingerprint?: string;
 }
 
 export interface AuthResult {
@@ -41,6 +42,8 @@ export interface AuthResult {
     tokenBalance: number;
     plan: string | null;
     isLocked: boolean;
+    isPlanExpired?: boolean;
+    subscriptionEndsAt?: string | null;
   };
   accessToken?: string;
   refreshToken?: string;
@@ -162,7 +165,7 @@ export async function validateRefreshToken(token: string): Promise<{ userId: str
 
 // ─── Auth from request ───
 export async function authenticateRequest(request: Request): Promise<{
-  user: NonNullable<AuthResult["user"]> & { id: string };
+  user: NonNullable<AuthResult["user"]> & { id: string; licenseId?: string | null };
   payload: JWTPayload;
 } | null> {
   // 1. Try cookie first
@@ -203,9 +206,10 @@ export async function authenticateRequest(request: Request): Promise<{
     if (!apiKey.tenant.isActive) return null;
 
 
-    // 3. Tenant plan must be active
-    if (!apiKey.tenant.plan?.isActive) return null;
-
+    // 3b. Tenant plan subscription must not be expired
+    if (apiKey.tenant.subscriptionEndsAt && apiKey.tenant.subscriptionEndsAt < new Date()) {
+      return null;
+    }
 
     // 4. Key must have an active license attached
     if (!apiKey.licenseId || !apiKey.license) return null;
@@ -231,6 +235,8 @@ export async function authenticateRequest(request: Request): Promise<{
         : Promise.resolve(),
     ]);
 
+    const finalTokenBalance = apiKey.license ? apiKey.license.tokenBalance : dbUser.tokenBalance;
+
     return {
       user: {
         id: dbUser.id,
@@ -239,9 +245,11 @@ export async function authenticateRequest(request: Request): Promise<{
         role: dbUser.role,
         tenantId: apiKey.tenantId,
         tenantName: apiKey.tenant.name,
-        tokenBalance: dbUser.tokenBalance,
+        tokenBalance: finalTokenBalance,
         plan: apiKey.tenant.plan?.name ?? null,
-        isLocked: dbUser.tokenBalance <= 0,
+        isLocked: finalTokenBalance <= 0,
+        isPlanExpired: false, // Edge API Key requests are blocked upstream if expired, so this is false
+        licenseId: apiKey.licenseId,
       },
       payload: {
         userId: dbUser.id,
@@ -261,6 +269,33 @@ export async function authenticateRequest(request: Request): Promise<{
   });
   if (!dbUser || !dbUser.isActive) return null;
 
+  let activeLicense: any = null;
+
+  // SI EL PAYLOAD CONTIENE HUELLA DE DISPOSITIVO, VALIDAR QUE SIGA ACTIVA
+  if (payload.deviceFingerprint && dbUser.tenantId) {
+    const license = await prisma.license.findFirst({
+      where: {
+        tenantId: dbUser.tenantId,
+        deviceFingerprint: payload.deviceFingerprint,
+        status: "ACTIVE",
+      },
+    });
+    if (!license) return null;
+    activeLicense = license;
+
+    // Actualizar lastSeenAt silenciosamente
+    prisma.license.update({
+      where: { id: license.id },
+      data: { lastSeenAt: new Date() },
+    }).catch(() => {});
+  }
+
+  const isPlanExpired = Boolean(
+    dbUser.tenant?.subscriptionEndsAt && dbUser.tenant.subscriptionEndsAt < new Date()
+  );
+
+  const finalTokenBalance = activeLicense ? activeLicense.tokenBalance : dbUser.tokenBalance;
+
   return {
     user: {
       id: dbUser.id,
@@ -269,16 +304,24 @@ export async function authenticateRequest(request: Request): Promise<{
       role: dbUser.role,
       tenantId: dbUser.tenantId,
       tenantName: dbUser.tenant?.name ?? null,
-      tokenBalance: dbUser.tokenBalance,
+      tokenBalance: finalTokenBalance,
       plan: dbUser.tenant?.plan?.name ?? null,
-      isLocked: dbUser.tokenBalance <= 0,
+      isLocked: finalTokenBalance <= 0 || isPlanExpired,
+      isPlanExpired,
+      subscriptionEndsAt: dbUser.tenant?.subscriptionEndsAt?.toISOString() ?? null,
+      licenseId: activeLicense ? activeLicense.id : null,
     },
     payload,
   };
 }
 
 // ─── Full login flow ───
-export async function loginWithEmail(email: string, password: string): Promise<AuthResult> {
+export async function loginWithEmail(
+  email: string,
+  password: string,
+  deviceFingerprint?: string,
+  deviceName?: string,
+): Promise<AuthResult> {
   const user = await prisma.user.findUnique({
     where: { email },
     include: { tenant: { include: { plan: true } } },
@@ -293,6 +336,60 @@ export async function loginWithEmail(email: string, password: string): Promise<A
     return { success: false, error: "Credenciales inválidas" };
   }
 
+  // VALIDAR DISPOSITIVO B2B (LICENCIAS) SI SE PROVEE UN FINGERPRINT
+  if (deviceFingerprint && user.tenantId && user.tenant) {
+    const existingLicense = await prisma.license.findFirst({
+      where: {
+        tenantId: user.tenantId,
+        deviceFingerprint: deviceFingerprint,
+      },
+    });
+
+    if (existingLicense) {
+      if (existingLicense.status === "REVOKED") {
+        return {
+          success: false,
+          error: "Este dispositivo ha sido revocado. Contacta al administrador para reactivarlo.",
+        };
+      }
+      // Actualizar lastSeenAt y opcionalmente el nombre si cambió
+      await prisma.license.update({
+        where: { id: existingLicense.id },
+        data: {
+          lastSeenAt: new Date(),
+          ...(deviceName && deviceName !== existingLicense.name ? { name: deviceName } : {}),
+        },
+      });
+    } else {
+      // Dispositivo nuevo: validar cupos
+      const activeCount = await prisma.license.count({
+        where: {
+          tenantId: user.tenantId,
+          status: "ACTIVE",
+        },
+      });
+
+      const maxLicenses = user.tenant.plan?.maxLicenses ?? 1;
+      if (activeCount >= maxLicenses) {
+        return {
+          success: false,
+          error: `Límite de dispositivos alcanzado (Máx: ${maxLicenses}). Libera espacio en tu panel de SaaS.`,
+        };
+      }
+
+      // Crear la nueva licencia
+      await prisma.license.create({
+        data: {
+          tenantId: user.tenantId,
+          name: deviceName || `Dispositivo ${activeCount + 1}`,
+          deviceFingerprint: deviceFingerprint,
+          status: "ACTIVE",
+          tokenBalance: user.tenant.plan?.tokenLimit ?? 1000000,
+        },
+      });
+    }
+  }
+
   // Update last login
   await prisma.user.update({
     where: { id: user.id },
@@ -304,10 +401,15 @@ export async function loginWithEmail(email: string, password: string): Promise<A
     email: user.email,
     role: user.role,
     tenantId: user.tenantId,
+    ...(deviceFingerprint ? { deviceFingerprint } : {}),
   };
 
   const accessToken = signAccessToken(payload);
   const refreshToken = await createRefreshToken(user.id);
+
+  const isPlanExpired = Boolean(
+    user.tenant?.subscriptionEndsAt && user.tenant.subscriptionEndsAt < new Date()
+  );
 
   return {
     success: true,
@@ -320,7 +422,9 @@ export async function loginWithEmail(email: string, password: string): Promise<A
       tenantName: user.tenant?.name ?? null,
       tokenBalance: user.tokenBalance,
       plan: user.tenant?.plan?.name ?? null,
-      isLocked: user.tokenBalance <= 0,
+      isLocked: user.tokenBalance <= 0 || isPlanExpired,
+      isPlanExpired,
+      subscriptionEndsAt: user.tenant?.subscriptionEndsAt?.toISOString() ?? null,
     },
     accessToken,
     refreshToken,
@@ -405,6 +509,8 @@ export async function registerUser(params: {
       tokenBalance: user.tokenBalance,
       plan: user.tenant?.plan?.name ?? null,
       isLocked: false,
+      isPlanExpired: false,
+      subscriptionEndsAt: user.tenant?.subscriptionEndsAt?.toISOString() ?? null,
     },
     accessToken,
     refreshToken,
@@ -412,7 +518,7 @@ export async function registerUser(params: {
 }
 
 // ─── Refresh flow ───
-export async function refreshAccessToken(refreshToken: string): Promise<AuthResult> {
+export async function refreshAccessToken(refreshToken: string, deviceFingerprint?: string): Promise<AuthResult> {
   const validated = await validateRefreshToken(refreshToken);
   if (!validated) {
     return { success: false, error: "Token de refresco inválido o expirado" };
@@ -431,15 +537,34 @@ export async function refreshAccessToken(refreshToken: string): Promise<AuthResu
     return { success: false, error: "Usuario no encontrado o inactivo" };
   }
 
+  // SI SE PROVEE HUELLA, VALIDAR QUE LA LICENCIA SIGA ACTIVA
+  if (deviceFingerprint && user.tenantId) {
+    const license = await prisma.license.findFirst({
+      where: {
+        tenantId: user.tenantId,
+        deviceFingerprint: deviceFingerprint,
+        status: "ACTIVE",
+      },
+    });
+    if (!license) {
+      return { success: false, error: "Dispositivo revocado o inactivo" };
+    }
+  }
+
   const payload: JWTPayload = {
     userId: user.id,
     email: user.email,
     role: user.role,
     tenantId: user.tenantId,
+    ...(deviceFingerprint ? { deviceFingerprint } : {}),
   };
 
   const accessToken = signAccessToken(payload);
   const newRefreshToken = await createRefreshToken(user.id);
+
+  const isPlanExpired = Boolean(
+    user.tenant?.subscriptionEndsAt && user.tenant.subscriptionEndsAt < new Date()
+  );
 
   return {
     success: true,
@@ -452,7 +577,9 @@ export async function refreshAccessToken(refreshToken: string): Promise<AuthResu
       tenantName: user.tenant?.name ?? null,
       tokenBalance: user.tokenBalance,
       plan: user.tenant?.plan?.name ?? null,
-      isLocked: user.tokenBalance <= 0,
+      isLocked: user.tokenBalance <= 0 || isPlanExpired,
+      isPlanExpired,
+      subscriptionEndsAt: user.tenant?.subscriptionEndsAt?.toISOString() ?? null,
     },
     accessToken,
     refreshToken: newRefreshToken,

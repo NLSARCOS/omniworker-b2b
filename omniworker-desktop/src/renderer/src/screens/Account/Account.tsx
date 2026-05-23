@@ -41,6 +41,15 @@ interface ApiKeyData {
   lastUsedAt: string | null;
 }
 
+interface LicenseData {
+  id: string;
+  name: string;
+  status: string;
+  deviceFingerprint: string | null;
+  lastSeenAt: string | null;
+  tokenBalance: number;
+}
+
 interface AccountProps {
   userData?: any;
   authToken?: string | null;
@@ -70,6 +79,8 @@ export default function Account({
   const [user, setUser] = useState<UserData | null>(null);
   const [agents, setAgents] = useState<EdgeAgent[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
+  const [licenses, setLicenses] = useState<LicenseData[]>([]);
+  const [licenseUsage, setLicenseUsage] = useState({ active: 0, max: 1 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -97,10 +108,24 @@ export default function Account({
     try {
       const headers = getHeaders();
 
-      const [meRes, agentsRes, keysRes] = await Promise.all([
+      let fingerprint = "";
+      let deviceName = "";
+      try {
+        fingerprint = await window.omniworkerAPI.getDeviceFingerprint();
+        deviceName = await window.omniworkerAPI.getDeviceName();
+      } catch (e) {
+        console.error("[Account] Failed to get device info:", e);
+      }
+
+      const licensesUrl = fingerprint
+        ? `${saasUrl}/api/v1/licenses?deviceFingerprint=${encodeURIComponent(fingerprint)}&deviceName=${encodeURIComponent(deviceName)}`
+        : `${saasUrl}/api/v1/licenses`;
+
+      const [meRes, agentsRes, keysRes, licensesRes] = await Promise.all([
         fetch(`${saasUrl}/api/v1/auth/me`, { headers }).catch(() => null),
         fetch(`${saasUrl}/api/v1/edge/status`, { headers }).catch(() => null),
         fetch(`${saasUrl}/api/v1/apikeys`, { headers }).catch(() => null),
+        fetch(licensesUrl, { headers }).catch(() => null),
       ]);
 
       if (meRes) {
@@ -116,6 +141,19 @@ export default function Account({
       if (keysRes) {
         const keysData = await keysRes.json().catch(() => null);
         if (keysData?.success) setApiKeys(keysData.keys || []);
+      }
+
+      if (licensesRes) {
+        if (licensesRes.status === 401 && onLogout) {
+          console.warn("[Account] Device has been revoked. Triggering logout.");
+          onLogout();
+          return;
+        }
+        const licData = await licensesRes.json().catch(() => null);
+        if (licData?.success) {
+          setLicenses(licData.licenses || []);
+          setLicenseUsage(licData.usage || { active: 0, max: 1 });
+        }
       }
     } catch {
       // Use login data as fallback — already set via useEffect
@@ -314,7 +352,7 @@ export default function Account({
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
           {/* Quick Stats row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
             
             {/* Tokens Widget */}
             <div className="ow-capacity-widget" style={{ margin: 0 }}>
@@ -351,6 +389,17 @@ export default function Account({
               <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)", marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
                 {displayUser.plan || "Free Tier"}
                 <span className="ow-badge-modern" style={{ fontSize: "9px" }}>PRO</span>
+              </span>
+            </div>
+
+            {/* Licencias widget */}
+            <div className="account-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "16px" }}>
+              <span style={{ fontSize: "12px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Equipos Licenciados
+              </span>
+              <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)", marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+                {licenseUsage.active} / {licenseUsage.max}
+                <span className="ow-badge-modern" style={{ fontSize: "9px" }}>B2B</span>
               </span>
             </div>
 
@@ -409,6 +458,67 @@ export default function Account({
                         }}
                       >
                         {agent.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Active B2B Licenses Card */}
+          <div className="account-card">
+            <div className="account-card-header">
+              <h2>
+                <Laptop size={15} style={{ color: "var(--accent)" }} />
+                Licencias de Equipos / Instalaciones
+                <span className="ow-tag-pill" style={{ marginLeft: "auto", fontSize: "10px" }}>
+                  {licenseUsage.active} / {licenseUsage.max} Activas
+                </span>
+              </h2>
+            </div>
+            <div style={{ padding: "16px" }}>
+              {licenses.length === 0 ? (
+                <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: 0, textAlign: "center", padding: "12px 0" }}>
+                  Sin licencias registradas en esta cuenta B2B.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {licenses.map((lic) => (
+                    <div
+                      key={lic.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        background: "rgba(255,255,255,0.01)",
+                        border: "1px solid rgba(255,255,255,0.03)",
+                        borderRadius: "8px"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ padding: "8px", background: "rgba(255,255,255,0.03)", borderRadius: "6px" }}>
+                          <Laptop size={14} style={{ color: lic.status === "ACTIVE" ? "#10b981" : "#f87171" }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
+                            {lic.name}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                            {lic.deviceFingerprint ? `Fingerprint: ${lic.deviceFingerprint.substring(0, 8)}...` : "Browser / Web"} &middot; {lic.lastSeenAt ? `Visto: ${new Date(lic.lastSeenAt).toLocaleString()}` : "Nunca visto"} &middot; <span style={{ color: "var(--accent)", fontWeight: "bold" }}>{(lic.tokenBalance ?? 0).toLocaleString()} tokens</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        className={`ow-badge-modern`}
+                        style={{
+                          background: lic.status === "ACTIVE" ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
+                          borderColor: lic.status === "ACTIVE" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                          color: lic.status === "ACTIVE" ? "#10b981" : "#f87171",
+                        }}
+                      >
+                        {lic.status}
                       </span>
                     </div>
                   ))}

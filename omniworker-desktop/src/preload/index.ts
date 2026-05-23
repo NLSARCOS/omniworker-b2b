@@ -113,6 +113,10 @@ const omniworkerAPI = {
   isRemoteMode: (): Promise<boolean> => ipcRenderer.invoke("is-remote-mode"),
   isRemoteOnlyMode: (): Promise<boolean> =>
     ipcRenderer.invoke("is-remote-only-mode"),
+  getDeviceFingerprint: (): Promise<string> =>
+    ipcRenderer.invoke("get-device-fingerprint"),
+  getDeviceName: (): Promise<string> =>
+    ipcRenderer.invoke("get-device-name"),
   getConnectionConfig: (): Promise<{
     mode: "local" | "remote" | "ssh";
     remoteUrl: string;
@@ -1063,6 +1067,12 @@ const omniworkerAPI = {
   getOnboardingStatus: (): Promise<boolean> => ipcRenderer.invoke("get-onboarding-status"),
   saveOnboardingData: (data: any): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("save-onboarding-data", data),
+
+  // Plan Enforcement
+  setPlanExpired: (expired: boolean): Promise<boolean> =>
+    ipcRenderer.invoke("set-plan-expired", expired),
+  checkPlanExpired: (): Promise<boolean> =>
+    ipcRenderer.invoke("check-plan-expired"),
 };
 
 if (process.contextIsolated) {

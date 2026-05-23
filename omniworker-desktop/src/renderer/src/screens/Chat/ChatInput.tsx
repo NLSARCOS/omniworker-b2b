@@ -25,11 +25,12 @@ interface ChatInputProps {
   onSubmit: (text: string) => void;
   onQuickAsk: (text: string) => void;
   onAbort: () => void;
+  isPlanExpired?: boolean;
 }
 
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
   function ChatInput(
-    { isLoading, hasSession, onSubmit, onQuickAsk, onAbort },
+    { isLoading, hasSession, onSubmit, onQuickAsk, onAbort, isPlanExpired },
     ref,
   ): React.JSX.Element {
     const { t } = useI18n();
@@ -262,16 +263,17 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             </div>
           </div>
         )}
-        <div className="chat-input-wrapper">
+        <div className={`chat-input-wrapper ${isPlanExpired ? "opacity-60 cursor-not-allowed bg-zinc-900" : ""}`}>
           <textarea
             ref={inputRef}
             className="chat-input"
-            placeholder={t("chat.typeMessage")}
+            placeholder={isPlanExpired ? "Suscripción expirada. Por favor actualiza tu plan en el SaaS." : t("chat.typeMessage")}
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             rows={1}
-            autoFocus
+            autoFocus={!isPlanExpired}
+            disabled={isPlanExpired}
           />
           {isLoading ? (
             <button
@@ -283,7 +285,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             </button>
           ) : (
             <>
-              {input.trim() && hasSession && (
+              {input.trim() && hasSession && !isPlanExpired && (
                 <button
                   className="chat-btw-btn"
                   onClick={handleQuickAsk}
@@ -295,7 +297,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               <button
                 className="chat-send-btn"
                 onClick={handleSend}
-                disabled={!input.trim()}
+                disabled={!input.trim() || isPlanExpired}
                 title={t("chat.send")}
               >
                 <Send size={16} />

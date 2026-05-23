@@ -13,11 +13,12 @@ export async function GET(request: Request) {
 
   const tenants = await prisma.tenant.findMany({
     include: {
-      plan: { select: { id: true, name: true, tokenLimit: true, price: true } },
-      _count: { select: { users: true, edgeAgents: true, tasks: true } },
+      plan: { select: { id: true, name: true, tokenLimit: true, price: true, maxLicenses: true } },
+      _count: { select: { users: true, edgeAgents: true, tasks: true, licenses: true } },
       users: { select: { tokenBalance: true } },
       apiKeys: { select: { id: true, name: true, keyPrefix: true, lastUsedAt: true } },
-      edgeAgents: { select: { id: true, agentName: true, status: true, lastSeenAt: true } }
+      edgeAgents: { select: { id: true, agentName: true, status: true, lastSeenAt: true } },
+      licenses: { select: { id: true, name: true, status: true, deviceFingerprint: true, lastSeenAt: true, createdAt: true } }
     },
     orderBy: { createdAt: "desc" },
   });

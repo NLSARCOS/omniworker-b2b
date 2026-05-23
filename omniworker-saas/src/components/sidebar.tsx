@@ -77,7 +77,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
                     padding: "10px 20px", fontSize: 13, fontWeight: isActive ? 700 : 600,
                     color: isActive ? "#fff" : "#333", textDecoration: "none",
                     background: isActive ? "#111" : "transparent",
-                    borderLeft: isActive ? "3px solid #FFC800" : "3px solid transparent",
+                    borderLeft: isActive ? "3px solid #111" : "3px solid transparent",
                     fontFamily: "'Inter', sans-serif", letterSpacing: 0,
                     transition: "all 0.15s",
                   }}

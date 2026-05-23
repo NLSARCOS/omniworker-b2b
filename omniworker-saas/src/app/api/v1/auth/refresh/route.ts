@@ -7,11 +7,13 @@ export async function POST(request: Request) {
   try {
     // Accept refresh token from body (desktop clients) OR cookie (web clients)
     let refreshToken: string | undefined;
+    let deviceFingerprint: string | undefined;
 
     // Try body first (for Electron / desktop clients that can't use HTTP-only cookies)
     try {
       const body = await request.json();
       refreshToken = body.refreshToken;
+      deviceFingerprint = body.deviceFingerprint;
     } catch {
       // no body — fall through to cookie
     }
@@ -29,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await refreshAccessToken(refreshToken);
+    const result = await refreshAccessToken(refreshToken, deviceFingerprint);
 
     if (!result.success) {
       return NextResponse.json(

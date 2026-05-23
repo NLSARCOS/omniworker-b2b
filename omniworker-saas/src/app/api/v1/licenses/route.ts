@@ -13,6 +13,68 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Sin tenant" }, { status: 400 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const deviceFingerprint = searchParams.get("deviceFingerprint");
+  const deviceName = searchParams.get("deviceName");
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: user.tenantId },
+    include: { plan: true },
+  });
+  const maxLicenses = tenant?.plan?.maxLicenses ?? 1;
+
+  if (deviceFingerprint) {
+    const existingLicense = await prisma.license.findFirst({
+      where: {
+        tenantId: user.tenantId,
+        deviceFingerprint: deviceFingerprint,
+      },
+    });
+
+    if (existingLicense) {
+      if (existingLicense.status === "REVOKED") {
+        return NextResponse.json(
+          { error: "Este dispositivo ha sido revocado. Contacta al administrador para reactivarlo." },
+          { status: 401 }
+        );
+      }
+      // Actualizar lastSeenAt y opcionalmente el nombre si cambió
+      await prisma.license.update({
+        where: { id: existingLicense.id },
+        data: {
+          lastSeenAt: new Date(),
+          ...(deviceName && deviceName !== existingLicense.name ? { name: deviceName } : {}),
+        },
+      });
+    } else {
+      // Dispositivo nuevo: validar cupos
+      const activeCount = await prisma.license.count({
+        where: {
+          tenantId: user.tenantId,
+          status: "ACTIVE",
+        },
+      });
+
+      if (activeCount < maxLicenses) {
+        // Crear la nueva licencia de forma auto-curativa
+        await prisma.license.create({
+          data: {
+            tenantId: user.tenantId,
+            name: deviceName || `Dispositivo ${activeCount + 1}`,
+            deviceFingerprint: deviceFingerprint,
+            status: "ACTIVE",
+            tokenBalance: tenant?.plan?.tokenLimit ?? 1000000,
+          },
+        });
+      } else {
+        return NextResponse.json(
+          { error: `Límite de dispositivos alcanzado (Máx: ${maxLicenses}). Libera espacio en tu panel de SaaS.` },
+          { status: 401 }
+        );
+      }
+    }
+  }
+
   const licenses = await prisma.license.findMany({
     where: { tenantId: user.tenantId },
     include: {
@@ -22,11 +84,6 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
   });
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: user.tenantId },
-    include: { plan: true },
-  });
-  const maxLicenses = tenant?.plan?.maxLicenses ?? 1;
   const activeCount = licenses.filter(l => l.status === "ACTIVE").length;
 
   return NextResponse.json({
@@ -84,6 +141,7 @@ export async function POST(request: Request) {
       name: name || `Instalación ${tenant.licenses.length + 1}`,
       deviceFingerprint: deviceFingerprint || null,
       status: "ACTIVE",
+      tokenBalance: tenant.plan?.tokenLimit ?? 1000000,
     },
   });
 

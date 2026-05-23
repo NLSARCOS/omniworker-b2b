@@ -23,13 +23,18 @@ async function fetchWithTimeout(url: string, opts: RequestInit): Promise<Respons
   }
 }
 
-async function loginRequest(email: string, password: string): Promise<{ user: any; accessToken: string; refreshToken?: string }> {
+async function loginRequest(
+  email: string,
+  password: string,
+  deviceFingerprint?: string,
+  deviceName?: string,
+): Promise<{ user: any; accessToken: string; refreshToken?: string }> {
   const saasUrl = "https://worker.thelab.lat";
   const url = `${saasUrl}/api/v1/auth/login`;
   const opts: RequestInit = {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, deviceFingerprint, deviceName }),
   };
 
   let response: Response;
@@ -89,7 +94,15 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setIsLoading(true);
 
     try {
-      const data = await loginRequest(email, password);
+      let fingerprint: string | undefined;
+      let deviceName: string | undefined;
+      try {
+        fingerprint = await window.omniworkerAPI.getDeviceFingerprint();
+        deviceName = await window.omniworkerAPI.getDeviceName();
+      } catch (fpErr) {
+        console.error("[Login] Failed to retrieve device fingerprint/name:", fpErr);
+      }
+      const data = await loginRequest(email, password, fingerprint, deviceName);
       await onLoginSuccess(data.user, {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,

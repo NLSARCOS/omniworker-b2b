@@ -98,7 +98,7 @@ function SplashScreen({ onFinished }: SplashScreenProps): React.JSX.Element {
           width: "500px",
           height: "500px",
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(212, 255, 0, 0.04) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%)",
           top: "10%",
           left: "10%",
           filter: "blur(40px)",
@@ -111,7 +111,7 @@ function SplashScreen({ onFinished }: SplashScreenProps): React.JSX.Element {
           width: "600px",
           height: "600px",
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(221, 183, 255, 0.03) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(255, 255, 255, 0.01) 0%, transparent 70%)",
           bottom: "10%",
           right: "10%",
           filter: "blur(50px)",
@@ -142,7 +142,7 @@ function SplashScreen({ onFinished }: SplashScreenProps): React.JSX.Element {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 0 30px rgba(212, 255, 0, 0.15), inset 0 0 15px rgba(212, 255, 0, 0.1)",
+            boxShadow: "0 0 30px rgba(255, 255, 255, 0.1), inset 0 0 15px rgba(255, 255, 255, 0.05)",
           }}
         >
           {/* Circular border wrapper for exact rounded gradients */}
@@ -155,7 +155,7 @@ function SplashScreen({ onFinished }: SplashScreenProps): React.JSX.Element {
               bottom: -3,
               borderRadius: "50%",
               border: "3px solid transparent",
-              background: "linear-gradient(#0e0e11, #0e0e11) padding-box, linear-gradient(135deg, #d4ff00, #ddb7ff) border-box",
+              background: "linear-gradient(#0e0e11, #0e0e11) padding-box, linear-gradient(135deg, #ffffff, #52525b) border-box",
             }}
           />
           
@@ -165,13 +165,13 @@ function SplashScreen({ onFinished }: SplashScreenProps): React.JSX.Element {
             height="32"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#d4ff00"
+            stroke="#ffffff"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             style={{
               zIndex: 2,
-              filter: "drop-shadow(0 0 6px rgba(212, 255, 0, 0.6))",
+              filter: "drop-shadow(0 0 6px rgba(255, 255, 255, 0.5))",
             }}
           >
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -201,7 +201,7 @@ function SplashScreen({ onFinished }: SplashScreenProps): React.JSX.Element {
               top: 0,
               bottom: 0,
               width: "40%",
-              background: "linear-gradient(90deg, transparent, rgba(212, 255, 0, 0.25), transparent)",
+              background: "linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent)",
               transform: "skewX(-20deg)",
               pointerEvents: "none",
             }}
@@ -229,7 +229,7 @@ function SplashScreen({ onFinished }: SplashScreenProps): React.JSX.Element {
         <div
           ref={subtitleRef}
           style={{
-            color: "var(--text-secondary, #c5c9ac)",
+            color: "var(--text-secondary, #a1a1aa)",
             marginTop: "16px",
             fontSize: "12px",
             fontWeight: "600",

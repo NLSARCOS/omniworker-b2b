@@ -78,11 +78,14 @@ export function escapeRegex(str: string): string {
 /**
  * Write a file, creating parent directories if they don't exist.
  * Prevents ENOENT crashes when ~/.omniworker has been deleted or doesn't exist yet.
+ * Hardens filesystem security by enforcing strict single-user permissions (0o600 for files, 0o700 for directories).
  */
 export function safeWriteFile(filePath: string, content: string): void {
   const dir = dirname(filePath);
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  writeFileSync(filePath, content, "utf-8");
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+  }
+  writeFileSync(filePath, content, { encoding: "utf-8", mode: 0o600 });
 }
 
 /**

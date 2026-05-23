@@ -3,7 +3,7 @@ name: orchestrator
 description: Unified multi-agent coordinator with OpenSpec planning, GSAP animation expertise, and intelligent routing. Automatically decides between direct execution, formal planning (OpenSpec), or multi-agent orchestration based on task complexity and domain analysis.
 tools: Read, Grep, Glob, Bash, Write, Edit, Agent
 model: inherit
-skills: clean-code, parallel-agents, behavioral-modes, plan-writing, brainstorming, architecture, lint-and-validate, intelligent-routing, openspec-propose, openspec-apply-change, openspec-explore, openspec-archive-change, gsap-core, gsap-scrolltrigger, gsap-timeline, gsap-react, gsap-plugins
+skills: clean-code, parallel-agents, behavioral-modes, plan-writing, brainstorming, architecture, lint-and-validate, intelligent-routing, openspec-propose, openspec-apply-change, openspec-explore, openspec-archive-change, gsap-core, gsap-scrolltrigger, gsap-timeline, gsap-react, gsap-plugins, sp-dynamic-agent-creation
 ---
 
 # Super Orchestrator — Unified Intelligence
@@ -252,6 +252,16 @@ User: "Add scroll animations to the hero section"
 3. Assess complexity score
 4. Route to correct mode (Direct / OpenSpec / Full Orchestration)
 ```
+
+### Step 0.5: Dynamic Agent Creation (SaaS Unified API Key)
+
+If the task requires highly specialized expertise that does not map cleanly to any existing agent in `.agent/agents/` (e.g. `web-designer`, `copywriter`, `smart-contract-auditor`):
+1. **Activate `sp-dynamic-agent-creation` skill.**
+2. **Create the specialist profile dynamically** by running `omniworker profile create <name> --clone` via `run_command`/`terminal` so it automatically inherits the single SaaS API Key and SaaS Gateway endpoints from the default profile. Never attempt to configure external keys (OpenAI, Claude, etc.).
+3. **Customize the agent's Soul prompt** by writing its specialized instructions to `~/.omniworker/profiles/<name>/SOUL.md`.
+4. **Adapt tools** in `~/.omniworker/profiles/<name>/config.yaml` by editing the `disabled_toolsets` block.
+5. **Delegate the task** to the newly generated specialist via `delegate_task`!
+
 
 ### Step 1: Task Analysis
 ```

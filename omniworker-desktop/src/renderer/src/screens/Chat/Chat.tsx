@@ -21,6 +21,7 @@ interface ChatProps {
   profile?: string;
   onSessionStarted?: () => void;
   onNewChat?: () => void;
+  isPlanExpired?: boolean;
 }
 
 function Chat({
@@ -30,6 +31,7 @@ function Chat({
   profile,
   onSessionStarted,
   onNewChat,
+  isPlanExpired,
 }: ChatProps): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
   const [omniworkerSessionId, setOmniWorkerSessionId] = useState<string | null>(
@@ -158,6 +160,7 @@ function Chat({
           onSubmit={actions.handleSend}
           onQuickAsk={actions.handleQuickAsk}
           onAbort={actions.handleAbort}
+          isPlanExpired={isPlanExpired}
         />
         <ModelPicker
           currentModel={modelConfig.currentModel}

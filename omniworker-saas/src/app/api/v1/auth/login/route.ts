@@ -28,7 +28,8 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = parsed.data;
-    const result = await loginWithEmail(email, password);
+    const { deviceFingerprint, deviceName } = body;
+    const result = await loginWithEmail(email, password, deviceFingerprint, deviceName);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 401 });
