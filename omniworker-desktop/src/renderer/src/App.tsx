@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Welcome from "./screens/Welcome/Welcome";
+import Onboarding from "./screens/Onboarding/Onboarding";
 import Install from "./screens/Install/Install";
 import Setup from "./screens/Setup/Setup";
 import Layout from "./screens/Layout/Layout";
 import SplashScreen from "./screens/SplashScreen/SplashScreen";
 import Login from "./screens/Login/Login";
 
-type Screen = "splash" | "login" | "welcome" | "installing" | "setup" | "main";
+type Screen = "splash" | "login" | "welcome" | "installing" | "setup" | "main" | "onboarding";
 
 // Minimum time the splash stays visible so the brand animation plays
 // through. Tracks the splash logo fade-in duration in main.css.
@@ -45,7 +46,12 @@ function App(): React.JSX.Element {
     try {
       const mode = await window.omniworkerAPI.isRemoteOnlyMode();
       if (mode) {
-        setScreen("main");
+        const completed = await window.omniworkerAPI.getOnboardingStatus();
+        if (completed) {
+          setScreen("main");
+        } else {
+          setScreen("onboarding");
+        }
         return;
       }
 
@@ -56,7 +62,12 @@ function App(): React.JSX.Element {
       }
 
       if (installStatus.installed && isVerified) {
-        setScreen("main");
+        const completed = await window.omniworkerAPI.getOnboardingStatus();
+        if (completed) {
+          setScreen("main");
+        } else {
+          setScreen("onboarding");
+        }
       } else {
         setScreen("installing");
       }
@@ -240,7 +251,12 @@ function App(): React.JSX.Element {
       console.error("Failed to start backend services after install:", err);
     }
     
-    setScreen("main");
+    const completed = await window.omniworkerAPI.getOnboardingStatus();
+    if (completed) {
+      setScreen("main");
+    } else {
+      setScreen("onboarding");
+    }
   }
 
   function handleInstallFailed(error: string): void {
@@ -345,6 +361,8 @@ function App(): React.JSX.Element {
             onLogout={handleLogout}
           />
         );
+      case "onboarding":
+        return <Onboarding onComplete={() => setScreen("main")} />;
     }
   }
 

@@ -108,6 +108,7 @@ import {
   setConnectionConfig,
   getPlatformEnabled,
   setPlatformEnabled,
+  getOnboardingCompleted,
 } from "./config";
 import { listSessions, getSessionMessages, searchSessions } from "./sessions";
 import {
@@ -121,6 +122,7 @@ import {
   createProfile,
   deleteProfile,
   setActiveProfile,
+  saveOnboardingData,
 } from "./profiles";
 import {
   readMemory,
@@ -589,6 +591,8 @@ function setupIPC(): void {
   ipcMain.handle("is-remote-only-mode", () => isRemoteOnlyMode());
   ipcMain.handle("get-connection-config", () => getConnectionConfig());
   ipcMain.handle("is-ssh-tunnel-active", () => isSshTunnelActive());
+  ipcMain.handle("get-onboarding-status", () => getOnboardingCompleted());
+  ipcMain.handle("save-onboarding-data", (_event, data) => saveOnboardingData(data));
 
   ipcMain.handle(
     "set-connection-config",

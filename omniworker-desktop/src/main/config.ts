@@ -454,3 +454,15 @@ export function setCredentialPool(
     entries;
   writeAuthStore(store);
 }
+
+export function getOnboardingCompleted(): boolean {
+  const data = readDesktopConfig();
+  return !!data.onboardingCompleted;
+}
+
+export function setOnboardingCompleted(completed: boolean): void {
+  const data = readDesktopConfig();
+  data.onboardingCompleted = completed;
+  writeDesktopConfig(data);
+}
+

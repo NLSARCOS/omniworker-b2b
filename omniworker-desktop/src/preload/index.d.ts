@@ -815,6 +815,17 @@ interface OmniWorkerAPI {
     encryption: "none" | "ssl" | "tls",
     type: "smtp" | "imap",
   ) => Promise<{ success: boolean; message: string }>;
+
+  // Onboarding
+  getOnboardingStatus: () => Promise<boolean>;
+  saveOnboardingData: (data: {
+    userName: string;
+    language: string;
+    role: "developer" | "gateway" | "executive" | "creative";
+    tone: "direct" | "collaborative" | "academic";
+    proactivity: boolean;
+    engine: "local" | "cloud";
+  }) => Promise<{ success: boolean; error?: string }>;
 }
 
 

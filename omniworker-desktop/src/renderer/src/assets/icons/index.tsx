@@ -1,5 +1,6 @@
 export {
   ArrowRight,
+  ArrowLeft,
   Bot,
   Brain,
   Building,

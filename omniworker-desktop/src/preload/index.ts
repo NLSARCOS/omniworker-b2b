@@ -1058,6 +1058,11 @@ const omniworkerAPI = {
     lines?: number,
   ): Promise<{ content: string; path: string }> =>
     ipcRenderer.invoke("read-logs", logFile, lines),
+
+  // Onboarding
+  getOnboardingStatus: (): Promise<boolean> => ipcRenderer.invoke("get-onboarding-status"),
+  saveOnboardingData: (data: any): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("save-onboarding-data", data),
 };
 
 if (process.contextIsolated) {

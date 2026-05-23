@@ -455,3 +455,95 @@ export function setActiveProfile(name: string): void {
     // ignore
   }
 }
+
+export interface OnboardingData {
+  userName: string;
+  language: string;
+  role: "developer" | "gateway" | "executive" | "creative";
+  tone: "direct" | "collaborative" | "academic";
+  proactivity: boolean;
+  engine: "local" | "cloud";
+}
+
+export function saveOnboardingData(data: OnboardingData): { success: boolean; error?: string } {
+  try {
+    const roleNames: Record<string, string> = {
+      developer: "Software Engineer",
+      gateway: "Gateway Automator",
+      executive: "Executive & Data Assistant",
+      creative: "General Creative Co-Pilot"
+    };
+
+    const toneNames: Record<string, string> = {
+      direct: "Direct & Raw (No-Fluff)",
+      collaborative: "Collaborative Pair-Programmer",
+      academic: "Academic Educator"
+    };
+
+    const enabledToolsetsMap: Record<string, string> = {
+      developer: "terminal, file, web, skills, todo",
+      gateway: "smtp_client, terminal, file, web, skills, cronjob",
+      executive: "smtp_client, file, web, browser, todo",
+      creative: "file, web, skills, todo, tts"
+    };
+
+    const roleName = roleNames[data.role] || "General Co-Pilot";
+    const toneName = toneNames[data.tone] || "Collaborative Pair-Programmer";
+    const enabledToolsets = enabledToolsetsMap[data.role] || "file, web, skills, todo";
+    const proactivityText = data.proactivity ? "Proactive" : "Reactive";
+
+    const soulContent = `# OmniWorker Soul Configuration
+
+## 👤 User Identity
+- **Owner Name:** ${data.userName}
+- **Preferred Language:** ${data.language}
+- **Preferred Form of Address:** Direct, addressing the user as "${data.userName}".
+
+## 🎯 Primary Focus & Role
+- **Active Specialty:** ${roleName}
+- **Primary Objective:** Deliver high-quality output tailored for ${roleName} workflows.
+- **Enabled Core Competencies:** ${enabledToolsets}
+
+## 🎭 Persona & Communication Rules
+- **Tone Profile:** ${toneName}
+- **Behavior Level:** ${proactivityText}
+
+### Explicit Constraints
+1. **Response Style:**
+   - If Tone Profile is "Direct & Raw (No-Fluff)": Never use sycophantic preambles like "Sure, I can help with that!" or "Perfect, let me do that." Lead directly with the code, edit, or answer. Keep explanations post-logic and minimal.
+   - If Tone Profile is "Collaborative Pair-Programmer": Propose design approaches and wait for approval before doing multi-file changes.
+   - If Tone Profile is "Academic Educator": Provide high-level context, trace dependencies, and explain the theoretical mechanics of the code.
+2. **Proactivity Control:**
+   - If Behavior is "Proactive": Silently check code files for potential security, performance, or typing flaws and add inline recommendations.
+   - If Behavior is "Reactive": Address the request literally without adding speculative features or refactoring unrelated lines.
+3. **Locale:** All responses, formatting, and markdown texts must be outputted in ${data.language}, keeping variable names and strict code comments in English.
+`;
+
+    const defaultSoulPath = join(OMNIWORKER_HOME, "SOUL.md");
+    safeWriteFile(defaultSoulPath, soulContent);
+
+    const defaultConfigPath = join(OMNIWORKER_HOME, "config.yaml");
+    if (existsSync(defaultConfigPath)) {
+      let configContent = readFileSync(defaultConfigPath, "utf-8");
+
+      const disabledToolsetsMap: Record<string, string[]> = {
+        developer: ["smtp_client", "browser", "tts", "cronjob"],
+        gateway: ["browser", "tts", "todo"],
+        executive: ["terminal", "skills", "tts", "cronjob"],
+        creative: ["smtp_client", "terminal", "browser", "cronjob"]
+      };
+      const disabledList = disabledToolsetsMap[data.role] || [];
+
+      configContent = updateDisabledToolsetsInConfig(configContent, disabledList);
+      safeWriteFile(defaultConfigPath, configContent);
+    }
+
+    const { setOnboardingCompleted } = require("./config");
+    setOnboardingCompleted(true);
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
