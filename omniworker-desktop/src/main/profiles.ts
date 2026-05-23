@@ -462,6 +462,42 @@ export interface OnboardingData {
   role: "normal" | "coder";
   tone: "direct" | "collaborative" | "academic";
   proactivity: boolean;
+  agentGoal?: string;
+  agentTasks?: string;
+  customMission?: string;
+  autolearning: boolean;
+  gatewayEnabled?: boolean;
+}
+
+function setOnboardingCompletedDirectly(completed: boolean): void {
+  const f = join(OMNIWORKER_HOME, "desktop.json");
+  let data: Record<string, any> = {};
+  try {
+    if (existsSync(f)) {
+      data = JSON.parse(readFileSync(f, "utf-8"));
+    }
+  } catch {
+    // ignore
+  }
+  data.onboardingCompleted = completed;
+  safeWriteFile(f, JSON.stringify(data, null, 2));
+}
+
+
+function updateAutolearningInConfig(content: string, enabled: boolean): string {
+  const block = `autolearning:\n  enabled: ${enabled}`;
+  
+  const hasAutolearning = content.search(/^autolearning:\s*$/m) !== -1;
+  if (!hasAutolearning) {
+    return content + `\n\n${block}\n`;
+  }
+  
+  const regex = /^(autolearning:\s*\r?\n\s*enabled:\s*)(true|false)/m;
+  if (regex.test(content)) {
+    return content.replace(regex, `$1${enabled}`);
+  }
+  
+  return content;
 }
 
 export function saveOnboardingData(data: OnboardingData): { success: boolean; error?: string } {
@@ -486,6 +522,11 @@ export function saveOnboardingData(data: OnboardingData): { success: boolean; er
     const toneName = toneNames[data.tone] || "Collaborative Pair-Programmer";
     const enabledToolsets = enabledToolsetsMap[data.role] || "file, web, todo";
     const proactivityText = data.proactivity ? "Proactive" : "Reactive";
+    
+    // Combine goal and tasks into customMission fallback if missing, or use new structured format
+    const goalText = data.agentGoal ? data.agentGoal.trim() : "";
+    const tasksText = data.agentTasks ? data.agentTasks.trim() : "";
+    const customMissionText = data.customMission ? data.customMission.trim() : "";
 
     const soulContent = `# OmniWorker Soul Configuration
 
@@ -498,6 +539,10 @@ export function saveOnboardingData(data: OnboardingData): { success: boolean; er
 - **Active Specialty:** ${roleName}
 - **Primary Objective:** Deliver high-quality output tailored for ${roleName} workflows.
 - **Enabled Core Competencies:** ${enabledToolsets}
+
+## 📋 Misión y Tareas Específicas
+- **Objetivo / Fin Principal:** ${goalText || customMissionText || "No especificado."}
+- **Tareas y Actividades:** ${tasksText || "No especificada por el usuario."}
 
 ## 🎭 Persona & Communication Rules
 - **Tone Profile:** ${toneName}
@@ -528,11 +573,11 @@ export function saveOnboardingData(data: OnboardingData): { success: boolean; er
       const disabledList = disabledToolsetsMap[data.role] || [];
 
       configContent = updateDisabledToolsetsInConfig(configContent, disabledList);
+      configContent = updateAutolearningInConfig(configContent, data.autolearning);
       safeWriteFile(defaultConfigPath, configContent);
     }
 
-    const { setOnboardingCompleted } = require("./config");
-    setOnboardingCompleted(true);
+    setOnboardingCompletedDirectly(true);
 
     return { success: true };
   } catch (err) {

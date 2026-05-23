@@ -14,6 +14,10 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
   const [userName, setUserName] = useState("");
   const [language, setLanguage] = useState("Español");
   const [role, setRole] = useState<OnboardingRole>("normal");
+  const [agentGoal, setAgentGoal] = useState("");
+  const [agentTasks, setAgentTasks] = useState("");
+  const [autolearning, setAutolearning] = useState(true);
+  const [gatewayEnabled, setGatewayEnabled] = useState(false);
   const [tone, setTone] = useState<OnboardingTone>("collaborative");
   const [proactivity, setProactivity] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,9 +53,21 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
         role,
         tone,
         proactivity,
+        agentGoal: agentGoal.trim(),
+        agentTasks: agentTasks.trim(),
+        customMission: `${agentGoal.trim()}\n\n${agentTasks.trim()}`,
+        autolearning,
+        gatewayEnabled,
       });
 
       if (res.success) {
+        if (gatewayEnabled) {
+          try {
+            await window.omniworkerAPI.startGateway();
+          } catch (e) {
+            console.error("Failed to start gateway:", e);
+          }
+        }
         onComplete();
       } else {
         setError(res.error || "Ocurrió un error al guardar tu configuración.");
@@ -91,13 +107,13 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
           {/* STEP 0: Cinematic Welcome */}
           {step === 0 && (
             <div className="onboarding-step-content step-fade-in">
-              <h1 className="onboarding-title">Alineación de Alma</h1>
+              <h1 className="onboarding-title">Configuración de tu OmniWorker</h1>
               <p className="onboarding-description">
-                Bienvenido a tu OmniWorker. Configuremos tu agente para que se adapte exactamente a ti, tu lenguaje y tu estilo de trabajo preferido desde el primer segundo.
+                Personaliza tu asistente inteligente en tres sencillos pasos para alinearlo perfectamente con tu flujo de trabajo diario y tus preferencias.
               </p>
               <div className="onboarding-actions" style={{ justifyContent: "center", marginTop: 32 }}>
                 <button className="btn btn-primary welcome-button animate-pulse" onClick={handleNext}>
-                  Comenzar Alineación
+                  Comenzar Configuración
                   <ArrowRight size={16} />
                 </button>
               </div>
@@ -156,12 +172,12 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
             </div>
           )}
 
-          {/* STEP 2: Mission & Role (Normal vs Coder) */}
+          {/* STEP 2: Mission & Role (Normal vs Coder + Custom Mission input) */}
           {step === 2 && (
             <div className="onboarding-step-content step-fade-in">
-              <h1 className="onboarding-title">¿Cuál será mi enfoque?</h1>
+              <h1 className="onboarding-title">¿Cuál será mi enfoque y funciones?</h1>
               <p className="onboarding-description">
-                Selecciona la especialidad de tu OmniWorker. Esto habilitará solo las herramientas y capacidades óptimas para tus tareas.
+                Selecciona la especialidad de tu OmniWorker y describe en tus propias palabras qué fin o tareas específicas deseas que realice.
               </p>
               
               <div className="onboarding-grid-roles" style={{ gridTemplateColumns: "1fr 1fr" }}>
@@ -169,11 +185,11 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
                 <div 
                   className={`onboarding-role-card ${role === "normal" ? "active" : ""}`}
                   onClick={() => setRole("normal")}
-                  style={{ minHeight: 180 }}
+                  style={{ minHeight: 160 }}
                 >
                   <div className="role-accent-dot color-exec"></div>
                   <h3 className="role-title">💼 Agente Normal</h3>
-                  <p className="role-desc">
+                  <p className="role-desc" style={{ fontSize: 11.5 }}>
                     Optimizado para labores administrativas de oficina, envíos de correo, automatización de mensajería, gestión de archivos y búsquedas web.
                   </p>
                 </div>
@@ -182,17 +198,44 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
                 <div 
                   className={`onboarding-role-card ${role === "coder" ? "active" : ""}`}
                   onClick={() => setRole("coder")}
-                  style={{ minHeight: 180 }}
+                  style={{ minHeight: 160 }}
                 >
                   <div className="role-accent-dot color-dev"></div>
                   <h3 className="role-title">💻 Agente Coder</h3>
-                  <p className="role-desc">
+                  <p className="role-desc" style={{ fontSize: 11.5 }}>
                     Especializado en ingeniería de software. Optimizado para escribir código limpio, ejecutar comandos en consola, debugging y testing.
                   </p>
                 </div>
               </div>
 
-              <div className="onboarding-actions" style={{ marginTop: 32 }}>
+              {/* Structured Inputs for Agent Purpose and Tasks */}
+              <div className="onboarding-form-group" style={{ marginTop: 24 }}>
+                <label className="onboarding-label">🎯 ¿Cuál es el fin u objetivo principal de tu agente?</label>
+                <input
+                  type="text"
+                  className="onboarding-input"
+                  style={{ marginTop: 4, fontSize: 13 }}
+                  placeholder="Ej. Ayudarme a analizar reportes de ventas, gestionar soporte, o Escribir tests"
+                  value={agentGoal}
+                  onChange={(e) => setAgentGoal(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleNext();
+                  }}
+                />
+              </div>
+
+              <div className="onboarding-form-group" style={{ marginTop: 16 }}>
+                <label className="onboarding-label">📋 ¿Qué tareas o actividades específicas va a realizar?</label>
+                <textarea
+                  className="onboarding-input"
+                  style={{ minHeight: 70, resize: "vertical", fontFamily: "inherit", fontSize: 13, marginTop: 4, lineHeight: 1.5 }}
+                  placeholder="Ej. Responder correos de clientes, hacer resúmenes de reuniones, o programar utilidades"
+                  value={agentTasks}
+                  onChange={(e) => setAgentTasks(e.target.value)}
+                />
+              </div>
+
+              <div className="onboarding-actions" style={{ marginTop: 28 }}>
                 <button className="btn-ghost" onClick={handleBack}>
                   <ArrowLeft size={16} />
                   Atrás
@@ -208,7 +251,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
           {/* STEP 3: Tone, Proactivity & Finalize */}
           {step === 3 && (
             <div className="onboarding-step-content step-fade-in">
-              <h1 className="onboarding-title">Personalidad y Alineación</h1>
+              <h1 className="onboarding-title">Personalidad y Comportamiento</h1>
               <p className="onboarding-description">
                 Elige el tono en el que debo expresarme y mi nivel de autonomía para hacerte sugerencias como copiloto.
               </p>
@@ -255,6 +298,43 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
                     <div className="toggle-slider"></div>
                   </button>
                 </div>
+
+                <div className="onboarding-proactivity-switch" style={{ marginTop: 16 }}>
+                  <div className="switch-text-block">
+                    <label className="onboarding-label" style={{ margin: 0 }}>Auto-aprendizaje Activo</label>
+                    <p className="role-desc" style={{ fontSize: 12, marginTop: 4 }}>
+                      {autolearning 
+                        ? "El agente identificará patrones en tus comandos y te sugerirá automatizaciones (tareas Cron) personalizadas." 
+                        : "El agente operará en modo estático sin sugerir automatizaciones de comportamiento."}
+                    </p>
+                  </div>
+                  <button 
+                    className={`onboarding-toggle-btn ${autolearning ? "on" : "off"}`}
+                    onClick={() => setAutolearning(!autolearning)}
+                  >
+                    <div className="toggle-slider"></div>
+                  </button>
+                </div>
+
+                <div className="onboarding-proactivity-switch" style={{ marginTop: 16 }}>
+                  <div className="switch-text-block">
+                    <label className="onboarding-label" style={{ margin: 0 }}>Pasarela de Mensajería (Gateway)</label>
+                    <p className="role-desc" style={{ fontSize: 12, marginTop: 4 }}>
+                      {gatewayEnabled 
+                        ? "Habilita el chatbot en segundo plano para Telegram, WhatsApp, Slack o Discord." 
+                        : "Desactiva las pasarelas externas; solo responderé desde la interfaz de escritorio."}
+                    </p>
+                    <p className="role-desc" style={{ fontSize: 11, color: "var(--accent-subtle)", marginTop: 6, fontStyle: "italic" }}>
+                      💡 El Gateway y el Chat local trabajan en paralelo de forma simultánea, compartiendo la misma base de conocimiento y memoria sin interferencias.
+                    </p>
+                  </div>
+                  <button 
+                    className={`onboarding-toggle-btn ${gatewayEnabled ? "on" : "off"}`}
+                    onClick={() => setGatewayEnabled(!gatewayEnabled)}
+                  >
+                    <div className="toggle-slider"></div>
+                  </button>
+                </div>
               </div>
 
               {error && <p className="onboarding-form-error">{error}</p>}
@@ -272,12 +352,12 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
                 >
                   {saving ? (
                     <>
-                      Alineando...
+                      Configurando...
                       <Spinner size={14} className="animate-spin" />
                     </>
                   ) : (
                     <>
-                      Completar Alineación
+                      Finalizar Configuración
                       <ArrowRight size={16} />
                     </>
                   )}

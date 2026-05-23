@@ -47,7 +47,7 @@ describe("I18nProvider", () => {
     }
   });
 
-  it("renders English translations by default", async () => {
+  it("renders Spanish translations by default", async () => {
     await act(async () => {
       render(
         <I18nProvider>
@@ -57,7 +57,7 @@ describe("I18nProvider", () => {
     });
 
     expect(
-      await screen.findByText("Welcome to OmniWorker"),
+      await screen.findByText("Bienvenido a OmniWorker"),
     ).toBeInTheDocument();
   });
 

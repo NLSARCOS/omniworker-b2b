@@ -824,6 +824,11 @@ interface OmniWorkerAPI {
     role: "normal" | "coder";
     tone: "direct" | "collaborative" | "academic";
     proactivity: boolean;
+    agentGoal?: string;
+    agentTasks?: string;
+    customMission?: string;
+    autolearning: boolean;
+    gatewayEnabled?: boolean;
   }) => Promise<{ success: boolean; error?: string }>;
 }
 
