@@ -1,7 +1,7 @@
 export default {
   title: "Pengaturan",
   sections: {
-    omniworkerAgent: "OmniWorker Agent",
+    omniworkerAgent: "Flux Agent By Simplex",
     appearance: "Tampilan",
     credentialPool: "Kumpulan Kredensial",
   },
@@ -23,7 +23,7 @@ export default {
   },
   notDetected: "Tidak terdeteksi",
   updatedSuccessfully: "Berhasil diperbarui!",
-  updateSuccess: "OmniWorker berhasil diperbarui.",
+  updateSuccess: "Flux Agent By Simplex berhasil diperbarui.",
   updateFailed: "Pembaruan gagal.",
   version: "v{{version}}",
   proxyPlaceholder: "mis. socks5://127.0.0.1:1080 atau http://proxy:8080",
@@ -66,12 +66,12 @@ export default {
   runDiagnosis: "Jalankan Diagnosis",
   running: "Berjalan...",
   debugDump: "Debug Dump",
-  migrationDetected: "Instalasi OmniWorker Terdeteksi",
+  migrationDetected: "Instalasi Flux Agent By Simplex Terdeteksi",
   migrationDesc:
     "OmniWorker ditemukan di <code>{{path}}</code>. Anda dapat memigrasikan konfigurasi, API key, sesi, dan skill ke OmniWorker.",
   migrationDismiss: "Jangan tampilkan lagi",
   migrating: "Memigrasikan...",
-  migrateToOmniWorker: "Migrasi ke OmniWorker",
+  migrateToOmniWorker: "Migrasi ke Flux Agent By Simplex",
   skip: "Lewati",
   appearanceHint: "Pilih tampilan antarmuka yang Anda sukai",
   apiKeyPlaceholder: "API Key",
@@ -79,7 +79,7 @@ export default {
   connectionSection: "Koneksi",
   modeLocal: "Lokal",
   modeRemote: "Remote",
-  modeLocalHint: "Menggunakan OmniWorker yang terinstal di perangkat ini",
+  modeLocalHint: "Menggunakan Flux Agent By Simplex yang terinstal di perangkat ini",
   modeRemoteHint:
     "Hubungkan ke server OmniWorker API di jaringan atau cloud Anda",
   remoteUrl: "URL Remote",
@@ -93,7 +93,7 @@ export default {
   save: "Simpan",
   serverConfigTitle: "Konfigurasi Server",
   serverConfigHint:
-    "Anda terhubung ke server OmniWorker remote. Pilihan model, API key provider, dan kredensial dikelola di <code>~/.omniworker/.env</code> dan <code>config.yaml</code> pada server. Edit di host (mis. <code>docker exec -it omniworker vi /opt/data/.env</code>) lalu restart container.",
+    "Anda terhubung ke server Flux Agent By Simplex remote. Pilihan model, API key provider, dan kredensial dikelola di <code>~/.omniworker/.env</code> dan <code>config.yaml</code> pada server. Edit di host (mis. <code>docker exec -it Flux Agent By Simplex vi /opt/data/.env</code>) lalu restart container.",
   connectionMode: "Mode",
   switchedToLocal: "Beralih ke mode lokal",
 } as const;

@@ -1,1230 +1,393 @@
-"use client";
-
-import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence, useInView } from "framer-motion";
-import {
-  FileText,
-  Database,
-  MessageSquare,
-  Workflow,
-  Check,
-  Plus,
-  ArrowRight,
-  Zap,
-  Shield,
-  BarChart3,
-  Users,
-  Clock,
-  Lock,
-  ChevronRight,
-} from "lucide-react";
+import type { Metadata } from "next";
 
-/* ────────────────────────────────
-   DESIGN TOKENS
-──────────────────────────────── */
-const ACCENT = "#D4A853";
-const BG = "#050505";
-const BG_ELEVATED = "#0a0a0a";
-const TEXT = "#ffffff";
-const TEXT_MUTED = "#888888";
-const BORDER = "rgba(255,255,255,0.06)";
-const BORDER_HOVER = "rgba(255,255,255,0.10)";
-
-/* ────────────────────────────────
-   ANIMATION VARIANTS
-──────────────────────────────── */
-const easeOut: [number, number, number, number] = [0.16, 1, 0.3, 1];
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: (delay = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, delay, ease: easeOut },
-  }),
+export const metadata: Metadata = {
+  title: "OmniWorker — El asistente digital que trabaja por tu empresa",
+  description:
+    "OmniWorker asigna a tu empresa un asistente digital que atiende clientes, gestiona tareas y automatiza procesos — sin contratar a nadie más. By Simplex Latam.",
 };
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: (delay = 0) => ({
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.8, delay, ease: easeOut },
-  }),
+/* ─── Design tokens (inline CSS vars) ─── */
+/* ─── Shared styles (object) ─── */
+const S = {
+  sectionLabel: {
+    fontFamily: "'DM Mono', monospace",
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: "0.22em",
+    textTransform: "uppercase" as const,
+    color: "var(--neon-dim)",
+    marginBottom: 16,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  } as React.CSSProperties,
+  sectionTitle: {
+    fontFamily: "'Fraunces', serif",
+    fontVariationSettings: '"opsz" 80, "SOFT" 30',
+    fontWeight: 500,
+    fontSize: "clamp(34px, 4vw, 54px)",
+    lineHeight: 1.05,
+    letterSpacing: "-0.025em",
+    color: "var(--ink)",
+    marginBottom: 20,
+  } as React.CSSProperties,
+  sectionLead: {
+    fontSize: 18,
+    fontWeight: 400,
+    color: "var(--muted)",
+    maxWidth: 680,
+    lineHeight: 1.65,
+    marginBottom: 56,
+  } as React.CSSProperties,
 };
 
-/* ────────────────────────────────
-   SECTION WRAPPER
-──────────────────────────────── */
-function Section({
-  children,
-  className = "",
-  id,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  id?: string;
-}) {
+/* ─── SectionLabel helper ─── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <section id={id} className={`relative ${className}`}>
+    <div style={S.sectionLabel}>
+      <span style={{ color: "var(--muted)" }}>§</span>
       {children}
-    </section>
+    </div>
   );
 }
 
-/* ────────────────────────────────
-   SPOTLIGHT BACKGROUND
-──────────────────────────────── */
-function Spotlight({
-  className = "",
-  color = ACCENT,
-}: {
-  className?: string;
-  color?: string;
-}) {
+export default function HomePage() {
   return (
-    <div
-      className={`absolute pointer-events-none ${className}`}
-      style={{
-        background: `radial-gradient(600px circle at 50% 0%, ${color}15, transparent 60%)`,
-      }}
-    />
-  );
-}
+    <>
 
-/* ────────────────────────────────
-   GRID DOTS BACKGROUND
-──────────────────────────────── */
-function GridDots() {
-  return (
-    <div
-      className="absolute inset-0 pointer-events-none opacity-[0.15]"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px)",
-        backgroundSize: "40px 40px",
-      }}
-    />
-  );
-}
+      <div style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "'Inter', sans-serif", fontSize: 16, lineHeight: 1.65, WebkitFontSmoothing: "antialiased", backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 23px, rgba(0,0,0,0.022) 23px, rgba(0,0,0,0.022) 24px)" }}>
 
-/* ────────────────────────────────
-   NAVIGATION
-──────────────────────────────── */
-function Nav() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  return (
-    <motion.header
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "bg-[#050505]/80 backdrop-blur-xl border-b border-white/[0.06]"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-2 h-2 rounded-full" style={{ background: ACCENT }} />
-          <span className="font-bold text-white tracking-tight text-lg">
-            OmniWorker
-          </span>
-        </Link>
-
-        <nav className="hidden md:flex items-center gap-8">
-          {["Producto", "Cómo funciona", "Precios", "FAQ"].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
-              className="text-sm text-neutral-400 hover:text-white transition-colors duration-300"
-            >
-              {item}
+        {/* ── NAV ── */}
+        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--paper)", borderBottom: `3px double var(--ink)`, padding: "0 5vw" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68 }}>
+            <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+              <img src="/logo.svg" alt="Fluxs Logo" style={{ height: 28 }} />
             </a>
-          ))}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <a href="#problema" style={{ fontSize: 13.5, fontWeight: 500, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 6, transition: "all .15s" }}>El problema</a>
+              <a href="#personaliza" style={{ fontSize: 13.5, fontWeight: 500, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 6 }}>Tu asistente</a>
+              <a href="#casos" style={{ fontSize: 13.5, fontWeight: 500, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 6 }}>Casos de uso</a>
+              <a href="#como" style={{ fontSize: 13.5, fontWeight: 500, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 6 }}>Cómo funciona</a>
+              <div style={{ width: 1, height: 28, background: "var(--rule)", margin: "0 8px" }} />
+              <Link href="/login" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", textDecoration: "none", padding: "9px 18px", border: `1.5px solid var(--rule)`, borderRadius: 6, transition: "all .2s" }}>
+                Iniciar sesión
+              </Link>
+              <Link href="/register" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", textDecoration: "none", padding: "9px 20px", background: "var(--neon)", borderRadius: 6, transition: "all .2s", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                Registrarse →
+              </Link>
+            </div>
+          </div>
         </nav>
 
-        <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="hidden sm:block text-sm text-neutral-400 hover:text-white transition-colors"
-          >
-            Iniciar sesión
-          </Link>
-          <Link
-            href="/register"
-            className="text-sm font-medium px-5 py-2.5 rounded-lg bg-white text-black hover:bg-neutral-200 transition-colors duration-300"
-          >
-            Empezar gratis
-          </Link>
+        {/* ── TOPBAR ── */}
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 5vw" }}>
+          <div style={{ borderBottom: `1px solid var(--rule)`, padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--muted)" }}>By Simplex Latam · 2026</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--neon-dim)", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--neon)", display: "inline-block", animation: "blink 2s ease-in-out infinite" }} />
+              Asistentes activos ahora mismo
+            </span>
+          </div>
         </div>
-      </div>
-    </motion.header>
-  );
-}
 
-/* ────────────────────────────────
-   HERO
-──────────────────────────────── */
-function Hero() {
-  return (
-    <Section className="min-h-screen flex items-center overflow-hidden pt-16" id="producto">
-      <Spotlight className="inset-0" />
-      <GridDots />
-
-      <div className="relative z-10 max-w-6xl mx-auto px-6 w-full py-20">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left copy */}
+        {/* ── HERO ── */}
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "72px 5vw 88px", display: "grid", gridTemplateColumns: "1fr 360px", gap: 80, alignItems: "start" }}>
           <div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] mb-8"
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ background: ACCENT }}
-              />
-              <span className="text-xs font-medium text-neutral-400">
-                Plataforma de agentes autónomos de IA
-              </span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-[clamp(2.5rem,5vw,4.5rem)] font-bold text-white tracking-tight leading-[1.05]"
-            >
-              Elimina{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-neutral-500">
-                40 horas
-              </span>{" "}
-              semanales de trabajo operativo
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.4 }}
-              className="mt-6 text-lg text-neutral-400 leading-relaxed max-w-lg"
-            >
-              OmniWorker despliega agentes de IA que procesan documentos,
-              sincronizan datos y ejecutan flujos de trabajo 24/7. Todo en tu
-              infraestructura.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.6 }}
-              className="mt-10 flex flex-wrap items-center gap-4"
-            >
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-white text-black font-semibold text-sm hover:bg-neutral-200 transition-all duration-300 hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.15)]"
-              >
-                Comenzar gratis — 60 segundos
-                <ArrowRight className="w-4 h-4" />
+            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--neon-dim)", background: "var(--neon-pale)", padding: "8px 14px", display: "inline-block", marginBottom: 28, borderLeft: `3px solid var(--neon)` }}>
+              Asistentes digitales · By Simplex Latam
+            </div>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 144, "SOFT" 30, "WONK" 0', fontWeight: 500, fontSize: "clamp(52px, 6vw, 88px)", lineHeight: 0.93, letterSpacing: "-0.04em", color: "var(--ink)", marginBottom: 32 }}>
+              El asistente<br />que{" "}
+              <em style={{ fontStyle: "italic", color: "var(--neon-dim)", fontVariationSettings: '"opsz" 144, "SOFT" 80' }}>nunca</em>
+              <br />para.
+            </h1>
+            <p style={{ fontSize: 20, fontWeight: 400, lineHeight: 1.6, color: "var(--ink-soft)", maxWidth: 600, marginBottom: 48, borderLeft: `3px solid var(--rule)`, paddingLeft: 20 }}>
+              OMNIWORKER asigna a tu empresa un asistente digital que atiende clientes, sigue prospectos y gestiona tareas repetitivas — de manera automática, las 24 horas, sin contratar a nadie más.
+            </p>
+            <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+              <Link href="/register" style={{ background: "var(--neon)", color: "var(--ink)", padding: "15px 32px", fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 6, transition: "all .2s" }}>
+                Configurar mi asistente →
               </Link>
-              <a
-                href="#como-funciona"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl border border-white/[0.08] text-white font-medium text-sm hover:bg-white/[0.03] hover:border-white/[0.12] transition-all duration-300"
-              >
+              <a href="#como" style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none", padding: "15px 0", borderBottom: `2px solid var(--ink)` }}>
                 Ver cómo funciona
               </a>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.7, delay: 0.8 }}
-              className="mt-12 flex items-center gap-10"
-            >
-              {[
-                { v: "10,000+", l: "agentes activos" },
-                { v: "2.4M", l: "tareas este mes" },
-                { v: "99.97%", l: "uptime" },
-              ].map((s) => (
-                <div key={s.l}>
-                  <div className="text-lg font-bold text-white">{s.v}</div>
-                  <div className="text-xs text-neutral-500 mt-0.5">{s.l}</div>
-                </div>
+            </div>
+            <div style={{ marginTop: 32, fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: "var(--muted)", display: "flex", gap: 24, flexWrap: "wrap" }}>
+              {["Garantía 60 días", "Listo en 14 días", "Sin contratos largos"].map((t) => (
+                <span key={t} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ color: "var(--neon-dim)", fontWeight: 700 }}>✓</span> {t}
+                </span>
               ))}
-            </motion.div>
-          </div>
-
-          {/* Right mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: 40, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="hidden lg:block"
-          >
-            <div
-              className="relative rounded-2xl overflow-hidden"
-              style={{
-                background: BG_ELEVATED,
-                border: "1px solid rgba(255,255,255,0.08)",
-                boxShadow: `0 0 80px -20px ${ACCENT}15, 0 25px 80px -20px rgba(0,0,0,0.8)`,
-                transform: "perspective(1000px) rotateY(-5deg) rotateX(3deg)",
-              }}
-            >
-              {/* Top bar */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06] bg-black/40">
-                <div className="flex gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
-                </div>
-                <span className="ml-3 text-[10px] text-neutral-600 font-mono">
-                  omniworker — dashboard
-                </span>
-              </div>
-
-              <div className="flex">
-                {/* Sidebar */}
-                <div className="w-44 border-r border-white/[0.06] p-3 hidden sm:block">
-                  <div className="text-[9px] text-neutral-600 font-mono uppercase tracking-widest mb-3">
-                    Workspace
-                  </div>
-                  {["Agentes", "Ejecuciones", "Integraciones", "Logs"].map(
-                    (item, i) => (
-                      <div
-                        key={item}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium mb-0.5 ${
-                          i === 0
-                            ? "bg-white/[0.04] text-white"
-                            : "text-neutral-500"
-                        }`}
-                      >
-                        {item}
-                      </div>
-                    )
-                  )}
-                  <div className="mt-4 pt-3 border-t border-white/[0.06] space-y-1.5">
-                    <div className="flex justify-between text-[10px] text-neutral-600">
-                      <span>CPU</span>
-                      <span className="font-mono text-neutral-400">12%</span>
-                    </div>
-                    <div className="flex justify-between text-[10px] text-neutral-600">
-                      <span>RAM</span>
-                      <span className="font-mono text-neutral-400">340 MB</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Main */}
-                <div className="flex-1 p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-semibold text-white">
-                      Agentes activos
-                    </span>
-                    <span className="text-[10px] text-neutral-600 font-mono">
-                      actualizado hace 4s
-                    </span>
-                  </div>
-
-                  {[
-                    { n: "Facturación", id: "ow-billing-01", ops: "847", t: "12 min" },
-                    { n: "Soporte Comercial", id: "ow-support-02", ops: "1,204", t: "3 min" },
-                    { n: "Sincronización ERP", id: "ow-sync-03", ops: "2,891", t: "1 min" },
-                  ].map((agent) => (
-                    <div
-                      key={agent.id}
-                      className="flex items-center justify-between p-3 rounded-xl mb-2"
-                      style={{
-                        background: "rgba(255,255,255,0.02)",
-                        border: "1px solid rgba(255,255,255,0.04)",
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                          <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: ACCENT }}
-                          />
-                        </div>
-                        <div>
-                          <div className="text-sm text-white font-medium">
-                            {agent.n}
-                          </div>
-                          <div className="text-[10px] text-neutral-600 font-mono">
-                            {agent.id} · hace {agent.t}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-neutral-500 font-mono hidden sm:block">
-                          {agent.ops} ops
-                        </span>
-                        <span
-                          className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                          style={{
-                            color: "#22c55e",
-                            background: "rgba(34,197,94,0.1)",
-                            border: "1px solid rgba(34,197,94,0.2)",
-                          }}
-                        >
-                          Activo
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
-          </motion.div>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   LOGOS
-──────────────────────────────── */
-function Logos() {
-  const brands = [
-    "Notion",
-    "Slack",
-    "Stripe",
-    "Airtable",
-    "Asana",
-    "HubSpot",
-    "Salesforce",
-    "Google Workspace",
-  ];
-
-  return (
-    <Section className="border-y border-white/[0.06] bg-[#050505]">
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <motion.p
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-600 mb-8"
-        >
-          Equipos de todo tamaño ya automatizan con OmniWorker
-        </motion.p>
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6"
-        >
-          {brands.map((b) => (
-            <span
-              key={b}
-              className="text-sm font-semibold text-neutral-700 hover:text-neutral-400 transition-colors duration-300 cursor-default"
-            >
-              {b}
-            </span>
-          ))}
-        </motion.div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   PROBLEM
-──────────────────────────────── */
-function Problem() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-
-  const stats = [
-    { v: "73%", d: "del tiempo operativo se gasta en tareas repetitivas que no generan ingresos" },
-    { v: "$4,200", d: "es el costo mensual promedio por especialista operativo en Norteamérica" },
-    { v: "0 hrs", d: "de automatización real logran la mayoría con chatbots genéricos" },
-  ];
-
-  return (
-    <Section className="bg-[#050505] py-32 md:py-40" id="problema">
-      <Spotlight className="inset-0" color="#ffffff" />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
-        <motion.div
-          ref={ref}
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="max-w-2xl mb-20"
-        >
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4A853] mb-4 block">
-            El problema
-          </span>
-          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold text-white tracking-tight leading-[1.1]">
-            Tu equipo pierde 23 horas semanales en tareas que un agente de IA ejecutaría en segundos
-          </h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {stats.map((s, i) => (
-            <motion.div
-              key={s.v}
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={i * 0.15}
-            >
-              <div className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-4">
-                {s.v}
-              </div>
-              <div
-                className="w-full h-px mb-5"
-                style={{
-                  background:
-                    "linear-gradient(90deg, rgba(255,255,255,0.2), transparent)",
-                }}
-              />
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                {s.d}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   SOLUTION / FEATURES
-──────────────────────────────── */
-function Features() {
-  const features = [
-    {
-      icon: FileText,
-      title: "Procesamiento de documentos",
-      desc: "Extrae datos de facturas, contratos y formularios con precisión humana. Soporta PDFs escaneados e imágenes.",
-      benefit: "Reduce 6 horas a 4 minutos por lote",
-    },
-    {
-      icon: Database,
-      title: "Sincronización entre sistemas",
-      desc: "Conecta CRM, ERP, hojas de cálculo y bases de datos. Datos siempre actualizados en todos los canales.",
-      benefit: "Elimina errores de doble entrada",
-    },
-    {
-      icon: MessageSquare,
-      title: "Respuesta automática multicanal",
-      desc: "Atiende correos, Slack, tickets y consultas con contexto completo de tu negocio y políticas internas.",
-      benefit: "Responde en 30s, no en 4 horas",
-    },
-    {
-      icon: Workflow,
-      title: "Flujos de trabajo autónomos",
-      desc: "Diseña flujos con condiciones, aprobaciones y acciones encadenadas. Los agentes ejecutan cada paso.",
-      benefit: "Opera procesos completos sin supervisión",
-    },
-  ];
-
-  return (
-    <Section className="bg-[#0a0a0a] py-32 md:py-40" id="solucion">
-      <GridDots />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="max-w-2xl mb-20"
-        >
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4A853] mb-4 block">
-            La solución
-          </span>
-          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold text-white tracking-tight leading-[1.1]">
-            Agentes que ejecutan flujos completos, no solo responden preguntas
-          </h2>
-          <p className="mt-5 text-lg text-neutral-500 leading-relaxed">
-            OmniWorker combina modelos de lenguaje con herramientas empresariales reales. Sin enviar un byte a servidores externos.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {features.map((f, i) => (
-            <motion.div
-              key={f.title}
-              variants={scaleIn}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={i * 0.1}
-              className="group relative rounded-2xl p-8 transition-all duration-500 hover:bg-white/[0.03]"
-              style={{
-                background: "rgba(255,255,255,0.015)",
-                border: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
-              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{
-                  boxShadow: `inset 0 1px 0 0 rgba(255,255,255,0.06)`,
-                }}
-              />
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
-                style={{ background: `${ACCENT}12` }}
-              >
-                <f.icon className="w-5 h-5" style={{ color: ACCENT }} />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">
-                {f.title}
-              </h3>
-              <p className="text-sm text-neutral-500 leading-relaxed mb-4">
-                {f.desc}
-              </p>
-              <p className="text-sm font-medium" style={{ color: ACCENT }}>
-                {f.benefit}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   HOW IT WORKS
-──────────────────────────────── */
-function HowItWorks() {
-  const steps = [
-    {
-      n: "01",
-      title: "Conecta tus herramientas",
-      desc: "Integra tus sistemas existentes en minutos. 200+ aplicaciones sin código. Tus datos nunca salen de tu infraestructura.",
-    },
-    {
-      n: "02",
-      title: "Describe el trabajo",
-      desc: "Explica en lenguaje natural qué tarea quieres automatizar. El sistema comprende el contexto y genera el flujo automáticamente.",
-    },
-    {
-      n: "03",
-      title: "El agente opera 24/7",
-      desc: "Una vez activado, ejecuta la tarea de forma autónoma, maneja excepciones y mejora con cada iteración.",
-    },
-  ];
-
-  return (
-    <Section className="bg-[#050505] py-32 md:py-40" id="como-funciona">
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="max-w-2xl mb-20"
-        >
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4A853] mb-4 block">
-            Cómo funciona
-          </span>
-          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold text-white tracking-tight leading-[1.1]">
-            De la idea a la automatización en tres pasos
-          </h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
-          {/* Connector line */}
-          <div
-            className="hidden md:block absolute top-12 left-[16%] right-[16%] h-px"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, rgba(212,168,83,0.2), transparent)",
-            }}
-          />
-
-          {steps.map((s, i) => (
-            <motion.div
-              key={s.n}
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={i * 0.15}
-            >
-              <div className="text-7xl font-bold text-white/[0.04] leading-none mb-4">
-                {s.n}
-              </div>
-              <h3 className="text-lg font-semibold text-white mb-2">
-                {s.title}
-              </h3>
-              <p className="text-sm text-neutral-500 leading-relaxed">
-                {s.desc}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   STATS
-──────────────────────────────── */
-function Stats() {
-  const items = [
-    { v: "24/7", l: "Operación continua" },
-    { v: "+800%", l: "ROI promedio en 90 días" },
-    { v: "100%", l: "Datos en tu infraestructura" },
-    { v: "<60s", l: "Para desplegar tu primer agente" },
-  ];
-
-  return (
-    <Section className="bg-[#0a0a0a] py-24 md:py-32 relative overflow-hidden" id="stats">
-      <Spotlight className="inset-0" />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
-          {items.map((item, i) => (
-            <motion.div
-              key={item.v}
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={i * 0.1}
-              className="text-center"
-            >
-              <div className="text-4xl md:text-5xl font-bold text-white tracking-tight">
-                {item.v}
-              </div>
-              <div className="text-sm text-neutral-500 mt-2">{item.l}</div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   TESTIMONIALS
-──────────────────────────────── */
-function Testimonials() {
-  const items = [
-    {
-      q: "Antes teníamos dos personas dedicadas exclusivamente a procesar facturas. Ahora el agente maneja el 94% del volumen sin intervención.",
-      a: "Mariana Cortés",
-      r: "Directora de Operaciones",
-      c: "Finova Logística",
-      m: "Redujo costos $12,400/mes",
-    },
-    {
-      q: "Implementamos el agente de soporte en una semana. Ahora resuelve el 78% de los tickets de primer nivel en menos de dos minutos.",
-      a: "Diego Ramírez",
-      r: "CTO",
-      c: "Nexora Cloud",
-      m: "Tiempo de respuesta -89%",
-    },
-    {
-      q: "El agente de onboarding integra datos de 7 sistemas automáticamente. Lo que tomaba 3 días, ahora se completa en 4 horas.",
-      a: "Carolina Vargas",
-      r: "VP People Operations",
-      c: "GrowthLab",
-      m: "Ahorra 340 horas mensuales",
-    },
-  ];
-
-  return (
-    <Section className="bg-[#050505] py-32 md:py-40" id="testimonios">
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="max-w-2xl mb-20"
-        >
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4A853] mb-4 block">
-            Resultados reales
-          </span>
-          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold text-white tracking-tight leading-[1.1]">
-            Lo que logran los equipos con agentes autónomos
-          </h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {items.map((t, i) => (
-            <motion.div
-              key={t.a}
-              variants={scaleIn}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={i * 0.1}
-              className="rounded-2xl p-8 flex flex-col"
-              style={{
-                background: "rgba(255,255,255,0.015)",
-                border: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
-              <p className="text-white/70 leading-relaxed flex-1 mb-6">
-                &ldquo;{t.q}&rdquo;
-              </p>
-              <div
-                className="pt-5 border-t"
-                style={{ borderColor: "rgba(255,255,255,0.06)" }}
-              >
-                <div className="font-semibold text-white text-sm">{t.a}</div>
-                <div className="text-xs text-neutral-500 mt-0.5">
-                  {t.r}, {t.c}
-                </div>
-                <div
-                  className="text-xs font-medium mt-3"
-                  style={{ color: ACCENT }}
-                >
-                  {t.m}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   PRICING
-──────────────────────────────── */
-function Pricing() {
-  const tiers = [
-    {
-      name: "Gratis",
-      price: "$0",
-      desc: "Para individuos y equipos pequeños",
-      features: [
-        "1 agente activo",
-        "100 tareas mensuales",
-        "Integraciones esenciales",
-        "Soporte por comunidad",
-      ],
-      cta: "Crear cuenta",
-      highlighted: false,
-    },
-    {
-      name: "Pro",
-      price: "$49",
-      period: "/mes",
-      desc: "Para equipos que necesitan automatización real",
-      features: [
-        "10 agentes activos",
-        "Tareas ilimitadas",
-        "Todas las integraciones",
-        "OCR de documentos",
-        "Flujos con condiciones",
-        "Soporte prioritario",
-      ],
-      cta: "Comenzar prueba de 14 días",
-      highlighted: true,
-    },
-    {
-      name: "Enterprise",
-      price: "Personalizado",
-      desc: "Para organizaciones con control total",
-      features: [
-        "Agentes ilimitados",
-        "Despliegue on-premise/VPC",
-        "Auditoría completa y SSO",
-        "SLA 99.99%",
-        "Soporte dedicado 24/7",
-      ],
-      cta: "Hablar con ventas",
-      highlighted: false,
-    },
-  ];
-
-  return (
-    <Section className="bg-[#0a0a0a] py-32 md:py-40" id="precios">
-      <Spotlight className="inset-0" color="#ffffff" />
-      <div className="relative z-10 max-w-6xl mx-auto px-6">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="max-w-2xl mb-20 text-center mx-auto"
-        >
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4A853] mb-4 block">
-            Precios
-          </span>
-          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold text-white tracking-tight leading-[1.1]">
-            Empieza gratis. Escala cuando crezcas.
-          </h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-          {tiers.map((tier, i) => (
-            <motion.div
-              key={tier.name}
-              variants={scaleIn}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={i * 0.1}
-              className={`relative rounded-2xl p-8 flex flex-col ${
-                tier.highlighted ? "md:-mt-4 md:mb-4" : ""
-              }`}
-              style={{
-                background: tier.highlighted
-                  ? `linear-gradient(180deg, ${ACCENT}08, rgba(255,255,255,0.01))`
-                  : "rgba(255,255,255,0.015)",
-                border: tier.highlighted
-                  ? `1px solid ${ACCENT}30`
-                  : "1px solid rgba(255,255,255,0.06)",
-                boxShadow: tier.highlighted
-                  ? `0 0 60px -20px ${ACCENT}20`
-                  : "none",
-              }}
-            >
-              {tier.highlighted && (
-                <span
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-[0.15em] px-3 py-1 rounded-full"
-                  style={{ background: ACCENT, color: "#000" }}
-                >
-                  Más popular
-                </span>
-              )}
-
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  {tier.name}
-                </h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-white">
-                    {tier.price}
-                  </span>
-                  {tier.period && (
-                    <span className="text-sm text-neutral-500">
-                      {tier.period}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-neutral-500 mt-2">{tier.desc}</p>
-              </div>
-
-              <ul className="space-y-3 mb-8 flex-1">
-                {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-3 text-sm">
-                    <Check
-                      className="w-4 h-4 shrink-0 mt-0.5"
-                      style={{ color: tier.highlighted ? ACCENT : "#666" }}
-                    />
-                    <span className="text-neutral-400">{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href="/register"
-                className={`block text-center text-sm font-semibold py-3 rounded-xl transition-all duration-300 ${
-                  tier.highlighted
-                    ? "bg-white text-black hover:bg-neutral-200 hover:shadow-[0_0_30px_-5px_rgba(255,255,255,0.2)]"
-                    : "border border-white/[0.08] text-white hover:bg-white/[0.03] hover:border-white/[0.12]"
-                }`}
-              >
-                {tier.cta}
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   FAQ
-──────────────────────────────── */
-function FAQSection() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const items = [
-    {
-      q: "¿OmniWorker es un chatbot?",
-      a: "No. Los chatbots responden preguntas. Los agentes de OmniWorker ejecutan acciones: leen documentos, actualizan bases de datos, envían mensajes y completan flujos de trabajo sin intervención humana.",
-    },
-    {
-      q: "¿Mis datos están seguros?",
-      a: "OmniWorker se ejecuta localmente por defecto. Tus datos nunca salen de tu infraestructura. Usamos cifrado end-to-end y cumplimos con SOC 2, GDPR y estándares sectoriales.",
-    },
-    {
-      q: "¿Necesito un equipo técnico?",
-      a: "No. El 94% de nuestros usuarios configuran su primer agente sin escribir código. Describes la tarea en lenguaje natural y el sistema genera el flujo automáticamente.",
-    },
-    {
-      q: "¿Con qué herramientas se integra?",
-      a: "Más de 200 aplicaciones: Salesforce, HubSpot, Slack, Notion, Airtable, Google Workspace, Stripe, SAP, Shopify y bases de datos SQL/NoSQL. También ofrecemos API para integraciones personalizadas.",
-    },
-    {
-      q: "¿Qué pasa si el agente comete un error?",
-      a: "Los agentes operan con reglas de confianza configurables. Para transacciones críticas puedes exigir aprobación humana. Cada acción queda registrada en un trail de auditoría inmutable.",
-    },
-    {
-      q: "¿Puedo cancelar en cualquier momento?",
-      a: "Sí. No hay contratos de permanencia ni penalizaciones. Puedes cambiar de plan, escalar agentes o pausar tu suscripción desde el panel.",
-    },
-    {
-      q: "¿Cuánto tiempo toma ver resultados?",
-      a: "La mayoría despliega su primer agente en menos de 60 minutos y ve automatización real en las primeras 24 horas. Procesos complejos están automatizados en la primera semana.",
-    },
-  ];
-
-  return (
-    <Section className="bg-[#050505] py-32 md:py-40" id="faq">
-      <div className="relative z-10 max-w-3xl mx-auto px-6">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="mb-16"
-        >
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#D4A853] mb-4 block">
-            Preguntas frecuentes
-          </span>
-          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold text-white tracking-tight leading-[1.1]">
-            Todo lo que necesitas saber
-          </h2>
-        </motion.div>
-
-        <div>
-          {items.map((item, i) => (
-            <motion.div
-              key={i}
-              variants={fadeUp}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              custom={i * 0.05}
-              className="border-b"
-              style={{ borderColor: "rgba(255,255,255,0.06)" }}
-            >
-              <button
-                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="w-full py-6 flex items-start justify-between text-left gap-4 group cursor-pointer"
-              >
-                <span className="text-base font-medium text-white group-hover:text-neutral-300 transition-colors">
-                  {item.q}
-                </span>
-                <span
-                  className="text-xl text-neutral-600 shrink-0 mt-0.5 transition-all duration-300"
-                  style={{
-                    transform:
-                      openIndex === i ? "rotate(45deg)" : "rotate(0deg)",
-                  }}
-                >
-                  <Plus className="w-5 h-5" />
-                </span>
-              </button>
-              <AnimatePresence initial={false}>
-                {openIndex === i && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className="overflow-hidden"
-                  >
-                    <p className="pb-6 text-sm text-neutral-500 leading-relaxed max-w-2xl">
-                      {item.a}
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   FINAL CTA
-──────────────────────────────── */
-function FinalCTA() {
-  return (
-    <Section className="bg-[#050505] py-32 md:py-40 relative overflow-hidden" id="cta">
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(800px circle at 50% 50%, ${ACCENT}10, transparent 60%)`,
-        }}
-      />
-      <div className="relative z-10 max-w-3xl mx-auto px-6 text-center">
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold text-white tracking-tight leading-[1.1]">
-            Tu competencia ya está automatizando. Cada día que esperas cuesta dinero real.
-          </h2>
-        </motion.div>
-        <motion.p
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          custom={0.1}
-          className="mt-6 text-lg text-neutral-500 leading-relaxed max-w-xl mx-auto"
-        >
-          Únete a más de 10,000 equipos que operan con agentes autónomos.
-          Despliega tu primer agente en menos de 60 segundos.
-        </motion.p>
-        <motion.div
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          custom={0.2}
-          className="mt-10"
-        >
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-black font-semibold text-base hover:bg-neutral-200 transition-all duration-300 hover:shadow-[0_0_50px_-10px_rgba(255,255,255,0.2)]"
-          >
-            Comenzar gratis — desplegar mi primer agente
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </motion.div>
-        <motion.p
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          custom={0.3}
-          className="mt-6 text-xs font-medium"
-          style={{ color: ACCENT }}
-        >
-          Los primeros 500 usuarios Pro este mes reciben onboarding personalizado
-        </motion.p>
-      </div>
-    </Section>
-  );
-}
-
-/* ────────────────────────────────
-   FOOTER
-──────────────────────────────── */
-function Footer() {
-  return (
-    <footer
-      className="border-t py-16"
-      style={{ background: BG, borderColor: "rgba(255,255,255,0.06)" }}
-    >
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-10 mb-16">
-          <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: ACCENT }}
-              />
-              <span className="font-bold text-white tracking-tight text-lg">
-                OmniWorker
-              </span>
-            </Link>
-            <p className="text-sm text-neutral-400 leading-relaxed max-w-xs">
-              Agentes autónomos de IA que ejecutan trabajo real. Se operan en tu
-              infraestructura con privacidad total.
-            </p>
           </div>
-
-          {[
-            {
-              title: "Producto",
-              links: ["Agentes", "Documentos", "Integraciones", "Precios"],
-            },
-            {
-              title: "Casos de uso",
-              links: ["Finanzas", "Soporte", "RRHH", "Operaciones"],
-            },
-            {
-              title: "Recursos",
-              links: ["Docs", "API", "Blog", "Estado"],
-            },
-            {
-              title: "Compañía",
-              links: ["Nosotros", "Carreras", "Contacto", "Legal"],
-            },
-          ].map((col) => (
-            <div key={col.title}>
-              <h4 className="text-sm font-semibold text-white mb-4">
-                {col.title}
-              </h4>
-              <ul className="space-y-3">
-                {col.links.map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
-                      className="text-sm text-neutral-400 hover:text-white transition-colors duration-300"},{
-                    >
-                      {l}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <div className="pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-          <p className="text-sm text-neutral-700">
-            © 2026 OmniWorker. Todos los derechos reservados.
-          </p>
-          <div className="flex items-center gap-6">
-            {["GitHub", "X", "LinkedIn"].map((s) => (
-              <a
-                key={s}
-                href="#"
-                className="text-sm text-neutral-600 hover:text-white transition-colors duration-300"
-              >
-                {s}
-              </a>
+          {/* Stats aside */}
+          <div style={{ borderLeft: `2px solid var(--ink)`, paddingLeft: 32, marginTop: 8 }}>
+            {[
+              { num: "800%", label: "Retorno sobre la inversión en 90 días" },
+              { num: "73%", label: "Del día de tu equipo va en tareas repetitivas" },
+              { num: "14", label: "Días para tener tu asistente funcionando" },
+              { num: "24/7", label: "Trabaja sin pausas, fines de semana ni vacaciones" },
+            ].map((s, i) => (
+              <div key={i} style={{ padding: "24px 0", borderBottom: i < 3 ? `1px solid var(--rule)` : "none" }}>
+                <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 100, "WONK" 1', fontWeight: 500, fontSize: 52, lineHeight: 1, letterSpacing: "-0.03em", color: "var(--ink)" }}>{s.num}</div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: "var(--muted)", marginTop: 6 }}>{s.label}</div>
+              </div>
             ))}
           </div>
         </div>
+
+        {/* ── MARQUEE ── */}
+        <div style={{ borderTop: `1px solid var(--rule)`, borderBottom: `1px solid var(--rule)`, background: "var(--paper-warm)", overflow: "hidden", padding: "14px 0" }}>
+          <style>{`@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}} @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}`}</style>
+          <div style={{ display: "flex", animation: "marquee 32s linear infinite", whiteSpace: "nowrap" }}>
+            {[...Array(2)].map((_, d) => (
+              <div key={d} style={{ display: "flex", flexShrink: 0 }}>
+                {["Seguimiento de clientes", "Atención por WhatsApp 24/7", "Recordatorios de cobro", "Selección de candidatos", "Recuperación de ventas", "Confirmación de citas", "Reportes automáticos", "Calificación de oportunidades"].map((item) => (
+                  <span key={item} style={{ display: "inline-flex", alignItems: "center" }}>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "var(--muted)", padding: "0 32px" }}>{item}</span>
+                    <span style={{ color: "var(--neon)" }}>◆</span>
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── PROBLEMA ── */}
+        <section id="problema" style={{ background: "var(--ink)", padding: "96px 5vw" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+            <div style={{ ...S.sectionLabel, color: "rgba(0,201,92,0.8)" }}><span style={{ color: "rgba(255,255,255,0.25)" }}>§</span>El problema</div>
+            <h2 style={{ ...S.sectionTitle, color: "var(--paper)" }}>
+              Contratar más personas<br />
+              <em style={{ color: "var(--neon)", fontStyle: "italic" }}>no resuelve el problema.</em>
+            </h2>
+            <p style={{ ...S.sectionLead, color: "rgba(245,240,232,0.6)" }}>
+              En América Latina, agregar una persona al equipo cuesta tiempo, dinero y energía. Y cuando por fin está lista, el negocio ya creció y necesitás otra. Hay una forma mejor de escalar.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 1, background: "rgba(255,255,255,0.08)" }}>
+              {[
+                { num: "USD\n2,500", desc: "Costo mensual de un colaborador de ventas en LATAM. El asistente digital hace el mismo trabajo por una fracción de ese costo." },
+                { num: "4\nmeses", desc: "Tiempo promedio hasta que una persona nueva es realmente productiva. El asistente digital está funcionando en 14 días." },
+                { num: "25%", desc: "De los equipos operativos rota cada año en LATAM. El asistente digital no renuncia, no se enferma y no se va con la competencia." },
+              ].map((s, i) => (
+                <div key={i} style={{ background: "var(--ink)", padding: "52px 44px", border: `1px solid rgba(255,255,255,0.06)` }}>
+                  <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 100, "WONK" 1', fontWeight: 500, fontSize: 68, lineHeight: 1, color: "var(--paper)", letterSpacing: "-0.03em", marginBottom: 16, whiteSpace: "pre-line" }}>{s.num}</div>
+                  <div style={{ fontSize: 15, fontWeight: 400, color: "rgba(245,240,232,0.55)", lineHeight: 1.6 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── PERSONALIZA ── */}
+        <section id="personaliza" style={{ background: "var(--paper-warm)", padding: "96px 5vw" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+            <SectionLabel>Tu asistente, tu forma</SectionLabel>
+            <h2 style={S.sectionTitle}>
+              Lo configurás para<br />
+              <em style={{ color: "var(--neon-dim)", fontStyle: "italic" }}>lo que necesites.</em>
+            </h2>
+            <p style={S.sectionLead}>
+              No es un producto cerrado. Vos describís qué tarea querés automatizar y nosotros configuramos el asistente para que se adapte exactamente a tu proceso, tu industria y tus herramientas.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+              {/* Examples */}
+              <div>
+                {[
+                  { tag: "🏥 Clínicas y consultorios", name: "Gestión de turnos y recordatorios", desc: "El asistente confirma citas por WhatsApp, maneja la lista de espera y avisa cuando hay lugar. Menos llamadas, menos ausentismo, agenda siempre llena.", result: "Ausentismo reducido del 30% al 10%", active: true },
+                  { tag: "🛒 E-commerce y retail", name: "Recuperación de clientes que no compraron", desc: "El asistente contacta a quienes dejaron productos en el carrito, responde dudas de último momento y ofrece una razón para completar la compra.", result: "Recupera entre 12% y 22% de ventas perdidas", active: false },
+                  { tag: "💰 Empresas con cartera de cobros", name: "Recordatorios de pago antes del vencimiento", desc: "El asistente avisa con días de anticipación, gestiona acuerdos de pago y solo escala al equipo los casos que realmente lo necesitan.", result: "Reduce pagos atrasados un 25–40%", active: false },
+                ].map((card) => (
+                  <div key={card.name} style={{ background: card.active ? "var(--neon-pale)" : "var(--paper)", border: `1.5px solid ${card.active ? "var(--neon)" : "var(--rule)"}`, borderRadius: 12, padding: "28px 32px", marginBottom: 16, position: "relative" }}>
+                    {card.active && (
+                      <span style={{ position: "absolute", top: 14, right: 14, fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--neon-dim)", background: "white", border: `1px solid var(--neon)`, padding: "3px 10px", borderRadius: 100 }}>✓ En uso</span>
+                    )}
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10.5, fontWeight: 500, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--neon-dim)", marginBottom: 8 }}>{card.tag}</div>
+                    <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 60, "SOFT" 20', fontWeight: 500, fontSize: 20, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 8 }}>{card.name}</div>
+                    <div style={{ fontSize: 14.5, fontWeight: 400, color: "var(--muted)", lineHeight: 1.6, marginBottom: 12 }}>{card.desc}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--neon-dim)", display: "flex", alignItems: "center", gap: 6 }}><span>↗</span>{card.result}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Config UI mockup */}
+              <div style={{ background: "var(--paper)", border: `2px solid var(--ink)`, borderRadius: 12, overflow: "hidden", boxShadow: `6px 6px 0 var(--ink)` }}>
+                <div style={{ background: "var(--ink)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 10 }}>
+                  {["#ff5f57", "#febc2e", "#28c840"].map((c) => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--neon)", flex: 1, textAlign: "center" }}>Configurar mi asistente</div>
+                </div>
+                <div style={{ padding: 32 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>¿Qué querés automatizar?</div>
+                  <div style={{ background: "var(--neon-pale)", border: `1.5px solid var(--neon)`, borderRadius: 8, padding: "14px 18px", fontSize: 15, fontWeight: 500, color: "var(--ink)", marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
+                    <span>💬</span>"Necesito que alguien confirme mis citas y avise cuando hay cancela..."
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>¿En qué área trabaja tu negocio?</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+                    {["Salud", "Ventas", "Atención al cliente", "Cobranzas", "Recursos humanos", "Otro"].map((chip, i) => (
+                      <span key={chip} style={{ fontSize: 12.5, fontWeight: 600, padding: "6px 14px", border: `1.5px solid ${i === 0 ? "var(--ink)" : "var(--rule)"}`, borderRadius: 100, color: i === 0 ? "white" : "var(--ink-soft)", background: i === 0 ? "var(--ink)" : "white" }}>{chip}</span>
+                    ))}
+                  </div>
+                  <div style={{ background: "var(--paper-warm)", borderRadius: 8, padding: "16px 18px", marginBottom: 24 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Se conecta con lo que ya usás</div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {["📱 WhatsApp", "📅 Google Calendar", "📊 Planillas", "+ 190 más"].map((int) => (
+                        <span key={int} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", background: "white", border: `1px solid var(--rule)`, borderRadius: 6, color: "var(--ink-soft)" }}>{int}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <Link href="/register" style={{ display: "block", width: "100%", background: "var(--neon)", color: "var(--ink)", fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, padding: 14, textAlign: "center", borderRadius: 8, textDecoration: "none" }}>
+                    Hablar con un experto →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── CASOS DE USO ── */}
+        <section id="casos" style={{ padding: "96px 5vw" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+            <SectionLabel>Casos de uso</SectionLabel>
+            <h2 style={S.sectionTitle}>
+              ¿Qué puede hacer<br />
+              <em style={{ color: "var(--neon-dim)", fontStyle: "italic" }}>tu asistente digital?</em>
+            </h2>
+            <p style={S.sectionLead}>Desde atender un cliente a las 3am hasta enviar un informe cada lunes a las 8am. Algunos ejemplos de lo que los equipos ya automatizan.</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+              {[
+                { icon: "🎯", name: "Seguimiento de prospectos de ventas", dept: "Ventas" },
+                { icon: "💬", name: "Atención al cliente por WhatsApp las 24 hs", dept: "Servicio al cliente" },
+                { icon: "💰", name: "Recordatorios de pago antes del vencimiento", dept: "Finanzas" },
+                { icon: "🛒", name: "Recuperación de compras no terminadas", dept: "E-commerce" },
+                { icon: "👥", name: "Primera revisión de candidatos a un puesto", dept: "Recursos humanos" },
+                { icon: "📅", name: "Confirmación y gestión de citas y turnos", dept: "Salud / Servicios" },
+                { icon: "📊", name: "Reportes semanales enviados de forma automática", dept: "Operaciones" },
+                { icon: "🏘️", name: "Seguimiento de interesados en propiedades", dept: "Inmobiliario" },
+                { icon: "📚", name: "Inscripciones y consultas para cursos", dept: "Educación" },
+                { icon: "🔔", name: "Alertas automáticas ante eventos clave del negocio", dept: "Dirección general" },
+                { icon: "📦", name: "Seguimiento del estado de pedidos o envíos", dept: "Logística" },
+                { icon: "✏️", name: "¿Tenés un proceso distinto? Lo armamos para vos.", dept: "Personalizado", dark: true },
+              ].map((uc) => (
+                <div key={uc.name} style={{ background: uc.dark ? "var(--ink)" : "var(--paper)", border: `1.5px solid ${uc.dark ? "var(--ink)" : "var(--rule)"}`, borderRadius: 10, padding: "24px 22px", transition: "all .2s" }}>
+                  <div style={{ fontSize: 26, marginBottom: 10 }}>{uc.icon}</div>
+                  <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 48', fontWeight: 500, fontSize: 15.5, color: uc.dark ? "var(--paper)" : "var(--ink)", marginBottom: 6, letterSpacing: "-0.01em", lineHeight: 1.25 }}>{uc.name}</div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600, color: uc.dark ? "var(--neon)" : "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{uc.dept}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── HOW IT WORKS ── */}
+        <section id="como" style={{ background: "var(--paper-warm)", padding: "96px 5vw" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+            <SectionLabel>Cómo funciona</SectionLabel>
+            <h2 style={S.sectionTitle}>
+              Tu asistente listo<br />
+              <em style={{ color: "var(--neon-dim)", fontStyle: "italic" }}>en tres pasos.</em>
+            </h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 48, marginTop: 56 }}>
+              {[
+                { n: "01", title: "Contás qué necesitás", desc: "Explicás en tus palabras qué tarea querés delegar. No hace falta ser técnico — nuestro equipo te ayuda a definir cómo debe funcionar el asistente." },
+                { n: "02", title: "Lo conectamos a tus herramientas", desc: "Integramos el asistente con WhatsApp, tu sistema de clientes, el calendario, planillas o cualquier herramienta que ya estés usando. Sin cambiar nada de tu forma de trabajar." },
+                { n: "03", title: "El asistente trabaja, vos revisás los resultados", desc: "En 14 días está funcionando. Trabaja las 24 horas, reporta lo que hizo y aprende con el tiempo. Nuestro equipo lo supervisa — vos solo pedís los resultados." },
+              ].map((step, i) => (
+                <div key={step.n} style={{ position: "relative" }}>
+                  {i < 2 && (
+                    <div style={{ position: "absolute", top: 20, left: "100%", width: "calc(100% - 20px)", height: 1, background: `linear-gradient(90deg, var(--rule), transparent)` }} />
+                  )}
+                  <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 144, "WONK" 1', fontStyle: "italic", fontWeight: 400, fontSize: 72, lineHeight: 0.85, color: "rgba(0,0,0,0.07)", marginBottom: 16 }}>{step.n}</div>
+                  <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 48', fontWeight: 500, fontSize: 22, letterSpacing: "-0.01em", color: "var(--ink)", marginBottom: 12, lineHeight: 1.3 }}>{step.title}</div>
+                  <div style={{ fontSize: 15, fontWeight: 400, color: "var(--muted)", lineHeight: 1.7 }}>{step.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── TESTIMONIALS ── */}
+        <section style={{ padding: "96px 5vw" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+            <SectionLabel>Resultados reales</SectionLabel>
+            <h2 style={S.sectionTitle}>
+              Lo que logran<br />
+              <em style={{ color: "var(--neon-dim)", fontStyle: "italic" }}>quienes ya lo usan.</em>
+            </h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 32, marginTop: 56 }}>
+              {[
+                { quote: "Teníamos dos personas que solo procesaban facturas todo el día. Ahora el asistente hace el 94% de ese trabajo solo. Esas dos personas están en tareas que sí requieren criterio.", name: "Mariana Cortés", role: "Directora de Operaciones · Finova Logística", result: "↓ USD 12,400 de ahorro mensual" },
+                { quote: "Lo pusimos a funcionar en una semana. Ahora resuelve el 78% de las consultas de nuestros clientes en menos de dos minutos, a cualquier hora.", name: "Diego Ramírez", role: "Director de Tecnología · Nexora Cloud", result: "↓ Tiempo de respuesta reducido un 89%" },
+                { quote: "Incorporar una persona nueva nos tomaba 3 días de proceso. Ahora el asistente cruza datos de 7 sistemas y lo hace en 4 horas.", name: "Carolina Vargas", role: "VP de Personas · GrowthLab", result: "↑ 340 horas recuperadas por mes" },
+              ].map((t) => (
+                <div key={t.name} style={{ borderTop: `2px solid var(--ink)`, paddingTop: 28 }}>
+                  <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 48, "SOFT" 60', fontStyle: "italic", fontWeight: 400, fontSize: 17, lineHeight: 1.6, color: "var(--ink-soft)", marginBottom: 24 }}>"{t.quote}"</div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 500, color: "var(--muted)" }}>
+                    <strong style={{ color: "var(--ink)", display: "block", marginBottom: 2, fontWeight: 700, fontSize: 14 }}>{t.name}</strong>
+                    {t.role}
+                  </div>
+                  <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: "var(--neon-dim)", display: "flex", alignItems: "center", gap: 6 }}>{t.result}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA FINAL ── */}
+        <section id="cta" style={{ background: "var(--ink)", padding: "96px 5vw", textAlign: "center" }}>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 100, "SOFT" 50', fontWeight: 500, fontSize: "clamp(36px, 5vw, 64px)", lineHeight: 1.05, letterSpacing: "-0.03em", color: "var(--paper)", maxWidth: 820, margin: "0 auto 24px" }}>
+            Tu competencia ya está<br />automatizando.{" "}
+            <em style={{ color: "var(--neon)", fontStyle: "italic" }}>Cada semana<br />que esperás tiene un costo real.</em>
+          </h2>
+          <p style={{ fontSize: 19, fontWeight: 400, color: "rgba(245,240,232,0.5)", maxWidth: 560, margin: "0 auto 48px", lineHeight: 1.6 }}>
+            Hablá con uno de nuestros expertos. Sin compromiso, sin jerga técnica. Solo una conversación sobre qué podría delegar tu equipo esta semana.
+          </p>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/register" style={{ background: "var(--neon)", color: "var(--ink)", padding: "16px 36px", fontFamily: "'Inter', sans-serif", fontSize: 15, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 6 }}>
+              Configurar mi asistente →
+            </Link>
+            <Link href="/login" style={{ color: "rgba(245,240,232,0.5)", fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 500, textDecoration: "none", borderBottom: "1px solid rgba(245,240,232,0.2)", paddingBottom: 2, display: "inline-flex", alignItems: "center" }}>
+              Ya tengo cuenta → Iniciar sesión
+            </Link>
+          </div>
+          <div style={{ marginTop: 40, fontFamily: "'Inter', sans-serif", fontSize: 12, color: "rgba(245,240,232,0.2)", letterSpacing: "0.04em" }}>
+            By Simplex Latam · Garantía 60 días
+          </div>
+        </section>
+
+        {/* ── FOOTER ── */}
+        <footer style={{ background: "var(--paper-warm)", borderTop: `3px double var(--ink)`, padding: "60px 5vw 40px" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto", display: "grid", gridTemplateColumns: "1.2fr repeat(4,1fr)", gap: 56, alignItems: "start", marginBottom: 40, paddingBottom: 40, borderBottom: `1px solid var(--rule)` }}>
+            <div>
+              <div style={{ marginBottom: 16 }}>
+                <img src="/logo.svg" alt="Fluxs Logo" style={{ height: 32 }} />
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 400, color: "var(--muted)", maxWidth: 240, lineHeight: 1.6, marginBottom: 20 }}>Asistentes digitales para empresas latinoamericanas. By Simplex Latam.</div>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--neon-pale)", border: `1px solid rgba(0,201,92,0.3)`, borderRadius: 100, padding: "5px 14px", fontSize: 12, fontWeight: 600, color: "var(--neon-dim)" }}>● Activos las 24 horas</span>
+            </div>
+            {[
+              { title: "Producto", links: ["Cómo funciona", "Casos de uso", "Integraciones", "Seguridad"] },
+              { title: "Industrias", links: ["E-commerce", "Salud", "Propiedades", "Educación"] },
+              { title: "Recursos", links: ["Documentación", "Blog", "Calculadora de ahorro", "Estado del servicio"] },
+              { title: "Compañía", links: ["Sobre Simplex", "Contacto", "Garantía", "Términos legales"] },
+            ].map((col) => (
+              <div key={col.title}>
+                <h5 style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 16, textTransform: "uppercase", letterSpacing: "0.04em" }}>{col.title}</h5>
+                {col.links.map((l) => (
+                  <a key={l} href="#" style={{ display: "block", fontSize: 14, fontWeight: 400, color: "var(--muted)", textDecoration: "none", marginBottom: 10 }}>{l}</a>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 400, color: "var(--muted)" }}>
+            <span>© 2026 OmniWorker · By Simplex Latam · Todos los derechos reservados.</span>
+            <span>LATAM · Español · Q2 2026</span>
+          </div>
+        </footer>
+
       </div>
-    </footer>
+    </>
   );
 }
 
-/* ────────────────────────────────
-   PAGE
-──────────────────────────────── */
-export default function Home() {
-  return (
-    <main className="min-h-screen" style={{ background: BG, color: TEXT }}>
-      <Nav />
-      <Hero />
-      <Logos />
-      <Problem />
-      <Features />
-      <HowItWorks />
-      <Stats />
-      <Testimonials />
-      <Pricing />
-      <FAQSection />
-      <FinalCTA />
-      <Footer />
-    </main>
-  );
-}
+// Force React import for JSX in older setups
+import React from "react";

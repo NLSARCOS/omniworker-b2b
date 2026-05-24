@@ -1,5 +1,5 @@
 export default {
-  title: "OmniWorker へようこそ",
+  title: "Flux Agent By Simplex へようこそ",
   subtitle:
     "あなたのマシンでローカル実行する自己進化型 AI アシスタント。プライベートで、強力で、常に学習します。",
   installIssueTitle: "インストールの問題",
@@ -10,8 +10,8 @@ export default {
   installSizeHint: "必要なコンポーネント（約 2 GB）をインストールします",
   copyInstallCommand: "インストールコマンドをコピー",
   dividerOr: "または",
-  connectRemote: "リモート OmniWorker に接続",
-  connectRemoteTitle: "リモート OmniWorker に接続",
+  connectRemote: "リモート Flux Agent By Simplex に接続",
+  connectRemoteTitle: "リモート Flux Agent By Simplex に接続",
   connectRemoteSubtitle:
     "稼働中の OmniWorker API サーバの URL を入力してください。",
   remoteServerUrl: "サーバ URL",

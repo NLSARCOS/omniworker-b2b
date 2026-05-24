@@ -1,5 +1,5 @@
 appId: com.omniworker.omniworker
-productName: OmniWorker Agent
+productName: Flux Agent By Simplex
 directories:
   buildResources: build
 files:
@@ -71,8 +71,8 @@ linux:
   category: Utility
   synopsis: Self-improving AI assistant desktop app
   description: >-
-    OmniWorker Desktop is a native desktop app for installing, configuring, and chatting
-    with OmniWorker Agent — a self-improving AI assistant with tool use, multi-platform
+    Flux Agent By Simplex is a native desktop app for installing, configuring, and chatting
+    with Flux Agent By Simplex — a self-improving AI assistant with tool use, multi-platform
     messaging, and a closed learning loop.
 appImage:
   artifactName: ${name}-${version}.${ext}

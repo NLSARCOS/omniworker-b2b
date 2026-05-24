@@ -1,13 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050505;
-  --foreground: #ffffff;
+  --paper: #F5F0E8;
+  --paper-warm: #EDE7D9;
+  --ink: #0D0D0D;
+  --ink-soft: #222220;
+  --muted: #5A5650;
+  --rule: #C8C0B0;
+  --neon: #00C95C;
+  --neon-dim: #008B3C;
+  --neon-pale: #EDFFF5;
+  --danger: #C0392B;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans), sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
 }
@@ -17,17 +23,17 @@ html {
 }
 
 html, body {
-  background-color: #050505 !important;
-  color: #ffffff !important;
-  font-family: var(--font-sans);
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', var(--font-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Selection */
 ::selection {
-  background: rgba(212, 168, 83, 0.3);
-  color: #ffffff;
+  background: rgba(0, 201, 92, 0.2);
+  color: var(--ink);
 }
 
 /* Scrollbar */
@@ -35,21 +41,19 @@ html, body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: var(--paper-warm);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: var(--rule);
+  border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--muted);
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

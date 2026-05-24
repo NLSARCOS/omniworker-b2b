@@ -1,6 +1,6 @@
 export default {
   title: "记忆",
-  subtitle: "OmniWorker 在不同会话之间记住的关于你和环境的信息。",
+  subtitle: "Flux Agent By Simplex 在不同会话之间记住的关于你和环境的信息。",
   sessions: "会话",
   messages: "消息",
   memories: "记忆",
@@ -17,7 +17,7 @@ export default {
     "例如：姓名 Alex。资深开发者。偏好简洁回答。使用 macOS 和 zsh。时区：PST。",
   noProvidersFound: "未在当前安装中找到任何外部记忆提供商。",
   openProviderWebsite: "打开提供商网站",
-  noMemoriesYet: "还没有记忆。OmniWorker 会在你聊天时保存重要信息。",
+  noMemoriesYet: "还没有记忆。Flux Agent By Simplex 会在你聊天时保存重要信息。",
   noMemoryEntries: "暂无记忆条目。",
   noToolsetsFound: "未找到工具集。",
   addManuallyHint: "你也可以使用上面的按钮手动添加记忆。",

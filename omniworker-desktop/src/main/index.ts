@@ -452,7 +452,7 @@ function setupIPC(): void {
         event.sender.send("install-progress", {
           step: 1,
           totalSteps: 1,
-          title: "Updating remote OmniWorker Agent",
+          title: "Updating remote Flux Agent By Simplex",
           detail: "Running omniworker update over SSH...",
           log: "Running omniworker update over SSH...\n",
         });
@@ -757,7 +757,7 @@ function setupIPC(): void {
                 .trim()
                 .slice(0, 80);
               new Notification({
-                title: "OmniWorker Agent",
+                title: "Flux Agent By Simplex",
                 body: preview || "Response ready",
               }).show();
             }
@@ -769,7 +769,7 @@ function setupIPC(): void {
             // Notify on error too if window not focused
             if (mainWindow && !mainWindow.isFocused()) {
               new Notification({
-                title: "OmniWorker Agent — Error",
+                title: "Flux Agent By Simplex — Error",
                 body: error.slice(0, 100),
               }).show();
             }
@@ -1480,10 +1480,10 @@ function setupIPC(): void {
       const win = BrowserWindow.fromWebContents(event.sender);
       const { dialog } = require("electron");
       const result = await dialog.showSaveDialog(win, {
-        title: "Save OmniWorker Backup",
+        title: "Save Flux Agent By Simplex Backup",
         defaultPath: `omniworker-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`,
         filters: [
-          { name: "OmniWorker Backup", extensions: ["tar.gz"] },
+          { name: "Flux Agent By Simplex Backup", extensions: ["tar.gz"] },
           { name: "All Files", extensions: ["*"] },
         ],
       });

@@ -1,7 +1,7 @@
 export default {
   title: "Configurações",
   sections: {
-    omniworkerAgent: "OmniWorker Agent",
+    omniworkerAgent: "Flux Agent By Simplex",
     appearance: "Aparência",
     credentialPool: "Pool de Credenciais",
   },
@@ -22,7 +22,7 @@ export default {
   },
   notDetected: "Não detectado",
   updatedSuccessfully: "Atualizado com sucesso!",
-  updateSuccess: "OmniWorker atualizado com sucesso.",
+  updateSuccess: "Flux Agent By Simplex atualizado com sucesso.",
   updateFailed: "Falha na atualização.",
   version: "v{{version}}",
   proxyPlaceholder: "ex: socks5://127.0.0.1:1080 ou http://proxy:8080",
@@ -66,12 +66,12 @@ export default {
   runDiagnosis: "Executar Diagnóstico",
   running: "Executando...",
   debugDump: "Dump de Depuração",
-  migrationDetected: "Instalação do OmniWorker Detectada",
+  migrationDetected: "Instalação do Flux Agent By Simplex Detectada",
   migrationDesc:
     "Encontramos o OmniWorker em <code>{{path}}</code>. Você pode migrar sua configuração, chaves de API, sessões e habilidades para o OmniWorker.",
   migrationDismiss: "Não mostrar novamente",
   migrating: "Migrando...",
-  migrateToOmniWorker: "Migrar para o OmniWorker",
+  migrateToOmniWorker: "Migrar para o Flux Agent By Simplex",
   skip: "Pular",
   appearanceHint: "Escolha a aparência preferida da interface",
   apiKeyPlaceholder: "Chave da API",
@@ -79,7 +79,7 @@ export default {
   connectionSection: "Conexão",
   modeLocal: "Local",
   modeRemote: "Remoto",
-  modeLocalHint: "Usando o OmniWorker instalado neste dispositivo",
+  modeLocalHint: "Usando o Flux Agent By Simplex instalado neste dispositivo",
   modeRemoteHint:
     "Conectar a um servidor da API do OmniWorker na sua rede ou nuvem",
   remoteUrl: "URL Remota",
@@ -93,7 +93,7 @@ export default {
   save: "Salvar",
   serverConfigTitle: "Configuração do Servidor",
   serverConfigHint:
-    "Você está conectado a um servidor remoto do OmniWorker. A seleção de modelos, as chaves de API dos provedores e as credenciais são gerenciadas no host remoto em <code>~/.omniworker/.env</code> e <code>config.yaml</code>. Edite-os lá e reinicie o servidor.",
+    "Você está conectado a um servidor remoto do Flux Agent By Simplex. A seleção de modelos, as chaves de API dos provedores e as credenciais são gerenciadas no host remoto em <code>~/.omniworker/.env</code> e <code>config.yaml</code>. Edite-os lá e reinicie o servidor.",
   connectionMode: "Modo",
   switchedToLocal: "Mudou para o modo local",
 } as const;

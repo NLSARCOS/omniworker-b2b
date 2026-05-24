@@ -6,6 +6,12 @@ server {
     listen 80;
     server_name worker.thelab.lat api.worker.thelab.lat;
 
+    location /downloads/ {
+        alias /opt/omniworker/downloads/;
+        autoindex on;
+        try_files $uri =404;
+    }
+
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;

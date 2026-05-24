@@ -468,7 +468,7 @@ function sendMessageViaApi(
   req.on("timeout", () => {
     req.destroy();
     finish(
-      "API request timed out. Check the SSH tunnel and remote OmniWorker gateway.",
+      "API request timed out. Check the SSH tunnel and remote Flux Agent By Simplex gateway.",
     );
   });
 
@@ -486,7 +486,7 @@ function sendMessageViaApi(
 //  CLI fallback (slow path — spawns process)
 // ────────────────────────────────────────────────────
 
-const NOISE_PATTERNS = [/^[╭╰│╮╯─┌┐└┘┤├┬┴┼]/, /⚕\s*OmniWorker/];
+const NOISE_PATTERNS = [/^[╭╰│╮╯─┌┐└┘┤├┬┴┼]/, /⚕\s*Flux Agent/];
 
 function sendMessageViaCli(
   message: string,
@@ -706,8 +706,8 @@ function sendMessageViaCli(
       const detail = stderrBuffer.trim();
       cb.onError(
         detail
-          ? `OmniWorker exited with code ${code}: ${detail}`
-          : `OmniWorker exited with code ${code}. Check your model configuration and API key.`,
+          ? `Flux Agent By Simplex exited with code ${code}: ${detail}`
+          : `Flux Agent By Simplex exited with code ${code}. Check your model configuration and API key.`,
       );
     }
   });
@@ -909,7 +909,7 @@ export async function sendMessage(
   // Enforce B2B subscription plan lock
   if (isPlanExpired) {
     setTimeout(() => {
-      cb.onError("PLAN_EXPIRED: Tu suscripción de OmniWorker ha vencido. Por favor, actualiza tu plan en el panel del SaaS.");
+      cb.onError("PLAN_EXPIRED: Tu suscripción de Flux Agent By Simplex ha vencido. Por favor, actualiza tu plan en el panel del SaaS.");
     }, 100);
     return { abort: () => {} };
   }

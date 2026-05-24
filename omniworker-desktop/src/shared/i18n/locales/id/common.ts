@@ -1,5 +1,5 @@
 export default {
-  appName: "OmniWorker Agent",
+  appName: "Flux Agent By Simplex",
   continue: "Lanjutkan",
   cancel: "Batal",
   retry: "Coba lagi",

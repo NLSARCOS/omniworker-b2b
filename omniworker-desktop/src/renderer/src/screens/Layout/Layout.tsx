@@ -241,7 +241,7 @@ function Layout({
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              agentName: "OmniWorker Desktop",
+              agentName: "Flux Agent By Simplex",
               hostname: "Local Desktop",
               platform: window.electron?.process?.platform || "unknown",
               capabilities: ["chat", "files"],
@@ -400,7 +400,7 @@ function Layout({
           <div className="flex items-center gap-3">
             <span className="text-base">⚠️</span>
             <span className="font-semibold tracking-wide">
-              Tu plan de OmniWorker ha vencido. Por favor, actualiza tu suscripción en el panel del SaaS para continuar usando la IA local y remota.
+              Tu plan de Flux Agent By Simplex ha vencido. Por favor, actualiza tu suscripción en el panel del SaaS para continuar usando la IA local y remota.
             </span>
           </div>
           <button 
@@ -735,7 +735,7 @@ function Layout({
               <div className="update-modal-title-container">
                 <h3 className="update-modal-title">
                   {updateState === "available" && "Nueva versión disponible"}
-                  {updateState === "downloading" && "Descargando OmniWorker"}
+                  {updateState === "downloading" && "Descargando Flux Agent By Simplex"}
                   {updateState === "ready" && "¡Actualización Lista!"}
                   {updateState === "error" && "Error en la actualización"}
                 </h3>
@@ -751,7 +751,7 @@ function Layout({
               {updateState === "available" && (
                 <div className="space-y-3">
                   <p>
-                    Una nueva versión de OmniWorker está disponible para su descarga. Incluye mejoras de rendimiento, parches de seguridad y nuevas capacidades inteligentes para tus agentes.
+                    Una nueva versión de Flux Agent By Simplex está disponible para su descarga. Incluye mejoras de rendimiento, parches de seguridad y nuevas capacidades inteligentes para tus agentes.
                   </p>
                   {saasReleaseNotes && (
                     <div className="mt-3 p-3 bg-zinc-950/60 border border-zinc-800 rounded-sm text-left font-mono">

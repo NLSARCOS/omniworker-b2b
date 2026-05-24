@@ -47,31 +47,48 @@ interface AgentData {
   status: string;
 }
 
-/* ─── Brutalist Components ─── */
+/* ─── Design Tokens (matching landing page exactly) ─── */
+/* ─── Editorial Components (same design system as landing page) ─── */
 
 function PageHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32, paddingBottom: 20, borderBottom: "3px solid #111" }}>
-      <div>
-        <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-1px", textTransform: "uppercase", lineHeight: 1, margin: 0 }}>{title}</h1>
-        <p style={{ fontSize: 13, color: "#555", marginTop: 6, fontFamily: "'Space Mono', monospace", textTransform: "uppercase", letterSpacing: 1 }}>{subtitle}</p>
+    <div style={{ marginBottom: 48 }}>
+      {/* Topbar — same as landing */}
+      <div style={{ borderBottom: `1px solid var(--rule)`, paddingBottom: 10, marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--muted)" }}>Panel de control · OmniWorker</span>
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--neon-dim)", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--neon)", display: "inline-block" }} />
+          Asistente activo
+        </span>
       </div>
-      {action}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", paddingBottom: 24, borderBottom: `3px double var(--ink)` }}>
+        <div>
+          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--neon-dim)", background: "var(--neon-pale)", padding: "6px 12px", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 16, borderLeft: `3px solid var(--neon)` }}>
+            <span style={{ color: "var(--muted)" }}>§</span> Panel de control
+          </div>
+          <h1 style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 144, "SOFT" 30, "WONK" 0', fontSize: "clamp(40px, 5vw, 64px)", fontWeight: 500, letterSpacing: "-0.04em", lineHeight: 0.93, margin: 0, color: "var(--ink)" }}>
+            {title}
+          </h1>
+          <p style={{ fontSize: 16, color: "var(--muted)", marginTop: 12, fontFamily: "'Inter', sans-serif", fontWeight: 400, borderLeft: `3px solid var(--rule)`, paddingLeft: 16, lineHeight: 1.5 }}>{subtitle}</p>
+        </div>
+        {action}
+      </div>
     </div>
   );
 }
 
 function StatCard({ title, value, progress, subtitle }: { title: string; value: string | number; progress?: number; subtitle?: string }) {
   return (
-    <div style={{ background: "#fff", padding: 24, border: "none" }}>
-      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, color: "#555", marginBottom: 8, fontFamily: "'Space Mono', monospace" }}>{title}</p>
-      <p style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-2px", lineHeight: 1, margin: 0 }}>{value}</p>
+    <div style={{ background: "var(--paper)", padding: 32, borderRight: `1px solid var(--rule)` }}>
+      {/* Same as hero aside on landing */}
+      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--muted)", marginBottom: 12 }}>{title}</div>
+      <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 100, "WONK" 1', fontSize: 52, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1, color: "var(--ink)", marginBottom: 6 }}>{value}</div>
       {progress !== undefined && (
         <>
-          <div style={{ height: 4, background: "#eee", overflow: "hidden", marginTop: 12 }}>
-            <div style={{ height: "100%", width: `${Math.min(progress, 100)}%`, background: progress > 90 ? "#ff0000" : "#000", transition: "width 0.6s ease" }} />
+          <div style={{ height: 3, background: "var(--rule)", overflow: "hidden", marginTop: 12 }}>
+            <div style={{ height: "100%", width: `${Math.min(progress, 100)}%`, background: progress > 90 ? "var(--danger)" : "var(--neon)", transition: "width 0.6s ease" }} />
           </div>
-          {subtitle && <p style={{ fontSize: 12, color: "#888", marginTop: 6, fontFamily: "'Space Mono', monospace" }}>{subtitle}</p>}
+          {subtitle && <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 8, fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>{subtitle}</div>}
         </>
       )}
     </div>
@@ -80,7 +97,8 @@ function StatCard({ title, value, progress, subtitle }: { title: string; value: 
 
 function StatsGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, marginBottom: 32, border: "3px solid #111", boxShadow: "4px 4px 0 0 #111" }}>
+    /* Same as hero aside layout on landing */
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 0, marginBottom: 40, border: `2px solid var(--ink)`, background: "var(--rule)" }}>
       {children}
     </div>
   );
@@ -88,24 +106,31 @@ function StatsGrid({ children }: { children: React.ReactNode }) {
 
 function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <div id={id} style={{ marginBottom: 32, border: "3px solid #111", padding: 24, background: "#fff", boxShadow: "4px 4px 0 0 #111" }}>
-      <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, marginBottom: 20, paddingBottom: 12, borderBottom: "1px solid #e0e0e0", fontFamily: "'Space Mono', monospace" }}>{title}</h2>
-      {children}
+    /* Matches .section structure from landing page */
+    <div id={id} style={{ marginBottom: 32, background: "var(--paper)", border: `1.5px solid var(--rule)`, borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ padding: "20px 28px", borderBottom: `1px solid var(--rule)`, background: "var(--paper-warm)", display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--neon-dim)", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: "var(--muted)" }}>§</span>{title}
+        </span>
+      </div>
+      <div style={{ padding: 28 }}>
+        {children}
+      </div>
     </div>
   );
 }
 
 function Badge({ variant, children }: { variant: "success" | "warning" | "danger" | "info" | "default"; children: React.ReactNode }) {
-  const colors: Record<string, { color: string; border: string; bg?: string }> = {
-    success: { color: "#000", border: "#000" },
-    warning: { color: "#000", border: "#000", bg: "#f0f0f0" },
-    danger: { color: "#ff0000", border: "#ff0000" },
-    info: { color: "#000", border: "#000" },
-    default: { color: "#666", border: "#ccc" },
+  const colors: Record<string, { color: string; border: string; bg: string }> = {
+    success: { color: "var(--neon-dim)", border: "var(--neon)", bg: "var(--neon-pale)" },
+    warning: { color: "#92400E", border: "#D97706", bg: "#FFFBEB" },
+    danger:  { color: "var(--danger)",  border: "var(--danger)",  bg: "#FEF2F2" },
+    info:    { color: "var(--ink)",     border: "var(--rule)",    bg: "var(--paper-warm)" },
+    default: { color: "var(--muted)",  border: "var(--rule)",    bg: "var(--paper-warm)" },
   };
   const c = colors[variant] || colors.default;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace", border: `1px solid ${c.border}`, color: c.color, background: c.bg || "transparent" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", border: `1px solid ${c.border}`, color: c.color, background: c.bg, borderRadius: 100 }}>
       {children}
     </span>
   );
@@ -113,9 +138,9 @@ function Badge({ variant, children }: { variant: "success" | "warning" | "danger
 
 function Button({ variant = "primary", onClick, disabled, children, small }: { variant?: "primary" | "secondary" | "danger"; onClick: () => void; disabled?: boolean; children: React.ReactNode; small?: boolean }) {
   const styles: Record<string, React.CSSProperties> = {
-    primary: { background: "#000", color: "#fff", borderColor: "#000" },
-    secondary: { background: "#fff", color: "#000", borderColor: "#000" },
-    danger: { background: "#ff0000", color: "#fff", borderColor: "#ff0000" },
+    primary:   { background: "var(--ink)",    color: "var(--paper)", border: `1.5px solid var(--ink)` },
+    secondary: { background: "var(--paper)",  color: "var(--ink)",   border: `1.5px solid var(--rule)` },
+    danger:    { background: "#FEF2F2", color: "var(--danger)", border: `1.5px solid var(--danger)` },
   };
   const s = styles[variant] || styles.primary;
   return (
@@ -124,10 +149,10 @@ function Button({ variant = "primary", onClick, disabled, children, small }: { v
       disabled={disabled}
       style={{
         display: "inline-flex", alignItems: "center", gap: 6,
-        padding: small ? "6px 12px" : "10px 20px",
-        fontSize: small ? 11 : 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
-        border: "3px solid", cursor: disabled ? "not-allowed" : "pointer",
-        fontFamily: "'Space Mono', monospace", boxShadow: "2px 2px 0 0 #111",
+        padding: small ? "6px 14px" : "10px 20px",
+        fontSize: small ? 12 : 13, fontWeight: 600,
+        borderRadius: 6, cursor: disabled ? "not-allowed" : "pointer",
+        fontFamily: "'Inter', sans-serif",
         transition: "all 0.15s ease", opacity: disabled ? 0.5 : 1,
         ...s,
       }}
@@ -140,13 +165,14 @@ function Button({ variant = "primary", onClick, disabled, children, small }: { v
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+      position: "fixed", inset: 0, background: "rgba(13,13,13,0.5)",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+      backdropFilter: "blur(4px)",
     }}>
-      <div style={{ background: "#fff", border: "3px solid #111", boxShadow: "8px 8px 0 0 #111", padding: 32, maxWidth: 480, width: "90%", maxHeight: "80vh", overflowY: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 12, borderBottom: "3px solid #111" }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, margin: 0 }}>{title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", fontWeight: 700 }}>×</button>
+      <div style={{ background: "var(--paper)", border: `1.5px solid var(--rule)`, borderRadius: 12, boxShadow: `6px 6px 0 var(--ink)`, padding: 32, maxWidth: 480, width: "90%", maxHeight: "80vh", overflowY: "auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 14, borderBottom: `1px solid var(--rule)` }}>
+          <h3 style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 48', fontSize: 20, fontWeight: 500, letterSpacing: "-0.01em", margin: 0, color: "var(--ink)" }}>{title}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", fontWeight: 400, color: "var(--muted)", lineHeight: 1 }}>×</button>
         </div>
         {children}
       </div>
@@ -313,8 +339,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
-        <p style={{ fontSize: 24, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace" }}>Cargando...</p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", flexDirection: "column", gap: 16 }}>
+        <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 80, "SOFT" 30', fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em" }}>Cargando...</div>
+        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--muted)" }}>Verificando acceso</div>
       </div>
     );
   }
@@ -333,16 +360,16 @@ export default function DashboardPage() {
 
       {/* Subscription warning */}
       {user.isPlanExpired && (
-        <div style={{ marginBottom: 32, padding: "16px 20px", background: "rgba(255,100,100,0.05)", border: "3px solid #ff0000", boxShadow: "4px 4px 0 0 #ff0000" }}>
-          <strong style={{ textTransform: "uppercase", color: "#ff0000" }}>⚠️ Plan de Suscripción Expirado</strong>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>Tu plan de OmniWorker ha vencido. Ponte en contacto con tu administrador para registrar un nuevo pago y reactivar tu cuenta.</p>
+        <div style={{ marginBottom: 28, padding: "16px 20px", background: "#FEF2F2", border: `1.5px solid var(--danger)`, borderRadius: 8 }}>
+          <strong style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--danger)" }}>⚠️ Plan de suscripción expirado</strong>
+          <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--ink-soft)", fontWeight: 400, lineHeight: 1.6 }}>Tu plan de OmniWorker ha vencido. Ponte en contacto con tu administrador para registrar un nuevo pago y reactivar tu cuenta.</p>
         </div>
       )}
 
       {user.isLocked && !user.isPlanExpired && (
-        <div style={{ marginBottom: 32, padding: "16px 20px", background: "rgba(255,100,100,0.05)", border: "3px solid #ff0000", boxShadow: "4px 4px 0 0 #ff0000" }}>
-          <strong style={{ textTransform: "uppercase", color: "#ff0000" }}>Saldo Insuficiente</strong>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>Tu balance de tokens está agotado. Contacta a tu administrador.</p>
+        <div style={{ marginBottom: 28, padding: "16px 20px", background: "#FEF2F2", border: `1.5px solid var(--danger)`, borderRadius: 8 }}>
+          <strong style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--danger)" }}>Saldo de tokens agotado</strong>
+          <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--ink-soft)", fontWeight: 400 }}>Tu balance de tokens está agotado. Contactá a tu administrador.</p>
         </div>
       )}
 
@@ -354,17 +381,17 @@ export default function DashboardPage() {
       </StatsGrid>
 
       {/* Licenses / Instalaciones */}
-      <Section title={`LICENCIAS / INSTALACIONES — ${licenseUsage.active} / ${licenseUsage.max}`} id="licenses">
+      <Section title={`Instalaciones — ${licenseUsage.active} / ${licenseUsage.max}`} id="licenses">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Cada instalación autorizada. Revocar una elimina todas sus claves.</p>
+          <p style={{ fontSize: 14, color: "var(--muted)", margin: 0, fontWeight: 400 }}>Cada instalación autorizada. Revocar una elimina todas sus claves de acceso.</p>
           <Button onClick={() => setShowNewLicense(true)} disabled={licenseUsage.active >= licenseUsage.max}>
-            + NUEVA LICENCIA
+            + Nueva instalación
           </Button>
         </div>
 
         {licenseUsage.active >= licenseUsage.max && (
-          <div style={{ padding: 12, background: "#fff0f0", border: "3px solid #ff0000", marginBottom: 16 }}>
-            <p style={{ fontSize: 13, color: "#ff0000", margin: 0, fontWeight: 700 }}>Límite de instalaciones alcanzado. Actualizá tu plan para agregar más.</p>
+          <div style={{ padding: "12px 16px", background: "#FEF2F2", border: `1.5px solid var(--danger)`, marginBottom: 16, borderRadius: 6 }}>
+            <p style={{ fontSize: 13, color: "var(--danger)", margin: 0, fontWeight: 600 }}>Límite de instalaciones alcanzado. Actualizá tu plan para agregar más.</p>
           </div>
         )}
 
@@ -414,17 +441,17 @@ export default function DashboardPage() {
       </Section>
 
       {/* API Keys */}
-      <Section title="API KEYS — CONEXIÓN AGENTE" id="keys">
+      <Section title="Claves de acceso" id="keys">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Claves vinculadas a una licencia. Eliminar corta acceso inmediatamente.</p>
+          <p style={{ fontSize: 14, color: "var(--muted)", margin: 0, fontWeight: 400 }}>Claves vinculadas a una instalación. Eliminar corta el acceso de inmediato.</p>
           <Button onClick={() => setShowNewKey(true)} disabled={activeLicenses.length === 0}>
-            + NUEVA CLAVE
+            + Nueva clave
           </Button>
         </div>
 
         {activeLicenses.length === 0 && (
-          <div style={{ padding: 12, background: "#f0f0f0", border: "3px solid #111", marginBottom: 16 }}>
-            <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Creá una licencia primero para poder generar claves API.</p>
+          <div style={{ padding: "12px 16px", background: "var(--paper-warm)", border: `1px solid var(--rule)`, marginBottom: 16, borderRadius: 6 }}>
+            <p style={{ fontSize: 13, color: "var(--muted)", margin: 0, fontWeight: 500 }}>Creá una instalación primero para poder generar claves de acceso.</p>
           </div>
         )}
 
@@ -468,7 +495,7 @@ export default function DashboardPage() {
       </Section>
 
       {/* Edge Agents */}
-      <Section title="AGENTES CONECTADOS" id="agents">
+      <Section title="Asistentes conectados" id="agents">
         {agents.length === 0 ? (
           <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
             <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin agentes</p>
@@ -505,29 +532,26 @@ export default function DashboardPage() {
       </Section>
 
       {/* Quick Actions */}
-      <Section title="ACCIONES RÁPIDAS" id="actions">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 0 }}>
-          <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111", transition: "all 0.15s ease", cursor: "pointer" }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translate(-4px,-4px)"; e.currentTarget.style.boxShadow = "8px 8px 0 0 #111"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "2px 2px 0 0 #111"; }}
-          >
-            <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Descargar Desktop</p>
-            <p style={{ fontSize: 13, color: "#555", margin: "0 0 16px" }}>App nativa para macOS, Windows, Linux — v0.4.3</p>
+      <Section title="Descargas" id="actions">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+          <div style={{ border: `1.5px solid var(--rule)`, borderRadius: 10, padding: 24, background: "var(--paper-warm)", transition: "all 0.15s ease" }}>
+            <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 48', fontSize: 20, fontWeight: 500, letterSpacing: "-0.01em", color: "var(--ink)", margin: "0 0 6px" }}>Descargar app de escritorio</div>
+            <div style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 16px", fontWeight: 400 }}>App nativa para macOS, Windows, Linux — v0.4.3</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <a href="/api/downloads/omniworker-desktop-0.4.3-arm64.dmg" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>🍎 Mac (Apple Silicon)</a>
-              <a href="/api/downloads/omniworker-desktop-0.4.3-setup.exe" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#000", color: "#fff", textDecoration: "none", border: "2px solid #000" }}>🪟 Windows</a>
-              <a href="/api/downloads/omniworker-desktop-0.4.3.AppImage" style={{ padding: "8px 14px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", fontFamily: "'Space Mono', monospace", background: "#fff", color: "#000", textDecoration: "none", border: "2px solid #000" }}>🐧 Linux</a>
+              <a href="/api/downloads/omniworker-desktop-0.4.3-arm64.dmg" style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, background: "var(--ink)", color: "var(--paper)", textDecoration: "none", borderRadius: 6 }}>🍎 Mac (Apple Silicon)</a>
+              <a href="/api/downloads/omniworker-desktop-0.4.3-setup.exe" style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, background: "var(--ink)", color: "var(--paper)", textDecoration: "none", borderRadius: 6 }}>🪟 Windows</a>
+              <a href="/api/downloads/omniworker-desktop-0.4.3.AppImage" style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, background: "var(--paper)", color: "var(--ink)", textDecoration: "none", borderRadius: 6, border: `1px solid var(--rule)` }}>🐧 Linux</a>
             </div>
           </div>
-          <div style={{ border: "3px solid #111", padding: 24, boxShadow: "2px 2px 0 0 #111" }}>
-            <p style={{ fontSize: 18, fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Documentación</p>
-            <p style={{ fontSize: 13, color: "#555", margin: 0 }}>Guías de instalación y configuración</p>
+          <div style={{ border: `1.5px solid var(--rule)`, borderRadius: 10, padding: 24, background: "var(--paper-warm)" }}>
+            <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 48', fontSize: 20, fontWeight: 500, letterSpacing: "-0.01em", color: "var(--ink)", margin: "0 0 6px" }}>Documentación</div>
+            <div style={{ fontSize: 13, color: "var(--muted)", margin: 0, fontWeight: 400 }}>Guías de instalación y configuración del asistente</div>
           </div>
         </div>
       </Section>
 
       {/* Historial de Facturación */}
-      <Section title="HISTORIAL DE FACTURACIÓN — PAGOS B2B MANUALES" id="billing">
+      <Section title="Historial de facturación" id="billing">
         {invoices.length === 0 ? (
           <div style={{ textAlign: "center", padding: "48px 20px", color: "#888" }}>
             <p style={{ fontWeight: 700, textTransform: "uppercase", margin: "0 0 8px" }}>Sin facturas</p>
@@ -564,52 +588,45 @@ export default function DashboardPage() {
       </Section>
 
       {/* Platform Status */}
-      <Section title="ESTADO DE PLATAFORMA">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, border: "2px solid #111" }}>
-          <div style={{ borderRight: "2px solid #111", padding: 16 }}>
-            <span style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>Plan</span><br />
-            <strong style={{ fontSize: 16 }}>{(user.plan || "Free").toUpperCase()}</strong>
-          </div>
-          <div style={{ borderRight: "2px solid #111", padding: 16 }}>
-            <span style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>Cuenta</span><br />
-            <Badge variant={user.isPlanExpired ? "danger" : "success"}>{user.isPlanExpired ? "EXPIRADA" : "ACTIVA"}</Badge>
-          </div>
-          <div style={{ borderRight: "2px solid #111", padding: 16 }}>
-            <span style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>Vencimiento</span><br />
-            <strong style={{ fontSize: 14 }}>
-              {user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt).toLocaleDateString() : "Ilimitado"}
-            </strong>
-          </div>
-          <div style={{ padding: 16 }}>
-            <span style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>Organización</span><br />
-            <strong style={{ fontSize: 16 }}>{user.tenantName || "—"}</strong>
-          </div>
+      <Section title="Estado de la cuenta">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, border: `1px solid var(--rule)`, borderRadius: 8, overflow: "hidden" }}>
+          {[
+            { label: "Plan", value: (user.plan || "Free").toUpperCase() },
+            { label: "Estado", value: <Badge variant={user.isPlanExpired ? "danger" : "success"}>{user.isPlanExpired ? "Expirada" : "Activa"}</Badge> },
+            { label: "Vencimiento", value: user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt).toLocaleDateString() : "Sin fecha límite" },
+            { label: "Organización", value: user.tenantName || "—" },
+          ].map((item, i) => (
+            <div key={item.label} style={{ padding: "20px 24px", borderRight: i < 3 ? `1px solid var(--rule)` : "none", background: "var(--paper-warm)" }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.16em", color: "var(--muted)", marginBottom: 8 }}>{item.label}</div>
+              <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 48', fontSize: 18, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.01em" }}>{item.value}</div>
+            </div>
+          ))}
         </div>
       </Section>
 
       {/* ── New License Modal ── */}
       {showNewLicense && (
-        <Modal title="Nueva Instalación" onClose={() => setShowNewLicense(false)}>
+        <Modal title="Nueva instalación" onClose={() => setShowNewLicense(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, marginBottom: 8, fontFamily: "'Space Mono', monospace" }}>Nombre (opcional)</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "'Inter', sans-serif", color: "var(--muted)" }}>Nombre (opcional)</label>
               <input
                 type="text"
                 value={newLicenseName}
                 onChange={e => setNewLicenseName(e.target.value)}
                 placeholder="Ej: MacBook Pro Nelson"
-                style={{ width: "100%", padding: "10px 12px", border: "3px solid #111", fontSize: 14, fontFamily: "'Space Mono', monospace", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "10px 14px", border: `1.5px solid var(--rule)`, borderRadius: 6, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", background: "var(--paper-warm)", color: "var(--ink)", outline: "none" }}
               />
             </div>
             {licenseError && (
-              <div style={{ padding: 12, background: "#fff0f0", border: "3px solid #ff0000" }}>
-                <p style={{ fontSize: 13, color: "#ff0000", margin: 0 }}>{licenseError}</p>
+              <div style={{ padding: "10px 14px", background: "#FEF2F2", border: `1px solid var(--danger)`, borderRadius: 6 }}>
+                <p style={{ fontSize: 13, color: "var(--danger)", margin: 0, fontWeight: 500 }}>{licenseError}</p>
               </div>
             )}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <Button variant="secondary" onClick={() => setShowNewLicense(false)}>CANCELAR</Button>
+              <Button variant="secondary" onClick={() => setShowNewLicense(false)}>Cancelar</Button>
               <Button onClick={handleCreateLicense} disabled={creatingLicense}>
-                {creatingLicense ? "CREANDO..." : "CREAR INSTALACIÓN"}
+                {creatingLicense ? "Creando..." : "Crear instalación"}
               </Button>
             </div>
           </div>
@@ -618,40 +635,40 @@ export default function DashboardPage() {
 
       {/* ── New API Key Modal ── */}
       {showNewKey && (
-        <Modal title="Nueva Clave API" onClose={() => setShowNewKey(false)}>
+        <Modal title="Nueva clave de acceso" onClose={() => setShowNewKey(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, marginBottom: 8, fontFamily: "'Space Mono', monospace" }}>Licencia *</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "'Inter', sans-serif", color: "var(--muted)" }}>Instalación *</label>
               <select
                 value={selectedLicenseId}
                 onChange={e => setSelectedLicenseId(e.target.value)}
-                style={{ width: "100%", padding: "10px 12px", border: "3px solid #111", fontSize: 14, fontFamily: "'Space Mono', monospace", boxSizing: "border-box", background: "#fff" }}
+                style={{ width: "100%", padding: "10px 14px", border: `1.5px solid var(--rule)`, borderRadius: 6, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", background: "var(--paper-warm)", color: "var(--ink)" }}
               >
-                <option value="">Seleccionar licencia...</option>
+                <option value="">Seleccionar instalación...</option>
                 {activeLicenses.map(lic => (
                   <option key={lic.id} value={lic.id}>{lic.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, marginBottom: 8, fontFamily: "'Space Mono', monospace" }}>Nombre (opcional)</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "'Inter', sans-serif", color: "var(--muted)" }}>Nombre (opcional)</label>
               <input
                 type="text"
                 value={newKeyName}
                 onChange={e => setNewKeyName(e.target.value)}
                 placeholder="Ej: Desktop Agent Key"
-                style={{ width: "100%", padding: "10px 12px", border: "3px solid #111", fontSize: 14, fontFamily: "'Space Mono', monospace", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "10px 14px", border: `1.5px solid var(--rule)`, borderRadius: 6, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", background: "var(--paper-warm)", color: "var(--ink)" }}
               />
             </div>
             {keyError && (
-              <div style={{ padding: 12, background: "#fff0f0", border: "3px solid #ff0000" }}>
-                <p style={{ fontSize: 13, color: "#ff0000", margin: 0 }}>{keyError}</p>
+              <div style={{ padding: "10px 14px", background: "#FEF2F2", border: `1px solid var(--danger)`, borderRadius: 6 }}>
+                <p style={{ fontSize: 13, color: "var(--danger)", margin: 0, fontWeight: 500 }}>{keyError}</p>
               </div>
             )}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <Button variant="secondary" onClick={() => setShowNewKey(false)}>CANCELAR</Button>
+              <Button variant="secondary" onClick={() => setShowNewKey(false)}>Cancelar</Button>
               <Button onClick={handleGenerateKey} disabled={generatingKey || !selectedLicenseId}>
-                {generatingKey ? "GENERANDO..." : "GENERAR CLAVE"}
+                {generatingKey ? "Generando..." : "Generar clave"}
               </Button>
             </div>
           </div>
@@ -660,34 +677,32 @@ export default function DashboardPage() {
 
       {/* ── One-time raw key display ── */}
       {newKeyRaw && (
-        <Modal title="Tu Nueva Clave API" onClose={() => setNewKeyRaw(null)}>
-          <div style={{ padding: 16, background: "#FFC800", border: "3px solid #111", marginBottom: 16, boxShadow: "4px 4px 0 0 #111" }}>
-            <p style={{ fontWeight: 700, fontSize: 16, margin: "0 0 8px" }}>⚠️ Copiá esta clave ahora!</p>
-            <p style={{ fontSize: 13, color: "#333", margin: "0 0 8px" }}>
-              Vinculada a: <strong>{newKeyLicense}</strong>. No se volverá a mostrar.
+        <Modal title="Tu nueva clave de acceso" onClose={() => setNewKeyRaw(null)}>
+          <div style={{ padding: 16, background: "var(--neon-pale)", border: `1.5px solid var(--neon)`, marginBottom: 16, borderRadius: 8 }}>
+            <p style={{ fontWeight: 700, fontSize: 15, margin: "0 0 8px", color: "var(--ink)" }}>⚠️ Copiá esta clave ahora</p>
+            <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 12px", fontWeight: 400 }}>
+              Vinculada a: <strong style={{ color: "var(--ink)" }}>{newKeyLicense}</strong>. No se volverá a mostrar.
             </p>
-            <code style={{ display: "block", background: "#111", color: "#fff", padding: 16, fontFamily: "'Space Mono', monospace", fontSize: 13, wordBreak: "break-all" }}>{newKeyRaw}</code>
+            <code style={{ display: "block", background: "var(--ink)", color: "var(--neon)", padding: 16, fontFamily: "'DM Mono', monospace", fontSize: 13, wordBreak: "break-all", borderRadius: 6 }}>{newKeyRaw}</code>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button onClick={() => setNewKeyRaw(null)}>ENTENDIDO</Button>
+            <Button onClick={() => setNewKeyRaw(null)}>Entendido</Button>
           </div>
         </Modal>
       )}
 
       {/* ── Delete API Key Confirmation ── */}
       {deleteKeyConfirm && (
-        <Modal title="Eliminar Clave API" onClose={() => setDeleteKeyConfirm(null)}>
-          <div style={{ padding: 16, background: "#fff0f0", border: "3px solid #ff0000", marginBottom: 16 }}>
-            <p style={{ fontWeight: 700, fontSize: 16, margin: "0 0 8px" }}>⚠️ Esta clave se eliminará inmediatamente.</p>
-            <p style={{ fontSize: 14, color: "#333", margin: 0 }}>
-              La app en ese computador perderá acceso a la plataforma.
-            </p>
+        <Modal title="Eliminar clave de acceso" onClose={() => setDeleteKeyConfirm(null)}>
+          <div style={{ padding: "12px 16px", background: "#FEF2F2", border: `1px solid var(--danger)`, marginBottom: 16, borderRadius: 6 }}>
+            <p style={{ fontWeight: 700, fontSize: 14, margin: "0 0 6px", color: "var(--danger)" }}>⚠️ Esta clave se eliminará de inmediato.</p>
+            <p style={{ fontSize: 13, color: "var(--muted)", margin: 0, fontWeight: 400 }}>La aplicación en ese computador perderá acceso a la plataforma.</p>
           </div>
-          <p style={{ fontSize: 14, marginBottom: 16 }}>Clave: <strong>{deleteKeyConfirm.name}</strong></p>
+          <p style={{ fontSize: 14, marginBottom: 16, color: "var(--ink-soft)" }}>Clave: <strong style={{ color: "var(--ink)" }}>{deleteKeyConfirm.name}</strong></p>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <Button variant="secondary" onClick={() => setDeleteKeyConfirm(null)}>CANCELAR</Button>
+            <Button variant="secondary" onClick={() => setDeleteKeyConfirm(null)}>Cancelar</Button>
             <Button variant="danger" onClick={handleDeleteKey} disabled={deletingKey}>
-              {deletingKey ? "ELIMINANDO..." : "ELIMINAR DEFINITIVAMENTE"}
+              {deletingKey ? "Eliminando..." : "Eliminar definitivamente"}
             </Button>
           </div>
         </Modal>
@@ -695,18 +710,16 @@ export default function DashboardPage() {
 
       {/* ── Revoke License Confirmation ── */}
       {revokeLicenseConfirm && (
-        <Modal title="Revocar Instalación" onClose={() => setRevokeLicenseConfirm(null)}>
-          <div style={{ padding: 16, background: "#fff0f0", border: "3px solid #ff0000", marginBottom: 16 }}>
-            <p style={{ fontWeight: 700, fontSize: 16, margin: "0 0 8px" }}>⚠️ Todas las claves de esta instalación serán eliminadas.</p>
-            <p style={{ fontSize: 14, color: "#333", margin: 0 }}>
-              Las apps en los computadores asociados perderán acceso inmediatamente.
-            </p>
+        <Modal title="Revocar instalación" onClose={() => setRevokeLicenseConfirm(null)}>
+          <div style={{ padding: "12px 16px", background: "#FEF2F2", border: `1px solid var(--danger)`, marginBottom: 16, borderRadius: 6 }}>
+            <p style={{ fontWeight: 700, fontSize: 14, margin: "0 0 6px", color: "var(--danger)" }}>⚠️ Todas las claves de esta instalación serán eliminadas.</p>
+            <p style={{ fontSize: 13, color: "var(--muted)", margin: 0, fontWeight: 400 }}>Las aplicaciones en los computadores asociados perderán acceso de inmediato.</p>
           </div>
-          <p style={{ fontSize: 14, marginBottom: 16 }}>Instalación: <strong>{revokeLicenseConfirm.name}</strong></p>
+          <p style={{ fontSize: 14, marginBottom: 16, color: "var(--ink-soft)" }}>Instalación: <strong style={{ color: "var(--ink)" }}>{revokeLicenseConfirm.name}</strong></p>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <Button variant="secondary" onClick={() => setRevokeLicenseConfirm(null)}>CANCELAR</Button>
+            <Button variant="secondary" onClick={() => setRevokeLicenseConfirm(null)}>Cancelar</Button>
             <Button variant="danger" onClick={handleRevokeLicense} disabled={revokingLicense}>
-              {revokingLicense ? "REVOCANDO..." : "REVOCAR DEFINITIVAMENTE"}
+              {revokingLicense ? "Revocando..." : "Revocar definitivamente"}
             </Button>
           </div>
         </Modal>

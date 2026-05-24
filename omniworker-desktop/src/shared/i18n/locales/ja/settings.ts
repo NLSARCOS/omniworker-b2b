@@ -1,7 +1,7 @@
 export default {
   title: "設定",
   sections: {
-    omniworkerAgent: "OmniWorker Agent",
+    omniworkerAgent: "Flux Agent By Simplex",
     appearance: "外観",
     credentialPool: "認証情報プール",
   },
@@ -64,12 +64,12 @@ export default {
   runDiagnosis: "診断を実行",
   running: "実行中...",
   debugDump: "デバッグダンプ",
-  migrationDetected: "OmniWorker インストールを検出",
+  migrationDetected: "Flux Agent By Simplex インストールを検出",
   migrationDesc:
     "<code>{{path}}</code> に OmniWorker が見つかりました。設定・API キー・セッション・スキルを OmniWorker に移行できます。",
   migrationDismiss: "再表示しない",
   migrating: "移行中...",
-  migrateToOmniWorker: "OmniWorker に移行",
+  migrateToOmniWorker: "Flux Agent By Simplex に移行",
   skip: "スキップ",
   appearanceHint: "好みのインターフェース外観を選択",
   apiKeyPlaceholder: "API キー",
@@ -77,8 +77,8 @@ export default {
   connectionSection: "接続",
   modeLocal: "ローカル",
   modeRemote: "リモート",
-  modeLocalHint: "このデバイスにインストールされた OmniWorker を使用",
-  modeRemoteHint: "ネットワークまたはクラウド上の OmniWorker API サーバに接続",
+  modeLocalHint: "このデバイスにインストールされた Flux Agent By Simplex を使用",
+  modeRemoteHint: "ネットワークまたはクラウド上の Flux Agent By Simplex API サーバに接続",
   remoteUrl: "リモート URL",
   remoteUrlHint:
     "OmniWorker API サーバの URL（/health と /v1/chat/completions を公開している必要あり）",
@@ -90,7 +90,7 @@ export default {
   save: "保存",
   serverConfigTitle: "サーバ設定",
   serverConfigHint:
-    "リモート OmniWorker サーバに接続中です。モデル選択、プロバイダ API キー、認証情報はサーバ側の <code>~/.omniworker/.env</code> と <code>config.yaml</code> で管理されます。ホスト側で編集（例：<code>docker exec -it omniworker vi /opt/data/.env</code>）してコンテナを再起動してください。",
+    "リモート Flux Agent By Simplex サーバに接続中です。モデル選択、プロバイダ API キー、認証情報はサーバ側の <code>~/.omniworker/.env</code> と <code>config.yaml</code> で管理されます。ホスト側で編集（例：<code>docker exec -it Flux Agent By Simplex vi /opt/data/.env</code>）してコンテナを再起動してください。",
   connectionMode: "モード",
   switchedToLocal: "ローカルモードに切り替えました",
 } as const;

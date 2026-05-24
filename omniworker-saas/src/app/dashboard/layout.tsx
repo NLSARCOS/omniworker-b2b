@@ -14,25 +14,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   return (
-    <>
-      {/* Fonts */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-
-      <div style={{ display: "flex", minHeight: "100vh" }}>
-        <Sidebar userRole={role} />
-        <main style={{
-          flex: 1, marginLeft: 240, padding: 32,
-          background: "#F4F4F0", color: "#111",
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      <Sidebar userRole={role} />
+      <main
+        style={{
+          flex: 1,
+          marginLeft: 240,
+          padding: "48px 56px",
+          background: "#F5F0E8",
+          color: "#0D0D0D",
           fontFamily: "'Inter', sans-serif",
           minWidth: 0,
-        }}>
-          <div style={{ maxWidth: 1320 }}>
-            {children}
-          </div>
-        </main>
-      </div>
-    </>
+          backgroundImage: "repeating-linear-gradient(0deg, transparent 0, transparent 23px, rgba(0,0,0,0.018) 23px, rgba(0,0,0,0.018) 24px)",
+        }}
+      >
+        <div style={{ maxWidth: 1100 }}>
+          {children}
+        </div>
+      </main>
+    </div>
   );
 }

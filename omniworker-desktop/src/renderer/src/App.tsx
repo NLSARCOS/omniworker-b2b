@@ -225,7 +225,7 @@ function App(): React.JSX.Element {
 
   const runInstallCheck = useCallback(async () => {
     const startedAt = Date.now();
-    let next: Screen = "login"; // OMNIWORKER B2B: Siempre empezamos en Login
+    let next: Screen = "login"; // FLUX AGENT B2B: Siempre empezamos en Login
 
     let autoLoggedIn = false;
     const savedUser = localStorage.getItem("ow_user");

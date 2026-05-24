@@ -1,5 +1,5 @@
 export default {
-  title: "Selamat datang di OmniWorker",
+  title: "Selamat datang di Flux Agent By Simplex",
   subtitle:
     "Asisten AI yang terus berkembang dan berjalan lokal di mesin Anda. Privat, kuat, dan selalu belajar.",
   installIssueTitle: "Masalah Instalasi",
@@ -11,8 +11,8 @@ export default {
   installSizeHint: "Ini akan menginstal komponen yang diperlukan (~2 GB)",
   copyInstallCommand: "Salin perintah instalasi",
   dividerOr: "atau",
-  connectRemote: "Hubungkan ke OmniWorker Remote",
-  connectRemoteTitle: "Hubungkan ke OmniWorker Remote",
+  connectRemote: "Hubungkan ke Flux Agent By Simplex Remote",
+  connectRemoteTitle: "Hubungkan ke Flux Agent By Simplex Remote",
   connectRemoteSubtitle:
     "Masukkan URL server OmniWorker API yang sedang berjalan.",
   remoteServerUrl: "URL Server",

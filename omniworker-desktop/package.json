@@ -1,7 +1,7 @@
 {
   "name": "omniworker-desktop",
   "version": "0.4.3",
-  "description": "OmniWorker Agent Desktop — self-improving AI assistant",
+  "description": "Flux Agent By Simplex — self-improving AI assistant",
   "main": "./out/main/index.js",
   "author": "fathah",
   "homepage": "https://github.com/fathah/omniworker-desktop",

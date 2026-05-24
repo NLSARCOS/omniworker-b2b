@@ -3,7 +3,7 @@ export default {
   startingInstall: "インストールを開始しています",
   installationComplete: "インストール完了",
   installationFailed: "インストール失敗",
-  installingOmniWorker: "OmniWorker Agent をインストール中",
+  installingOmniWorker: "Flux Agent By Simplex をインストール中",
   installationFailedHint:
     "インストールに失敗しました。再試行するか、ターミナル経由でインストールしてください。",
   retryInstallation: "再試行",

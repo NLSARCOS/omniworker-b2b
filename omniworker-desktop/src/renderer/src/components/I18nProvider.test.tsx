@@ -57,7 +57,7 @@ describe("I18nProvider", () => {
     });
 
     expect(
-      await screen.findByText("Bienvenido a OmniWorker"),
+      await screen.findByText("Bienvenido a Flux Agent By Simplex"),
     ).toBeInTheDocument();
   });
 
@@ -76,7 +76,7 @@ describe("I18nProvider", () => {
 
     expect(setLocale).toHaveBeenLastCalledWith("es");
     expect(
-      await screen.findByText("Bienvenido a OmniWorker"),
+      await screen.findByText("Bienvenido a Flux Agent By Simplex"),
     ).toBeInTheDocument();
   });
 });

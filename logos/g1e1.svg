@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="134.88013"
+   height="134.88013"
+   viewBox="0 0 134.88013 134.88013"
+   fill="none"
+   version="1.1"
+   id="svg9"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs9" />
+  <g
+     id="g11"
+     transform="translate(-528.22167,147.59134)">
+    <circle
+       style="font-variation-settings:'opsz' 32, 'wght' 200;fill:#0ad062;fill-opacity:1;stroke-width:17.9868"
+       id="path10"
+       cx="595.66174"
+       cy="-80.151283"
+       r="67.440063"
+       transform="translate(1.7665296e-6)" />
+    <g
+       id="g10"
+       transform="matrix(0.72996393,0,0,0.77668143,152.65059,35.658579)">
+      <path
+         d="m 648.58867,-91.457292 h -18.56 v -7.68 h 18.56 v -94.848018 h -17.408 v -7.68 h 17.408 c 6.144,0 8.192,3.072 8.192,8.064 v 94.080018 c 0,4.992 -2.048,8.064 -8.192,8.064 z"
+         fill="#0ad062"
+         id="path1-1"
+         style="fill:#ffffff" />
+      <path
+         d="m 581.52545,-91.926402 h -18.56 c -6.144,0 -8.192,-3.072 -8.192,-8.064 V -194.0704 c 0,-4.992 2.048,-8.064 8.192,-8.064 h 17.408 v 7.68 h -17.408 v 94.847998 h 18.56 z"
+         fill="#0ad062"
+         id="path9-7"
+         style="fill:#ffffff" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:100.994px;font-family:Inter;-inkscape-font-specification:'Inter, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#ffffff;stroke-width:8.41544;stroke-dasharray:none"
+         x="579.18292"
+         y="-111.88854"
+         id="text9-5"><tspan
+           id="tspan9-5"
+           x="579.18292"
+           y="-111.88854"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:100.994px;font-family:Inter;-inkscape-font-specification:'Inter, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#ffffff;stroke-width:8.41544;stroke-dasharray:none">F</tspan></text>
+    </g>
+  </g>
+</svg>

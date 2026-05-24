@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="316.00723"
+   height="110.6771"
+   viewBox="0 0 316.00723 110.6771"
+   fill="none"
+   version="1.1"
+   id="svg9"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs9" />
+  <path
+     d="m 307.81523,110.6771 h -18.56 v -7.68 h 18.56 V 8.1490873 h -17.408 V 0.46908731 h 17.408 c 6.144,0 8.192,3.07199999 8.192,8.06399999 V 102.6131 c 0,4.992 -2.048,8.064 -8.192,8.064 z"
+     fill="#0ad062"
+     id="path1" />
+  <path
+     d="M 26.752,110.20799 H 8.1920003 c -6.144,0 -8.19200002383543,-3.072 -8.19200002383543,-8.064 V 8.0639973 C 2.7616457e-7,3.0719973 2.0480003,-2.6961926e-6 8.1920003,-2.6961926e-6 H 25.6 V 7.6799973 H 8.1920003 V 102.52799 H 26.752 Z"
+     fill="#0ad062"
+     id="path9" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:100.994px;font-family:Inter;-inkscape-font-specification:'Inter, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#0D0D0D;stroke-width:8.41544;stroke-dasharray:none"
+     x="24.409439"
+     y="90.245857"
+     id="text9"><tspan
+       id="tspan9"
+       x="24.409439"
+       y="90.245857"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:100.994px;font-family:Inter;-inkscape-font-specification:'Inter, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#0D0D0D;stroke-width:8.41544;stroke-dasharray:none">Flux</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.2271px;font-family:Inter;-inkscape-font-specification:'Inter, @opsz=32,wght=200';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;font-variation-settings:'opsz' 32, 'wght' 200;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#0D0D0D;stroke-width:3.18532;stroke-dasharray:none"
+     x="203.82901"
+     y="75.121979"
+     id="text9-3"><tspan
+       id="tspan9-9"
+       x="203.82901"
+       y="75.121979"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.2271px;font-family:Inter;-inkscape-font-specification:'Inter, @opsz=32,wght=200';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;font-variation-settings:'opsz' 32, 'wght' 200;fill:#0D0D0D;stroke-width:3.18532;stroke-dasharray:none">Agent</tspan></text>
+</svg>

@@ -1,6 +1,6 @@
 export default {
   title: "Memoria",
-  subtitle: "Lo que OmniWorker recuerda sobre ti y tu entorno entre sesiones.",
+  subtitle: "Lo que Flux Agent By Simplex recuerda sobre ti y tu entorno entre sesiones.",
   sessions: "Sesiones",
   messages: "Mensajes",
   memories: "Recuerdos",

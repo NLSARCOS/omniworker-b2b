@@ -58,6 +58,6 @@ export default {
     model: "Mostrar o cambiar el modelo actual",
     memory: "Mostrar la memoria del agente",
     persona: "Mostrar la personalidad actual",
-    version: "Mostrar la versión de OmniWorker",
+    version: "Mostrar la versión de Flux Agent By Simplex",
   },
 } as const;
