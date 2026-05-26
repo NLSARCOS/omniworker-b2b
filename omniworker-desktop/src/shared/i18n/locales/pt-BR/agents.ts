@@ -1,7 +1,7 @@
 export default {
   title: "Perfis",
   subtitle:
-    "Cada perfil é um espaço de trabalho isolado do OmniWorker com sua própria configuração, memória e habilidades",
+    "Cada perfil é um espaço de trabalho isolado do Flux Agent com sua própria configuração, memória e habilidades",
   newAgent: "Novo Agente",
   namePlaceholder: "Nome do agente (ex: coder)",
   cloneConfig: "Clonar configuração e chaves de API do padrão",

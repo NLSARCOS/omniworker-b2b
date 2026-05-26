@@ -190,27 +190,7 @@ export async function bootstrapEngram(onProgress?: (detail: string, step: number
     return true;
   }
 
-  // 1. Try Homebrew on macOS as preferred path
-  if (process.platform === "darwin") {
-    console.log("[Engram] Binary not found. Attempting to install via Homebrew...");
-    onProgress?.("Intentando instalar Engram vía Homebrew...", 1);
-    try {
-      execSync("brew install gentleman-programming/tap/engram", {
-        stdio: "ignore",
-        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
-      });
-      console.log("[Engram] Successfully installed engram via Homebrew tap!");
-      if (existsSync(findEngramBinary())) {
-        onProgress?.("¡Engram instalado con éxito vía Homebrew!", 3);
-        return true;
-      }
-    } catch (err) {
-      console.warn("[Engram] Homebrew install failed. Falling back to static download.", err);
-      onProgress?.("Homebrew no disponible. Descargando de GitHub...", 2);
-    }
-  } else {
-    onProgress?.("Descargando binario de Engram desde GitHub...", 2);
-  }
+  onProgress?.("Descargando binario de Engram desde GitHub...", 2);
 
   // 2. Fallback to direct static download from GitHub releases (Zero-Touch)
   console.log("[Engram] Downloading precompiled static binary from GitHub releases...");

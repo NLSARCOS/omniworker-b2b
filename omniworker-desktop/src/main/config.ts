@@ -276,7 +276,45 @@ export function setModelConfig(
 
   let content = readFileSync(configFile, "utf-8");
 
+  // Check if there's an ACTIVE (uncommented) model: section.
+  // The template config.yaml may have everything commented out, which means
+  // regex replacements silently fail and the gateway never learns about the
+  // Smart Router base_url — root cause of production auth failures.
+  const hasActiveModelSection = /^\s*model:\s*$/m.test(content);
   const providerRegex = /^(\s*provider:\s*)["']?[^"'\n#]*["']?/m;
+  const hasActiveProvider = providerRegex.test(content);
+
+  if (!hasActiveModelSection || !hasActiveProvider) {
+    // No active model: section — inject one at the top of the file
+    // (after any initial comments, before the first config block)
+    const modelBlock = [
+      "",
+      "# Model configuration (auto-configured by desktop app)",
+      "model:",
+      `  provider: "${provider}"`,
+      `  default: "${model}"`,
+      baseUrl ? `  base_url: "${baseUrl}"` : "",
+      "  streaming: true",
+      "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    // Insert after the first blank line or at the very top
+    const firstBlankLine = content.indexOf("\n\n");
+    if (firstBlankLine >= 0) {
+      content =
+        content.slice(0, firstBlankLine) +
+        modelBlock +
+        content.slice(firstBlankLine);
+    } else {
+      content = modelBlock + "\n" + content;
+    }
+    safeWriteFile(configFile, content);
+    return;
+  }
+
+  // Active model section exists — update in-place
   if (providerRegex.test(content)) {
     content = content.replace(providerRegex, `$1"${provider}"`);
   }
@@ -486,4 +524,3 @@ export function getDeviceName(): string {
     return "Desktop App";
   }
 }
-

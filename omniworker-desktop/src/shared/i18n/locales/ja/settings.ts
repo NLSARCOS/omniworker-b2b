@@ -1,7 +1,7 @@
 export default {
   title: "設定",
   sections: {
-    omniworkerAgent: "Flux Agent By Simplex",
+    omniworkerAgent: "Flux Agent",
     appearance: "外観",
     credentialPool: "認証情報プール",
   },
@@ -42,14 +42,14 @@ export default {
   modelHint: "デフォルトのモデル名（空欄でプロバイダのデフォルトを使用）",
   customBaseUrlHint: "OpenAI 互換 API エンドポイント",
   poolHint:
-    "同じプロバイダの API キーを複数追加して自動ローテーション・負荷分散。OmniWorker が順に使い回します。",
+    "同じプロバイダの API キーを複数追加して自動ローテーション・負荷分散。Flux Agent が順に使い回します。",
   add: "追加",
   remove: "削除",
   keyLabel: "キー",
   empty: "（空）",
   dataSection: "データ",
   dataHint:
-    "OmniWorker の設定、セッション、スキル、メモリのエクスポート・インポートを行います。",
+    "Flux Agent の設定、セッション、スキル、メモリのエクスポート・インポートを行います。",
   backingUp: "バックアップ中...",
   exportBackup: "バックアップをエクスポート",
   importing: "インポート中...",
@@ -64,12 +64,12 @@ export default {
   runDiagnosis: "診断を実行",
   running: "実行中...",
   debugDump: "デバッグダンプ",
-  migrationDetected: "Flux Agent By Simplex インストールを検出",
+  migrationDetected: "Flux Agent インストールを検出",
   migrationDesc:
-    "<code>{{path}}</code> に OmniWorker が見つかりました。設定・API キー・セッション・スキルを OmniWorker に移行できます。",
+    "<code>{{path}}</code> に Flux Agent が見つかりました。設定・API キー・セッション・スキルを Flux Agent に移行できます。",
   migrationDismiss: "再表示しない",
   migrating: "移行中...",
-  migrateToOmniWorker: "Flux Agent By Simplex に移行",
+  migrateToOmniWorker: "Flux Agent に移行",
   skip: "スキップ",
   appearanceHint: "好みのインターフェース外観を選択",
   apiKeyPlaceholder: "API キー",
@@ -77,11 +77,11 @@ export default {
   connectionSection: "接続",
   modeLocal: "ローカル",
   modeRemote: "リモート",
-  modeLocalHint: "このデバイスにインストールされた Flux Agent By Simplex を使用",
-  modeRemoteHint: "ネットワークまたはクラウド上の Flux Agent By Simplex API サーバに接続",
+  modeLocalHint: "このデバイスにインストールされた Flux Agent を使用",
+  modeRemoteHint: "ネットワークまたはクラウド上の Flux Agent API サーバに接続",
   remoteUrl: "リモート URL",
   remoteUrlHint:
-    "OmniWorker API サーバの URL（/health と /v1/chat/completions を公開している必要あり）",
+    "Flux Agent API サーバの URL（/health と /v1/chat/completions を公開している必要あり）",
   remoteApiKey: "API キー",
   remoteApiKeyHint:
     "リモートホストの API_SERVER_KEY と一致させてください。サーバが認証なしリクエストを受け付ける場合は空欄で OK。",
@@ -90,7 +90,7 @@ export default {
   save: "保存",
   serverConfigTitle: "サーバ設定",
   serverConfigHint:
-    "リモート Flux Agent By Simplex サーバに接続中です。モデル選択、プロバイダ API キー、認証情報はサーバ側の <code>~/.omniworker/.env</code> と <code>config.yaml</code> で管理されます。ホスト側で編集（例：<code>docker exec -it Flux Agent By Simplex vi /opt/data/.env</code>）してコンテナを再起動してください。",
+    "リモート Flux Agent サーバに接続中です。モデル選択、プロバイダ API キー、認証情報はサーバ側の <code>~/.omniworker/.env</code> と <code>config.yaml</code> で管理されます。ホスト側で編集（例：<code>docker exec -it Flux Agent vi /opt/data/.env</code>）してコンテナを再起動してください。",
   connectionMode: "モード",
   switchedToLocal: "ローカルモードに切り替えました",
 } as const;

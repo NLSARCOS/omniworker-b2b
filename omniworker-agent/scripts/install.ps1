@@ -38,9 +38,7 @@ $NodeVersion = "22"
 function Write-Banner {
     Write-Host ""
     Write-Host "┌─────────────────────────────────────────────────────────┐" -ForegroundColor Magenta
-    Write-Host "│             ⚕ OmniWorker Agent Installer                    │" -ForegroundColor Magenta
-    Write-Host "├─────────────────────────────────────────────────────────┤" -ForegroundColor Magenta
-    Write-Host "│  An open source AI agent by Nous Research.              │" -ForegroundColor Magenta
+    Write-Host "│             ⚕ Flux Agent Installer                      │" -ForegroundColor Magenta
     Write-Host "└─────────────────────────────────────────────────────────┘" -ForegroundColor Magenta
     Write-Host ""
 }
@@ -1591,7 +1589,7 @@ function Main {
     Install-Repository
     Install-Venv
     Install-Dependencies
-    Setup-LocalLlm
+    # Setup-LocalLlm
     Install-NodeDeps
     Set-PathVariable
     Copy-ConfigTemplates

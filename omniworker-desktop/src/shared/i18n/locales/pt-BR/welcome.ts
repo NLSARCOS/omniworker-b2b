@@ -1,5 +1,5 @@
 export default {
-  title: "Bem-vindo ao Flux Agent By Simplex",
+  title: "Bem-vindo ao Flux Agent",
   subtitle:
     "Seu assistente de IA que se aprimora sozinho e roda localmente na sua máquina. Privado, poderoso e sempre aprendendo.",
   installIssueTitle: "Problema na Instalação",
@@ -11,10 +11,10 @@ export default {
   installSizeHint: "Isso instalará os componentes necessários (~2 GB)",
   copyInstallCommand: "Copiar comando de instalação",
   dividerOr: "ou",
-  connectRemote: "Conectar ao Flux Agent By Simplex Remoto",
-  connectRemoteTitle: "Conectar ao Flux Agent By Simplex Remoto",
+  connectRemote: "Conectar ao Flux Agent Remoto",
+  connectRemoteTitle: "Conectar ao Flux Agent Remoto",
   connectRemoteSubtitle:
-    "Insira a URL de um servidor da API do OmniWorker em execução.",
+    "Insira a URL de um servidor da API do Flux Agent em execução.",
   remoteServerUrl: "URL do Servidor",
   remoteApiKey: "Chave da API (opcional)",
   remoteApiKeyPlaceholder: "Token Bearer (API_SERVER_KEY)",

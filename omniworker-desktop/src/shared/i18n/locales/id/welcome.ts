@@ -1,5 +1,5 @@
 export default {
-  title: "Selamat datang di Flux Agent By Simplex",
+  title: "Selamat datang di Flux Agent",
   subtitle:
     "Asisten AI yang terus berkembang dan berjalan lokal di mesin Anda. Privat, kuat, dan selalu belajar.",
   installIssueTitle: "Masalah Instalasi",
@@ -11,10 +11,10 @@ export default {
   installSizeHint: "Ini akan menginstal komponen yang diperlukan (~2 GB)",
   copyInstallCommand: "Salin perintah instalasi",
   dividerOr: "atau",
-  connectRemote: "Hubungkan ke Flux Agent By Simplex Remote",
-  connectRemoteTitle: "Hubungkan ke Flux Agent By Simplex Remote",
+  connectRemote: "Hubungkan ke Flux Agent Remote",
+  connectRemoteTitle: "Hubungkan ke Flux Agent Remote",
   connectRemoteSubtitle:
-    "Masukkan URL server OmniWorker API yang sedang berjalan.",
+    "Masukkan URL server Flux Agent API yang sedang berjalan.",
   remoteServerUrl: "URL Server",
   remoteApiKey: "API Key (opsional)",
   remoteApiKeyPlaceholder: "Bearer token (API_SERVER_KEY)",

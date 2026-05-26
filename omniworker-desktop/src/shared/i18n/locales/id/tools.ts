@@ -74,7 +74,7 @@ export default {
   },
   mcpServers: "Server MCP",
   mcpDescription:
-    "Server Model Context Protocol yang dikonfigurasi di config.yaml. Kelola melalui <code>omniworker mcp add/remove</code> di terminal.",
+    "Server Model Context Protocol yang dikonfigurasi di config.yaml. Kelola melalui <code>flux-agent mcp add/remove</code> di terminal.",
   http: "HTTP",
   stdio: "stdio",
   disabled: "nonaktif",

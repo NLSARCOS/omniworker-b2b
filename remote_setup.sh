@@ -27,18 +27,21 @@ JWT_SECRET="super-secret-jwt-key-2026-thelab"
 JWT_REFRESH_SECRET="super-secret-refresh-jwt-key-2026"
 ENVEOF
 
+echo "Modifying schema.prisma for PostgreSQL..."
+sed -i 's/provider = "sqlite"/provider = "postgresql"/g' prisma/schema.prisma
+
 echo "Starting Docker Compose..."
 docker compose up -d --build
 
 echo "Waiting for DB to start..."
 sleep 15
-docker compose exec -T omniworker-saas npx prisma migrate deploy || docker compose exec -T omniworker-saas npx prisma db push || true
+docker compose exec -T omniworker-saas npx prisma@5.22.0 db push || true
 
 echo "Configuring Nginx..."
 cat << 'NGINXEOF' > /etc/nginx/sites-available/omniworker
 server {
     listen 80;
-    server_name worker.thelab.lat api.worker.thelab.lat;
+    server_name flux.simplex.lat;
 
     location /downloads/ {
         alias /opt/omniworker/downloads/;
@@ -66,6 +69,7 @@ rm -f /etc/nginx/sites-enabled/default
 systemctl restart nginx
 
 # Run certbot (this will only succeed if Cloudflare proxy allows it)
-certbot --nginx -d worker.thelab.lat -d api.worker.thelab.lat --non-interactive --agree-tos -m admin@thelab.lat || echo "Certbot failed, probably due to DNS propagation or Cloudflare settings. Using HTTP for now."
+certbot --nginx -d flux.simplex.lat --non-interactive --agree-tos -m admin@simplex.lat || echo "Certbot failed, probably due to DNS propagation or Cloudflare settings. Using HTTP for now."
 
 echo "Setup complete."
+

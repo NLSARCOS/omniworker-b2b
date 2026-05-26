@@ -30,7 +30,7 @@ export default {
   },
   mcpServers: "MCP 服务器",
   mcpDescription:
-    "在 config.yaml 中配置的模型上下文协议服务器。在终端中使用 <code>omniworker mcp add/remove</code> 管理。",
+    "在 config.yaml 中配置的模型上下文协议服务器。在终端中使用 <code>flux-agent mcp add/remove</code> 管理。",
   http: "HTTP",
   stdio: "标准IO",
   disabled: "已禁用",

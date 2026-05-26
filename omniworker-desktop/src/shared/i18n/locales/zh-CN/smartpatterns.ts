@@ -3,7 +3,7 @@ export default {
   subtitle: "自动检测的习惯和主动任务调度",
   refresh: "刷新",
   empty: "尚未检测到任何模式",
-  emptyHint: "随着您使用 Flux Agent By Simplex，AI 将学习您的习惯并在此处建议自动化任务",
+  emptyHint: "随着您使用 Flux Agent，AI 将学习您的习惯并在此处建议自动化任务",
   loadFailed: "加载模式失败",
   confidence: "置信度",
   occurrences: "出现次数",

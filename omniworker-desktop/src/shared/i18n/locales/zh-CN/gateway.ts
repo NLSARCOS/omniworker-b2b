@@ -5,5 +5,5 @@ export default {
   status: "状态",
   running: "运行中",
   stopped: "已停止",
-  gatewayHint: "将 Flux Agent By Simplex 连接到 Telegram、Discord、Slack 等平台",
+  gatewayHint: "将 Flux Agent 连接到 Telegram、Discord、Slack 等平台",
 } as const;

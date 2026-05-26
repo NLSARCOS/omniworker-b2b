@@ -1,7 +1,7 @@
 export default {
   title: "Configuración",
   sections: {
-    omniworkerAgent: "Flux Agent By Simplex",
+    omniworkerAgent: "Flux Agent",
     appearance: "Apariencia",
     credentialPool: "Grupo de credenciales",
   },
@@ -22,7 +22,7 @@ export default {
   },
   notDetected: "No detectado",
   updatedSuccessfully: "¡Actualizado correctamente!",
-  updateSuccess: "Flux Agent By Simplex se actualizó correctamente.",
+  updateSuccess: "Flux Agent se actualizó correctamente.",
   updateFailed: "La actualización falló.",
   version: "v{{version}}",
   proxyPlaceholder: "p. ej. socks5://127.0.0.1:1080 o http://proxy:8080",
@@ -32,6 +32,9 @@ export default {
   forceIpv4: "Forzar IPv4",
   forceIpv4Hint:
     "Desactiva IPv6 para corregir problemas de tiempo de espera de conexión en algunas redes",
+  disableLocalSlm: "Desactivar modelo local (Solo Nube)",
+  disableLocalSlmHint:
+    "Desactiva por completo el modelo local SLM y fuerza todas las peticiones a través del SaaS en la nube. Corrige cuelgues si el puerto 8080 está ocupado.",
   httpProxy: "Proxy HTTP",
   httpProxyHint:
     "Proxy SOCKS o HTTP para todas las conexiones salientes (déjalo en blanco para detección automática)",
@@ -44,14 +47,14 @@ export default {
     "Nombre del modelo predeterminado (déjalo en blanco para usar el valor predeterminado del proveedor)",
   customBaseUrlHint: "Endpoint de API compatible con OpenAI",
   poolHint:
-    "Agrega varias API keys para el mismo proveedor para la rotación automática y el equilibrio de carga. OmniWorker alternará entre ellas.",
+    "Agrega varias API keys para el mismo proveedor para la rotación automática y el equilibrio de carga. Flux Agent alternará entre ellas.",
   add: "Agregar",
   remove: "Quitar",
   keyLabel: "Clave",
   empty: "(vacío)",
   dataSection: "Datos",
   dataHint:
-    "Exporta o importa tu configuración de OmniWorker, sesiones, habilidades y memoria.",
+    "Exporta o importa tu configuración de Flux Agent, sesiones, habilidades y memoria.",
   backingUp: "Creando copia de seguridad...",
   exportBackup: "Exportar copia de seguridad",
   importing: "Importando...",
@@ -66,12 +69,12 @@ export default {
   runDiagnosis: "Ejecutar diagnóstico",
   running: "Ejecutando...",
   debugDump: "Volcado de depuración",
-  migrationDetected: "Se detectó una instalación de Flux Agent By Simplex",
+  migrationDetected: "Se detectó una instalación de Flux Agent",
   migrationDesc:
-    "Se encontró OmniWorker en <code>{{path}}</code>. Puedes migrar tu configuración, API keys, sesiones y habilidades a OmniWorker.",
+    "Se encontró Flux Agent en <code>{{path}}</code>. Puedes migrar tu configuración, API keys, sesiones y habilidades a Flux Agent.",
   migrationDismiss: "No volver a mostrar",
   migrating: "Migrando...",
-  migrateToOmniWorker: "Migrar a Flux Agent By Simplex",
+  migrateToOmniWorker: "Migrar a Flux Agent",
   skip: "Omitir",
   appearanceHint: "Elige la apariencia de interfaz que prefieras",
   apiKeyPlaceholder: "API key",
@@ -79,12 +82,12 @@ export default {
   connectionSection: "Conexión",
   modeLocal: "Local",
   modeRemote: "Remoto",
-  modeLocalHint: "Usando Flux Agent By Simplex instalado en este dispositivo",
+  modeLocalHint: "Usando Flux Agent instalado en este dispositivo",
   modeRemoteHint:
-    "Conectarse a un servidor de API de OmniWorker en tu red o en la nube",
+    "Conectarse a un servidor de API de Flux Agent en tu red o en la nube",
   remoteUrl: "URL remota",
   remoteUrlHint:
-    "La URL del servidor de API de OmniWorker (debe exponer /health y /v1/chat/completions)",
+    "La URL del servidor de API de Flux Agent (debe exponer /health y /v1/chat/completions)",
   remoteApiKey: "API key",
   remoteApiKeyHint:
     "Coincide con API_SERVER_KEY en el host remoto. Déjalo vacío si el servidor acepta solicitudes no autenticadas.",
@@ -93,7 +96,7 @@ export default {
   save: "Guardar",
   serverConfigTitle: "Configuración del servidor",
   serverConfigHint:
-    "Estás conectado a un servidor remoto de Flux Agent By Simplex. La selección de modelos, las API keys de proveedores y las credenciales se administran en <code>~/.omniworker/.env</code> y <code>config.yaml</code> del servidor. Edítalos en el host (por ejemplo, <code>docker exec -it Flux Agent By Simplex vi /opt/data/.env</code>) y reinicia el contenedor.",
+    "Estás conectado a un servidor remoto de Flux Agent. La selección de modelos, las API keys de proveedores y las credenciales se administran en <code>~/.omniworker/.env</code> y <code>config.yaml</code> del servidor. Edítalos en el host (por ejemplo, <code>docker exec -it Flux Agent vi /opt/data/.env</code>) y reinicia el contenedor.",
   connectionMode: "Modo",
   switchedToLocal: "Se cambió al modo local",
 } as const;

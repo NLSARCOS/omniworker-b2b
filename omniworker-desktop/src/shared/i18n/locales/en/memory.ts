@@ -1,7 +1,7 @@
 export default {
   title: "Memory",
   subtitle:
-    "What OmniWorker remembers about you and your environment across sessions.",
+    "What Flux Agent remembers about you and your environment across sessions.",
   sessions: "Sessions",
   messages: "Messages",
   memories: "Memories",
@@ -20,14 +20,14 @@ export default {
   noProvidersFound: "No memory providers found in this installation.",
   openProviderWebsite: "Open provider website",
   noMemoriesYet:
-    "No memories yet. OmniWorker will save important facts as you chat.",
+    "No memories yet. Flux Agent will save important facts as you chat.",
   noMemoryEntries: "No memory entries yet.",
   noToolsetsFound: "No toolsets found.",
   addManuallyHint: "You can also add memories manually using the button above.",
   userProfileHint:
-    "Tell OmniWorker about yourself — name, role, preferences, communication style.",
+    "Tell Flux Agent about yourself — name, role, preferences, communication style.",
   providersHint:
-    "Pluggable memory providers give OmniWorker advanced long-term memory. Built-in memory (above) is always active alongside the selected provider.",
+    "Pluggable memory providers give Flux Agent advanced long-term memory. Built-in memory (above) is always active alongside the selected provider.",
   providersHintActive: "Active: <strong>{{provider}}</strong>",
   providersHintInactive: "No external provider active — using built-in only.",
   enterEnvKey: "Enter {{key}}",

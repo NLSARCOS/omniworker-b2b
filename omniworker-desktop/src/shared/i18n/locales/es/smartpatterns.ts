@@ -4,7 +4,7 @@ export default {
   refresh: "Actualizar",
   empty: "Aún no se han detectado patrones",
   emptyHint:
-    "A medida que uses OmniWorker, la IA aprenderá tus hábitos y sugerirá tareas automatizadas aquí",
+    "A medida que uses Flux Agent, la IA aprenderá tus hábitos y sugerirá tareas automatizadas aquí",
   loadFailed: "Error al cargar patrones",
   confidence: "Confianza",
   occurrences: "Ocurrencias",

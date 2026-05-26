@@ -1,7 +1,7 @@
 export default {
   title: "Memória",
   subtitle:
-    "O que o OmniWorker lembra sobre você e seu ambiente entre as sessões.",
+    "O que o Flux Agent lembra sobre você e seu ambiente entre as sessões.",
   sessions: "Sessões",
   messages: "Mensagens",
   memories: "Memórias",
@@ -20,15 +20,15 @@ export default {
   noProvidersFound: "Nenhum provedor de memória encontrado nesta instalação.",
   openProviderWebsite: "Abrir site do provedor",
   noMemoriesYet:
-    "Nenhuma memória ainda. O OmniWorker salvará fatos importantes conforme vocês conversam.",
+    "Nenhuma memória ainda. O Flux Agent salvará fatos importantes conforme vocês conversam.",
   noMemoryEntries: "Nenhuma entrada de memória ainda.",
   noToolsetsFound: "Nenhum conjunto de ferramentas encontrado.",
   addManuallyHint:
     "Você também pode adicionar memórias manualmente usando o botão acima.",
   userProfileHint:
-    "Conte ao OmniWorker sobre você — nome, cargo, preferências, estilo de comunicação.",
+    "Conte ao Flux Agent sobre você — nome, cargo, preferências, estilo de comunicação.",
   providersHint:
-    "Provedores de memória plugáveis dão ao OmniWorker uma memória de longo prazo avançada. A memória integrada (acima) está sempre ativa ao lado do provedor selecionado.",
+    "Provedores de memória plugáveis dão ao Flux Agent uma memória de longo prazo avançada. A memória integrada (acima) está sempre ativa ao lado do provedor selecionado.",
   providersHintActive: "Ativo: <strong>{{provider}}</strong>",
   providersHintInactive:
     "Nenhum provedor externo ativo — usando apenas a integrada.",

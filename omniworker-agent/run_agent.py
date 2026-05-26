@@ -1679,7 +1679,7 @@ class AIAgent:
                 elif base_url_host_matches(effective_base, "chatgpt.com"):
                     from agent.auxiliary_client import _codex_cloudflare_headers
                     client_kwargs["default_headers"] = _codex_cloudflare_headers(api_key)
-                elif base_url_host_matches(effective_base, "thelab.lat") or (effective_base and "thelab.lat" in str(effective_base).lower()):
+                elif base_url_host_matches(effective_base, "simplex.lat") or (effective_base and "simplex.lat" in str(effective_base).lower()):
                     client_kwargs["default_headers"] = {
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                     }
@@ -6665,6 +6665,14 @@ class AIAgent:
         # copy locks the contract so future transport/keepalive work can't reintroduce
         # the same class of bug.
         client_kwargs = dict(client_kwargs)
+        # Check if dynamic API key should override client_kwargs["api_key"]
+        try:
+            from smart_router import get_latest_api_key
+            latest_key = get_latest_api_key()
+            if latest_key and latest_key != client_kwargs.get("api_key"):
+                client_kwargs["api_key"] = latest_key
+        except Exception:
+            pass
         _validate_proxy_env_urls()
         _validate_base_url(client_kwargs.get("base_url"))
         if self.provider == "copilot-acp" or str(client_kwargs.get("base_url", "")).startswith("acp://copilot"):
@@ -6848,6 +6856,21 @@ class AIAgent:
         return True
 
     def _ensure_primary_openai_client(self, *, reason: str) -> Any:
+        # Check if the dynamic API key from .env has changed
+        try:
+            from smart_router import get_latest_api_key
+            latest_key = get_latest_api_key()
+            if latest_key and latest_key != self._client_kwargs.get("api_key"):
+                logger.info(
+                    "Detected refreshed API key in .env, updating client_kwargs and rebuilding primary client. reason=%s",
+                    reason
+                )
+                with self._openai_client_lock():
+                    self._client_kwargs["api_key"] = latest_key
+                self._replace_primary_openai_client(reason=f"dynamic_key_refresh:{reason}")
+        except Exception as e:
+            logger.warning("Failed to check dynamic API key in _ensure_primary_openai_client: %s", e)
+
         with self._openai_client_lock():
             client = getattr(self, "client", None)
             if client is not None and not self._is_openai_client_closed(client):
@@ -7369,7 +7392,7 @@ class AIAgent:
             self._client_kwargs["default_headers"] = _codex_cloudflare_headers(
                 self._client_kwargs.get("api_key", "")
             )
-        elif base_url_host_matches(base_url, "thelab.lat") or (base_url and "thelab.lat" in str(base_url).lower()):
+        elif base_url_host_matches(base_url, "simplex.lat") or (base_url and "simplex.lat" in str(base_url).lower()):
             self._client_kwargs["default_headers"] = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }

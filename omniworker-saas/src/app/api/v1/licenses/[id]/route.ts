@@ -94,9 +94,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       data: { status: "REVOKED", revokedAt: new Date() },
     }),
     prisma.tenantApiKey.deleteMany({ where: { licenseId: id } }),
-    prisma.edgeAgent.updateMany({
+    prisma.edgeAgent.deleteMany({
       where: { licenseId: id },
-      data: { licenseId: null },
     }),
   ]);
 

@@ -33,7 +33,7 @@ function Setup({
     try {
       // Configuramos el agente para que se conecte al Gateway de nuestro SaaS B2B
       const saasUrl =
-        import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+        import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
       const gatewayUrl = `${saasUrl}/api/v1`;
 
       // 1. Validate the API Key against the SaaS backend

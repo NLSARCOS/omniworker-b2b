@@ -15,7 +15,7 @@
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "dev:fresh": "OMNIWORKER_HOME=$(mktemp -d -t omniworker-fresh) electron-vite dev",
-    "prebuild": "bash scripts/download_slm.sh && bash scripts/bundle-claw3d.sh",
+    "prebuild": "bash scripts/download_slm.sh",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",

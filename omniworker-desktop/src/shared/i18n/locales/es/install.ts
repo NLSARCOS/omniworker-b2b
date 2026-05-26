@@ -3,7 +3,7 @@ export default {
   startingInstall: "Iniciando la instalación",
   installationComplete: "Instalación completada",
   installationFailed: "La instalación falló",
-  installingOmniWorker: "Instalando Flux Agent By Simplex",
+  installingOmniWorker: "Instalando Flux Agent",
   installationFailedHint:
     "La instalación falló. Inténtalo de nuevo o instala desde la terminal.",
   retryInstallation: "Reintentar la instalación",

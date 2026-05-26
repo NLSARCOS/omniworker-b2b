@@ -72,14 +72,18 @@ const OPENCODE_GO_MODEL_IDS = [...new Set(OPENCODE_GO_CATALOG.map(m => m.id))];
  *  - Short/simple prompts → speed
  */
 function classifyPromptComplexity(messages: { role: string; content: string }[]): "reasoning" | "balanced" | "speed" {
-  const fullText = messages.map(m => m.content || "").join(" ");
+  // Only analyze user/assistant messages — system prompts from agents are always
+  // huge (20K+ chars with skills, tools, AGENTS.md) and would always bias to
+  // "reasoning" tier even for simple messages like "hola".
+  const userMessages = messages.filter(m => m.role !== "system");
+  const fullText = userMessages.map(m => m.content || "").join(" ");
   const totalLength = fullText.length;
-  const messageCount = messages.length;
+  const messageCount = userMessages.length;
 
   // Complexity signals
   let score = 0;
 
-  // Length-based scoring
+  // Length-based scoring (user content only)
   if (totalLength > 4000) score += 3;
   else if (totalLength > 2000) score += 2;
   else if (totalLength > 800) score += 1;
@@ -99,11 +103,6 @@ function classifyPromptComplexity(messages: { role: string; content: string }[])
   // Conversation depth
   if (messageCount > 10) score += 2;
   else if (messageCount > 5) score += 1;
-
-  // System prompt depth (longer system prompts = more complex task)
-  const systemMsg = messages.find(m => m.role === "system");
-  if (systemMsg && systemMsg.content.length > 500) score += 2;
-  else if (systemMsg && systemMsg.content.length > 200) score += 1;
 
   // Map score to tier
   if (score >= 5) return "reasoning";
@@ -286,7 +285,11 @@ export async function POST(request: Request) {
       payload = { ...body, model: realModel, messages };
     }
 
-    const estimatedCost = 50;
+    // Dynamic cost estimation fallback (e.g. for streaming)
+    const promptCharCount = JSON.stringify(payload.messages || []).length;
+    const promptTokensEst = Math.max(10, Math.floor(promptCharCount / 4));
+    const completionTokensEst = isStream ? 500 : 300;
+    const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
 
     try {
       const aiResponse = await fetchWithBackoff(resolvedUrl, {
@@ -304,16 +307,34 @@ export async function POST(request: Request) {
         );
       }
 
+      let finalCost = estimatedCost;
+      let promptTokens = promptTokensEst;
+      let completionTokens = completionTokensEst;
+      let responseData: any = null;
+
+      if (!isStream) {
+        try {
+          responseData = await aiResponse.json();
+          if (responseData && responseData.usage) {
+            promptTokens = responseData.usage.prompt_tokens || promptTokens;
+            completionTokens = responseData.usage.completion_tokens || completionTokens;
+            finalCost = responseData.usage.total_tokens || finalCost;
+          }
+        } catch (e) {
+          console.warn("Failed to parse response JSON for actual tokens", e);
+        }
+      }
+
       // Deduct tokens + log
       if (auth.user.licenseId) {
         await prisma.license.update({
           where: { id: auth.user.licenseId },
-          data: { tokenBalance: { decrement: estimatedCost } },
+          data: { tokenBalance: { decrement: finalCost } },
         });
       } else {
         await prisma.user.update({
           where: { id: user.id },
-          data: { tokenBalance: { decrement: estimatedCost } },
+          data: { tokenBalance: { decrement: finalCost } },
         });
       }
 
@@ -321,8 +342,8 @@ export async function POST(request: Request) {
         data: {
           userId: user.id,
           tenantId: user.tenantId,
-          promptTokens: estimatedCost,
-          completionTks: 0,
+          promptTokens: promptTokens,
+          completionTks: completionTokens,
           modelUsed: requestedModel,
           taskType: requestedModel === "omniworker-code" ? "code_generation" : "cloud_reasoning",
           status: "completed",
@@ -339,8 +360,7 @@ export async function POST(request: Request) {
         });
       }
 
-      const data = await aiResponse.json();
-      return NextResponse.json(data);
+      return NextResponse.json(responseData || {});
     } catch (error) {
       console.error("[LLM Gateway Error]", error);
       await prisma.taskLog.create({
@@ -375,69 +395,90 @@ export async function POST(request: Request) {
 
   console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${requestedModel})`);
 
-  const estimatedCost = 50;
+    // Dynamic cost estimation fallback (e.g. for streaming)
+    const promptCharCount = JSON.stringify(body.messages || []).length;
+    const promptTokensEst = Math.max(10, Math.floor(promptCharCount / 4));
+    const completionTokensEst = isStream ? 500 : 300;
+    const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
 
-  try {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
 
-    if (targetProvider === "anthropic") {
-      headers["x-api-key"] = masterProvider.apiKey;
-      headers["anthropic-version"] = "2023-06-01";
-    } else {
-      headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
-    }
+      if (targetProvider === "anthropic") {
+        headers["x-api-key"] = masterProvider.apiKey;
+        headers["anthropic-version"] = "2023-06-01";
+      } else {
+        headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
+      }
 
-    const aiResponse = await fetchWithBackoff(targetUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ ...body, model: requestedModel }),
-    });
-
-    if (!aiResponse.ok) {
-      const errTxt = await aiResponse.text();
-      console.error(`[OmniWorker Cloud] Error ${targetProvider}:`, errTxt);
-      return NextResponse.json(
-        { error: `Error del proveedor (${targetProvider})` },
-        { status: 502 }
-      );
-    }
-
-    if (auth.user.licenseId) {
-      await prisma.license.update({
-        where: { id: auth.user.licenseId },
-        data: { tokenBalance: { decrement: estimatedCost } },
+      const aiResponse = await fetchWithBackoff(targetUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ ...body, model: requestedModel }),
       });
-    } else {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { tokenBalance: { decrement: estimatedCost } },
-      });
-    }
 
-    await prisma.taskLog.create({
-      data: {
-        userId: user.id,
-        tenantId: user.tenantId,
-        promptTokens: estimatedCost,
-        completionTks: 0,
-        modelUsed: requestedModel,
-        taskType: "cloud_reasoning",
-        status: "completed",
-      },
-    });
+      if (!aiResponse.ok) {
+        const errTxt = await aiResponse.text();
+        console.error(`[OmniWorker Cloud] Error ${targetProvider}:`, errTxt);
+        return NextResponse.json(
+          { error: `Error del proveedor (${targetProvider})` },
+          { status: 502 }
+        );
+      }
 
-    if (isStream) {
-      return new Response(aiResponse.body, {
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
+      let finalCost = estimatedCost;
+      let promptTokens = promptTokensEst;
+      let completionTokens = completionTokensEst;
+      let responseData: any = null;
+
+      if (!isStream) {
+        try {
+          responseData = await aiResponse.json();
+          if (responseData && responseData.usage) {
+            promptTokens = responseData.usage.prompt_tokens || promptTokens;
+            completionTokens = responseData.usage.completion_tokens || completionTokens;
+            finalCost = responseData.usage.total_tokens || finalCost;
+          }
+        } catch (e) {
+          console.warn("Failed to parse response JSON for actual tokens", e);
+        }
+      }
+
+      if (auth.user.licenseId) {
+        await prisma.license.update({
+          where: { id: auth.user.licenseId },
+          data: { tokenBalance: { decrement: finalCost } },
+        });
+      } else {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { tokenBalance: { decrement: finalCost } },
+        });
+      }
+
+      await prisma.taskLog.create({
+        data: {
+          userId: user.id,
+          tenantId: user.tenantId,
+          promptTokens: promptTokens,
+          completionTks: completionTokens,
+          modelUsed: requestedModel,
+          taskType: "cloud_reasoning",
+          status: "completed",
         },
       });
-    }
 
-    const data = await aiResponse.json();
-    return NextResponse.json(data);
+      if (isStream) {
+        return new Response(aiResponse.body, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          },
+        });
+      }
+
+      return NextResponse.json(responseData || {});
   } catch (error) {
     console.error("[LLM Gateway Error]", error);
 

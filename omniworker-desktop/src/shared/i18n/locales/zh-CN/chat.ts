@@ -54,6 +54,6 @@ export default {
     model: "查看或切换当前模型",
     memory: "查看代理记忆",
     persona: "查看当前人格",
-    version: "查看 Flux Agent By Simplex 版本",
+    version: "查看 Flux Agent 版本",
   },
 } as const;

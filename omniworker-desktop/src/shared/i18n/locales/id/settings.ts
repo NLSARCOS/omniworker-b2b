@@ -1,7 +1,7 @@
 export default {
   title: "Pengaturan",
   sections: {
-    omniworkerAgent: "Flux Agent By Simplex",
+    omniworkerAgent: "Flux Agent",
     appearance: "Tampilan",
     credentialPool: "Kumpulan Kredensial",
   },
@@ -23,7 +23,7 @@ export default {
   },
   notDetected: "Tidak terdeteksi",
   updatedSuccessfully: "Berhasil diperbarui!",
-  updateSuccess: "Flux Agent By Simplex berhasil diperbarui.",
+  updateSuccess: "Flux Agent berhasil diperbarui.",
   updateFailed: "Pembaruan gagal.",
   version: "v{{version}}",
   proxyPlaceholder: "mis. socks5://127.0.0.1:1080 atau http://proxy:8080",
@@ -44,14 +44,14 @@ export default {
   modelHint: "Nama model default (kosongkan untuk memakai default provider)",
   customBaseUrlHint: "Endpoint API kompatibel OpenAI",
   poolHint:
-    "Tambahkan beberapa API Key untuk provider yang sama agar OmniWorker dapat melakukan rotasi otomatis dan load balancing.",
+    "Tambahkan beberapa API Key untuk provider yang sama agar Flux Agent dapat melakukan rotasi otomatis dan load balancing.",
   add: "Tambah",
   remove: "Hapus",
   keyLabel: "Key",
   empty: "(kosong)",
   dataSection: "Data",
   dataHint:
-    "Ekspor atau impor konfigurasi OmniWorker, sesi, skill, dan memori Anda.",
+    "Ekspor atau impor konfigurasi Flux Agent, sesi, skill, dan memori Anda.",
   backingUp: "Membuat backup...",
   exportBackup: "Ekspor Backup",
   importing: "Mengimpor...",
@@ -66,12 +66,12 @@ export default {
   runDiagnosis: "Jalankan Diagnosis",
   running: "Berjalan...",
   debugDump: "Debug Dump",
-  migrationDetected: "Instalasi Flux Agent By Simplex Terdeteksi",
+  migrationDetected: "Instalasi Flux Agent Terdeteksi",
   migrationDesc:
-    "OmniWorker ditemukan di <code>{{path}}</code>. Anda dapat memigrasikan konfigurasi, API key, sesi, dan skill ke OmniWorker.",
+    "Flux Agent ditemukan di <code>{{path}}</code>. Anda dapat memigrasikan konfigurasi, API key, sesi, dan skill ke Flux Agent.",
   migrationDismiss: "Jangan tampilkan lagi",
   migrating: "Memigrasikan...",
-  migrateToOmniWorker: "Migrasi ke Flux Agent By Simplex",
+  migrateToOmniWorker: "Migrasi ke Flux Agent",
   skip: "Lewati",
   appearanceHint: "Pilih tampilan antarmuka yang Anda sukai",
   apiKeyPlaceholder: "API Key",
@@ -79,12 +79,12 @@ export default {
   connectionSection: "Koneksi",
   modeLocal: "Lokal",
   modeRemote: "Remote",
-  modeLocalHint: "Menggunakan Flux Agent By Simplex yang terinstal di perangkat ini",
+  modeLocalHint: "Menggunakan Flux Agent yang terinstal di perangkat ini",
   modeRemoteHint:
-    "Hubungkan ke server OmniWorker API di jaringan atau cloud Anda",
+    "Hubungkan ke server Flux Agent API di jaringan atau cloud Anda",
   remoteUrl: "URL Remote",
   remoteUrlHint:
-    "URL server OmniWorker API (harus mengekspos /health dan /v1/chat/completions)",
+    "URL server Flux Agent API (harus mengekspos /health dan /v1/chat/completions)",
   remoteApiKey: "API Key",
   remoteApiKeyHint:
     "Cocok dengan API_SERVER_KEY di host remote. Kosongkan jika server menerima request tanpa autentikasi.",
@@ -93,7 +93,7 @@ export default {
   save: "Simpan",
   serverConfigTitle: "Konfigurasi Server",
   serverConfigHint:
-    "Anda terhubung ke server Flux Agent By Simplex remote. Pilihan model, API key provider, dan kredensial dikelola di <code>~/.omniworker/.env</code> dan <code>config.yaml</code> pada server. Edit di host (mis. <code>docker exec -it Flux Agent By Simplex vi /opt/data/.env</code>) lalu restart container.",
+    "Anda terhubung ke server Flux Agent remote. Pilihan model, API key provider, dan kredensial dikelola di <code>~/.omniworker/.env</code> dan <code>config.yaml</code> pada server. Edit di host (mis. <code>docker exec -it Flux Agent vi /opt/data/.env</code>) lalu restart container.",
   connectionMode: "Mode",
   switchedToLocal: "Beralih ke mode lokal",
 } as const;

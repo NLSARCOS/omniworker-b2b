@@ -174,6 +174,10 @@ def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
     return home / new_subpath
 
 
+get_omniworker_dir = get_hermes_dir
+
+
+
 def display_omniworker_home() -> str:
     """Return a user-friendly display string for the current OMNIWORKER_HOME.
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
+import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
 
 interface LoginProps {
   onLoginSuccess: (userData: any, authData: any) => void;
@@ -29,7 +30,7 @@ async function loginRequest(
   deviceFingerprint?: string,
   deviceName?: string,
 ): Promise<{ user: any; accessToken: string; refreshToken?: string }> {
-  const saasUrl = "https://worker.thelab.lat";
+  const saasUrl = "https://flux.simplex.lat";
   const url = `${saasUrl}/api/v1/auth/login`;
   const opts: RequestInit = {
     method: "POST",
@@ -180,27 +181,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       >
         {/* Logo / Brand */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              background: "var(--accent)",
-              boxShadow: "0 0 15px var(--accent-subtle)",
-              margin: "0 auto 16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-              fontWeight: 900,
-              color: "var(--accent-btn-text)",
-              letterSpacing: "-0.5px",
-              fontFamily: "var(--font-mono)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-            }}
-          >
-            OW
+          <div style={{ marginBottom: "20px", display: "flex", justifyContent: "center" }}>
+            <OmniWorkerLogo size={44} />
           </div>
+
           <h1
             style={{
               fontSize: "24px",

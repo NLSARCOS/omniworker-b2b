@@ -12,7 +12,7 @@ REM   irm https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scr
 REM ============================================================================
 
 echo.
-echo  OmniWorker Agent Installer
+echo  Flux Agent Installer
 echo  Launching PowerShell installer...
 echo.
 

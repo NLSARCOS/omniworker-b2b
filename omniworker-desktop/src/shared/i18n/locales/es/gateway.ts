@@ -6,5 +6,5 @@ export default {
   running: "En ejecución",
   stopped: "Detenido",
   gatewayHint:
-    "Conecta OmniWorker con Telegram, Discord, Slack y otras plataformas",
+    "Conecta Flux Agent con Telegram, Discord, Slack y otras plataformas",
 } as const;

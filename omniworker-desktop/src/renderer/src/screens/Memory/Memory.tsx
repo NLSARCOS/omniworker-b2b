@@ -412,25 +412,25 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           to { opacity: 1; transform: translateY(0); }
         }
         .engram-glass-card {
-          background: rgba(15, 23, 42, 0.4);
+          background: var(--panel-bg);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid var(--border);
           border-radius: 12px;
           padding: 20px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .engram-glass-card:hover {
-          border-color: rgba(99, 102, 241, 0.2);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          border-color: var(--border-bright);
+          box-shadow: var(--panel-glow), var(--glass-shadow);
         }
         .engram-glass-tabs {
           display: flex;
           gap: 6px;
-          background: rgba(255, 255, 255, 0.02);
+          background: var(--bg-secondary);
           padding: 4px;
           border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border);
           margin-bottom: 8px;
         }
         .engram-glass-tab {
@@ -443,20 +443,20 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           border-radius: 8px;
           border: none;
           background: transparent;
-          color: var(--text-muted);
+          color: var(--text-secondary);
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .engram-glass-tab:hover {
-          color: var(--text);
-          background: rgba(255, 255, 255, 0.04);
+          color: var(--text-primary);
+          background: var(--bg-hover);
         }
         .engram-glass-tab.active {
-          color: #ffffff;
-          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+          color: var(--accent-btn-text);
+          background: var(--accent);
+          box-shadow: 0 4px 12px var(--accent-subtle);
         }
         .search-row {
           display: flex;
@@ -479,22 +479,22 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
         .engram-search-input {
           width: 100%;
           padding: 10px 16px 10px 38px;
-          background: rgba(0, 0, 0, 0.25);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--bg-primary);
+          border: 1px solid var(--border);
           border-radius: 8px;
-          color: var(--text);
+          color: var(--text-primary);
           font-size: 13px;
           outline: none;
           transition: all 0.2s ease;
         }
         .engram-search-input:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+          border-color: var(--accent);
+          box-shadow: 0 0 0 2px var(--accent-subtle);
         }
         .engram-observation-card {
           position: relative;
-          background: rgba(255, 255, 255, 0.015);
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
           border-radius: 10px;
           padding: 16px;
           display: flex;
@@ -503,8 +503,8 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           transition: all 0.2s ease;
         }
         .engram-observation-card:hover {
-          background: rgba(255, 255, 255, 0.03);
-          border-color: rgba(255, 255, 255, 0.08);
+          background: var(--bg-hover);
+          border-color: var(--border-bright);
         }
         .timeline-inspect-drawer {
           position: absolute;
@@ -513,12 +513,12 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           width: 420px;
           height: 100%;
           min-height: 500px;
-          background: rgba(10, 15, 28, 0.95);
+          background: var(--bg-elevated);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border-left: 1px solid rgba(255, 255, 255, 0.08);
+          border-left: 1px solid var(--border);
           border-radius: 0 12px 12px 0;
-          box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+          box-shadow: var(--glass-shadow);
           z-index: 100;
           display: flex;
           flex-direction: column;
@@ -543,7 +543,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           top: 20px;
           bottom: 20px;
           width: 2px;
-          background: rgba(255, 255, 255, 0.06);
+          background: var(--border);
           z-index: 1;
         }
         .timeline-entry-node {
@@ -556,30 +556,30 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           width: 12px;
           height: 12px;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.15);
-          border: 2px solid #0a0f1c;
+          background: var(--border);
+          border: 2px solid var(--bg-primary);
           margin-top: 14px;
           flex-shrink: 0;
         }
         .timeline-dot.focus {
-          background: #6366f1;
-          box-shadow: 0 0 8px #6366f1;
+          background: var(--accent);
+          box-shadow: 0 0 8px var(--accent);
           transform: scale(1.2);
         }
         .timeline-card {
           flex: 1;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
           border-radius: 8px;
           padding: 12px;
         }
         .timeline-card.focus {
-          background: rgba(99, 102, 241, 0.08);
-          border-color: rgba(99, 102, 241, 0.3);
+          background: var(--accent-subtle);
+          border-color: var(--accent);
         }
         .conflict-grid-item {
-          background: rgba(255, 255, 255, 0.015);
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
           border-radius: 12px;
           padding: 18px;
           margin-bottom: 16px;
@@ -600,8 +600,8 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           letter-spacing: 0.5px;
         }
         .conflict-box {
-          background: rgba(0, 0, 0, 0.2);
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          background: var(--bg-primary);
+          border: 1px solid var(--border);
           border-radius: 8px;
           padding: 12px;
           flex: 1;
@@ -617,7 +617,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           display: flex;
           flex-direction: column;
           gap: 8px;
-          border-top: 1px solid rgba(255, 255, 255, 0.04);
+          border-top: 1px solid var(--border);
           padding-top: 12px;
         }
         .conflict-btn-group {
@@ -630,15 +630,15 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           border-radius: 6px;
           font-size: 11px;
           font-weight: 500;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(255, 255, 255, 0.02);
-          color: var(--text-muted);
+          border: 1px solid var(--border);
+          background: var(--bg-secondary);
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s ease;
         }
         .conflict-btn:hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: var(--text);
+          background: var(--bg-hover);
+          color: var(--text-primary);
         }
         .conflict-btn.compatible:hover {
           border-color: #10b981;
@@ -663,7 +663,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
         .conflict-btn.not-conflict:hover {
           border-color: var(--text-muted);
           background: rgba(255, 255, 255, 0.08);
-          color: var(--text);
+          color: var(--text-primary);
         }
         .sync-pulse {
           display: inline-block;
@@ -690,14 +690,15 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
           font-weight: 600;
           font-size: 14px;
           cursor: pointer;
-          background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-          color: white;
-          box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+          background: var(--accent);
+          color: var(--accent-btn-text);
+          box-shadow: var(--glass-shadow);
           transition: all 0.2s ease;
         }
         .sync-huge-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+          background: var(--accent-hover);
+          box-shadow: var(--panel-glow);
         }
         .sync-huge-btn:disabled {
           background: var(--text-muted);

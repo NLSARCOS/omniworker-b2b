@@ -1,7 +1,7 @@
 export default {
   title: "Settings",
   sections: {
-    omniworkerAgent: "Flux Agent By Simplex",
+    omniworkerAgent: "Flux Agent",
     appearance: "Appearance",
     credentialPool: "Credential Pool",
   },
@@ -23,7 +23,7 @@ export default {
   },
   notDetected: "Not detected",
   updatedSuccessfully: "Updated successfully!",
-  updateSuccess: "Flux Agent By Simplex updated successfully.",
+  updateSuccess: "Flux Agent updated successfully.",
   updateFailed: "Update failed.",
   version: "v{{version}}",
   proxyPlaceholder: "e.g. socks5://127.0.0.1:1080 or http://proxy:8080",
@@ -33,6 +33,9 @@ export default {
   forceIpv4: "Force IPv4",
   forceIpv4Hint:
     "Disable IPv6 to fix connection timeout issues on some networks",
+  disableLocalSlm: "Bypass Local Model (Cloud Only)",
+  disableLocalSlmHint:
+    "Completely disable local SLM routing and force all completions through the cloud SaaS. Fixes hangs caused by port 8080 collisions.",
   httpProxy: "HTTP Proxy",
   httpProxyHint:
     "SOCKS or HTTP proxy for all outgoing connections (leave blank for auto-detect)",
@@ -43,14 +46,14 @@ export default {
   modelHint: "Default model name (leave blank to use provider default)",
   customBaseUrlHint: "OpenAI-compatible API endpoint",
   poolHint:
-    "Add multiple API Keys for the same provider for automatic rotation and load balancing. OmniWorker will cycle through them.",
+    "Add multiple API Keys for the same provider for automatic rotation and load balancing. Flux Agent will cycle through them.",
   add: "Add",
   remove: "Remove",
   keyLabel: "Key",
   empty: "(empty)",
   dataSection: "Data",
   dataHint:
-    "Export or import your OmniWorker configuration, sessions, skills, and memory.",
+    "Export or import your Flux Agent configuration, sessions, skills, and memory.",
   backingUp: "Backing up...",
   exportBackup: "Export Backup",
   importing: "Importing...",
@@ -65,12 +68,12 @@ export default {
   runDiagnosis: "Run Diagnosis",
   running: "Running...",
   debugDump: "Debug Dump",
-  migrationDetected: "Flux Agent By Simplex Installation Detected",
+  migrationDetected: "Flux Agent Installation Detected",
   migrationDesc:
-    "Found OmniWorker at <code>{{path}}</code>. You can migrate your configuration, API keys, sessions, and skills to OmniWorker.",
+    "Found Flux Agent at <code>{{path}}</code>. You can migrate your configuration, API keys, sessions, and skills to Flux Agent.",
   migrationDismiss: "Don't show again",
   migrating: "Migrating...",
-  migrateToOmniWorker: "Migrate to Flux Agent By Simplex",
+  migrateToOmniWorker: "Migrate to Flux Agent",
   skip: "Skip",
   appearanceHint: "Choose your preferred interface appearance",
   apiKeyPlaceholder: "API Key",
@@ -78,11 +81,11 @@ export default {
   connectionSection: "Connection",
   modeLocal: "Local",
   modeRemote: "Remote",
-  modeLocalHint: "Using Flux Agent By Simplex installed on this device",
-  modeRemoteHint: "Connect to a Flux Agent By Simplex API server on your network or cloud",
+  modeLocalHint: "Using Flux Agent installed on this device",
+  modeRemoteHint: "Connect to a Flux Agent API server on your network or cloud",
   remoteUrl: "Remote URL",
   remoteUrlHint:
-    "The OmniWorker API server URL (must expose /health and /v1/chat/completions)",
+    "The Flux Agent API server URL (must expose /health and /v1/chat/completions)",
   remoteApiKey: "API Key",
   remoteApiKeyHint:
     "Matches API_SERVER_KEY on the remote host. Leave empty if the server accepts unauthenticated requests.",
@@ -91,7 +94,7 @@ export default {
   save: "Save",
   serverConfigTitle: "Server Configuration",
   serverConfigHint:
-    "You&apos;re connected to a remote Flux Agent By Simplex server. Model selection, provider API keys, and credentials are managed on the server&apos;s <code>~/.omniworker/.env</code> and <code>config.yaml</code>. Edit them on the host (e.g. <code>docker exec -it Flux Agent By Simplex vi /opt/data/.env</code>) and restart the container.",
+    "You&apos;re connected to a remote Flux Agent server. Model selection, provider API keys, and credentials are managed on the server&apos;s <code>~/.omniworker/.env</code> and <code>config.yaml</code>. Edit them on the host (e.g. <code>docker exec -it Flux Agent vi /opt/data/.env</code>) and restart the container.",
   connectionMode: "Mode",
   switchedToLocal: "Switched to local mode",
 } as const;

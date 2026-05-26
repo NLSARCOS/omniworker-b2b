@@ -18,6 +18,7 @@ import Kanban from "../Kanban/Kanban";
 import Account from "../Account/Account";
 import RemoteNotice from "../../components/RemoteNotice";
 import VerifyWarningBanner from "../../components/VerifyWarningBanner";
+import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
 
 import {
   ChatBubble,
@@ -115,6 +116,7 @@ function Layout({
       "-=0.75"
     );
   }, []);
+
   const [activeProfile, setActiveProfile] = useState("default");
   // Tabs lazy-mount on first visit, then stay mounted (display:none toggle).
   // Keeps IPC refetch / DOM rebuild off the tab-switch hot path.
@@ -219,10 +221,10 @@ function Layout({
       try {
         const envs = await window.omniworkerAPI.getEnv();
         const apiKey = envs?.CUSTOM_API_KEY;
-        if (!apiKey || !apiKey.startsWith("tsto_")) return;
+        if (!apiKey) return;
 
         const saasUrl =
-          import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+          import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
 
         // Obtener la versión de la aplicación de escritorio
         let appVersion = "1.0.0";
@@ -288,6 +290,9 @@ function Layout({
               setUpdateError(null);
               setShowUpdateModal(true);
             }
+          } else {
+            console.warn("Heartbeat failed, resetting registeredAgentId:", data.error);
+            registeredAgentId = null;
           }
         }
       } catch (err) {
@@ -386,7 +391,7 @@ function Layout({
   const isPlanExpired = !!userData?.isPlanExpired;
 
   const handleOpenSaaS = useCallback(() => {
-    const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+    const saasUrl = import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
     window.omniworkerAPI.openExternal(`${saasUrl}/dashboard`);
   }, []);
 
@@ -412,10 +417,8 @@ function Layout({
       )}
       <div className="layout" style={{ height: "auto", flex: 1 }}>
         <aside ref={sidebarRef} className="sidebar">
-        <div className="sidebar-brand">
-          <div className="sidebar-brand-badge">
-            OMNIWORKER
-          </div>
+        <div className="sidebar-brand" style={{ padding: "20px 16px", display: "flex", justifyContent: "center" }}>
+          <OmniWorkerLogo size={24} />
         </div>
 
         <nav className="sidebar-nav">

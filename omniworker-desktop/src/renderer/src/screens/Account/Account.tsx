@@ -85,7 +85,7 @@ export default function Account({
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const saasUrl = import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+  const saasUrl = import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
 
   // Build initial user from login data
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Search, Clock, Mail, Code, ChartLine, Bell } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
+import { FluxLogo } from "../../components/common/FluxLogo";
 
 interface Suggestion {
   i18nKey: string;
@@ -60,23 +61,7 @@ export const ChatEmptyState = memo(function ChatEmptyState({
           marginBottom: "24px",
         }}
       >
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            backgroundColor: "var(--text-primary)",
-            color: "var(--bg-primary)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: "bold",
-            fontSize: "24px",
-            borderRadius: "12px",
-            fontFamily: "monospace",
-          }}
-        >
-          OW
-        </div>
+        <FluxLogo size={64} />
       </div>
       <div className="chat-empty-text">{t("chat.emptyTitle")}</div>
       <div className="chat-empty-hint">{t("chat.emptyHint")}</div>

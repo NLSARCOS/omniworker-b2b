@@ -1,5 +1,5 @@
 export default {
-  appName: "Flux Agent By Simplex",
+  appName: "Flux Agent",
   continue: "继续",
   cancel: "取消",
   retry: "重试",

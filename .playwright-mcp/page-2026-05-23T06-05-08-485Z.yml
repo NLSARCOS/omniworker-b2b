@@ -1,0 +1,375 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e4]:
+      - link "OmniWorker" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: OmniWorker
+      - navigation [ref=e8]:
+        - link "Producto" [ref=e9] [cursor=pointer]:
+          - /url: "#producto"
+        - link "Cómo funciona" [ref=e10] [cursor=pointer]:
+          - /url: "#cómo-funciona"
+        - link "Precios" [ref=e11] [cursor=pointer]:
+          - /url: "#precios"
+        - link "FAQ" [ref=e12] [cursor=pointer]:
+          - /url: "#faq"
+      - generic [ref=e13]:
+        - link "Iniciar sesión" [ref=e14] [cursor=pointer]:
+          - /url: /login
+        - link "Empezar gratis" [ref=e15] [cursor=pointer]:
+          - /url: /register
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e22]: Plataforma de agentes autónomos de IA
+        - heading "Elimina 40 horas semanales de trabajo operativo" [level=1] [ref=e23]
+        - paragraph [ref=e24]: OmniWorker despliega agentes de IA que procesan documentos, sincronizan datos y ejecutan flujos de trabajo 24/7. Todo en tu infraestructura.
+        - generic [ref=e25]:
+          - link "Comenzar gratis — 60 segundos" [ref=e26] [cursor=pointer]:
+            - /url: /register
+            - text: Comenzar gratis — 60 segundos
+            - img [ref=e27]
+          - link "Ver cómo funciona" [ref=e29] [cursor=pointer]:
+            - /url: "#como-funciona"
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: 10,000+
+            - generic [ref=e33]: agentes activos
+          - generic [ref=e34]:
+            - generic [ref=e35]: 2.4M
+            - generic [ref=e36]: tareas este mes
+          - generic [ref=e37]:
+            - generic [ref=e38]: 99.97%
+            - generic [ref=e39]: uptime
+      - generic [ref=e41]:
+        - generic [ref=e47]: omniworker — dashboard
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: Workspace
+            - generic [ref=e51]: Agentes
+            - generic [ref=e52]: Ejecuciones
+            - generic [ref=e53]: Integraciones
+            - generic [ref=e54]: Logs
+            - generic [ref=e55]:
+              - generic [ref=e56]:
+                - generic [ref=e57]: CPU
+                - generic [ref=e58]: 12%
+              - generic [ref=e59]:
+                - generic [ref=e60]: RAM
+                - generic [ref=e61]: 340 MB
+          - generic [ref=e62]:
+            - generic [ref=e63]:
+              - generic [ref=e64]: Agentes activos
+              - generic [ref=e65]: actualizado hace 4s
+            - generic [ref=e66]:
+              - generic [ref=e70]:
+                - generic [ref=e71]: Facturación
+                - generic [ref=e72]: ow-billing-01 · hace 12 min
+              - generic [ref=e73]:
+                - generic [ref=e74]: 847 ops
+                - generic [ref=e75]: Activo
+            - generic [ref=e76]:
+              - generic [ref=e80]:
+                - generic [ref=e81]: Soporte Comercial
+                - generic [ref=e82]: ow-support-02 · hace 3 min
+              - generic [ref=e83]:
+                - generic [ref=e84]: 1,204 ops
+                - generic [ref=e85]: Activo
+            - generic [ref=e86]:
+              - generic [ref=e90]:
+                - generic [ref=e91]: Sincronización ERP
+                - generic [ref=e92]: ow-sync-03 · hace 1 min
+              - generic [ref=e93]:
+                - generic [ref=e94]: 2,891 ops
+                - generic [ref=e95]: Activo
+    - generic [ref=e97]:
+      - paragraph [ref=e98]: Equipos de todo tamaño ya automatizan con OmniWorker
+      - generic [ref=e99]:
+        - generic [ref=e100]: Notion
+        - generic [ref=e101]: Slack
+        - generic [ref=e102]: Stripe
+        - generic [ref=e103]: Airtable
+        - generic [ref=e104]: Asana
+        - generic [ref=e105]: HubSpot
+        - generic [ref=e106]: Salesforce
+        - generic [ref=e107]: Google Workspace
+    - generic [ref=e109]:
+      - generic [ref=e110]:
+        - generic [ref=e111]: El problema
+        - heading "Tu equipo pierde 23 horas semanales en tareas que un agente de IA ejecutaría en segundos" [level=2] [ref=e112]
+      - generic [ref=e113]:
+        - generic [ref=e114]:
+          - generic [ref=e115]: 73%
+          - paragraph [ref=e117]: del tiempo operativo se gasta en tareas repetitivas que no generan ingresos
+        - generic [ref=e118]:
+          - generic [ref=e119]: $4,200
+          - paragraph [ref=e121]: es el costo mensual promedio por especialista operativo en Norteamérica
+        - generic [ref=e122]:
+          - generic [ref=e123]: 0 hrs
+          - paragraph [ref=e125]: de automatización real logran la mayoría con chatbots genéricos
+    - generic [ref=e127]:
+      - generic [ref=e128]:
+        - generic [ref=e129]: La solución
+        - heading "Agentes que ejecutan flujos completos, no solo responden preguntas" [level=2] [ref=e130]
+        - paragraph [ref=e131]: OmniWorker combina modelos de lenguaje con herramientas empresariales reales. Sin enviar un byte a servidores externos.
+      - generic [ref=e132]:
+        - generic [ref=e133]:
+          - img [ref=e135]
+          - heading "Procesamiento de documentos" [level=3] [ref=e138]
+          - paragraph [ref=e139]: Extrae datos de facturas, contratos y formularios con precisión humana. Soporta PDFs escaneados e imágenes.
+          - paragraph [ref=e140]: Reduce 6 horas a 4 minutos por lote
+        - generic [ref=e141]:
+          - img [ref=e143]
+          - heading "Sincronización entre sistemas" [level=3] [ref=e147]
+          - paragraph [ref=e148]: Conecta CRM, ERP, hojas de cálculo y bases de datos. Datos siempre actualizados en todos los canales.
+          - paragraph [ref=e149]: Elimina errores de doble entrada
+        - generic [ref=e150]:
+          - img [ref=e152]
+          - heading "Respuesta automática multicanal" [level=3] [ref=e154]
+          - paragraph [ref=e155]: Atiende correos, Slack, tickets y consultas con contexto completo de tu negocio y políticas internas.
+          - paragraph [ref=e156]: Responde en 30s, no en 4 horas
+        - generic [ref=e157]:
+          - img [ref=e159]
+          - heading "Flujos de trabajo autónomos" [level=3] [ref=e163]
+          - paragraph [ref=e164]: Diseña flujos con condiciones, aprobaciones y acciones encadenadas. Los agentes ejecutan cada paso.
+          - paragraph [ref=e165]: Opera procesos completos sin supervisión
+    - generic [ref=e167]:
+      - generic [ref=e168]:
+        - generic [ref=e169]: Cómo funciona
+        - heading "De la idea a la automatización en tres pasos" [level=2] [ref=e170]
+      - generic [ref=e171]:
+        - generic [ref=e173]:
+          - generic [ref=e174]: "01"
+          - heading "Conecta tus herramientas" [level=3] [ref=e175]
+          - paragraph [ref=e176]: Integra tus sistemas existentes en minutos. 200+ aplicaciones sin código. Tus datos nunca salen de tu infraestructura.
+        - generic [ref=e177]:
+          - generic [ref=e178]: "02"
+          - heading "Describe el trabajo" [level=3] [ref=e179]
+          - paragraph [ref=e180]: Explica en lenguaje natural qué tarea quieres automatizar. El sistema comprende el contexto y genera el flujo automáticamente.
+        - generic [ref=e181]:
+          - generic [ref=e182]: "03"
+          - heading "El agente opera 24/7" [level=3] [ref=e183]
+          - paragraph [ref=e184]: Una vez activado, ejecuta la tarea de forma autónoma, maneja excepciones y mejora con cada iteración.
+    - generic [ref=e187]:
+      - generic [ref=e188]:
+        - generic [ref=e189]: 24/7
+        - generic [ref=e190]: Operación continua
+      - generic [ref=e191]:
+        - generic [ref=e192]: +800%
+        - generic [ref=e193]: ROI promedio en 90 días
+      - generic [ref=e194]:
+        - generic [ref=e195]: 100%
+        - generic [ref=e196]: Datos en tu infraestructura
+      - generic [ref=e197]:
+        - generic [ref=e198]: <60s
+        - generic [ref=e199]: Para desplegar tu primer agente
+    - generic [ref=e201]:
+      - generic [ref=e202]:
+        - generic [ref=e203]: Resultados reales
+        - heading "Lo que logran los equipos con agentes autónomos" [level=2] [ref=e204]
+      - generic [ref=e205]:
+        - generic [ref=e206]:
+          - paragraph [ref=e207]: “Antes teníamos dos personas dedicadas exclusivamente a procesar facturas. Ahora el agente maneja el 94% del volumen sin intervención.”
+          - generic [ref=e208]:
+            - generic [ref=e209]: Mariana Cortés
+            - generic [ref=e210]: Directora de Operaciones, Finova Logística
+            - generic [ref=e211]: Redujo costos $12,400/mes
+        - generic [ref=e212]:
+          - paragraph [ref=e213]: “Implementamos el agente de soporte en una semana. Ahora resuelve el 78% de los tickets de primer nivel en menos de dos minutos.”
+          - generic [ref=e214]:
+            - generic [ref=e215]: Diego Ramírez
+            - generic [ref=e216]: CTO, Nexora Cloud
+            - generic [ref=e217]: Tiempo de respuesta -89%
+        - generic [ref=e218]:
+          - paragraph [ref=e219]: “El agente de onboarding integra datos de 7 sistemas automáticamente. Lo que tomaba 3 días, ahora se completa en 4 horas.”
+          - generic [ref=e220]:
+            - generic [ref=e221]: Carolina Vargas
+            - generic [ref=e222]: VP People Operations, GrowthLab
+            - generic [ref=e223]: Ahorra 340 horas mensuales
+    - generic [ref=e225]:
+      - generic [ref=e226]:
+        - generic [ref=e227]: Precios
+        - heading "Empieza gratis. Escala cuando crezcas." [level=2] [ref=e228]
+      - generic [ref=e229]:
+        - generic [ref=e230]:
+          - generic [ref=e231]:
+            - heading "Gratis" [level=3] [ref=e232]
+            - generic [ref=e234]: $0
+            - paragraph [ref=e235]: Para individuos y equipos pequeños
+          - list [ref=e236]:
+            - listitem [ref=e237]:
+              - img [ref=e238]
+              - generic [ref=e240]: 1 agente activo
+            - listitem [ref=e241]:
+              - img [ref=e242]
+              - generic [ref=e244]: 100 tareas mensuales
+            - listitem [ref=e245]:
+              - img [ref=e246]
+              - generic [ref=e248]: Integraciones esenciales
+            - listitem [ref=e249]:
+              - img [ref=e250]
+              - generic [ref=e252]: Soporte por comunidad
+          - link "Crear cuenta" [ref=e253] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e254]:
+          - generic [ref=e255]: Más popular
+          - generic [ref=e256]:
+            - heading "Pro" [level=3] [ref=e257]
+            - generic [ref=e258]:
+              - generic [ref=e259]: $49
+              - generic [ref=e260]: /mes
+            - paragraph [ref=e261]: Para equipos que necesitan automatización real
+          - list [ref=e262]:
+            - listitem [ref=e263]:
+              - img [ref=e264]
+              - generic [ref=e266]: 10 agentes activos
+            - listitem [ref=e267]:
+              - img [ref=e268]
+              - generic [ref=e270]: Tareas ilimitadas
+            - listitem [ref=e271]:
+              - img [ref=e272]
+              - generic [ref=e274]: Todas las integraciones
+            - listitem [ref=e275]:
+              - img [ref=e276]
+              - generic [ref=e278]: OCR de documentos
+            - listitem [ref=e279]:
+              - img [ref=e280]
+              - generic [ref=e282]: Flujos con condiciones
+            - listitem [ref=e283]:
+              - img [ref=e284]
+              - generic [ref=e286]: Soporte prioritario
+          - link "Comenzar prueba de 14 días" [ref=e287] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e288]:
+          - generic [ref=e289]:
+            - heading "Enterprise" [level=3] [ref=e290]
+            - generic [ref=e292]: Personalizado
+            - paragraph [ref=e293]: Para organizaciones con control total
+          - list [ref=e294]:
+            - listitem [ref=e295]:
+              - img [ref=e296]
+              - generic [ref=e298]: Agentes ilimitados
+            - listitem [ref=e299]:
+              - img [ref=e300]
+              - generic [ref=e302]: Despliegue on-premise/VPC
+            - listitem [ref=e303]:
+              - img [ref=e304]
+              - generic [ref=e306]: Auditoría completa y SSO
+            - listitem [ref=e307]:
+              - img [ref=e308]
+              - generic [ref=e310]: SLA 99.99%
+            - listitem [ref=e311]:
+              - img [ref=e312]
+              - generic [ref=e314]: Soporte dedicado 24/7
+          - link "Hablar con ventas" [ref=e315] [cursor=pointer]:
+            - /url: /register
+    - generic [ref=e317]:
+      - generic [ref=e318]:
+        - generic [ref=e319]: Preguntas frecuentes
+        - heading "Todo lo que necesitas saber" [level=2] [ref=e320]
+      - generic [ref=e321]:
+        - button "¿OmniWorker es un chatbot?" [ref=e323] [cursor=pointer]:
+          - generic [ref=e324]: ¿OmniWorker es un chatbot?
+          - img [ref=e326]
+        - button "¿Mis datos están seguros?" [ref=e328] [cursor=pointer]:
+          - generic [ref=e329]: ¿Mis datos están seguros?
+          - img [ref=e331]
+        - button "¿Necesito un equipo técnico?" [ref=e333] [cursor=pointer]:
+          - generic [ref=e334]: ¿Necesito un equipo técnico?
+          - img [ref=e336]
+        - button "¿Con qué herramientas se integra?" [ref=e338] [cursor=pointer]:
+          - generic [ref=e339]: ¿Con qué herramientas se integra?
+          - img [ref=e341]
+        - button "¿Qué pasa si el agente comete un error?" [ref=e343] [cursor=pointer]:
+          - generic [ref=e344]: ¿Qué pasa si el agente comete un error?
+          - img [ref=e346]
+        - button "¿Puedo cancelar en cualquier momento?" [ref=e348] [cursor=pointer]:
+          - generic [ref=e349]: ¿Puedo cancelar en cualquier momento?
+          - img [ref=e351]
+        - button "¿Cuánto tiempo toma ver resultados?" [ref=e353] [cursor=pointer]:
+          - generic [ref=e354]: ¿Cuánto tiempo toma ver resultados?
+          - img [ref=e356]
+    - generic [ref=e358]:
+      - heading "Tu competencia ya está automatizando. Cada día que esperas cuesta dinero real." [level=2] [ref=e360]
+      - paragraph [ref=e361]: Únete a más de 10,000 equipos que operan con agentes autónomos. Despliega tu primer agente en menos de 60 segundos.
+      - link "Comenzar gratis — desplegar mi primer agente" [ref=e363] [cursor=pointer]:
+        - /url: /register
+        - text: Comenzar gratis — desplegar mi primer agente
+        - img [ref=e364]
+      - paragraph [ref=e366]: Los primeros 500 usuarios Pro este mes reciben onboarding personalizado
+    - generic [ref=e368]:
+      - generic [ref=e369]:
+        - generic [ref=e370]:
+          - link "OmniWorker" [ref=e371] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e373]: OmniWorker
+          - paragraph [ref=e374]: Agentes autónomos de IA que ejecutan trabajo real. Se operan en tu infraestructura con privacidad total.
+        - generic [ref=e375]:
+          - heading "Producto" [level=4] [ref=e376]
+          - list [ref=e377]:
+            - listitem [ref=e378]:
+              - link "Agentes" [ref=e379] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e380]:
+              - link "Documentos" [ref=e381] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e382]:
+              - link "Integraciones" [ref=e383] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e384]:
+              - link "Precios" [ref=e385] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e386]:
+          - heading "Casos de uso" [level=4] [ref=e387]
+          - list [ref=e388]:
+            - listitem [ref=e389]:
+              - link "Finanzas" [ref=e390] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e391]:
+              - link "Soporte" [ref=e392] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e393]:
+              - link "RRHH" [ref=e394] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e395]:
+              - link "Operaciones" [ref=e396] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e397]:
+          - heading "Recursos" [level=4] [ref=e398]
+          - list [ref=e399]:
+            - listitem [ref=e400]:
+              - link "Docs" [ref=e401] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e402]:
+              - link "API" [ref=e403] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e404]:
+              - link "Blog" [ref=e405] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e406]:
+              - link "Estado" [ref=e407] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e408]:
+          - heading "Compañía" [level=4] [ref=e409]
+          - list [ref=e410]:
+            - listitem [ref=e411]:
+              - link "Nosotros" [ref=e412] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e413]:
+              - link "Carreras" [ref=e414] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e415]:
+              - link "Contacto" [ref=e416] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e417]:
+              - link "Legal" [ref=e418] [cursor=pointer]:
+                - /url: "#"
+      - generic [ref=e419]:
+        - paragraph [ref=e420]: © 2026 OmniWorker. Todos los derechos reservados.
+        - generic [ref=e421]:
+          - link "GitHub" [ref=e422] [cursor=pointer]:
+            - /url: "#"
+          - link "X" [ref=e423] [cursor=pointer]:
+            - /url: "#"
+          - link "LinkedIn" [ref=e424] [cursor=pointer]:
+            - /url: "#"
+  - alert [ref=e425]

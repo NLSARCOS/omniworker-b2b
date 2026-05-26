@@ -58,6 +58,6 @@ export default {
     model: "Tampilkan atau ganti model saat ini",
     memory: "Tampilkan memori agent",
     persona: "Tampilkan persona saat ini",
-    version: "Tampilkan versi Flux Agent By Simplex",
+    version: "Tampilkan versi Flux Agent",
   },
 } as const;

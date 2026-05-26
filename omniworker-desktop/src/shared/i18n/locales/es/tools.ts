@@ -91,7 +91,7 @@ export default {
   },
   mcpServers: "Servidores MCP",
   mcpDescription:
-    "Servidores Model Context Protocol configurados en config.yaml. Adminístralos con <code>omniworker mcp add/remove</code> en la terminal.",
+    "Servidores Model Context Protocol configurados en config.yaml. Adminístralos con <code>flux-agent mcp add/remove</code> en la terminal.",
   http: "HTTP",
   stdio: "stdio",
   disabled: "desactivado",

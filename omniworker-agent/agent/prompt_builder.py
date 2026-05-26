@@ -1358,7 +1358,8 @@ def _load_agents_md(cwd_path: Path) -> str:
         candidate = cwd_path / name
         if candidate.exists():
             try:
-                content = candidate.read_text(encoding="utf-8").strip()
+                # Use errors="replace" to avoid crashing on non-UTF-8 files
+                content = candidate.read_text(encoding="utf-8", errors="replace").strip()
                 if content:
                     content = _scan_context_content(content, name)
                     result = f"## {name}\n\n{content}"

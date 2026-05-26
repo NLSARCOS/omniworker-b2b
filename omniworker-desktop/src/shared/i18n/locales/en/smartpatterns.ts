@@ -4,7 +4,7 @@ export default {
   refresh: "Refresh",
   empty: "No patterns detected yet",
   emptyHint:
-    "As you use OmniWorker, the AI will learn your habits and suggest automated tasks here",
+    "As you use Flux Agent, the AI will learn your habits and suggest automated tasks here",
   loadFailed: "Failed to load patterns",
   confidence: "Confidence",
   occurrences: "Occurrences",

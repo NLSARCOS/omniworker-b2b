@@ -7,95 +7,94 @@
    ======================================================================== */
 
 /* ----- Dark Theme (Slate + Neon Lime) ----- */
+/* ----- Dark Theme (Slate + Neon Lime / B2B Brutalist Dark) ----- */
 [data-theme="dark"] {
-  --bg-primary: #131316; /* deep modern slate black */
-  --bg-secondary: #0e0e11; /* ultra deep black */
-  --bg-tertiary: #1f1f22; /* sleek dark slate */
-  --bg-elevated: #2a2a2d; /* modal or popup background */
-  --bg-hover: #262629; /* hover list item */
-  --bg-active: #333336;
-  --accent: #ffffff; /* pure white highlight */
-  --accent-hover: #e4e4e7; /* zinc-200 */
-  --accent-subtle: rgba(255, 255, 255, 0.08); /* elegant soft white glow background */
-  --accent-text: #ffffff; /* white text */
-  --accent-btn-text: #09090b; /* dark contrast text for white buttons */
-  --text-primary: #e4e1e6; /* clean off-white */
-  --text-secondary: #a1a1aa; /* soft zinc-400 grey */
-  --text-muted: #71717a; /* muted zinc-500 grey */
-  --border: rgba(255, 255, 255, 0.05); /* extra-fine elegant glass borders */
-  --border-bright: rgba(255, 255, 255, 0.1);
-  --border-focus: #ffffff; /* white focus */
-  --success: #3cddc7; /* neon teal */
-  --success-bg: rgba(60, 221, 199, 0.1);
-  --error: #ffb4ab; /* soft warm error red */
-  --error-bg: rgba(255, 180, 171, 0.1);
-  --warning: #ddb7ff; /* vibrant secondary purple */
-  --warning-bg: rgba(221, 183, 255, 0.1);
-  --user-bubble: #ffffff; /* white user chat bubble */
-  --user-bubble-text: #09090b; /* deep contrast user text */
-  --agent-bubble: #1f1f22; /* slate chat bubble */
-  --agent-bubble-text: #e4e1e6;
-  --code-bg: #0e0e11;
-  --scrollbar-thumb: #353438;
-  --scrollbar-hover: #52525b;
-  --selection: rgba(255, 255, 255, 0.2);
+  --bg-primary: #0D0D0D; /* deep ink black from SaaS */
+  --bg-secondary: #161616; /* high-contrast dark secondary */
+  --bg-tertiary: #1E1E1E; /* card background */
+  --bg-elevated: #282828; /* modal/popup background */
+  --bg-hover: #222220; /* matching ink-soft */
+  --bg-active: #333330;
+  --accent: #00C95C; /* B2B Neon Green from SaaS */
+  --accent-hover: #008B3C; /* Neon Dim from SaaS */
+  --accent-subtle: rgba(0, 201, 92, 0.08); /* neon pale overlay */
+  --accent-text: #00C95C; /* neon text */
+  --accent-btn-text: #0D0D0D; /* solid black text on neon buttons for high-contrast brutalism */
+  --text-primary: #F5F0E8; /* warm paper cream from SaaS */
+  --text-secondary: #EDE7D9; /* paper warm secondary */
+  --text-muted: #827E76; /* warm muted grey */
+  --border: rgba(200, 192, 176, 0.15); /* rule color with transparency */
+  --border-bright: rgba(200, 192, 176, 0.3);
+  --border-focus: #00C95C; /* neon focus */
+  --success: #00C95C; /* neon green */
+  --success-bg: rgba(0, 201, 92, 0.1);
+  --error: #FF5A5A; /* bright error red */
+  --error-bg: rgba(255, 90, 90, 0.1);
+  --warning: #FFB300; /* B2B yellow */
+  --warning-bg: rgba(255, 179, 0, 0.1);
+  --user-bubble: #00C95C; /* neon green bubble */
+  --user-bubble-text: #0D0D0D; /* black text */
+  --agent-bubble: #1E1E1E; /* dark bubble */
+  --agent-bubble-text: #F5F0E8;
+  --code-bg: #161616;
+  --scrollbar-thumb: #333333;
+  --scrollbar-hover: #5A5650;
+  --selection: rgba(0, 201, 92, 0.3);
 
-  /* Neon extra shades */
-  --neon-pink: #ff4d8d;
-  --neon-teal: #3cddc7;
-  --neon-purple: #ddb7ff;
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --panel-bg: rgba(14, 14, 17, 0.55);
-  --panel-border: rgba(255, 255, 255, 0.05);
-  --panel-glow: 0 12px 40px 0 rgba(0, 0, 0, 0.3);
-  --layout-bg: radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 45%),
-               radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.01) 0%, transparent 45%),
-               #131316;
+  --neon-pink: #FF2E93;
+  --neon-teal: #00C95C;
+  --neon-purple: #8B5CF6;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  --panel-bg: rgba(13, 13, 13, 0.85);
+  --panel-border: rgba(200, 192, 176, 0.15);
+  --panel-glow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+  --layout-bg: radial-gradient(circle at 10% 20%, rgba(0, 201, 92, 0.03) 0%, transparent 45%),
+               #0D0D0D;
 }
 
-/* ----- Light Theme (Milk + Monochrome Dark) ----- */
+/* ----- Light Theme (B2B SaaS Warm Paper + Ink Brutalist) ----- */
 [data-theme="light"] {
-  --bg-primary: #fbfbfe; /* clean elegant white-milk */
-  --bg-secondary: #f3f3f7; /* soft grey-blue sidebar */
-  --bg-tertiary: #ffffff; /* pure white cards */
-  --bg-elevated: #eaeaf1;
-  --bg-hover: #f1f1f6;
-  --bg-active: #e2e2ec;
-  --accent: #09090b; /* deep black-zinc */
-  --accent-hover: #27272a; /* zinc-800 */
-  --accent-subtle: rgba(9, 9, 11, 0.05); /* soft zinc active background */
-  --accent-text: #09090b;
-  --accent-btn-text: #ffffff; /* white contrast text for dark buttons */
-  --text-primary: #0e0e11; /* deep rich charcoal */
-  --text-secondary: #4f4f5a; /* midtone cool grey-slate text */
-  --text-muted: #828292;
-  --border: rgba(0, 0, 0, 0.06); /* soft borders */
-  --border-bright: rgba(0, 0, 0, 0.12);
-  --border-focus: #09090b;
-  --success: #007a6e; /* rich teal forest green */
-  --success-bg: rgba(0, 122, 110, 0.08);
-  --error: #b3000f; /* sophisticated red crimson */
-  --error-bg: rgba(179, 0, 15, 0.06);
-  --warning: #a15c00; /* rich amber */
-  --warning-bg: rgba(161, 92, 0, 0.08);
-  --user-bubble: #09090b; /* black user chat bubble */
-  --user-bubble-text: #ffffff;
-  --agent-bubble: #ffffff;
-  --agent-bubble-text: #0e0e11;
-  --code-bg: #f3f3f7;
-  --scrollbar-thumb: #dcdce4;
-  --scrollbar-hover: #a1a1aa;
-  --selection: rgba(9, 9, 11, 0.1);
+  --bg-primary: #F5F0E8; /* warm paper base from SaaS */
+  --bg-secondary: #EDE7D9; /* paper-warm sidebar from SaaS */
+  --bg-tertiary: #FFFFFF; /* bright card background */
+  --bg-elevated: #EDE7D9; /* matching warm paper secondary */
+  --bg-hover: #E3DBD0; /* warm sandy hover */
+  --bg-active: #DAD2C4;
+  --accent: #0D0D0D; /* solid B2B Ink from SaaS */
+  --accent-hover: #222220; /* ink-soft from SaaS */
+  --accent-subtle: rgba(0, 201, 92, 0.08); /* neon pale overlay */
+  --accent-text: #0D0D0D;
+  --accent-btn-text: #F5F0E8; /* warm paper text on dark buttons */
+  --text-primary: #0D0D0D; /* ink text from SaaS */
+  --text-secondary: #222220; /* ink-soft from SaaS */
+  --text-muted: #5A5650; /* muted grey-brown from SaaS */
+  --border: #C8C0B0; /* rule border from SaaS */
+  --border-bright: #0D0D0D; /* strong ink border for brutalist outline */
+  --border-focus: #00C95C; /* neon green focus */
+  --success: #008B3C; /* neon-dim from SaaS */
+  --success-bg: #EDFFF5; /* neon-pale from SaaS */
+  --error: #C0392B; /* danger red from SaaS */
+  --error-bg: #FCE8E6;
+  --warning: #B45309; /* rich amber */
+  --warning-bg: #FEF3C7;
+  --user-bubble: #0D0D0D; /* solid ink chat bubble */
+  --user-bubble-text: #F5F0E8; /* warm paper text */
+  --agent-bubble: #FFFFFF; /* white bubble */
+  --agent-bubble-text: #0D0D0D; /* ink text */
+  --code-bg: #EDE7D9; /* warm-paper code block */
+  --scrollbar-thumb: #C8C0B0; /* rule border */
+  --scrollbar-hover: #5A5650; /* muted */
+  --selection: rgba(0, 201, 92, 0.2);
 
-  --neon-pink: #d81b60;
-  --neon-teal: #00796b;
-  --neon-purple: #09090b;
+  --neon-pink: #D81B60;
+  --neon-teal: #00C95C;
+  --neon-purple: #0D0D0D;
   --glass-shadow: 0 8px 32px 0 rgba(9, 9, 11, 0.05);
-  --panel-bg: rgba(255, 255, 255, 0.7);
-  --panel-border: rgba(0, 0, 0, 0.06);
-  --panel-glow: 0 12px 40px 0 rgba(9, 9, 11, 0.03);
-  --layout-bg: radial-gradient(circle at 10% 20%, rgba(0, 0, 0, 0.02) 0%, transparent 45%),
-               #fbfbfe;
+  --panel-bg: rgba(245, 240, 232, 0.85);
+  --panel-border: #C8C0B0;
+  --panel-glow: 0 12px 40px 0 rgba(13, 13, 13, 0.03);
+  --layout-bg: radial-gradient(circle at 10% 20%, rgba(0, 201, 92, 0.02) 0%, transparent 45%),
+               #F5F0E8;
 }
 
 /* ----- Shared Tokens ----- */

@@ -46,6 +46,7 @@ export async function POST(request: Request) {
   }
 
   const { agentName, hostname, platform, capabilities, licenseId } = body;
+  const finalLicenseId = licenseId || user.licenseId;
 
   // Check plan limits
   const tenant = await prisma.tenant.findUnique({
@@ -65,9 +66,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (licenseId) {
+  if (finalLicenseId) {
     const lic = await prisma.license.findFirst({
-      where: { id: licenseId, tenantId: user.tenantId, status: "ACTIVE" },
+      where: { id: finalLicenseId, tenantId: user.tenantId, status: "ACTIVE" },
     });
     if (!lic) {
       return NextResponse.json({ error: "Licencia inválida o inactiva" }, { status: 400 });
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
       platform: platform || null,
       status: "online",
       capabilities: JSON.stringify(capabilities || []),
-      ...(licenseId ? { licenseId } : {}),
+      ...(finalLicenseId ? { licenseId: finalLicenseId } : {}),
     },
   });
 

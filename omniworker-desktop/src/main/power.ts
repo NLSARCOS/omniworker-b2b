@@ -1,4 +1,5 @@
 import { powerSaveBlocker, powerMonitor } from "electron";
+import { runCronCommand } from "./cronjobs";
 
 let activeBlocks = 0;
 let blockerId: number | null = null;
@@ -38,7 +39,6 @@ export function setupPowerMonitor(): void {
     // Trigger catch-up tick for cronjobs dynamically to avoid circular dependencies
     setTimeout(async () => {
       try {
-        const { runCronCommand } = require("./cronjobs");
         const res = await runCronCommand(["tick"]);
         if (res.success) {
           console.log("[PowerManager] Cron catch-up tick completed successfully.");
@@ -51,3 +51,4 @@ export function setupPowerMonitor(): void {
     }, 2000); // 2s delay to let the network/OS/database interfaces stabilize after wake-up
   });
 }
+

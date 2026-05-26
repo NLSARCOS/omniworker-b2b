@@ -6,7 +6,7 @@ Architecture:
   Desktop App → Agent Gateway → Smart Router (this, port 8341)
                                       │
                                       ├─ Local SLM (port 8080) — simple/fast
-                                      └─ Cloud SaaS (worker.thelab.lat) — complex/capable
+                                      └─ Cloud SaaS (flux.simplex.lat) — complex/capable
 
 Classification logic:
   Level 1: Quick message classification (desktop app) — already handled.
@@ -42,9 +42,33 @@ ROUTER_PORT = int(os.environ.get("SMART_ROUTER_PORT", "8341"))
 LOCAL_SLM_HOST = "127.0.0.1"
 LOCAL_SLM_PORT = int(os.environ.get("LOCAL_SLM_PORT", "8080"))
 CLOUD_API_URL = os.environ.get(
-    "CLOUD_API_URL", "https://worker.thelab.lat/api"
+    "CLOUD_API_URL", "https://flux.simplex.lat/api"
 )
 ROUTER_LOG = os.environ.get("SMART_ROUTER_LOG", "").lower() in ("1", "true", "yes")
+
+FORCE_IPV4 = os.environ.get("FORCE_IPV4", "").lower() in ("1", "true", "yes")
+
+def apply_ipv4_preference(force: bool = False) -> None:
+    if not force:
+        return
+    import socket
+    if getattr(socket.getaddrinfo, "_hermes_ipv4_patched", False):
+        return
+    _original_getaddrinfo = socket.getaddrinfo
+    def _ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+        if family == 0:
+            try:
+                return _original_getaddrinfo(
+                    host, port, socket.AF_INET, type, proto, flags
+                )
+            except socket.gaierror:
+                return _original_getaddrinfo(host, port, family, type, proto, flags)
+        return _original_getaddrinfo(host, port, family, type, proto, flags)
+    _ipv4_getaddrinfo._hermes_ipv4_patched = True
+    socket.getaddrinfo = _ipv4_getaddrinfo
+
+apply_ipv4_preference(FORCE_IPV4)
+
 
 ENV_CACHE_LOCK = threading.Lock()
 CACHED_API_KEY = None
@@ -97,7 +121,8 @@ def get_cloud_connection(use_https, host, port):
 def get_latest_api_key() -> str:
     """Read the latest OPENAI_API_KEY / CUSTOM_API_KEY from ~/.omniworker/.env dynamically to avoid stale keys after JWT refresh. Uses mtime to cache and avoid redundant disk I/O."""
     global CACHED_API_KEY, CACHED_ENV_MTIME
-    env_path = os.path.expanduser("~/.omniworker/.env")
+    home_dir = os.environ.get("OMNIWORKER_HOME") or os.path.expanduser("~/.omniworker")
+    env_path = os.path.join(home_dir, ".env")
     if os.path.exists(env_path):
         try:
             mtime = os.path.getmtime(env_path)
@@ -335,12 +360,50 @@ SLM_ALIVE_STATUS = False
 LAST_SLM_CHECK = 0.0
 SLM_CACHE_LOCK = threading.Lock()
 
+DISABLE_SLM_LOCK = threading.Lock()
+CACHED_DISABLE_SLM = None
+CACHED_DISABLE_MTIME = 0.0
+
+def is_local_slm_disabled_dynamically() -> bool:
+    """Read DISABLE_LOCAL_SLM from ~/.omniworker/.env dynamically to allow real-time toggling from settings."""
+    global CACHED_DISABLE_SLM, CACHED_DISABLE_MTIME
+    env_path = os.path.expanduser("~/.omniworker/.env")
+    if os.path.exists(env_path):
+        try:
+            mtime = os.path.getmtime(env_path)
+            with DISABLE_SLM_LOCK:
+                if CACHED_DISABLE_SLM is not None and mtime == CACHED_DISABLE_MTIME:
+                    return CACHED_DISABLE_SLM
+            
+            # Read and update cache
+            disabled = False
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    trimmed = line.strip()
+                    if trimmed.startswith("#") or "=" not in trimmed:
+                        continue
+                    key, val = trimmed.split("=", 1)
+                    key = key.strip()
+                    val = val.strip().strip("'").strip('"')
+                    if key == "DISABLE_LOCAL_SLM":
+                        disabled = val.lower() in ("1", "true", "yes")
+            with DISABLE_SLM_LOCK:
+                CACHED_DISABLE_SLM = disabled
+                CACHED_DISABLE_MTIME = mtime
+            return disabled
+        except Exception as e:
+            logger.warning(f"Error reading DISABLE_LOCAL_SLM from .env: {e}")
+    return os.environ.get("DISABLE_LOCAL_SLM", "").lower() in ("1", "true", "yes")
+
 def is_local_slm_alive() -> bool:
     """Quick TCP probe with a short timeout and 8-second caching to prevent slow connection attempts when offline."""
     global SLM_ALIVE_STATUS, LAST_SLM_CHECK
     import time
     import socket
     
+    if is_local_slm_disabled_dynamically():
+        return False
+        
     with SLM_CACHE_LOCK:
         now = time.time()
         if now - LAST_SLM_CHECK < 8.0:
@@ -357,6 +420,7 @@ def is_local_slm_alive() -> bool:
         
         LAST_SLM_CHECK = now
         return SLM_ALIVE_STATUS
+
 
 
 # ────────────────────────────────────────────────────
@@ -492,14 +556,24 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
             "Connection": "keep-alive",
         }
 
-        # Prefer incoming Authorization header unless it is generic/absent
+        # Prefer incoming Authorization header unless it is generic/absent,
+        # OR if the incoming header contains a JWT token (which might be stale/expired due to in-memory caching in the gateway)
+        # and we have a fresh JWT token in our dynamic env.
         auth = self.headers.get("Authorization", "")
-        if auth and "no-key-required" not in auth and auth.strip() != "Bearer":
+        incoming_token = ""
+        if auth and auth.strip().startswith("Bearer "):
+            incoming_token = auth.split("Bearer ", 1)[1].strip()
+
+        use_latest = False
+        api_key = get_latest_api_key()
+        if (incoming_token.startswith("eyJ") and api_key.startswith("eyJ")) or (incoming_token.startswith("tsto_") and api_key.startswith("tsto_")):
+            use_latest = True
+
+        if auth and "no-key-required" not in auth and auth.strip() != "Bearer" and not use_latest:
             headers["Authorization"] = auth
         else:
-            api_key = get_latest_api_key()
             if api_key:
-                headers["Authorization"] = f"Bearer {api_key}"
+                headers["Authorization"] = f"Bearer {api_key}""
 
         acquired = CLOUD_CONN_LOCK.acquire(blocking=False)
         conn = None

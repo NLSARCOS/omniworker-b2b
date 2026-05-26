@@ -46,6 +46,8 @@
 - **central-rule-first**: `GEMINI.md` defines global behavior and must stay aligned with workflows and agents
 - **risk-based-validation**: run checks proportional to change scope instead of always forcing the full suite
 - **execution-by-default**: direct work is preferred for clear low-risk tasks; planning is an escalation path, not the default
+- **no-exploratory-narration**: Never narrate self-exploration, directory listings, or internal file scans. Act directly and silently without prior 'exploration' steps.
+- **resume-from-disk-state**: If a stream aborts or the user says 'continue', always read the modified files and `task.md` first to resume exactly where the work left off. Never restart the task from the beginning.
 - **parallel-when-safe**: use subagents in parallel only when dependencies and write scopes are clearly separated
 
 ---

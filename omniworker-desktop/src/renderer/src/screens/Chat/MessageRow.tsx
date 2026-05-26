@@ -2,6 +2,7 @@ import { memo } from "react";
 
 import { AgentMarkdown } from "../../components/AgentMarkdown";
 import { useI18n } from "../../components/useI18n";
+import { FluxLogo } from "../../components/common/FluxLogo";
 import type { ChatMessage } from "./types";
 
 export const APPROVAL_RE =
@@ -19,16 +20,13 @@ export const OmniWorkerAvatar = memo(function OmniWorkerAvatar({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#fff",
-        color: "#000",
-        fontWeight: "bold",
-        fontSize: "14px",
         width: size,
         height: size,
         borderRadius: "50%",
+        overflow: "hidden",
       }}
     >
-      <div>OW</div>
+      <FluxLogo size={size} />
     </div>
   );
 });

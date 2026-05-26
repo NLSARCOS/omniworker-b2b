@@ -20,6 +20,10 @@
 
 set -euo pipefail
 
+# Default to 1 (skip) for cloud-only production deployments
+SKIP_LLAMA_DOWNLOAD="${SKIP_LLAMA_DOWNLOAD:-1}"
+SKIP_MODEL_DOWNLOAD="${SKIP_MODEL_DOWNLOAD:-1}"
+
 echo "[OmniWorker B2B] Preparing Local SLM engine..."
 
 RESOURCES_DIR="resources/engine"

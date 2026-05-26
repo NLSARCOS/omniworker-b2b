@@ -58,6 +58,6 @@ export default {
     model: "Mostrar ou trocar o modelo atual",
     memory: "Mostrar a memória do agente",
     persona: "Mostrar a persona atual",
-    version: "Mostrar a versão do Flux Agent By Simplex",
+    version: "Mostrar a versão do Flux Agent",
   },
 } as const;

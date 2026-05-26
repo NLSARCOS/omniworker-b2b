@@ -57,6 +57,6 @@ export default {
     model: "現在のモデルを表示・切替",
     memory: "エージェントメモリを表示",
     persona: "現在のペルソナを表示",
-    version: "Flux Agent By Simplex バージョンを表示",
+    version: "Flux Agent バージョンを表示",
   },
 } as const;

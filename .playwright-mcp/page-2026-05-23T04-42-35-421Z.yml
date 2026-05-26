@@ -1,0 +1,250 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: OmniWorker
+          - generic [ref=e8]:
+            - link "Producto" [ref=e9] [cursor=pointer]:
+              - /url: "#producto"
+            - link "Cómo funciona" [ref=e10] [cursor=pointer]:
+              - /url: "#como-funciona"
+            - link "FAQ" [ref=e11] [cursor=pointer]:
+              - /url: "#faq"
+        - generic [ref=e12]:
+          - link "Iniciar sesión" [ref=e13] [cursor=pointer]:
+            - /url: /login
+          - link "Empezar gratis" [ref=e14] [cursor=pointer]:
+            - /url: /register
+    - main [ref=e15]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - heading "Contrata empleados de IA que nunca paran, nunca fallan y nunca se van" [level=1] [ref=e19]
+          - paragraph [ref=e20]: OmniWorker despliega agentes autónomos en tu servidor. Facturan, responden clientes, sincronizan tu ERP y operan 24/7 con privacidad absoluta.
+          - generic [ref=e21]:
+            - link "Desplegar mi primer agente" [ref=e22] [cursor=pointer]:
+              - /url: /register
+            - link "Ver cómo funciona →" [ref=e23] [cursor=pointer]:
+              - /url: "#como-funciona"
+        - generic [ref=e24]:
+          - generic [ref=e30]: omniworker — panel de control
+          - generic [ref=e31]:
+            - generic [ref=e32]:
+              - generic [ref=e33]: Workspace
+              - navigation [ref=e34]:
+                - generic [ref=e35]: Agentes
+                - generic [ref=e36]: Ejecuciones
+                - generic [ref=e37]: Integraciones
+                - generic [ref=e38]: Logs
+              - generic [ref=e39]:
+                - generic [ref=e40]:
+                  - generic [ref=e41]: CPU
+                  - generic [ref=e42]: 12%
+                - generic [ref=e43]:
+                  - generic [ref=e44]: RAM
+                  - generic [ref=e45]: 340 MB
+            - generic [ref=e46]:
+              - generic [ref=e47]:
+                - generic [ref=e48]: Agentes activos
+                - generic [ref=e49]: actualizado hace 4s
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - generic [ref=e55]:
+                    - generic [ref=e56]: Facturación
+                    - generic [ref=e57]: ow-billing-01 · hace 12 min
+                  - generic [ref=e58]:
+                    - generic [ref=e59]: 847 ops
+                    - generic [ref=e60]: Activo
+                - generic [ref=e61]:
+                  - generic [ref=e65]:
+                    - generic [ref=e66]: Soporte Comercial
+                    - generic [ref=e67]: ow-support-02 · hace 3 min
+                  - generic [ref=e68]:
+                    - generic [ref=e69]: 1,204 ops
+                    - generic [ref=e70]: Activo
+                - generic [ref=e71]:
+                  - generic [ref=e75]:
+                    - generic [ref=e76]: Sincronización ERP
+                    - generic [ref=e77]: ow-sync-03 · hace 1 min
+                  - generic [ref=e78]:
+                    - generic [ref=e79]: 2,891 ops
+                    - generic [ref=e80]: Activo
+      - generic [ref=e82]:
+        - paragraph [ref=e83]: Se integra con las herramientas que ya usas
+        - generic [ref=e84]:
+          - img "Notion" [ref=e85]
+          - img "Slack" [ref=e86]
+          - img "Stripe" [ref=e87]
+          - img "Airtable" [ref=e88]
+          - img "Asana" [ref=e89]
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - paragraph [ref=e93]: El problema
+          - heading "Tu empresa pierde dinero cada hora que un humano hace trabajo de máquina" [level=2] [ref=e94]
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]: 73%
+            - paragraph [ref=e98]: "del tiempo de un equipo comercial se gasta en tareas administrativas repetitivas: copiar datos, generar PDFs, actualizar CRMs y responder correos con información que ya existe."
+          - generic [ref=e99]:
+            - generic [ref=e100]: $4,200
+            - paragraph [ref=e101]: al mes se pierden en promedio por empleado en procesos que podrían ejecutarse automáticamente. Facturas atrasadas, correos sin responder, datos desincronizados entre sistemas.
+          - generic [ref=e102]:
+            - generic [ref=e103]: 0 hrs
+            - paragraph [ref=e104]: de operación fuera de horario laboral. Tu competencia con operaciones 24/7 cierra tratos mientras tu equipo duerme. Cada hora sin operar es una oportunidad que alguien más toma.
+      - generic [ref=e106]:
+        - generic [ref=e107]:
+          - paragraph [ref=e108]: La solución
+          - heading "Agentes que ejecutan trabajo real, no sugerencias" [level=2] [ref=e109]
+          - paragraph [ref=e110]: No es otro chatbot. OmniWorker ejecuta procesos completos de inicio a fin en tu infraestructura, sin enviar un solo byte a servidores externos.
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - img [ref=e114]
+            - heading "Procesamiento de documentos" [level=3] [ref=e116]
+            - paragraph [ref=e117]: Extrae datos de facturas, contratos y PDFs. Valida contra tus políticas comerciales, registra en tu base de datos y procesa pagos vía Stripe — todo sin intervención.
+          - generic [ref=e118]:
+            - img [ref=e120]
+            - heading "Atención comercial autónoma" [level=3] [ref=e122]
+            - paragraph [ref=e123]: Responde correos y tickets con cotizaciones personalizadas basadas en tu catálogo de precios real. Opera fuera de horario, los fines de semana y en festivos.
+          - generic [ref=e124]:
+            - img [ref=e126]
+            - heading "Sincronización de datos y ERP" [level=3] [ref=e128]
+            - paragraph [ref=e129]: Mantiene sincronizados tu CRM, contabilidad, inventario y base de datos de clientes. Detecta inconsistencias y las corrige antes de que generen problemas.
+          - generic [ref=e130]:
+            - img [ref=e132]
+            - heading "Ejecución local y privada" [level=3] [ref=e134]
+            - paragraph [ref=e135]: Todo se ejecuta en tu infraestructura. Tus datos nunca salen de tu red. Cumplimiento normativo inmediato, auditoría completa de cada operación ejecutada.
+      - generic [ref=e137]:
+        - generic [ref=e138]:
+          - paragraph [ref=e139]: Cómo funciona
+          - heading "Tres pasos para poner a trabajar a tu primer agente" [level=2] [ref=e140]
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - generic [ref=e143]: "01"
+            - heading "Conecta tus herramientas" [level=3] [ref=e144]
+            - paragraph [ref=e145]: Conecta tu base de datos, CRM, correo y las APIs que ya usas. OmniWorker se adapta a tu stack existente — no necesitas migrar nada.
+          - generic [ref=e146]:
+            - generic [ref=e147]: "02"
+            - heading "Define las instrucciones" [level=3] [ref=e148]
+            - paragraph [ref=e149]: "Escribe en lenguaje natural qué debe hacer el agente: \"Cuando llegue una factura, extrae los datos, valida el monto y regístralo en el CRM.\" Así de simple."
+          - generic [ref=e150]:
+            - generic [ref=e151]: "03"
+            - heading "Despliega y olvídate" [level=3] [ref=e152]
+            - paragraph [ref=e153]: El agente arranca en tu servidor local y comienza a operar de inmediato. Monitorea su rendimiento desde el panel o simplemente déjalo trabajar.
+        - link "Crear mi primer agente →" [ref=e155] [cursor=pointer]:
+          - /url: /register
+      - generic [ref=e158]:
+        - generic [ref=e159]:
+          - generic [ref=e160]: 24/7
+          - generic [ref=e161]: Operación continua
+        - generic [ref=e162]:
+          - generic [ref=e163]: +800%
+          - generic [ref=e164]: Productividad operativa
+        - generic [ref=e165]:
+          - generic [ref=e166]: 100%
+          - generic [ref=e167]: Datos en local
+        - generic [ref=e168]:
+          - generic [ref=e169]: <60s
+          - generic [ref=e170]: Tiempo de despliegue
+      - generic [ref=e173]:
+        - generic [ref=e174]:
+          - paragraph [ref=e175]: Contexto corporativo
+          - heading "Tus agentes conocen tu empresa mejor que cualquier empleado nuevo" [level=2] [ref=e176]
+          - paragraph [ref=e177]: Conecta tus manuales, políticas, catálogos de precios y guías operativas. Los agentes internalizan ese conocimiento y lo aplican en cada decisión.
+          - link "Empezar gratis" [ref=e179] [cursor=pointer]:
+            - /url: /register
+        - generic [ref=e180]:
+          - generic [ref=e181]:
+            - heading "Conocimiento accionable" [level=4] [ref=e182]
+            - paragraph [ref=e183]: Tus políticas de descuentos, reglas de facturación y workflows internos se convierten en las directrices que el agente sigue al pie de la letra.
+          - generic [ref=e184]:
+            - heading "Cero alucinaciones" [level=4] [ref=e185]
+            - paragraph [ref=e186]: Los agentes operan exclusivamente con los datos y reglas que tú defines. Sin invenciones, sin respuestas genéricas, sin riesgo reputacional.
+          - generic [ref=e187]:
+            - heading "Auditoría inmutable" [level=4] [ref=e188]
+            - paragraph [ref=e189]: Cada acción, decisión e input se registra. Cumplimiento normativo total y trazabilidad completa de todos los procesos ejecutados.
+      - generic [ref=e191]:
+        - heading "Preguntas frecuentes" [level=2] [ref=e192]
+        - generic [ref=e193]:
+          - generic [ref=e194]:
+            - heading "¿Mis datos salen de mi servidor?" [level=3] [ref=e195]
+            - paragraph [ref=e196]: No. Todo el procesamiento se ejecuta localmente en tu infraestructura. El gateway en la nube solo se usa para enrutamiento inteligente de modelos de alta complejidad, y puedes desactivarlo completamente.
+          - generic [ref=e197]:
+            - heading "¿Qué tipo de tareas pueden ejecutar los agentes?" [level=3] [ref=e198]
+            - paragraph [ref=e199]: "Cualquier tarea que puedas describir paso a paso: procesar facturas, responder correos con cotizaciones, sincronizar bases de datos, generar reportes, actualizar CRMs, gestionar tickets de soporte y más."
+          - generic [ref=e200]:
+            - heading "¿Necesito un equipo técnico para configurarlo?" [level=3] [ref=e201]
+            - paragraph [ref=e202]: No. Las instrucciones se escriben en lenguaje natural. Si puedes explicar un proceso a un empleado nuevo, puedes configurar un agente de OmniWorker.
+          - generic [ref=e203]:
+            - heading "¿Qué pasa si el agente comete un error?" [level=3] [ref=e204]
+            - paragraph [ref=e205]: Cada acción se registra en un log inmutable. Puedes configurar reglas de validación, límites de aprobación y alertas para que revises decisiones críticas antes de que se ejecuten.
+          - generic [ref=e206]:
+            - heading "¿Cuánto cuesta?" [level=3] [ref=e207]
+            - paragraph [ref=e208]: OmniWorker tiene un plan gratuito para comenzar. Los planes empresariales se adaptan al número de agentes y volumen de operaciones que necesites. Agenda una demo para una cotización personalizada.
+      - generic [ref=e211]:
+        - heading "Tu competencia ya está automatizando. ¿Y tú?" [level=2] [ref=e212]
+        - paragraph [ref=e213]: Despliega tu primer agente autónomo en menos de un minuto. Sin tarjeta de crédito, sin llamadas de ventas.
+        - link "Comenzar gratis →" [ref=e214] [cursor=pointer]:
+          - /url: /register
+    - contentinfo [ref=e215]:
+      - generic [ref=e216]:
+        - generic [ref=e217]:
+          - generic [ref=e218]:
+            - text: OmniWorker
+            - paragraph [ref=e219]: Agentes autónomos de IA para operaciones empresariales.
+          - generic [ref=e220]:
+            - heading "Producto" [level=4] [ref=e221]
+            - list [ref=e222]:
+              - listitem [ref=e223]:
+                - link "Plataforma" [ref=e224] [cursor=pointer]:
+                  - /url: "#producto"
+              - listitem [ref=e225]:
+                - link "Agentes" [ref=e226] [cursor=pointer]:
+                  - /url: "#features"
+              - listitem [ref=e227]:
+                - link "Cómo funciona" [ref=e228] [cursor=pointer]:
+                  - /url: "#como-funciona"
+              - listitem [ref=e229]:
+                - link "Precios" [ref=e230] [cursor=pointer]:
+                  - /url: "#faq"
+          - generic [ref=e231]:
+            - heading "Casos de uso" [level=4] [ref=e232]
+            - list [ref=e233]:
+              - listitem [ref=e234]:
+                - link "Facturación" [ref=e235] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e236]:
+                - link "Soporte 24/7" [ref=e237] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e238]:
+                - link "Sincronización ERP" [ref=e239] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e240]:
+                - link "Operaciones comerciales" [ref=e241] [cursor=pointer]:
+                  - /url: "#"
+          - generic [ref=e242]:
+            - heading "Recursos" [level=4] [ref=e243]
+            - list [ref=e244]:
+              - listitem [ref=e245]:
+                - link "Documentación" [ref=e246] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e247]:
+                - link "Guías de integración" [ref=e248] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e249]:
+                - link "API Reference" [ref=e250] [cursor=pointer]:
+                  - /url: "#"
+          - generic [ref=e251]:
+            - heading "Compañía" [level=4] [ref=e252]
+            - list [ref=e253]:
+              - listitem [ref=e254]:
+                - link "Contacto" [ref=e255] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e256]:
+                - link "Privacidad" [ref=e257] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e258]:
+                - link "Términos" [ref=e259] [cursor=pointer]:
+                  - /url: "#"
+        - paragraph [ref=e261]: © 2026 OmniWorker. Todos los derechos reservados.
+  - button "Open Next.js Dev Tools" [ref=e267] [cursor=pointer]:
+    - img [ref=e268]

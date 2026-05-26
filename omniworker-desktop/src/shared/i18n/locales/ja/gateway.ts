@@ -6,5 +6,5 @@ export default {
   running: "稼働中",
   stopped: "停止中",
   gatewayHint:
-    "OmniWorker を Telegram・Discord・Slack などのプラットフォームに接続します",
+    "Flux Agent を Telegram・Discord・Slack などのプラットフォームに接続します",
 } as const;

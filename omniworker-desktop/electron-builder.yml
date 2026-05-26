@@ -23,10 +23,6 @@ asarUnpack:
   - resources/local-llm-scripts/**
   - resources/engine/llama-server
 extraResources:
-  - from: "resources/omniworker-office"
-    to: "omniworker-office"
-    filter:
-      - "**/*"
   - from: "resources/engine"
     to: "engine"
     filter:
@@ -63,9 +59,7 @@ dmg:
 linux:
   target:
     - AppImage
-    - snap
     - deb
-    - rpm
   maintainer: electronjs.org
   vendor: Nous Research
   category: Utility

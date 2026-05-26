@@ -4,7 +4,7 @@ export default {
   refresh: "更新",
   empty: "まだパターンが検出されていません",
   emptyHint:
-    "OmniWorkerを使用するにつれて、AIがあなたの習慣を学習し、自動化されたタスクをここに提案します",
+    "Flux Agentを使用するにつれて、AIがあなたの習慣を学習し、自動化されたタスクをここに提案します",
   loadFailed: "パターンの読み込みに失敗しました",
   confidence: "信頼度",
   occurrences: "発生回数",

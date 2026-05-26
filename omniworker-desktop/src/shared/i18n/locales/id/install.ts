@@ -3,7 +3,7 @@ export default {
   startingInstall: "Memulai instalasi",
   installationComplete: "Instalasi Selesai",
   installationFailed: "Instalasi Gagal",
-  installingOmniWorker: "Menginstal Flux Agent By Simplex",
+  installingOmniWorker: "Menginstal Flux Agent",
   installationFailedHint:
     "Instalasi gagal. Coba lagi atau instal melalui terminal.",
   retryInstallation: "Ulangi Instalasi",

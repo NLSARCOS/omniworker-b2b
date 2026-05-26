@@ -1,7 +1,7 @@
 export default {
   title: "メモリ",
   subtitle:
-    "OmniWorker がセッションを跨いで覚えているあなたと環境に関する情報です。",
+    "Flux Agent がセッションを跨いで覚えているあなたと環境に関する情報です。",
   sessions: "セッション",
   messages: "メッセージ",
   memories: "メモリ",
@@ -20,14 +20,14 @@ export default {
   noProvidersFound: "このインストールにはメモリプロバイダが見つかりません。",
   openProviderWebsite: "プロバイダのウェブサイトを開く",
   noMemoriesYet:
-    "まだメモリがありません。OmniWorker はチャットを通じて重要な事実を保存します。",
+    "まだメモリがありません。Flux Agent はチャットを通じて重要な事実を保存します。",
   noMemoryEntries: "メモリエントリがまだありません。",
   noToolsetsFound: "ツールセットが見つかりません。",
   addManuallyHint: "上のボタンから手動でメモリを追加することもできます。",
   userProfileHint:
-    "あなた自身について OmniWorker に教えてください — 名前、役割、好み、コミュニケーションスタイルなど。",
+    "あなた自身について Flux Agent に教えてください — 名前、役割、好み、コミュニケーションスタイルなど。",
   providersHint:
-    "プラガブルなメモリプロバイダは OmniWorker に高度な長期記憶を与えます。組み込みメモリ（上）は選択したプロバイダと並行して常時動作します。",
+    "プラガブルなメモリプロバイダは Flux Agent に高度な長期記憶を与えます。組み込みメモリ（上）は選択したプロバイダと並行して常時動作します。",
   providersHintActive: "稼働中：<strong>{{provider}}</strong>",
   providersHintInactive: "外部プロバイダ未使用 — 組み込みのみ利用中。",
   enterEnvKey: "{{key}} を入力",

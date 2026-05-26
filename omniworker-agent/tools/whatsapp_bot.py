@@ -42,11 +42,20 @@ def _tool_result(data: Any) -> str:
     return tool_result(data)
 
 
+def _check_available() -> bool:
+    # WhatsApp tools must be explicitly enabled via WHATSAPP_ENABLED env var
+    return os.getenv("WHATSAPP_ENABLED", "").lower() in {"true", "1", "yes"}
+
+
 def _bot_exists() -> bool:
+    if not _check_available():
+        return False
     return (BOT_DIR / "agent" / "main.py").exists()
 
 
 def _bot_running() -> bool:
+    if not _check_available():
+        return False
     if not PID_FILE.exists():
         return False
     try:
@@ -56,10 +65,6 @@ def _bot_running() -> bool:
     except (ProcessLookupError, ValueError, PermissionError):
         PID_FILE.unlink(missing_ok=True)
         return False
-
-
-def _check_available() -> bool:
-    return True
 
 
 def _get_settings() -> Optional[Dict[str, Any]]:

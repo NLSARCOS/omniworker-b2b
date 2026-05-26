@@ -154,9 +154,7 @@ print_banner() {
     echo ""
     echo -e "${MAGENTA}${BOLD}"
     echo "┌─────────────────────────────────────────────────────────┐"
-    echo "│             ⚕ OmniWorker Agent Installer                    │"
-    echo "├─────────────────────────────────────────────────────────┤"
-    echo "│  An open source AI agent by Nous Research.              │"
+    echo "│             ⚕ Flux Agent Installer                      │"
     echo "└─────────────────────────────────────────────────────────┘"
     echo -e "${NC}"
 }
@@ -1968,7 +1966,7 @@ main() {
     setup_venv
     install_deps
     install_node_deps
-    setup_local_llm
+    # setup_local_llm
     setup_path
     copy_config_templates
     run_setup_wizard

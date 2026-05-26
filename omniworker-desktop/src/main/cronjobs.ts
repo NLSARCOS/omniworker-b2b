@@ -10,6 +10,7 @@ import {
 import { profileHome } from "./utils";
 import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./omniworker";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
+import { PowerManager } from "./power";
 
 export interface CronJob {
   id: string;
@@ -155,7 +156,6 @@ export function runCronCommand(
 
   // Prevent sleep during active cron command runs
   try {
-    const { PowerManager } = require("./power");
     PowerManager.startBlocking();
   } catch (e) {
     console.error("[CRON] Failed to start PowerManager block:", e);
@@ -173,7 +173,6 @@ export function runCronCommand(
       (err, stdout, stderr) => {
         // Release power block upon completion
         try {
-          const { PowerManager } = require("./power");
           PowerManager.stopBlocking();
         } catch (e) {
           console.error("[CRON] Failed to stop PowerManager block:", e);

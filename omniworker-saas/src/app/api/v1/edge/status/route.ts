@@ -34,3 +34,36 @@ export async function GET(request: Request) {
     })),
   });
 }
+
+export async function DELETE(request: Request) {
+  const auth = await authenticateRequest(request);
+  if (!auth) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  const { user } = auth;
+
+  if (!user.tenantId) {
+    return NextResponse.json({ error: "Sin tenant" }, { status: 400 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const agentId = searchParams.get("id");
+  if (!agentId) {
+    return NextResponse.json({ error: "id requerido" }, { status: 400 });
+  }
+
+  const agent = await prisma.edgeAgent.findFirst({
+    where: { id: agentId, tenantId: user.tenantId },
+  });
+
+  if (!agent) {
+    return NextResponse.json({ error: "Agente no encontrado" }, { status: 404 });
+  }
+
+  await prisma.edgeAgent.delete({
+    where: { id: agentId },
+  });
+
+  return NextResponse.json({ success: true });
+}

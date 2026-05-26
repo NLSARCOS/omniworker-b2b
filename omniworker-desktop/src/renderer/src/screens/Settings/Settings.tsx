@@ -97,6 +97,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
 
   // Network settings
   const [forceIpv4, setForceIpv4] = useState(false);
+  const [disableLocalSlm, setDisableLocalSlm] = useState(false);
   const [httpProxy, setHttpProxy] = useState("");
   const [networkSaved, setNetworkSaved] = useState(false);
 
@@ -119,6 +120,11 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
     });
     window.omniworkerAPI.getConfig("network.proxy", profile).then((v) => {
       setHttpProxy(v || "");
+    });
+    window.omniworkerAPI.getEnv(profile).then((env) => {
+      if (env) {
+        setDisableLocalSlm(env["DISABLE_LOCAL_SLM"] === "true" || env["DISABLE_LOCAL_SLM"] === "True");
+      }
     });
 
     window.omniworkerAPI.getOmniWorkerVersion().then((v) => {
@@ -356,20 +362,21 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       {/* Scope Style Overrides */}
       <style>{`
         .cockpit-card {
-          background: rgba(14, 14, 17, 0.45);
+          background: var(--panel-bg);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          border: 1px solid var(--border);
           border-radius: 12px;
-          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+          box-shadow: var(--glass-shadow);
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .cockpit-card:hover {
-          border-color: rgba(255, 255, 255, 0.15);
-          box-shadow: 0 0 24px rgba(255, 255, 255, 0.02), 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+          border-color: var(--border-bright);
+          box-shadow: var(--panel-glow), var(--glass-shadow);
         }
         .theme-btn {
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid var(--border);
+          background: var(--bg-secondary);
+          color: var(--text-secondary);
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .theme-btn.active {
@@ -380,13 +387,14 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           font-weight: 600;
         }
         .theme-btn:not(.active):hover {
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.1);
+          background: var(--bg-hover);
+          border-color: var(--border-bright);
+          color: var(--text-primary);
         }
         .futuristic-terminal {
-          background: #09090b;
-          border: 1px solid rgba(255, 255, 255, 0.04);
-          box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
         }
         .custom-toggle input:checked ~ .toggle-track {
           background-color: var(--accent);
@@ -398,7 +406,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         .toggle-track {
           width: 32px;
           height: 18px;
-          background-color: rgba(255,255,255,0.1);
+          background-color: var(--border);
           border-radius: 9px;
           position: relative;
           transition: background-color 0.2s;
@@ -410,7 +418,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           width: 14px;
           height: 14px;
           border-radius: 50%;
-          background-color: #e4e1e6;
+          background-color: var(--text-primary);
           top: 2px;
           left: 2px;
           transition: transform 0.2s, background-color 0.2s;
@@ -625,6 +633,28 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
                     const val = e.target.checked;
                     setForceIpv4(val);
                     await window.omniworkerAPI.setConfig("network.force_ipv4", val ? "true" : "false", profile);
+                    setNetworkSaved(true);
+                    setTimeout(() => setNetworkSaved(false), 2000);
+                  }}
+                />
+                <span className="toggle-track" />
+              </label>
+            </div>
+
+            <div className="flex items-start justify-between bg-white/[0.01] p-3 rounded-lg border border-[var(--border)]">
+              <div className="space-y-1 pr-4">
+                <span className="text-xs font-semibold text-[var(--text-primary)] block">{t("settings.disableLocalSlm")}</span>
+                <span className="text-[11px] text-[var(--text-muted)] leading-relaxed block">{t("settings.disableLocalSlmHint")}</span>
+              </div>
+              <label className="custom-toggle inline-flex items-center flex-shrink-0 mt-1 select-none">
+                <input
+                  type="checkbox"
+                  className="hidden"
+                  checked={disableLocalSlm}
+                  onChange={async (e) => {
+                    const val = e.target.checked;
+                    setDisableLocalSlm(val);
+                    await window.omniworkerAPI.setEnv("DISABLE_LOCAL_SLM", val ? "true" : "false", profile);
                     setNetworkSaved(true);
                     setTimeout(() => setNetworkSaved(false), 2000);
                   }}

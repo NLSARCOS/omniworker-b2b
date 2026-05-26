@@ -22,7 +22,7 @@ import {
   getEnhancedPath,
   SAAS_BASE_URL,
 } from "./installer";
-import { getModelConfig, readEnv, getConnectionConfig } from "./config";
+import { getModelConfig, readEnv, getConnectionConfig, setEnvValue, getConfigValue } from "./config";
 import { ensureMemoryConfig } from "./memory";
 import {
   getSshTunnelUrl,
@@ -30,9 +30,10 @@ import {
   isSshTunnelHealthy,
   startSshTunnel,
 } from "./ssh-tunnel";
-import { stripAnsi } from "./utils";
+import { stripAnsi, profilePaths } from "./utils";
 import { readModels } from "./models";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
+import { PowerManager } from "./power";
 
 let isPlanExpired = false;
 
@@ -457,7 +458,13 @@ function sendMessageViaApi(
         finish(hasContent ? undefined : lastError);
       });
 
-      res.on("error", (err) => finish(`Stream error: ${err.message}`));
+      res.on("error", (err: any) => {
+        if (controller.signal.aborted || err.message === "aborted" || err.code === "ECONNRESET") {
+          finish();
+          return;
+        }
+        finish(`Stream error: ${err.message}`);
+      });
     },
   );
 
@@ -620,7 +627,6 @@ function sendMessageViaCli(
 
   // Prevent sleep during active agent conversation/reasoning tasks
   try {
-    const { PowerManager } = require("./power");
     PowerManager.startBlocking();
   } catch (e) {
     console.error("[CONVERSATION] Failed to start PowerManager block:", e);
@@ -631,7 +637,6 @@ function sendMessageViaCli(
     if (isPowerBlockReleased) return;
     isPowerBlockReleased = true;
     try {
-      const { PowerManager } = require("./power");
       PowerManager.stopBlocking();
     } catch (e) {
       console.error("[CONVERSATION] Failed to stop PowerManager block:", e);
@@ -684,7 +689,8 @@ function sendMessageViaCli(
     ) {
       return;
     }
-    // Forward errors visibly to the chat
+    stderrBuffer += text;
+    // Forward errors visibly to the chat in real-time
     if (
       /❌|⚠️|Error|Traceback|error|failed|denied|unauthorized|invalid/i.test(
         text,
@@ -692,21 +698,19 @@ function sendMessageViaCli(
     ) {
       hasOutput = true;
       cb.onChunk(text);
-    } else {
-      // Buffer other stderr for reporting on non-zero exit
-      stderrBuffer += text;
     }
   });
 
   proc.on("close", (code) => {
     releasePowerBlock();
-    if (code === 0 || hasOutput) {
+    console.log(`[OmniWorker Agent] Process closed with code ${code}. hasOutput=${hasOutput}`);
+    if (code === 0) {
       cb.onDone(capturedSessionId || undefined);
     } else {
       const detail = stderrBuffer.trim();
       cb.onError(
         detail
-          ? `Flux Agent By Simplex exited with code ${code}: ${detail}`
+          ? `Flux Agent By Simplex exited with code ${code}:\n${detail}`
           : `Flux Agent By Simplex exited with code ${code}. Check your model configuration and API key.`,
       );
     }
@@ -751,6 +755,11 @@ function shouldUseLocalSlm(
   message: string,
   history?: Array<{ role: string; content: string }>,
 ): boolean {
+  // If local SLM is disabled, bypass immediately to save socket probe latency
+  if (process.env.DISABLE_LOCAL_SLM === "true" || process.env.DISABLE_LOCAL_SLM === "True") {
+    return false;
+  }
+
   // Multi-turn → always cloud
   if (history && history.length > 0) return false;
 
@@ -1000,6 +1009,7 @@ function ensureInitialized(): void {
  */
 function ensureLocalLlmScripts(): void {
   try {
+    const fs = require("fs");
     const { app } = require("electron");
     const srcDir = join(app.getAppPath(), "resources", "local-llm-scripts");
     const engineSrcDir = join(app.getAppPath(), "resources", "engine");
@@ -1009,7 +1019,23 @@ function ensureLocalLlmScripts(): void {
     if (!existsSync(srcDir)) return; // not packaged yet (dev mode)
 
     mkdirSync(destScriptsDir, { recursive: true });
-    mkdirSync(destEngineDir, { recursive: true });
+
+    // Si existe la carpeta física pero está vacía o es un directorio normal y existe engineSrcDir,
+    // la removemos para que symlinkSync pueda crearlo como link.
+    if (existsSync(engineSrcDir) && existsSync(destEngineDir)) {
+      try {
+        const lstat = fs.lstatSync(destEngineDir);
+        if (lstat.isDirectory() && !lstat.isSymbolicLink()) {
+          fs.rmdirSync(destEngineDir);
+        }
+      } catch (err) {
+        // Si tiene archivos (como slm.gguf descargado), no la borramos
+      }
+    }
+
+    if (!existsSync(destEngineDir) && !existsSync(engineSrcDir)) {
+      mkdirSync(destEngineDir, { recursive: true });
+    }
 
     // Copy startup scripts
     for (const f of ["start-local-llm.sh", "start-local-llm.bat"]) {
@@ -1091,6 +1117,10 @@ function isLocalLlmRunning(): Promise<boolean> {
 }
 
 export async function startLocalLlmServer(): Promise<boolean> {
+  if (process.env.DISABLE_LOCAL_SLM === "true" || process.env.DISABLE_LOCAL_SLM === "True") {
+    return false;
+  }
+
   const scriptPath = join(
     OMNIWORKER_HOME,
     "local-llm",
@@ -1259,10 +1289,25 @@ export async function startSmartRouter(): Promise<boolean> {
   const conn = getConnectionConfig();
   const envConfig = readEnv();
 
+  // Central sanitization of dead domain worker.thelab.lat
+  if (process.env.VITE_SAAS_URL && process.env.VITE_SAAS_URL.includes("worker.thelab.lat")) {
+    process.env.VITE_SAAS_URL = "https://flux.simplex.lat";
+  }
+  if (process.env.CLOUD_API_URL && process.env.CLOUD_API_URL.includes("worker.thelab.lat")) {
+    process.env.CLOUD_API_URL = "https://flux.simplex.lat/api";
+  }
+  if (envConfig.CLOUD_API_URL && envConfig.CLOUD_API_URL.includes("worker.thelab.lat")) {
+    console.log("[SmartRouter] Dead domain worker.thelab.lat detected in envConfig. Migrating to flux.simplex.lat...");
+    setEnvValue("CLOUD_API_URL", "https://flux.simplex.lat/api");
+    envConfig.CLOUD_API_URL = "https://flux.simplex.lat/api";
+  }
+
   let cloudApiUrl = process.env.CLOUD_API_URL || envConfig.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
   if (conn.mode === "local") {
     cloudApiUrl = envConfig.CUSTOM_BASE_URL || envConfig.CLOUD_API_URL || `${SAAS_BASE_URL}/api`;
   }
+
+  const forceIpv4 = getConfigValue("network.force_ipv4") === "true";
 
   const routerEnv: Record<string, string> = {
     ...(process.env as Record<string, string>),
@@ -1272,6 +1317,7 @@ export async function startSmartRouter(): Promise<boolean> {
     LOCAL_SLM_PORT: process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
     CLOUD_API_URL: cloudApiUrl,
     SMART_ROUTER_LOG: "1", // Enable logging
+    FORCE_IPV4: forceIpv4 ? "true" : "false",
   };
 
   // Forward the JWT token or local API key so the router can auth with cloud
@@ -1359,9 +1405,26 @@ export async function getSmartRouterUrl(
 let gatewayProcess: ChildProcess | null = null;
 let gatewayStartedByApp = false;
 
-export function startGateway(profile?: string): boolean {
+export async function startGateway(profile?: string): Promise<boolean> {
   ensureInitialized();
-  if (isGatewayRunning()) return false;
+  if (gatewayProcess && !gatewayProcess.killed) {
+    return true; // Already running and managed
+  }
+  const isRunning = isGatewayRunning();
+  if (isRunning) {
+    console.log("[Gateway] Stale orphan gateway detected or port 8642 in use. Force killing...");
+    await forceKillPort(8642);
+    const stalePid = readPidFile();
+    if (stalePid) {
+      try {
+        console.log(`[Gateway] Force killing stale orphan gateway PID ${stalePid} via SIGKILL`);
+        process.kill(stalePid, "SIGKILL");
+      } catch {
+        // already dead or couldn't kill
+      }
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
 
   // Ensure memory config defaults are present before gateway starts.
   // This guarantees background memory review works in local mode.
@@ -1396,7 +1459,7 @@ export function startGateway(profile?: string): boolean {
   const jwtToken = profileEnv.CUSTOM_API_KEY || profileEnv.OPENAI_API_KEY;
   if (jwtToken) {
     try {
-      const configPath = join(OMNIWORKER_HOME, "config.yaml");
+      const configPath = profilePaths(profile).configFile;
       const fsSync = require("fs") as typeof import("fs");
       if (fsSync.existsSync(configPath)) {
         let yaml = fsSync.readFileSync(configPath, "utf-8");
@@ -1422,6 +1485,16 @@ export function startGateway(profile?: string): boolean {
     detached: true,
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });
+
+  if (gatewayProcess && gatewayProcess.pid) {
+    try {
+      const pidFile = join(OMNIWORKER_HOME, "gateway.pid");
+      fs.writeFileSync(pidFile, gatewayProcess.pid.toString(), "utf-8");
+      console.log(`[Gateway] Wrote spawned PID ${gatewayProcess.pid} to ${pidFile}`);
+    } catch (err) {
+      console.error("[Gateway] Failed to write PID file:", err);
+    }
+  }
 
   gatewayProcess.unref();
 
@@ -1535,10 +1608,9 @@ export function testRemoteConnection(
   });
 }
 
-export function restartGateway(profile?: string): void {
+export async function restartGateway(profile?: string): Promise<void> {
   if (!gatewayStartedByApp && !isGatewayRunning()) return;
   stopGateway(true);
-  setTimeout(() => {
-    startGateway(profile);
-  }, 500);
+  await new Promise((r) => setTimeout(r, 1000));
+  await startGateway(profile);
 }

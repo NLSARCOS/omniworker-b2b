@@ -144,7 +144,7 @@ export default {
   matrixHomeserver: "Matrix Homeserver",
   matrixHomeHint: "e.g. https://matrix.org",
   matrixUserId: "Matrix User ID",
-  matrixUserHint: "e.g. @omniworker:matrix.org",
+  matrixUserHint: "e.g. @flux-agent:matrix.org",
   matrixAccessToken: "Matrix Access Token",
   matrixTokenHint: "Access token for Matrix login",
   mattermostUrl: "Mattermost URL",

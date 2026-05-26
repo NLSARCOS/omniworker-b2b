@@ -4,7 +4,7 @@ export default {
   refresh: "Atualizar",
   empty: "Nenhum padrão detectado ainda",
   emptyHint:
-    "À medida que você usa o OmniWorker, a IA aprenderá seus hábitos e sugerirá tarefas automatizadas aqui",
+    "À medida que você usa o Flux Agent, a IA aprenderá seus hábitos e sugerirá tarefas automatizadas aqui",
   loadFailed: "Falha ao carregar padrões",
   confidence: "Confiança",
   occurrences: "Ocorrências",

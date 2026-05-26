@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Welcome from "./screens/Welcome/Welcome";
@@ -13,10 +13,11 @@ type Screen = "splash" | "login" | "welcome" | "installing" | "setup" | "main" |
 
 // Minimum time the splash stays visible so the brand animation plays
 // through. Tracks the splash logo fade-in duration in main.css.
-const SPLASH_MIN_MS = 2800;
+const SPLASH_MIN_MS = 0;
 
 function App(): React.JSX.Element {
   const [screen, setScreen] = useState<Screen>("splash");
+  const installCheckStarted = useRef(false);
   const [installError, setInstallError] = useState<string | null>(null);
   const [connectionMode, setConnectionMode] = useState<
     "local" | "remote" | "ssh"
@@ -99,7 +100,7 @@ function App(): React.JSX.Element {
       localStorage.setItem("ow_auth", JSON.stringify(auth));
 
       const saasUrl =
-        import.meta.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+        import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
 
       // 1. Guardar JWT para que los procesos Python/CLI también lo usen
       await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
@@ -113,24 +114,15 @@ function App(): React.JSX.Element {
         "",
       );
 
-      // 3. Configurar el backend custom del agente local para que consuma a través del Smart Router
-      const routerUrl = `http://127.0.0.1:8341/v1`;
+      // 3. Configurar el backend custom del agente para conectar DIRECTO al SaaS
+      const directSaasApi = `${saasUrl}/api/v1`;
       await window.omniworkerAPI.setModelConfig(
         "custom",
         "omniworker",
-        routerUrl,
+        directSaasApi,
       );
 
-      console.error("[APP] Configured local mode with custom B2B SaaS backend");
-
-      // 4. Iniciar Smart Router para enrutar mensajes simples al SLM local
-      //    (no-fatal: si no está disponible el SLM, todo va al SaaS igual)
-      try {
-        await window.omniworkerAPI.startSmartRouter();
-        console.error("[APP] Smart Router started");
-      } catch (srErr: any) {
-        console.error("[APP] Smart Router failed (non-fatal):", srErr?.message);
-      }
+      console.error("[APP] Configured direct SaaS connection:", directSaasApi);
 
       // 5. Auto-refresh del JWT cada 12 minutos para mantener la sesión viva
       if (auth.refreshToken) {
@@ -176,11 +168,10 @@ function App(): React.JSX.Element {
                   "CUSTOM_API_KEY",
                   data.accessToken,
                 );
-                const routerUrl = `http://127.0.0.1:8341/v1`;
                 await window.omniworkerAPI.setModelConfig(
                   "custom",
                   "omniworker",
-                  routerUrl,
+                  `${saasUrl}/api/v1`,
                 );
                 return data.refreshToken || refreshToken;
               }
@@ -237,7 +228,48 @@ function App(): React.JSX.Element {
         const auth = JSON.parse(savedAuth);
         if (auth?.accessToken) {
           console.error("[APP] Found saved credentials, auto-logging in user:", user.email);
-          await handleLoginSuccess(user, auth);
+          
+          // Refresh the token first before handleLoginSuccess to avoid writing expired tokens to .env
+          const saasUrl = import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
+          let freshAuth = auth;
+          let freshUser = user;
+          try {
+            let fingerprint: string | undefined;
+            try {
+              fingerprint = await window.omniworkerAPI.getDeviceFingerprint();
+            } catch (fpErr) {
+              console.error("[APP] Failed to get fingerprint for startup token refresh:", fpErr);
+            }
+            console.error("[APP] Refreshing token on startup to ensure fresh session...");
+            const res = await fetch(`${saasUrl}/api/v1/auth/refresh`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refreshToken: auth.refreshToken, deviceFingerprint: fingerprint }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.accessToken) {
+                console.error("[APP] Token refreshed successfully on startup!");
+                freshAuth = {
+                  accessToken: data.accessToken,
+                  refreshToken: data.refreshToken || auth.refreshToken,
+                };
+                localStorage.setItem("ow_auth", JSON.stringify(freshAuth));
+                if (data.user) {
+                  freshUser = data.user;
+                  localStorage.setItem("ow_user", JSON.stringify(freshUser));
+                }
+              }
+            } else if (res.status === 401) {
+              console.error("[APP] Saved session refresh failed (401). Logging out...");
+              handleLogout();
+              return;
+            }
+          } catch (refreshErr) {
+            console.error("[APP] Failed to refresh saved session token on startup:", refreshErr);
+          }
+
+          await handleLoginSuccess(freshUser, freshAuth);
           autoLoggedIn = true;
         }
       } catch (err) {
@@ -254,9 +286,11 @@ function App(): React.JSX.Element {
     if (!autoLoggedIn) {
       setScreen(next);
     }
-  }, [handleLoginSuccess]);
+  }, [handleLoginSuccess, handleLogout]);
 
   useEffect(() => {
+    if (installCheckStarted.current) return;
+    installCheckStarted.current = true;
     runInstallCheck();
   }, [runInstallCheck]);
 
@@ -316,8 +350,8 @@ function App(): React.JSX.Element {
   }
 
   function renderScreen(): React.JSX.Element {
-    // BLOQUEO B2B
-    if (userData?.isLocked && !userData?.isPlanExpired) {
+    // BLOQUEO B2B (Desactivado en DEV para permitir capturas de pantalla de la documentación)
+    if (userData?.isLocked && !userData?.isPlanExpired && !import.meta.env.DEV) {
       return (
         <div className="flex h-screen w-full items-center justify-center bg-black text-white font-mono z-50 fixed top-0 left-0">
           <div className="border-8 border-white p-12 text-center max-w-lg">

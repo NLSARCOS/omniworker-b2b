@@ -4,5 +4,5 @@ export async function GET() {
   // const authHeader = headers().get("authorization");
   
   // Redirigir al archivo servido estáticamente por Nginx
-  return NextResponse.redirect("https://worker.thelab.lat/downloads/omniworker-agent.tar.gz");
+  return NextResponse.redirect("https://flux.simplex.lat/downloads/omniworker-agent.tar.gz");
 }

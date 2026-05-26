@@ -18,6 +18,13 @@ import { setupAskpass, AskpassHandle } from "./askpass";
 import { precacheSudoCredentials } from "./sudoCreds";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 
+if (process.env.VITE_SAAS_URL && process.env.VITE_SAAS_URL.includes("worker.thelab.lat")) {
+  process.env.VITE_SAAS_URL = "https://flux.simplex.lat";
+}
+if (process.env.CLOUD_API_URL && process.env.CLOUD_API_URL.includes("worker.thelab.lat")) {
+  process.env.CLOUD_API_URL = "https://flux.simplex.lat/api";
+}
+
 const IS_WINDOWS = process.platform === "win32";
 
 export const OMNIWORKER_HOME =
@@ -305,7 +312,7 @@ export function clearVersionCache(): void {
 
 export function runOmniWorkerDoctor(): string {
   if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
-    return "OmniWorker is not installed.";
+    return "Flux Agent is not installed.";
   }
   try {
     const output = execFileSync(
@@ -350,12 +357,12 @@ export async function runClawMigrate(
   onProgress: (progress: InstallProgress) => void,
 ): Promise<void> {
   if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
-    throw new Error("OmniWorker is not installed.");
+    throw new Error("Flux Agent is not installed.");
   }
 
   const omniworker = checkOmniWorkerExists();
   if (!omniworker.found) {
-    throw new Error("No OmniWorker installation found.");
+    throw new Error("No Flux Agent installation found.");
   }
 
   let log = "";
@@ -364,7 +371,7 @@ export async function runClawMigrate(
     onProgress({
       step: 1,
       totalSteps: 1,
-      title: "Migrating from OmniWorker",
+      title: "Migrating from Flux Agent",
       detail: text.trim().slice(0, 120),
       log,
     });
@@ -415,7 +422,7 @@ export async function runOmniWorkerUpdate(
   onProgress: (progress: InstallProgress) => void,
 ): Promise<void> {
   if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
-    throw new Error("OmniWorker is not installed. Please install it first.");
+    throw new Error("Flux Agent is not installed. Please install it first.");
   }
 
   let log = "";
@@ -424,7 +431,7 @@ export async function runOmniWorkerUpdate(
     onProgress({
       step: 1,
       totalSteps: 1,
-      title: "Updating OmniWorker Agent",
+      title: "Updating Flux Agent",
       detail: text.trim().slice(0, 120),
       log,
     });
@@ -531,7 +538,7 @@ const STAGE_MARKERS: { pattern: RegExp; step: number; title: string }[] = [
 ];
 
 export const SAAS_BASE_URL =
-  process.env.VITE_SAAS_URL || "https://worker.thelab.lat";
+  process.env.VITE_SAAS_URL || "https://flux.simplex.lat";
 
 export async function runInstall(
   onProgress: (progress: InstallProgress) => void,
@@ -930,7 +937,7 @@ export async function runOmniWorkerBackup(
   profile?: string,
 ): Promise<{ success: boolean; path?: string; error?: string }> {
   if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
-    return { success: false, error: "OmniWorker is not installed." };
+    return { success: false, error: "Flux Agent is not installed." };
   }
   const args = omniworkerCliArgs();
   if (profile && profile !== "default") args.push("-p", profile);
@@ -979,7 +986,7 @@ export async function runOmniWorkerImport(
   profile?: string,
 ): Promise<{ success: boolean; error?: string }> {
   if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
-    return { success: false, error: "OmniWorker is not installed." };
+    return { success: false, error: "Flux Agent is not installed." };
   }
   const args = omniworkerCliArgs();
   if (profile && profile !== "default") args.push("-p", profile);
@@ -1021,7 +1028,7 @@ export async function runOmniWorkerImport(
 
 export function runOmniWorkerDump(): Promise<string> {
   if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
-    return Promise.resolve("OmniWorker is not installed.");
+    return Promise.resolve("Flux Agent is not installed.");
   }
   return new Promise((resolve) => {
     execFile(
@@ -1259,9 +1266,7 @@ export async function downloadSLM(
   onProgress: (progress: InstallProgress) => void,
   authToken?: string,
 ): Promise<void> {
-  // Use resources/engine relative to the current directory
-  // Assuming this file is compiled to out/main/installer.js, the project root is 2 levels up
-  const modelDir = join(__dirname, "../../resources/engine");
+  const modelDir = join(OMNIWORKER_HOME, "local-llm", "engine");
   const modelPath = join(modelDir, "slm.gguf");
   
   if (!existsSync(modelDir)) {
@@ -1363,7 +1368,7 @@ export async function downloadAndInstallOpenwa(
   emit(`Descargando tarball a: ${tempTarball}\n`, 1, 2);
 
   return new Promise<void>((resolve, reject) => {
-    const url = "https://worker.thelab.lat/downloads/openwa-server.tar.gz";
+    const url = "https://flux.simplex.lat/downloads/openwa-server.tar.gz";
     const file = createWriteStream(tempTarball);
 
     https.get(url, (response: any) => {

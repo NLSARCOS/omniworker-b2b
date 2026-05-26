@@ -4,7 +4,7 @@ set -e
 cat << 'NGINXEOF' > /etc/nginx/sites-available/omniworker
 server {
     listen 80;
-    server_name worker.thelab.lat api.worker.thelab.lat;
+    server_name flux.simplex.lat;
 
     location /downloads/ {
         alias /opt/omniworker/downloads/;
@@ -30,4 +30,4 @@ rm -f /etc/nginx/sites-enabled/default
 systemctl restart nginx
 
 # Run certbot to get SSL certificates
-certbot --nginx -d worker.thelab.lat -d api.worker.thelab.lat --non-interactive --agree-tos -m admin@thelab.lat || echo "Certbot failed. You may need to disable Cloudflare proxy during cert issuance."
+certbot --nginx -d flux.simplex.lat --non-interactive --agree-tos -m admin@simplex.lat || echo "Certbot failed. You may need to disable Cloudflare proxy during cert issuance."

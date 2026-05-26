@@ -4,7 +4,7 @@ export default {
   refresh: "Segarkan",
   empty: "Belum ada pola yang terdeteksi",
   emptyHint:
-    "Saat Anda menggunakan OmniWorker, AI akan mempelajari kebiasaan Anda dan menyarankan tugas otomatis di sini",
+    "Saat Anda menggunakan Flux Agent, AI akan mempelajari kebiasaan Anda dan menyarankan tugas otomatis di sini",
   loadFailed: "Gagal memuat pola",
   confidence: "Kepercayaan",
   occurrences: "Kejadian",

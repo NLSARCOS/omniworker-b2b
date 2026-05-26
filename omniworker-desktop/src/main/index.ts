@@ -164,6 +164,7 @@ import {
   resumeCronJob,
   triggerCronJob,
 } from "./cronjobs";
+import { setupPowerMonitor } from "./power";
 import {
   listDetectedPatterns,
   approvePattern,
@@ -1745,7 +1746,6 @@ app.whenReady().then(() => {
 
   // Initialize power monitoring for resume catch-up ticks
   try {
-    const { setupPowerMonitor } = require("./power");
     setupPowerMonitor();
   } catch (err) {
     console.error("[POWER] Failed to initialize setupPowerMonitor:", err);
@@ -1765,6 +1765,44 @@ app.whenReady().then(() => {
   setupIPC();
   createWindow();
   setupUpdater();
+
+  // ── macOS: Check Full Disk Access on first launch ──────────────────
+  if (process.platform === "darwin") {
+    (async () => {
+      const os = await import("os");
+      const fs = await import("fs");
+      const path = await import("path");
+      const { exec } = await import("child_process");
+
+      const testPath = path.join(os.homedir(), "Desktop", ".fluxagent_permission_test");
+      try {
+        fs.writeFileSync(testPath, "test", { encoding: "utf-8" });
+        fs.unlinkSync(testPath);
+        // Permissions OK
+      } catch {
+        // No access — show dialog
+        const result = await dialog.showMessageBox({
+          type: "warning",
+          title: "Permisos Requeridos",
+          message: "FluxAgent necesita acceso completo al disco",
+          detail:
+            "Para que el agente pueda crear archivos, ejecutar comandos y acceder a tus proyectos, necesitas otorgar 'Full Disk Access' en Configuración del Sistema.\n\n" +
+            "1. Click 'Abrir Configuración'\n" +
+            "2. Busca 'FluxAgent' en la lista\n" +
+            "3. Activa el toggle\n" +
+            "4. Reinicia la app",
+          buttons: ["Abrir Configuración", "Más tarde"],
+          defaultId: 0,
+        });
+
+        if (result.response === 0) {
+          exec("open 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles'");
+        }
+      }
+    })().catch((err) => {
+      console.error("[PERMISSIONS] Check failed:", err);
+    });
+  }
 
   // Auto-start SSH tunnel or local gateway on launch
   const conn = getConnectionConfig();

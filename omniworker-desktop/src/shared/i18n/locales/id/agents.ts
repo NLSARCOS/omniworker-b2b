@@ -1,7 +1,7 @@
 export default {
   title: "Profil",
   subtitle:
-    "Setiap profil adalah workspace OmniWorker terisolasi dengan konfigurasi, memori, dan skill sendiri",
+    "Setiap profil adalah workspace Flux Agent terisolasi dengan konfigurasi, memori, dan skill sendiri",
   newAgent: "Agent Baru",
   namePlaceholder: "Nama agent (mis. coder)",
   cloneConfig: "Klon konfigurasi & API key dari default",
