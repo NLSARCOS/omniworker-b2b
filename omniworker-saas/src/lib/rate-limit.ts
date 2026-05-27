@@ -56,6 +56,10 @@ const limiters = {
   auth: redis
     ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "15 m") })
     : null,
+  // Token refresh: 60 per 15 min (normal desktop app usage)
+  refresh: redis
+    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, "15 m") })
+    : null,
   // Chat/completions: 60 per min
   chat: redis
     ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, "1 m") })
@@ -70,7 +74,7 @@ const limiters = {
     : null,
 };
 
-type RateLimitTier = "auth" | "chat" | "admin" | "default";
+type RateLimitTier = "auth" | "refresh" | "chat" | "admin" | "default";
 
 export async function checkRateLimit(
   identifier: string,
@@ -93,6 +97,7 @@ export async function checkRateLimit(
 function getLimitForTier(tier: RateLimitTier): number {
   switch (tier) {
     case "auth": return 5;
+    case "refresh": return 60;
     case "chat": return 60;
     case "admin": return 30;
     default: return 120;
@@ -102,6 +107,7 @@ function getLimitForTier(tier: RateLimitTier): number {
 function getWindowForTier(tier: RateLimitTier): number {
   switch (tier) {
     case "auth": return 15 * 60 * 1000;
+    case "refresh": return 15 * 60 * 1000;
     case "chat": return 60 * 1000;
     case "admin": return 60 * 1000;
     default: return 60 * 1000;
