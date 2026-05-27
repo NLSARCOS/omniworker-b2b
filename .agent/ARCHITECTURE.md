@@ -14,7 +14,7 @@ This workspace unifies **three** complementary systems into a single development
 | **OpenSpec** | Spec-driven formal planning | 4 skills, 4 workflows, `openspec/` data |
 | **GSAP Skills** | Animation domain expertise | 8 specialized animation skills |
 
-**Total**: 20 agents + 58 skills + 25 workflows + validation scripts
+**Total**: 20 agents + 61 skills + 26 workflows + validation scripts
 
 ---
 
@@ -119,7 +119,7 @@ USER REQUEST ──→ CLASSIFY
 
 ---
 
-## 🧩 Skills (58)
+## 🧩 Skills (61)
 
 ### Kit Skills (37)
 
@@ -185,9 +185,9 @@ USER REQUEST ──→ CLASSIFY
 
 ---
 
-## 🔄 Workflows (25)
+## 🔄 Workflows (26)
 
-### Kit Workflows (12)
+### Kit Workflows (22)
 
 | Command | Description |
 |---------|-------------|

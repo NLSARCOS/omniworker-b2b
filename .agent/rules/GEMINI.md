@@ -184,9 +184,9 @@ When user's prompt is NOT in English:
 **Path Awareness:**
 
 - Agents: `.agent/agents/` (20 specialists)
-- Skills: `.agent/skills/` (59 skills — Kit + OpenSpec + GSAP + Superpowers)
+- Skills: `.agent/skills/` (61 skills — Kit + OpenSpec + GSAP + Superpowers)
 - Project skills: `.agent/project-skills/` (repo-scoped learned conventions from `/learn`)
-- Workflows: `.agent/workflows/` (16 workflows — Kit + OpenSpec)
+- Workflows: `.agent/workflows/` (26 workflows — Kit + OpenSpec)
 - Scripts: `.agent/scripts/` (validation & audit)
 - Memory: `.agent/MEMORY.md` (project decisions & context)
 - OpenSpec data: `openspec/` (change artifacts)

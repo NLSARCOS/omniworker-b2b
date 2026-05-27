@@ -20,7 +20,7 @@ describe("Electron main process hardening", () => {
     expect(mainSrc).toContain("nodeIntegration: false");
     expect(mainSrc).toContain("contextIsolation: true");
     expect(mainSrc).toContain("sandbox: true");
-    expect(mainSrc).toContain("webSecurity: false");
+    expect(mainSrc).not.toContain("webSecurity: false");
     expect(mainSrc).toContain("allowRunningInsecureContent: false");
   });
 

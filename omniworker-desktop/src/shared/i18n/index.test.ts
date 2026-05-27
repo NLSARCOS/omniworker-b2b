@@ -3,7 +3,7 @@ import { t } from "./index";
 
 describe("shared i18n", () => {
   it("returns Spanish text by default", () => {
-    expect(t("welcome.title")).toBe("Bienvenido a Flux Agent By Simplex");
+    expect(t("welcome.title")).toBe("Bienvenido a Flux Agent");
   });
 
   it("falls back to the key when an English key is missing", () => {
@@ -11,15 +11,15 @@ describe("shared i18n", () => {
   });
 
   it("returns zh-CN text when available", () => {
-    expect(t("welcome.title", "zh-CN")).toBe("欢迎使用 Flux Agent By Simplex");
+    expect(t("welcome.title", "zh-CN")).toBe("欢迎使用 Flux Agent");
   });
 
   it("returns es text when available", () => {
-    expect(t("welcome.title", "es")).toBe("Bienvenido a Flux Agent By Simplex");
+    expect(t("welcome.title", "es")).toBe("Bienvenido a Flux Agent");
   });
 
   it("returns id text when available", () => {
-    expect(t("welcome.title", "id")).toBe("Selamat datang di Flux Agent By Simplex");
+    expect(t("welcome.title", "id")).toBe("Selamat datang di Flux Agent");
   });
 
   it("falls back to en when zh-CN key is missing", () => {
