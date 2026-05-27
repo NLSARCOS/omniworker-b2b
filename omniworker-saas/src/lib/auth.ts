@@ -533,22 +533,25 @@ export async function refreshAccessToken(refreshToken: string, deviceFingerprint
     return { success: false, error: "Token de refresco inválido o expirado" };
   }
 
-  // Atomic rotation: revoke old + create new in a transaction (prevents token loss on DB failure)
+  // Token rotation: revoke old token first, then create new one.
+  // Order matters: if revocation fails, no new token is created and the old one stays valid.
+  // If new token creation fails after revocation, the user must re-login (acceptable for a DB failure).
+  // createRefreshToken uses the module-level prisma client and cannot be placed inside a transaction,
+  // so revocation is done in its own transaction before issuance.
   const oldHash = hashToken(refreshToken);
   let newRefreshToken: string;
   try {
-    newRefreshToken = await prisma.$transaction(async (tx) => {
-      // Create new token FIRST (so if this fails, old token remains valid)
-      const newToken = await createRefreshToken(validated.userId, validated.family);
-      // Then revoke the old one
+    // Step 1: Revoke the old token atomically
+    await prisma.$transaction(async (tx) => {
       await tx.refreshToken.updateMany({
         where: { tokenHash: oldHash },
         data: { revoked: true },
       });
-      return newToken;
     });
+    // Step 2: Only create new token after revocation succeeds
+    newRefreshToken = await createRefreshToken(validated.userId, validated.family);
   } catch (error) {
-    console.error("[Auth] Refresh rotation transaction failed:", error);
+    console.error("[Auth] Refresh rotation failed:", error);
     return { success: false, error: "Error en la rotación de token" };
   }
 
