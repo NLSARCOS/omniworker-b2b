@@ -190,7 +190,7 @@ export const MessageList = memo(function MessageList({
 
   // Height measurement caching
   const heightsRef = useRef<Record<string, number>>({});
-  const listRef = useRef<List>(null);
+  const listRef = useRef<any>(null);
 
   const getItemSize = useCallback(
     (index: number) => {
