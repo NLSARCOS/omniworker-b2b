@@ -1159,6 +1159,22 @@ def build_skills_system_prompt(
             except Exception as e:
                 logger.debug("Could not read external skill description %s: %s", desc_file, e)
 
+    def _short_desc(desc: str, max_chars: int = 55) -> str:
+        """Truncate to the first natural break at or before max_chars."""
+        if not desc:
+            return ""
+        # Try colon or em-dash as a natural mid-sentence cut point first
+        for sep in (":", " —", " -"):
+            idx = desc.find(sep)
+            if 0 < idx <= max_chars:
+                return desc[:idx].rstrip()
+        # Fall back to hard char limit, breaking at a word boundary
+        if len(desc) <= max_chars:
+            return desc.rstrip(".")
+        truncated = desc[:max_chars]
+        last_space = truncated.rfind(" ")
+        return (truncated[:last_space] if last_space > 20 else truncated).rstrip(" ,;.")
+
     if not skills_by_category:
         result = ""
     else:
@@ -1166,7 +1182,7 @@ def build_skills_system_prompt(
         for category in sorted(skills_by_category.keys()):
             cat_desc = category_descriptions.get(category, "")
             if cat_desc:
-                index_lines.append(f"  {category}: {cat_desc}")
+                index_lines.append(f"  {category}: {_short_desc(cat_desc, 80)}")
             else:
                 index_lines.append(f"  {category}:")
             # Deduplicate and sort skills within each category
@@ -1175,38 +1191,20 @@ def build_skills_system_prompt(
                 if name in seen:
                     continue
                 seen.add(name)
-                if desc:
-                    index_lines.append(f"    - {name}: {desc}")
+                short = _short_desc(desc)
+                if short:
+                    index_lines.append(f"    - {name}: {short}")
                 else:
                     index_lines.append(f"    - {name}")
 
         result = (
-            "## Skills (mandatory)\n"
-            "Before replying, scan the skills below. If a skill matches or is even partially relevant "
-            "to your task, you MUST load it with skill_view(name) and follow its instructions. "
-            "Err on the side of loading — it is always better to have context you don't need "
-            "than to miss critical steps, pitfalls, or established workflows. "
-            "Skills contain specialized knowledge — API endpoints, tool-specific commands, "
-            "and proven workflows that outperform general-purpose approaches. Load the skill "
-            "even if you think you could handle the task with basic tools like web_search or terminal. "
-            "Skills also encode the user's preferred approach, conventions, and quality standards "
-            "for tasks like code review, planning, and testing — load them even for tasks you "
-            "already know how to do, because the skill defines how it should be done here.\n"
-            "Whenever the user asks you to configure, set up, install, enable, disable, modify, "
-            "or troubleshoot OmniWorker Agent itself — its CLI, config, models, providers, tools, "
-            "skills, voice, gateway, plugins, or any feature — load the `omniworker-agent` skill "
-            "first. It has the actual commands (e.g. `omniworker config set …`, `omniworker tools`, "
-            "`omniworker setup`) so you don't have to guess or invent workarounds.\n"
-            "If a skill has issues, fix it with skill_manage(action='patch').\n"
-            "After difficult/iterative tasks, offer to save as a skill. "
-            "If a skill you loaded was missing steps, had wrong commands, or needed "
-            "pitfalls you discovered, update it before finishing.\n"
+            "## Skills\n"
+            "Scan the index below. If a skill matches your task, load it with skill_view(name) "
+            "and follow its instructions. For OmniWorker config/setup always load `omniworker-agent` first.\n"
             "\n"
             "<available_skills>\n"
             + "\n".join(index_lines) + "\n"
             "</available_skills>\n"
-            "\n"
-            "Only proceed without loading a skill if genuinely none are relevant to the task."
         )
 
     # ── Store in LRU cache ────────────────────────────────────────────
