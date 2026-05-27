@@ -337,22 +337,45 @@ class MemoryManager:
     # -- Prefetch / recall ---------------------------------------------------
 
     def prefetch_all(self, query: str, *, session_id: str = "") -> str:
-        """Collect prefetch context from all providers.
+        """Collect prefetch context from all providers in parallel with timeout."""
+        import os
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
-        Returns merged context text labeled by provider. Empty providers
-        are skipped. Failures in one provider don't block others.
-        """
+        timeout_str = os.environ.get("OMNIWORKER_MEMORY_TIMEOUT")
+        try:
+            timeout = float(timeout_str) if timeout_str is not None else 10.0
+        except ValueError:
+            timeout = 10.0
+
+        results = {}
+        with ThreadPoolExecutor(max_workers=max(1, len(self._providers))) as executor:
+            future_to_provider = {
+                executor.submit(provider.prefetch, query, session_id=session_id): provider
+                for provider in self._providers
+            }
+            
+            for future in future_to_provider:
+                provider = future_to_provider[future]
+                try:
+                    result = future.result(timeout=timeout)
+                    if result and result.strip():
+                        results[provider.name] = result
+                except TimeoutError:
+                    logger.warning(
+                        "Memory provider '%s' prefetch timed out after %.1fs",
+                        provider.name, timeout,
+                    )
+                except Exception as e:
+                    logger.debug(
+                        "Memory provider '%s' prefetch failed (non-fatal): %s",
+                        provider.name, e,
+                    )
+
+        # Assemble in original provider order
         parts = []
         for provider in self._providers:
-            try:
-                result = provider.prefetch(query, session_id=session_id)
-                if result and result.strip():
-                    parts.append(result)
-            except Exception as e:
-                logger.debug(
-                    "Memory provider '%s' prefetch failed (non-fatal): %s",
-                    provider.name, e,
-                )
+            if provider.name in results:
+                parts.append(results[provider.name])
         return "\n\n".join(parts)
 
     def queue_prefetch_all(self, query: str, *, session_id: str = "") -> None:
@@ -369,15 +392,38 @@ class MemoryManager:
     # -- Sync ----------------------------------------------------------------
 
     def sync_all(self, user_content: str, assistant_content: str, *, session_id: str = "") -> None:
-        """Sync a completed turn to all providers."""
-        for provider in self._providers:
-            try:
-                provider.sync_turn(user_content, assistant_content, session_id=session_id)
-            except Exception as e:
-                logger.warning(
-                    "Memory provider '%s' sync_turn failed: %s",
-                    provider.name, e,
-                )
+        """Sync a completed turn to all providers in parallel with timeout."""
+        import os
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError
+
+        timeout_str = os.environ.get("OMNIWORKER_MEMORY_TIMEOUT")
+        try:
+            timeout = float(timeout_str) if timeout_str is not None else 10.0
+        except ValueError:
+            timeout = 10.0
+
+        with ThreadPoolExecutor(max_workers=max(1, len(self._providers))) as executor:
+            future_to_provider = {
+                executor.submit(
+                    provider.sync_turn, user_content, assistant_content, session_id=session_id
+                ): provider
+                for provider in self._providers
+            }
+            
+            for future in future_to_provider:
+                provider = future_to_provider[future]
+                try:
+                    future.result(timeout=timeout)
+                except TimeoutError:
+                    logger.warning(
+                        "Memory provider '%s' sync_turn timed out after %.1fs",
+                        provider.name, timeout,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Memory provider '%s' sync_turn failed: %s",
+                        provider.name, e,
+                    )
 
     # -- Tools ---------------------------------------------------------------
 

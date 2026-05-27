@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { hostname, platform } from "os";
 import { OMNIWORKER_HOME } from "./installer";
 import { profilePaths, escapeRegex, safeWriteFile } from "./utils";
+import { safeStorage } from "electron";
 
 // ── Connection Config (local / remote / ssh) ─────────────
 
@@ -523,4 +524,81 @@ export function getDeviceName(): string {
   } catch {
     return "Desktop App";
   }
+}
+
+// ── safeStorage and Secure Env Management ──────────────
+
+export function removeEnvValue(key: string, profile?: string): void {
+  const { envFile } = profilePaths(profile);
+  invalidateCache(`env:${profile || "default"}`);
+  if (!existsSync(envFile)) return;
+
+  const content = readFileSync(envFile, "utf-8");
+  const lines = content.split("\n");
+  const filteredLines = lines.filter(line => {
+    const trimmed = line.trim();
+    return !trimmed.match(new RegExp(`^#?\\s*${escapeRegex(key)}\\s*=`));
+  });
+
+  safeWriteFile(envFile, filteredLines.join("\n"));
+}
+
+export function encryptToken(plainText: string): string {
+  if (!plainText) return "";
+  if (safeStorage.isEncryptionAvailable()) {
+    try {
+      const encryptedBuffer = safeStorage.encryptString(plainText);
+      return "enc:" + encryptedBuffer.toString("hex");
+    } catch (err) {
+      console.error("[safeStorage] Encryption failed, falling back to plain text:", err);
+      return plainText;
+    }
+  } else {
+    console.warn("[safeStorage] Encryption not available, storing token in plain text.");
+    return plainText;
+  }
+}
+
+export function decryptToken(cipherText: string): string {
+  if (!cipherText) return "";
+  if (cipherText.startsWith("enc:")) {
+    if (safeStorage.isEncryptionAvailable()) {
+      try {
+        const hex = cipherText.substring(4);
+        const encryptedBuffer = Buffer.from(hex, "hex");
+        return safeStorage.decryptString(encryptedBuffer);
+      } catch (err) {
+        console.error("[safeStorage] Decryption failed:", err);
+        return "";
+      }
+    } else {
+      console.error("[safeStorage] Encryption not available but token is encrypted. Decryption impossible.");
+      return "";
+    }
+  }
+  return cipherText;
+}
+
+export function saveSecureTokens(accessToken: string, refreshToken: string): void {
+  const data = readDesktopConfig();
+  data.secureAccessToken = encryptToken(accessToken);
+  data.secureRefreshToken = encryptToken(refreshToken);
+  writeDesktopConfig(data);
+}
+
+export function getSecureTokens(): { accessToken: string; refreshToken: string } {
+  const data = readDesktopConfig();
+  const rawAccess = (data.secureAccessToken as string) || "";
+  const rawRefresh = (data.secureRefreshToken as string) || "";
+  return {
+    accessToken: decryptToken(rawAccess),
+    refreshToken: decryptToken(rawRefresh),
+  };
+}
+
+export function deleteSecureTokens(): void {
+  const data = readDesktopConfig();
+  delete data.secureAccessToken;
+  delete data.secureRefreshToken;
+  writeDesktopConfig(data);
 }

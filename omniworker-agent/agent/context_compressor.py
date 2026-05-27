@@ -29,6 +29,8 @@ from agent.model_metadata import (
     MINIMUM_CONTEXT_LENGTH,
     get_model_context_length,
     estimate_messages_tokens_rough,
+    estimate_tokens_rough,
+    IMAGE_TOKEN_ESTIMATE,
 )
 from agent.redact import redact_sensitive_text
 
@@ -68,7 +70,7 @@ _CHARS_PER_TOKEN = 4
 # high-detail 2048×2048, Gemini 258/tile), but 1600 is a realistic ceiling
 # that keeps compression budgeting honest for multi-image conversations.
 # Matches Claude Code's IMAGE_TOKEN_ESTIMATE constant.
-_IMAGE_TOKEN_ESTIMATE = 1600
+_IMAGE_TOKEN_ESTIMATE = IMAGE_TOKEN_ESTIMATE
 # Same figure expressed in the char-budget currency the rest of the
 # compressor speaks in.  Used when accumulating message "content length"
 # for tail-cut decisions.
@@ -481,6 +483,10 @@ class ContextCompressor(ContextEngine):
         self._ineffective_compression_count = 0
         self._summary_failure_cooldown_until = 0.0  # transient errors must not block a fresh session
 
+    def reset_anti_thrashing(self) -> None:
+        """Reset the ineffective compression count to zero (e.g. after model, context, or manual /compress)."""
+        self._ineffective_compression_count = 0
+
     def update_model(
         self,
         model: str,
@@ -508,6 +514,7 @@ class ContextCompressor(ContextEngine):
         self.max_summary_tokens = min(
             int(context_length * 0.05), _SUMMARY_TOKENS_CEILING,
         )
+        self.reset_anti_thrashing()
 
     def __init__(
         self,
@@ -523,7 +530,7 @@ class ContextCompressor(ContextEngine):
         config_context_length: int | None = None,
         provider: str = "",
         api_mode: str = "",
-        abort_on_summary_failure: bool = False,
+        abort_on_summary_failure: bool = True,
     ):
         self.model = model
         self.base_url = base_url
@@ -1015,6 +1022,72 @@ Be specific with file paths, commands, line numbers, and results.]
 Target ~{summary_budget} tokens. Be CONCRETE — include file paths, command outputs, error messages, line numbers, and specific values. Avoid vague descriptions like "made some changes" — say exactly what changed.
 
 Write only the summary body. Do not include any preamble or prefix."""
+
+        # Resolve target context length for the model being used
+        target_model = self.summary_model or self.model
+        aux_context_length = get_model_context_length(
+            model=target_model,
+            base_url=self.base_url,
+            api_key=self.api_key,
+        )
+
+        # Construct prompt_without_content to measure frame token footprint
+        if self._previous_summary:
+            prompt_without_content = f"""{_summarizer_preamble}
+
+You are updating a context compaction summary. A previous compaction produced the summary below. New conversation turns have occurred since then and need to be incorporated.
+
+PREVIOUS SUMMARY:
+{self._previous_summary}
+
+NEW TURNS TO INCORPORATE:
+
+
+Update the summary using this exact structure. PRESERVE all existing information that is still relevant. ADD new completed actions to the numbered list (continue numbering). Move items from "In Progress" to "Completed Actions" when done. Move answered questions to "Resolved Questions". Update "Active State" to reflect current state. Remove information only if it is clearly obsolete. CRITICAL: Update "## Active Task" to reflect the user's most recent unfulfilled request — this is the most important field for task continuity.
+
+{_template_sections}"""
+        else:
+            prompt_without_content = f"""{_summarizer_preamble}
+
+Create a structured checkpoint summary for the conversation after earlier turns are compacted. The summary should preserve enough detail for continuity without re-reading the original turns.
+
+TURNS TO SUMMARIZE:
+
+
+Use this exact structure:
+
+{_template_sections}"""
+
+        if focus_topic:
+            prompt_without_content += f"""
+
+FOCUS TOPIC: "{focus_topic}"
+The user has requested that this compaction PRIORITISE preserving all information related to the focus topic above. For content related to "{focus_topic}", include full detail — exact values, file paths, command outputs, error messages, and decisions. For content NOT related to the focus topic, summarise more aggressively (brief one-liners or omit if truly irrelevant). The focus topic sections should receive roughly 60-70% of the summary token budget. Even for the focus topic, NEVER preserve API keys, tokens, passwords, or credentials — use [REDACTED]."""
+
+        prompt_without_content_est = estimate_tokens_rough(prompt_without_content)
+        max_prompt_tokens = int(0.8 * aux_context_length)
+        
+        # Estimate complete prompt first
+        initial_prompt = prompt_without_content + content_to_summarize
+        initial_prompt_est = estimate_tokens_rough(initial_prompt)
+        
+        original_tokens = estimate_tokens_rough(content_to_summarize)
+        
+        if initial_prompt_est > max_prompt_tokens:
+            max_content_tokens = max(0, max_prompt_tokens - prompt_without_content_est)
+            max_content_chars = max_content_tokens * 4
+            if len(content_to_summarize) > max_content_chars:
+                # Truncate content from the beginning (preserve the end/most recent content)
+                content_to_summarize = content_to_summarize[-max_content_chars:]
+                truncated_tokens = estimate_tokens_rough(content_to_summarize)
+                logger.warning(
+                    "Compression prompt size (%d tokens) exceeds 80%% of auxiliary model's context length (%d tokens). "
+                    "Truncating content to preserve most recent turns. Original content: %d tokens, Truncated content: %d tokens.",
+                    initial_prompt_est,
+                    aux_context_length,
+                    original_tokens,
+                    truncated_tokens
+                )
 
         if self._previous_summary:
             # Iterative update: preserve existing info, add new progress
@@ -1651,6 +1724,25 @@ The user has requested that this compaction PRIORITISE preserving all informatio
             n_dropped = compress_end - compress_start
             self._last_summary_dropped_count = n_dropped
             self._last_summary_fallback_used = True
+
+            # RECOVERY: persist dropped messages before they are lost forever
+            try:
+                import pathlib, time as _time
+                recovery_dir = pathlib.Path.home() / ".omniworker" / "recovery"
+                recovery_dir.mkdir(parents=True, exist_ok=True)
+                session_id = getattr(self, '_session_id', 'unknown')
+                ts = int(_time.time())
+                recovery_path = recovery_dir / f"dropped_{session_id}_{ts}.json"
+                dropped_messages = messages[compress_start:compress_end]
+                with open(recovery_path, 'w', encoding='utf-8') as f:
+                    json.dump(dropped_messages, f, ensure_ascii=False, indent=2, default=str)
+                logger.error(
+                    "Summary failure: %d messages persisted to %s before drop",
+                    n_dropped, recovery_path,
+                )
+            except Exception as recovery_err:
+                logger.error("Failed to persist recovery file: %s", recovery_err)
+
             summary = (
                 f"{SUMMARY_PREFIX}\n"
                 f"Summary generation was unavailable. {n_dropped} message(s) were "
@@ -1730,7 +1822,7 @@ The user has requested that this compaction PRIORITISE preserving all informatio
         # Anti-thrashing: track compression effectiveness
         savings_pct = (saved_estimate / display_tokens * 100) if display_tokens > 0 else 0
         self._last_compression_savings_pct = savings_pct
-        if savings_pct < 10:
+        if savings_pct < 20:
             self._ineffective_compression_count += 1
         else:
             self._ineffective_compression_count = 0

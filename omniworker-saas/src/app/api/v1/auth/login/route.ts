@@ -27,8 +27,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email, password } = parsed.data;
-    const { deviceFingerprint, deviceName } = body;
+    const { email, password, deviceFingerprint, deviceName } = parsed.data;
     const result = await loginWithEmail(email, password, deviceFingerprint, deviceName);
 
     if (!result.success) {

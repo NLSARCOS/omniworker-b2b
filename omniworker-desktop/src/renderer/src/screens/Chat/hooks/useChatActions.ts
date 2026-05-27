@@ -68,7 +68,7 @@ export function useChatActions({
           text,
           profile,
           omniworkerSessionId || undefined,
-          messagesRef.current.map((m) => ({
+          messagesRef.current.slice(-50).map((m) => ({
             role: m.role,
             content: m.content,
           })),

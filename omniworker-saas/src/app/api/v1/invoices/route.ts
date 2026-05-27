@@ -19,7 +19,11 @@ export async function GET(request: Request) {
       where: { tenantId },
       orderBy: { paidAt: "desc" },
     });
-    return NextResponse.json({ success: true, invoices });
+    const formattedInvoices = invoices.map(inv => ({
+      ...inv,
+      amount: inv.amount / 100,
+    }));
+    return NextResponse.json({ success: true, invoices: formattedInvoices });
   } catch (err: any) {
     return NextResponse.json({ error: "Error al obtener facturas: " + err.message }, { status: 500 });
   }

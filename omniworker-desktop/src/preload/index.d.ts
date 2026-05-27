@@ -836,6 +836,26 @@ interface OmniWorkerAPI {
   // Plan Enforcement
   setPlanExpired: (expired: boolean) => Promise<boolean>;
   checkPlanExpired: () => Promise<boolean>;
+
+  // Fetch Proxy
+  proxyRequest: (options: {
+    url: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    isStream?: boolean;
+    requestId: string;
+  }) => Promise<{ status: number; headers: Record<string, string>; body?: string; error?: string; isStream?: boolean }>;
+  abortProxyRequest: (requestId: string) => Promise<boolean>;
+  onProxyStreamChunk: (callback: (data: { requestId: string; chunk: string }) => void) => () => void;
+  onProxyStreamEnd: (callback: (data: { requestId: string }) => void) => () => void;
+  onProxyStreamError: (callback: (data: { requestId: string; error: string }) => void) => () => void;
+
+  // safeStorage Token Methods
+  saveTokens: (tokens: { accessToken: string; refreshToken: string }) => Promise<void>;
+  getTokens: () => Promise<{ accessToken: string; refreshToken: string }>;
+  deleteTokens: () => Promise<void>;
+  removeEnv: (key: string, profile?: string) => Promise<void>;
 }
 
 

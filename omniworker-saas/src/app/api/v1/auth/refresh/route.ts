@@ -2,10 +2,19 @@
 import { NextResponse } from "next/server";
 import { refreshAccessToken, setAuthCookies } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
-    // Accept refresh token from body (desktop clients) OR cookie (web clients)
+    // Rate limiting by IP (same tier as login)
+    const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
+    const rateLimit = await checkRateLimit(ip, "auth");
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Demasiados intentos. Intenta más tarde." },
+        { status: 429, headers: { "X-RateLimit-Remaining": "0" } }
+      );
+    }
     let refreshToken: string | undefined;
     let deviceFingerprint: string | undefined;
 

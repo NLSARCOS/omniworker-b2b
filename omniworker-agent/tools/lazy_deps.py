@@ -165,6 +165,7 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
         "fastapi==0.133.1",
         "uvicorn[standard]==0.41.0",
     ),
+    "token.tiktoken": ("tiktoken==0.7.0",),
 }
 
 

@@ -92,7 +92,7 @@ export async function checkRateLimit(
 
 function getLimitForTier(tier: RateLimitTier): number {
   switch (tier) {
-    case "auth": return 500;
+    case "auth": return 5;
     case "chat": return 60;
     case "admin": return 30;
     default: return 120;

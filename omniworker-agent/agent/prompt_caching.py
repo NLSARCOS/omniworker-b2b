@@ -57,23 +57,31 @@ def apply_anthropic_cache_control(
     messages, all at the same TTL.
 
     Returns:
-        Deep copy of messages with cache_control breakpoints injected.
+        Copy of messages with cache_control breakpoints injected, where only modified
+        messages are deep-copied and the rest are shallow references.
     """
-    messages = copy.deepcopy(api_messages)
-    if not messages:
-        return messages
+    if not api_messages:
+        return []
 
+    # PC1: Shallow copy the list to avoid deepcopying untouched historical messages
+    messages = list(api_messages)
     marker = _build_marker(cache_ttl)
 
     breakpoints_used = 0
+    indices_to_modify = set()
 
     if messages[0].get("role") == "system":
-        _apply_cache_marker(messages[0], marker, native_anthropic=native_anthropic)
+        indices_to_modify.add(0)
         breakpoints_used += 1
 
     remaining = 4 - breakpoints_used
     non_sys = [i for i in range(len(messages)) if messages[i].get("role") != "system"]
     for idx in non_sys[-remaining:]:
+        indices_to_modify.add(idx)
+
+    # Deep-copy only the messages we are going to modify
+    for idx in indices_to_modify:
+        messages[idx] = copy.deepcopy(messages[idx])
         _apply_cache_marker(messages[idx], marker, native_anthropic=native_anthropic)
 
     return messages

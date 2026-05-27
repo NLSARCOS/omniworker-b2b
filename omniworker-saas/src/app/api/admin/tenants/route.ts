@@ -23,7 +23,20 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ tenants });
+  const formattedTenants = tenants.map(t => {
+    if (t.plan) {
+      return {
+        ...t,
+        plan: {
+          ...t.plan,
+          price: t.plan.price / 100,
+        },
+      };
+    }
+    return t;
+  });
+
+  return NextResponse.json({ tenants: formattedTenants });
 }
 
 export async function POST(request: Request) {
@@ -177,7 +190,12 @@ export async function PATCH(request: Request) {
     data: { adminId: auth.user.id, action: "UPDATE_TENANT", target: id },
   });
 
-  return NextResponse.json({ success: true, tenant });
+  const formattedTenant = {
+    ...tenant,
+    plan: tenant.plan ? { ...tenant.plan, price: tenant.plan.price / 100 } : null,
+  };
+
+  return NextResponse.json({ success: true, tenant: formattedTenant });
 }
 
 export async function DELETE(request: Request) {

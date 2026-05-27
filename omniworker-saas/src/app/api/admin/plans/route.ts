@@ -14,7 +14,12 @@ export async function GET(request: Request) {
     include: { _count: { select: { tenants: true } } },
   });
 
-  return NextResponse.json({ plans });
+  const formattedPlans = plans.map(p => ({
+    ...p,
+    price: p.price / 100,
+  }));
+
+  return NextResponse.json({ plans: formattedPlans });
 }
 
 export async function POST(request: Request) {
@@ -58,7 +63,7 @@ export async function POST(request: Request) {
       maxAgents: typeof maxAgents === 'string' ? parseInt(maxAgents) : (maxAgents ?? 1),
       maxUsers: typeof maxUsers === 'string' ? parseInt(maxUsers) : (maxUsers ?? 1),
       maxLicenses: typeof maxLicenses === 'string' ? parseInt(maxLicenses) : (maxLicenses ?? 1),
-      price: typeof price === 'string' ? parseFloat(price) : price,
+      price: typeof price === 'string' ? Math.round(parseFloat(price) * 100) : Math.round(price * 100),
       billingPeriod: billingPeriod || "monthly",
       isPublic: isPublic ?? true,
       features: JSON.stringify(features || []),
@@ -70,7 +75,7 @@ export async function POST(request: Request) {
     data: { adminId: auth.user.id, action: "CREATE_PLAN", target: plan.id, details: JSON.stringify({ name, price }) },
   });
 
-  return NextResponse.json({ success: true, plan });
+  return NextResponse.json({ success: true, plan: { ...plan, price: plan.price / 100 } });
 }
 
 export async function PATCH(request: Request) {
@@ -108,7 +113,7 @@ export async function PATCH(request: Request) {
   if (rest.maxAgents !== undefined) updateData.maxAgents = typeof rest.maxAgents === 'string' ? parseInt(rest.maxAgents) : rest.maxAgents;
   if (rest.maxUsers !== undefined) updateData.maxUsers = typeof rest.maxUsers === 'string' ? parseInt(rest.maxUsers) : rest.maxUsers;
   if (rest.maxLicenses !== undefined) updateData.maxLicenses = typeof rest.maxLicenses === 'string' ? parseInt(rest.maxLicenses) : rest.maxLicenses;
-  if (rest.price !== undefined) updateData.price = typeof rest.price === 'string' ? parseFloat(rest.price) : rest.price;
+  if (rest.price !== undefined) updateData.price = typeof rest.price === 'string' ? Math.round(parseFloat(rest.price) * 100) : Math.round(rest.price * 100);
 
   const plan = await prisma.subscriptionPlan.update({ where: { id }, data: updateData });
 
@@ -116,7 +121,7 @@ export async function PATCH(request: Request) {
     data: { adminId: auth.user.id, action: "UPDATE_PLAN", target: id },
   });
 
-  return NextResponse.json({ success: true, plan });
+  return NextResponse.json({ success: true, plan: { ...plan, price: plan.price / 100 } });
 }
 
 export async function DELETE(request: Request) {

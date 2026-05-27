@@ -419,6 +419,39 @@ def run_conversation(
 
     active_system_prompt = agent._cached_system_prompt
 
+    # ── Preflight message cap compression (A1) ──
+    max_messages_str = os.environ.get("OMNIWORKER_MAX_MESSAGES")
+    try:
+        max_messages = int(max_messages_str) if max_messages_str else 500
+    except ValueError:
+        max_messages = 500
+
+    if len(messages) >= max_messages:
+        logger.info(
+            "Preflight message cap compression: %d messages >= %d cap",
+            len(messages),
+            max_messages,
+        )
+        agent._emit_status(
+            f"🗜️ Proactive message cap reached: {len(messages)} messages >= {max_messages} cap. "
+            "Compressing conversation..."
+        )
+        # Compress repeatedly until message count is < 80% of max_messages
+        # or we cannot compress further (original_len did not decrease).
+        for _pass in range(5):
+            if len(messages) < int(max_messages * 0.8):
+                break
+            orig_len = len(messages)
+            messages, active_system_prompt = agent._compress_context(
+                messages,
+                system_message,
+                task_id=effective_task_id,
+            )
+            # Clear history reference so all compressed messages are written to new session's SQLite
+            conversation_history = None
+            if len(messages) >= orig_len:
+                break
+
     # ── Preflight context compression ──
     # Before entering the main loop, check if the loaded conversation
     # history already exceeds the model's context threshold.  This handles
@@ -705,6 +738,38 @@ def run_conversation(
                 else:
                     existing = getattr(agent, "_pending_steer", None)
                     agent._pending_steer = (existing + "\n" + _pre_api_steer) if existing else _pre_api_steer
+
+        # ── Proactive message cap compression check (A1) ──
+        max_messages_str = os.environ.get("OMNIWORKER_MAX_MESSAGES")
+        try:
+            max_messages = int(max_messages_str) if max_messages_str else 500
+        except ValueError:
+            max_messages = 500
+
+        if len(messages) >= max_messages:
+            logger.info(
+                "Proactive message cap compression inside loop: %d messages >= %d cap",
+                len(messages),
+                max_messages,
+            )
+            agent._emit_status(
+                f"🗜️ Message cap reached inside loop: {len(messages)} messages >= {max_messages} cap. "
+                "Compressing conversation..."
+            )
+            # Compress repeatedly until message count is < 80% of max_messages
+            # or we cannot compress further
+            for _pass in range(5):
+                if len(messages) < int(max_messages * 0.8):
+                    break
+                orig_len = len(messages)
+                messages, active_system_prompt = agent._compress_context(
+                    messages,
+                    system_message or getattr(agent, "ephemeral_system_prompt", None) or "",
+                    task_id=effective_task_id,
+                )
+                conversation_history = None
+                if len(messages) >= orig_len:
+                    break
 
         # Prepare messages for API call
         # If we have an ephemeral system prompt, prepend it to the messages

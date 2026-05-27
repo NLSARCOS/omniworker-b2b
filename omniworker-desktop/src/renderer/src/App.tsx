@@ -33,6 +33,7 @@ function App(): React.JSX.Element {
     setAuthToken(null);
     localStorage.removeItem("ow_user");
     localStorage.removeItem("ow_auth");
+    window.omniworkerAPI.deleteTokens().catch(console.error);
 
     // Clear auto-refresh interval if active
     if ((window as any).__owRefreshInterval) {
@@ -95,16 +96,20 @@ function App(): React.JSX.Element {
       console.error("[APP] Got accessToken, setting auth token");
       setAuthToken(auth.accessToken);
 
-      // Guardar en localStorage para auto-login
+      // Guardar en localStorage (solo datos de usuario no sensibles) y en safeStorage para tokens
       localStorage.setItem("ow_user", JSON.stringify(user));
-      localStorage.setItem("ow_auth", JSON.stringify(auth));
+      localStorage.removeItem("ow_auth"); // Ensure old plain text token is removed
+      await window.omniworkerAPI.saveTokens({
+        accessToken: auth.accessToken,
+        refreshToken: auth.refreshToken,
+      });
 
       const saasUrl =
         import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
 
-      // 1. Guardar JWT para que los procesos Python/CLI también lo usen
-      await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
-      await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", auth.accessToken);
+      // 1. Guardar CLOUD_API_URL en env (OPENAI_API_KEY/CUSTOM_API_KEY no se guardan en .env para cumplir D2-SEC)
+      await window.omniworkerAPI.removeEnv("OPENAI_API_KEY");
+      await window.omniworkerAPI.removeEnv("CUSTOM_API_KEY");
       await window.omniworkerAPI.setEnv("CLOUD_API_URL", `${saasUrl}/api`);
 
       // 2. Configurar conexión LOCAL para mantener la capacidad de ejecución local de herramientas
@@ -143,12 +148,11 @@ function App(): React.JSX.Element {
               const data = await res.json();
               if (data.accessToken) {
                 setAuthToken(data.accessToken);
-                // Guardar el nuevo token refrescado en localStorage
-                const updatedAuth = {
+                // Guardar el nuevo token refrescado en safeStorage
+                await window.omniworkerAPI.saveTokens({
                   accessToken: data.accessToken,
                   refreshToken: data.refreshToken || refreshToken,
-                };
-                localStorage.setItem("ow_auth", JSON.stringify(updatedAuth));
+                });
 
                 if (data.user) {
                   setUserData(data.user);
@@ -159,15 +163,9 @@ function App(): React.JSX.Element {
                   }
                 }
 
-                // Actualizar token en config para que el próximo mensaje use el nuevo JWT
-                await window.omniworkerAPI.setEnv(
-                  "OPENAI_API_KEY",
-                  data.accessToken,
-                );
-                await window.omniworkerAPI.setEnv(
-                  "CUSTOM_API_KEY",
-                  data.accessToken,
-                );
+                // Asegurar que no escribimos claves rotadas a .env
+                await window.omniworkerAPI.removeEnv("OPENAI_API_KEY");
+                await window.omniworkerAPI.removeEnv("CUSTOM_API_KEY");
                 await window.omniworkerAPI.setModelConfig(
                   "custom",
                   "omniworker",
@@ -222,10 +220,34 @@ function App(): React.JSX.Element {
     const savedUser = localStorage.getItem("ow_user");
     const savedAuth = localStorage.getItem("ow_auth");
 
-    if (savedUser && savedAuth) {
+    // ── MIGRATION ON FIRST LAUNCH ──
+    let secureTokens = await window.omniworkerAPI.getTokens();
+    if (savedAuth && (!secureTokens.accessToken || !secureTokens.refreshToken)) {
+      console.error("[APP] Migrating existing plaintext tokens from localStorage to safeStorage...");
+      try {
+        const auth = JSON.parse(savedAuth);
+        if (auth?.accessToken && auth?.refreshToken) {
+          await window.omniworkerAPI.saveTokens({
+            accessToken: auth.accessToken,
+            refreshToken: auth.refreshToken,
+          });
+          // Retrieve newly migrated tokens
+          secureTokens = await window.omniworkerAPI.getTokens();
+        }
+      } catch (err) {
+        console.error("[APP] Failed to migrate existing localStorage tokens:", err);
+      }
+      // Delete old plain text storage and keys in env
+      localStorage.removeItem("ow_auth");
+      await window.omniworkerAPI.removeEnv("OPENAI_API_KEY");
+      await window.omniworkerAPI.removeEnv("CUSTOM_API_KEY");
+    }
+
+    const auth = (secureTokens.accessToken && secureTokens.refreshToken) ? secureTokens : null;
+
+    if (savedUser && auth) {
       try {
         const user = JSON.parse(savedUser);
-        const auth = JSON.parse(savedAuth);
         if (auth?.accessToken) {
           console.error("[APP] Found saved credentials, auto-logging in user:", user.email);
           
@@ -254,7 +276,7 @@ function App(): React.JSX.Element {
                   accessToken: data.accessToken,
                   refreshToken: data.refreshToken || auth.refreshToken,
                 };
-                localStorage.setItem("ow_auth", JSON.stringify(freshAuth));
+                await window.omniworkerAPI.saveTokens(freshAuth);
                 if (data.user) {
                   freshUser = data.user;
                   localStorage.setItem("ow_user", JSON.stringify(freshUser));

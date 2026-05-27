@@ -23,7 +23,11 @@ export async function GET(request: Request) {
       },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ invoices });
+    const formattedInvoices = invoices.map(inv => ({
+      ...inv,
+      amount: inv.amount / 100,
+    }));
+    return NextResponse.json({ invoices: formattedInvoices });
   } catch (err: any) {
     return NextResponse.json({ error: "Error al consultar facturas: " + err.message }, { status: 500 });
   }
@@ -87,7 +91,7 @@ export async function POST(request: Request) {
       prisma.invoice.create({
         data: {
           tenantId,
-          amount: parseFloat(amount as any),
+          amount: Math.round(parseFloat(amount as any) * 100),
           description: description || "Pago de suscripción manual",
           invoiceNumber,
           status: "PAID",
@@ -116,7 +120,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, invoice, tenant: updatedTenant });
+    return NextResponse.json({ success: true, invoice: { ...invoice, amount: invoice.amount / 100 }, tenant: updatedTenant });
   } catch (err: any) {
     return NextResponse.json({ error: "Error al registrar el pago: " + err.message }, { status: 500 });
   }

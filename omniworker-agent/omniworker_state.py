@@ -2611,6 +2611,19 @@ class SessionDB:
         # Clean up on-disk files outside the DB transaction
         for sid in removed_ids:
             self._remove_session_files(sessions_dir, sid)
+
+        # E4-FTS: Run FTS5 optimize command asynchronously
+        import threading
+        def _run_optimize():
+            try:
+                def _do_opt(conn):
+                    conn.execute("INSERT INTO messages_fts(messages_fts) VALUES('optimize')")
+                self._execute_write(_do_opt)
+            except Exception:
+                pass
+
+        threading.Thread(target=_run_optimize, daemon=True).start()
+
         return count
 
     # ── Meta key/value (for scheduler bookkeeping) ──

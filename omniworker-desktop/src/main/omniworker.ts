@@ -22,7 +22,7 @@ import {
   getEnhancedPath,
   SAAS_BASE_URL,
 } from "./installer";
-import { getModelConfig, readEnv, getConnectionConfig, setEnvValue, getConfigValue } from "./config";
+import { getModelConfig, readEnv, getConnectionConfig, setEnvValue, getConfigValue, getSecureTokens } from "./config";
 import { ensureMemoryConfig } from "./memory";
 import {
   getSshTunnelUrl,
@@ -34,6 +34,111 @@ import { stripAnsi, profilePaths } from "./utils";
 import { readModels } from "./models";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { PowerManager } from "./power";
+const pidsFile = join(OMNIWORKER_HOME, "pids.json");
+
+function getRecordedPids(): number[] {
+  if (!existsSync(pidsFile)) return [];
+  try {
+    const raw = readFileSync(pidsFile, "utf-8").trim();
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function recordPid(pid: number): void {
+  try {
+    const pids = getRecordedPids();
+    if (!pids.includes(pid)) {
+      pids.push(pid);
+      writeFileSync(pidsFile, JSON.stringify(pids), "utf-8");
+    }
+  } catch (err) {
+    console.error("[PIDS] Failed to record PID:", err);
+  }
+}
+
+function unrecordPid(pid: number): void {
+  try {
+    const pids = getRecordedPids();
+    const index = pids.indexOf(pid);
+    if (index !== -1) {
+      pids.splice(index, 1);
+      writeFileSync(pidsFile, JSON.stringify(pids), "utf-8");
+    }
+  } catch (err) {
+    console.error("[PIDS] Failed to unrecord PID:", err);
+  }
+}
+
+export async function checkAndCleanupOrphans(): Promise<void> {
+  const pids = getRecordedPids();
+  if (pids.length === 0) return;
+
+  console.log(`[PIDS] Found ${pids.length} potentially orphan processes from previous session. Cleaning up...`);
+  for (const pid of pids) {
+    try {
+      process.kill(pid, 0);
+      console.log(`[PIDS] Killing orphan process PID ${pid}`);
+      process.kill(pid, "SIGKILL");
+    } catch {
+      // Already dead
+    }
+  }
+
+  try {
+    writeFileSync(pidsFile, JSON.stringify([]), "utf-8");
+  } catch (err) {
+    console.error("[PIDS] Failed to clear PIDS file:", err);
+  }
+}
+
+export async function killSpawnedProcessesGracefully(): Promise<void> {
+  const pids = getRecordedPids();
+  if (pids.length === 0) return;
+
+  console.log(`[PIDS] Gracefully stopping ${pids.length} spawned processes...`);
+  for (const pid of pids) {
+    try {
+      process.kill(pid, "SIGTERM");
+    } catch {
+      // already dead
+    }
+  }
+
+  const startTime = Date.now();
+  while (Date.now() - startTime < 5000) {
+    const runningPids = pids.filter((pid) => {
+      try {
+        process.kill(pid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    if (runningPids.length === 0) {
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+
+  for (const pid of pids) {
+    try {
+      process.kill(pid, 0);
+      console.log(`[PIDS] Graceful stop failed for PID ${pid}. Sending SIGKILL.`);
+      process.kill(pid, "SIGKILL");
+    } catch {
+      // dead
+    }
+  }
+
+  try {
+    writeFileSync(pidsFile, JSON.stringify([]), "utf-8");
+  } catch (err) {
+    console.error("[PIDS] Failed to clear PIDS file:", err);
+  }
+}
 
 let isPlanExpired = false;
 
@@ -253,7 +358,28 @@ function sendMessageViaApi(
   // Tool progress pattern: `emoji tool_name` or `emoji description`
   const toolProgressRe = /^`([^\s`]+)\s+([^`]+)`$/;
 
+  let watchdogTimer: NodeJS.Timeout | null = null;
+
+  function resetWatchdog(): void {
+    if (watchdogTimer) {
+      clearTimeout(watchdogTimer);
+    }
+    watchdogTimer = setTimeout(() => {
+      console.warn("[Watchdog] Stream inactive for 90s. Aborting request.");
+      controller.abort();
+      finish("Agent appears unresponsive (90s inactivity timeout). Please check if the gateway is running and try again.");
+    }, 90000);
+  }
+
+  function clearWatchdog(): void {
+    if (watchdogTimer) {
+      clearTimeout(watchdogTimer);
+      watchdogTimer = null;
+    }
+  }
+
   function finish(error?: string): void {
+    clearWatchdog();
     if (finished) return;
     finished = true;
     if (error) {
@@ -435,6 +561,7 @@ function sendMessageViaApi(
       }
 
       res.on("data", (chunk: Buffer) => {
+        resetWatchdog();
         buffer += chunk.toString();
         const parts = buffer.split("\n\n");
         buffer = parts.pop() || "";
@@ -479,6 +606,7 @@ function sendMessageViaApi(
     );
   });
 
+  resetWatchdog();
   req.write(body);
   req.end();
 
@@ -527,6 +655,12 @@ function sendMessageViaCli(
       process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     PYTHONUNBUFFERED: "1",
   };
+
+  const secureTokens = getSecureTokens();
+  if (secureTokens.accessToken) {
+    env.OPENAI_API_KEY = secureTokens.accessToken;
+    env.CUSTOM_API_KEY = secureTokens.accessToken;
+  }
 
   // Inject all API keys from the profile .env so the CLI can access them
   const KNOWN_API_KEYS = [
@@ -649,6 +783,13 @@ function sendMessageViaCli(
     stdio: ["ignore", "pipe", "pipe"],
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });
+
+  if (proc.pid) {
+    recordPid(proc.pid);
+    proc.on("close", () => {
+      unrecordPid(proc.pid!);
+    });
+  }
 
   let hasOutput = false;
   let capturedSessionId = "";
@@ -1165,12 +1306,18 @@ export async function startLocalLlmServer(): Promise<boolean> {
     cwd: OMNIWORKER_HOME,
     env,
     stdio: "ignore",
-    detached: true,
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });
 
+  if (localLlmProcess.pid) {
+    recordPid(localLlmProcess.pid);
+  }
+
   localLlmProcess.unref();
   localLlmProcess.on("close", () => {
+    if (localLlmProcess && localLlmProcess.pid) {
+      unrecordPid(localLlmProcess.pid);
+    }
     localLlmProcess = null;
   });
 
@@ -1342,16 +1489,25 @@ export async function startSmartRouter(): Promise<boolean> {
     cwd: OMNIWORKER_REPO,
     env: routerEnv,
     stdio: "ignore",
-    detached: true,
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });
 
+  if (smartRouterProcess.pid) {
+    recordPid(smartRouterProcess.pid);
+  }
+
   smartRouterProcess.unref();
   smartRouterProcess.on("close", () => {
+    if (smartRouterProcess && smartRouterProcess.pid) {
+      unrecordPid(smartRouterProcess.pid);
+    }
     smartRouterProcess = null;
   });
   smartRouterProcess.on("error", (err) => {
     console.error("[SmartRouter] Process error:", err);
+    if (smartRouterProcess && smartRouterProcess.pid) {
+      unrecordPid(smartRouterProcess.pid);
+    }
     smartRouterProcess = null;
   });
 
@@ -1446,6 +1602,13 @@ export async function startGateway(profile?: string): Promise<boolean> {
       gatewayEnv[key] = value;
     }
   }
+
+  const secureTokens = getSecureTokens();
+  if (secureTokens.accessToken) {
+    gatewayEnv.OPENAI_API_KEY = secureTokens.accessToken;
+    gatewayEnv.CUSTOM_API_KEY = secureTokens.accessToken;
+  }
+
   // NOTE: Do NOT set API_SERVER_KEY for the local gateway.
   // The gateway binds to 127.0.0.1 and its _check_auth allows all requests
   // when no key is configured ("local-only use"). Setting it from CUSTOM_API_KEY
@@ -1456,7 +1619,7 @@ export async function startGateway(profile?: string): Promise<boolean> {
   // Sync the current JWT into config.yaml so the agent's "custom" provider
   // uses the fresh token for SaaS API calls. The JWT rotates on login/refresh,
   // and the agent reads api_key from config.yaml at startup.
-  const jwtToken = profileEnv.CUSTOM_API_KEY || profileEnv.OPENAI_API_KEY;
+  const jwtToken = secureTokens.accessToken || profileEnv.CUSTOM_API_KEY || profileEnv.OPENAI_API_KEY;
   if (jwtToken) {
     try {
       const configPath = profilePaths(profile).configFile;
@@ -1482,11 +1645,11 @@ export async function startGateway(profile?: string): Promise<boolean> {
     cwd: OMNIWORKER_REPO,
     env: gatewayEnv,
     stdio: ["ignore", logFd, logFd],
-    detached: true,
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });
 
   if (gatewayProcess && gatewayProcess.pid) {
+    recordPid(gatewayProcess.pid);
     try {
       const pidFile = join(OMNIWORKER_HOME, "gateway.pid");
       fs.writeFileSync(pidFile, gatewayProcess.pid.toString(), "utf-8");
@@ -1499,6 +1662,9 @@ export async function startGateway(profile?: string): Promise<boolean> {
   gatewayProcess.unref();
 
   gatewayProcess.on("close", () => {
+    if (gatewayProcess && gatewayProcess.pid) {
+      unrecordPid(gatewayProcess.pid);
+    }
     gatewayProcess = null;
     gatewayStartedByApp = false;
     apiServerAvailable = false;
@@ -1507,6 +1673,9 @@ export async function startGateway(profile?: string): Promise<boolean> {
   });
   gatewayProcess.on("error", (err) => {
     console.error("[Gateway] Process error:", err);
+    if (gatewayProcess && gatewayProcess.pid) {
+      unrecordPid(gatewayProcess.pid);
+    }
     gatewayProcess = null;
     gatewayStartedByApp = false;
   });

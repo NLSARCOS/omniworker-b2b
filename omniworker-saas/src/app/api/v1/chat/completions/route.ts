@@ -32,6 +32,149 @@ When fixing bugs, explain the root cause. When suggesting code, include complete
 Languages, frameworks, and tools: you are fluent in all of them.`,
 };
 
+// ── SSE Token Counter and Billing Reconciliation Helpers ─────────────────
+class SSETokenCounter {
+  private decoder = new TextDecoder();
+  private buffer = "";
+  private generatedText = "";
+  private actualPromptTokens = 0;
+  private actualCompletionTokens = 0;
+  private actualTotalTokens = 0;
+  private hasUsage = false;
+
+  constructor(private promptEst: number) {
+    this.actualPromptTokens = promptEst;
+  }
+
+  feed(chunk: Uint8Array) {
+    const text = this.decoder.decode(chunk, { stream: true });
+    this.buffer += text;
+    const lines = this.buffer.split("\n");
+    this.buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const dataStr = trimmed.slice(5).trim();
+      if (dataStr === "[DONE]") continue;
+
+      try {
+        const parsed = JSON.parse(dataStr);
+        if (parsed.usage) {
+          this.actualPromptTokens = parsed.usage.prompt_tokens || this.actualPromptTokens;
+          this.actualCompletionTokens = parsed.usage.completion_tokens || this.actualCompletionTokens;
+          this.actualTotalTokens = parsed.usage.total_tokens || this.actualTotalTokens;
+          this.hasUsage = true;
+        }
+
+        if (parsed.choices?.[0]?.delta?.content) {
+          this.generatedText += parsed.choices[0].delta.content;
+        } else if (parsed.delta?.text) {
+          this.generatedText += parsed.delta.text;
+        } else if (parsed.content) {
+          this.generatedText += parsed.content;
+        }
+      } catch {
+        // Ignore JSON parse errors for non-JSON lines
+      }
+    }
+  }
+
+  getResults() {
+    if (this.hasUsage && this.actualTotalTokens > 0) {
+      return {
+        promptTokens: this.actualPromptTokens,
+        completionTokens: this.actualCompletionTokens,
+        totalTokens: this.actualTotalTokens,
+      };
+    }
+
+    const completionTokens = Math.max(1, Math.floor(this.generatedText.length / 4));
+    return {
+      promptTokens: this.actualPromptTokens,
+      completionTokens: completionTokens,
+      totalTokens: this.actualPromptTokens + completionTokens,
+    };
+  }
+}
+
+async function reconcileStreamBilling(
+  userId: string,
+  licenseId: string | null,
+  tenantId: string,
+  requestedModel: string,
+  promptTokensEst: number,
+  estimatedCost: number,
+  counter: SSETokenCounter
+) {
+  const actual = counter.getResults();
+  const actualCost = actual.totalTokens;
+
+  console.log(`[Reconciliation] Est Cost: ${estimatedCost}, Actual Cost: ${actualCost}, Prompt: ${actual.promptTokens}, Completion: ${actual.completionTokens}`);
+
+  let refundAmount = 0;
+  if (estimatedCost > actualCost) {
+    const diff = estimatedCost - actualCost;
+    if (diff > actualCost * 0.10) {
+      refundAmount = diff;
+    }
+  }
+
+  if (refundAmount > 0) {
+    console.log(`[Reconciliation] Refunding ${refundAmount} tokens to user/license`);
+    try {
+      if (licenseId) {
+        await prisma.license.update({
+          where: { id: licenseId },
+          data: { tokenBalance: { increment: refundAmount } },
+        });
+      } else {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { tokenBalance: { increment: refundAmount } },
+        });
+      }
+    } catch (e) {
+      console.error("[Reconciliation Refund Error]", e);
+    }
+  }
+
+  try {
+    await prisma.taskLog.create({
+      data: {
+        userId,
+        tenantId,
+        promptTokens: actual.promptTokens,
+        completionTks: actual.completionTokens,
+        modelUsed: requestedModel,
+        taskType: requestedModel === "omniworker-code" ? "code_generation" : "cloud_reasoning",
+        status: "completed",
+      },
+    });
+  } catch (e) {
+    console.error("[Reconciliation TaskLog Error]", e);
+  }
+}
+
+function estimatePromptTokens(messages: any[]): number {
+  const fullText = JSON.stringify(messages || []);
+  const totalChars = fullText.length;
+  if (totalChars === 0) return 0;
+
+  let nonAsciiCount = 0;
+  for (let i = 0; i < totalChars; i++) {
+    if (fullText.charCodeAt(i) > 127) {
+      nonAsciiCount++;
+    }
+  }
+
+  const isNonAsciiHeavy = (nonAsciiCount / totalChars) > 0.3;
+  const multiplier = isNonAsciiHeavy ? 1.5 : 1.0;
+
+  const baseTokens = Math.max(10, Math.floor(totalChars / 4));
+  return Math.floor(baseTokens * multiplier);
+}
+
 // ── OpenCode Go Intelligent Routing ──────────────────────────────────
 interface ModelTier {
   id: string;
@@ -286,9 +429,8 @@ export async function POST(request: Request) {
     }
 
     // Dynamic cost estimation fallback (e.g. for streaming)
-    const promptCharCount = JSON.stringify(payload.messages || []).length;
-    const promptTokensEst = Math.max(10, Math.floor(promptCharCount / 4));
-    const completionTokensEst = isStream ? 500 : 300;
+    const promptTokensEst = estimatePromptTokens((payload.messages as any[]) || []);
+    const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
     const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
 
     try {
@@ -312,30 +454,122 @@ export async function POST(request: Request) {
       let completionTokens = completionTokensEst;
       let responseData: any = null;
 
-      if (!isStream) {
-        try {
-          responseData = await aiResponse.json();
-          if (responseData && responseData.usage) {
-            promptTokens = responseData.usage.prompt_tokens || promptTokens;
-            completionTokens = responseData.usage.completion_tokens || completionTokens;
-            finalCost = responseData.usage.total_tokens || finalCost;
+      if (isStream) {
+        if (auth.user.licenseId) {
+          const deductResult = await prisma.license.updateMany({
+            where: { id: auth.user.licenseId, tokenBalance: { gte: estimatedCost } },
+            data: { tokenBalance: { decrement: estimatedCost } },
+          });
+          if (deductResult.count === 0) {
+            return NextResponse.json({ error: "Saldo de tokens insuficiente." }, { status: 402 });
           }
-        } catch (e) {
-          console.warn("Failed to parse response JSON for actual tokens", e);
+        } else {
+          const deductResult = await prisma.user.updateMany({
+            where: { id: user.id, tokenBalance: { gte: estimatedCost } },
+            data: { tokenBalance: { decrement: estimatedCost } },
+          });
+          if (deductResult.count === 0) {
+            return NextResponse.json({ error: "Saldo de tokens insuficiente." }, { status: 402 });
+          }
         }
+
+        const counter = new SSETokenCounter(promptTokensEst);
+        let reconciled = false;
+        const reconcileOnce = async () => {
+          if (reconciled) return;
+          reconciled = true;
+          try {
+            await reconcileStreamBilling(
+              user.id,
+              user.licenseId || null,
+              user.tenantId || "",
+              requestedModel,
+              promptTokensEst,
+              estimatedCost,
+              counter
+            );
+          } catch (err) {
+            console.error("[Reconciliation Error]", err);
+          }
+        };
+
+        request.signal.addEventListener("abort", () => {
+          console.log("[Reconciliation] Client aborted connection, reconciling billing.");
+          reconcileOnce();
+        });
+
+        const bodyStream = aiResponse.body || new ReadableStream();
+        const reader = bodyStream.getReader();
+        const customStream = new ReadableStream({
+          async pull(controller) {
+            try {
+              const { done, value } = await reader.read();
+              if (done) {
+                await reconcileOnce();
+                controller.close();
+                return;
+              }
+              counter.feed(value);
+              controller.enqueue(value);
+            } catch (err) {
+              console.error("[Stream Error] Upstream connection dropped:", err);
+              const encoder = new TextEncoder();
+              const errorEvent = `data: ${JSON.stringify({ error: "Provider connection lost" })}\n\n`;
+              controller.enqueue(encoder.encode(errorEvent));
+              await reconcileOnce();
+              try {
+                controller.close();
+              } catch {}
+            }
+          },
+          async cancel() {
+            await reader.cancel();
+          }
+        });
+
+        return new Response(customStream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          },
+        });
       }
 
-      // Deduct tokens + log
+      // Non-stream path (usage-based deduction)
+      try {
+        responseData = await aiResponse.json();
+        if (responseData && responseData.usage) {
+          promptTokens = responseData.usage.prompt_tokens || promptTokens;
+          completionTokens = responseData.usage.completion_tokens || completionTokens;
+          finalCost = responseData.usage.total_tokens || finalCost;
+        }
+      } catch (e) {
+        console.warn("Failed to parse response JSON for actual tokens", e);
+      }
+
       if (auth.user.licenseId) {
-        await prisma.license.update({
-          where: { id: auth.user.licenseId },
+        const deductResult = await prisma.license.updateMany({
+          where: { id: auth.user.licenseId, tokenBalance: { gte: finalCost } },
           data: { tokenBalance: { decrement: finalCost } },
         });
+        if (deductResult.count === 0) {
+          return NextResponse.json(
+            { error: "Saldo de tokens insuficiente." },
+            { status: 402 }
+          );
+        }
       } else {
-        await prisma.user.update({
-          where: { id: user.id },
+        const deductResult = await prisma.user.updateMany({
+          where: { id: user.id, tokenBalance: { gte: finalCost } },
           data: { tokenBalance: { decrement: finalCost } },
         });
+        if (deductResult.count === 0) {
+          return NextResponse.json(
+            { error: "Saldo de tokens insuficiente." },
+            { status: 402 }
+          );
+        }
       }
 
       await prisma.taskLog.create({
@@ -349,16 +583,6 @@ export async function POST(request: Request) {
           status: "completed",
         },
       });
-
-      if (isStream) {
-        return new Response(aiResponse.body, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            Connection: "keep-alive",
-          },
-        });
-      }
 
       return NextResponse.json(responseData || {});
     } catch (error) {
@@ -396,9 +620,8 @@ export async function POST(request: Request) {
   console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${requestedModel})`);
 
     // Dynamic cost estimation fallback (e.g. for streaming)
-    const promptCharCount = JSON.stringify(body.messages || []).length;
-    const promptTokensEst = Math.max(10, Math.floor(promptCharCount / 4));
-    const completionTokensEst = isStream ? 500 : 300;
+    const promptTokensEst = estimatePromptTokens(body.messages || []);
+    const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
     const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
 
     try {
@@ -431,29 +654,122 @@ export async function POST(request: Request) {
       let completionTokens = completionTokensEst;
       let responseData: any = null;
 
-      if (!isStream) {
-        try {
-          responseData = await aiResponse.json();
-          if (responseData && responseData.usage) {
-            promptTokens = responseData.usage.prompt_tokens || promptTokens;
-            completionTokens = responseData.usage.completion_tokens || completionTokens;
-            finalCost = responseData.usage.total_tokens || finalCost;
+      if (isStream) {
+        if (auth.user.licenseId) {
+          const deductResult = await prisma.license.updateMany({
+            where: { id: auth.user.licenseId, tokenBalance: { gte: estimatedCost } },
+            data: { tokenBalance: { decrement: estimatedCost } },
+          });
+          if (deductResult.count === 0) {
+            return NextResponse.json({ error: "Saldo de tokens insuficiente." }, { status: 402 });
           }
-        } catch (e) {
-          console.warn("Failed to parse response JSON for actual tokens", e);
+        } else {
+          const deductResult = await prisma.user.updateMany({
+            where: { id: user.id, tokenBalance: { gte: estimatedCost } },
+            data: { tokenBalance: { decrement: estimatedCost } },
+          });
+          if (deductResult.count === 0) {
+            return NextResponse.json({ error: "Saldo de tokens insuficiente." }, { status: 402 });
+          }
         }
+
+        const counter = new SSETokenCounter(promptTokensEst);
+        let reconciled = false;
+        const reconcileOnce = async () => {
+          if (reconciled) return;
+          reconciled = true;
+          try {
+            await reconcileStreamBilling(
+              user.id,
+              user.licenseId || null,
+              user.tenantId || "",
+              requestedModel,
+              promptTokensEst,
+              estimatedCost,
+              counter
+            );
+          } catch (err) {
+            console.error("[Reconciliation Error]", err);
+          }
+        };
+
+        request.signal.addEventListener("abort", () => {
+          console.log("[Reconciliation] Client aborted connection, reconciling billing.");
+          reconcileOnce();
+        });
+
+        const bodyStream = aiResponse.body || new ReadableStream();
+        const reader = bodyStream.getReader();
+        const customStream = new ReadableStream({
+          async pull(controller) {
+            try {
+              const { done, value } = await reader.read();
+              if (done) {
+                await reconcileOnce();
+                controller.close();
+                return;
+              }
+              counter.feed(value);
+              controller.enqueue(value);
+            } catch (err) {
+              console.error("[Stream Error] Upstream connection dropped:", err);
+              const encoder = new TextEncoder();
+              const errorEvent = `data: ${JSON.stringify({ error: "Provider connection lost" })}\n\n`;
+              controller.enqueue(encoder.encode(errorEvent));
+              await reconcileOnce();
+              try {
+                controller.close();
+              } catch {}
+            }
+          },
+          async cancel() {
+            await reader.cancel();
+          }
+        });
+
+        return new Response(customStream, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+          },
+        });
+      }
+
+      // Non-stream path (usage-based deduction)
+      try {
+        responseData = await aiResponse.json();
+        if (responseData && responseData.usage) {
+          promptTokens = responseData.usage.prompt_tokens || promptTokens;
+          completionTokens = responseData.usage.completion_tokens || completionTokens;
+          finalCost = responseData.usage.total_tokens || finalCost;
+        }
+      } catch (e) {
+        console.warn("Failed to parse response JSON for actual tokens", e);
       }
 
       if (auth.user.licenseId) {
-        await prisma.license.update({
-          where: { id: auth.user.licenseId },
+        const deductResult = await prisma.license.updateMany({
+          where: { id: auth.user.licenseId, tokenBalance: { gte: finalCost } },
           data: { tokenBalance: { decrement: finalCost } },
         });
+        if (deductResult.count === 0) {
+          return NextResponse.json(
+            { error: "Saldo de tokens insuficiente." },
+            { status: 402 }
+          );
+        }
       } else {
-        await prisma.user.update({
-          where: { id: user.id },
+        const deductResult = await prisma.user.updateMany({
+          where: { id: user.id, tokenBalance: { gte: finalCost } },
           data: { tokenBalance: { decrement: finalCost } },
         });
+        if (deductResult.count === 0) {
+          return NextResponse.json(
+            { error: "Saldo de tokens insuficiente." },
+            { status: 402 }
+          );
+        }
       }
 
       await prisma.taskLog.create({
@@ -467,16 +783,6 @@ export async function POST(request: Request) {
           status: "completed",
         },
       });
-
-      if (isStream) {
-        return new Response(aiResponse.body, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            Connection: "keep-alive",
-          },
-        });
-      }
 
       return NextResponse.json(responseData || {});
   } catch (error) {

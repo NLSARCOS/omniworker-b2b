@@ -137,9 +137,12 @@ function Chat({
         onClear={handleClear}
       />
 
-      <div className="chat-messages" ref={containerRef}>
+      <div className={messages.length === 0 ? "chat-messages" : "chat-messages !overflow-hidden !p-0"} ref={containerRef}>
         {messages.length === 0 ? (
-          <ChatEmptyState onSelectSuggestion={handleSuggestion} />
+          <>
+            <ChatEmptyState onSelectSuggestion={handleSuggestion} />
+            <div ref={bottomRef} />
+          </>
         ) : (
           <MessageList
             messages={messages}
@@ -149,7 +152,6 @@ function Chat({
             onDeny={actions.handleDeny}
           />
         )}
-        <div ref={bottomRef} />
       </div>
 
       <div className="chat-input-area">

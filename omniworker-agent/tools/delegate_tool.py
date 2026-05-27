@@ -154,6 +154,52 @@ _active_subagents_lock = threading.Lock()
 # for the lifetime of the run; _run_single_child is the owner.
 _active_subagents: Dict[str, Dict[str, Any]] = {}
 
+_sweeper_started = False
+_sweeper_lock = threading.Lock()
+
+
+def _start_sweeper_if_needed():
+    global _sweeper_started
+    with _sweeper_lock:
+        if not _sweeper_started:
+            t = threading.Thread(target=_sweeper_loop, daemon=True, name="subagent-sweeper")
+            t.start()
+            _sweeper_started = True
+
+
+def _sweeper_loop():
+    while True:
+        time.sleep(60)
+        try:
+            _sweep_active_subagents()
+        except Exception as e:
+            logger.debug("Active subagents sweeper error: %s", e)
+
+
+def _sweep_active_subagents():
+    now = time.time()
+    timeout = _get_child_timeout()
+    max_duration = timeout * 2.0
+
+    stale_ids = []
+    with _active_subagents_lock:
+        for sid, record in list(_active_subagents.items()):
+            started_at = record.get("started_at", 0)
+            if now - started_at > max_duration:
+                stale_ids.append((sid, "duration exceeded 2x timeout"))
+                continue
+
+            holder = record.get("thread_holder")
+            if holder:
+                t = holder.get("t")
+                if t is not None and not t.is_alive():
+                    stale_ids.append((sid, "thread is dead"))
+                    continue
+
+        for sid, reason in stale_ids:
+            logger.warning("Sweeper removing stale subagent %s (reason: %s)", sid, reason)
+            _active_subagents.pop(sid, None)
+
 
 def set_spawn_paused(paused: bool) -> bool:
     """Globally block/unblock new delegate_task spawns.
@@ -178,6 +224,7 @@ def _register_subagent(record: Dict[str, Any]) -> None:
         return
     with _active_subagents_lock:
         _active_subagents[sid] = record
+    _start_sweeper_if_needed()
 
 
 def _unregister_subagent(subagent_id: str) -> None:
@@ -1330,6 +1377,7 @@ def _run_single_child(
     Returns a structured result dict.
     """
     child_start = time.monotonic()
+    _worker_thread_holder: Dict[str, Optional[threading.Thread]] = {"t": None}
 
     # Get the progress callback from the child agent
     child_progress_cb = getattr(child, "tool_progress_callback", None)
@@ -1462,6 +1510,7 @@ def _run_single_child(
                 "status": "running",
                 "tool_count": 0,
                 "agent": child,
+                "thread_holder": _worker_thread_holder,
             }
         )
 
@@ -1500,7 +1549,7 @@ def _run_single_child(
         )
         # Capture the worker thread so the timeout diagnostic can dump its
         # Python stack (see #14726 — 0-API-call hangs are opaque without it).
-        _worker_thread_holder: Dict[str, Optional[threading.Thread]] = {"t": None}
+        # (Declared at the top of _run_single_child to span active subagents registry)
 
         def _run_with_thread_capture():
             _worker_thread_holder["t"] = threading.current_thread()
@@ -1515,10 +1564,12 @@ def _run_single_child(
         except Exception as _timeout_exc:
             # Signal the child to stop so its thread can exit cleanly.
             try:
-                if hasattr(child, "interrupt"):
-                    child.interrupt()
-                elif hasattr(child, "_interrupt_requested"):
-                    child._interrupt_requested = True
+                if child is not None:
+                    child._force_stop = True
+                    if hasattr(child, "interrupt"):
+                        child.interrupt()
+                    elif hasattr(child, "_interrupt_requested"):
+                        child._interrupt_requested = True
             except Exception:
                 pass
 
@@ -1537,8 +1588,9 @@ def _run_single_child(
             diagnostic_path: Optional[str] = None
             child_api_calls = 0
             try:
-                _summary = child.get_activity_summary()
-                child_api_calls = int(_summary.get("api_call_count", 0) or 0)
+                if child is not None:
+                    _summary = child.get_activity_summary()
+                    child_api_calls = int(_summary.get("api_call_count", 0) or 0)
             except Exception:
                 pass
             if is_timeout and child_api_calls == 0:
@@ -1600,13 +1652,12 @@ def _run_single_child(
                 "exit_reason": "timeout" if is_timeout else "error",
                 "api_calls": child_api_calls,
                 "duration_seconds": duration,
-                "_child_role": getattr(child, "_delegate_role", None),
+                "_child_role": getattr(child, "_delegate_role", None) if child is not None else None,
                 "diagnostic_path": diagnostic_path,
             }
         finally:
-            # Shut down executor without waiting — if the child thread
-            # is stuck on blocking I/O, wait=True would hang forever.
-            _timeout_executor.shutdown(wait=False)
+            # Shut down executor with wait=True, cancel_futures=True to aggressively cancel pending threads
+            _timeout_executor.shutdown(wait=True, cancel_futures=True)
 
         # Flush any remaining batched progress to gateway
         if child_progress_cb and hasattr(child_progress_cb, "_flush"):
@@ -1890,6 +1941,9 @@ def _run_single_child(
                 child.close()
         except Exception:
             logger.debug("Failed to close child agent after delegation")
+
+        # Break closure reference to the child AIAgent
+        child = None
 
 
 def _recover_tasks_from_json_string(

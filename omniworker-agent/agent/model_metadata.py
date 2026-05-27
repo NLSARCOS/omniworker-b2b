@@ -356,6 +356,8 @@ _URL_TO_PROVIDER: Dict[str, str] = {
     "openrouter.ai": "openrouter",
     "generativelanguage.googleapis.com": "gemini",
     "inference-api.nousresearch.com": "nous",
+    "inference-api.omniworker.com": "nous",
+    "inference.omniworker.com": "nous",
     "api.deepseek.com": "deepseek",
     "api.githubcopilot.com": "copilot",
     "models.github.ai": "copilot",
@@ -1715,69 +1717,143 @@ def get_model_context_length(
     return DEFAULT_FALLBACK_CONTEXT
 
 
-def estimate_tokens_rough(text: str) -> int:
-    """Rough token estimate (~4 chars/token) for pre-flight checks.
+IMAGE_TOKEN_ESTIMATE = 1600
 
-    Uses ceiling division so short texts (1-3 chars) never estimate as
-    0 tokens, which would cause the compressor and pre-flight checks to
-    systematically undercount when many short tool results are present.
-    """
+_tiktoken_encoding = None
+
+def _get_tiktoken_encoding():
+    global _tiktoken_encoding
+    if _tiktoken_encoding is not None:
+        return _tiktoken_encoding
+    try:
+        import tiktoken
+        _tiktoken_encoding = tiktoken.get_encoding("cl100k_base")
+    except ImportError:
+        try:
+            from tools.lazy_deps import ensure
+            ensure("token.tiktoken", prompt=False)
+            import tiktoken
+            _tiktoken_encoding = tiktoken.get_encoding("cl100k_base")
+        except Exception:
+            pass
+    return _tiktoken_encoding
+
+def is_openai_model(model_name: str) -> bool:
+    if not model_name:
+        return False
+    name = model_name.lower()
+    return "openai" in name or name.startswith("gpt") or "o1" in name or "o3" in name
+
+def count_tokens_precise(text: str, is_openai: bool = False) -> int:
+    """Accurately count tokens using tiktoken when available for OpenAI, with non-ASCII correction."""
     if not text:
         return 0
-    return (len(text) + 3) // 4
 
+    actual_count = None
+    estimated_count = (len(text) + 3) // 4
 
-def estimate_messages_tokens_rough(messages: List[Dict[str, Any]]) -> int:
-    """Rough token estimate for a message list (pre-flight only).
+    # 1. Use tiktoken if available and model is OpenAI-based
+    if is_openai:
+        enc = _get_tiktoken_encoding()
+        if enc is not None:
+            try:
+                actual_count = len(enc.encode(text))
+            except Exception:
+                pass
 
-    Image parts (base64 PNG/JPEG) are counted as a flat ~1500 tokens per
-    image — the Anthropic pricing model — instead of counting raw base64
-    character length. Without this, a single ~1MB screenshot would be
-    estimated at ~250K tokens and trigger premature context compression.
-    """
-    _IMAGE_TOKEN_COST = 1500
-    total_chars = 0
-    image_tokens = 0
+    # 2. Apply 1.5x correction factor for non-ASCII-heavy messages (>30% non-ASCII chars)
+    non_ascii_count = sum(1 for ch in text if ord(ch) > 127)
+    is_non_ascii_heavy = len(text) > 0 and (non_ascii_count / len(text)) > 0.3
+
+    if actual_count is None:
+        actual_count = estimated_count
+        if is_non_ascii_heavy:
+            actual_count = int(actual_count * 1.5)
+    else:
+        if is_non_ascii_heavy:
+            actual_count = int(actual_count * 1.5)
+
+    # 3. Log metrics (estimated vs actual) for debugging
+    logger.debug(
+        "[TOKEN METRICS] text_len=%d non_ascii_ratio=%.2f estimated=%d actual=%d",
+        len(text), non_ascii_count / len(text) if len(text) > 0 else 0,
+        estimated_count, actual_count
+    )
+
+    return actual_count
+
+def estimate_image_tokens(width: Optional[int], height: Optional[int]) -> int:
+    """Estimate image tokens using actual dimensions when available, falling back to 1600."""
+    if width is not None and height is not None and width > 0 and height > 0:
+        # Standard OpenAI high-res tiling formula:
+        if width > 2048 or height > 2048:
+            ratio = min(2048 / width, 2048 / height)
+            width = int(width * ratio)
+            height = int(height * ratio)
+        if min(width, height) < 768:
+            ratio = 768 / min(width, height)
+            width = int(width * ratio)
+            height = int(height * ratio)
+        import math
+        tiles_w = math.ceil(width / 512)
+        tiles_h = math.ceil(height / 512)
+        num_tiles = tiles_w * tiles_h
+        return 85 + 170 * num_tiles
+    
+    return IMAGE_TOKEN_ESTIMATE
+
+def estimate_tokens_rough(text: str) -> int:
+    """Rough token estimate (~4 chars/token) for pre-flight checks."""
+    return count_tokens_precise(text, is_openai=False)
+
+def estimate_messages_tokens_rough(messages: List[Dict[str, Any]], is_openai: bool = False) -> int:
+    """Accurate token estimate for a message list, taking image dimensions into account."""
+    total_tokens = 0
     for msg in messages:
-        total_chars += _estimate_message_chars(msg)
-        image_tokens += _count_image_tokens(msg, _IMAGE_TOKEN_COST)
-    return ((total_chars + 3) // 4) + image_tokens
-
+        text = _estimate_message_text(msg)
+        total_tokens += count_tokens_precise(text, is_openai=is_openai)
+        total_tokens += _count_image_tokens(msg, IMAGE_TOKEN_ESTIMATE)
+    return total_tokens
 
 def _count_image_tokens(msg: Dict[str, Any], cost_per_image: int) -> int:
-    """Count image-like content parts in a message; return their token cost."""
-    count = 0
+    """Count image-like content parts in a message; return their token cost with custom dimensions support."""
+    total_cost = 0
     content = msg.get("content") if isinstance(msg, dict) else None
+    
+    def extract_dimensions_and_cost(part: Dict[str, Any]) -> int:
+        width = part.get("width") or part.get("image_url", {}).get("width")
+        height = part.get("height") or part.get("image_url", {}).get("height")
+        try:
+            w = int(width) if width is not None else None
+            h = int(height) if height is not None else None
+        except (ValueError, TypeError):
+            w, h = None, None
+        return estimate_image_tokens(w, h)
+
     if isinstance(content, list):
         for part in content:
             if not isinstance(part, dict):
                 continue
             ptype = part.get("type")
             if ptype in {"image", "image_url", "input_image"}:
-                count += 1
+                total_cost += extract_dimensions_and_cost(part)
     stashed = msg.get("_anthropic_content_blocks") if isinstance(msg, dict) else None
     if isinstance(stashed, list):
         for part in stashed:
             if isinstance(part, dict) and part.get("type") == "image":
-                count += 1
-    # Multimodal tool results that haven't been converted yet.
+                total_cost += extract_dimensions_and_cost(part)
     if isinstance(content, dict) and content.get("_multimodal"):
         inner = content.get("content")
         if isinstance(inner, list):
             for part in inner:
                 if isinstance(part, dict) and part.get("type") in {"image", "image_url"}:
-                    count += 1
-    return count * cost_per_image
+                    total_cost += extract_dimensions_and_cost(part)
+    return total_cost
 
-
-def _estimate_message_chars(msg: Dict[str, Any]) -> int:
-    """Char count for token estimation, excluding base64 image data.
-
-    Base64 images are counted via `_count_image_tokens` instead; including
-    their raw chars here would massively overestimate token usage.
-    """
+def _estimate_message_text(msg: Dict[str, Any]) -> str:
+    """Extract text content from a message, excluding base64 image data."""
     if not isinstance(msg, dict):
-        return len(str(msg))
+        return str(msg)
     shadow: Dict[str, Any] = {}
     for k, v in msg.items():
         if k == "_anthropic_content_blocks":
@@ -1800,28 +1876,26 @@ def _estimate_message_chars(msg: Dict[str, Any]) -> int:
                 shadow[k] = v
         else:
             shadow[k] = v
-    return len(str(shadow))
+    return str(shadow)
 
+def _estimate_message_chars(msg: Dict[str, Any]) -> int:
+    """Char count for token estimation, excluding base64 image data."""
+    return len(_estimate_message_text(msg))
 
 def estimate_request_tokens_rough(
     messages: List[Dict[str, Any]],
     *,
     system_prompt: str = "",
     tools: Optional[List[Dict[str, Any]]] = None,
+    model: str = "",
 ) -> int:
-    """Rough token estimate for a full chat-completions request.
-
-    Includes the major payload buckets OmniWorker sends to providers:
-    system prompt, conversation messages, and tool schemas.  With 50+
-    tools enabled, schemas alone can add 20-30K tokens — a significant
-    blind spot when only counting messages. Image content is counted
-    at a flat per-image cost (see estimate_messages_tokens_rough).
-    """
+    """Accurate token estimate for a full chat-completions request using model details."""
+    is_openai = is_openai_model(model)
     total = 0
     if system_prompt:
-        total += (len(system_prompt) + 3) // 4
+        total += count_tokens_precise(system_prompt, is_openai=is_openai)
     if messages:
-        total += estimate_messages_tokens_rough(messages)
+        total += estimate_messages_tokens_rough(messages, is_openai=is_openai)
     if tools:
-        total += (len(str(tools)) + 3) // 4
+        total += count_tokens_precise(str(tools), is_openai=is_openai)
     return total

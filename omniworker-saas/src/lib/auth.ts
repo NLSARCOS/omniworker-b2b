@@ -116,8 +116,8 @@ export async function clearAuthCookies() {
 }
 
 // ─── Refresh token DB operations ───
-export async function createRefreshToken(userId: string): Promise<string> {
-  const family = generateTokenFamily();
+export async function createRefreshToken(userId: string, existingFamily?: string): Promise<string> {
+  const family = existingFamily || generateTokenFamily();
   const token = signRefreshToken({ userId, family });
   const tokenHash = hashToken(token);
 
@@ -156,7 +156,16 @@ export async function validateRefreshToken(token: string): Promise<{ userId: str
     where: { tokenHash },
   });
 
-  if (!dbToken || dbToken.revoked || dbToken.expiresAt < new Date()) {
+  if (!dbToken) return null;
+
+  // THEFT DETECTION: if a revoked token is presented, the entire family is compromised
+  if (dbToken.revoked) {
+    console.error(`[Auth] SECURITY: Revoked refresh token reused. Revoking entire family: ${dbToken.family}`);
+    await revokeTokenFamily(dbToken.family);
+    return null;
+  }
+
+  if (dbToken.expiresAt < new Date()) {
     return null;
   }
 
@@ -524,9 +533,24 @@ export async function refreshAccessToken(refreshToken: string, deviceFingerprint
     return { success: false, error: "Token de refresco inválido o expirado" };
   }
 
-  // Rotate: revoke old token, create new one
+  // Atomic rotation: revoke old + create new in a transaction (prevents token loss on DB failure)
   const oldHash = hashToken(refreshToken);
-  await revokeRefreshToken(oldHash);
+  let newRefreshToken: string;
+  try {
+    newRefreshToken = await prisma.$transaction(async (tx) => {
+      // Create new token FIRST (so if this fails, old token remains valid)
+      const newToken = await createRefreshToken(validated.userId, validated.family);
+      // Then revoke the old one
+      await tx.refreshToken.updateMany({
+        where: { tokenHash: oldHash },
+        data: { revoked: true },
+      });
+      return newToken;
+    });
+  } catch (error) {
+    console.error("[Auth] Refresh rotation transaction failed:", error);
+    return { success: false, error: "Error en la rotación de token" };
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: validated.userId },
@@ -560,7 +584,6 @@ export async function refreshAccessToken(refreshToken: string, deviceFingerprint
   };
 
   const accessToken = signAccessToken(payload);
-  const newRefreshToken = await createRefreshToken(user.id);
 
   const isPlanExpired = Boolean(
     user.tenant?.subscriptionEndsAt && user.tenant.subscriptionEndsAt < new Date()

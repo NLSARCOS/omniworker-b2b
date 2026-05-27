@@ -50,9 +50,11 @@ model Tenant {
 model TenantApiKey {
   id          String    @id @default(uuid())
   tenantId    String
-  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  // Tenant deletion cascades to all associated Tenant API keys
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   licenseId   String?
-  license     License?  @relation(fields: [licenseId], references: [id])
+  // License deletion cascades to all associated Tenant API keys
+  license     License?  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
   keyHash     String    @unique
   keyPrefix   String
   name        String?
@@ -71,7 +73,8 @@ model User {
   name          String?
   role          String    @default("USER")
   tenantId      String?
-  tenant        Tenant?   @relation(fields: [tenantId], references: [id])
+  // If a Tenant is deleted, users remain but their tenantId is set to NULL
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   tokenBalance  Int       @default(0)
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
@@ -79,6 +82,8 @@ model User {
 
   tasks         TaskLog[]
   refreshTokens RefreshToken[]
+
+  @@index([tenantId])
 }
 
 // ─── REFRESH TOKEN ───
@@ -94,6 +99,7 @@ model RefreshToken {
 
   @@index([userId])
   @@index([tokenHash])
+  @@index([family])
 }
 
 // ─── SUBSCRIPTION PLANS ───
@@ -105,7 +111,7 @@ model SubscriptionPlan {
   maxAgents     Int      @default(1)
   maxUsers      Int      @default(1)
   maxLicenses   Int      @default(1)
-  price         Float
+  price         Int      // Price stored in cents
   billingPeriod String   @default("monthly")
   isActive      Boolean  @default(true)
   isPublic      Boolean  @default(true)
@@ -119,15 +125,21 @@ model SubscriptionPlan {
 model TaskLog {
   id             String   @id @default(uuid())
   tenantId       String?
-  tenant         Tenant?  @relation(fields: [tenantId], references: [id])
+  // Tenant deletion cascades to all associated TaskLogs
+  tenant         Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
+  // User deletion cascades to all associated TaskLogs
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   promptTokens   Int      @default(0)
   completionTks  Int      @default(0)
   modelUsed      String
   taskType       String
   status         String   @default("completed")
   createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([createdAt])
 }
 
 // ─── MASTER PROVIDERS — multi-key por proveedor ───
@@ -144,6 +156,8 @@ model MasterProvider {
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([provider, isActive])
 }
 
 // ─── ADMIN AUDIT LOG ───
@@ -161,7 +175,8 @@ model AdminAuditLog {
 model License {
   id               String    @id @default(uuid())
   tenantId         String
-  tenant           Tenant    @relation(fields: [tenantId], references: [id])
+  // Tenant deletion cascades to all associated Licenses
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name             String
   status           String    @default("ACTIVE")
   deviceFingerprint String?
@@ -183,9 +198,11 @@ model License {
 model EdgeAgent {
   id            String    @id @default(uuid())
   tenantId      String
-  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  // Tenant deletion cascades to all associated EdgeAgents
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   licenseId     String?
-  license       License?  @relation(fields: [licenseId], references: [id])
+  // License deletion cascades to all associated EdgeAgents
+  license       License?  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
   agentName     String
   hostname      String?
   platform      String?
@@ -214,8 +231,9 @@ model AppUpdate {
 model Invoice {
   id             String   @id @default(uuid())
   tenantId       String
-  tenant         Tenant   @relation(fields: [tenantId], references: [id])
-  amount         Float
+  // Tenant deletion cascades to all associated Invoices
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  amount         Int      // Amount stored in cents
   currency       String   @default("USD")
   status         String   @default("PAID")
   description    String?

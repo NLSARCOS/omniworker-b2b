@@ -1073,6 +1073,48 @@ const omniworkerAPI = {
     ipcRenderer.invoke("set-plan-expired", expired),
   checkPlanExpired: (): Promise<boolean> =>
     ipcRenderer.invoke("check-plan-expired"),
+
+  // Fetch Proxy
+  proxyRequest: (options: {
+    url: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    isStream?: boolean;
+    requestId: string;
+  }): Promise<{ status: number; headers: Record<string, string>; body?: string; error?: string; isStream?: boolean }> =>
+    ipcRenderer.invoke("proxy-request", options),
+
+  abortProxyRequest: (requestId: string): Promise<boolean> =>
+    ipcRenderer.invoke("abort-proxy-request", requestId),
+
+  onProxyStreamChunk: (callback: (data: { requestId: string; chunk: string }) => void): (() => void) => {
+    const handler = (_event: any, data: { requestId: string; chunk: string }) => callback(data);
+    ipcRenderer.on("proxy-stream-chunk", handler);
+    return () => ipcRenderer.removeListener("proxy-stream-chunk", handler);
+  },
+
+  onProxyStreamEnd: (callback: (data: { requestId: string }) => void): (() => void) => {
+    const handler = (_event: any, data: { requestId: string }) => callback(data);
+    ipcRenderer.on("proxy-stream-end", handler);
+    return () => ipcRenderer.removeListener("proxy-stream-end", handler);
+  },
+
+  onProxyStreamError: (callback: (data: { requestId: string; error: string }) => void): (() => void) => {
+    const handler = (_event: any, data: { requestId: string; error: string }) => callback(data);
+    ipcRenderer.on("proxy-stream-error", handler);
+    return () => ipcRenderer.removeListener("proxy-stream-error", handler);
+  },
+
+  // safeStorage Token Methods
+  saveTokens: (tokens: { accessToken: string; refreshToken: string }): Promise<void> =>
+    ipcRenderer.invoke("save-tokens", tokens),
+  getTokens: (): Promise<{ accessToken: string; refreshToken: string }> =>
+    ipcRenderer.invoke("get-tokens"),
+  deleteTokens: (): Promise<void> =>
+    ipcRenderer.invoke("delete-tokens"),
+  removeEnv: (key: string, profile?: string): Promise<void> =>
+    ipcRenderer.invoke("remove-env", key, profile),
 };
 
 if (process.contextIsolated) {

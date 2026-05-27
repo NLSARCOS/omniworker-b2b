@@ -61,6 +61,8 @@ import {
   isSmartRouterRunning,
   setPlanExpired,
   getPlanExpired,
+  checkAndCleanupOrphans,
+  killSpawnedProcessesGracefully,
 } from "./omniworker";
 import {
   startSshTunnel,
@@ -113,6 +115,10 @@ import {
   getOnboardingCompleted,
   getDeviceFingerprint,
   getDeviceName,
+  saveSecureTokens,
+  getSecureTokens,
+  deleteSecureTokens,
+  removeEnvValue,
 } from "./config";
 import { listSessions, getSessionMessages, searchSessions } from "./sessions";
 import {
@@ -299,7 +305,7 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
-      webSecurity: false, // Temporarily disabled to prevent strict CORS 'Failed to fetch' issues on Windows/Mac
+      webSecurity: process.env.OMNIWORKER_LEGACY_WEB_SECURITY === "1" ? false : true,
       allowRunningInsecureContent: false,
       webviewTag: true,
     },
@@ -373,7 +379,133 @@ function createWindow(): void {
   }
 }
 
+const activeRequests = new Map<string, AbortController>();
+
 function setupIPC(): void {
+  // Proxy fetch handler for D1-SEC
+  ipcMain.handle(
+    "proxy-request",
+    async (
+      event,
+      options: {
+        url: string;
+        method?: string;
+        headers?: Record<string, string>;
+        body?: string;
+        isStream?: boolean;
+        requestId: string;
+      },
+    ) => {
+      const { url, method = "GET", headers = {}, body, isStream = false, requestId } = options;
+      const controller = new AbortController();
+      activeRequests.set(requestId, controller);
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers,
+          body: body ? body : undefined,
+          signal: controller.signal,
+        });
+
+        const responseHeaders: Record<string, string> = {};
+        response.headers.forEach((value, key) => {
+          responseHeaders[key] = value;
+        });
+
+        if (isStream) {
+          const webContents = event.sender;
+          if (response.body) {
+            const bodyStream = response.body as any;
+            if (typeof bodyStream.getReader === "function") {
+              const reader = bodyStream.getReader();
+              const decoder = new TextDecoder();
+              (async () => {
+                try {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunkStr = decoder.decode(value, { stream: true });
+                    if (!webContents.isDestroyed()) {
+                      webContents.send("proxy-stream-chunk", { requestId, chunk: chunkStr });
+                    }
+                  }
+                  if (!webContents.isDestroyed()) {
+                    webContents.send("proxy-stream-end", { requestId });
+                  }
+                } catch (streamErr: any) {
+                  if (!webContents.isDestroyed()) {
+                    webContents.send("proxy-stream-error", { requestId, error: streamErr.message || String(streamErr) });
+                  }
+                } finally {
+                  activeRequests.delete(requestId);
+                }
+              })();
+            } else if (typeof bodyStream.on === "function") {
+              bodyStream.on("data", (chunk: any) => {
+                const chunkStr = typeof chunk === "string" ? chunk : chunk.toString("utf8");
+                if (!webContents.isDestroyed()) {
+                  webContents.send("proxy-stream-chunk", { requestId, chunk: chunkStr });
+                }
+              });
+              bodyStream.on("end", () => {
+                if (!webContents.isDestroyed()) {
+                  webContents.send("proxy-stream-end", { requestId });
+                }
+                activeRequests.delete(requestId);
+              });
+              bodyStream.on("error", (streamErr: any) => {
+                if (!webContents.isDestroyed()) {
+                  webContents.send("proxy-stream-error", { requestId, error: streamErr.message || String(streamErr) });
+                }
+                activeRequests.delete(requestId);
+              });
+            }
+          } else {
+            activeRequests.delete(requestId);
+            return {
+              status: response.status,
+              headers: responseHeaders,
+              error: "No stream body available",
+            };
+          }
+
+          return {
+            status: response.status,
+            headers: responseHeaders,
+            isStream: true,
+          };
+        } else {
+          const responseBody = await response.text();
+          activeRequests.delete(requestId);
+          return {
+            status: response.status,
+            headers: responseHeaders,
+            body: responseBody,
+          };
+        }
+      } catch (err: any) {
+        activeRequests.delete(requestId);
+        console.error("[Proxy Request Error]", err);
+        return {
+          status: 500,
+          headers: {},
+          error: err.message || String(err),
+        };
+      }
+    },
+  );
+
+  ipcMain.handle("abort-proxy-request", (_event, requestId: string) => {
+    const controller = activeRequests.get(requestId);
+    if (controller) {
+      controller.abort();
+      activeRequests.delete(requestId);
+      return true;
+    }
+    return false;
+  });
+
   // Installation
   ipcMain.handle("check-install", () => {
     return checkInstallStatus();
@@ -552,6 +684,23 @@ function setupIPC(): void {
 
   ipcMain.handle("get-device-name", () => {
     return getDeviceName();
+  });
+
+  // safeStorage Token Handlers
+  ipcMain.handle("save-tokens", (_event, tokens: { accessToken: string; refreshToken: string }) => {
+    saveSecureTokens(tokens.accessToken, tokens.refreshToken);
+  });
+
+  ipcMain.handle("get-tokens", () => {
+    return getSecureTokens();
+  });
+
+  ipcMain.handle("delete-tokens", () => {
+    deleteSecureTokens();
+  });
+
+  ipcMain.handle("remove-env", (_event, key: string, profile?: string) => {
+    removeEnvValue(key, profile);
   });
 
   ipcMain.handle("get-model-config", (_event, profile?: string) => {
@@ -1740,8 +1889,9 @@ function setupUpdater(): void {
   }, 5000);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   app.name = "OmniWorker";
+  await checkAndCleanupOrphans();
   electronApp.setAppUserModelId("com.omniworker.omniworker");
 
   // Initialize power monitoring for resume catch-up ticks
@@ -1843,7 +1993,14 @@ app.on("window-all-closed", () => {
   }
 });
 
-app.on("before-quit", () => {
+let cleanupDone = false;
+
+app.on("before-quit", (event) => {
+  if (cleanupDone) return;
+  event.preventDefault();
+  cleanupDone = true;
+
+  console.log("[Quit] Performing graceful cleanup of subprocesses...");
   stopHealthPolling();
   if (currentChatAbort) {
     currentChatAbort();
@@ -1854,9 +2011,38 @@ app.on("before-quit", () => {
     unsubscribeMemoryChangesForWebContents(webContentsId);
   }
   cleanupMemoryWatchers();
-  EngramDaemonManager.stopDaemon();
-  stopGateway();
-  stopSshTunnel();
-  stopClaw3d();
-  stopWhatsAppBot();
+
+  const timeoutId = setTimeout(() => {
+    console.warn("[Quit] Cleanup timed out after 5s. Forcing exit...");
+    app.exit(0);
+  }, 5000);
+
+  (async () => {
+    try {
+      console.log("[Quit] Stopping Engram daemon...");
+      await EngramDaemonManager.stopDaemon();
+    } catch (err) {
+      console.error("[Quit] stopDaemon failed:", err);
+    }
+
+    try {
+      stopGateway();
+      stopSshTunnel();
+      stopClaw3d();
+      stopWhatsAppBot();
+    } catch (err) {
+      console.error("[Quit] stop services failed:", err);
+    }
+
+    try {
+      console.log("[Quit] Killing spawned processes...");
+      await killSpawnedProcessesGracefully();
+    } catch (err) {
+      console.error("[Quit] killSpawnedProcessesGracefully failed:", err);
+    }
+
+    clearTimeout(timeoutId);
+    console.log("[Quit] Graceful cleanup complete. Exiting...");
+    app.exit(0);
+  })();
 });

@@ -9422,6 +9422,26 @@ class AIAgent:
         the agent has a chance to recover.
         """
         if not _is_multimodal_tool_result(result):
+            if isinstance(result, str):
+                max_output_str = os.environ.get("OMNIWORKER_MAX_TOOL_OUTPUT")
+                try:
+                    max_output = int(max_output_str) if max_output_str is not None else 204800
+                except ValueError:
+                    max_output = 204800
+
+                result_bytes = result.encode("utf-8", errors="replace")
+                if len(result_bytes) > max_output:
+                    truncated_bytes = result_bytes[:max_output]
+                    truncated_str = truncated_bytes.decode("utf-8", errors="ignore")
+                    omitted_bytes = len(result_bytes) - len(truncated_bytes)
+                    if omitted_bytes >= 1024 * 1024:
+                        omitted_str = f"{omitted_bytes / (1024 * 1024):.1f}MB"
+                    elif omitted_bytes >= 1024:
+                        omitted_str = f"{omitted_bytes / 1024:.1f}KB"
+                    else:
+                        omitted_str = f"{omitted_bytes} bytes"
+                    result = truncated_str + f"\n[truncated: {omitted_str} omitted]"
+                    logger.warning("Tool output of %s was truncated by %s", tool_name, omitted_str)
             return result
 
         content = result.get("content") or []
@@ -9663,9 +9683,99 @@ class AIAgent:
                     content[-1]["cache_control"] = {"type": "ephemeral"}
                 break
 
+    def _get_lazy_loaded_tools(self, api_messages: list) -> Optional[List[Dict[str, Any]]]:
+        if not self.tools:
+            return self.tools
+
+        # 1. Identify recently used tools (last 10 messages)
+        recent_tool_names = set()
+        for msg in reversed(api_messages[-10:]):
+            if isinstance(msg, dict):
+                if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                    for tc in msg["tool_calls"]:
+                        if isinstance(tc, dict) and "function" in tc:
+                            recent_tool_names.add(tc["function"].get("name"))
+                elif msg.get("role") == "tool" and msg.get("name"):
+                    recent_tool_names.add(msg["name"])
+
+        # 2. Re-construct tools list with lazy loading
+        lazy_tools = []
+        original_tokens = 0
+        optimized_tokens = 0
+        import json
+
+        # Always include critical core tools fully so the agent has basic abilities
+        critical_tools = {
+            "read_file", "write_file", "run_command", "ask_question",
+            "replace_file_content", "multi_replace_file_content",
+            "write_to_file", "grep_search", "list_dir", "view_file"
+        }
+
+        # Check if last user message explicitly mentions any tool name
+        last_user_msg = ""
+        if api_messages and isinstance(api_messages[-1], dict) and api_messages[-1].get("role") == "user":
+            content_val = api_messages[-1].get("content") or ""
+            if isinstance(content_val, list):
+                last_user_msg = " ".join([
+                    item.get("text", "") for item in content_val 
+                    if isinstance(item, dict) and "text" in item
+                ])
+            elif isinstance(content_val, str):
+                last_user_msg = content_val
+
+        for tool in self.tools:
+            tool_json_len = len(json.dumps(tool))
+            original_tokens += tool_json_len // 4
+
+            tool_name = tool.get("function", {}).get("name")
+            if not tool_name:
+                lazy_tools.append(tool)
+                continue
+
+            # Load full schema if recently used, mentioned, or a critical core tool
+            if tool_name in recent_tool_names or tool_name in last_user_msg or tool_name in critical_tools:
+                lazy_tools.append(tool)
+                optimized_tokens += tool_json_len // 4
+            else:
+                # Build compact schema
+                desc = tool.get("function", {}).get("description") or ""
+                desc_first_line = desc.split("\n")[0] if desc else "Compact helper tool."
+                compact_tool = {
+                    "type": "function",
+                    "function": {
+                        "name": tool_name,
+                        "description": f"{desc_first_line} (Full schema will be loaded dynamically on first use)",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {}
+                        }
+                    }
+                }
+                lazy_tools.append(compact_tool)
+                optimized_tokens += len(json.dumps(compact_tool)) // 4
+
+        # Log measured token savings
+        savings = original_tokens - optimized_tokens
+        if savings > 0:
+            import logging
+            logging.getLogger(__name__).info(
+                f"[E5-PROMPT] Lazy-loaded tools schemas. Original: ~{original_tokens} tokens, "
+                f"Optimized: ~{optimized_tokens} tokens, Saved: ~{savings} tokens ({savings * 100 // max(1, original_tokens)}% savings)"
+            )
+
+        return lazy_tools
+
     def _build_api_kwargs(self, api_messages: list) -> dict:
         """Build the keyword arguments dict for the active API mode."""
-        tools_for_api = self.tools
+        if getattr(self, "_budget_grace_call", False):
+            if self.request_overrides is None:
+                self.request_overrides = {}
+            self.request_overrides["tool_choice"] = "none"
+        else:
+            if self.request_overrides and self.request_overrides.get("tool_choice") == "none":
+                del self.request_overrides["tool_choice"]
+
+        tools_for_api = self._get_lazy_loaded_tools(api_messages)
 
         if self.api_mode == "anthropic_messages":
             _transport = self._get_transport()
@@ -10473,7 +10583,7 @@ class AIAgent:
         """
         return self.api_mode != "codex_responses"
 
-    def _compress_context(self, messages: list, system_message: str, *, approx_tokens: int = None, task_id: str = "default", focus_topic: str = None) -> tuple:
+    def _compress_context(self, messages: list, system_message: str, *, approx_tokens: int = None, task_id: str = "default", focus_topic: str = None, force: bool = False) -> tuple:
         """Compress conversation context and split the session in SQLite.
 
         Args:
@@ -10486,10 +10596,10 @@ class AIAgent:
         """
         _pre_msg_count = len(messages)
         logger.info(
-            "context compression started: session=%s messages=%d tokens=~%s model=%s focus=%r",
+            "context compression started: session=%s messages=%d tokens=~%s model=%s focus=%r force=%r",
             self.session_id or "none", _pre_msg_count,
             f"{approx_tokens:,}" if approx_tokens else "unknown", self.model,
-            focus_topic,
+            focus_topic, force,
         )
         self._emit_status(
             "🗜️ Compacting context — summarizing earlier conversation so I can continue..."
@@ -10501,6 +10611,10 @@ class AIAgent:
                 self._memory_manager.on_pre_compress(messages)
             except Exception:
                 pass
+
+        if force and hasattr(self, "context_compressor") and self.context_compressor:
+            if hasattr(self.context_compressor, "reset_anti_thrashing"):
+                self.context_compressor.reset_anti_thrashing()
 
         try:
             compressed = self.context_compressor.compress(messages, current_tokens=approx_tokens, focus_topic=focus_topic)
@@ -11953,6 +12067,8 @@ class AIAgent:
             base_url_str = getattr(self, "base_url", "") or ""
             if "8341" in base_url_str or os.environ.get("USE_SMART_ROUTER") == "true":
                 logging.getLogger(__name__).info("Bypassing intent classifier: Smart Router is active as base_url")
+            elif "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("OMNIWORKER_TESTING") == "true":
+                logging.getLogger(__name__).info("Bypassing intent classifier: running in test environment")
             else:
                 # Añadir ruta si no está
                 agent_dir = os.path.dirname(__file__)
@@ -12220,6 +12336,39 @@ class AIAgent:
 
         active_system_prompt = self._cached_system_prompt
 
+        # ── Preflight message cap compression (A1) ──
+        max_messages_str = os.environ.get("OMNIWORKER_MAX_MESSAGES")
+        try:
+            max_messages = int(max_messages_str) if max_messages_str else 500
+        except ValueError:
+            max_messages = 500
+
+        if len(messages) >= max_messages:
+            logger.info(
+                "Preflight message cap compression: %d messages >= %d cap",
+                len(messages),
+                max_messages,
+            )
+            self._emit_status(
+                f"🗜️ Proactive message cap reached: {len(messages)} messages >= {max_messages} cap. "
+                "Compressing conversation..."
+            )
+            # Compress repeatedly until message count is < 80% of max_messages
+            # or we cannot compress further (original_len did not decrease).
+            for _pass in range(5):
+                if len(messages) < int(max_messages * 0.8):
+                    break
+                orig_len = len(messages)
+                messages, active_system_prompt = self._compress_context(
+                    messages,
+                    system_message,
+                    task_id=effective_task_id,
+                )
+                # Clear history reference so all compressed messages are written to new session's SQLite
+                conversation_history = None
+                if len(messages) >= orig_len:
+                    break
+
         # ── Preflight context compression ──
         # Before entering the main loop, check if the loaded conversation
         # history already exceeds the model's context threshold.  This handles
@@ -12378,7 +12527,20 @@ class AIAgent:
         if self._memory_manager:
             try:
                 _query = original_user_message if isinstance(original_user_message, str) else ""
-                _ext_prefetch_cache = self._memory_manager.prefetch_all(_query) or ""
+                _raw_cache = self._memory_manager.prefetch_all(_query) or ""
+                import os
+                try:
+                    _max_chars = int(os.environ.get("OMNIWORKER_PREFETCH_MAX_CHARS", "32000"))
+                except ValueError:
+                    _max_chars = 32000
+
+                if len(_raw_cache) > _max_chars:
+                    _omitted = len(_raw_cache) - _max_chars
+                    _ext_prefetch_cache = _raw_cache[:_max_chars] + f"\n\n[prefetch truncated: {_omitted} chars omitted]\n"
+                    import logging
+                    logging.getLogger(__name__).warning(f"[C5-PREFETCH] Prefetch cache exceeded limit. Truncated {_omitted} characters.")
+                else:
+                    _ext_prefetch_cache = _raw_cache
             except Exception:
                 pass
 
@@ -12509,6 +12671,38 @@ class AIAgent:
                     else:
                         existing = getattr(self, "_pending_steer", None)
                         self._pending_steer = (existing + "\n" + _pre_api_steer) if existing else _pre_api_steer
+
+            # ── Proactive message cap compression check (A1) ──
+            max_messages_str = os.environ.get("OMNIWORKER_MAX_MESSAGES")
+            try:
+                max_messages = int(max_messages_str) if max_messages_str else 500
+            except ValueError:
+                max_messages = 500
+
+            if len(messages) >= max_messages:
+                logger.info(
+                    "Proactive message cap compression inside loop: %d messages >= %d cap",
+                    len(messages),
+                    max_messages,
+                )
+                self._emit_status(
+                    f"🗜️ Message cap reached inside loop: {len(messages)} messages >= {max_messages} cap. "
+                    "Compressing conversation..."
+                )
+                # Compress repeatedly until message count is < 80% of max_messages
+                # or we cannot compress further
+                for _pass in range(5):
+                    if len(messages) < int(max_messages * 0.8):
+                        break
+                    orig_len = len(messages)
+                    messages, active_system_prompt = self._compress_context(
+                        messages,
+                        system_message or getattr(self, "ephemeral_system_prompt", None) or "",
+                        task_id=effective_task_id,
+                    )
+                    conversation_history = None
+                    if len(messages) >= orig_len:
+                        break
 
             # Prepare messages for API call
             # If we have an ephemeral system prompt, prepend it to the messages

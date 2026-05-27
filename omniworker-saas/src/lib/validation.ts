@@ -5,6 +5,8 @@ import { z } from "zod";
 export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(1, "Contraseña requerida"),
+  deviceFingerprint: z.string().max(256).regex(/^[a-zA-Z0-9._-]*$/, "Caracteres no permitidos").optional(),
+  deviceName: z.string().max(128).regex(/^[a-zA-Z0-9._\- ]*$/, "Caracteres no permitidos").optional(),
 });
 
 export const registerSchema = z.object({
@@ -20,11 +22,11 @@ export const chatCompletionSchema = z.object({
   messages: z.array(z.object({
     role: z.string(),
     content: z.string()
-  }).passthrough()).min(1, "Se requiere al menos un mensaje"),
+  }).strict()).min(1, "Se requiere al menos un mensaje"),
   stream: z.boolean().optional(),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().positive().optional(),
-}).passthrough();
+}).strict();
 
 // ─── Edge Agents ───
 export const edgeRegisterSchema = z.object({
