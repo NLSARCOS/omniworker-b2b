@@ -533,9 +533,11 @@ export async function refreshAccessToken(refreshToken: string, deviceFingerprint
     return { success: false, error: "Token de refresco inválido o expirado" };
   }
 
-  // Token rotation: revoke old token first, then create new one.
-  // Order matters: if revocation fails, no new token is created and the old one stays valid.
-  // If new token creation fails after revocation, the user must re-login (acceptable for a DB failure).
+  // Token rotation: revoke-first, create-second.
+  // If revocation fails: old token remains valid, client can retry — no data loss.
+  // If revocation succeeds but creation fails: old token is revoked but no new token exists.
+  // This forces the user to re-login, which is acceptable for a rare DB failure scenario.
+  // The alternative (create-first) risks both tokens being valid if revocation fails.
   const oldHash = hashToken(refreshToken);
 
   // Step 1: Revoke old token (single op is already atomic, no transaction needed)
