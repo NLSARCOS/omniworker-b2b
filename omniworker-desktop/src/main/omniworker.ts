@@ -1656,11 +1656,18 @@ export async function startGateway(profile?: string): Promise<boolean> {
       const fsSync = require("fs") as typeof import("fs");
       if (fsSync.existsSync(configPath)) {
         let yaml = fsSync.readFileSync(configPath, "utf-8");
-        // Replace api_key line under model section (matches any quoted value)
-        yaml = yaml.replace(
-          /^(\s+api_key:\s*)"[^"]*".*$/m,
-          `$1"${jwtToken}"  # Auto-synced JWT from desktop login`,
-        );
+        const apiKeyLine = `  api_key: "${jwtToken}"  # Auto-synced JWT from desktop login`;
+        if (/^\s+api_key:/m.test(yaml)) {
+          // Replace existing api_key line
+          yaml = yaml.replace(/^(\s+api_key:\s*)"[^"]*".*$/m, apiKeyLine);
+        } else {
+          // Insert after base_url line, or after streaming line, falling back to appending to model block
+          if (/^\s+base_url:/m.test(yaml)) {
+            yaml = yaml.replace(/^(\s+base_url:.*)/m, `$1\n${apiKeyLine}`);
+          } else if (/^\s+streaming:/m.test(yaml)) {
+            yaml = yaml.replace(/^(\s+streaming:.*)/m, `${apiKeyLine}\n$1`);
+          }
+        }
         fsSync.writeFileSync(configPath, yaml, "utf-8");
       }
     } catch {

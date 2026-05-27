@@ -874,6 +874,12 @@ class APIServerAdapter(BasePlatformAdapter):
             fallback_model=fallback_model,
             reasoning_config=reasoning_config,
             gateway_session_key=gateway_session_key,
+            # Skip cwd-based project context files (AGENTS.md/CLAUDE.md from the
+            # agent repo dir are dev guides — irrelevant for chat requests).
+            # SOUL.md is still loaded via load_soul_identity so user identity,
+            # language preference, and personality are preserved.
+            skip_context_files=True,
+            load_soul_identity=True,
         )
         return agent
 
