@@ -90,26 +90,37 @@ export async function checkAndCleanupOrphans(): Promise<void> {
   if (entries.length === 0) return;
 
   const now = Date.now();
-  console.log(`[PIDS] Found ${entries.length} potentially orphan processes from previous session. Checking ages...`);
-  for (const { pid, startedAt } of entries) {
-    const age = now - startedAt;
+  const toKill: typeof entries = [];
+  const toRetain: typeof entries = [];
+
+  for (const entry of entries) {
+    const age = now - entry.startedAt;
     if (age <= ORPHAN_MIN_AGE_MS) {
-      console.log(`[PIDS] Skipping PID ${pid} — only ${age}ms old, not yet eligible for orphan cleanup.`);
-      continue;
+      toRetain.push(entry);  // Too young — keep tracking, don't kill
+    } else {
+      toKill.push(entry);    // Old enough to be an orphan
     }
+  }
+
+  if (toKill.length > 0) {
+    console.log(`[PIDS] Found ${toKill.length} orphan processes. Cleaning up... (${toRetain.length} young processes retained)`);
+  }
+
+  for (const { pid } of toKill) {
     try {
       process.kill(pid, 0);
-      console.log(`[PIDS] Killing orphan process PID ${pid} (age ${age}ms)`);
+      console.log(`[PIDS] Killing orphan process PID ${pid}`);
       process.kill(pid, "SIGKILL");
     } catch {
       // Already dead
     }
   }
 
+  // Retain young entries — they'll be re-evaluated on next restart
   try {
-    writeFileSync(pidsFile, JSON.stringify([]), "utf-8");
+    writeFileSync(pidsFile, JSON.stringify(toRetain), "utf-8");
   } catch (err) {
-    console.error("[PIDS] Failed to clear PIDS file:", err);
+    console.error("[PIDS] Failed to update PIDS file after orphan cleanup:", err);
   }
 }
 
