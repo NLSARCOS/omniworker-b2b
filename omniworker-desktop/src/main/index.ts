@@ -689,6 +689,13 @@ function setupIPC(): void {
   // safeStorage Token Handlers
   ipcMain.handle("save-tokens", (_event, tokens: { accessToken: string; refreshToken: string }) => {
     saveSecureTokens(tokens.accessToken, tokens.refreshToken);
+    // Restart the gateway so it picks up the fresh token in its environment.
+    // The gateway captures OPENAI_API_KEY at spawn time — saving tokens alone
+    // does nothing until the process is restarted.
+    const conn = getConnectionConfig();
+    if (conn.mode === "local") {
+      restartGateway().catch((err) => console.error("[save-tokens] Gateway restart failed:", err));
+    }
   });
 
   ipcMain.handle("get-tokens", () => {
