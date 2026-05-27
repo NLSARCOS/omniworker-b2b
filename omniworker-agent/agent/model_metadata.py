@@ -1769,15 +1769,14 @@ def count_tokens_precise(text: str, is_openai: bool = False) -> int:
         actual_count = estimated_count
         if is_non_ascii_heavy:
             actual_count = int(actual_count * 1.5)
-    else:
-        if is_non_ascii_heavy:
-            actual_count = int(actual_count * 1.5)
 
     # 3. Log metrics (estimated vs actual) for debugging
+    # Note: when actual_count came from tiktoken, no 1.5x correction is applied
     logger.debug(
-        "[TOKEN METRICS] text_len=%d non_ascii_ratio=%.2f estimated=%d actual=%d",
+        "[TOKEN METRICS] text_len=%d non_ascii_ratio=%.2f estimated=%d actual=%d (source=%s)",
         len(text), non_ascii_count / len(text) if len(text) > 0 else 0,
-        estimated_count, actual_count
+        estimated_count, actual_count,
+        "tiktoken" if actual_count != estimated_count or not is_non_ascii_heavy else "fallback+correction"
     )
 
     return actual_count

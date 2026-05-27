@@ -1656,8 +1656,10 @@ def _run_single_child(
                 "diagnostic_path": diagnostic_path,
             }
         finally:
-            # Shut down executor with wait=True, cancel_futures=True to aggressively cancel pending threads
-            _timeout_executor.shutdown(wait=True, cancel_futures=True)
+            # Shut down executor without waiting — if the child thread is stuck on blocking I/O,
+            # wait=True would hang forever. cancel_futures=True only prevents unstarted futures;
+            # it cannot interrupt a thread already executing blocking I/O (network calls, socket reads, etc.).
+            _timeout_executor.shutdown(wait=False)
 
         # Flush any remaining batched progress to gateway
         if child_progress_cb and hasattr(child_progress_cb, "_flush"):

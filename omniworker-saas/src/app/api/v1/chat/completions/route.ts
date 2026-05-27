@@ -101,7 +101,7 @@ class SSETokenCounter {
 async function reconcileStreamBilling(
   userId: string,
   licenseId: string | null,
-  tenantId: string,
+  tenantId: string | null,
   requestedModel: string,
   promptTokensEst: number,
   estimatedCost: number,
@@ -482,7 +482,7 @@ export async function POST(request: Request) {
             await reconcileStreamBilling(
               user.id,
               user.licenseId || null,
-              user.tenantId || "",
+              user.tenantId || null,
               requestedModel,
               promptTokensEst,
               estimatedCost,
@@ -682,7 +682,7 @@ export async function POST(request: Request) {
             await reconcileStreamBilling(
               user.id,
               user.licenseId || null,
-              user.tenantId || "",
+              user.tenantId || null,
               requestedModel,
               promptTokensEst,
               estimatedCost,

@@ -22,7 +22,7 @@ export const chatCompletionSchema = z.object({
   messages: z.array(z.object({
     role: z.string(),
     content: z.string()
-  }).strict()).min(1, "Se requiere al menos un mensaje"),
+  }).passthrough()).min(1, "Se requiere al menos un mensaje"),
   stream: z.boolean().optional(),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().positive().optional(),

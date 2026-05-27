@@ -533,22 +533,30 @@ export async function refreshAccessToken(refreshToken: string, deviceFingerprint
     return { success: false, error: "Token de refresco inválido o expirado" };
   }
 
-  // Atomic rotation: revoke old + create new in a transaction (prevents token loss on DB failure)
+  // Token rotation: revoke-first, create-second.
+  // If revocation fails: old token remains valid, client can retry — no data loss.
+  // If revocation succeeds but creation fails: old token is revoked but no new token exists.
+  // This forces the user to re-login, which is acceptable for a rare DB failure scenario.
+  // The alternative (create-first) risks both tokens being valid if revocation fails.
   const oldHash = hashToken(refreshToken);
-  let newRefreshToken: string;
+
+  // Step 1: Revoke old token (single op is already atomic, no transaction needed)
   try {
-    newRefreshToken = await prisma.$transaction(async (tx) => {
-      // Create new token FIRST (so if this fails, old token remains valid)
-      const newToken = await createRefreshToken(validated.userId, validated.family);
-      // Then revoke the old one
-      await tx.refreshToken.updateMany({
-        where: { tokenHash: oldHash },
-        data: { revoked: true },
-      });
-      return newToken;
+    await prisma.refreshToken.updateMany({
+      where: { tokenHash: oldHash },
+      data: { revoked: true },
     });
   } catch (error) {
-    console.error("[Auth] Refresh rotation transaction failed:", error);
+    console.error("[Auth] Refresh rotation failed: could not revoke old token (old token remains valid):", error);
+    return { success: false, error: "Error en la rotación de token" };
+  }
+
+  // Step 2: Create new token (only reached if revocation succeeded)
+  let newRefreshToken: string;
+  try {
+    newRefreshToken = await createRefreshToken(validated.userId, validated.family);
+  } catch (error) {
+    console.error("[Auth] Refresh rotation failed: old token revoked but new token could not be created (user must re-login):", error);
     return { success: false, error: "Error en la rotación de token" };
   }
 

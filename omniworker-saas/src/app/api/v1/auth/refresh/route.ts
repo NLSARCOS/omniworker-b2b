@@ -6,9 +6,9 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
-    // Rate limiting by IP (same tier as login)
+    // Rate limiting by IP (refresh tier: higher limit for normal desktop app usage)
     const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
-    const rateLimit = await checkRateLimit(ip, "auth");
+    const rateLimit = await checkRateLimit(ip, "refresh");
     if (!rateLimit.success) {
       return NextResponse.json(
         { error: "Demasiados intentos. Intenta más tarde." },
