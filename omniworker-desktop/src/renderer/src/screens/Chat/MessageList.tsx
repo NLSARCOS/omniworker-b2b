@@ -1,6 +1,7 @@
 import { memo, useMemo, useRef, useState, useEffect, useCallback } from "react";
+import * as reactWindow from "react-window";
 // @ts-ignore
-import { VariableSizeList as List } from "react-window";
+const List = (reactWindow.VariableSizeList || (reactWindow as any).default?.VariableSizeList || (reactWindow as any).default) as any;
 import { OmniWorkerAvatar, MessageRow } from "./MessageRow";
 import type { ChatMessage } from "./types";
 
