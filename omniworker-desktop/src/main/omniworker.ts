@@ -36,12 +36,26 @@ import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { PowerManager } from "./power";
 const pidsFile = join(OMNIWORKER_HOME, "pids.json");
 
-function getRecordedPids(): number[] {
+interface PidEntry {
+  pid: number;
+  startedAt: number;
+}
+
+/** Minimum age (ms) a PID must have before being treated as an orphan on startup. */
+const ORPHAN_MIN_AGE_MS = 10_000;
+
+function getRecordedPids(): PidEntry[] {
   if (!existsSync(pidsFile)) return [];
   try {
     const raw = readFileSync(pidsFile, "utf-8").trim();
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    // Backward compatibility: plain numbers → treat startedAt as 0 (always eligible for cleanup)
+    return parsed.map((entry: unknown) =>
+      typeof entry === "number"
+        ? { pid: entry, startedAt: 0 }
+        : (entry as PidEntry)
+    );
   } catch {
     return [];
   }
@@ -49,10 +63,10 @@ function getRecordedPids(): number[] {
 
 function recordPid(pid: number): void {
   try {
-    const pids = getRecordedPids();
-    if (!pids.includes(pid)) {
-      pids.push(pid);
-      writeFileSync(pidsFile, JSON.stringify(pids), "utf-8");
+    const entries = getRecordedPids();
+    if (!entries.some((e) => e.pid === pid)) {
+      entries.push({ pid, startedAt: Date.now() });
+      writeFileSync(pidsFile, JSON.stringify(entries), "utf-8");
     }
   } catch (err) {
     console.error("[PIDS] Failed to record PID:", err);
@@ -61,11 +75,10 @@ function recordPid(pid: number): void {
 
 function unrecordPid(pid: number): void {
   try {
-    const pids = getRecordedPids();
-    const index = pids.indexOf(pid);
-    if (index !== -1) {
-      pids.splice(index, 1);
-      writeFileSync(pidsFile, JSON.stringify(pids), "utf-8");
+    const entries = getRecordedPids();
+    const filtered = entries.filter((e) => e.pid !== pid);
+    if (filtered.length !== entries.length) {
+      writeFileSync(pidsFile, JSON.stringify(filtered), "utf-8");
     }
   } catch (err) {
     console.error("[PIDS] Failed to unrecord PID:", err);
@@ -73,14 +86,20 @@ function unrecordPid(pid: number): void {
 }
 
 export async function checkAndCleanupOrphans(): Promise<void> {
-  const pids = getRecordedPids();
-  if (pids.length === 0) return;
+  const entries = getRecordedPids();
+  if (entries.length === 0) return;
 
-  console.log(`[PIDS] Found ${pids.length} potentially orphan processes from previous session. Cleaning up...`);
-  for (const pid of pids) {
+  const now = Date.now();
+  console.log(`[PIDS] Found ${entries.length} potentially orphan processes from previous session. Checking ages...`);
+  for (const { pid, startedAt } of entries) {
+    const age = now - startedAt;
+    if (age <= ORPHAN_MIN_AGE_MS) {
+      console.log(`[PIDS] Skipping PID ${pid} — only ${age}ms old, not yet eligible for orphan cleanup.`);
+      continue;
+    }
     try {
       process.kill(pid, 0);
-      console.log(`[PIDS] Killing orphan process PID ${pid}`);
+      console.log(`[PIDS] Killing orphan process PID ${pid} (age ${age}ms)`);
       process.kill(pid, "SIGKILL");
     } catch {
       // Already dead
@@ -95,11 +114,11 @@ export async function checkAndCleanupOrphans(): Promise<void> {
 }
 
 export async function killSpawnedProcessesGracefully(): Promise<void> {
-  const pids = getRecordedPids();
-  if (pids.length === 0) return;
+  const entries = getRecordedPids();
+  if (entries.length === 0) return;
 
-  console.log(`[PIDS] Gracefully stopping ${pids.length} spawned processes...`);
-  for (const pid of pids) {
+  console.log(`[PIDS] Gracefully stopping ${entries.length} spawned processes...`);
+  for (const { pid } of entries) {
     try {
       process.kill(pid, "SIGTERM");
     } catch {
@@ -109,7 +128,7 @@ export async function killSpawnedProcessesGracefully(): Promise<void> {
 
   const startTime = Date.now();
   while (Date.now() - startTime < 5000) {
-    const runningPids = pids.filter((pid) => {
+    const anyRunning = entries.some(({ pid }) => {
       try {
         process.kill(pid, 0);
         return true;
@@ -117,13 +136,13 @@ export async function killSpawnedProcessesGracefully(): Promise<void> {
         return false;
       }
     });
-    if (runningPids.length === 0) {
+    if (!anyRunning) {
       break;
     }
     await new Promise((r) => setTimeout(r, 200));
   }
 
-  for (const pid of pids) {
+  for (const { pid } of entries) {
     try {
       process.kill(pid, 0);
       console.log(`[PIDS] Graceful stop failed for PID ${pid}. Sending SIGKILL.`);
