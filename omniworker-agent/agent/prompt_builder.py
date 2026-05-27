@@ -1159,32 +1159,27 @@ def build_skills_system_prompt(
             except Exception as e:
                 logger.debug("Could not read external skill description %s: %s", desc_file, e)
 
-    def _short_desc(desc: str, max_chars: int = 55) -> str:
+    def _short_desc(desc: str, max_chars: int = 40) -> str:
         """Truncate to the first natural break at or before max_chars."""
         if not desc:
             return ""
-        # Try colon or em-dash as a natural mid-sentence cut point first
         for sep in (":", " —", " -"):
             idx = desc.find(sep)
             if 0 < idx <= max_chars:
                 return desc[:idx].rstrip()
-        # Fall back to hard char limit, breaking at a word boundary
         if len(desc) <= max_chars:
             return desc.rstrip(".")
         truncated = desc[:max_chars]
         last_space = truncated.rfind(" ")
-        return (truncated[:last_space] if last_space > 20 else truncated).rstrip(" ,;.")
+        return (truncated[:last_space] if last_space > 15 else truncated).rstrip(" ,;.")
 
     if not skills_by_category:
         result = ""
     else:
         index_lines = []
         for category in sorted(skills_by_category.keys()):
-            cat_desc = category_descriptions.get(category, "")
-            if cat_desc:
-                index_lines.append(f"  {category}: {_short_desc(cat_desc, 80)}")
-            else:
-                index_lines.append(f"  {category}:")
+            # Category headers without descriptions — name alone is enough for routing
+            index_lines.append(f"  {category}:")
             # Deduplicate and sort skills within each category
             seen = set()
             for name, desc in sorted(skills_by_category[category], key=lambda x: x[0]):
