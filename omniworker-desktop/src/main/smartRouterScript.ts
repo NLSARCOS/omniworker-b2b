@@ -268,35 +268,12 @@ def classify_request(data: dict) -> str:
     Returns:
         "local" — route to local SLM (fast, free, limited)
         "cloud" — route to cloud SaaS (capable, costs tokens)
-
-    Classification levels:
-        1. Tool presence → always cloud (SLM can't do tool calling)
-        2. System prompt complexity → cloud if complex instructions
-        3. Multi-turn depth → cloud if conversation is deep
-        4. Message content → complex patterns → cloud, simple → local
     """
     messages = data.get("messages", [])
     if not messages:
         return "cloud"
 
-    # ── Level 2: Tool-aware routing ──
-    has_tool_calls = False
-    has_tool_results = False
-    for msg in messages:
-        if msg.get("tool_calls"):
-            has_tool_calls = True
-        if msg.get("role") == "tool":
-            has_tool_results = True
-
-    # Tool calling requires a capable model — always cloud
-    if has_tool_calls:
-        return "cloud"
-
-    # If there are tools defined in the request, the agent expects tool calling
-    if data.get("tools"):
-        return "cloud"
-
-    # ── Analyze message content ──
+    # ── Analyze message content first ──
     last_user_msg = ""
     total_content_len = 0
     system_complexity = 0
@@ -315,6 +292,31 @@ def classify_request(data: dict) -> str:
             if len(content) > 500:
                 system_complexity += 2
 
+    trimmed_last = last_user_msg.strip()
+
+    # ── Fast Path for Simple Chitchat/Greetings ──
+    # If the user says just "hola" or "gracias" in a fresh conversation, bypass
+    # tools and route to free Local SLM immediately.
+    if SIMPLE_PATTERNS.match(trimmed_last) and len(messages) <= 4 and system_complexity < 2:
+        return "local"
+
+    # ── Level 2: Tool-aware routing ──
+    has_tool_calls = False
+    has_tool_results = False
+    for msg in messages:
+        if msg.get("tool_calls"):
+            has_tool_calls = True
+        if msg.get("role") == "tool":
+            has_tool_results = True
+
+    # Tool calling requires a capable model — always cloud
+    if has_tool_calls:
+        return "cloud"
+
+    # If there are tools defined in the request, the agent expects tool calling
+    if data.get("tools"):
+        return "cloud"
+
     # ── Level 3: Inference complexity routing ──
 
     # Multi-turn: more than 4 messages (2+ exchanges) → cloud
@@ -324,12 +326,6 @@ def classify_request(data: dict) -> str:
     # Complex system prompt → cloud
     if system_complexity >= 2:
         return "cloud"
-
-    trimmed_last = last_user_msg.strip()
-
-    # Simple greeting/thanks (starts & ends with greeting words) → local
-    if SIMPLE_PATTERNS.match(trimmed_last):
-        return "local"
 
     # Any real question (?) that is not a simple greeting -> cloud
     if "?" in trimmed_last or "¿" in trimmed_last:
@@ -423,6 +419,35 @@ def is_local_slm_alive() -> bool:
 
 
 
+def simplify_chitchat_payload(data: dict) -> dict:
+    """Simplify the payload for simple chitchat to drastically reduce token usage in the cloud.
+    Removes the heavy tools schemas and condenses the huge agent system prompt into a concise one.
+    """
+    simplified = data.copy()
+    
+    # 1. Remove tools if present
+    if "tools" in simplified:
+        del simplified["tools"]
+    if "tool_choice" in simplified:
+        del simplified["tool_choice"]
+        
+    # 2. Condense system prompt in messages
+    messages = simplified.get("messages", [])
+    new_messages = []
+    for msg in messages:
+        if msg.get("role") == "system":
+            # Replace heavy system prompt with a concise friendly one
+            new_messages.append({
+                "role": "system",
+                "content": "You are Flux Agent By Simplex, a helpful and friendly B2B AI assistant. Respond in the same language as the user."
+            })
+        else:
+            new_messages.append(msg)
+            
+    simplified["messages"] = new_messages
+    return simplified
+
+
 # ────────────────────────────────────────────────────
 # HTTP Proxy Handler
 # ────────────────────────────────────────────────────
@@ -446,6 +471,18 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         # Classify the request
         target = classify_request(data)
 
+        # Since we are Cloud-Only, we never use the local SLM.
+        # Instead, if the request is classified as "local" (chitchat),
+        # we optimize the payload to save ~98% of tokens in the cloud.
+        if target == "local":
+            try:
+                optimized_data = simplify_chitchat_payload(data)
+                body = json.dumps(optimized_data).encode("utf-8")
+                if ROUTER_LOG:
+                    logger.info("⚡ Chitchat optimized: Payload simplified to save tokens in the cloud.")
+            except Exception as opt_err:
+                logger.warning(f"Failed to optimize chitchat payload: {opt_err}")
+
         last_user = ""
         for msg in reversed(messages):
             if msg.get("role") == "user":
@@ -454,23 +491,11 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
 
         if ROUTER_LOG:
             logger.info(
-                f"→ {target.upper()} | msgs={len(messages)} | "
+                f"→ CLOUD | target={target} | msgs={len(messages)} | "
                 f"stream={stream} | user={last_user!r}"
             )
 
-        # Route to target
-        if target == "local":
-            if is_local_slm_alive():
-                success = self._proxy_to_local(body, stream)
-                if success:
-                    return
-                # Local failed — fall back to cloud
-                if ROUTER_LOG:
-                    logger.info("Local SLM failed, falling back to cloud")
-            else:
-                if ROUTER_LOG:
-                    logger.info("Local SLM not available, routing to cloud")
-
+        # Always route to cloud (no local SLM)
         self._proxy_to_cloud(body, stream)
 
     def do_GET(self):
@@ -573,7 +598,7 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
             headers["Authorization"] = auth
         else:
             if api_key:
-                headers["Authorization"] = f"Bearer {api_key}""
+                headers["Authorization"] = f"Bearer {api_key}"
 
         acquired = CLOUD_CONN_LOCK.acquire(blocking=False)
         conn = None

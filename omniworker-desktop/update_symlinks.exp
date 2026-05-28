@@ -1,0 +1,6 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn ssh root@217.76.62.37 "ln -sf /opt/omniworker/downloads/omniworker-desktop-0.4.3-x64.dmg /opt/omniworker/downloads/FluxAgent.dmg && ln -sf /opt/omniworker/downloads/omniworker-desktop-0.4.3-x64.dmg /opt/omniworker/downloads/OmniWorker-v8.8.dmg && ln -sf /opt/omniworker/downloads/omniworker-desktop-0.4.3-x64.dmg /opt/omniworker/downloads/OmniWorker-v5.dmg && cp -P /opt/omniworker/downloads/* /opt/omniworker-downloads/ 2>/dev/null || true"
+expect "*?assword:*"
+send "Santiago1206\r"
+expect eof

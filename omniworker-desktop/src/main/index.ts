@@ -689,12 +689,25 @@ function setupIPC(): void {
   // safeStorage Token Handlers
   ipcMain.handle("save-tokens", (_event, tokens: { accessToken: string; refreshToken: string }) => {
     saveSecureTokens(tokens.accessToken, tokens.refreshToken);
-    // Restart the gateway so it picks up the fresh token in its environment.
-    // The gateway captures OPENAI_API_KEY at spawn time — saving tokens alone
-    // does nothing until the process is restarted.
-    const conn = getConnectionConfig();
-    if (conn.mode === "local") {
-      restartGateway().catch((err) => console.error("[save-tokens] Gateway restart failed:", err));
+    
+    // Sync the fresh JWT to both the .env and config.yaml files.
+    // The smart router reads these dynamically (using mtime) on every call,
+    // allowing background agents to continue using the refreshed token without
+    // needing a disruptive process restart.
+    try {
+      setEnvValue("OPENAI_API_KEY", tokens.accessToken);
+      setEnvValue("CUSTOM_API_KEY", tokens.accessToken);
+      console.log("[save-tokens] Successfully synced fresh JWT tokens to profile .env file.");
+    } catch (envErr) {
+      console.error("[save-tokens] Failed to sync fresh JWT tokens to .env:", envErr);
+    }
+
+    try {
+      // Also sync it into config.yaml model block for consistency
+      setConfigValue("model:api_key", tokens.accessToken);
+      setConfigValue("api_key", tokens.accessToken);
+    } catch (cfgErr) {
+      // Non-fatal, getModelConfig/smart_router primarily use .env values
     }
   });
 

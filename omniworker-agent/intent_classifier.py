@@ -134,6 +134,12 @@ def get_routing_config(
             )
 
     # Cloud path
-    saas_key = _SAAS_API_KEY or current_key  # honour whatever key the agent already has
+    # Read keys dynamically to ensure we get the refreshed values
+    saas_key = (
+        os.getenv("OMNIWORKER_SAAS_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+        or os.getenv("CUSTOM_API_KEY")
+        or current_key
+    )
     logger.info("[Intent Classifier] → CLOUD SaaS (%s)", _SAAS_BASE_URL)
     return _SAAS_BASE_URL, _SAAS_MODEL, saas_key

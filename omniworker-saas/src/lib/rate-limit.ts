@@ -52,9 +52,9 @@ const redis = getRedis();
 
 // Pre-configured rate limiters
 const limiters = {
-  // Auth endpoints: 5 per 15 min
+  // Auth endpoints: 50 per 15 min
   auth: redis
-    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "15 m") })
+    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(50, "15 m") })
     : null,
   // Token refresh: 60 per 15 min (normal desktop app usage)
   refresh: redis
@@ -96,7 +96,7 @@ export async function checkRateLimit(
 
 function getLimitForTier(tier: RateLimitTier): number {
   switch (tier) {
-    case "auth": return 5;
+    case "auth": return 50;
     case "refresh": return 60;
     case "chat": return 60;
     case "admin": return 30;

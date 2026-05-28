@@ -6856,6 +6856,14 @@ class AIAgent:
         return True
 
     def _ensure_primary_openai_client(self, *, reason: str) -> Any:
+        # Proactively check if SaaS token is expiring soon and refresh it
+        try:
+            if os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN") and self._is_saas_token_expiring_soon():
+                logger.info("SaaS token is expiring soon. Proactively refreshing...")
+                self._try_refresh_saas_client_credentials()
+        except Exception as e:
+            logger.warning("Failed to check/refresh expiring SaaS token: %s", e)
+
         # Check if the dynamic API key from .env has changed
         try:
             from smart_router import get_latest_api_key
@@ -7283,6 +7291,79 @@ class AIAgent:
             return False
 
         return True
+
+    def _try_refresh_saas_client_credentials(self) -> bool:
+        refresh_token = os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
+        base_url = os.getenv("OMNIWORKER_SAAS_BASE_URL")
+        fingerprint = os.getenv("OMNIWORKER_DEVICE_FINGERPRINT")
+
+        if not refresh_token or not base_url:
+            return False
+
+        logger.info("Attempting to refresh SaaS JWT access token using refresh token...")
+        try:
+            import httpx
+            url = f"{base_url.rstrip('/')}/auth/refresh"
+            payload = {
+                "refreshToken": refresh_token,
+            }
+            if fingerprint:
+                payload["deviceFingerprint"] = fingerprint
+
+            response = httpx.post(
+                url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=15.0
+            )
+            if response.status_code == 200:
+                data = response.json()
+                new_access_token = data.get("accessToken")
+                new_refresh_token = data.get("refreshToken")
+                if new_access_token:
+                    self.api_key = new_access_token
+                    self._client_kwargs["api_key"] = new_access_token
+                    os.environ["OPENAI_API_KEY"] = new_access_token
+                    os.environ["CUSTOM_API_KEY"] = new_access_token
+                    if new_refresh_token:
+                        os.environ["OMNIWORKER_SAAS_REFRESH_TOKEN"] = new_refresh_token
+                    
+                    self._replace_primary_openai_client(reason="saas_token_refresh")
+                    logger.info("SaaS JWT access token refreshed successfully!")
+                    return True
+            else:
+                logger.warning(
+                    "SaaS token refresh failed with status %d: %s",
+                    response.status_code,
+                    response.text,
+                )
+        except Exception as exc:
+            logger.warning("Failed to refresh SaaS client credentials: %s", exc)
+        return False
+
+    def _is_saas_token_expiring_soon(self) -> bool:
+        token = self.api_key
+        if not token or not token.startswith("eyJ"):
+            return False
+        try:
+            parts = token.split(".")
+            if len(parts) != 3:
+                return False
+            payload_b64 = parts[1]
+            rem = len(payload_b64) % 4
+            if rem > 0:
+                payload_b64 += "=" * (4 - rem)
+            import base64
+            import json
+            import time
+            payload = json.loads(base64.b64decode(payload_b64).decode("utf-8"))
+            exp = payload.get("exp")
+            if exp is not None:
+                # If it expires in less than 2 minutes (120 seconds), consider it expiring soon
+                return (exp - time.time()) < 120
+        except Exception:
+            pass
+        return False
 
     def _try_refresh_copilot_client_credentials(self) -> bool:
         """Refresh Copilot credentials and rebuild the shared OpenAI client.
@@ -12840,6 +12921,7 @@ class AIAgent:
             anthropic_auth_retry_attempted=False
             nous_auth_retry_attempted=False
             copilot_auth_retry_attempted=False
+            saas_auth_retry_attempted=False
             thinking_sig_retry_attempted = False
             image_shrink_retry_attempted = False
             oauth_1m_beta_retry_attempted = False
@@ -13949,6 +14031,15 @@ class AIAgent:
                         codex_auth_retry_attempted = True
                         if self._try_refresh_codex_client_credentials(force=True):
                             self._vprint(f"{self.log_prefix}🔐 Codex auth refreshed after 401. Retrying request...")
+                            continue
+                    if (
+                        status_code == 401
+                        and os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
+                        and not saas_auth_retry_attempted
+                    ):
+                        saas_auth_retry_attempted = True
+                        if self._try_refresh_saas_client_credentials():
+                            print(f"{self.log_prefix}🔐 SaaS access token refreshed after 401. Retrying request...")
                             continue
                     if (
                         self.api_mode == "chat_completions"

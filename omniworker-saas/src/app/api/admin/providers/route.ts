@@ -13,6 +13,7 @@ const PROVIDER_OPTIONS = [
   { id: "mistral",     label: "Mistral",       baseUrl: null },
   { id: "cohere",      label: "Cohere",        baseUrl: null },
   { id: "together",    label: "Together AI",   baseUrl: null },
+  { id: "nvidia",      label: "NVIDIA",        baseUrl: "https://integrate.api.nvidia.com/v1" },
   { id: "ollama",      label: "Ollama (local)", baseUrl: "http://localhost:11434" },
   { id: "opencode-go", label: "OpenCode Go",   baseUrl: "https://opencode.ai/zen/go/v1" },
 ];

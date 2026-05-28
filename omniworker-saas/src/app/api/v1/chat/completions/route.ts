@@ -12,6 +12,7 @@ const PROVIDER_URLS: Record<string, string> = {
   deepseek: "https://api.deepseek.com/chat/completions",
   moonshot: "https://api.moonshot.cn/v1/chat/completions",
   minimax: "https://api.minimax.chat/v1/text/chatcompletion_v2",
+  nvidia: "https://integrate.api.nvidia.com/v1/chat/completions",
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
 };
 
@@ -288,6 +289,7 @@ function detectProvider(model: string): string {
   if (m.includes("minimax")) return "minimax";
   if (m.includes("claude")) return "anthropic";
   if (m.includes("gemini")) return "gemini";
+  if (m.includes("nvidia")) return "nvidia";
   return "openai";
 }
 

@@ -26,7 +26,7 @@ export const chatCompletionSchema = z.object({
   stream: z.boolean().optional(),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().positive().optional(),
-}).strict();
+}).passthrough();
 
 // ─── Edge Agents ───
 export const edgeRegisterSchema = z.object({

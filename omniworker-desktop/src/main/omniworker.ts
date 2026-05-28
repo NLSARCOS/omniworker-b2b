@@ -22,7 +22,7 @@ import {
   getEnhancedPath,
   SAAS_BASE_URL,
 } from "./installer";
-import { getModelConfig, readEnv, getConnectionConfig, setEnvValue, getConfigValue, getSecureTokens } from "./config";
+import { getModelConfig, readEnv, getConnectionConfig, setEnvValue, getConfigValue, getSecureTokens, getDeviceFingerprint } from "./config";
 import { ensureMemoryConfig } from "./memory";
 import {
   getSshTunnelUrl,
@@ -684,12 +684,24 @@ function sendMessageViaCli(
     OMNIWORKER_SAAS_BASE_URL:
       process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     PYTHONUNBUFFERED: "1",
+    OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
   };
 
   const secureTokens = getSecureTokens();
   if (secureTokens.accessToken) {
     env.OPENAI_API_KEY = secureTokens.accessToken;
     env.CUSTOM_API_KEY = secureTokens.accessToken;
+  }
+  if (secureTokens.refreshToken) {
+    env.OMNIWORKER_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
+  }
+  try {
+    const fingerprint = getDeviceFingerprint();
+    if (fingerprint) {
+      env.OMNIWORKER_DEVICE_FINGERPRINT = fingerprint;
+    }
+  } catch (err) {
+    /* ignore */
   }
 
   // Inject all API keys from the profile .env so the CLI can access them
@@ -1623,6 +1635,7 @@ export async function startGateway(profile?: string): Promise<boolean> {
     HOME: homedir(),
     OMNIWORKER_HOME: OMNIWORKER_HOME,
     API_SERVER_ENABLED: "true", // Ensure API server starts with gateway
+    OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
   };
 
   // Inject ALL profile API keys so the gateway can authenticate with any provider.
@@ -1637,6 +1650,17 @@ export async function startGateway(profile?: string): Promise<boolean> {
   if (secureTokens.accessToken) {
     gatewayEnv.OPENAI_API_KEY = secureTokens.accessToken;
     gatewayEnv.CUSTOM_API_KEY = secureTokens.accessToken;
+  }
+  if (secureTokens.refreshToken) {
+    gatewayEnv.OMNIWORKER_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
+  }
+  try {
+    const fingerprint = getDeviceFingerprint();
+    if (fingerprint) {
+      gatewayEnv.OMNIWORKER_DEVICE_FINGERPRINT = fingerprint;
+    }
+  } catch (err) {
+    /* ignore */
   }
 
   // NOTE: Do NOT set API_SERVER_KEY for the local gateway.

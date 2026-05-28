@@ -51,6 +51,9 @@ mac:
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+    - NSDesktopFolderUsageDescription: Application requests access to the user's Desktop folder.
+    - NSNetworkVolumesUsageDescription: Application requests access to files on network volumes.
+    - NSRemovableVolumesUsageDescription: Application requests access to files on removable volumes.
   hardenedRuntime: true
   gatekeeperAssess: false
   notarize: true

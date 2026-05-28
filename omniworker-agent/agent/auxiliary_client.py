@@ -2651,10 +2651,61 @@ async def _retry_same_provider_async(
     )
 
 
+def _refresh_saas_credentials() -> bool:
+    """Refresh the SaaS JWT access token using the refresh token."""
+    refresh_token = os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
+    base_url = os.getenv("OMNIWORKER_SAAS_BASE_URL")
+    fingerprint = os.getenv("OMNIWORKER_DEVICE_FINGERPRINT")
+
+    if not refresh_token or not base_url:
+        return False
+
+    logger.debug("Attempting to refresh SaaS JWT access token in auxiliary client...")
+    try:
+        import httpx
+        url = f"{base_url.rstrip('/')}/auth/refresh"
+        payload = {
+            "refreshToken": refresh_token,
+        }
+        if fingerprint:
+            payload["deviceFingerprint"] = fingerprint
+
+        response = httpx.post(
+            url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=15.0
+        )
+        if response.status_code == 200:
+            data = response.json()
+            new_access_token = data.get("accessToken")
+            new_refresh_token = data.get("refreshToken")
+            if new_access_token:
+                os.environ["OPENAI_API_KEY"] = new_access_token
+                os.environ["CUSTOM_API_KEY"] = new_access_token
+                if new_refresh_token:
+                    os.environ["OMNIWORKER_SAAS_REFRESH_TOKEN"] = new_refresh_token
+                logger.debug("SaaS JWT access token refreshed successfully in auxiliary client!")
+                return True
+        else:
+            logger.warning(
+                "SaaS token refresh failed in auxiliary client with status %d: %s",
+                response.status_code,
+                response.text,
+            )
+    except Exception as exc:
+        logger.warning("Failed to refresh SaaS credentials in auxiliary client: %s", exc)
+    return False
+
+
 def _refresh_provider_credentials(provider: str) -> bool:
     """Refresh short-lived credentials for OAuth-backed auxiliary providers."""
     normalized = _normalize_aux_provider(provider)
     try:
+        if normalized in {"custom", "openai"}:
+            if _refresh_saas_credentials():
+                _evict_cached_clients(normalized)
+                return True
         if normalized == "openai-codex":
             from omniworker_cli.auth import resolve_codex_runtime_credentials
 
