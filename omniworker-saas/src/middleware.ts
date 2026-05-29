@@ -33,12 +33,12 @@ export async function middleware(request: NextRequest) {
 
   const isProd = process.env.NODE_ENV === "production";
   const scriptCsp = isProd
-    ? `'self' 'nonce-${nonce}'`
-    : `'self' 'nonce-${nonce}' 'unsafe-eval'`;
+    ? `'self' 'unsafe-inline' 'unsafe-eval'`
+    : `'self' 'unsafe-inline' 'unsafe-eval'`;
 
   headers.set(
     "Content-Security-Policy",
-    `default-src 'self'; script-src ${scriptCsp}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';`
+    `default-src 'self'; script-src ${scriptCsp}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self';`
   );
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
