@@ -191,13 +191,13 @@ const OPENCODE_GO_CATALOG: ModelTier[] = [
   { id: "deepseek-v4-pro", label: "DeepSeek V4 Pro",  tier: "reasoning", weight: 0, endpoint: "chat_completions" },
   { id: "kimi-k2.6",       label: "Kimi K2.6",        tier: "reasoning", weight: 2, endpoint: "chat_completions" },
   { id: "mimo-v2.5-pro",   label: "MiMo-V2.5-Pro",    tier: "reasoning", weight: 2, endpoint: "chat_completions" },
-  { id: "qwen3.6-plus",    label: "Qwen3.6 Plus",     tier: "reasoning", weight: 2, endpoint: "chat_completions" },
+  { id: "qwen3.7-max",     label: "Qwen3.7 Max",      tier: "reasoning", weight: 2, endpoint: "messages" },
+  { id: "qwen3.6-plus",    label: "Qwen3.6 Plus",     tier: "reasoning", weight: 2, endpoint: "messages" },
   { id: "minimax-m2.7",    label: "MiniMax M2.7",     tier: "reasoning", weight: 1, endpoint: "messages" },
   // Tier: BALANCED — general purpose, mid-complexity
   { id: "glm-5",           label: "GLM-5",            tier: "balanced",  weight: 3, endpoint: "chat_completions" },
   { id: "kimi-k2.5",       label: "Kimi K2.5",        tier: "balanced",  weight: 3, endpoint: "chat_completions" },
   { id: "mimo-v2.5",       label: "MiMo-V2.5",        tier: "balanced",  weight: 2, endpoint: "chat_completions" },
-  { id: "qwen3.5-plus",    label: "Qwen3.5 Plus",     tier: "balanced",  weight: 2, endpoint: "chat_completions" },
   { id: "minimax-m2.5",    label: "MiniMax M2.5",     tier: "balanced",  weight: 1, endpoint: "messages" },
   // Tier: SPEED — fast responses, simple queries, chat
   { id: "deepseek-v4-flash", label: "DeepSeek V4 Flash", tier: "speed", weight: 4, endpoint: "chat_completions" },
@@ -640,25 +640,55 @@ export async function POST(request: Request) {
     );
   }
 
-  console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${requestedModel})`);
+  // Resolve the actual endpoint format and URL for OpenCode Go standard models
+  const catalogModel = OPENCODE_GO_CATALOG.find(m => m.id === requestedModel);
+  const resolvedEndpoint = catalogModel ? catalogModel.endpoint : "chat_completions";
+  let resolvedUrl = targetUrl;
+  if (targetProvider === "opencode-go") {
+    resolvedUrl = OPENCODE_GO_ENDPOINTS[resolvedEndpoint];
+  }
 
-    // Dynamic cost estimation fallback (e.g. for streaming)
-    const promptTokensEst = estimatePromptTokens(body.messages || []);
-    const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
-    const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
+  console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${requestedModel}) resolvedUrl=${resolvedUrl}`);
 
-    try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+  // Dynamic cost estimation fallback (e.g. for streaming)
+  const promptTokensEst = estimatePromptTokens(body.messages || []);
+  const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
+  const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
 
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    let payload: Record<string, unknown>;
+
+    const useAnthropicFormat = targetProvider === "anthropic" || 
+      (targetProvider === "opencode-go" && resolvedEndpoint === "messages");
+
+    if (useAnthropicFormat) {
       if (targetProvider === "anthropic") {
         headers["x-api-key"] = masterProvider.apiKey;
         headers["anthropic-version"] = "2023-06-01";
       } else {
+        // OpenCode Go /messages endpoint uses Bearer auth
         headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
       }
-
+      // Anthropic API format: system as top-level, no system in messages array
+      const msgs = body.messages || [];
+      const systemMsg = msgs.find((m: { role: string; content: string }) => m.role === "system");
+      const chatMsgs = msgs.filter((m: { role: string; content: string }) => m.role !== "system");
+      payload = {
+        model: requestedModel,
+        max_tokens: body.max_tokens || 4096,
+        ...(systemMsg ? { system: systemMsg.content } : {}),
+        messages: chatMsgs.map((m: { role: string; content: string }) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: m.content,
+        })),
+        stream: isStream,
+      };
+    } else {
+      headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
+      
       // Normalize system messages for providers that don't support "system" role
-      let normalizedBody = body;
+      let normalizedMessages = body.messages || [];
       if (targetProvider === "opencode-go") {
         const msgs = body.messages || [];
         const systemMsgs = msgs.filter((m: { role: string; content: string }) => m.role === "system");
@@ -666,7 +696,7 @@ export async function POST(request: Request) {
         
         if (systemMsgs.length > 0) {
           const systemContent = systemMsgs.map((m: { role: string; content: string }) => m.content).join("\n\n");
-          let normalizedMessages = [...nonSystemMsgs];
+          normalizedMessages = [...nonSystemMsgs];
           const firstUserIdx = normalizedMessages.findIndex((m: { role: string; content: string }) => m.role === "user");
           if (firstUserIdx >= 0) {
             normalizedMessages[firstUserIdx] = {
@@ -676,15 +706,16 @@ export async function POST(request: Request) {
           } else {
             normalizedMessages = [{ role: "user", content: systemContent }, ...normalizedMessages];
           }
-          normalizedBody = { ...body, messages: normalizedMessages };
         }
       }
+      payload = { ...body, model: requestedModel, messages: normalizedMessages };
+    }
 
-      const aiResponse = await fetchWithBackoff(targetUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ ...normalizedBody, model: requestedModel }),
-      });
+    const aiResponse = await fetchWithBackoff(resolvedUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
 
       if (!aiResponse.ok) {
         const errTxt = await aiResponse.text();
