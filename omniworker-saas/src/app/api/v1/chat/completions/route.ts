@@ -305,7 +305,7 @@ function detectProvider(model: string): string {
   if (m.includes("minimax")) return "minimax";
   if (m.includes("claude")) return "anthropic";
   if (m.includes("gemini")) return "gemini";
-  if (m.includes("nvidia")) return "nvidia";
+  if (m.includes("nvidia") || m.includes("stepfun") || m.includes("step-3.7")) return "nvidia";
   return "openai";
 }
 

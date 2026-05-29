@@ -28,7 +28,7 @@ const PROVIDER_TEST_MODELS: Record<string, string> = {
   mistral: "mistral-small-latest",
   cohere: "command-r",
   together: "meta-llama/Llama-3-8b-chat-hf",
-  nvidia: "minimaxai/minimax-m2.7",
+  nvidia: "stepfun-ai/step-3.7-flash",
   "opencode-go": "glm-5",
   ollama: "llama3",
 };

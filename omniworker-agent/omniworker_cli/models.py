@@ -181,6 +181,8 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "google/gemini-3.1-flash-lite-preview",
         "qwen/qwen3.6-35b-a3b",
         "stepfun/step-3.5-flash",
+        "stepfun/step-3.7-flash",
+        "stepfun-ai/step-3.7-flash",
         "minimax/minimax-m2.7",
         "z-ai/glm-5.1",
         "x-ai/grok-4.3",
@@ -250,6 +252,8 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "nvidia/llama-3.3-nemotron-super-49b-v1.5",
         # Third-party agentic models hosted on build.nvidia.com
         # (map to OpenRouter defaults — users get familiar picks on NIM)
+        "stepfun-ai/step-3.7-flash",
+        "stepfun/step-3.7-flash",
         "qwen/qwen3.5-397b-a17b",
         "deepseek-ai/deepseek-v3.2",
         "moonshotai/kimi-k2.6",
@@ -274,6 +278,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "kimi-k2-0905-preview",
     ],
     "stepfun": [
+        "step-3.7-flash",
         "step-3.5-flash",
         "step-3.5-flash-2603",
     ],
