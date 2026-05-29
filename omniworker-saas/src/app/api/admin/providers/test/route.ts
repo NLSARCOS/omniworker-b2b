@@ -69,8 +69,8 @@ export async function POST(request: Request) {
 
   const testModel = provider.defaultModel || PROVIDER_TEST_MODELS[provider.provider] || "gpt-4o-mini";
 
+  const startTime = Date.now();
   try {
-    const startTime = Date.now();
 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     let payload: Record<string, unknown>;
