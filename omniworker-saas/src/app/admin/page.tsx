@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Terminal, Box, ShieldAlert, Cpu, Activity, Database, DollarSign, Zap, Download } from "lucide-react";
+import { Terminal, Box, ShieldAlert, Cpu, Activity, Database, DollarSign, Zap, Download, FlaskConical, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 interface Provider {
   id: string;
@@ -97,6 +97,7 @@ export default function SuperAdminCommandCenter() {
   const [paymentTenant, setPaymentTenant] = useState<Tenant | null>(null);
   const [defaultExpiryDate, setDefaultExpiryDate] = useState("");
   const [selectedFormProvider, setSelectedFormProvider] = useState("");
+  const [testResults, setTestResults] = useState<Record<string, { status: "testing" | "success" | "error"; latencyMs?: number; model?: string; response?: string; error?: string }>>({});
 
   const [error, setError] = useState("");
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
@@ -250,6 +251,25 @@ export default function SuperAdminCommandCenter() {
     const headers = { Authorization: `Bearer ${localStorage.getItem("ow_token")}` };
     await fetch(`/api/admin/providers?id=${id}`, { method: "DELETE", headers });
     loadAll();
+  };
+
+  const handleProviderTest = async (id: string) => {
+    setTestResults(prev => ({ ...prev, [id]: { status: "testing" } }));
+    try {
+      const res = await fetch("/api/admin/providers/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+        body: JSON.stringify({ providerId: id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestResults(prev => ({ ...prev, [id]: { status: "success", latencyMs: data.latencyMs, model: data.model, response: data.response } }));
+      } else {
+        setTestResults(prev => ({ ...prev, [id]: { status: "error", latencyMs: data.latencyMs, error: typeof data.error === "string" ? data.error : JSON.stringify(data.error), model: data.model } }));
+      }
+    } catch (err: unknown) {
+      setTestResults(prev => ({ ...prev, [id]: { status: "error", error: err instanceof Error ? err.message : "Network error" } }));
+    }
   };
 
   const handleTenantCreate = async (e: React.FormEvent) => {
@@ -688,7 +708,51 @@ export default function SuperAdminCommandCenter() {
                         </div>
                       </div>
 
-                      <div className="mt-5 pt-4 border-t border-zinc-800 flex justify-end">
+                      {/* Test Result Banner */}
+                      {testResults[p.id] && (
+                        <div className={`mt-4 p-3 border text-xs font-mono ${
+                          testResults[p.id].status === "testing" ? "border-zinc-700 bg-zinc-950 text-zinc-400" :
+                          testResults[p.id].status === "success" ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" :
+                          "border-red-500/30 bg-red-500/5 text-red-400"
+                        }`}>
+                          {testResults[p.id].status === "testing" && (
+                            <div className="flex items-center gap-2">
+                              <Loader2 size={12} className="animate-spin" />
+                              <span>TESTING CONNECTION...</span>
+                            </div>
+                          )}
+                          {testResults[p.id].status === "success" && (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 size={12} />
+                                <span className="font-bold">KEY VALID</span>
+                                <span className="text-zinc-500">· {testResults[p.id].latencyMs}ms</span>
+                              </div>
+                              <div className="text-zinc-500 truncate">Model: {testResults[p.id].model} · \"{testResults[p.id].response}\"</div>
+                            </div>
+                          )}
+                          {testResults[p.id].status === "error" && (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <XCircle size={12} />
+                                <span className="font-bold">KEY FAILED</span>
+                                {testResults[p.id].latencyMs ? <span className="text-zinc-500">· {testResults[p.id].latencyMs}ms</span> : null}
+                              </div>
+                              <div className="text-red-300/70 truncate">{testResults[p.id].error}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="mt-5 pt-4 border-t border-zinc-800 flex justify-between items-center">
+                        <button 
+                          onClick={() => handleProviderTest(p.id)} 
+                          disabled={testResults[p.id]?.status === "testing"}
+                          className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-wait"
+                        >
+                          <FlaskConical size={12} />
+                          {testResults[p.id]?.status === "testing" ? "Testing..." : "Test Key"}
+                        </button>
                         <button onClick={() => handleProviderDelete(p.id)} className="text-xs font-mono text-red-500 hover:text-red-400 uppercase tracking-widest">Terminate</button>
                       </div>
                     </div>
