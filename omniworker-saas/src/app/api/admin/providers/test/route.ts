@@ -28,7 +28,7 @@ const PROVIDER_TEST_MODELS: Record<string, string> = {
   mistral: "mistral-small-latest",
   cohere: "command-r",
   together: "meta-llama/Llama-3-8b-chat-hf",
-  nvidia: "meta/llama-3.1-8b-instruct",
+  nvidia: "minimaxai/minimax-m2.7",
   "opencode-go": "glm-5",
   ollama: "llama3",
 };
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
-  const testModel = PROVIDER_TEST_MODELS[provider.provider] || "gpt-4o-mini";
+  const testModel = provider.defaultModel || PROVIDER_TEST_MODELS[provider.provider] || "gpt-4o-mini";
 
   try {
     const startTime = Date.now();
