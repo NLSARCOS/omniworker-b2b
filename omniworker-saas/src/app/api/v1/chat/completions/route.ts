@@ -16,6 +16,22 @@ const PROVIDER_URLS: Record<string, string> = {
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
 };
 
+// NVIDIA GLM-specific config: enable thinking but hide reasoning output
+// This makes GLM "think" internally for better answers without sending
+// verbose reasoning text back (saves tokens and response time).
+function applyNvidiaGLMConfig(payload: Record<string, unknown>, model: string, provider: string): Record<string, unknown> {
+  if (provider !== "nvidia") return payload;
+  const m = (model || "").toLowerCase();
+  if (m.includes("glm")) {
+    return {
+      ...payload,
+      max_tokens: Math.min((payload.max_tokens as number) || 4096, 4096),
+      chat_template_kwargs: { enable_thinking: true, clear_thinking: true },
+    };
+  }
+  return payload;
+}
+
 // OpenCode Go has two endpoint formats depending on the model
 const OPENCODE_GO_ENDPOINTS = {
   chat_completions: "https://opencode.ai/zen/go/v1/chat/completions",
@@ -456,6 +472,9 @@ export async function POST(request: Request) {
     const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
     const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
 
+    // Apply NVIDIA GLM-specific config (thinking with clear_thinking)
+    payload = applyNvidiaGLMConfig(payload, realModel, targetProvider);
+
     try {
       const aiResponse = await fetchWithBackoff(resolvedUrl, {
         method: "POST",
@@ -710,6 +729,9 @@ export async function POST(request: Request) {
       }
       payload = { ...body, model: requestedModel, messages: normalizedMessages };
     }
+
+    // Apply NVIDIA GLM-specific config (thinking with clear_thinking)
+    payload = applyNvidiaGLMConfig(payload, requestedModel, targetProvider);
 
     const aiResponse = await fetchWithBackoff(resolvedUrl, {
       method: "POST",
