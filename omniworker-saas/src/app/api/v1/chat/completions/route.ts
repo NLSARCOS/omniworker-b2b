@@ -427,7 +427,28 @@ export async function POST(request: Request) {
       };
     } else {
       headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
-      payload = { ...body, model: realModel, messages };
+      // Normalize system messages for providers that don't support "system" role
+      // (e.g. OpenCode Go uses Pydantic validation allowing only "user"/"assistant").
+      // Extract system content and prepend to first user message.
+      const systemMsgs = messages.filter((m: { role: string; content: string }) => m.role === "system");
+      const nonSystemMsgs = messages.filter((m: { role: string; content: string }) => m.role !== "system");
+      
+      let normalizedMessages = nonSystemMsgs;
+      if (systemMsgs.length > 0) {
+        const systemContent = systemMsgs.map((m: { role: string; content: string }) => m.content).join("\n\n");
+        const firstUserIdx = normalizedMessages.findIndex((m: { role: string; content: string }) => m.role === "user");
+        if (firstUserIdx >= 0) {
+          normalizedMessages = [...normalizedMessages];
+          normalizedMessages[firstUserIdx] = {
+            ...normalizedMessages[firstUserIdx],
+            content: systemContent + "\n\n" + normalizedMessages[firstUserIdx].content,
+          };
+        } else {
+          // No user message yet — prepend system as user message
+          normalizedMessages = [{ role: "user", content: systemContent }, ...normalizedMessages];
+        }
+      }
+      payload = { ...body, model: realModel, messages: normalizedMessages };
     }
 
     // Dynamic cost estimation fallback (e.g. for streaming)
@@ -636,10 +657,33 @@ export async function POST(request: Request) {
         headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
       }
 
+      // Normalize system messages for providers that don't support "system" role
+      let normalizedBody = body;
+      if (targetProvider === "opencode-go") {
+        const msgs = body.messages || [];
+        const systemMsgs = msgs.filter((m: { role: string; content: string }) => m.role === "system");
+        const nonSystemMsgs = msgs.filter((m: { role: string; content: string }) => m.role !== "system");
+        
+        if (systemMsgs.length > 0) {
+          const systemContent = systemMsgs.map((m: { role: string; content: string }) => m.content).join("\n\n");
+          let normalizedMessages = [...nonSystemMsgs];
+          const firstUserIdx = normalizedMessages.findIndex((m: { role: string; content: string }) => m.role === "user");
+          if (firstUserIdx >= 0) {
+            normalizedMessages[firstUserIdx] = {
+              ...normalizedMessages[firstUserIdx],
+              content: systemContent + "\n\n" + normalizedMessages[firstUserIdx].content,
+            };
+          } else {
+            normalizedMessages = [{ role: "user", content: systemContent }, ...normalizedMessages];
+          }
+          normalizedBody = { ...body, messages: normalizedMessages };
+        }
+      }
+
       const aiResponse = await fetchWithBackoff(targetUrl, {
         method: "POST",
         headers,
-        body: JSON.stringify({ ...body, model: requestedModel }),
+        body: JSON.stringify({ ...normalizedBody, model: requestedModel }),
       });
 
       if (!aiResponse.ok) {
