@@ -148,12 +148,13 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
     const isTimeout = message.includes("abort");
+    const latencyMs = Date.now() - startTime;
 
     return NextResponse.json({
       success: false,
       status: 0,
-      latencyMs: isTimeout ? 15000 : 0,
-      error: isTimeout ? "Timeout: el proveedor no respondió en 15 segundos" : message,
+      latencyMs,
+      error: isTimeout ? `Timeout: el proveedor no respondió en ${Math.round(latencyMs / 1000)} segundos` : message,
       model: testModel,
     });
   }
