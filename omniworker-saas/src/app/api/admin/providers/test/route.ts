@@ -16,6 +16,8 @@ const PROVIDER_TEST_URLS: Record<string, string> = {
   nvidia: "https://integrate.api.nvidia.com/v1/chat/completions",
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
   ollama: "http://localhost:11434/v1/chat/completions",
+  moonshot: "https://api.kimi.com/coding/v1/chat/completions",
+  "z-ai": "https://api.z.ai/api/coding/paas/v4/chat/completions",
 };
 
 // Default test model for each provider
@@ -31,6 +33,8 @@ const PROVIDER_TEST_MODELS: Record<string, string> = {
   nvidia: "stepfun-ai/step-3.7-flash",
   "opencode-go": "glm-5",
   ollama: "llama3",
+  moonshot: "k2.6",
+  "z-ai": "glm-5",
 };
 
 export async function POST(request: Request) {
@@ -67,12 +71,17 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
-  const testModel = provider.defaultModel || PROVIDER_TEST_MODELS[provider.provider] || "gpt-4o-mini";
+  const testModel = (provider.defaultModel && provider.defaultModel !== "gpt-4o-mini" || provider.provider === "openai")
+    ? provider.defaultModel
+    : (PROVIDER_TEST_MODELS[provider.provider] || "gpt-4o-mini");
 
   const startTime = Date.now();
   try {
 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (provider.provider === "moonshot") {
+      headers["User-Agent"] = "KimiCLI/1.5";
+    }
     let payload: Record<string, unknown>;
 
     if (provider.provider === "anthropic") {

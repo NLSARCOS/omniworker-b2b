@@ -50,36 +50,38 @@ function getRedis() {
 
 const redis = getRedis();
 
-// Pre-configured rate limiters
+// Pre-configured rate limiters with extremely generous limits for Nelson's team
 const limiters = {
-  // Auth endpoints: 50 per 15 min
+  // Auth endpoints: 2000 per 15 min
   auth: redis
-    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(50, "15 m") })
+    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(2000, "15 m") })
     : null,
-  // Token refresh: 60 per 15 min (normal desktop app usage)
+  // Token refresh: 5000 per 15 min (normal desktop app sync usage)
   refresh: redis
-    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, "15 m") })
+    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5000, "15 m") })
     : null,
-  // Chat/completions: 60 per min
+  // Chat/completions: 1000 per min (parallel agents workflow safe)
   chat: redis
-    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, "1 m") })
+    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(1000, "1 m") })
     : null,
-  // Admin: 30 per min
+  // Admin: 500 per min
   admin: redis
-    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, "1 m") })
+    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(500, "1 m") })
     : null,
-  // General API: 120 per min
+  // General API: 3000 per min
   default: redis
-    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(120, "1 m") })
+    ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3000, "1 m") })
     : null,
 };
 
 type RateLimitTier = "auth" | "refresh" | "chat" | "admin" | "default";
 
 export async function checkRateLimit(
-  identifier: string,
+  rawIdentifier: string,
   tier: RateLimitTier = "default"
 ): Promise<{ success: boolean; remaining: number; reset: number; limit: number }> {
+  // Extract first client IP from X-Forwarded-For header to prevent proxy aggregation
+  const identifier = (rawIdentifier || "unknown-ip").split(",")[0].trim();
   const limiter = limiters[tier];
 
   if (limiter) {
@@ -96,11 +98,11 @@ export async function checkRateLimit(
 
 function getLimitForTier(tier: RateLimitTier): number {
   switch (tier) {
-    case "auth": return 50;
-    case "refresh": return 60;
-    case "chat": return 60;
-    case "admin": return 30;
-    default: return 120;
+    case "auth": return 2000;
+    case "refresh": return 5000;
+    case "chat": return 1000;
+    case "admin": return 500;
+    default: return 3000;
   }
 }
 

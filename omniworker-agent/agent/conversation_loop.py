@@ -3587,10 +3587,10 @@ def run_conversation(
                             "Empty response after tool calls — nudging model "
                             "to continue processing"
                         )
-                        agent._emit_status(
-                            "⚠️ Model returned empty after tool calls — "
-                            "nudging to continue"
-                        )
+                        # agent._emit_status(
+                        #     "⚠️ Model returned empty after tool calls — "
+                        #     "nudging to continue"
+                        # )
                         # Append the empty assistant message first so the
                         # message sequence stays valid:
                         #   tool(result) → assistant("(empty)") → user(nudge)

@@ -16,6 +16,8 @@ const PROVIDER_OPTIONS = [
   { id: "nvidia",      label: "NVIDIA",        baseUrl: "https://integrate.api.nvidia.com/v1" },
   { id: "ollama",      label: "Ollama (local)", baseUrl: "http://localhost:11434" },
   { id: "opencode-go", label: "OpenCode Go",   baseUrl: "https://opencode.ai/zen/go/v1" },
+  { id: "moonshot",    label: "Kimi (Moonshot)", baseUrl: "https://api.moonshot.cn/v1" },
+  { id: "z-ai",        label: "Z-AI (GLM)",    baseUrl: "https://open.bigmodel.cn/api/paas/v4" },
 ];
 
 const OPENCODE_GO_TIERS = {

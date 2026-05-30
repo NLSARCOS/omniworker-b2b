@@ -107,9 +107,9 @@ function App(): React.JSX.Element {
       const saasUrl =
         import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
 
-      // 1. Guardar CLOUD_API_URL en env (OPENAI_API_KEY/CUSTOM_API_KEY no se guardan en .env para cumplir D2-SEC)
-      await window.omniworkerAPI.removeEnv("OPENAI_API_KEY");
-      await window.omniworkerAPI.removeEnv("CUSTOM_API_KEY");
+      // 1. Guardar CLOUD_API_URL y tokens en env para posibilitar el ruteo del agente y smart router
+      await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
+      await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", auth.accessToken);
       await window.omniworkerAPI.setEnv("CLOUD_API_URL", `${saasUrl}/api`);
 
       // 2. Configurar conexión LOCAL para mantener la capacidad de ejecución local de herramientas
@@ -163,9 +163,9 @@ function App(): React.JSX.Element {
                   }
                 }
 
-                // Asegurar que no escribimos claves rotadas a .env
-                await window.omniworkerAPI.removeEnv("OPENAI_API_KEY");
-                await window.omniworkerAPI.removeEnv("CUSTOM_API_KEY");
+                // Asegurar que escribimos las claves rotadas a .env
+                await window.omniworkerAPI.setEnv("OPENAI_API_KEY", data.accessToken);
+                await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", data.accessToken);
                 await window.omniworkerAPI.setModelConfig(
                   "custom",
                   "omniworker",
@@ -237,10 +237,12 @@ function App(): React.JSX.Element {
       } catch (err) {
         console.error("[APP] Failed to migrate existing localStorage tokens:", err);
       }
-      // Delete old plain text storage and keys in env
+      // Delete old plain text storage and sync keys to env
       localStorage.removeItem("ow_auth");
-      await window.omniworkerAPI.removeEnv("OPENAI_API_KEY");
-      await window.omniworkerAPI.removeEnv("CUSTOM_API_KEY");
+      if (secureTokens.accessToken) {
+        await window.omniworkerAPI.setEnv("OPENAI_API_KEY", secureTokens.accessToken);
+        await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", secureTokens.accessToken);
+      }
     }
 
     const auth = (secureTokens.accessToken && secureTokens.refreshToken) ? secureTokens : null;

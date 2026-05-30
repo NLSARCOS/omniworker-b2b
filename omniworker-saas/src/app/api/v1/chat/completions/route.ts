@@ -10,10 +10,27 @@ const PROVIDER_URLS: Record<string, string> = {
   openai: "https://api.openai.com/v1/chat/completions",
   anthropic: "https://api.anthropic.com/v1/messages",
   deepseek: "https://api.deepseek.com/chat/completions",
-  moonshot: "https://api.moonshot.cn/v1/chat/completions",
-  minimax: "https://api.minimax.chat/v1/text/chatcompletion_v2",
+  moonshot: "https://api.kimi.com/coding/v1/chat/completions",
   nvidia: "https://integrate.api.nvidia.com/v1/chat/completions",
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
+  "z-ai": "https://api.z.ai/api/coding/paas/v4/chat/completions",
+};
+
+// Default model for each provider
+const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
+  openai: "gpt-4o-mini",
+  anthropic: "claude-3-haiku-20240307",
+  deepseek: "deepseek-chat",
+  groq: "llama-3.1-8b-instant",
+  gemini: "gemini-2.0-flash",
+  mistral: "mistral-small-latest",
+  cohere: "command-r",
+  together: "meta-llama/Llama-3-8b-chat-hf",
+  nvidia: "stepfun-ai/step-3.7-flash",
+  "opencode-go": "glm-5",
+  ollama: "llama3",
+  moonshot: "k2.6",
+  "z-ai": "glm-5",
 };
 
 // NVIDIA GLM-specific config: enable thinking but hide reasoning output
@@ -48,6 +65,14 @@ Always prefer production-quality solutions with proper error handling.
 When fixing bugs, explain the root cause. When suggesting code, include complete examples.
 Languages, frameworks, and tools: you are fluent in all of them.`,
 };
+
+// ── SSE Sanitization: hide real model/provider from client ─────────────
+function sanitizeSSEChunk(chunk: Uint8Array, realModel: string, requestedModel: string): Uint8Array {
+  if (!realModel || realModel === requestedModel) return chunk;
+  const text = new TextDecoder().decode(chunk);
+  const sanitized = text.replaceAll(`"${realModel}"`, `"${requestedModel}"`);
+  return sanitized === text ? chunk : new TextEncoder().encode(sanitized);
+}
 
 // ── SSE Token Counter and Billing Reconciliation Helpers ─────────────────
 class SSETokenCounter {
@@ -361,136 +386,205 @@ export async function POST(request: Request) {
 
   // ── OmniWorker virtual model handling ──────────────────────────────
   if (isOmniWorkerVirtualModel(requestedModel)) {
-    // Find the first active master provider (priority order)
-    const masterProvider = await prisma.masterProvider.findFirst({
+    // Find the highest active priority level
+    const topProvider = await prisma.masterProvider.findFirst({
       where: { isActive: true },
       orderBy: { priority: "asc" },
     });
 
-    if (!masterProvider?.apiKey) {
+    if (!topProvider?.apiKey) {
       return NextResponse.json(
         { error: "No hay proveedores de IA configurados. Contacta al admin." },
         { status: 503 }
       );
     }
 
-    const targetProvider = masterProvider.provider;
-    const targetUrl = PROVIDER_URLS[targetProvider];
-    if (!targetUrl) {
+    // Fallback cascade: get ALL active providers, ordered by priority.
+    // Same-priority providers are shuffled for load balancing,
+    // then lower-priority providers are tried as fallback.
+    const allProviders = await prisma.masterProvider.findMany({
+      where: { isActive: true },
+      orderBy: { priority: "asc" },
+    });
+
+    // Group by priority, shuffle within each group, then flatten
+    const priorityGroups = new Map<number, any[]>();
+    for (const p of allProviders) {
+      const group = priorityGroups.get(p.priority) || [];
+      group.push(p);
+      priorityGroups.set(p.priority, group);
+    }
+    const sortedPriorities = [...priorityGroups.keys()].sort((a, b) => a - b);
+    const shuffledCandidates: any[] = [];
+    for (const pri of sortedPriorities) {
+      const group = priorityGroups.get(pri)!;
+      shuffledCandidates.push(...[...group].sort(() => Math.random() - 0.5));
+    }
+
+    let aiResponse: Response | null = null;
+    let selectedProvider: any = null;
+    let selectedRealModel = "";
+    let selectedPayload: any = null;
+    let selectedHeaders: any = null;
+    let selectedUrl = "";
+    let selectedPromptTokensEst = 0;
+    let selectedCompletionTokensEst = 0;
+    let selectedEstimatedCost = 0;
+    let lastErrorDetails: any = null;
+
+    for (const masterProvider of shuffledCandidates) {
+      const targetProvider = masterProvider.provider;
+      const targetUrl = PROVIDER_URLS[targetProvider];
+      if (!targetUrl) continue;
+
+      // Resolve real model: intelligent routing for OpenCode Go, default for others
+      let realModel: string;
+      let routingTier = "default";
+      let resolvedEndpoint: OpenCodeEndpoint = "chat_completions";
+      if (targetProvider === "opencode-go") {
+        const routing = intelligentModelSelect(body.messages || []);
+        realModel = routing.model;
+        routingTier = routing.tier;
+        resolvedEndpoint = routing.endpoint;
+      } else {
+        const dbModel = masterProvider.defaultModel;
+        realModel = (dbModel && dbModel !== "gpt-4o-mini" || targetProvider === "openai")
+          ? dbModel
+          : (DEFAULT_PROVIDER_MODELS[targetProvider] || "gpt-4o-mini");
+      }
+
+      // Inject role-based system prompt for code mode
+      const rolePrompt = OMNIWORKER_ROLES[requestedModel] || null;
+      let messages = body.messages || [];
+      if (rolePrompt && messages.length > 0) {
+        messages = [{ role: "system", content: rolePrompt }, ...messages];
+      }
+
+      // Resolve the actual URL — OpenCode Go models may use different endpoints
+      let resolvedUrl = targetUrl;
+      if (targetProvider === "opencode-go") {
+        resolvedUrl = OPENCODE_GO_ENDPOINTS[resolvedEndpoint];
+      }
+
+      // Build provider-specific payload
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (targetProvider === "moonshot") {
+        headers["User-Agent"] = "KimiCLI/1.5";
+      }
+      let payload: Record<string, unknown>;
+
+      // Anthropic-format providers OR OpenCode Go models that use /messages endpoint
+      const useAnthropicFormat = targetProvider === "anthropic" || 
+        (targetProvider === "opencode-go" && resolvedEndpoint === "messages");
+
+      if (useAnthropicFormat) {
+        if (targetProvider === "anthropic") {
+          headers["x-api-key"] = masterProvider.apiKey;
+          headers["anthropic-version"] = "2023-06-01";
+        } else {
+          // OpenCode Go /messages endpoint uses Bearer auth, but might require x-api-key for Anthropic compatibility
+          headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
+          headers["x-api-key"] = masterProvider.apiKey;
+        }
+        // Anthropic API format: system as top-level, no system in messages array
+        const systemMsg = messages.find((m: { role: string; content: string }) => m.role === "system");
+        const chatMsgs = messages.filter((m: { role: string; content: string }) => m.role !== "system");
+        payload = {
+          model: realModel,
+          max_tokens: body.max_tokens || 4096,
+          ...(systemMsg ? { system: systemMsg.content } : {}),
+          messages: chatMsgs.map((m: { role: string; content: string }) => ({
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: m.content,
+          })),
+          stream: isStream,
+        };
+      } else {
+        headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
+        // Normalize system messages for providers that don't support "system" role
+        // (e.g. OpenCode Go uses Pydantic validation allowing only "user"/"assistant").
+        // Extract system content and prepend to first user message.
+        const systemMsgs = messages.filter((m: { role: string; content: string }) => m.role === "system");
+        const nonSystemMsgs = messages.filter((m: { role: string; content: string }) => m.role !== "system");
+        
+        let normalizedMessages = nonSystemMsgs;
+        if (systemMsgs.length > 0) {
+          const systemContent = systemMsgs.map((m: { role: string; content: string }) => m.content).join("\n\n");
+          const firstUserIdx = normalizedMessages.findIndex((m: { role: string; content: string }) => m.role === "user");
+          if (firstUserIdx >= 0) {
+            normalizedMessages = [...normalizedMessages];
+            normalizedMessages[firstUserIdx] = {
+              ...normalizedMessages[firstUserIdx],
+              content: systemContent + "\n\n" + normalizedMessages[firstUserIdx].content,
+            };
+          } else {
+            // No user message yet — prepend system as user message
+            normalizedMessages = [{ role: "user", content: systemContent }, ...normalizedMessages];
+          }
+        }
+        payload = { ...body, model: realModel, messages: normalizedMessages };
+      }
+
+      // Dynamic cost estimation fallback (e.g. for streaming)
+      const promptTokensEst = estimatePromptTokens((payload.messages as any[]) || []);
+      const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
+      const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
+
+      // Apply NVIDIA GLM-specific config (thinking with clear_thinking)
+      payload = applyNvidiaGLMConfig(payload, realModel, targetProvider);
+
+      console.log(`[OmniWorker Cloud] ${user.email} → trying provider ${targetProvider} (${realModel}) [${requestedModel}]`);
+
+      try {
+        const response = await fetchWithBackoff(resolvedUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          aiResponse = response;
+          selectedProvider = masterProvider;
+          selectedRealModel = realModel;
+          selectedPayload = payload;
+          selectedHeaders = headers;
+          selectedUrl = resolvedUrl;
+          selectedPromptTokensEst = promptTokensEst;
+          selectedCompletionTokensEst = completionTokensEst;
+          selectedEstimatedCost = estimatedCost;
+          break; // Success! Exit the candidates loop.
+        } else {
+          const errTxt = await response.text();
+          console.warn(`[OmniWorker Cloud] Provider ${targetProvider} failed with status ${response.status}:`, errTxt);
+          lastErrorDetails = { provider: targetProvider, status: response.status, error: errTxt };
+        }
+      } catch (err: any) {
+        console.error(`[OmniWorker Cloud] Fetch error to provider ${targetProvider}:`, err);
+        lastErrorDetails = { provider: targetProvider, error: err.message || String(err) };
+      }
+    }
+
+    if (!aiResponse || !selectedProvider) {
+      // Log internally for debugging — never expose provider details to the client
+      console.error("[OmniWorker Cloud] All providers failed:", JSON.stringify(lastErrorDetails));
       return NextResponse.json(
-        { error: `Proveedor ${targetProvider} no soportado` },
-        { status: 503 }
+        { error: "El servicio no está disponible temporalmente. Intenta de nuevo más tarde." },
+        { status: 502 }
       );
     }
 
-    // Resolve real model: intelligent routing for OpenCode Go, default for others
-    let realModel: string;
-    let routingTier = "default";
-    let resolvedEndpoint: OpenCodeEndpoint = "chat_completions";
-    if (targetProvider === "opencode-go") {
-      const routing = intelligentModelSelect(body.messages || []);
-      realModel = routing.model;
-      routingTier = routing.tier;
-      resolvedEndpoint = routing.endpoint;
-    } else {
-      realModel = masterProvider.defaultModel || "gpt-4o-mini";
-    }
-
-    // Inject role-based system prompt for code mode
-    const rolePrompt = OMNIWORKER_ROLES[requestedModel] || null;
-    let messages = body.messages || [];
-    if (rolePrompt && messages.length > 0) {
-      // Prepend role system prompt
-      messages = [{ role: "system", content: rolePrompt }, ...messages];
-    }
-
-    // Resolve the actual URL — OpenCode Go models may use different endpoints
-    let resolvedUrl = targetUrl;
-    if (targetProvider === "opencode-go") {
-      resolvedUrl = OPENCODE_GO_ENDPOINTS[resolvedEndpoint];
-    }
-
-    console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${realModel}) [${requestedModel}] tier=${routingTier} endpoint=${resolvedEndpoint}`);
-
-    // Build provider-specific payload
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    let payload: Record<string, unknown>;
-
-    // Anthropic-format providers OR OpenCode Go models that use /messages endpoint
-    const useAnthropicFormat = targetProvider === "anthropic" || 
-      (targetProvider === "opencode-go" && resolvedEndpoint === "messages");
-
-    if (useAnthropicFormat) {
-      if (targetProvider === "anthropic") {
-        headers["x-api-key"] = masterProvider.apiKey;
-        headers["anthropic-version"] = "2023-06-01";
-      } else {
-        // OpenCode Go /messages endpoint uses Bearer auth
-        headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
-      }
-      // Anthropic API format: system as top-level, no system in messages array
-      const systemMsg = messages.find((m: { role: string; content: string }) => m.role === "system");
-      const chatMsgs = messages.filter((m: { role: string; content: string }) => m.role !== "system");
-      payload = {
-        model: realModel,
-        max_tokens: body.max_tokens || 4096,
-        ...(systemMsg ? { system: systemMsg.content } : {}),
-        messages: chatMsgs.map((m: { role: string; content: string }) => ({
-          role: m.role === "assistant" ? "assistant" : "user",
-          content: m.content,
-        })),
-        stream: isStream,
-      };
-    } else {
-      headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
-      // Normalize system messages for providers that don't support "system" role
-      // (e.g. OpenCode Go uses Pydantic validation allowing only "user"/"assistant").
-      // Extract system content and prepend to first user message.
-      const systemMsgs = messages.filter((m: { role: string; content: string }) => m.role === "system");
-      const nonSystemMsgs = messages.filter((m: { role: string; content: string }) => m.role !== "system");
-      
-      let normalizedMessages = nonSystemMsgs;
-      if (systemMsgs.length > 0) {
-        const systemContent = systemMsgs.map((m: { role: string; content: string }) => m.content).join("\n\n");
-        const firstUserIdx = normalizedMessages.findIndex((m: { role: string; content: string }) => m.role === "user");
-        if (firstUserIdx >= 0) {
-          normalizedMessages = [...normalizedMessages];
-          normalizedMessages[firstUserIdx] = {
-            ...normalizedMessages[firstUserIdx],
-            content: systemContent + "\n\n" + normalizedMessages[firstUserIdx].content,
-          };
-        } else {
-          // No user message yet — prepend system as user message
-          normalizedMessages = [{ role: "user", content: systemContent }, ...normalizedMessages];
-        }
-      }
-      payload = { ...body, model: realModel, messages: normalizedMessages };
-    }
-
-    // Dynamic cost estimation fallback (e.g. for streaming)
-    const promptTokensEst = estimatePromptTokens((payload.messages as any[]) || []);
-    const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
-    const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
-
-    // Apply NVIDIA GLM-specific config (thinking with clear_thinking)
-    payload = applyNvidiaGLMConfig(payload, realModel, targetProvider);
+    // Re-assign resolved values for downstream billing and logging
+    const targetProvider = selectedProvider.provider;
+    const realModel = selectedRealModel;
+    const resolvedUrl = selectedUrl;
+    const headers = selectedHeaders;
+    const payload = selectedPayload;
+    const promptTokensEst = selectedPromptTokensEst;
+    const completionTokensEst = selectedCompletionTokensEst;
+    const estimatedCost = selectedEstimatedCost;
+    const masterProvider = selectedProvider;
 
     try {
-      const aiResponse = await fetchWithBackoff(resolvedUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-      if (!aiResponse.ok) {
-        const errTxt = await aiResponse.text();
-        console.error(`[OmniWorker Cloud] Error ${targetProvider}:`, errTxt);
-        return NextResponse.json(
-          { error: `Error del proveedor (${targetProvider})` },
-          { status: 502 }
-        );
-      }
-
       let finalCost = estimatedCost;
       let promptTokens = promptTokensEst;
       let completionTokens = completionTokensEst;
@@ -552,11 +646,11 @@ export async function POST(request: Request) {
                 return;
               }
               counter.feed(value);
-              controller.enqueue(value);
+              controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
             } catch (err) {
               console.error("[Stream Error] Upstream connection dropped:", err);
               const encoder = new TextEncoder();
-              const errorEvent = `data: ${JSON.stringify({ error: "Provider connection lost" })}\n\n`;
+              const errorEvent = `data: ${JSON.stringify({ error: "Conexión interrumpida. Intenta de nuevo." })}\n\n`;
               controller.enqueue(encoder.encode(errorEvent));
               await reconcileOnce();
               try {
@@ -626,6 +720,11 @@ export async function POST(request: Request) {
         },
       });
 
+      // Sanitize response: replace real model name with requested virtual model
+      // so the client never sees which provider/model was actually used
+      if (responseData && requestedModel) {
+        responseData.model = requestedModel;
+      }
       return NextResponse.json(responseData || {});
     } catch (error) {
       console.error("[LLM Gateway Error]", error);
@@ -654,7 +753,7 @@ export async function POST(request: Request) {
 
   if (!masterProvider?.apiKey) {
     return NextResponse.json(
-      { error: `Proveedor ${targetProvider} no disponible` },
+      { error: "El servicio no está disponible temporalmente." },
       { status: 503 }
     );
   }
@@ -662,12 +761,21 @@ export async function POST(request: Request) {
   // Resolve the actual endpoint format and URL for OpenCode Go standard models
   const catalogModel = OPENCODE_GO_CATALOG.find(m => m.id === requestedModel);
   const resolvedEndpoint = catalogModel ? catalogModel.endpoint : "chat_completions";
+  const realModel = requestedModel; // standard path: user explicitly chose the model
   let resolvedUrl = targetUrl;
   if (targetProvider === "opencode-go") {
     resolvedUrl = OPENCODE_GO_ENDPOINTS[resolvedEndpoint];
   }
 
   console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${requestedModel}) resolvedUrl=${resolvedUrl}`);
+  
+  // Debug payload breakdown
+  const debugMsgs = body.messages || [];
+  console.log(`[DEBUG PAYLOAD] Total messages: ${debugMsgs.length}`);
+  debugMsgs.forEach((msg: any, i: number) => {
+    const contentStr = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
+    console.log(`  - Msg ${i}: role=${msg.role}, char_len=${contentStr.length}, snippet=${contentStr.substring(0, 150).replace(/\s+/g, " ")}...`);
+  });
 
   // Dynamic cost estimation fallback (e.g. for streaming)
   const promptTokensEst = estimatePromptTokens(body.messages || []);
@@ -676,6 +784,9 @@ export async function POST(request: Request) {
 
   try {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (targetProvider === "moonshot") {
+      headers["User-Agent"] = "KimiCLI/1.5";
+    }
     let payload: Record<string, unknown>;
 
     const useAnthropicFormat = targetProvider === "anthropic" || 
@@ -686,8 +797,9 @@ export async function POST(request: Request) {
         headers["x-api-key"] = masterProvider.apiKey;
         headers["anthropic-version"] = "2023-06-01";
       } else {
-        // OpenCode Go /messages endpoint uses Bearer auth
+        // OpenCode Go /messages endpoint uses Bearer auth, but might require x-api-key for Anthropic compatibility
         headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
+        headers["x-api-key"] = masterProvider.apiKey;
       }
       // Anthropic API format: system as top-level, no system in messages array
       const msgs = body.messages || [];
@@ -741,9 +853,10 @@ export async function POST(request: Request) {
 
       if (!aiResponse.ok) {
         const errTxt = await aiResponse.text();
+        // Log provider details internally — never expose to client
         console.error(`[OmniWorker Cloud] Error ${targetProvider}:`, errTxt);
         return NextResponse.json(
-          { error: `Error del proveedor (${targetProvider})` },
+          { error: "El servicio no está disponible temporalmente. Intenta de nuevo más tarde." },
           { status: 502 }
         );
       }
@@ -809,11 +922,11 @@ export async function POST(request: Request) {
                 return;
               }
               counter.feed(value);
-              controller.enqueue(value);
+              controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
             } catch (err) {
               console.error("[Stream Error] Upstream connection dropped:", err);
               const encoder = new TextEncoder();
-              const errorEvent = `data: ${JSON.stringify({ error: "Provider connection lost" })}\n\n`;
+              const errorEvent = `data: ${JSON.stringify({ error: "Conexión interrumpida. Intenta de nuevo." })}\n\n`;
               controller.enqueue(encoder.encode(errorEvent));
               await reconcileOnce();
               try {

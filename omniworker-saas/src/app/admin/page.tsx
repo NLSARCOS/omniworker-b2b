@@ -38,10 +38,18 @@ type OpenCodeGoTiers = Record<string, OpenCodeGoTier>;
 interface Plan {
   id: string;
   name: string;
+  description: string | null;
   tokenLimit: number;
   price: number;
   maxAgents: number;
   maxUsers: number;
+  maxLicenses: number;
+  billingPeriod: string;
+  isActive: boolean;
+  isPublic: boolean;
+  features: string;
+  sortOrder: number;
+  _count?: { tenants: number };
 }
 
 interface Tenant {
@@ -80,6 +88,19 @@ interface AppUpdate {
   createdAt: string;
 }
 
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  amount: number;
+  currency: string;
+  status: string;
+  description: string | null;
+  paymentMethod: string;
+  paidAt: string;
+  createdAt: string;
+  tenant?: { id: string; name: string };
+}
+
 type View = "dashboard" | "providers" | "tenants" | "plans" | "audit" | "updates";
 
 export default function SuperAdminCommandCenter() {
@@ -96,12 +117,18 @@ export default function SuperAdminCommandCenter() {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [paymentTenant, setPaymentTenant] = useState<Tenant | null>(null);
   const [defaultExpiryDate, setDefaultExpiryDate] = useState("");
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
+  const [viewingInvoicesTenant, setViewingInvoicesTenant] = useState<Tenant | null>(null);
+  const [tenantInvoices, setTenantInvoices] = useState<Invoice[]>([]);
+  const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
   const [selectedFormProvider, setSelectedFormProvider] = useState("");
   const [testResults, setTestResults] = useState<Record<string, { status: "testing" | "success" | "error"; latencyMs?: number; model?: string; response?: string; error?: string }>>({});
 
   const [error, setError] = useState("");
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [showCreateUpdate, setShowCreateUpdate] = useState(false);
+  const [showCreatePlan, setShowCreatePlan] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
 
   // Total model count across all OpenCode Go tiers
   const opencodeGoModelCount = useMemo(() => {
@@ -337,8 +364,20 @@ export default function SuperAdminCommandCenter() {
     e.preventDefault();
     if (!paymentTenant) return;
     const form = e.target as HTMLFormElement;
-    
+    setIsRecordingPayment(true);
+    setError("");
+
     try {
+      const amountEl = form.elements.namedItem("amount") as HTMLInputElement | null;
+      const dateEl = form.elements.namedItem("subscriptionEndsAt") as HTMLInputElement | null;
+      const descEl = form.elements.namedItem("description") as HTMLInputElement | null;
+
+      if (!amountEl || !dateEl || !descEl) {
+        setError("Form elements not found. Please refresh the page.");
+        setIsRecordingPayment(false);
+        return;
+      }
+
       const res = await fetch("/api/admin/invoices", {
         method: "POST",
         headers: {
@@ -347,23 +386,156 @@ export default function SuperAdminCommandCenter() {
         },
         body: JSON.stringify({
           tenantId: paymentTenant.id,
-          amount: parseFloat((form.elements.namedItem("amount") as HTMLInputElement).value),
-          subscriptionEndsAt: (form.elements.namedItem("subscriptionEndsAt") as HTMLInputElement).value,
-          description: (form.elements.namedItem("description") as HTMLInputElement).value,
+          amount: parseFloat(amountEl.value),
+          subscriptionEndsAt: dateEl.value,
+          description: descEl.value,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Error al registrar el pago");
+        setIsRecordingPayment(false);
         return;
       }
 
       setError("");
       setPaymentTenant(null);
+      setDefaultExpiryDate("");
       loadAll();
     } catch (err: any) {
-      setError("Error de red al registrar pago: " + err.message);
+      setError("Error de red al registrar pago: " + (err?.message || String(err)));
+    } finally {
+      setIsRecordingPayment(false);
+    }
+  };
+
+  const loadTenantInvoices = async (tenantId: string) => {
+    setIsLoadingInvoices(true);
+    setTenantInvoices([]);
+    try {
+      const res = await fetch(`/api/admin/invoices?tenantId=${tenantId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTenantInvoices(data.invoices || []);
+      } else {
+        setError(data.error || "Error loading invoices");
+      }
+    } catch (err: any) {
+      setError("Error loading invoices: " + (err?.message || String(err)));
+    } finally {
+      setIsLoadingInvoices(false);
+    }
+  };
+
+  const handlePlanCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    try {
+      const featuresRaw = (form.elements.namedItem("features") as HTMLTextAreaElement).value;
+      const features = featuresRaw
+        .split("\n")
+        .map((f) => f.trim())
+        .filter(Boolean);
+
+      const res = await fetch("/api/admin/plans", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("ow_token")}`,
+        },
+        body: JSON.stringify({
+          name: (form.elements.namedItem("planName") as HTMLInputElement).value,
+          description: (form.elements.namedItem("planDescription") as HTMLTextAreaElement).value || undefined,
+          tokenLimit: parseInt((form.elements.namedItem("tokenLimit") as HTMLInputElement).value),
+          maxAgents: parseInt((form.elements.namedItem("maxAgents") as HTMLInputElement).value) || 1,
+          maxUsers: parseInt((form.elements.namedItem("maxUsers") as HTMLInputElement).value) || 1,
+          maxLicenses: parseInt((form.elements.namedItem("maxLicenses") as HTMLInputElement).value) || 1,
+          price: parseFloat((form.elements.namedItem("price") as HTMLInputElement).value),
+          billingPeriod: (form.elements.namedItem("billingPeriod") as HTMLSelectElement).value,
+          isPublic: (form.elements.namedItem("isPublic") as HTMLInputElement).checked,
+          sortOrder: parseInt((form.elements.namedItem("sortOrder") as HTMLInputElement).value) || 0,
+          features,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to create plan");
+        return;
+      }
+      setError("");
+      form.reset();
+      setShowCreatePlan(false);
+      loadAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error creating plan");
+    }
+  };
+
+  const handlePlanUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlan) return;
+    const form = e.target as HTMLFormElement;
+    try {
+      const featuresRaw = (form.elements.namedItem("features") as HTMLTextAreaElement).value;
+      const features = featuresRaw
+        .split("\n")
+        .map((f) => f.trim())
+        .filter(Boolean);
+
+      const res = await fetch("/api/admin/plans", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("ow_token")}`,
+        },
+        body: JSON.stringify({
+          id: editingPlan.id,
+          name: (form.elements.namedItem("planName") as HTMLInputElement).value,
+          description: (form.elements.namedItem("planDescription") as HTMLTextAreaElement).value || undefined,
+          tokenLimit: parseInt((form.elements.namedItem("tokenLimit") as HTMLInputElement).value),
+          maxAgents: parseInt((form.elements.namedItem("maxAgents") as HTMLInputElement).value) || 1,
+          maxUsers: parseInt((form.elements.namedItem("maxUsers") as HTMLInputElement).value) || 1,
+          maxLicenses: parseInt((form.elements.namedItem("maxLicenses") as HTMLInputElement).value) || 1,
+          price: parseFloat((form.elements.namedItem("price") as HTMLInputElement).value),
+          billingPeriod: (form.elements.namedItem("billingPeriod") as HTMLSelectElement).value,
+          isPublic: (form.elements.namedItem("isPublic") as HTMLInputElement).checked,
+          sortOrder: parseInt((form.elements.namedItem("sortOrder") as HTMLInputElement).value) || 0,
+          features,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to update plan");
+        return;
+      }
+      setError("");
+      setEditingPlan(null);
+      loadAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error updating plan");
+    }
+  };
+
+  const handlePlanDelete = async (id: string) => {
+    const plan = plans.find((p) => p.id === id);
+    if (!confirm(`WARN: Destructive action. Delete plan "${plan?.name}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/plans?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to delete plan");
+        return;
+      }
+      setError("");
+      loadAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error deleting plan");
     }
   };
 
@@ -933,7 +1105,16 @@ export default function SuperAdminCommandCenter() {
                           >
                             Modify
                           </button>
-                          <button 
+                          <button
+                            onClick={() => {
+                              setViewingInvoicesTenant(t);
+                              loadTenantInvoices(t.id);
+                            }}
+                            className="text-xs font-mono text-emerald-500 hover:text-emerald-400 uppercase tracking-widest transition-colors"
+                          >
+                            Invoices
+                          </button>
+                          <button
                             onClick={() => {
                               setPaymentTenant(t);
                               const nextDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -1010,12 +1191,13 @@ export default function SuperAdminCommandCenter() {
                     </div>
                     <div>
                       <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">New Expiration Date *</label>
-                      <input 
-                        name="subscriptionEndsAt" 
-                        type="date" 
-                        required 
-                        defaultValue={defaultExpiryDate}
-                        className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors [&::-webkit-calendar-picker-indicator]:invert-[0.8]" 
+                      <input
+                        name="subscriptionEndsAt"
+                        type="date"
+                        required
+                        value={defaultExpiryDate}
+                        onChange={(e) => setDefaultExpiryDate(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors [&::-webkit-calendar-picker-indicator]:invert-[0.8]"
                       />
                     </div>
                     <div>
@@ -1023,11 +1205,15 @@ export default function SuperAdminCommandCenter() {
                       <input name="description" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors" placeholder="e.g. Pago de suscripción mensual Pro" />
                     </div>
                     <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-zinc-800">
-                      <button type="button" onClick={() => setPaymentTenant(null)} className="text-zinc-400 hover:text-white uppercase text-xs font-bold tracking-widest px-4 py-2">
+                      <button type="button" onClick={() => { setPaymentTenant(null); setDefaultExpiryDate(""); }} className="text-zinc-400 hover:text-white uppercase text-xs font-bold tracking-widest px-4 py-2">
                         Cancel
                       </button>
-                      <button type="submit" className="bg-white text-black border border-zinc-200 px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors">
-                        Record Payment & Extend
+                      <button
+                        type="submit"
+                        disabled={isRecordingPayment}
+                        className="bg-white text-black border border-zinc-200 px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isRecordingPayment ? "Processing..." : "Record Payment & Extend"}
                       </button>
                     </div>
                   </form>
@@ -1109,14 +1295,325 @@ export default function SuperAdminCommandCenter() {
                 })()}
               </div>
             )}
+
+            {/* INVOICES MODAL */}
+            {viewingInvoicesTenant && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="bg-zinc-900 border border-zinc-800 p-6 w-full max-w-4xl max-h-[85vh] overflow-auto animate-in zoom-in-95 duration-200">
+                  <div className="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+                    <div>
+                      <h2 className="text-lg font-bold text-white uppercase tracking-wider">
+                        Invoices: {viewingInvoicesTenant.name}
+                      </h2>
+                      <p className="text-xs text-zinc-500 font-mono mt-1">
+                        {tenantInvoices.length} payment record(s) found
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => { setViewingInvoicesTenant(null); setTenantInvoices([]); }}
+                      className="text-zinc-400 hover:text-white text-xl leading-none"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {isLoadingInvoices ? (
+                    <div className="py-12 text-center text-zinc-500 font-mono text-sm uppercase tracking-widest animate-pulse">
+                      Loading invoices...
+                    </div>
+                  ) : tenantInvoices.length === 0 ? (
+                    <div className="py-12 text-center text-zinc-600 font-mono text-sm uppercase tracking-widest border border-dashed border-zinc-800">
+                      No invoices found for this tenant.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left font-mono text-sm text-zinc-300">
+                        <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
+                          <tr>
+                            <th className="px-4 py-3">Invoice #</th>
+                            <th className="px-4 py-3">Amount</th>
+                            <th className="px-4 py-3">Status</th>
+                            <th className="px-4 py-3">Method</th>
+                            <th className="px-4 py-3">Date</th>
+                            <th className="px-4 py-3">Description</th>
+                            <th className="px-4 py-3 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-800">
+                          {tenantInvoices.map((inv) => (
+                            <tr key={inv.id} className="hover:bg-zinc-800/50 transition-colors">
+                              <td className="px-4 py-3 whitespace-nowrap font-medium text-white">{inv.invoiceNumber}</td>
+                              <td className="px-4 py-3 whitespace-nowrap font-mono">
+                                ${inv.amount.toFixed(2)} <span className="text-zinc-500">{inv.currency}</span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap">
+                                <span className={`text-[10px] font-mono px-2 py-0.5 border uppercase tracking-wider ${inv.status === "PAID" ? "bg-zinc-900 border-zinc-800 text-zinc-300 font-semibold" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
+                                  {inv.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-zinc-400">{inv.paymentMethod}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-zinc-500">
+                                {new Date(inv.paidAt).toLocaleDateString()}
+                              </td>
+                              <td className="px-4 py-3 text-zinc-400 max-w-xs truncate">{inv.description || "—"}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-right">
+                                <a
+                                  href={`/api/admin/invoices/${inv.id}/pdf`}
+                                  download={`factura-${inv.invoiceNumber}.pdf`}
+                                  className="text-xs font-mono text-zinc-300 font-semibold hover:text-white uppercase tracking-widest transition-colors border border-zinc-700 px-2 py-1"
+                                >
+                                  Download PDF
+                                </a>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* --- VIEW: PLANS --- */}
         {view === "plans" && (
           <div className="space-y-8 animate-in fade-in duration-500">
-             <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Subscription Protocols</h1>
-             <p className="text-zinc-500 font-mono text-sm">Define capabilities and token constraints for tenant workspaces.</p>
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Subscription Protocols</h1>
+                <p className="text-zinc-500 font-mono text-sm mt-1">Define capabilities, token limits, and pricing for tenant workspaces.</p>
+              </div>
+              <button
+                onClick={() => setShowCreatePlan(!showCreatePlan)}
+                className="bg-white text-black border border-zinc-200 px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors"
+              >
+                {showCreatePlan ? "Cancel" : "Create Plan"}
+              </button>
+            </div>
+
+            {/* CREATE / EDIT FORM */}
+            {(showCreatePlan || editingPlan) && (
+              <div className="bg-zinc-900 border border-zinc-800 p-6 animate-in slide-in-from-top-2 duration-300">
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2">
+                  <Database size={16} />
+                  {editingPlan ? `Edit Plan: ${editingPlan.name}` : "New Subscription Plan"}
+                </h2>
+                <form
+                  onSubmit={editingPlan ? handlePlanUpdate : handlePlanCreate}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Plan Name *</label>
+                    <input
+                      name="planName"
+                      defaultValue={editingPlan?.name || ""}
+                      required
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50"
+                      placeholder="e.g. Pro B2B"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Token Limit *</label>
+                    <input
+                      name="tokenLimit"
+                      type="number"
+                      defaultValue={editingPlan?.tokenLimit || 100000}
+                      required
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Price (USD) *</label>
+                    <input
+                      name="price"
+                      type="number"
+                      step="0.01"
+                      defaultValue={editingPlan?.price || 0}
+                      required
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono"
+                      placeholder="e.g. 49.99"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Max Agents</label>
+                    <input
+                      name="maxAgents"
+                      type="number"
+                      defaultValue={editingPlan?.maxAgents || 1}
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Max Users</label>
+                    <input
+                      name="maxUsers"
+                      type="number"
+                      defaultValue={editingPlan?.maxUsers || 1}
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Max Licenses</label>
+                    <input
+                      name="maxLicenses"
+                      type="number"
+                      defaultValue={editingPlan?.maxLicenses || 1}
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Billing Period</label>
+                    <select
+                      name="billingPeriod"
+                      defaultValue={editingPlan?.billingPeriod || "monthly"}
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors"
+                    >
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                      <option value="lifetime">Lifetime</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Sort Order</label>
+                    <input
+                      name="sortOrder"
+                      type="number"
+                      defaultValue={editingPlan?.sortOrder || 0}
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono"
+                    />
+                  </div>
+                  <div className="flex items-end pb-3">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="isPublic"
+                        defaultChecked={editingPlan ? editingPlan.isPublic : true}
+                        className="w-5 h-5 accent-zinc-100 bg-zinc-950 border border-zinc-800"
+                      />
+                      <span className="text-sm font-mono text-zinc-300 uppercase tracking-widest">Public Plan</span>
+                    </label>
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Description</label>
+                    <input
+                      name="planDescription"
+                      defaultValue={editingPlan?.description || ""}
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50"
+                      placeholder="Short description of the plan..."
+                    />
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Features (one per line)</label>
+                    <textarea
+                      name="features"
+                      rows={3}
+                      defaultValue={
+                        editingPlan
+                          ? (() => {
+                              try {
+                                return JSON.parse(editingPlan.features).join("\n");
+                              } catch {
+                                return editingPlan.features || "";
+                              }
+                            })()
+                          : ""
+                      }
+                      className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50"
+                      placeholder="e.g. 1M tokens/month&#10;Priority support&#10;Unlimited tools"
+                    />
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreatePlan(false);
+                        setEditingPlan(null);
+                      }}
+                      className="text-zinc-400 hover:text-white uppercase text-xs font-bold tracking-widest px-4 py-2"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-white text-black border border-zinc-200 px-8 py-3 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors"
+                    >
+                      {editingPlan ? "Save Changes" : "Create Plan"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* PLANS TABLE */}
+            <div className="bg-zinc-900 border border-zinc-800 overflow-x-auto">
+              <table className="w-full text-left font-mono text-sm text-zinc-300">
+                <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
+                  <tr>
+                    <th className="px-6 py-4">Order</th>
+                    <th className="px-6 py-4">Plan Name</th>
+                    <th className="px-6 py-4">Token Limit</th>
+                    <th className="px-6 py-4">Price</th>
+                    <th className="px-6 py-4 text-center">Agents</th>
+                    <th className="px-6 py-4 text-center">Users</th>
+                    <th className="px-6 py-4 text-center">Licenses</th>
+                    <th className="px-6 py-4 text-center">Tenants</th>
+                    <th className="px-6 py-4">Visibility</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800">
+                  {[...plans]
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map((p) => (
+                      <tr key={p.id} className="hover:bg-zinc-800/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-zinc-500">{p.sortOrder}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="font-medium text-white">{p.name}</div>
+                          {p.description && <div className="text-xs text-zinc-500 truncate max-w-xs">{p.description}</div>}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap font-mono">{(p.tokenLimit / 1000).toFixed(0)}k</td>
+                        <td className="px-6 py-4 whitespace-nowrap font-mono">${p.price.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">{p.maxAgents}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">{p.maxUsers}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">{p.maxLicenses}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className="text-zinc-300 font-semibold">{p._count?.tenants || 0}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {p.isPublic ? (
+                            <span className="text-[10px] font-mono px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-300 font-semibold uppercase tracking-wider">Public</span>
+                          ) : (
+                            <span className="text-[10px] font-mono px-2 py-0.5 bg-zinc-950 border border-zinc-800 text-zinc-500 uppercase tracking-wider">Hidden</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right space-x-4">
+                          <button
+                            onClick={() => setEditingPlan(p)}
+                            className="text-xs font-mono text-zinc-400 hover:text-zinc-300 font-semibold uppercase tracking-widest transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handlePlanDelete(p.id)}
+                            className="text-xs font-mono text-red-500 hover:text-red-400 uppercase tracking-widest transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  {plans.length === 0 && (
+                    <tr>
+                      <td colSpan={10} className="px-6 py-8 text-center text-zinc-600">
+                        No subscription plans defined. Create one to get started.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

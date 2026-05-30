@@ -1997,7 +1997,7 @@ class AIAgent:
         self._memory_manager = None
         if not skip_memory:
             try:
-                _mem_provider_name = mem_config.get("provider", "") if mem_config else ""
+                _mem_provider_name = (mem_config.get("provider", "") if mem_config else "") or "offline_fts"
 
                 if _mem_provider_name:
                     from agent.memory_manager import MemoryManager as _MemoryManager
@@ -7294,7 +7294,7 @@ class AIAgent:
 
     def _try_refresh_saas_client_credentials(self) -> bool:
         refresh_token = os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
-        base_url = os.getenv("OMNIWORKER_SAAS_BASE_URL")
+        base_url = os.getenv("OMNIWORKER_SAAS_BASE_URL") or os.getenv("CLOUD_API_URL")
         fingerprint = os.getenv("OMNIWORKER_DEVICE_FINGERPRINT")
 
         if not refresh_token or not base_url:
@@ -8875,15 +8875,13 @@ class AIAgent:
         auth resolution and client construction — no duplicated provider→key
         mappings.
         """
-        if reason in {FailoverReason.rate_limit, FailoverReason.billing}:
-            # Only start cooldown when leaving the primary provider.  If we're
-            # already on a fallback and chain-switching, the primary wasn't the
-            # source of the 429 so the cooldown should not be reset/extended.
-            fallback_already_active = bool(getattr(self, "_fallback_activated", False))
-            current_provider = (getattr(self, "provider", "") or "").strip().lower()
-            primary_provider = ((self._primary_runtime or {}).get("provider") or "").strip().lower()
-            if (not fallback_already_active) or (primary_provider and current_provider == primary_provider):
-                self._rate_limited_until = time.monotonic() + 60
+        # Always set rate limit cooldown when leaving the primary provider so we don't
+        # try the failing primary on every subsequent turn of the session.
+        fallback_already_active = bool(getattr(self, "_fallback_activated", False))
+        current_provider = (getattr(self, "provider", "") or "").strip().lower()
+        primary_provider = ((self._primary_runtime or {}).get("provider") or "").strip().lower()
+        if (not fallback_already_active) or (primary_provider and current_provider == primary_provider):
+            self._rate_limited_until = time.monotonic() + 900
         if self._fallback_index >= len(self._fallback_chain):
             return False
 
@@ -9079,10 +9077,8 @@ class AIAgent:
                     provider=self.provider,
                 )
 
-            self._emit_status(
-                f"🔄 Primary model failed — switching to fallback: "
-                f"{fb_model} via {fb_provider}"
-            )
+            # Fallback is silent as requested, do not emit lifecycle status to the user.
+            # Only log it internally.
             logging.info(
                 "Fallback activated: %s → %s (%s)",
                 old_model, fb_model, fb_provider,
@@ -15479,10 +15475,10 @@ class AIAgent:
                                 "Empty response after tool calls — nudging model "
                                 "to continue processing"
                             )
-                            self._emit_status(
-                                "⚠️ Model returned empty after tool calls — "
-                                "nudging to continue"
-                            )
+                            # self._emit_status(
+                            #     "⚠️ Model returned empty after tool calls — "
+                            #     "nudging to continue"
+                            # )
                             # Append the empty assistant message first so the
                             # message sequence stays valid:
                             #   tool(result) → assistant("(empty)") → user(nudge)

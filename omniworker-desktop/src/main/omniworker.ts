@@ -228,7 +228,8 @@ export function getRemoteAuthHeader(profile?: string): Record<string, string> {
   }
   if (conn.mode === "local") {
     const envConfig = readEnv(profile);
-    const localKey = envConfig.CUSTOM_API_KEY || envConfig.OPENAI_API_KEY;
+    const secureTokens = getSecureTokens();
+    const localKey = secureTokens.accessToken || envConfig.CUSTOM_API_KEY || envConfig.OPENAI_API_KEY;
     if (localKey) {
       return { Authorization: `Bearer ${localKey}` };
     }
@@ -1514,8 +1515,10 @@ export async function startSmartRouter(): Promise<boolean> {
   if (conn.mode === "remote" && conn.apiKey) {
     apiKey = conn.apiKey;
   } else {
+    const secureTokens = getSecureTokens();
     apiKey =
       process.env.OPENAI_API_KEY ||
+      secureTokens.accessToken ||
       envConfig.OPENAI_API_KEY ||
       envConfig.CUSTOM_API_KEY ||
       "";
@@ -1636,6 +1639,8 @@ export async function startGateway(profile?: string): Promise<boolean> {
     OMNIWORKER_HOME: OMNIWORKER_HOME,
     API_SERVER_ENABLED: "true", // Ensure API server starts with gateway
     OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
+    OMNIWORKER_SAAS_BASE_URL:
+      process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
   };
 
   // Inject ALL profile API keys so the gateway can authenticate with any provider.

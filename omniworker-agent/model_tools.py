@@ -902,6 +902,9 @@ def handle_function_call(
             edit_block_message = maybe_require_edit_approval(function_name, function_args)
             if edit_block_message is not None:
                 return edit_block_message
+        except ImportError:
+            # ACP edit approval module is not present (e.g. non-ACP/non-Zed environment)
+            pass
         except Exception as _edit_approval_err:
             logger.debug("ACP edit approval guard error: %s", _edit_approval_err)
             if function_name in {"write_file", "patch"}:

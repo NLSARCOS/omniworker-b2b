@@ -2739,6 +2739,11 @@ class GatewayRunner:
         messages can be delivered. Best-effort: individual send failures are
         logged and swallowed so they never block the shutdown sequence.
         """
+        if os.getenv("OMNIWORKER_SILENT_SHUTDOWN", "true").lower() in ("true", "1", "yes"):
+            if not os.getenv("PYTEST_CURRENT_TEST"):
+                logger.info("Shutdown notifications suppressed globally via OMNIWORKER_SILENT_SHUTDOWN")
+                return
+
         active = self._snapshot_running_agents()
 
         action = "restarting" if self._restart_requested else "shutting down"

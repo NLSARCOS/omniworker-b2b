@@ -1,10 +1,41 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { randomUUID } from "crypto";
-import { hostname, platform } from "os";
+import { randomUUID, createCipheriv, createDecipheriv, scryptSync } from "crypto";
+import { hostname, platform, userInfo } from "os";
 import { OMNIWORKER_HOME } from "./installer";
 import { profilePaths, escapeRegex, safeWriteFile } from "./utils";
 import { safeStorage } from "electron";
+
+// ── Fallback encryption (works without code signing) ─────────────
+// Derives a key from machine-specific data so tokens persist across
+// sessions even when Electron's safeStorage can't (unsigned apps).
+const FALLBACK_PREFIX = "aes:";
+
+function getMachineKey(): Buffer {
+  const salt = `omniworker-${hostname()}-${userInfo().username}`;
+  return scryptSync(`flux-agent-${platform()}`, salt, 32);
+}
+
+function fallbackEncrypt(plainText: string): string {
+  const key = getMachineKey();
+  const iv = randomUUID().slice(0, 16);
+  const cipher = createCipheriv("aes-256-cbc", key, iv);
+  return FALLBACK_PREFIX + iv + ":" + cipher.update(plainText, "utf8", "hex") + cipher.final("hex");
+}
+
+function fallbackDecrypt(cipherText: string): string {
+  if (!cipherText.startsWith(FALLBACK_PREFIX)) return "";
+  try {
+    const withoutPrefix = cipherText.slice(FALLBACK_PREFIX.length);
+    const [iv, encrypted] = withoutPrefix.split(":");
+    const key = getMachineKey();
+    const decipher = createDecipheriv("aes-256-cbc", key, iv);
+    return decipher.update(encrypted, "hex", "utf8") + decipher.final("utf8");
+  } catch (err) {
+    console.error("[fallbackDecrypt] Failed:", err);
+    return "";
+  }
+}
 
 // ── Connection Config (local / remote / ssh) ─────────────
 
@@ -545,22 +576,23 @@ export function removeEnvValue(key: string, profile?: string): void {
 
 export function encryptToken(plainText: string): string {
   if (!plainText) return "";
+  // Try safeStorage first (works with code signing)
   if (safeStorage.isEncryptionAvailable()) {
     try {
       const encryptedBuffer = safeStorage.encryptString(plainText);
       return "enc:" + encryptedBuffer.toString("hex");
     } catch (err) {
-      console.error("[safeStorage] Encryption failed, falling back to plain text:", err);
-      return plainText;
+      console.warn("[safeStorage] Encryption failed, using fallback:", err);
     }
-  } else {
-    console.warn("[safeStorage] Encryption not available, storing token in plain text.");
-    return plainText;
   }
+  // Fallback: AES-256-CBC with machine-derived key (works without code signing)
+  return fallbackEncrypt(plainText);
 }
 
 export function decryptToken(cipherText: string): string {
   if (!cipherText) return "";
+
+  // Try safeStorage format first
   if (cipherText.startsWith("enc:")) {
     if (safeStorage.isEncryptionAvailable()) {
       try {
@@ -568,14 +600,21 @@ export function decryptToken(cipherText: string): string {
         const encryptedBuffer = Buffer.from(hex, "hex");
         return safeStorage.decryptString(encryptedBuffer);
       } catch (err) {
-        console.error("[safeStorage] Decryption failed:", err);
+        console.warn("[safeStorage] Decryption failed, token may be from a different session:", err);
         return "";
       }
     } else {
-      console.error("[safeStorage] Encryption not available but token is encrypted. Decryption impossible.");
+      console.warn("[safeStorage] Not available, cannot decrypt enc: token");
       return "";
     }
   }
+
+  // Fallback AES format
+  if (cipherText.startsWith(FALLBACK_PREFIX)) {
+    return fallbackDecrypt(cipherText);
+  }
+
+  // Plain text (legacy / migration)
   return cipherText;
 }
 
