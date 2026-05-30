@@ -103,7 +103,7 @@ export default function HomePage() {
               <br />para.
             </h1>
             <p style={{ fontSize: 20, fontWeight: 400, lineHeight: 1.6, color: "var(--ink-soft)", maxWidth: 600, marginBottom: 48, borderLeft: `3px solid var(--rule)`, paddingLeft: 20 }}>
-              OMNIWORKER asigna a tu empresa un asistente digital que atiende clientes, sigue prospectos y gestiona tareas repetitivas — de manera automática, las 24 horas, sin contratar a nadie más.
+              FLUX AGENT asigna a tu empresa un asistente digital que atiende clientes, sigue prospectos y gestiona tareas repetitivas — de manera automática, las 24 horas, sin contratar a nadie más.
             </p>
             <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
               <Link href="/register" style={{ background: "var(--neon)", color: "var(--ink)", padding: "15px 32px", fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 6, transition: "all .2s" }}>
