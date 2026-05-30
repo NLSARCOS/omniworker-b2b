@@ -1710,7 +1710,7 @@ def _resolve_custom_runtime() -> Tuple[Optional[str], Optional[str], Optional[st
 
     if not isinstance(runtime, dict):
         openai_base = os.getenv("OPENAI_BASE_URL", "").strip().rstrip("/")
-        openai_key = os.getenv("OPENAI_API_KEY", "").strip()
+        openai_key = os.getenv("CUSTOM_API_KEY", "").strip() or os.getenv("OPENAI_API_KEY", "").strip()
         if not openai_base:
             return None, None, None
         runtime = {
@@ -3321,6 +3321,7 @@ def resolve_provider_client(
             custom_base = _to_openai_base_url(explicit_base_url).strip()
             custom_key = (
                 (explicit_api_key or "").strip()
+                or os.getenv("CUSTOM_API_KEY", "").strip()
                 or os.getenv("OPENAI_API_KEY", "").strip()
                 or "no-key-required"  # local servers don't need auth
             )

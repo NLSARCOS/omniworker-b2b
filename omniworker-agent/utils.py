@@ -311,6 +311,35 @@ def normalize_proxy_url(proxy_url: str | None) -> str | None:
     return candidate
 
 
+def normalize_no_proxy(value: str) -> str:
+    """Normalize NO_PROXY / no_proxy entries to avoid httpx InvalidPort parser errors on IPv6 loopback and literal patterns."""
+    if not value:
+        return ""
+    parts = []
+    for part in value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        # Count colons to detect raw IPv6 addresses.
+        # IPv6 addresses have >= 2 colons, while host:port has exactly 1 colon.
+        if part.count(":") >= 2 and not part.startswith(("http://", "https://", "socks://", "socks5://")):
+            if part.startswith("["):
+                parts.append(f"http://{part}")
+            else:
+                if "/" in part:
+                    ip, mask = part.split("/", 1)
+                    parts.append(f"http://[{ip}]/{mask}")
+                elif part.count(":") >= 3:
+                    # IPv6 with a port, e.g., ::1:8080
+                    ip, port = part.rsplit(":", 1)
+                    parts.append(f"http://[{ip}]:{port}")
+                else:
+                    parts.append(f"http://[{part}]")
+        else:
+            parts.append(part)
+    return ",".join(parts)
+
+
 def normalize_proxy_env_vars() -> None:
     """Rewrite supported proxy env vars to canonical URL forms in-place."""
     for key in _PROXY_ENV_KEYS:
@@ -318,6 +347,13 @@ def normalize_proxy_env_vars() -> None:
         normalized = normalize_proxy_url(value)
         if normalized and normalized != value:
             os.environ[key] = normalized
+
+    for key in ("NO_PROXY", "no_proxy"):
+        value = os.getenv(key, "")
+        if value:
+            normalized = normalize_no_proxy(value)
+            if normalized != value:
+                os.environ[key] = normalized
 
 
 # ─── URL Parsing Helpers ──────────────────────────────────────────────────────
