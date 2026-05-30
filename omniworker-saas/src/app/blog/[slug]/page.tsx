@@ -26,7 +26,7 @@ function parseFrontmatter(fileContent: string): { data: BlogPost; content: strin
   frontmatter.split("\n").forEach((line) => {
     const [key, ...rest] = line.split(": ");
     if (key && rest.length) {
-      let val = rest.join(": ").trim();
+      let val: any = rest.join(": ").trim();
       if (val.startsWith("[") && val.endsWith("]")) {
         val = val.slice(1, -1).split(",").map((s: string) => s.trim().replace(/"/g, ""));
       }
