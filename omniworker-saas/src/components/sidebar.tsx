@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   {
     section: "RESUMEN",
-    items: [{ href: "/dashboard", label: "Dashboard" }],
+    items: [{ href: "/dashboard", label: "Panel de control" }],
   },
   {
     section: "GESTIÓN",
@@ -49,7 +49,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
       {/* Logo */}
       <div style={{ padding: "24px 20px", borderBottom: `3px double var(--ink)` }}>
         <Link href="/" style={{ textDecoration: "none", display: "block" }}>
-          <img src="/logo.svg" alt="Fluxs Logo" style={{ height: 28, display: "block" }} />
+          <img src="/logo.svg" alt="Flux Agent" style={{ height: 28, display: "block" }} />
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, fontWeight: 500, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--muted)", marginTop: 8 }}>
             By Simplex Latam
           </div>

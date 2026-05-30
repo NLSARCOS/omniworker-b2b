@@ -74,7 +74,7 @@ function PageHeader({ title, subtitle, action }: { title: string; subtitle: stri
     <div style={{ marginBottom: 48 }}>
       {/* Topbar — same as landing */}
       <div style={{ borderBottom: `1px solid var(--rule)`, paddingBottom: 10, marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--muted)" }}>Panel de control · OmniWorker</span>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 400, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--muted)" }}>Panel de control · Flux Agent</span>
         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--neon-dim)", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--neon)", display: "inline-block" }} />
           Asistente activo
@@ -311,7 +311,7 @@ export default function DashboardPage() {
       const res = await fetch("/api/v1/apikeys", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + localStorage.getItem("ow_token") },
-        body: JSON.stringify({ name: newKeyName || "Desktop Agent Key", licenseId: selectedLicenseId }),
+        body: JSON.stringify({ name: newKeyName || "Clave del agente de escritorio", licenseId: selectedLicenseId }),
       });
       const data = await res.json();
       if (data.success) {
@@ -397,7 +397,7 @@ export default function DashboardPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 20, fontWeight: 700, letterSpacing: "0.12em", color: "var(--ink)" }}>FLUXS</span>
           <span style={{ color: "var(--rule)", fontSize: 18 }}>|</span>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>OmniWorker</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Flux Agent</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           {(user.role === "SUPERADMIN" || user.role === "ADMIN") && (
@@ -419,7 +419,7 @@ export default function DashboardPage() {
       </div>
 
       <PageHeader
-        title="Dashboard"
+        title="Panel de control"
         subtitle={`${user.tenantName || user.email} / ${(user.plan || "FREE").toUpperCase()} PLAN`}
       />
 
@@ -427,7 +427,7 @@ export default function DashboardPage() {
       {user.isPlanExpired && (
         <div style={{ marginBottom: 28, padding: "16px 20px", background: "#FEF2F2", border: `1.5px solid var(--danger)`, borderRadius: 8 }}>
           <strong style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--danger)" }}>⚠️ Plan de suscripción expirado</strong>
-          <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--ink-soft)", fontWeight: 400, lineHeight: 1.6 }}>Tu plan de OmniWorker ha vencido. Ponte en contacto con tu administrador para registrar un nuevo pago y reactivar tu cuenta.</p>
+          <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--ink-soft)", fontWeight: 400, lineHeight: 1.6 }}>Tu plan de Flux Agent ha vencido. Ponte en contacto con tu administrador para registrar un nuevo pago y reactivar tu cuenta.</p>
         </div>
       )}
 
@@ -842,7 +842,7 @@ export default function DashboardPage() {
                 type="text"
                 value={newKeyName}
                 onChange={e => setNewKeyName(e.target.value)}
-                placeholder="Ej: Desktop Agent Key"
+                placeholder="Ej: Clave del agente"
                 style={{ width: "100%", padding: "10px 14px", border: `1.5px solid var(--rule)`, borderRadius: 6, fontSize: 14, fontFamily: "'Inter', sans-serif", boxSizing: "border-box", background: "var(--paper-warm)", color: "var(--ink)" }}
               />
             </div>

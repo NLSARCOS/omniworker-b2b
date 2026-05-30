@@ -180,7 +180,7 @@ export default function SuperAdminCommandCenter() {
       setUpdates(upRes.updates || []);
     } catch (err) {
       console.error(err);
-      setError("SYSTEM_FAULT: Gataway connection failed.");
+      setError("SYSTEM_FAULT: Error de conexión.");
     }
   };
 
@@ -211,10 +211,10 @@ export default function SuperAdminCommandCenter() {
         loadAll();
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to create update");
+        setError(data.error || "Error al crear la actualización");
       }
     } catch {
-      setError("Network error while creating update");
+      setError("Error de red al crear la actualización");
     }
   };
 
@@ -229,15 +229,15 @@ export default function SuperAdminCommandCenter() {
         loadAll();
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to toggle status");
+        setError(data.error || "Error al cambiar el estado");
       }
     } catch {
-      setError("Network error toggling status");
+      setError("Error de red al cambiar el estado");
     }
   };
 
   const handleUpdateDelete = async (id: string) => {
-    if (!confirm("WARN: Destructive action. Delete update?")) return;
+    if (!confirm("⚠️ Acción destructiva. ¿Eliminar actualización?")) return;
     try {
       const res = await fetch(`/api/admin/updates?id=${id}`, {
         method: "DELETE",
@@ -247,10 +247,10 @@ export default function SuperAdminCommandCenter() {
         loadAll();
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to delete update");
+        setError(data.error || "Error al eliminar la actualización");
       }
     } catch {
-      setError("Network error deleting update");
+      setError("Error de red al eliminar la actualización");
     }
   };
 
@@ -274,7 +274,7 @@ export default function SuperAdminCommandCenter() {
   };
 
   const handleProviderDelete = async (id: string) => {
-    if (!confirm("WARN: Destructive action. Confirm?")) return;
+    if (!confirm("⚠️ Acción destructiva. ¿Confirmar?")) return;
     const headers = { Authorization: `Bearer ${localStorage.getItem("ow_token")}` };
     await fetch(`/api/admin/providers?id=${id}`, { method: "DELETE", headers });
     loadAll();
@@ -295,7 +295,7 @@ export default function SuperAdminCommandCenter() {
         setTestResults(prev => ({ ...prev, [id]: { status: "error", latencyMs: data.latencyMs, error: typeof data.error === "string" ? data.error : JSON.stringify(data.error), model: data.model } }));
       }
     } catch (err: unknown) {
-      setTestResults(prev => ({ ...prev, [id]: { status: "error", error: err instanceof Error ? err.message : "Network error" } }));
+      setTestResults(prev => ({ ...prev, [id]: { status: "error", error: err instanceof Error ? err.message : "Error de red" } }));
     }
   };
 
@@ -317,7 +317,7 @@ export default function SuperAdminCommandCenter() {
       
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError(data.error || "Failed to create workspace");
+        setError(data.error || "Error al crear el espacio de trabajo");
         return;
       }
       
@@ -325,7 +325,7 @@ export default function SuperAdminCommandCenter() {
       form.reset();
       loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error during provisioning");
+      setError(err instanceof Error ? err.message : "Error de red durante el aprovisionamiento");
     }
   };
 
@@ -348,7 +348,7 @@ export default function SuperAdminCommandCenter() {
       
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError(data.error || "Failed to update workspace");
+        setError(data.error || "Error al actualizar el espacio de trabajo");
         return;
       }
       
@@ -356,7 +356,7 @@ export default function SuperAdminCommandCenter() {
       setEditingTenant(null);
       loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error during update");
+      setError(err instanceof Error ? err.message : "Error de red al actualizar");
     }
   };
 
@@ -373,7 +373,7 @@ export default function SuperAdminCommandCenter() {
       const descEl = form.elements.namedItem("description") as HTMLInputElement | null;
 
       if (!amountEl || !dateEl || !descEl) {
-        setError("Form elements not found. Please refresh the page.");
+        setError("Elementos no encontrados. Recarga la página.");
         setIsRecordingPayment(false);
         return;
       }
@@ -421,10 +421,10 @@ export default function SuperAdminCommandCenter() {
       if (res.ok) {
         setTenantInvoices(data.invoices || []);
       } else {
-        setError(data.error || "Error loading invoices");
+        setError(data.error || "Error al cargar facturas");
       }
     } catch (err: any) {
-      setError("Error loading invoices: " + (err?.message || String(err)));
+      setError("Error al cargar facturas: " + (err?.message || String(err)));
     } finally {
       setIsLoadingInvoices(false);
     }
@@ -462,7 +462,7 @@ export default function SuperAdminCommandCenter() {
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError(data.error || "Failed to create plan");
+        setError(data.error || "Error al crear el plan");
         return;
       }
       setError("");
@@ -470,7 +470,7 @@ export default function SuperAdminCommandCenter() {
       setShowCreatePlan(false);
       loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error creating plan");
+      setError(err instanceof Error ? err.message : "Error de red al crear el plan");
     }
   };
 
@@ -508,20 +508,20 @@ export default function SuperAdminCommandCenter() {
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError(data.error || "Failed to update plan");
+        setError(data.error || "Error al actualizar el plan");
         return;
       }
       setError("");
       setEditingPlan(null);
       loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error updating plan");
+      setError(err instanceof Error ? err.message : "Error de red al actualizar el plan");
     }
   };
 
   const handlePlanDelete = async (id: string) => {
     const plan = plans.find((p) => p.id === id);
-    if (!confirm(`WARN: Destructive action. Delete plan "${plan?.name}"?`)) return;
+    if (!confirm(`⚠️ Acción destructiva. ¿Eliminar plan "${plan?.name}"?`)) return;
     try {
       const res = await fetch(`/api/admin/plans?id=${id}`, {
         method: "DELETE",
@@ -529,13 +529,13 @@ export default function SuperAdminCommandCenter() {
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError(data.error || "Failed to delete plan");
+        setError(data.error || "Error al eliminar el plan");
         return;
       }
       setError("");
       loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error deleting plan");
+      setError(err instanceof Error ? err.message : "Error de red al eliminar el plan");
     }
   };
 
@@ -567,35 +567,35 @@ export default function SuperAdminCommandCenter() {
         <div className="p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3 text-zinc-100 font-bold tracking-widest text-lg">
             <Terminal size={20} className="text-zinc-400" />
-            <span>OMNIWORKER</span>
+            <span>FLUX AGENT</span>
           </div>
-          <div className="text-xs text-zinc-500 mt-1 font-mono uppercase tracking-widest">Superadmin Root</div>
+          <div className="text-xs text-zinc-500 mt-1 font-mono uppercase tracking-widest">Administrador raíz</div>
         </div>
 
         <nav className="flex-1 p-4 flex flex-col gap-2">
           <button onClick={() => setView("dashboard")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "dashboard" ? "bg-zinc-800 text-zinc-300 font-semibold" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
-            <Activity size={18} /> Business Metrics
+            <Activity size={18} /> Métricas del negocio
           </button>
           <button onClick={() => setView("tenants")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "tenants" ? "bg-zinc-800 text-zinc-300 font-semibold" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
-            <Box size={18} /> Tenants (Clients)
+            <Box size={18} /> Espacios (Clientes)
           </button>
           <button onClick={() => setView("providers")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "providers" ? "bg-zinc-800 text-zinc-300 font-semibold" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
-            <Cpu size={18} /> LLM Providers
+            <Cpu size={18} /> Proveedores LLM
           </button>
           <button onClick={() => setView("plans")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "plans" ? "bg-zinc-800 text-zinc-300 font-semibold" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
-            <Database size={18} /> Subscriptions
+            <Database size={18} /> Suscripciones
           </button>
           <button onClick={() => setView("audit")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "audit" ? "bg-zinc-800 text-zinc-300 font-semibold" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
-            <ShieldAlert size={18} /> Security & Audit
+            <ShieldAlert size={18} /> Seguridad y auditoría
           </button>
           <button onClick={() => setView("updates")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "updates" ? "bg-zinc-800 text-zinc-300 font-semibold" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
-            <Download size={18} /> System Updates
+            <Download size={18} /> Actualizaciones del sistema
           </button>
         </nav>
 
         <div className="p-4 border-t border-zinc-800 text-xs font-mono text-zinc-600 flex justify-between">
-          <span>SYS_STATUS:</span>
-          <span className="text-zinc-400">ONLINE</span>
+          <span>ESTADO_SISTEMA:</span>
+          <span className="text-zinc-400">EN LÍNEA</span>
         </div>
       </div>
 
@@ -611,48 +611,48 @@ export default function SuperAdminCommandCenter() {
         {/* --- VIEW: DASHBOARD (Business Metrics) --- */}
         {view === "dashboard" && (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <h1 className="text-2xl font-bold text-white tracking-tight uppercase">System Diagnostics & Business</h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Diagnóstico del sistema y negocio</h1>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-zinc-900 border border-zinc-800 p-6">
-                <div className="text-zinc-500 text-xs font-mono uppercase mb-2">Total MRR</div>
+                <div className="text-zinc-500 text-xs font-mono uppercase mb-2">MRR total</div>
                 <div className="text-3xl font-bold text-white flex items-center gap-2"><DollarSign size={24} className="text-zinc-400"/>{totalMRR.toFixed(2)}</div>
               </div>
               <div className="bg-zinc-900 border border-zinc-800 p-6">
-                <div className="text-zinc-500 text-xs font-mono uppercase mb-2">Active Tenants</div>
+                <div className="text-zinc-500 text-xs font-mono uppercase mb-2">Espacios activos</div>
                 <div className="text-3xl font-bold text-white">{tenants.filter(t=>t.isActive).length} <span className="text-sm text-zinc-600 font-normal">/ {tenants.length}</span></div>
               </div>
               <div className="bg-zinc-900 border border-zinc-800 p-6">
-                <div className="text-zinc-500 text-xs font-mono uppercase mb-2">Global Tokens Used</div>
+                <div className="text-zinc-500 text-xs font-mono uppercase mb-2">Tokens globales usados</div>
                 <div className="text-3xl font-bold text-white">{(totalTokensGlobal / 1000000).toFixed(2)}M</div>
               </div>
               <div className="bg-zinc-900 border border-zinc-800 p-6">
-                <div className="text-zinc-500 text-xs font-mono uppercase mb-2">System Edge Agents</div>
+                <div className="text-zinc-500 text-xs font-mono uppercase mb-2">Agentes edge del sistema</div>
                 <div className="text-3xl font-bold text-white">{tenants.reduce((acc, t) => acc + t._count.edgeAgents, 0)}</div>
               </div>
             </div>
 
-            <h2 className="text-lg font-bold text-white uppercase mt-12 mb-4 border-b border-zinc-800 pb-2">Business & Platform Insights</h2>
+            <h2 className="text-lg font-bold text-white uppercase mt-12 mb-4 border-b border-zinc-800 pb-2">Información del negocio y plataforma</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* TOP APIS / MODELS */}
               <div className="bg-zinc-900 border border-zinc-800 p-6">
                 <div className="flex items-center gap-3 mb-4 text-zinc-400">
                   <Activity size={18} className="text-zinc-400" />
-                  <h3 className="font-bold text-white tracking-widest uppercase text-sm">Top Models by Usage</h3>
+                  <h3 className="font-bold text-white tracking-widest uppercase text-sm">Modelos más usados</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead className="text-xs text-zinc-500 uppercase bg-zinc-950/50">
                       <tr>
-                        <th className="px-4 py-3 font-mono">Model / API</th>
-                        <th className="px-4 py-3 font-mono">Calls</th>
-                        <th className="px-4 py-3 font-mono">Total Tokens</th>
+                        <th className="px-4 py-3 font-mono">Modelo / API</th>
+                        <th className="px-4 py-3 font-mono">Llamadas</th>
+                        <th className="px-4 py-3 font-mono">Tokens totales</th>
                       </tr>
                     </thead>
                     <tbody>
                       {modelMetrics.length === 0 && (
-                        <tr><td colSpan={3} className="px-4 py-6 text-center text-zinc-500 font-mono">No API usage recorded yet</td></tr>
+                        <tr><td colSpan={3} className="px-4 py-6 text-center text-zinc-500 font-mono">Sin registro de uso de API aún</td></tr>
                       )}
                       {modelMetrics.map((m, i) => (
                         <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-800/20">
@@ -670,20 +670,20 @@ export default function SuperAdminCommandCenter() {
               <div className="bg-zinc-900 border border-zinc-800 p-6">
                 <div className="flex items-center gap-3 mb-4 text-zinc-400">
                   <DollarSign size={18} className="text-zinc-400" />
-                  <h3 className="font-bold text-white tracking-widest uppercase text-sm">Top Consuming Tenants</h3>
+                  <h3 className="font-bold text-white tracking-widest uppercase text-sm">Espacios con mayor consumo</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead className="text-xs text-zinc-500 uppercase bg-zinc-950/50">
                       <tr>
-                        <th className="px-4 py-3 font-mono">Tenant Name</th>
-                        <th className="px-4 py-3 font-mono">Tokens Used</th>
-                        <th className="px-4 py-3 font-mono">Plan Expiry</th>
+                        <th className="px-4 py-3 font-mono">Nombre del espacio</th>
+                        <th className="px-4 py-3 font-mono">Tokens usados</th>
+                        <th className="px-4 py-3 font-mono">Vencimiento del plan</th>
                       </tr>
                     </thead>
                     <tbody>
                       {tenants.length === 0 && (
-                        <tr><td colSpan={3} className="px-4 py-6 text-center text-zinc-500 font-mono">No tenants found</td></tr>
+                        <tr><td colSpan={3} className="px-4 py-6 text-center text-zinc-500 font-mono">No se encontraron espacios</td></tr>
                       )}
                       {[...tenants].sort((a, b) => calcTenantTokensUsed(b) - calcTenantTokensUsed(a)).slice(0, 10).map(t => {
                         const used = calcTenantTokensUsed(t);
@@ -699,7 +699,7 @@ export default function SuperAdminCommandCenter() {
                                   {new Date(t.subscriptionEndsAt).toLocaleDateString()}
                                 </span>
                               ) : (
-                                "Unlimited"
+                                "Ilimitado"
                               )}
                             </td>
                           </tr>
@@ -711,17 +711,17 @@ export default function SuperAdminCommandCenter() {
               </div>
             </div>
 
-            <h2 className="text-lg font-bold text-white uppercase mt-12 mb-4 border-b border-zinc-800 pb-2">Tenant Consumption Report</h2>
+            <h2 className="text-lg font-bold text-white uppercase mt-12 mb-4 border-b border-zinc-800 pb-2">Reporte de consumo de espacios</h2>
             <div className="bg-zinc-900 border border-zinc-800">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                    <th className="p-4 font-medium text-zinc-400">TENANT</th>
+                    <th className="p-4 font-medium text-zinc-400">ESPACIO</th>
                     <th className="p-4 font-medium text-zinc-400">PLAN</th>
-                    <th className="p-4 font-medium text-zinc-400">LIMIT</th>
-                    <th className="p-4 font-medium text-zinc-400">REMAINING</th>
-                    <th className="p-4 font-medium text-zinc-400">EST. COST</th>
-                    <th className="p-4 font-medium text-zinc-400">STATUS</th>
+                    <th className="p-4 font-medium text-zinc-400">LÍMITE</th>
+                    <th className="p-4 font-medium text-zinc-400">RESTANTE</th>
+                    <th className="p-4 font-medium text-zinc-400">COSTO EST.</th>
+                    <th className="p-4 font-medium text-zinc-400">ESTADO</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -734,7 +734,7 @@ export default function SuperAdminCommandCenter() {
                     return (
                     <tr key={t.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
                       <td className="p-4 font-medium text-zinc-200">{t.name}</td>
-                      <td className="p-4 text-zinc-400">{t.plan?.name || "None"}</td>
+                      <td className="p-4 text-zinc-400">{t.plan?.name || "Ninguno"}</td>
                       <td className="p-4 text-zinc-400 font-mono">{(limit/1000).toFixed(0)}k</td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
@@ -744,14 +744,14 @@ export default function SuperAdminCommandCenter() {
                           </div>
                           {percent >= 80 && (
                             <span className="flex items-center gap-1 text-[10px] text-red-500 bg-red-500/10 px-1.5 py-0.5 border border-red-500/20 uppercase font-mono tracking-wider ml-1">
-                              <ShieldAlert size={10} /> 80%+ Warn
+                              <ShieldAlert size={10} /> 80%+ Alerta
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="p-4 font-mono text-zinc-300">${cost.toFixed(4)}</td>
                       <td className="p-4">
-                        {t.isActive ? <span className="text-zinc-400 text-xs font-mono bg-zinc-900 px-2 py-1">ACTIVE</span> : <span className="text-red-500 text-xs font-mono bg-red-500/10 px-2 py-1">SUSPENDED</span>}
+                        {t.isActive ? <span className="text-zinc-400 text-xs font-mono bg-zinc-900 px-2 py-1">ACTIVO</span> : <span className="text-red-500 text-xs font-mono bg-red-500/10 px-2 py-1">SUSPENDIDO</span>}
                       </td>
                     </tr>
                   )})}
@@ -764,15 +764,15 @@ export default function SuperAdminCommandCenter() {
         {/* --- VIEW: PROVIDERS --- */}
         {view === "providers" && (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <h1 className="text-2xl font-bold text-white tracking-tight uppercase">LLM Routing Network</h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Red de enrutamiento LLM</h1>
             
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               {/* Add Node */}
               <div className="bg-zinc-900 border border-zinc-800 p-6 xl:col-span-1 h-fit">
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2"><Cpu size={16}/> Register API Node</h2>
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2"><Cpu size={16}/> Registrar nodo API</h2>
                 <form onSubmit={handleProviderCreate} className="space-y-5">
                   <div>
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Provider Backbone</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Proveedor base</label>
                     <select name="provider" onChange={(e) => setSelectedFormProvider(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors">
                       {providerOptions.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                     </select>
@@ -783,12 +783,12 @@ export default function SuperAdminCommandCenter() {
                     <div className="border border-zinc-800 bg-zinc-900/50 p-4 space-y-2">
                       <div className="flex items-center gap-2">
                         <Zap size={14} className="text-zinc-300 font-semibold" />
-                        <span className="text-xs font-bold text-zinc-300 font-semibold uppercase tracking-wider">Intelligent Auto-Routing Active</span>
+                        <span className="text-xs font-bold text-zinc-300 font-semibold uppercase tracking-wider">Enrutamiento inteligente automático activo</span>
                       </div>
                       <p className="text-[11px] text-zinc-400 font-mono leading-relaxed">
-                        OpenCode Go routes requests across <span className="text-white font-bold">{opencodeGoModelCount} models</span> in 3 tiers 
-                        (🧠 Reasoning · ⚖️ Balanced · ⚡ Speed). The system analyzes prompt complexity 
-                        and selects the optimal model automatically. No manual model selection needed.
+                        OpenCode Go enruta solicitudes a través de <span className="text-white font-bold">{opencodeGoModelCount} modelos</span> en 3 tiers 
+                        (🧠 Razonamiento · ⚖️ Balanceado · ⚡ Velocidad). El sistema analiza la complejidad del prompt 
+                        y selecciona el modelo óptimo automáticamente. No requiere selección manual.
                       </p>
                       <div className="flex gap-2 mt-1">
                         {Object.entries(opencodeGoTiers).map(([key, tier]) => (
@@ -801,32 +801,32 @@ export default function SuperAdminCommandCenter() {
                   )}
 
                   <div>
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Node Identifier (Name)</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Identificador del nodo (nombre)</label>
                     <input name="nameInput" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-700" placeholder={selectedFormProvider === "opencode-go" ? "e.g. OpenCode Go Primary" : "e.g. OpenAI Primary"} />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Secret Key</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Clave secreta</label>
                     <input name="apiKey" type="password" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-700 font-mono text-sm" placeholder="sk-..." />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Priority (1 = High)</label>
+                      <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Prioridad (1 = Alta)</label>
                       <input name="priority" type="number" defaultValue="1" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono" />
                     </div>
                     <div>
-                      <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Daily Cap (Ops)</label>
+                      <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Límite diario (Ops)</label>
                       <input name="dailyLimit" type="number" placeholder="∞" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono" />
                     </div>
                   </div>
                   <button type="submit" className="w-full bg-white text-black border border-zinc-200 p-3 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors mt-2">
-                    Inject Node
+                    Registrar nodo
                   </button>
                 </form>
               </div>
 
               {/* Node Graph */}
               <div className="xl:col-span-2 space-y-6">
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2">Active Routing Graph</h2>
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2">Grafo de enrutamiento activo</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {providers.map((p) => {
                     const isOpenCodeGo = p.provider === "opencode-go";
@@ -842,10 +842,10 @@ export default function SuperAdminCommandCenter() {
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-mono uppercase bg-zinc-900 text-zinc-300 font-semibold px-2 py-1 border border-zinc-800 flex items-center gap-1.5">
                               <Zap size={10} />
-                              Intelligent Routing
+                              Enrutamiento inteligente
                             </span>
                             <span className="text-[10px] font-mono text-zinc-500">
-                              {opencodeGoModelCount} models · 3 tiers
+                              {opencodeGoModelCount} modelos · 3 tiers
                             </span>
                           </div>
                           <div className="flex gap-1.5 flex-wrap">
@@ -865,18 +865,18 @@ export default function SuperAdminCommandCenter() {
                       
                       <div className="space-y-2 text-sm font-mono text-zinc-400">
                         <div className="flex justify-between border-b border-zinc-800/50 pb-1">
-                          <span>PRIORITY</span><span className="text-zinc-200">Lvl {p.priority}</span>
+                          <span>PRIORIDAD</span><span className="text-zinc-200">Nivel {p.priority}</span>
                         </div>
                         <div className="flex justify-between border-b border-zinc-800/50 pb-1">
-                          <span>KEY_HASH</span><span className="text-zinc-200">{p.apiKey}</span>
+                          <span>HASH_CLAVE</span><span className="text-zinc-200">{p.apiKey}</span>
                         </div>
                         {isOpenCodeGo && (
                           <div className="flex justify-between border-b border-zinc-800/50 pb-1">
-                            <span>MODEL_SELECT</span><span className="text-zinc-300 font-semibold">AUTO (Complexity-Based)</span>
+                            <span>SELECCIÓN_MODELO</span><span className="text-zinc-300 font-semibold">AUTO (Por complejidad)</span>
                           </div>
                         )}
                         <div className="flex justify-between pb-1">
-                          <span>LIMIT</span><span className="text-zinc-200">{p.dailyLimit || "UNLIMITED"}</span>
+                          <span>LÍMITE</span><span className="text-zinc-200">{p.dailyLimit || "SIN LÍMITE"}</span>
                         </div>
                       </div>
 
@@ -890,24 +890,24 @@ export default function SuperAdminCommandCenter() {
                           {testResults[p.id].status === "testing" && (
                             <div className="flex items-center gap-2">
                               <Loader2 size={12} className="animate-spin" />
-                              <span>TESTING CONNECTION...</span>
+                              <span>PROBANDO CONEXIÓN...</span>
                             </div>
                           )}
                           {testResults[p.id].status === "success" && (
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <CheckCircle2 size={12} />
-                                <span className="font-bold">KEY VALID</span>
+                                <span className="font-bold">CLAVE VÁLIDA</span>
                                 <span className="text-zinc-500">· {testResults[p.id].latencyMs}ms</span>
                               </div>
-                              <div className="text-zinc-500 truncate">Model: {testResults[p.id].model} · \"{testResults[p.id].response}\"</div>
+                              <div className="text-zinc-500 truncate">Modelo: {testResults[p.id].model} · \"{testResults[p.id].response}\"</div>
                             </div>
                           )}
                           {testResults[p.id].status === "error" && (
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <XCircle size={12} />
-                                <span className="font-bold">KEY FAILED</span>
+                                <span className="font-bold">CLAVE FALLIDA</span>
                                 {testResults[p.id].latencyMs ? <span className="text-zinc-500">· {testResults[p.id].latencyMs}ms</span> : null}
                               </div>
                               <div className="text-red-300/70 truncate">{testResults[p.id].error}</div>
@@ -923,23 +923,23 @@ export default function SuperAdminCommandCenter() {
                           className="flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-wait"
                         >
                           <FlaskConical size={12} />
-                          {testResults[p.id]?.status === "testing" ? "Testing..." : "Test Key"}
+                          {testResults[p.id]?.status === "testing" ? "Probando..." : "Probar clave"}
                         </button>
-                        <button onClick={() => handleProviderDelete(p.id)} className="text-xs font-mono text-red-500 hover:text-red-400 uppercase tracking-widest">Terminate</button>
+                        <button onClick={() => handleProviderDelete(p.id)} className="text-xs font-mono text-red-500 hover:text-red-400 uppercase tracking-widest">Eliminar</button>
                       </div>
                     </div>
                     );
                   })}
-                  {providers.length === 0 && <div className="col-span-2 border border-dashed border-zinc-800 p-12 text-center text-zinc-600 font-mono text-sm uppercase tracking-widest">No routing nodes detected. System offline.</div>}
+                  {providers.length === 0 && <div className="col-span-2 border border-dashed border-zinc-800 p-12 text-center text-zinc-600 font-mono text-sm uppercase tracking-widest">No se detectaron nodos. Sistema fuera de línea.</div>}
                 </div>
 
                 {/* OpenCode Go Intelligent Routing Matrix */}
                 <div className="mt-8">
                   <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-2 border-b border-zinc-800 pb-2 flex items-center gap-2">
                     <Activity size={14} className="text-zinc-400" />
-                    OpenCode Go — Intelligent Auto-Routing
+                    OpenCode Go — Enrutamiento automático inteligente
                   </h2>
-                  <p className="text-xs text-zinc-500 font-mono mb-5">Requests are automatically classified by complexity and routed to the optimal model tier. Higher weight = higher selection probability within tier.</p>
+                  <p className="text-xs text-zinc-500 font-mono mb-5">Las solicitudes se clasifican automáticamente por complejidad y se enrutan al tier de modelo óptimo. Mayor peso = mayor probabilidad de selección dentro del tier.</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {Object.entries(opencodeGoTiers).map(([tierKey, tier]) => {
@@ -985,7 +985,7 @@ export default function SuperAdminCommandCenter() {
                           </div>
 
                           <div className="mt-4 pt-3 border-t border-zinc-800/50 flex justify-between items-center">
-                            <span className="text-[10px] font-mono text-zinc-600 uppercase">{tier.models.length} models</span>
+                            <span className="text-[10px] font-mono text-zinc-600 uppercase">{tier.models.length} modelos</span>
                             <span className={`text-[10px] font-mono px-2 py-0.5 border ${colors.badge} uppercase tracking-wider`}>Auto</span>
                           </div>
                         </div>
@@ -995,7 +995,7 @@ export default function SuperAdminCommandCenter() {
 
                   {Object.keys(opencodeGoTiers).length === 0 && (
                     <div className="border border-dashed border-zinc-800 p-8 text-center text-zinc-600 font-mono text-sm uppercase tracking-widest">
-                      No routing tiers configured
+                      No hay tiers de enrutamiento configurados
                     </div>
                   )}
                 </div>
@@ -1009,45 +1009,45 @@ export default function SuperAdminCommandCenter() {
         {view === "tenants" && (
           <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Tenant Isolation Management</h1>
+              <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Gestión de espacios aislados</h1>
               <button 
                 onClick={() => setShowCreateTenant(!showCreateTenant)} 
                 className="bg-white text-black border border-zinc-200 px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors"
               >
-                {showCreateTenant ? "Cancel" : "Provision Workspace"}
+                {showCreateTenant ? "Cancelar" : "Crear espacio de trabajo"}
               </button>
             </div>
             
             {showCreateTenant && (
               <div className="bg-zinc-900 border border-zinc-800 p-6 animate-in slide-in-from-top-2 duration-300">
-                 <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2"><Box size={16}/> Provision New Workspace</h2>
+                 <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2"><Box size={16}/> Crear nuevo espacio de trabajo</h2>
                  <form onSubmit={(e) => { handleTenantCreate(e); setShowCreateTenant(false); }} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                    <div>
-                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Organization Name *</label>
-                     <input name="tenantName" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50" placeholder="Type name here..." />
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Nombre de organización *</label>
+                     <input name="tenantName" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50" placeholder="Escribe el nombre aquí..." />
                    </div>
                    <div>
-                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Subscription Protocol</label>
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Protocolo de suscripción</label>
                      <select name="planId" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors">
-                       <option value="">[UNASSIGNED]</option>
+                       <option value="">[SIN ASIGNAR]</option>
                        {plans.map(p => <option key={p.id} value={p.id}>{p.name} - ${(p.price).toFixed(2)}</option>)}
                      </select>
                    </div>
                    <div>
-                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Plan Expiry Date</label>
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Fecha de vencimiento</label>
                      <input name="subscriptionEndsAt" type="date" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors [&::-webkit-calendar-picker-indicator]:invert-[0.8]" />
                    </div>
                    <div>
-                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Root Email *</label>
-                     <input name="adminEmail" type="email" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50" placeholder="Type email..." />
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Correo raíz *</label>
+                     <input name="adminEmail" type="email" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50" placeholder="Escribe el correo..." />
                    </div>
                    <div>
-                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Initial Keyphrase *</label>
-                     <input name="adminPassword" type="password" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50" placeholder="Type password..." />
+                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Contraseña inicial *</label>
+                     <input name="adminPassword" type="password" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800/50" placeholder="Escribe la contraseña..." />
                    </div>
                    <div className="md:col-span-3 lg:col-span-5 flex justify-end">
                      <button type="submit" className="bg-white text-black border border-zinc-200 px-8 py-3 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors">
-                       Execute Provisioning
+                       Crear espacio
                      </button>
                    </div>
                  </form>
@@ -1059,15 +1059,15 @@ export default function SuperAdminCommandCenter() {
               <table className="w-full text-left font-mono text-sm text-zinc-300">
                 <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
                   <tr>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Tenant Name</th>
+                    <th className="px-6 py-4">Estado</th>
+                    <th className="px-6 py-4">Nombre del espacio</th>
                     <th className="px-6 py-4">ID (Slug)</th>
                     <th className="px-6 py-4">Plan</th>
-                    <th className="px-6 py-4 text-center">Licenses</th>
-                    <th className="px-6 py-4 text-center">Users</th>
-                    <th className="px-6 py-4 text-center">Agents</th>
-                    <th className="px-6 py-4">Created</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4 text-center">Licencias</th>
+                    <th className="px-6 py-4 text-center">Usuarios</th>
+                    <th className="px-6 py-4 text-center">Agentes</th>
+                    <th className="px-6 py-4">Creado</th>
+                    <th className="px-6 py-4 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800">
@@ -1097,13 +1097,13 @@ export default function SuperAdminCommandCenter() {
                             onClick={() => setExpandedTenantId(expandedTenantId === t.id ? null : t.id)}
                             className="text-xs font-mono text-zinc-400 hover:text-white uppercase tracking-widest transition-colors"
                           >
-                            {expandedTenantId === t.id ? "Hide Details" : "Details"}
+                            {expandedTenantId === t.id ? "Ocultar detalles" : "Detalles"}
                           </button>
                           <button 
                             onClick={() => setEditingTenant(t)}
                             className="text-xs font-mono text-zinc-400 hover:text-zinc-300 font-semibold uppercase tracking-widest transition-colors"
                           >
-                            Modify
+                            Modificar
                           </button>
                           <button
                             onClick={() => {
@@ -1112,7 +1112,7 @@ export default function SuperAdminCommandCenter() {
                             }}
                             className="text-xs font-mono text-emerald-500 hover:text-emerald-400 uppercase tracking-widest transition-colors"
                           >
-                            Invoices
+                            Facturas
                           </button>
                           <button
                             onClick={() => {
@@ -1122,7 +1122,7 @@ export default function SuperAdminCommandCenter() {
                             }}
                             className="text-xs font-mono text-amber-500 hover:text-amber-400 uppercase tracking-widest transition-colors"
                           >
-                            Record Payment
+                            Registrar pago
                           </button>
                         </td>
                       </tr>
@@ -1130,7 +1130,7 @@ export default function SuperAdminCommandCenter() {
                   })}
                   {tenants.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-6 py-8 text-center text-zinc-600">No tenants found.</td>
+                      <td colSpan={9} className="px-6 py-8 text-center text-zinc-600">No se encontraron espacios.</td>
                     </tr>
                   )}
                 </tbody>
@@ -1145,24 +1145,24 @@ export default function SuperAdminCommandCenter() {
                   <form onSubmit={handleTenantUpdateSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Organization Name</label>
+                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Nombre de la organización</label>
                         <input name="tenantName" defaultValue={editingTenant.name} required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors" />
                       </div>
                       <div>
-                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Subscription Protocol</label>
+                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Protocolo de suscripción</label>
                         <select name="planId" defaultValue={editingTenant.plan?.id || ""} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors">
-                          <option value="">[UNASSIGNED]</option>
+                          <option value="">[SIN ASIGNAR]</option>
                           {plans.map(p => <option key={p.id} value={p.id}>{p.name} - ${(p.price).toFixed(2)}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Plan Expiry Date</label>
+                        <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Fecha de vencimiento</label>
                         <input name="subscriptionEndsAt" type="date" defaultValue={editingTenant.subscriptionEndsAt ? new Date(editingTenant.subscriptionEndsAt).toISOString().split('T')[0] : ""} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors [&::-webkit-calendar-picker-indicator]:invert-[0.8]" />
                       </div>
                       <div className="flex items-end pb-3">
                         <label className="flex items-center gap-3 cursor-pointer">
                           <input type="checkbox" name="isActive" defaultChecked={editingTenant.isActive} className="w-5 h-5 accent-zinc-100 bg-zinc-950 border border-zinc-800" />
-                          <span className="text-sm font-mono text-zinc-300 uppercase tracking-widest">Active Workspace</span>
+                          <span className="text-sm font-mono text-zinc-300 uppercase tracking-widest">Espacio activo</span>
                         </label>
                       </div>
                     </div>
@@ -1331,12 +1331,12 @@ export default function SuperAdminCommandCenter() {
                         <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
                           <tr>
                             <th className="px-4 py-3">Invoice #</th>
-                            <th className="px-4 py-3">Amount</th>
-                            <th className="px-4 py-3">Status</th>
-                            <th className="px-4 py-3">Method</th>
-                            <th className="px-4 py-3">Date</th>
-                            <th className="px-4 py-3">Description</th>
-                            <th className="px-4 py-3 text-right">Action</th>
+                            <th className="px-4 py-3">Monto</th>
+                            <th className="px-4 py-3">Estado</th>
+                            <th className="px-4 py-3">Método</th>
+                            <th className="px-4 py-3">Fecha</th>
+                            <th className="px-4 py-3">Descripción</th>
+                            <th className="px-4 py-3 text-right">Acción</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800">
@@ -1382,14 +1382,14 @@ export default function SuperAdminCommandCenter() {
           <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Subscription Protocols</h1>
-                <p className="text-zinc-500 font-mono text-sm mt-1">Define capabilities, token limits, and pricing for tenant workspaces.</p>
+                <h1 className="text-2xl font-bold text-white tracking-tight uppercase">Planes de suscripción</h1>
+                <p className="text-zinc-500 font-mono text-sm mt-1">Define capacidades, límites de tokens y precios para espacios de trabajo.</p>
               </div>
               <button
                 onClick={() => setShowCreatePlan(!showCreatePlan)}
                 className="bg-white text-black border border-zinc-200 px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors"
               >
-                {showCreatePlan ? "Cancel" : "Create Plan"}
+                {showCreatePlan ? "Cancelar" : "Crear plan"}
               </button>
             </div>
 
@@ -1437,7 +1437,7 @@ export default function SuperAdminCommandCenter() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Max Agents</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Máx. agentes</label>
                     <input
                       name="maxAgents"
                       type="number"
@@ -1446,7 +1446,7 @@ export default function SuperAdminCommandCenter() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Max Users</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Máx. usuarios</label>
                     <input
                       name="maxUsers"
                       type="number"
@@ -1455,7 +1455,7 @@ export default function SuperAdminCommandCenter() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Max Licenses</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Máx. licencias</label>
                     <input
                       name="maxLicenses"
                       type="number"
@@ -1464,19 +1464,19 @@ export default function SuperAdminCommandCenter() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Billing Period</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Periodo de facturación</label>
                     <select
                       name="billingPeriod"
                       defaultValue={editingPlan?.billingPeriod || "monthly"}
                       className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors"
                     >
-                      <option value="monthly">Monthly</option>
-                      <option value="yearly">Yearly</option>
-                      <option value="lifetime">Lifetime</option>
+                      <option value="monthly">Mensual</option>
+                      <option value="yearly">Anual</option>
+                      <option value="lifetime">Vitalicio</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Sort Order</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Orden</label>
                     <input
                       name="sortOrder"
                       type="number"
@@ -1492,11 +1492,11 @@ export default function SuperAdminCommandCenter() {
                         defaultChecked={editingPlan ? editingPlan.isPublic : true}
                         className="w-5 h-5 accent-zinc-100 bg-zinc-950 border border-zinc-800"
                       />
-                      <span className="text-sm font-mono text-zinc-300 uppercase tracking-widest">Public Plan</span>
+                      <span className="text-sm font-mono text-zinc-300 uppercase tracking-widest">Plan público</span>
                     </label>
                   </div>
                   <div className="md:col-span-2 lg:col-span-3">
-                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Description</label>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Descripción</label>
                     <input
                       name="planDescription"
                       defaultValue={editingPlan?.description || ""}
@@ -1539,7 +1539,7 @@ export default function SuperAdminCommandCenter() {
                       type="submit"
                       className="bg-white text-black border border-zinc-200 px-8 py-3 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors"
                     >
-                      {editingPlan ? "Save Changes" : "Create Plan"}
+                      {editingPlan ? "Save Changes" : "Crear plan"}
                     </button>
                   </div>
                 </form>
@@ -1552,14 +1552,14 @@ export default function SuperAdminCommandCenter() {
                 <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
                   <tr>
                     <th className="px-6 py-4">Order</th>
-                    <th className="px-6 py-4">Plan Name</th>
-                    <th className="px-6 py-4">Token Limit</th>
-                    <th className="px-6 py-4">Price</th>
-                    <th className="px-6 py-4 text-center">Agents</th>
-                    <th className="px-6 py-4 text-center">Users</th>
-                    <th className="px-6 py-4 text-center">Licenses</th>
-                    <th className="px-6 py-4 text-center">Tenants</th>
-                    <th className="px-6 py-4">Visibility</th>
+                    <th className="px-6 py-4">Plan</th>
+                    <th className="px-6 py-4">Límite de tokens</th>
+                    <th className="px-6 py-4">Precio</th>
+                    <th className="px-6 py-4 text-center">Agentes</th>
+                    <th className="px-6 py-4 text-center">Usuarios</th>
+                    <th className="px-6 py-4 text-center">Licencias</th>
+                    <th className="px-6 py-4 text-center">Espacios</th>
+                    <th className="px-6 py-4">Visibilidad</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -1583,9 +1583,9 @@ export default function SuperAdminCommandCenter() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {p.isPublic ? (
-                            <span className="text-[10px] font-mono px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-300 font-semibold uppercase tracking-wider">Public</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-300 font-semibold uppercase tracking-wider">Público</span>
                           ) : (
-                            <span className="text-[10px] font-mono px-2 py-0.5 bg-zinc-950 border border-zinc-800 text-zinc-500 uppercase tracking-wider">Hidden</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 bg-zinc-950 border border-zinc-800 text-zinc-500 uppercase tracking-wider">Oculto</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right space-x-4">
@@ -1625,18 +1625,18 @@ export default function SuperAdminCommandCenter() {
                Security & Audit Log
              </h1>
              <div className="bg-zinc-900 border-l-4 border-white p-6">
-                <div className="text-zinc-300 font-semibold font-mono font-bold mb-2">IMMUTABLE LEDGER ACTIVE</div>
+                <div className="text-zinc-300 font-semibold font-mono font-bold mb-2">REGISTRO INMUTABLE ACTIVO</div>
                 <p className="text-zinc-400 text-sm">All SuperAdmin destructive actions (DELETE, UPDATE, PROVISION) are hard-logged into the PostgreSQL audit chain associated with your admin token. Actions cannot be repudiated.</p>
              </div>
              <div className="bg-zinc-900 border border-zinc-800 overflow-x-auto">
                <table className="w-full text-left font-mono text-sm text-zinc-300">
                  <thead className="bg-zinc-950 text-zinc-500 text-xs uppercase">
                    <tr>
-                     <th className="px-6 py-4">Timestamp</th>
-                     <th className="px-6 py-4">Admin ID</th>
-                     <th className="px-6 py-4">Action</th>
-                     <th className="px-6 py-4">Target</th>
-                     <th className="px-6 py-4">Details</th>
+                     <th className="px-6 py-4">Fecha y hora</th>
+                     <th className="px-6 py-4">ID Admin</th>
+                     <th className="px-6 py-4">Acción</th>
+                     <th className="px-6 py-4">Objetivo</th>
+                     <th className="px-6 py-4">Detalles</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-zinc-800">
@@ -1675,7 +1675,7 @@ export default function SuperAdminCommandCenter() {
                 onClick={() => setShowCreateUpdate(!showCreateUpdate)} 
                 className="bg-white text-black border border-zinc-200 px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors"
               >
-                {showCreateUpdate ? "Cancel" : "Publish Update"}
+                {showCreateUpdate ? "Cancelar" : "Publicar actualización"}
               </button>
             </div>
 
@@ -1715,12 +1715,12 @@ export default function SuperAdminCommandCenter() {
 
                    <div>
                      <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Release Notes & Instructions (Markdown supported)</label>
-                     <textarea name="releaseNotes" rows={4} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800" placeholder="Describe the updates, improvements, bug fixes..." />
+                     <textarea name="releaseNotes" rows={4} className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-800" placeholder="Describe las actualizaciones, mejoras y correcciones..." />
                    </div>
 
                    <div className="flex justify-end">
                      <button type="submit" className="bg-white text-black border border-zinc-200 px-8 py-3 font-bold uppercase tracking-wider text-sm hover:bg-zinc-200 transition-colors">
-                       Deploy System Update
+                       Desplegar actualización
                      </button>
                    </div>
                  </form>
@@ -1746,7 +1746,7 @@ export default function SuperAdminCommandCenter() {
                           <span className="text-xl font-bold text-white font-mono">v{up.version}</span>
                           {up.isActive ? (
                             <span className="bg-zinc-900 text-zinc-300 font-semibold border border-zinc-700 px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider animate-pulse">
-                              Active Update
+                              Actualización activa
                             </span>
                           ) : (
                             <span className="bg-zinc-850 text-zinc-500 border border-zinc-800 px-2.5 py-0.5 text-xs font-mono uppercase tracking-wider">
@@ -1772,7 +1772,7 @@ export default function SuperAdminCommandCenter() {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
                         <div className="bg-zinc-950 p-3 border border-zinc-800">
-                          <span className="text-zinc-600 block mb-1 uppercase text-[10px]">Windows Link</span>
+                          <span className="text-zinc-600 block mb-1 uppercase text-[10px]">Enlace Windows</span>
                           <a href={up.urlWindows} target="_blank" rel="noreferrer" className="text-zinc-300 font-semibold hover:underline break-all">{up.urlWindows}</a>
                         </div>
                         <div className="bg-zinc-950 p-3 border border-zinc-800">
@@ -1780,7 +1780,7 @@ export default function SuperAdminCommandCenter() {
                           <a href={up.urlMac} target="_blank" rel="noreferrer" className="text-zinc-300 font-semibold hover:underline break-all">{up.urlMac}</a>
                         </div>
                         <div className="bg-zinc-950 p-3 border border-zinc-800">
-                          <span className="text-zinc-600 block mb-1 uppercase text-[10px]">Linux Link</span>
+                          <span className="text-zinc-600 block mb-1 uppercase text-[10px]">Enlace Linux</span>
                           <a href={up.urlLinux} target="_blank" rel="noreferrer" className="text-zinc-300 font-semibold hover:underline break-all">{up.urlLinux}</a>
                         </div>
                       </div>

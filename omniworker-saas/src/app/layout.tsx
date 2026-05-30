@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OmniWorker — El asistente digital que trabaja por tu empresa",
+  title: "Flux Agent — El asistente digital que trabaja por tu empresa",
   description:
-    "OmniWorker asigna a tu empresa un asistente digital que atiende clientes, gestiona tareas y automatiza procesos — sin contratar a nadie más. By Simplex Latam.",
+    "Flux Agent asigna a tu empresa un asistente digital que atiende clientes, gestiona tareas y automatiza procesos — sin contratar a nadie más. By Simplex Latam.",
 };
 
 export default function RootLayout({

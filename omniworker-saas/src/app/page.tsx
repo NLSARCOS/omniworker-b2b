@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "OmniWorker — El asistente digital que trabaja por tu empresa",
+  title: "Flux Agent — El asistente digital que trabaja por tu empresa",
   description:
-    "OmniWorker asigna a tu empresa un asistente digital que atiende clientes, gestiona tareas y automatiza procesos — sin contratar a nadie más. By Simplex Latam.",
+    "Flux Agent asigna a tu empresa un asistente digital que atiende clientes, gestiona tareas y automatiza procesos — sin contratar a nadie más. By Simplex Latam.",
 };
 
 /* ─── Design tokens (inline CSS vars) ─── */
@@ -62,7 +62,7 @@ export default function HomePage() {
         <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--paper)", borderBottom: `3px double var(--ink)`, padding: "0 5vw" }}>
           <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68 }}>
             <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
-              <img src="/logo.svg" alt="Fluxs Logo" style={{ height: 28 }} />
+              <img src="/logo.svg" alt="Flux Agent" style={{ height: 28 }} />
             </a>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <a href="#problema" style={{ fontSize: 13.5, fontWeight: 500, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 6, transition: "all .15s" }}>El problema</a>
@@ -359,7 +359,7 @@ export default function HomePage() {
           <div style={{ maxWidth: 1280, margin: "0 auto", display: "grid", gridTemplateColumns: "1.2fr repeat(4,1fr)", gap: 56, alignItems: "start", marginBottom: 40, paddingBottom: 40, borderBottom: `1px solid var(--rule)` }}>
             <div>
               <div style={{ marginBottom: 16 }}>
-                <img src="/logo.svg" alt="Fluxs Logo" style={{ height: 32 }} />
+                <img src="/logo.svg" alt="Flux Agent" style={{ height: 32 }} />
               </div>
               <div style={{ fontSize: 14, fontWeight: 400, color: "var(--muted)", maxWidth: 240, lineHeight: 1.6, marginBottom: 20 }}>Asistentes digitales para empresas latinoamericanas. By Simplex Latam.</div>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--neon-pale)", border: `1px solid rgba(0,201,92,0.3)`, borderRadius: 100, padding: "5px 14px", fontSize: 12, fontWeight: 600, color: "var(--neon-dim)" }}>● Activos las 24 horas</span>
@@ -379,7 +379,7 @@ export default function HomePage() {
             ))}
           </div>
           <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 400, color: "var(--muted)" }}>
-            <span>© 2026 OmniWorker · By Simplex Latam · Todos los derechos reservados.</span>
+            <span>© 2026 Flux Agent · By Simplex Latam · Todos los derechos reservados.</span>
             <span>LATAM · Español · Q2 2026</span>
           </div>
         </footer>

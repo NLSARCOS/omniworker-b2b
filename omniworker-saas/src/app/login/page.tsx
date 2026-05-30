@@ -43,7 +43,7 @@ export default function LoginPage() {
       <div style={{ maxWidth: 420, width: "100%" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <Link href="/" style={{ textDecoration: "none", display: "inline-block", marginBottom: 32 }}>
-            <img src="/logo.svg" alt="Fluxs Logo" style={{ height: 36, display: "block", margin: "0 auto" }} />
+            <img src="/logo.svg" alt="Flux Agent" style={{ height: 36, display: "block", margin: "0 auto" }} />
           </Link>
           <h1 style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 80, "SOFT" 30', fontSize: 40, fontWeight: 500, letterSpacing: "-0.025em", lineHeight: 1.05, margin: "0 0 12px", color: "var(--ink)" }}>
             Iniciar sesión
@@ -62,7 +62,7 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} style={{ background: "var(--paper)", padding: 32, borderRadius: 12, border: "1.5px solid var(--rule)", boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "'Inter', sans-serif", color: "var(--muted)" }}>
-              Email
+              Correo electrónico
             </label>
             <input
               type="email"
