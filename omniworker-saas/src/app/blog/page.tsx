@@ -26,7 +26,7 @@ function parseFrontmatter(fileContent: string): { data: BlogPost; content: strin
       let val: any = rest.join(": ").trim();
       // Parse arrays
       if (val.startsWith("[") && val.endsWith("]")) {
-        val = val.slice(1, -1).split(",").map((s) => s.trim().replace(/"/g, ""));
+        val = val.slice(1, -1).split(",").map((s: string) => s.trim().replace(/"/g, ""));
       }
       // Parse numbers
       if (!isNaN(Number(val)) && key.trim() !== "title" && key.trim() !== "slug") {
