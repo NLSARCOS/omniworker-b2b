@@ -77,6 +77,5 @@ rpm:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: github
-  owner: Simplex-lat
-  repo: omniworker-releases
+  provider: generic
+  url: https://flux.simplex.lat/api/downloads/

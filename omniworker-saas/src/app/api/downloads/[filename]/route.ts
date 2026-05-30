@@ -36,6 +36,8 @@ export async function GET(
     ".rpm": "application/x-rpm",
     ".snap": "application/vnd.snap",
     ".zip": "application/zip",
+    ".yml": "text/yaml",
+    ".yaml": "text/yaml",
   };
 
   const headers = new Headers({

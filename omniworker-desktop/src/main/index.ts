@@ -1859,6 +1859,11 @@ function setupUpdater(): void {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  autoUpdater.setFeedURL({
+    provider: "generic",
+    url: "https://flux.simplex.lat/api/downloads/"
+  });
+
   autoUpdater.on("update-available", (info) => {
     mainWindow?.webContents.send("update-available", {
       version: info.version,
