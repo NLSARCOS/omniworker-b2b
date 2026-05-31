@@ -294,13 +294,7 @@ def classify_request(data: dict) -> str:
 
     trimmed_last = last_user_msg.strip()
 
-    # ── Fast Path for Simple Chitchat/Greetings ──
-    # If the user says just "hola" or "gracias" in a fresh conversation, bypass
-    # tools and route to free Local SLM immediately.
-    if SIMPLE_PATTERNS.match(trimmed_last) and len(messages) <= 4 and system_complexity < 2:
-        return "local"
-
-    # ── Level 2: Tool-aware routing ──
+    # ── Level 2: Tool-aware routing (check this first for safety) ──
     has_tool_calls = False
     has_tool_results = False
     for msg in messages:
@@ -308,6 +302,12 @@ def classify_request(data: dict) -> str:
             has_tool_calls = True
         if msg.get("role") == "tool":
             has_tool_results = True
+
+    # ── Fast Path for Simple Chitchat/Greetings ──
+    # If the user says just "hola" or "gracias" in a fresh conversation without tools,
+    # bypass tools/schemas and simplify payload to save 98%+ of tokens in the cloud.
+    if SIMPLE_PATTERNS.match(trimmed_last) and len(messages) <= 4 and not has_tool_calls and not has_tool_results:
+        return "local"
 
     # Tool calling requires a capable model — always cloud
     if has_tool_calls:
