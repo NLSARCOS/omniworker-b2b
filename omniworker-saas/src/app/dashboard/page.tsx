@@ -723,10 +723,10 @@ export default function DashboardPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
             <div style={{ border: `1.5px solid var(--rule)`, borderRadius: 10, padding: 24, background: "var(--paper-warm)", transition: "all 0.15s ease" }}>
               <div style={{ fontFamily: "'Fraunces', serif", fontVariationSettings: '"opsz" 48', fontSize: 20, fontWeight: 500, letterSpacing: "-0.01em", color: "var(--ink)", margin: "0 0 6px" }}>Descargar app de escritorio</div>
-              <div style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 16px", fontWeight: 400 }}>App nativa para macOS, Windows, Linux — v0.4.3</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 16px", fontWeight: 400 }}>App nativa para macOS, Windows, Linux — v0.4.4</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 <a
-                  href="/api/downloads/omniworker-desktop-0.4.3-arm64.dmg"
+                  href="/api/downloads/omniworker-desktop-0.4.4-x64.dmg"
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 8,
                     padding: "8px 16px", fontSize: 13, fontWeight: 600,
@@ -735,10 +735,10 @@ export default function DashboardPage() {
                   }}
                 >
                   <AppleIcon size={14} />
-                  <span>Mac (Apple Silicon)</span>
+                  <span>Mac (Intel/Apple Silicon)</span>
                 </a>
                 <a
-                  href="/api/downloads/omniworker-desktop-0.4.3-setup.exe"
+                  href="/api/downloads/omniworker-desktop-0.4.4-setup.exe"
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 8,
                     padding: "8px 16px", fontSize: 13, fontWeight: 600,
@@ -750,7 +750,7 @@ export default function DashboardPage() {
                   <span>Windows</span>
                 </a>
                 <a
-                  href="/api/downloads/omniworker-desktop-0.4.3.AppImage"
+                  href="/api/downloads/omniworker-desktop-0.4.4.AppImage"
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 8,
                     padding: "8px 16px", fontSize: 13, fontWeight: 600,
