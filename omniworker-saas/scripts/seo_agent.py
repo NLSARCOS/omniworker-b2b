@@ -2,43 +2,60 @@
 """
 SEO Agent — Flux Agent by Simplex Latam
 ========================================
-Automated SEO content generation pipeline.
-Uses DataForSEO API for keyword research, generates blog articles,
-places them in the Next.js content directory, and commits to git.
+Generates 3 landing pages + 2 blog articles per run.
+Uses DataForSEO API for research, auto-commits to git.
 
 Usage:
-  python seo_agent.py              # Generate 1 article
-  python seo_agent.py --count 3    # Generate 3 articles
-  python seo_agent.py --dry-run    # Preview without writing
-
-DataForSEO API: https://api.dataforseo.com/v3/
+ python seo_agent.py --landing 3 --blog 2
+ python seo_agent.py --dry-run
 """
 
 import json
 import os
-import sys
-import subprocess
-import hashlib
+import random
 import re
-from datetime import datetime, timezone
+import subprocess
+import sys
+from datetime import datetime
 from pathlib import Path
 
 import requests
 
 # ─── Configuration ───
-DATAFORSEO_LOGIN = "nelson.sarcos@simplex.lat"
-DATAFORSEO_PASSWORD = "d71d55f7104e2a04"
 DATAFORSEO_AUTH = "bmVsc29uLnNhcmNvc0BzaW1wbGV4LmxhdDpkNzFkNTVmNzEwNGUyYTA0"
 SERP_ENDPOINT = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced"
 KEYWORDS_ENDPOINT = "https://api.dataforseo.com/v3/keywords_data/google/search_volume/live"
 
 REPO_ROOT = Path("/Users/nelsonmini/.omniworker/omniworker-agent/omniworker-b2b/omniworker-saas")
 CONTENT_DIR = REPO_ROOT / "content" / "blog"
-BRANDING = "Flux Agent"
+APP_DIR = REPO_ROOT / "src" / "app"
 SITE_URL = "https://flux.simplex.lat"
 
-# SEO keyword clusters for LATAM SaaS audience
-KEYWORD_CLUSTERS = [
+# ─── Keyword Pools ───
+LANDING_KEYWORDS = [
+    "agente de ventas automatizado",
+    "automatización de cobranzas",
+    "chatbot para WhatsApp business",
+    "asistente virtual para clínicas",
+    "automatización de campañas marketing",
+    "lead scoring automático",
+    "CRM con inteligencia artificial",
+    "automatización de onboarding",
+    "asistente para e-commerce",
+    "gestión de turnos automatizada",
+    "seguimiento de clientes automático",
+    "automatización de facturación",
+    "chatbot para reservas",
+    "asistente para inmobiliarias",
+    "automatización de encuestas",
+    "agente para atención médica",
+    "automatización de pedidos",
+    "asistente para restaurantes",
+    "CRM para pequeñas empresas",
+    "automatización de inventario",
+]
+
+BLOG_KEYWORDS = [
     "asistente virtual empresas",
     "automatización de procesos",
     "chatbot para empresas",
@@ -54,35 +71,46 @@ KEYWORD_CLUSTERS = [
     "CRM automatizado LATAM",
     "seguimiento prospectos automático",
     "asistente virtual e-commerce",
-    "chatbot WhatsApp atención",
-    "automatización clínica",
-    "inteligencia artificial negocio",
-    "productividad empresarial IA",
-    "reducción costos operativos",
-    "escalar sin contratar",
-    "outsourcing digital LATAM",
-    "transformación digital PYMES",
-    "automatización onboarding",
-    "lead scoring automático",
 ]
 
-# Topic templates for article generation
-TOPIC_TEMPLATES = [
-    "cómo {keyword} puede transformar tu empresa en 2026",
-    "guía completa de {keyword} para empresas latinoamericanas",
-    "{keyword}: por qué las empresas que no lo implementan pierden competitividad",
-    "5 señales de que tu empresa necesita {keyword} ya",
-    "errores comunes al implementar {keyword} y cómo evitarlos",
-    "caso de éxito: cómo {keyword} aumentó la eficiencia un 300%",
-    "{keyword} para PYMES: mitos y realidades en LATAM",
-    "el futuro de {keyword} en américa latina",
-    "roi de {keyword}: cuánto podés ahorrar este mes",
-    "{keyword} vs contratar: comparativa real de costos",
+BLOG_TEMPLATES = [
+    "cómo {kw} puede transformar tu empresa en 2026",
+    "guía completa de {kw} para empresas latinoamericanas",
+    "{kw}: por qué las empresas que no lo implementan pierden competitividad",
+    "5 señales de que tu empresa necesita {kw} ya",
+    "errores comunes al implementar {kw} y cómo evitarlos",
+    "{kw} para PYMES: mitos y realidades en LATAM",
+    "el futuro de {kw} en américa latina",
+    "roi de {kw}: cuánto podés ahorrar este mes",
+    "{kw} vs contratar: comparativa real de costos",
+    "caso de éxito: cómo {kw} aumentó la eficiencia un 300%",
 ]
 
+LOCATIONS = [
+    (2840, "Mexico"), (2040, "Colombia"), (2060, "Chile"),
+    (2096, "Peru"), (2158, "Venezuela"), (2184, "Uruguay"),
+    (2100, "Guatemala"), (2826, "Spain"),
+]
+
+
+# ─── Helpers ───
+
+def slugify(text: str, max_len: int = 60) -> str:
+    s = text.lower()
+    for a, b in [('áàä','a'),('éèë','e'),('íìï','i'),('óòö','o'),('úùü','u'),('ñ','n')]:
+        s = re.sub(f'[{a}]', b, s)
+    s = re.sub(r'[^a-z0-9]+', '-', s).strip('-')
+    return s[:max_len]
+
+
+def escape_tsx(text: str) -> str:
+    """Escape text for safe insertion into TSX string content."""
+    return text.replace('\\', '\\\\').replace('`', '\\`').replace('${', '\\${')
+
+
+# ─── DataForSEO ───
 
 def serp_research(keyword: str, location_code: int = 2840) -> dict:
-    """Research SERP for a keyword using DataForSEO. Location 2840 = Mexico (LATAM proxy)."""
     payload = [{
         "keyword": keyword,
         "location_code": location_code,
@@ -105,18 +133,14 @@ def serp_research(keyword: str, location_code: int = 2840) -> dict:
                 return {
                     "keyword": keyword,
                     "results": len(organic),
-                    "top_urls": [r.get("url", "") for r in organic[:5]],
                     "top_titles": [r.get("title", "") for r in organic[:5]],
-                    "top_descriptions": [r.get("description", "") for r in organic[:5]],
-                    "related_keywords": tasks[0]["result"][0].get("se_results_container", {}).get("related_keywords", []),
                 }
     except Exception as e:
-        print(f"  [WARN] SERP research failed for '{keyword}': {e}")
-    return {"keyword": keyword, "results": 0, "top_urls": [], "top_titles": [], "top_descriptions": []}
+        print(f" [WARN] SERP failed for '{keyword}': {e}")
+    return {"keyword": keyword, "results": 0, "top_titles": []}
 
 
 def get_keyword_volume(keywords: list[str]) -> dict:
-    """Get search volume for keywords via DataForSEO."""
     payload = [{"keywords": keywords, "location_code": 2840, "language_code": "es"}]
     headers = {
         "Authorization": f"Basic {DATAFORSEO_AUTH}",
@@ -130,112 +154,320 @@ def get_keyword_volume(keywords: list[str]) -> dict:
             if tasks and tasks[0].get("result"):
                 return {r["keyword"]: r.get("search_volume", 0) for r in tasks[0]["result"]}
     except Exception as e:
-        print(f"  [WARN] Keyword volume failed: {e}")
+        print(f" [WARN] Volume failed: {e}")
     return {}
 
 
-def select_keyword() -> str:
-    """Select a keyword that hasn't been used recently."""
-    used = get_used_keywords()
-    available = [k for k in KEYWORD_CLUSTERS if k not in used]
-    if not available:
-        available = KEYWORD_CLUSTERS  # Reset if all used
-    # Pick randomly weighted toward less-used
-    import random
-    return random.choice(available)
+# ─── Landing Page Builder ───
+
+def make_landing_page(keyword: str, serp_data: dict) -> dict:
+    title = keyword.title()
+    slug = slugify(keyword)
+    description = f"Descubrí cómo {keyword} puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam."
+    content = build_landing_tsx(keyword, title, description, slug)
+    return {"type": "landing", "keyword": keyword, "title": title, "slug": slug, "description": description, "content": content}
 
 
-def get_used_keywords() -> set:
-    """Get keywords already used in existing articles."""
-    used = set()
-    if CONTENT_DIR.exists():
-        for f in CONTENT_DIR.glob("*.md"):
-            try:
-                text = f.read_text()
-                # Extract keywords from frontmatter
-                kw_match = re.search(r'keywords:\s*["\'](.+?)["\']', text)
-                if kw_match:
-                    used.update(kw_match.group(1).lower().split(", "))
-            except Exception:
-                pass
-    return used
+def build_landing_tsx(keyword: str, title: str, description: str, slug: str) -> str:
+    """Build landing page TSX content using line-by-line assembly."""
+    random.seed(hash(keyword))
+
+    all_features = [
+        ("🧠", "IA avanzada", "Procesamiento inteligente"),
+        ("⚡", "Resultados en 14 días", "Implementación express"),
+        ("🔗", "Integración total", "CRM, WhatsApp, y más"),
+        ("📊", "Analytics en tiempo real", "Métricas que importan"),
+        ("🎯", "ROI garantizado", "800% en el primer trimestre"),
+        ("🔄", "Escalado automático", "Crece sin límites"),
+        ("📱", "Multi-canal", "Web, WhatsApp, mobile"),
+        ("🔒", "Seguridad empresarial", "Datos protegidos"),
+    ]
+    random.shuffle(all_features)
+    features = all_features[:random.randint(4, 6)]
+
+    stats = [
+        {"num": "85%", "label": "Tareas automatizadas"},
+        {"num": "24/7", "label": "Disponibilidad total"},
+        {"num": "1/10", "label": "Costo vs empleado"},
+        {"num": "<30s", "label": "Tiempo respuesta"},
+    ]
+
+    steps = [
+        {"n": "01", "title": "Diagnóstico gratuito", "desc": f"Analizamos tu proceso de {keyword} y detectamos oportunidades."},
+        {"n": "02", "title": "Configuración express", "desc": "Implementamos la solución conectada a tus herramientas en 14 días."},
+        {"n": "03", "title": "Resultados medibles", "desc": "Monitoreá el impacto en tiempo real con soporte dedicado."},
+    ]
+
+    testimonials = [
+        {
+            "quote": f"Implementar {keyword} con Flux Agent cambió nuestra operación. Ahorramos 40hs semanales.",
+            "name": "María González",
+            "role": "CEO · TechStart MX",
+            "result": "↓ 40hs/semana",
+        },
+        {
+            "quote": "El ROI fue inmediato. En el primer mes ya habíamos recuperado la inversión.",
+            "name": "Carlos Ruiz",
+            "role": "Director · InnovateAR",
+            "result": "↑ 300% ROI",
+        },
+    ]
+
+    # Build TSX line by line to avoid f-string issues
+    lines = []
+    lines.append('import Link from "next/link";')
+    lines.append('import type { Metadata } from "next";')
+    lines.append("")
+    lines.append("export const metadata: Metadata = {")
+    lines.append(f'  title: "{escape_tsx(title)} — Flux Agent",')
+    lines.append(f'  description: "{escape_tsx(description)}",')
+    lines.append(f'  keywords: "{escape_tsx(keyword)}, automatización, IA, LATAM",')
+    lines.append("  openGraph: {")
+    lines.append(f'    title: "{escape_tsx(title)} — Flux Agent",')
+    lines.append(f'    description: "{escape_tsx(description)}",')
+    lines.append(f'    url: "{SITE_URL}/{slug}",')
+    lines.append('    siteName: "Flux Agent",')
+    lines.append('    locale: "es_LA",')
+    lines.append('    type: "website",')
+    lines.append("  },")
+    lines.append("};")
+    lines.append("")
+    lines.append(f"const FEATURES = {json.dumps(features, ensure_ascii=False)};")
+    lines.append(f"const STATS = {json.dumps(stats, ensure_ascii=False)};")
+    lines.append(f"const STEPS = {json.dumps(steps, ensure_ascii=False)};")
+    lines.append(f"const TESTIMONIALS = {json.dumps(testimonials, ensure_ascii=False)};")
+    lines.append("")
+    lines.append("export default function Page() {")
+    lines.append("  return (")
+    lines.append("    <>")
+
+    # JSON-LD
+    lines.append('      <script')
+    lines.append('        type="application/ld+json"')
+    lines.append('        dangerouslySetInnerHTML={{ __html: JSON.stringify({')
+    lines.append('          "@context": "https://schema.org",')
+    lines.append('          "@type": "SoftwareApplication",')
+    lines.append(f'          "name": "{escape_tsx(title)} — Flux Agent",')
+    lines.append(f'          "description": "{escape_tsx(description)}",')
+    lines.append('          "provider": { "@type": "Organization", "name": "Simplex Latam" },')
+    lines.append(f'          "url": "{SITE_URL}/{slug}",')
+    lines.append('          "applicationCategory": "BusinessApplication",')
+    lines.append('          "operatingSystem": "Web",')
+    lines.append('          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },')
+    lines.append("        }) }}")
+    lines.append("      />")
+
+    # Main container
+    lines.append('      <div style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "\'Inter\', sans-serif", fontSize: 16, lineHeight: 1.65 }}>')
+
+    # NAV
+    lines.append('        {/* NAV */}')
+    lines.append('        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--paper)", borderBottom: `3px double var(--ink)`, padding: "0 5vw" }}>')
+    lines.append('          <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68 }}>')
+    lines.append('            <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>')
+    lines.append('              <img src="/logo.svg" alt="Flux Agent" style={{ height: 28 }} />')
+    lines.append('            </a>')
+    lines.append('            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>')
+    lines.append('              <a href="/#problema" style={{ fontSize: 13.5, fontWeight: 500, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 6 }}>El problema</a>')
+    lines.append('              <a href="/#casos" style={{ fontSize: 13.5, fontWeight: 500, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 6 }}>Casos de uso</a>')
+    lines.append('              <a href="/#como" style={{ fontSize: 13.5, fontWeight: 500, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 6 }}>Cómo funciona</a>')
+    lines.append('              <div style={{ width: 1, height: 28, background: "var(--rule)", margin: "0 8px" }} />')
+    lines.append('              <Link href="/login" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", textDecoration: "none", padding: "9px 18px", border: `1.5px solid var(--rule)`, borderRadius: 6 }}>Iniciar sesión</Link>')
+    lines.append('              <Link href="/register" style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)", textDecoration: "none", padding: "9px 20px", background: "var(--neon)", borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 6 }}>Registrarse →</Link>')
+    lines.append('            </div>')
+    lines.append('          </div>')
+    lines.append('        </nav>')
+
+    # TOPBAR
+    lines.append('        {/* TOPBAR */}')
+    lines.append('        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 5vw" }}>')
+    lines.append('          <div style={{ borderBottom: `1px solid var(--rule)`, padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>')
+    lines.append('            <span style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, fontWeight: 400, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--muted)" }}>By Simplex Latam · 2026</span>')
+    lines.append('            <span style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--neon-dim)", display: "flex", alignItems: "center", gap: 6 }}>')
+    lines.append('              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--neon)", display: "inline-block", animation: "blink 2s ease-in-out infinite" }} />')
+    lines.append('              Asistentes activos ahora mismo')
+    lines.append('            </span>')
+    lines.append('          </div>')
+    lines.append('        </div>')
+
+    # HERO
+    lines.append('        {/* HERO */}')
+    lines.append('        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "72px 5vw 88px", display: "grid", gridTemplateColumns: "1fr 360px", gap: 80, alignItems: "start" }}>')
+    lines.append('          <div>')
+    lines.append(f'            <div style={{{{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--neon-dim)", background: "var(--neon-pale)", padding: "8px 14px", display: "inline-block", marginBottom: 28, borderLeft: `3px solid var(--neon)` }}}}>')
+    lines.append(f'              {escape_tsx(keyword.title())} · By Simplex Latam')
+    lines.append('            </div>')
+    lines.append(f'            <h1 style={{{{ fontFamily: "\'Fraunces\', serif", fontWeight: 500, fontSize: "clamp(52px, 6vw, 88px)", lineHeight: 0.93, letterSpacing: "-0.04em", color: "var(--ink)", marginBottom: 32 }}}}>{escape_tsx(title)}</h1>')
+    lines.append(f'            <p style={{{{ fontSize: 20, fontWeight: 400, lineHeight: 1.6, color: "var(--ink-soft)", maxWidth: 600, marginBottom: 48, borderLeft: `3px solid var(--rule)`, paddingLeft: 20 }}}}>')
+    lines.append(f'              {escape_tsx(description)}')
+    lines.append('            </p>')
+    lines.append('            <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "var(--neon)", color: "var(--paper)", padding: "18px 36px", borderRadius: 8, fontWeight: 600, fontSize: 17, textDecoration: "none" }}>')
+    lines.append('              Configurá tu asistente →')
+    lines.append('              <span style={{ fontSize: 13, opacity: 0.7 }}>14 días gratis</span>')
+    lines.append('            </Link>')
+    lines.append('          </div>')
+
+    # SIDEBAR
+    lines.append('          <aside style={{ border: "2px solid var(--ink)", borderRadius: 2, background: "var(--paper)", padding: 28, position: "sticky", top: 100 }}>')
+    lines.append('            <div style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 10, fontWeight: 500, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 18, borderBottom: "1px solid var(--rule)", paddingBottom: 10 }}>')
+    lines.append('              métricas reales')
+    lines.append('            </div>')
+    lines.append('            <div style={{ display: "grid", gap: 18 }}>')
+    lines.append('              {STATS.map((s) => (')
+    lines.append('                <div key={s.num} style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: 12, alignItems: "start" }}>')
+    lines.append('                  <div style={{ fontFamily: "\'Fraunces\', serif", fontSize: 32, fontWeight: 600, color: "var(--ink)", lineHeight: 1 }}>{s.num}</div>')
+    lines.append('                  <div style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.4, paddingTop: 6 }}>{s.label}</div>')
+    lines.append('                </div>')
+    lines.append('              ))}')
+    lines.append('            </div>')
+    lines.append('            <div style={{ border: "1px solid var(--rule)", borderRadius: 4, padding: "16px 18px", marginTop: 22, background: "var(--neon-pale)" }}>')
+    lines.append('              <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.04em", color: "var(--ink)", marginBottom: 6 }}>¿Listo para automatizar?</div>')
+    lines.append('              <div style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 14 }}>Empresas como la tuya ahorran 40-70% en tareas repetitivas.</div>')
+    lines.append('              <Link href="/register" style={{ display: "block", textAlign: "center", background: "var(--neon)", color: "var(--paper)", padding: "10px 16px", borderRadius: 6, fontWeight: 600, fontSize: 14, textDecoration: "none" }}>Empezar ahora</Link>')
+    lines.append('            </div>')
+    lines.append('          </aside>')
+    lines.append('        </div>')
+
+    # FEATURES
+    lines.append('        {/* FEATURES */}')
+    lines.append('        <div style={{ background: "var(--ink)", color: "var(--paper)", padding: "80px 5vw" }}>')
+    lines.append('          <div style={{ maxWidth: 1280, margin: "0 auto" }}>')
+    lines.append('            <div style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--neon)", marginBottom: 20 }}>características</div>')
+    lines.append(f'            <h2 style={{{{ fontFamily: "\'Fraunces\', serif", fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 500, lineHeight: 1.1, marginBottom: 60, maxWidth: 900 }}}}>Todo lo que necesitás para automatizar {escape_tsx(keyword)}.</h2>')
+    lines.append('            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 2 }}>')
+    lines.append('              {FEATURES.map((f) => (')
+    lines.append('                <div key={f.name} style={{ background: "var(--paper)", color: "var(--ink)", padding: "32px 28px", borderRadius: 2 }}>')
+    lines.append('                  <div style={{ fontSize: 28, marginBottom: 16 }}>{f.icon}</div>')
+    lines.append('                  <div style={{ fontFamily: "\'Fraunces\', serif", fontSize: 22, fontWeight: 600, marginBottom: 6 }}>{f.name}</div>')
+    lines.append('                  <div style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, fontWeight: 400, textTransform: "uppercase", letterSpacing: "0.14em", opacity: 0.6 }}>{f.dept}</div>')
+    lines.append('                </div>')
+    lines.append('              ))}')
+    lines.append('            </div>')
+    lines.append('          </div>')
+    lines.append('        </div>')
+
+    # STEPS
+    lines.append('        {/* STEPS */}')
+    lines.append('        <div style={{ background: "var(--paper)", padding: "80px 5vw" }}>')
+    lines.append('          <div style={{ maxWidth: 1000, margin: "0 auto" }}>')
+    lines.append('            <div style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--neon-dim)", marginBottom: 20 }}>cómo funciona</div>')
+    lines.append('            <h2 style={{ fontFamily: "\'Fraunces\', serif", fontSize: "clamp(28px, 3.5vw, 44px)", fontWeight: 500, lineHeight: 1.15, marginBottom: 60 }}>En 3 pasos, tu equipo empieza a trabajar 4x más rápido.</h2>')
+    lines.append('            <div style={{ display: "grid", gap: 0 }}>')
+    lines.append('              {STEPS.map((s) => (')
+    lines.append('                <div key={s.n} style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 32, padding: "36px 0", borderBottom: "1px solid var(--rule)" }}>')
+    lines.append('                  <div style={{ fontFamily: "\'Fraunces\', serif", fontSize: 72, fontWeight: 600, color: "var(--neon-dim)", lineHeight: 1 }}>{s.n}</div>')
+    lines.append('                  <div>')
+    lines.append('                    <div style={{ fontFamily: "\'Fraunces\', serif", fontSize: 26, fontWeight: 600, marginBottom: 10, color: "var(--ink)" }}>{s.title}</div>')
+    lines.append('                    <div style={{ fontSize: 16, color: "var(--ink-soft)", lineHeight: 1.6, maxWidth: 560 }}>{s.desc}</div>')
+    lines.append('                  </div>')
+    lines.append('                </div>')
+    lines.append('              ))}')
+    lines.append('            </div>')
+    lines.append('          </div>')
+    lines.append('        </div>')
+
+    # TESTIMONIALS
+    lines.append('        {/* TESTIMONIALS */}')
+    lines.append('        <div style={{ background: "var(--rule)", padding: "80px 5vw" }}>')
+    lines.append('          <div style={{ maxWidth: 1200, margin: "0 auto" }}>')
+    lines.append('            <div style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--neon-dim)", marginBottom: 20 }}>testimonios</div>')
+    lines.append('            <h2 style={{ fontFamily: "\'Fraunces\', serif", fontSize: "clamp(28px, 3.5vw, 44px)", fontWeight: 500, lineHeight: 1.15, marginBottom: 48 }}>Empresas que ya automatizaron con Flux Agent.</h2>')
+    lines.append('            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 24 }}>')
+    lines.append('              {TESTIMONIALS.map((t, i) => (')
+    lines.append('                <div key={i} style={{ background: "var(--paper)", border: "2px solid var(--ink)", borderRadius: 2, padding: 32, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>')
+    lines.append('                  <div>')
+    lines.append('                    <div style={{ fontFamily: "\'Fraunces\', serif", fontSize: 20, fontWeight: 500, lineHeight: 1.5, marginBottom: 24 }}>"{t.quote}"</div>')
+    lines.append('                  </div>')
+    lines.append('                  <div style={{ borderTop: "1px solid var(--rule)", paddingTop: 18, display: "flex", justifyContent: "space-between", alignItems: "center" }}>')
+    lines.append('                    <div>')
+    lines.append('                      <div style={{ fontWeight: 600, fontSize: 14 }}>{t.name}</div>')
+    lines.append('                      <div style={{ fontSize: 12, color: "var(--muted)" }}>{t.role}</div>')
+    lines.append('                    </div>')
+    lines.append('                    <div style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, fontWeight: 600, color: "var(--neon-dim)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t.result}</div>')
+    lines.append('                  </div>')
+    lines.append('                </div>')
+    lines.append('              ))}')
+    lines.append('            </div>')
+    lines.append('          </div>')
+    lines.append('        </div>')
+
+    # CTA FINAL
+    lines.append('        {/* CTA FINAL */}')
+    lines.append('        <div style={{ background: "var(--neon)", padding: "80px 5vw", textAlign: "center" }}>')
+    lines.append('          <div style={{ maxWidth: 800, margin: "0 auto" }}>')
+    lines.append(f'            <h2 style={{{{ fontFamily: "\'Fraunces\', serif", fontSize: "clamp(36px, 5vw, 64px)", fontWeight: 600, lineHeight: 1.05, marginBottom: 24, color: "var(--paper)" }}}}>¿Listo para automatizar {escape_tsx(keyword)}?</h2>')
+    lines.append('            <p style={{ fontSize: 18, color: "var(--paper)", opacity: 0.85, marginBottom: 40 }}>Configurá tu asistente en 14 días. Resultados medibles desde la semana 1.</p>')
+    lines.append('            <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "var(--paper)", color: "var(--neon)", padding: "18px 36px", borderRadius: 8, fontWeight: 700, fontSize: 17, textDecoration: "none" }}>')
+    lines.append('              Empezar ahora →')
+    lines.append('            </Link>')
+    lines.append('          </div>')
+    lines.append('        </div>')
+
+    # FOOTER
+    lines.append('        {/* FOOTER */}')
+    lines.append('        <footer style={{ background: "var(--ink)", color: "var(--paper)", padding: "40px 5vw" }}>')
+    lines.append('          <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 20 }}>')
+    lines.append('            <div style={{ fontFamily: "\'Fraunces\', serif", fontSize: 22, fontWeight: 600 }}>Flux Agent</div>')
+    lines.append('            <div style={{ fontFamily: "\'DM Mono\', monospace", fontSize: 11, letterSpacing: "0.1em", opacity: 0.5 }}>By Simplex Latam · 2026</div>')
+    lines.append('          </div>')
+    lines.append('        </footer>')
+    lines.append('      </div>')
+    lines.append('    </>')
+    lines.append('  );')
+    lines.append('}')
+    lines.append('')
+
+    return "\n".join(lines)
 
 
-def generate_article(keyword: str, serp_data: dict) -> dict:
-    """Generate article metadata and content based on keyword and SERP data."""
-    import random
-    template = random.choice(TOPIC_TEMPLATES)
-    title = template.format(keyword=keyword).capitalize()
+# ─── Blog Generation ───
 
-    # Generate slug
-    slug = title.lower()
-    slug = re.sub(r'[áàä]', 'a', slug)
-    slug = re.sub(r'[éèë]', 'e', slug)
-    slug = re.sub(r'[íìï]', 'i', slug)
-    slug = re.sub(r'[óòö]', 'o', slug)
-    slug = re.sub(r'[úùü]', 'u', slug)
-    slug = re.sub(r'[ñ]', 'n', slug)
-    slug = re.sub(r'[^a-z0-9]+', '-', slug)
-    slug = slug.strip('-')[:80]
-
-    # Build article content
-    description = f"Descubrí cómo {keyword} puede ayudar a tu empresa a ser más eficiente. Guía práctica para negocios en LATAM. By Simplex Latam."
-
-    # Generate sections based on SERP insights
-    serp_titles = serp_data.get("top_titles", [])
+def generate_blog_article(keyword: str, serp_data: dict) -> dict:
+    template = random.choice(BLOG_TEMPLATES)
+    title = template.format(kw=keyword.capitalize())
+    slug = slugify(title)
+    description = f"Descubrí cómo {keyword} puede ayudar a tu empresa. Guía práctica para LATAM. By Simplex Latam."
 
     sections = []
     sections.append(f"## ¿Qué es {keyword} y por qué importa en 2026?")
-    sections.append(f"{keyword} se ha convertido en una prioridad para las empresas latinoamericanas que buscan escalar sin aumentar su nómina. En un mercado cada vez más competitivo, automatizar procesos no es un lujo sino una necesidad.")
-
+    sections.append(f"{keyword.capitalize()} se ha convertido en una prioridad para empresas latinoamericanas que buscan escalar sin aumentar nómina. Automatizar no es un lujo, es una necesidad.")
     sections.append(f"## El problema que resuelve {keyword}")
-    sections.append(f"Las empresas en LATAM enfrentan un desafío común: crecer la operación sin que los costos crezcan en la misma proporción. {keyword} aborda exactamente este problema, permitiendo que los equipos se enfoquen en tareas de alto valor mientras los procesos repetitivos se ejecutan automáticamente.")
-
+    sections.append(f"Las empresas enfrentan un desafío común: crecer sin que los costos crezcan en la misma proporción. {keyword.capitalize()} aborda exactamente esto.")
     sections.append("## Cómo funciona en la práctica")
-    sections.append(f"Imaginá tener un empleado digital que trabaja 24/7, no se enferma, no toma vacaciones y aprende de cada interacción. Eso es lo que Flux Agent ofrece con {keyword}: un asistente configurado específicamente para tu proceso de negocio.")
-
-    sections.append("## Resultados que pueden esperar las empresas")
-    sections.append("Las empresas que ya implementaron asistentes digitales con Flux Agent reportan:")
-    sections.append("- Reducción del 40-70% en tiempo dedicado a tareas repetitivas")
+    sections.append(f"Imaginá un empleado digital que trabaja 24/7. Eso es lo que Flux Agent ofrece con {keyword}: un asistente configurado para tu proceso.")
+    sections.append("## Resultados esperados")
+    sections.append("- Reducción del 40-70% en tareas repetitivas")
     sections.append("- ROI de 800% en el primer trimestre")
-    sections.append("- Tiempo de implementación de solo 14 días")
-    sections.append("- Sin contrataciones adicionales necesarias")
-
-    sections.append("## Pasos para implementar en tu empresa")
-    sections.append("1. **Diagnosticá tu operación**: Identificá las tareas que más tiempo consumen")
-    sections.append("2. **Conectá tus herramientas**: WhatsApp, CRM, calendario y más")
-    sections.append("3. **Configurá el asistente**: Flux Agent lo adapta a tu proceso específico")
-    sections.append("4. **Revisá los resultados**: El asistente trabaja y vos supervisás")
-
+    sections.append("- Implementación en solo 14 días")
+    sections.append("## Pasos para implementar")
+    sections.append("1. Diagnosticá tu operación")
+    sections.append("2. Conectá tus herramientas (WhatsApp, CRM, etc.)")
+    sections.append("3. Configurá el asistente")
+    sections.append("4. Revisá resultados")
     sections.append("## Conclusión")
-    sections.append(f"{keyword} no es el futuro, es el presente. Las empresas que lo implementan hoy tendrán ventaja competitiva mañana. Flux Agent by Simplex Latam hace que la implementación sea rápida, sin complicaciones y con garantía de 60 días.")
-
-    # Add CTA
+    sections.append(f"{keyword.capitalize()} no es el futuro, es el presente. Flux Agent by Simplex Latam hace que la implementación sea rápida y con garantía de 60 días.")
     sections.append("---")
-    sections.append("*¿Listo para automatizar? [Configurá tu asistente digital](https://flux.simplex.lat/register) y empezá a ver resultados en 14 días.*")
-    sections.append(f"*Artículo escrito por Flux Agent · By Simplex Latam · {datetime.now().strftime('%B %Y')}*")
+    sections.append(f"*Escrito por Flux Agent · By Simplex Latam · {datetime.now().strftime('%B %Y')}*")
 
     body = "\n\n".join(sections)
 
     return {
+        "type": "blog",
+        "keyword": keyword,
         "title": title,
         "slug": slug,
         "description": description,
-        "keywords": keyword,
         "body": body,
-        "serp_data": serp_data,
     }
 
 
-def write_article(article: dict) -> Path:
-    """Write article as markdown with frontmatter."""
+def write_blog(article: dict) -> Path:
     CONTENT_DIR.mkdir(parents=True, exist_ok=True)
     filepath = CONTENT_DIR / f"{article['slug']}.md"
-
-    frontmatter = f"""---
+    front = f"""---
 title: "{article['title']}"
 description: "{article['description']}"
-keywords: "{article['keywords']}"
+keywords: "{article['keyword']}"
 author: "Flux Agent"
 date: "{datetime.now().strftime('%Y-%m-%d')}"
 slug: "{article['slug']}"
@@ -246,71 +478,133 @@ og_image: "/og-blog.jpg"
 
 {article['body']}
 """
-    filepath.write_text(frontmatter, encoding="utf-8")
+    filepath.write_text(front, encoding="utf-8")
     return filepath
 
 
-def git_commit_push(filepath: Path, message: str):
-    """Stage, commit and push a file."""
+def write_landing(page: dict) -> Path:
+    page_dir = APP_DIR / page['slug']
+    page_dir.mkdir(parents=True, exist_ok=True)
+    filepath = page_dir / "page.tsx"
+    filepath.write_text(page['content'], encoding="utf-8")
+    return filepath
+
+
+# ─── Git ───
+
+def git_commit(files: list[Path], msg: str):
     repo = REPO_ROOT
-    subprocess.run(["git", "add", str(filepath)], cwd=repo, capture_output=True)
-    subprocess.run(["git", "commit", "-m", message], cwd=repo, capture_output=True)
-    result = subprocess.run(["git", "push", "origin", "master"], cwd=repo, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"  [ERROR] Git push failed: {result.stderr}")
+    subprocess.run(["git", "add"] + [str(f) for f in files], cwd=repo, capture_output=True)
+    subprocess.run(["git", "commit", "-m", msg], cwd=repo, capture_output=True)
+    r = subprocess.run(["git", "push", "origin", "master"], cwd=repo, capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f" [ERROR] Push failed: {r.stderr[:200]}")
     else:
-        print(f"  [OK] Pushed to origin/master")
+        print(f" [OK] Pushed to origin/master")
 
 
-def run(count: int = 1, dry_run: bool = False):
-    """Main pipeline: research → generate → write → commit."""
+# ─── Tracking ───
+
+def used_landing_keys() -> set:
+    used = set()
+    for f in APP_DIR.glob("*/page.tsx"):
+        if f.parent.name in ("admin", "dashboard", "login", "register", "blog", "components"):
+            continue
+        try:
+            txt = f.read_text()
+            m = re.search(r'keywords:\s*"([^"]+)"', txt)
+            if m:
+                used.update(m.group(1).lower().split(", "))
+        except Exception:
+            pass
+    return used
+
+
+def used_blog_keys() -> set:
+    used = set()
+    for f in CONTENT_DIR.glob("*.md"):
+        try:
+            txt = f.read_text()
+            m = re.search(r'keywords:\s*"([^"]+)"', txt)
+            if m:
+                used.update(m.group(1).lower().split(", "))
+        except Exception:
+            pass
+    return used
+
+
+# ─── Pipeline ───
+
+def run(count_landing: int = 3, count_blog: int = 2, dry_run: bool = False):
     print(f"🤖 Flux Agent SEO Pipeline — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"   Mode: {'DRY RUN' if dry_run else 'LIVE'} | Articles: {count}")
+    print(f" Mode: {'DRY RUN' if dry_run else 'LIVE'} | {count_landing} landing + {count_blog} blog\n")
+
+    committed = []
+    lang = random.choice(LOCATIONS)[0]
+
+    # LANDINGS
+    avail_land = [k for k in LANDING_KEYWORDS if k not in used_landing_keys()]
+    if not avail_land:
+        avail_land = LANDING_KEYWORDS[:]
+    random.shuffle(avail_land)
+
+    for i in range(min(count_landing, len(avail_land))):
+        kw = avail_land[i]
+        print(f"[LANDING {i+1}/{count_landing}] {kw}")
+        serp = serp_research(kw, location_code=lang)
+        print(f"   SERP: {serp['results']} results")
+        page = make_landing_page(kw, serp)
+        print(f"   → /{page['slug']}")
+        if dry_run:
+            print(f"   [DRY RUN] src/app/{page['slug']}/page.tsx")
+            continue
+        fp = write_landing(page)
+        committed.append(fp)
+        print(f"   ✅ {fp.stat().st_size:,} bytes")
+
     print()
 
-    for i in range(count):
-        print(f"[{i+1}/{count}] Generating article...")
+    # BLOGS
+    avail_blog = [k for k in BLOG_KEYWORDS if k not in used_blog_keys()]
+    if not avail_blog:
+        avail_blog = BLOG_KEYWORDS[:]
+    random.shuffle(avail_blog)
+    blog_kws = avail_blog[:count_blog]
 
-        # 1. Select keyword
-        keyword = select_keyword()
-        print(f"  Keyword: {keyword}")
+    vols = {}
+    if blog_kws and not dry_run:
+        print(f"[BLOG] Volume research ({len(blog_kws)} keywords)...")
+        vols = get_keyword_volume(blog_kws)
 
-        # 2. SERP research
-        print("  Researching SERP...")
-        serp_data = serp_research(keyword)
-        print(f"  SERP results: {serp_data['results']} | Top: {serp_data['top_titles'][:2]}")
-
-        # 3. Get volume
-        vol = get_keyword_volume([keyword])
-        volume = vol.get(keyword, "N/A")
-        print(f"  Search volume: {volume}")
-
-        # 4. Generate article
-        article = generate_article(keyword, serp_data)
-        print(f"  Title: {article['title']}")
-        print(f"  Slug: {article['slug']}")
-
+    for i, kw in enumerate(blog_kws):
+        print(f"\n[BLOG {i+1}/{count_blog}] {kw} | Vol: {vols.get(kw, 'N/A')}")
+        serp = serp_research(kw, location_code=lang)
+        print(f"   SERP: {serp['results']} results")
+        art = generate_blog_article(kw, serp)
+        print(f"   → {art['title']}")
         if dry_run:
-            print(f"  [DRY RUN] Would write to: {CONTENT_DIR / article['slug']}.md")
-            print()
+            print(f"   [DRY RUN] content/blog/{art['slug']}.md")
             continue
+        fp = write_blog(art)
+        committed.append(fp)
+        print(f"   ✅ {fp.stat().st_size:,} bytes")
 
-        # 5. Write file
-        filepath = write_article(article)
-        print(f"  Written: {filepath} ({filepath.stat().st_size} bytes)")
-
-        # 6. Commit and push
-        commit_msg = f"seo: {article['slug']} (kw: {keyword})"
-        git_commit_push(filepath, commit_msg)
-        print()
-
-    print("✅ SEO Pipeline complete!")
+    # COMMIT
+    if committed and not dry_run:
+        msg = f"seo: {len(committed)} pieces ({count_landing} landing + {count_blog} blog)"
+        git_commit(committed, msg)
+        print(f"\n✅ Done! {len(committed)} files pushed.")
+    elif dry_run:
+        print(f"\n✅ DRY RUN — {count_landing + count_blog} pieces would be generated")
+    else:
+        print(f"\n⚠️ No new content (all keywords used)")
 
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Flux Agent SEO Pipeline")
-    parser.add_argument("--count", type=int, default=1, help="Number of articles to generate")
-    parser.add_argument("--dry-run", action="store_true", help="Preview without writing")
-    args = parser.parse_args()
-    run(count=args.count, dry_run=args.dry_run)
+    p = argparse.ArgumentParser()
+    p.add_argument("--landing", type=int, default=3)
+    p.add_argument("--blog", type=int, default=2)
+    p.add_argument("--dry-run", action="store_true")
+    a = p.parse_args()
+    run(count_landing=a.landing, count_blog=a.blog, dry_run=a.dry_run)
