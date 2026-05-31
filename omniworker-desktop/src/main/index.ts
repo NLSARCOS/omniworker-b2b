@@ -265,6 +265,7 @@ process.on("unhandledRejection", (reason) => {
 
 let mainWindow: BrowserWindow | null = null;
 let currentChatAbort: (() => void) | null = null;
+let isUpdating = false;
 const memoryChangeSubscriptions = new Map<number, () => void>();
 
 function unsubscribeMemoryChangesForWebContents(webContentsId: number): void {
@@ -1905,7 +1906,44 @@ function setupUpdater(): void {
     }
   });
 
-  ipcMain.handle("install-update", () => {
+  ipcMain.handle("install-update", async () => {
+    console.log("[Update] Preparing to apply update. Running graceful cleanup...");
+    stopHealthPolling();
+    if (currentChatAbort) {
+      currentChatAbort();
+      currentChatAbort = null;
+    }
+    stopSmartRouter();
+    for (const webContentsId of memoryChangeSubscriptions.keys()) {
+      unsubscribeMemoryChangesForWebContents(webContentsId);
+    }
+    cleanupMemoryWatchers();
+
+    try {
+      console.log("[Update] Stopping Engram daemon...");
+      await EngramDaemonManager.stopDaemon();
+    } catch (err) {
+      console.error("[Update] stopDaemon failed:", err);
+    }
+
+    try {
+      stopGateway();
+      stopSshTunnel();
+      stopClaw3d();
+      stopWhatsAppBot();
+    } catch (err) {
+      console.error("[Update] stop services failed:", err);
+    }
+
+    try {
+      console.log("[Update] Killing spawned processes...");
+      await killSpawnedProcessesGracefully();
+    } catch (err) {
+      console.error("[Update] killSpawnedProcessesGracefully failed:", err);
+    }
+
+    console.log("[Update] Cleanup complete. Calling quitAndInstall...");
+    isUpdating = true;
     autoUpdater.quitAndInstall(false, true);
   });
 
@@ -2047,6 +2085,9 @@ app.whenReady().then(async () => {
   // ── macOS: Check Full Disk Access on first launch ──────────────────
   if (process.platform === "darwin") {
     (async () => {
+      if (getConfigValue("dismissed_fda_prompt") === "true") {
+        return;
+      }
       const os = await import("os");
       const fs = await import("fs");
       const path = await import("path");
@@ -2075,6 +2116,9 @@ app.whenReady().then(async () => {
 
         if (result.response === 0) {
           exec("open 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles'");
+        } else {
+          // If clicked "Later" (index 1), save preference so we don't prompt on every startup
+          setConfigValue("dismissed_fda_prompt", "true");
         }
       }
     })().catch((err) => {
@@ -2124,6 +2168,7 @@ app.on("window-all-closed", () => {
 let cleanupDone = false;
 
 app.on("before-quit", (event) => {
+  if (isUpdating) return;
   if (cleanupDone) return;
   event.preventDefault();
   cleanupDone = true;
