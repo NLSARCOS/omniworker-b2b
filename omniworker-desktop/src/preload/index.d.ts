@@ -856,6 +856,14 @@ interface OmniWorkerAPI {
   getTokens: () => Promise<{ accessToken: string; refreshToken: string }>;
   deleteTokens: () => Promise<void>;
   removeEnv: (key: string, profile?: string) => Promise<void>;
+
+  // Main-process token refresh events
+  onTokenRefreshed: (
+    callback: (data: { accessToken: string; refreshToken: string; user?: any }) => void,
+  ) => () => void;
+  onSessionExpired: (callback: () => void) => () => void;
+  startTokenRefreshLoop: () => void;
+  stopTokenRefreshLoop: () => void;
 }
 
 

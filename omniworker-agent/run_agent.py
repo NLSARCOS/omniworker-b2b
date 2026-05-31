@@ -12055,6 +12055,14 @@ class AIAgent:
         # Installed once, transparent when streams are healthy, prevents crash on write.
         _install_safe_stdio()
 
+        # Re-read .env so that API keys refreshed by the desktop app's
+        # main-process token rotation loop are picked up between turns.
+        try:
+            from omniworker_cli.env_loader import load_omniworker_dotenv
+            load_omniworker_dotenv()
+        except Exception:
+            pass  # best-effort — don't block the conversation
+
         # OMNIWORKER INTENT CLASSIFIER (Hybrid Routing)
         try:
             import os

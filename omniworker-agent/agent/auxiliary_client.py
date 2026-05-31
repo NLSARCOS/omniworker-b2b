@@ -1700,6 +1700,14 @@ def _resolve_custom_runtime() -> Tuple[Optional[str], Optional[str], Optional[st
     endpoints where the base URL lives in config.yaml instead of the live
     environment.
     """
+    # Re-read .env so that API keys refreshed by the desktop app are picked
+    # up by long-running agent processes without a restart.
+    try:
+        from omniworker_cli.env_loader import load_omniworker_dotenv
+        load_omniworker_dotenv()
+    except Exception:
+        pass  # best-effort
+
     try:
         from omniworker_cli.runtime_provider import resolve_runtime_provider
 

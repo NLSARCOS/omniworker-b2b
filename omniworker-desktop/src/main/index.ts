@@ -1941,6 +1941,109 @@ app.whenReady().then(async () => {
   createWindow();
   setupUpdater();
 
+  // ── Main-process token refresh loop ────────────────────────────────
+  // This runs in the main process (not renderer) so it keeps refreshing
+  // even when the window is closed on macOS or the renderer is throttled.
+  const SAAS_URL = process.env.VITE_SAAS_URL || "https://flux.simplex.lat";
+  const TOKEN_REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+
+  let mainProcessRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
+  async function mainProcessRefreshToken(): Promise<void> {
+    try {
+      const tokens = getSecureTokens();
+      if (!tokens.refreshToken) return; // No session — skip
+
+      let fingerprint: string | undefined;
+      try { fingerprint = getDeviceFingerprint(); } catch { /* non-fatal */ }
+
+      const { net } = await import("electron");
+      const res = await net.fetch(`${SAAS_URL}/api/v1/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refreshToken: tokens.refreshToken,
+          deviceFingerprint: fingerprint,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.accessToken) {
+          // Persist to safeStorage
+          saveSecureTokens(data.accessToken, data.refreshToken || tokens.refreshToken);
+
+          // Sync to .env for CLI/gateway background processes
+          try {
+            setEnvValue("OPENAI_API_KEY", data.accessToken);
+            setEnvValue("CUSTOM_API_KEY", data.accessToken);
+          } catch { /* non-fatal */ }
+
+          try {
+            setConfigValue("model:api_key", data.accessToken);
+            setConfigValue("api_key", data.accessToken);
+          } catch { /* non-fatal */ }
+
+          // Sync plan expiration
+          if (data.user) {
+            setPlanExpired(!!data.user.isPlanExpired);
+          }
+
+          // Broadcast to all renderer windows so they update in-memory state
+          for (const win of BrowserWindow.getAllWindows()) {
+            if (!win.isDestroyed()) {
+              win.webContents.send("token-refreshed", {
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken || tokens.refreshToken,
+                user: data.user,
+              });
+            }
+          }
+
+          console.log("[MAIN-REFRESH] Token refreshed successfully.");
+        }
+      } else if (res.status === 401) {
+        console.error("[MAIN-REFRESH] Refresh token expired (401). Notifying renderer to logout...");
+        // Stop the loop — session is dead
+        if (mainProcessRefreshTimer) {
+          clearInterval(mainProcessRefreshTimer);
+          mainProcessRefreshTimer = null;
+        }
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (!win.isDestroyed()) {
+            win.webContents.send("session-expired");
+          }
+        }
+      } else {
+        console.warn(`[MAIN-REFRESH] Refresh failed with status ${res.status}`);
+      }
+    } catch (err) {
+      console.error("[MAIN-REFRESH] Token refresh error:", err);
+    }
+  }
+
+  // Start the loop if there are existing tokens
+  const existingTokens = getSecureTokens();
+  if (existingTokens.refreshToken) {
+    // Do an immediate refresh on startup, then every 10 min
+    mainProcessRefreshToken();
+    mainProcessRefreshTimer = setInterval(mainProcessRefreshToken, TOKEN_REFRESH_INTERVAL_MS);
+  }
+
+  // Allow renderer to signal that login happened so we start the loop
+  ipcMain.on("start-token-refresh-loop", () => {
+    if (mainProcessRefreshTimer) clearInterval(mainProcessRefreshTimer);
+    mainProcessRefreshToken();
+    mainProcessRefreshTimer = setInterval(mainProcessRefreshToken, TOKEN_REFRESH_INTERVAL_MS);
+  });
+
+  ipcMain.on("stop-token-refresh-loop", () => {
+    if (mainProcessRefreshTimer) {
+      clearInterval(mainProcessRefreshTimer);
+      mainProcessRefreshTimer = null;
+    }
+  });
+
   // ── macOS: Check Full Disk Access on first launch ──────────────────
   if (process.platform === "darwin") {
     (async () => {

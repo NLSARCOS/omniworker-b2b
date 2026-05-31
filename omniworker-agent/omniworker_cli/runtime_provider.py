@@ -1064,6 +1064,15 @@ def resolve_runtime_provider(
     persisted default. Other callers can leave it None to preserve existing
     behavior (api_mode derived from config).
     """
+    # Re-read .env so that API keys refreshed by the desktop app (written
+    # to ~/.hermes/.env by the main-process token rotation loop) are picked
+    # up by long-running agent processes without a restart.
+    try:
+        from omniworker_cli.env_loader import load_omniworker_dotenv
+        load_omniworker_dotenv()
+    except Exception:
+        pass  # best-effort — don't block credential resolution
+
     requested_provider = resolve_requested_provider(requested)
 
     # Azure Anthropic short-circuit: when explicitly targeting an Azure endpoint

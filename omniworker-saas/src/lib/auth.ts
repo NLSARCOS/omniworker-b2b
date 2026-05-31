@@ -65,7 +65,11 @@ export function signAccessToken(payload: JWTPayload): string {
 }
 
 export function signRefreshToken(payload: { userId: string; family: string }): string {
-  return jwt.sign(payload, JWT_REFRESH_SECRET!, { expiresIn: REFRESH_TOKEN_EXPIRES });
+  const uniquePayload = {
+    ...payload,
+    jti: randomBytes(16).toString("hex"),
+  };
+  return jwt.sign(uniquePayload, JWT_REFRESH_SECRET!, { expiresIn: REFRESH_TOKEN_EXPIRES });
 }
 
 export function verifyAccessToken(token: string): JWTPayload | null {

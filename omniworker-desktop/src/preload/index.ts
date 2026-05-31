@@ -1115,6 +1115,32 @@ const omniworkerAPI = {
     ipcRenderer.invoke("delete-tokens"),
   removeEnv: (key: string, profile?: string): Promise<void> =>
     ipcRenderer.invoke("remove-env", key, profile),
+
+  // ── Main-process token refresh events ──
+  onTokenRefreshed: (
+    callback: (data: { accessToken: string; refreshToken: string; user?: any }) => void,
+  ): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: unknown): void =>
+      callback(data as { accessToken: string; refreshToken: string; user?: any });
+    ipcRenderer.on("token-refreshed", handler);
+    return () => ipcRenderer.removeListener("token-refreshed", handler);
+  },
+
+  onSessionExpired: (
+    callback: () => void,
+  ): (() => void) => {
+    const handler = (): void => callback();
+    ipcRenderer.on("session-expired", handler);
+    return () => ipcRenderer.removeListener("session-expired", handler);
+  },
+
+  // Signal main process to start/stop token refresh loop
+  startTokenRefreshLoop: (): void => {
+    ipcRenderer.send("start-token-refresh-loop");
+  },
+  stopTokenRefreshLoop: (): void => {
+    ipcRenderer.send("stop-token-refresh-loop");
+  },
 };
 
 if (process.contextIsolated) {

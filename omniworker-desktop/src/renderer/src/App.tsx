@@ -35,11 +35,8 @@ function App(): React.JSX.Element {
     localStorage.removeItem("ow_auth");
     window.omniworkerAPI.deleteTokens().catch(console.error);
 
-    // Clear auto-refresh interval if active
-    if ((window as any).__owRefreshInterval) {
-      clearInterval((window as any).__owRefreshInterval);
-      delete (window as any).__owRefreshInterval;
-    }
+    // Signal main process to stop the token refresh loop
+    window.omniworkerAPI.stopTokenRefreshLoop();
 
     setScreen("login");
   }, []);
@@ -129,82 +126,10 @@ function App(): React.JSX.Element {
 
       console.error("[APP] Configured direct SaaS connection:", directSaasApi);
 
-      // 5. Auto-refresh del JWT cada 12 minutos para mantener la sesión viva
-      if (auth.refreshToken) {
-        const doRefresh = async (refreshToken: string) => {
-          try {
-            let fingerprint: string | undefined;
-            try {
-              fingerprint = await window.omniworkerAPI.getDeviceFingerprint();
-            } catch (fpErr) {
-              console.error("[APP] Failed to get fingerprint for token refresh:", fpErr);
-            }
-            const res = await fetch(`${saasUrl}/api/v1/auth/refresh`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ refreshToken, deviceFingerprint: fingerprint }),
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (data.accessToken) {
-                setAuthToken(data.accessToken);
-                // Guardar el nuevo token refrescado en safeStorage
-                await window.omniworkerAPI.saveTokens({
-                  accessToken: data.accessToken,
-                  refreshToken: data.refreshToken || refreshToken,
-                });
-
-                if (data.user) {
-                  setUserData(data.user);
-                  try {
-                    await window.omniworkerAPI.setPlanExpired(!!data.user.isPlanExpired);
-                  } catch (err: any) {
-                    console.error("[APP] Failed to update plan expiration during refresh:", err?.message);
-                  }
-                }
-
-                // Asegurar que escribimos las claves rotadas a .env
-                await window.omniworkerAPI.setEnv("OPENAI_API_KEY", data.accessToken);
-                await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", data.accessToken);
-                await window.omniworkerAPI.setModelConfig(
-                  "custom",
-                  "omniworker",
-                  `${saasUrl}/api/v1`,
-                );
-                return data.refreshToken || refreshToken;
-              }
-            } else if (res.status === 401) {
-              // Si el refresh token es inválido o expiró, cerrar sesión de inmediato
-              console.error("[APP] Refresh token invalid or expired (401). Logging out...");
-              handleLogout();
-            }
-          } catch (err) {
-            console.error("[APP] Failed to refresh token:", err);
-          }
-          return refreshToken;
-        };
-
-        let currentRefreshToken = auth.refreshToken;
-
-        // Limpiar intervalo previo existente para evitar fugas
-        if ((window as any).__owRefreshInterval) {
-          clearInterval((window as any).__owRefreshInterval);
-        }
-
-        // Ejecutar refresh de inmediato en startup/login para asegurar un token fresco y evitar 401s
-        doRefresh(currentRefreshToken).then((newRefresh) => {
-          currentRefreshToken = newRefresh;
-        });
-
-        const interval = setInterval(
-          async () => {
-            currentRefreshToken = await doRefresh(currentRefreshToken);
-          },
-          12 * 60 * 1000,
-        );
-
-        (window as any).__owRefreshInterval = interval;
-      }
+      // 4. Signal main process to start the token refresh loop.
+      //    The main process handles refreshing regardless of renderer state
+      //    (window closed on macOS, app minimized, renderer throttled).
+      window.omniworkerAPI.startTokenRefreshLoop();
     }
 
     console.error("[APP] Running post login install check...");
@@ -252,48 +177,10 @@ function App(): React.JSX.Element {
         const user = JSON.parse(savedUser);
         if (auth?.accessToken) {
           console.error("[APP] Found saved credentials, auto-logging in user:", user.email);
-          
-          // Refresh the token first before handleLoginSuccess to avoid writing expired tokens to .env
-          const saasUrl = import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
-          let freshAuth = auth;
-          let freshUser = user;
-          try {
-            let fingerprint: string | undefined;
-            try {
-              fingerprint = await window.omniworkerAPI.getDeviceFingerprint();
-            } catch (fpErr) {
-              console.error("[APP] Failed to get fingerprint for startup token refresh:", fpErr);
-            }
-            console.error("[APP] Refreshing token on startup to ensure fresh session...");
-            const res = await fetch(`${saasUrl}/api/v1/auth/refresh`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ refreshToken: auth.refreshToken, deviceFingerprint: fingerprint }),
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (data.accessToken) {
-                console.error("[APP] Token refreshed successfully on startup!");
-                freshAuth = {
-                  accessToken: data.accessToken,
-                  refreshToken: data.refreshToken || auth.refreshToken,
-                };
-                await window.omniworkerAPI.saveTokens(freshAuth);
-                if (data.user) {
-                  freshUser = data.user;
-                  localStorage.setItem("ow_user", JSON.stringify(freshUser));
-                }
-              }
-            } else if (res.status === 401) {
-              console.error("[APP] Saved session refresh failed (401). Logging out...");
-              handleLogout();
-              return;
-            }
-          } catch (refreshErr) {
-            console.error("[APP] Failed to refresh saved session token on startup:", refreshErr);
-          }
-
-          await handleLoginSuccess(freshUser, freshAuth);
+          // The main process already fires an immediate token refresh on startup
+          // when it finds existing tokens in safeStorage, so we skip the renderer-side
+          // refresh here to avoid duplicate concurrent refreshes (jti collision).
+          await handleLoginSuccess(user, auth);
           autoLoggedIn = true;
         }
       } catch (err) {
@@ -317,6 +204,26 @@ function App(): React.JSX.Element {
     installCheckStarted.current = true;
     runInstallCheck();
   }, [runInstallCheck]);
+
+  // Listen for main-process token refresh events
+  useEffect(() => {
+    const unsubRefresh = window.omniworkerAPI.onTokenRefreshed((data) => {
+      console.error("[APP] Received token-refreshed from main process");
+      setAuthToken(data.accessToken);
+      if (data.user) {
+        setUserData(data.user);
+        localStorage.setItem("ow_user", JSON.stringify(data.user));
+      }
+    });
+    const unsubExpired = window.omniworkerAPI.onSessionExpired(() => {
+      console.error("[APP] Received session-expired from main process");
+      handleLogout();
+    });
+    return () => {
+      unsubRefresh();
+      unsubExpired();
+    };
+  }, [handleLogout]);
 
   const handleSplashFinished = useCallback(() => {
     /* splash transition is driven by the install check, not a timer */

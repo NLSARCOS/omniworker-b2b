@@ -84,22 +84,57 @@ export default function Account({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [activeToken, setActiveToken] = useState<string | null>(authToken || null);
 
   const saasUrl = import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
 
-  // Build initial user from login data
+  // Build initial user from login data or local storage fallback
   useEffect(() => {
-    if (loginData) setUser(normalizeUser(loginData));
+    if (loginData) {
+      setUser(normalizeUser(loginData));
+    } else {
+      const savedUser = localStorage.getItem("ow_user");
+      if (savedUser) {
+        try {
+          setUser(normalizeUser(JSON.parse(savedUser)));
+        } catch (e) {
+          console.error("[Account] Failed to parse saved user in Account:", e);
+        }
+      }
+    }
   }, [loginData]);
+
+  // Load token if not provided in props
+  useEffect(() => {
+    if (authToken) {
+      setActiveToken(authToken);
+    } else {
+      window.omniworkerAPI.getTokens().then((tokens: any) => {
+        if (tokens?.accessToken) {
+          setActiveToken(tokens.accessToken);
+        } else {
+          // Try to fallback to reading CUSTOM_API_KEY from environment
+          window.omniworkerAPI.getEnv().then((envs: any) => {
+            const key = envs?.CUSTOM_API_KEY || envs?.OPENAI_API_KEY;
+            if (key) {
+              setActiveToken(key);
+            } else {
+              setLoading(false);
+            }
+          });
+        }
+      });
+    }
+  }, [authToken]);
 
   function getHeaders(): Record<string, string> {
     const h: Record<string, string> = { "Content-Type": "application/json" };
-    if (authToken) h["Authorization"] = `Bearer ${authToken}`;
+    if (activeToken) h["Authorization"] = `Bearer ${activeToken}`;
     return h;
   }
 
   async function fetchAccountData() {
-    if (!authToken) {
+    if (!activeToken) {
       setLoading(false);
       setRefreshing(false);
       return;
@@ -165,7 +200,7 @@ export default function Account({
 
   useEffect(() => {
     fetchAccountData();
-  }, [authToken]);
+  }, [activeToken]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -629,7 +664,7 @@ export default function Account({
                 );
                 try {
                   const res = await window.omniworkerAPI.startInstall(
-                    authToken || undefined,
+                    activeToken || undefined,
                   );
                   if (res.success) {
                     setValidationOutput(
