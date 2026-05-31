@@ -122,6 +122,8 @@ function App(): React.JSX.Element {
         "custom",
         "omniworker",
         directSaasApi,
+        undefined,
+        auth.accessToken,
       );
 
       console.error("[APP] Configured direct SaaS connection:", directSaasApi);

@@ -152,6 +152,7 @@ interface OmniWorkerAPI {
     model: string,
     baseUrl: string,
     profile?: string,
+    apiKey?: string,
   ) => Promise<boolean>;
 
   // Connection mode (local / remote / ssh)

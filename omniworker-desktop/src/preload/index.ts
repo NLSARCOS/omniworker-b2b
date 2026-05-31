@@ -106,8 +106,9 @@ const omniworkerAPI = {
     model: string,
     baseUrl: string,
     profile?: string,
+    apiKey?: string,
   ): Promise<boolean> =>
-    ipcRenderer.invoke("set-model-config", provider, model, baseUrl, profile),
+    ipcRenderer.invoke("set-model-config", provider, model, baseUrl, profile, apiKey),
 
   // Connection mode (local / remote / ssh)
   isRemoteMode: (): Promise<boolean> => ipcRenderer.invoke("is-remote-mode"),

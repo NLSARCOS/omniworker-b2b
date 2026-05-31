@@ -747,11 +747,19 @@ export async function POST(request: Request) {
   const targetProvider = detectProvider(requestedModel);
   const targetUrl = PROVIDER_URLS[targetProvider];
 
-  const masterProvider = await prisma.masterProvider.findFirst({
-    where: { isActive: true, provider: targetProvider },
+  // Build a list of candidate providers: primary first, then fallbacks
+  const allActiveProviders = await prisma.masterProvider.findMany({
+    where: { isActive: true },
+    orderBy: { priority: "asc" },
   });
 
-  if (!masterProvider?.apiKey) {
+  // Put the primary provider first, then remaining as fallbacks
+  const candidateProviders = [
+    ...allActiveProviders.filter(p => p.provider === targetProvider),
+    ...allActiveProviders.filter(p => p.provider !== targetProvider && PROVIDER_URLS[p.provider]),
+  ];
+
+  if (candidateProviders.length === 0) {
     return NextResponse.json(
       { error: "El servicio no está disponible temporalmente." },
       { status: 503 }
@@ -762,13 +770,7 @@ export async function POST(request: Request) {
   const catalogModel = OPENCODE_GO_CATALOG.find(m => m.id === requestedModel);
   const resolvedEndpoint = catalogModel ? catalogModel.endpoint : "chat_completions";
   const realModel = requestedModel; // standard path: user explicitly chose the model
-  let resolvedUrl = targetUrl;
-  if (targetProvider === "opencode-go") {
-    resolvedUrl = OPENCODE_GO_ENDPOINTS[resolvedEndpoint];
-  }
 
-  console.log(`[OmniWorker Cloud] ${user.email} → ${targetProvider} (${requestedModel}) resolvedUrl=${resolvedUrl}`);
-  
   // Debug payload breakdown
   const debugMsgs = body.messages || [];
   console.log(`[DEBUG PAYLOAD] Total messages: ${debugMsgs.length}`);
@@ -782,84 +784,130 @@ export async function POST(request: Request) {
   const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
   const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
 
-  try {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (targetProvider === "moonshot") {
-      headers["User-Agent"] = "KimiCLI/1.5";
+  // ── Provider fallback loop ──────────────────────────────────────────
+  // Try each candidate provider until one succeeds
+  let lastProviderError: string | null = null;
+  let aiResponse: Response | null = null;
+  let usedProvider: typeof candidateProviders[0] | null = null;
+  let usedUrl: string | null = null;
+
+  for (const provider of candidateProviders) {
+    const provName = provider.provider;
+    const provUrl = PROVIDER_URLS[provName];
+    if (!provUrl || !provider.apiKey) continue;
+
+    // Resolve URL: opencode-go may use different endpoints
+    let tryUrl = provUrl;
+    if (provName === "opencode-go") {
+      tryUrl = OPENCODE_GO_ENDPOINTS[resolvedEndpoint];
     }
-    let payload: Record<string, unknown>;
 
-    const useAnthropicFormat = targetProvider === "anthropic" || 
-      (targetProvider === "opencode-go" && resolvedEndpoint === "messages");
+    console.log(`[OmniWorker Cloud] ${user.email} → trying ${provName} (${requestedModel}) url=${tryUrl}`);
 
-    if (useAnthropicFormat) {
-      if (targetProvider === "anthropic") {
-        headers["x-api-key"] = masterProvider.apiKey;
-        headers["anthropic-version"] = "2023-06-01";
-      } else {
-        // OpenCode Go /messages endpoint uses Bearer auth, but might require x-api-key for Anthropic compatibility
-        headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
-        headers["x-api-key"] = masterProvider.apiKey;
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (provName === "moonshot") {
+        headers["User-Agent"] = "KimiCLI/1.5";
       }
-      // Anthropic API format: system as top-level, no system in messages array
-      const msgs = body.messages || [];
-      const systemMsg = msgs.find((m: { role: string; content: string }) => m.role === "system");
-      const chatMsgs = msgs.filter((m: { role: string; content: string }) => m.role !== "system");
-      payload = {
-        model: requestedModel,
-        max_tokens: body.max_tokens || 4096,
-        ...(systemMsg ? { system: systemMsg.content } : {}),
-        messages: chatMsgs.map((m: { role: string; content: string }) => ({
-          role: m.role === "assistant" ? "assistant" : "user",
-          content: m.content,
-        })),
-        stream: isStream,
-      };
-    } else {
-      headers["Authorization"] = `Bearer ${masterProvider.apiKey}`;
-      
-      // Normalize system messages for providers that don't support "system" role
-      let normalizedMessages = body.messages || [];
-      if (targetProvider === "opencode-go") {
+      let payload: Record<string, unknown>;
+
+      const useAnthropicFormat = provName === "anthropic" ||
+        (provName === "opencode-go" && resolvedEndpoint === "messages");
+
+      if (useAnthropicFormat) {
+        if (provName === "anthropic") {
+          headers["x-api-key"] = provider.apiKey;
+          headers["anthropic-version"] = "2023-06-01";
+        } else {
+          headers["Authorization"] = `Bearer ${provider.apiKey}`;
+          headers["x-api-key"] = provider.apiKey;
+        }
         const msgs = body.messages || [];
-        const systemMsgs = msgs.filter((m: { role: string; content: string }) => m.role === "system");
-        const nonSystemMsgs = msgs.filter((m: { role: string; content: string }) => m.role !== "system");
-        
-        if (systemMsgs.length > 0) {
-          const systemContent = systemMsgs.map((m: { role: string; content: string }) => m.content).join("\n\n");
-          normalizedMessages = [...nonSystemMsgs];
-          const firstUserIdx = normalizedMessages.findIndex((m: { role: string; content: string }) => m.role === "user");
-          if (firstUserIdx >= 0) {
-            normalizedMessages[firstUserIdx] = {
-              ...normalizedMessages[firstUserIdx],
-              content: systemContent + "\n\n" + normalizedMessages[firstUserIdx].content,
-            };
-          } else {
-            normalizedMessages = [{ role: "user", content: systemContent }, ...normalizedMessages];
+        const systemMsg = msgs.find((m: { role: string; content: string }) => m.role === "system");
+        const chatMsgs = msgs.filter((m: { role: string; content: string }) => m.role !== "system");
+        payload = {
+          model: requestedModel,
+          max_tokens: body.max_tokens || 4096,
+          ...(systemMsg ? { system: systemMsg.content } : {}),
+          messages: chatMsgs.map((m: { role: string; content: string }) => ({
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: m.content,
+          })),
+          stream: isStream,
+        };
+      } else {
+        headers["Authorization"] = `Bearer ${provider.apiKey}`;
+
+        // Normalize system messages for providers that don't support "system" role
+        let normalizedMessages = body.messages || [];
+        if (provName === "opencode-go") {
+          const msgs = body.messages || [];
+          const systemMsgs = msgs.filter((m: { role: string; content: string }) => m.role === "system");
+          const nonSystemMsgs = msgs.filter((m: { role: string; content: string }) => m.role !== "system");
+
+          if (systemMsgs.length > 0) {
+            const systemContent = systemMsgs.map((m: { role: string; content: string }) => m.content).join("\n\n");
+            normalizedMessages = [...nonSystemMsgs];
+            const firstUserIdx = normalizedMessages.findIndex((m: { role: string; content: string }) => m.role === "user");
+            if (firstUserIdx >= 0) {
+              normalizedMessages[firstUserIdx] = {
+                ...normalizedMessages[firstUserIdx],
+                content: systemContent + "\n\n" + normalizedMessages[firstUserIdx].content,
+              };
+            } else {
+              normalizedMessages = [{ role: "user", content: systemContent }, ...normalizedMessages];
+            }
           }
         }
+        payload = { ...body, model: requestedModel, messages: normalizedMessages };
       }
-      payload = { ...body, model: requestedModel, messages: normalizedMessages };
+
+      // Apply NVIDIA GLM-specific config (thinking with clear_thinking)
+      payload = applyNvidiaGLMConfig(payload, requestedModel, provName);
+
+      const resp = await fetchWithBackoff(tryUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (resp.ok) {
+        aiResponse = resp;
+        usedProvider = provider;
+        usedUrl = tryUrl;
+        break; // Success — use this provider
+      }
+
+      // Provider returned an error — log and try next
+      const errTxt = await resp.text();
+      lastProviderError = errTxt;
+      console.warn(`[OmniWorker Cloud] Provider ${provName} failed (${resp.status}): ${errTxt.substring(0, 200)}`);
+
+      // Only break on non-retryable client errors.
+      // 429 (rate limit), 401 (auth), 404 (model not found) → try next provider.
+      // 400 (bad request) → the request itself is malformed, no point retrying.
+      if (resp.status === 400) {
+        break;
+      }
+    } catch (err: any) {
+      lastProviderError = err.message;
+      console.warn(`[OmniWorker Cloud] Provider ${provName} exception: ${err.message}`);
+      // Continue to next provider
     }
+  }
 
-    // Apply NVIDIA GLM-specific config (thinking with clear_thinking)
-    payload = applyNvidiaGLMConfig(payload, requestedModel, targetProvider);
+  if (!aiResponse) {
+    console.error(`[OmniWorker Cloud] All providers failed. Last error: ${lastProviderError}`);
+    return NextResponse.json(
+      { error: "El servicio no está disponible temporalmente. Intenta de nuevo más tarde." },
+      { status: 502 }
+    );
+  }
 
-    const aiResponse = await fetchWithBackoff(resolvedUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
+  // Log the provider that actually handled the request
+  console.log(`[OmniWorker Cloud] ${user.email} → ${usedProvider!.provider} (${requestedModel}) url=${usedUrl}`);
 
-      if (!aiResponse.ok) {
-        const errTxt = await aiResponse.text();
-        // Log provider details internally — never expose to client
-        console.error(`[OmniWorker Cloud] Error ${targetProvider}:`, errTxt);
-        return NextResponse.json(
-          { error: "El servicio no está disponible temporalmente. Intenta de nuevo más tarde." },
-          { status: 502 }
-        );
-      }
+  try {
 
       let finalCost = estimatedCost;
       let promptTokens = promptTokensEst;

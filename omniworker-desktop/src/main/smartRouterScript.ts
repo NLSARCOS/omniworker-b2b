@@ -78,9 +78,16 @@ CACHED_ENV_MTIME = 0.0
 CLOUD_CONN = None
 CLOUD_CONN_LOCK = threading.Lock()
 
-def get_resilient_ssl_context():
+def get_resilient_ssl_context(verify=True):
     """Load a resilient SSL context, preferring system certs, with certifi fallback and unverified fallback if all else fails."""
     import ssl
+    if not verify:
+        try:
+            return ssl._create_unverified_context()
+        except Exception as e2:
+            logger.error(f"Failed to create unverified SSL context: {e2}")
+            raise e2
+
     try:
         context = ssl.create_default_context()
         try:
@@ -98,12 +105,12 @@ def get_resilient_ssl_context():
             logger.error(f"Failed to create even unverified SSL context: {e2}")
             raise e2
 
-def get_cloud_connection(use_https, host, port):
+def get_cloud_connection(use_https, host, port, verify=True):
     """Get or create the cached cloud connection, ensuring thread-safety."""
     global CLOUD_CONN
     if CLOUD_CONN is None:
         if use_https:
-            context = get_resilient_ssl_context()
+            context = get_resilient_ssl_context(verify=verify)
             CLOUD_CONN = HTTPSConnection(
                 host,
                 port=port,
@@ -118,11 +125,41 @@ def get_cloud_connection(use_https, host, port):
             )
     return CLOUD_CONN
 
+def resolve_env_path() -> str:
+    home_env = os.environ.get("OMNIWORKER_HOME", "").strip()
+    if home_env:
+        resolved_home = os.path.abspath(home_env)
+        parent_dir = os.path.basename(os.path.dirname(resolved_home))
+        if parent_dir == "profiles":
+            return os.path.join(resolved_home, ".env")
+        root_dir = resolved_home
+    else:
+        dot_omni = os.path.expanduser("~/.omniworker")
+        dot_hermes = os.path.expanduser("~/.hermes")
+        if os.path.exists(dot_omni):
+            root_dir = dot_omni
+        elif os.path.exists(dot_hermes):
+            root_dir = dot_hermes
+        else:
+            root_dir = dot_omni
+
+    active_profile_path = os.path.join(root_dir, "active_profile")
+    profile = "default"
+    if os.path.exists(active_profile_path):
+        try:
+            with open(active_profile_path, "r", encoding="utf-8") as f:
+                profile = f.read().strip() or "default"
+        except Exception:
+            pass
+
+    if profile and profile != "default":
+        return os.path.join(root_dir, "profiles", profile, ".env")
+    return os.path.join(root_dir, ".env")
+
 def get_latest_api_key() -> str:
-    """Read the latest OPENAI_API_KEY / CUSTOM_API_KEY from ~/.omniworker/.env dynamically to avoid stale keys after JWT refresh. Uses mtime to cache and avoid redundant disk I/O."""
+    """Read the latest OPENAI_API_KEY / CUSTOM_API_KEY from the resolved .env dynamically to avoid stale keys after JWT refresh. Uses mtime to cache and avoid redundant disk I/O."""
     global CACHED_API_KEY, CACHED_ENV_MTIME
-    home_dir = os.environ.get("OMNIWORKER_HOME") or os.path.expanduser("~/.omniworker")
-    env_path = os.path.join(home_dir, ".env")
+    env_path = resolve_env_path()
     if os.path.exists(env_path):
         try:
             mtime = os.path.getmtime(env_path)
@@ -361,9 +398,9 @@ CACHED_DISABLE_SLM = None
 CACHED_DISABLE_MTIME = 0.0
 
 def is_local_slm_disabled_dynamically() -> bool:
-    """Read DISABLE_LOCAL_SLM from ~/.omniworker/.env dynamically to allow real-time toggling from settings."""
+    """Read DISABLE_LOCAL_SLM from the resolved .env dynamically to allow real-time toggling from settings."""
     global CACHED_DISABLE_SLM, CACHED_DISABLE_MTIME
-    env_path = os.path.expanduser("~/.omniworker/.env")
+    env_path = resolve_env_path()
     if os.path.exists(env_path):
         try:
             mtime = os.path.getmtime(env_path)
@@ -594,7 +631,19 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         if (incoming_token.startswith("eyJ") and api_key.startswith("eyJ")) or (incoming_token.startswith("tsto_") and api_key.startswith("tsto_")):
             use_latest = True
 
-        if auth and "no-key-required" not in auth and auth.strip() != "Bearer" and not use_latest:
+        # Check if the incoming token is a valid token format/prefix
+        is_incoming_valid = incoming_token.startswith("eyJ") or incoming_token.startswith("tsto_")
+        
+        # Override the incoming token if:
+        # 1. We have a valid api_key in our dynamic env (JWT or tsto prefix), AND
+        # 2. EITHER the incoming token is invalid/empty/malformed (e.g. "undefined"),
+        #    OR it is valid but we want to force the latest one from env
+        override_auth = False
+        if api_key and (api_key.startswith("eyJ") or api_key.startswith("tsto_")):
+            if not is_incoming_valid or use_latest:
+                override_auth = True
+
+        if auth and "no-key-required" not in auth and auth.strip() != "Bearer" and not override_auth:
             headers["Authorization"] = auth
         else:
             if api_key:
@@ -602,27 +651,46 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
 
         acquired = CLOUD_CONN_LOCK.acquire(blocking=False)
         conn = None
+        verify_ssl = True
         try:
             if acquired:
-                conn = get_cloud_connection(use_https, host, port)
+                conn = get_cloud_connection(use_https, host, port, verify=verify_ssl)
             else:
                 # Create ad-hoc connection for concurrent request
                 if use_https:
-                    context = get_resilient_ssl_context()
+                    context = get_resilient_ssl_context(verify=verify_ssl)
                     conn = HTTPSConnection(host, port=port, timeout=120, context=context)
                 else:
                     conn = HTTPConnection(host, port=port, timeout=120)
 
             path = f"{parsed.path.rstrip('/')}/v1/chat/completions"
 
-            # Execute with a retry if stale
-            max_attempts = 2
+            # Execute with a retry if stale or SSL verification fails
+            max_attempts = 3
             for attempt in range(max_attempts):
                 try:
                     conn.request("POST", path, body=body, headers=headers)
                     resp = conn.getresponse()
                     break
                 except (Exception, OSError) as req_err:
+                    err_str = str(req_err).lower()
+                    is_ssl_error = "cert" in err_str or "ssl" in err_str or "handshake" in err_str or "verify failed" in err_str
+                    
+                    if is_ssl_error and verify_ssl:
+                        logger.warning(f"SSL certificate verification failed ({req_err}). Retrying with SSL verification disabled...")
+                        verify_ssl = False
+                        try:
+                            conn.close()
+                        except Exception:
+                            pass
+                        if acquired:
+                            CLOUD_CONN = None
+                            conn = get_cloud_connection(use_https, host, port, verify=False)
+                        else:
+                            context = get_resilient_ssl_context(verify=False)
+                            conn = HTTPSConnection(host, port=port, timeout=120, context=context)
+                        continue
+
                     if acquired and attempt == 0:
                         logger.info(f"Cached cloud connection failed ({req_err}), resetting and retrying...")
                         try:
@@ -630,7 +698,7 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                         except Exception:
                             pass
                         CLOUD_CONN = None
-                        conn = get_cloud_connection(use_https, host, port)
+                        conn = get_cloud_connection(use_https, host, port, verify=verify_ssl)
                         continue
                     else:
                         raise req_err

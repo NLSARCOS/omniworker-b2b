@@ -284,6 +284,7 @@ export function setModelConfig(
   model: string,
   baseUrl: string,
   profile?: string,
+  apiKey?: string,
 ): void {
   invalidateCache(`mc:${profile || "default"}`);
   const { configFile } = profilePaths(profile);
@@ -365,6 +366,23 @@ export function setModelConfig(
       /^(\s*provider:\s*"[^"]*"\s*\n)/m,
       `$1  base_url: "${baseUrl}"\n`,
     );
+  }
+
+  // Update api_key in config.yaml so the agent gateway uses the fresh JWT
+  if (apiKey) {
+    const apiKeyRegex = /^(\s*api_key:\s*)["']?[^"'\n#]*["']?/m;
+    if (apiKeyRegex.test(content)) {
+      content = content.replace(apiKeyRegex, `$1"${apiKey}"`);
+    } else {
+      // Append api_key after base_url in the model section
+      const insertAfter = baseUrl
+        ? /^(\s*base_url:\s*"[^"]*"\s*\n)/m
+        : /^(\s*provider:\s*"[^"]*"\s*\n)/m;
+      content = content.replace(
+        insertAfter,
+        `$1  api_key: "${apiKey}"\n`,
+      );
+    }
   }
 
   // Disable smart_model_routing

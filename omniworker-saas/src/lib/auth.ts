@@ -16,10 +16,10 @@ if (!JWT_REFRESH_SECRET) {
   throw new Error("FATAL: JWT_REFRESH_SECRET environment variable is required");
 }
 
-const ACCESS_TOKEN_EXPIRES = "15m";
-const REFRESH_TOKEN_EXPIRES = "7d";
-const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7; // 7 days in seconds
-const ACCESS_TOKEN_MAX_AGE = 60 * 15; // 15 minutes in seconds
+const ACCESS_TOKEN_EXPIRES = "7d";
+const REFRESH_TOKEN_EXPIRES = "30d";
+const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 30; // 30 days in seconds
+const ACCESS_TOKEN_MAX_AGE = 60 * 60 * 24 * 7; // 7 days in seconds
 
 // ─── Types ───
 export interface JWTPayload {

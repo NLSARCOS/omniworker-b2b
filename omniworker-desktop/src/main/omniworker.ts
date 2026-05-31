@@ -1467,9 +1467,23 @@ export async function startSmartRouter(): Promise<boolean> {
   }
 
   const routerScript = join(OMNIWORKER_REPO, "smart_router.py");
+  let shouldWriteScript = false;
   if (!existsSync(routerScript)) {
+    shouldWriteScript = true;
+  } else {
+    try {
+      const existingContent = readFileSync(routerScript, "utf-8");
+      if (existingContent !== SMART_ROUTER_SCRIPT) {
+        shouldWriteScript = true;
+      }
+    } catch {
+      shouldWriteScript = true;
+    }
+  }
+
+  if (shouldWriteScript) {
     console.log(
-      "[SmartRouter] Script not found natively. Writing bundled version...",
+      "[SmartRouter] Writing updated/bundled version of smart_router.py...",
     );
     mkdirSync(OMNIWORKER_REPO, { recursive: true });
     writeFileSync(routerScript, SMART_ROUTER_SCRIPT);
@@ -1501,6 +1515,7 @@ export async function startSmartRouter(): Promise<boolean> {
 
   const routerEnv: Record<string, string> = {
     ...(process.env as Record<string, string>),
+    OMNIWORKER_HOME: OMNIWORKER_HOME,
     PATH: getEnhancedPath(),
     HOME: homedir(),
     SMART_ROUTER_PORT: String(SMART_ROUTER_PORT),
