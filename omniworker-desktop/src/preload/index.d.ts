@@ -761,6 +761,30 @@ interface OmniWorkerAPI {
     lines?: number,
   ) => Promise<{ content: string; path: string }>;
 
+  // Token metrics
+  getTokenMetrics: () => Promise<{
+    entries: Array<{
+      session: string;
+      totalTokens: number;
+      stable: number;
+      context: number;
+      volatile: number;
+      tools: number;
+      timestamp: string;
+    }>;
+    latest: {
+      session: string;
+      totalTokens: number;
+      stable: number;
+      context: number;
+      volatile: number;
+      tools: number;
+      baseline: number;
+      savings: number;
+      savingsPercent: number;
+    } | null;
+  }>;
+
   // WhatsApp Bot
   whatsappBotStatus: () => Promise<{
     configured: boolean;

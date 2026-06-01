@@ -16,8 +16,16 @@ const PROVIDER_OPTIONS = [
   { id: "nvidia",      label: "NVIDIA",        baseUrl: "https://integrate.api.nvidia.com/v1" },
   { id: "ollama",      label: "Ollama (local)", baseUrl: "http://localhost:11434" },
   { id: "opencode-go", label: "OpenCode Go",   baseUrl: "https://opencode.ai/zen/go/v1" },
-  { id: "moonshot",    label: "Kimi (Moonshot)", baseUrl: "https://api.moonshot.cn/v1" },
-  { id: "z-ai",        label: "Z-AI (GLM)",    baseUrl: "https://open.bigmodel.cn/api/paas/v4" },
+  { id: "stepfun",    label: "StepFun",        baseUrl: "https://api.stepfun.ai/step_plan/v1" },
+];
+
+const STEPFUN_MODELS = [
+  { id: "step-3.5-flash",        label: "Step-3.5-Flash" },
+  { id: "step-3.5-flash-2603",  label: "Step-3.5-Flash-2603" },
+  { id: "stepaudio-2.5-tts",    label: "StepAudio-2.5-TTS" },
+  { id: "stepaudio-2.5-asr",    label: "StepAudio-2.5-ASR" },
+  { id: "step-image-edit-2",    label: "Step-Image-Edit-2" },
+  { id: "step-3.7-flash",        label: "Step-3.7-Flash" },
 ];
 
 const OPENCODE_GO_TIERS = {
@@ -60,6 +68,11 @@ function maskKey(key: string) {
   return key.slice(0, 6) + "••••" + key.slice(-4);
 }
 
+function maskUrl(url: string | null) {
+  if (!url) return "—";
+  return url;
+}
+
 export async function GET(request: Request) {
   const auth = await authenticateRequest(request);
   if (!auth || auth.user.role !== "SUPERADMIN") {
@@ -74,9 +87,11 @@ export async function GET(request: Request) {
     providers: providers.map((p) => ({
       ...p,
       apiKey: maskKey(p.apiKey),
+      baseUrl: p.baseUrl || null,
     })),
     availableProviders: PROVIDER_OPTIONS,
     openCodeGoTiers: OPENCODE_GO_TIERS,
+    stepfunModels: STEPFUN_MODELS,
   });
 }
 
@@ -96,6 +111,7 @@ export async function POST(request: Request) {
     name: string;
     provider: string;
     apiKey: string;
+    baseUrl?: string;
     isActive?: boolean;
     priority?: number;
     dailyLimit?: number;
@@ -107,7 +123,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
-  const { name, provider, apiKey, isActive, priority, dailyLimit, notes } = body;
+  const { name, provider, apiKey, baseUrl, isActive, priority, dailyLimit, notes } = body;
   if (!name || !provider || !apiKey) {
     return NextResponse.json({ error: "name, provider y apiKey son requeridos" }, { status: 400 });
   }
@@ -117,6 +133,7 @@ export async function POST(request: Request) {
       name,
       provider,
       apiKey,
+      baseUrl: baseUrl || null,
       isActive: isActive ?? true,
       priority: priority ?? 1,
       dailyLimit: dailyLimit || null,
@@ -142,6 +159,7 @@ export async function PATCH(request: Request) {
     name?: string;
     provider?: string;
     apiKey?: string;
+    baseUrl?: string;
     isActive?: boolean;
     priority?: number;
     dailyLimit?: number;

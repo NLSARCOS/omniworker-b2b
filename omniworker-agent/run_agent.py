@@ -160,7 +160,18 @@ from agent.model_metadata import (
 from agent.context_compressor import ContextCompressor
 from agent.subdirectory_hints import SubdirectoryHintTracker
 from agent.prompt_caching import apply_anthropic_cache_control
-from agent.prompt_builder import build_skills_system_prompt, build_context_files_prompt, build_environment_hints, load_soul_md, TOOL_USE_ENFORCEMENT_GUIDANCE, TOOL_USE_ENFORCEMENT_MODELS, GOOGLE_MODEL_OPERATIONAL_GUIDANCE, OPENAI_MODEL_EXECUTION_GUIDANCE
+from agent.prompt_builder import (
+    build_skills_system_prompt,
+    build_context_files_prompt,
+    build_environment_hints,
+    load_soul_md,
+    TOOL_USE_ENFORCEMENT_GUIDANCE,
+    TOOL_USE_ENFORCEMENT_MODELS,
+    GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
+    OPENAI_MODEL_EXECUTION_GUIDANCE,
+    build_relevant_skills_prompt,
+    build_relevant_context_prompt,
+)
 from agent.usage_pricing import estimate_usage_cost, normalize_usage
 from agent.codex_responses_adapter import (
     _derive_responses_function_call_id as _codex_derive_responses_function_call_id,
@@ -1923,6 +1934,7 @@ class AIAgent:
         
         # Cached system prompt -- built once per session, only rebuilt on compression
         self._cached_system_prompt: Optional[str] = None
+        self._system_prompt_query: Optional[str] = None
         
         # Filesystem checkpoint manager (transparent — not a tool)
         from tools.checkpoint_manager import CheckpointManager
@@ -2342,6 +2354,7 @@ class AIAgent:
                 config_context_length=_config_context_length,
                 provider=self.provider,
                 api_mode=self.api_mode,
+                session_db=getattr(self, "_session_db", None),
             )
         self.compression_enabled = compression_enabled
 
@@ -6063,10 +6076,17 @@ class AIAgent:
                 )
                 if toolset
             }
-            skills_prompt = build_skills_system_prompt(
-                available_tools=self.valid_tool_names,
-                available_toolsets=avail_toolsets,
-            )
+            if getattr(self, "_system_prompt_query", None):
+                skills_prompt = build_relevant_skills_prompt(
+                    query=self._system_prompt_query,
+                    available_tools=self.valid_tool_names,
+                    available_toolsets=avail_toolsets,
+                )
+            else:
+                skills_prompt = build_skills_system_prompt(
+                    available_tools=self.valid_tool_names,
+                    available_toolsets=avail_toolsets,
+                )
         else:
             skills_prompt = ""
         if skills_prompt:
@@ -6120,8 +6140,15 @@ class AIAgent:
             # dir, so os.getcwd() would pick up the repo's AGENTS.md and
             # other dev files — inflating token usage by ~10k for no benefit.
             _context_cwd = os.getenv("TERMINAL_CWD") or None
-            context_files_prompt = build_context_files_prompt(
-                cwd=_context_cwd, skip_soul=_soul_loaded)
+            if getattr(self, "_system_prompt_query", None):
+                context_files_prompt = build_relevant_context_prompt(
+                    query=self._system_prompt_query,
+                    cwd=_context_cwd,
+                    skip_soul=_soul_loaded,
+                )
+            else:
+                context_files_prompt = build_context_files_prompt(
+                    cwd=_context_cwd, skip_soul=_soul_loaded)
             if context_files_prompt:
                 context_parts.append(context_files_prompt)
 
@@ -6169,41 +6196,81 @@ class AIAgent:
         """
         Assemble the full system prompt from all layers.
 
-        Called once per session (cached on self._cached_system_prompt) and only
-        rebuilt after context compression events. This ensures the system prompt
-        is stable across all turns in a session, maximizing prefix cache hits.
-
-        Layers are ordered cache-friendly: stable identity/guidance first,
-        then session-stable context files, then per-call volatile content
-        (memory, USER profile, timestamp).  The whole string is treated as
-        one cached block — OmniWorker never rebuilds or reinjects parts of it
-        mid-session, which is the only way to keep upstream prompt caches
-        warm across turns.
+        Uses SQLite-backed cache keyed by prompt hash to avoid rebuilding
+        identical system prompts across turns in the same session.
         """
+        # Fast path: already in memory
+        if self._cached_system_prompt is not None:
+            return self._cached_system_prompt
+
+        cache_key = self._compute_system_prompt_cache_key(system_message)
+
+        if (
+            cache_key is not None
+            and self.session_id
+            and getattr(self, "_session_db", None)
+        ):
+            try:
+                cached = self._session_db.get_cached_system_prompt(self.session_id, cache_key)
+                if cached is not None:
+                    self._cached_system_prompt = cached
+                    return cached
+            except Exception:
+                pass
+
         parts = self._build_system_prompt_parts(system_message=system_message)
         joined = "\n\n".join(p for p in (parts["stable"], parts["context"], parts["volatile"]) if p)
+        self._cached_system_prompt = joined
+
+        if cache_key is not None and self.session_id and getattr(self, "_session_db", None):
+            try:
+                self._session_db.cache_system_prompt(self.session_id, joined)
+            except Exception:
+                pass
+
+        # Log system prompt budget for observability
+        try:
+            from agent.model_metadata import estimate_request_tokens_rough
+            _stable_tokens = estimate_request_tokens_rough([], system_prompt=parts.get("stable", ""), tools=[], model=self.model or "step-3.5-flash")
+            _context_tokens = estimate_request_tokens_rough([], system_prompt=parts.get("context", ""), tools=[], model=self.model or "step-3.5-flash")
+            _volatile_tokens = estimate_request_tokens_rough([], system_prompt=parts.get("volatile", ""), tools=[], model=self.model or "step-3.5-flash")
+            _total_tokens = estimate_request_tokens_rough([], system_prompt=joined, tools=[], model=self.model or "step-3.5-flash")
+            logger.info(
+                "system_prompt_budget: session=%s total_tokens=%d stable=%d context=%d volatile=%d tools=%d",
+                self.session_id or "none",
+                _total_tokens,
+                _stable_tokens,
+                _context_tokens,
+                _volatile_tokens,
+                len(self._get_lazy_loaded_tools(api_messages=[])) if hasattr(self, "_get_lazy_loaded_tools") else len(self.tools or []),
+            )
+        except Exception:
+            pass
+
         return joined
+
+    def _compute_system_prompt_cache_key(self, system_message: str = None) -> Optional[int]:
+        """Stable hash for system prompt cache invalidation."""
+        import hashlib
+        parts = [
+            str(self.model or ""),
+            str(self.provider or ""),
+            str(system_message or ""),
+            str(sorted(self.valid_tool_names or [])),
+            str(self.platform or ""),
+            str(self._system_prompt_query or ""),
+        ]
+        key_str = "\0".join(parts)
+        return int(hashlib.md5(key_str.encode("utf-8")).hexdigest()[:16], 16)
 
     # =========================================================================
     # Pre/post-call guardrails (inspired by PR #1321 — @alireza78a)
     # =========================================================================
 
-    @staticmethod
-    def _get_tool_call_id_static(tc) -> str:
-        """Extract call ID from a tool_call entry (dict or object)."""
-        if isinstance(tc, dict):
-            return tc.get("call_id", "") or tc.get("id", "") or ""
-        return getattr(tc, "call_id", "") or getattr(tc, "id", "") or ""
 
     @staticmethod
     def _get_tool_call_name_static(tc) -> str:
-        """Extract function name from a tool_call entry (dict or object).
-
-        Gemini's OpenAI-compatibility endpoint requires every `role: tool`
-        message to carry the matching function name. OpenAI/Anthropic/ollama
-        tolerate its absence, so the field is best-effort: callers fall back
-        to "" and the message still works elsewhere.
-        """
+        """Extract function name from a tool_call entry (dict or object)."""
         if isinstance(tc, dict):
             fn = tc.get("function")
             if isinstance(fn, dict):
@@ -6216,13 +6283,7 @@ class AIAgent:
 
     @staticmethod
     def _sanitize_api_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Fix orphaned tool_call / tool_result pairs before every LLM call.
-
-        Runs unconditionally — not gated on whether the context compressor
-        is present — so orphans from session loading or manual message
-        manipulation are always caught.
-        """
-        # --- Role allowlist: drop messages with roles the API won't accept ---
+        """Fix orphaned tool_call / tool_result pairs before every LLM call."""
         filtered = []
         for msg in messages:
             role = msg.get("role")
@@ -6250,7 +6311,6 @@ class AIAgent:
                 if cid:
                     result_call_ids.add(cid)
 
-        # 1. Drop tool results with no matching assistant call
         orphaned_results = result_call_ids - surviving_call_ids
         if orphaned_results:
             messages = [
@@ -6262,7 +6322,6 @@ class AIAgent:
                 len(orphaned_results),
             )
 
-        # 2. Inject stub results for calls whose result was dropped
         missing_results = surviving_call_ids - result_call_ids
         if missing_results:
             patched: List[Dict[str, Any]] = []
@@ -9760,8 +9819,85 @@ class AIAgent:
                     content[-1]["cache_control"] = {"type": "ephemeral"}
                 break
 
+    # ------------------------------------------------------------------
+    # P3: Lazy-loading of tool schemas
+    # ------------------------------------------------------------------
+    # On simple turns (few messages, no tool calls yet), only a minimal
+    # core set of tool schemas is sent to the LLM.  The full surface is
+    # promoted automatically when:
+    #   • the model requests a tool outside the core subset, OR
+    #   • the conversation already contains tool_call messages (active
+    #     tool-use loop), OR
+    #   • we're past the 2nd API call in the same turn (complex task).
+    #
+    # Lazy mode activates only when there are > _LAZY_TOOL_THRESHOLD
+    # tools; otherwise the overhead of the check outweighs the savings.
+    # ------------------------------------------------------------------
+
+    _LAZY_TOOL_THRESHOLD = 15
+
+    # Tool names considered essential for *every* turn — planning,
+    # meta-management, and clarification.  Everything else can wait.
+    _LAZY_CORE_TOOL_NAMES: frozenset = frozenset({
+        "todo", "memory", "clarify", "session_search",
+        "skills_list", "skill_view", "skill_manage",
+        "manage_tools", "autolearning",
+    })
+
     def _get_lazy_loaded_tools(self, api_messages: list) -> Optional[List[Dict[str, Any]]]:
-        return self.tools
+        """Return either the core tool subset or the full tool surface.
+
+        The decision is based on conversation state and whether lazy mode
+        has been promoted to full.  Once promoted, it stays promoted for
+        the remainder of the turn.
+        """
+        if self.tools is None:
+            return None
+
+        # Fast path: not enough tools to justify lazy loading, or
+        # already promoted to full.
+        if len(self.tools) <= self._LAZY_TOOL_THRESHOLD:
+            return self.tools
+        if getattr(self, "_lazy_tools_promoted", False):
+            return self.tools
+
+        # Promote if the conversation already has tool_calls — the model
+        # is actively using tools and may need any of them.
+        for _msg in api_messages:
+            if isinstance(_msg, dict) and _msg.get("tool_calls"):
+                self._lazy_tools_promoted = True
+                return self.tools
+
+        # Build the minimal core subset.
+        _core = [
+            t for t in self.tools
+            if t.get("function", {}).get("name", "") in self._LAZY_CORE_TOOL_NAMES
+        ]
+
+        # If core is basically the full set (edge case), just return all.
+        if len(_core) >= len(self.tools) - 2:
+            return self.tools
+
+        logger.debug(
+            "lazy tools: sending %d/%d tools (core subset)",
+            len(_core), len(self.tools),
+        )
+        return _core
+
+    def _promote_lazy_tools(self) -> None:
+        """Promote from lazy-core subset to the full tool surface.
+
+        Called when the model requests a tool that was not in the core
+        subset.  Also updates ``valid_tool_names`` so subsequent validation
+        passes.
+        """
+        if getattr(self, "_lazy_tools_promoted", False):
+            return  # already promoted
+        self._lazy_tools_promoted = True
+        logger.debug(
+            "lazy tools: promoted to full surface (%d tools)",
+            len(self.tools) if self.tools else 0,
+        )
 
     def _build_api_kwargs(self, api_messages: list) -> dict:
         """Build the keyword arguments dict for the active API mode."""
@@ -12161,6 +12297,7 @@ class AIAgent:
         # Reset retry counters and iteration budget at the start of each turn
         # so subagent usage from a previous turn doesn't eat into the next one.
         self._invalid_tool_retries = 0
+        self._lazy_tools_promoted = False  # P3: reset lazy-tools state for new turn
         self._invalid_json_retries = 0
         self._empty_content_retries = 0
         self._incomplete_scratchpad_retries = 0
@@ -12301,6 +12438,7 @@ class AIAgent:
         # from disk that the model already knows about (it wrote them!),
         # producing a different system prompt and breaking the Anthropic
         # prefix cache.
+        self._system_prompt_query = user_message
         if self._cached_system_prompt is None:
             stored_prompt = None
             if conversation_history and self._session_db:
@@ -15080,6 +15218,29 @@ class AIAgent:
                             if repaired:
                                 print(f"{self.log_prefix}🔧 Auto-repaired tool name: '{tc.function.name}' -> '{repaired}'")
                                 tc.function.name = repaired
+
+                    # P3: lazy-tools promotion — if the model requested a tool
+                    # that's valid in the full surface but wasn't in the core
+                    # subset sent this turn, promote now and skip the invalid
+                    # tool error.  The tool_call will be dispatched normally.
+                    _all_valid = getattr(self, 'valid_tool_names_full', None)
+                    if _all_valid is None and self.tools:
+                        _all_valid = {t.get("function", {}).get("name") for t in self.tools if isinstance(t, dict)}
+                        self.valid_tool_names_full = _all_valid
+                    if _all_valid:
+                        _lazy_unknowns = [
+                            tc.function.name for tc in assistant_message.tool_calls
+                            if tc.function.name not in self.valid_tool_names
+                            and tc.function.name in _all_valid
+                        ]
+                        if _lazy_unknowns:
+                            self._promote_lazy_tools()
+                            self.valid_tool_names = _all_valid
+                            logger.debug(
+                                "lazy tools: promoted on-demand for %s",
+                                _lazy_unknowns,
+                            )
+
                     invalid_tool_calls = [
                         tc.function.name for tc in assistant_message.tool_calls
                         if tc.function.name not in self.valid_tool_names

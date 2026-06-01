@@ -10,6 +10,7 @@ export default {
   soul: "人格",
   memory: "记忆",
   tools: "工具",
+  tokens: "令牌指标",
   schedules: "计划任务",
   smartpatterns: "智能模式",
   kanban: "看板",

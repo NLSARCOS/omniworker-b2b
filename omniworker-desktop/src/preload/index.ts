@@ -1064,6 +1064,30 @@ const omniworkerAPI = {
   ): Promise<{ content: string; path: string }> =>
     ipcRenderer.invoke("read-logs", logFile, lines),
 
+  // Token metrics
+  getTokenMetrics: (): Promise<{
+    entries: Array<{
+      session: string;
+      totalTokens: number;
+      stable: number;
+      context: number;
+      volatile: number;
+      tools: number;
+      timestamp: string;
+    }>;
+    latest: {
+      session: string;
+      totalTokens: number;
+      stable: number;
+      context: number;
+      volatile: number;
+      tools: number;
+      baseline: number;
+      savings: number;
+      savingsPercent: number;
+    } | null;
+  }> => ipcRenderer.invoke("get-token-metrics"),
+
   // Onboarding
   getOnboardingStatus: (): Promise<boolean> => ipcRenderer.invoke("get-onboarding-status"),
   saveOnboardingData: (data: any): Promise<{ success: boolean; error?: string }> =>

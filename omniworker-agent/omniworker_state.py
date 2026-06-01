@@ -244,6 +244,14 @@ CREATE TABLE IF NOT EXISTS state_meta (
     value TEXT
 );
 
+CREATE TABLE IF NOT EXISTS system_prompt_cache (
+    session_id TEXT PRIMARY KEY,
+    system_prompt TEXT NOT NULL,
+    prompt_hash TEXT NOT NULL,
+    cached_at REAL NOT NULL,
+    FOREIGN KEY (session_id) REFERENCES sessions(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_sessions_source ON sessions(source);
 CREATE INDEX IF NOT EXISTS idx_sessions_parent ON sessions(parent_session_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at DESC);
@@ -268,10 +276,10 @@ CREATE TABLE IF NOT EXISTS detected_patterns (
     metadata TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_patterns_status ON detected_patterns(status);
+CREATE INDEX IF NOT EXISTS idx_patterns_user ON detected_patterns(user_id, source_platform, source_chat_id);
 CREATE INDEX IF NOT EXISTS idx_patterns_hash ON detected_patterns(pattern_hash);
-CREATE INDEX IF NOT EXISTS idx_patterns_user ON detected_patterns(user_id, source_platform);
-CREATE INDEX IF NOT EXISTS idx_patterns_job ON detected_patterns(auto_created_job_id);
+CREATE INDEX IF NOT EXISTS idx_patterns_status ON detected_patterns(status);
+CREATE INDEX IF NOT EXISTS idx_sysprompt_cache_session ON system_prompt_cache(session_id);
 """
 
 FTS_SQL = """
@@ -772,6 +780,40 @@ class SessionDB:
                 "UPDATE sessions SET system_prompt = ? WHERE id = ?",
                 (system_prompt, session_id),
             )
+        self._execute_write(_do)
+
+    def cache_system_prompt(self, session_id: str, system_prompt: str) -> None:
+        """Cache/update the system prompt cache entry for a session."""
+        prompt_hash = hash(system_prompt)
+        def _do(conn):
+            conn.execute(
+                """INSERT INTO system_prompt_cache (session_id, system_prompt, prompt_hash, cached_at)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(session_id) DO UPDATE SET
+                     system_prompt = excluded.system_prompt,
+                     prompt_hash = excluded.prompt_hash,
+                     cached_at = excluded.cached_at""",
+                (session_id, system_prompt, prompt_hash, time.time()),
+            )
+        self._execute_write(_do)
+
+    def get_cached_system_prompt(self, session_id: str, system_prompt_hash: int) -> Optional[str]:
+        """Retrieve cached system prompt if hash matches (cache hit)."""
+        def _do(conn):
+            row = conn.execute(
+                "SELECT system_prompt FROM system_prompt_cache WHERE session_id = ? AND prompt_hash = ?",
+                (session_id, system_prompt_hash),
+            ).fetchone()
+            return row["system_prompt"] if row else None
+        return self._execute_read(_do)
+
+    def clear_system_prompt_cache(self, session_id: str = None) -> None:
+        """Clear system prompt cache for a session or all sessions."""
+        def _do(conn):
+            if session_id:
+                conn.execute("DELETE FROM system_prompt_cache WHERE session_id = ?", (session_id,))
+            else:
+                conn.execute("DELETE FROM system_prompt_cache")
         self._execute_write(_do)
 
     def update_token_counts(

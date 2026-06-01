@@ -12,6 +12,7 @@ interface Provider {
   priority: number;
   apiKey: string;
   dailyLimit: number | null;
+  defaultModel?: string;
 }
 
 interface ProviderOption {
@@ -31,6 +32,11 @@ interface OpenCodeGoTier {
   label: string;
   description: string;
   models: OpenCodeGoTierModel[];
+}
+
+interface StepFunModel {
+  id: string;
+  label: string;
 }
 
 type OpenCodeGoTiers = Record<string, OpenCodeGoTier>;
@@ -108,6 +114,7 @@ export default function SuperAdminCommandCenter() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providerOptions, setProviderOptions] = useState<ProviderOption[]>([]);
   const [opencodeGoTiers, setOpencodeGoTiers] = useState<OpenCodeGoTiers>({});
+  const [stepfunModels, setStepfunModels] = useState<StepFunModel[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -173,6 +180,8 @@ export default function SuperAdminCommandCenter() {
       setProviders(pRes.providers || []);
       setProviderOptions(pRes.availableProviders || []);
       setOpencodeGoTiers(pRes.openCodeGoTiers || {});
+      setStepfunModels(pRes.stepfunModels || []);
+      setStepfunModels(pRes.stepfunModels || []);
       setTenants(tRes.tenants || []);
       setPlans(plRes.plans || []);
       setAuditLogs(auditRes.logs || []);
@@ -264,6 +273,7 @@ export default function SuperAdminCommandCenter() {
         name: form.nameInput.value,
         provider: form.provider.value,
         apiKey: form.apiKey.value,
+        baseUrl: form.baseUrl?.value || "",
         priority: parseInt(form.priority.value),
         dailyLimit: form.dailyLimit.value ? parseInt(form.dailyLimit.value) : null,
         isActive: true
@@ -800,6 +810,33 @@ export default function SuperAdminCommandCenter() {
                     </div>
                   )}
 
+                  {/* StepFun: Model Selector */}
+                  {selectedFormProvider === "stepfun" && (
+                    <div className="border border-zinc-800 bg-zinc-900/50 p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-zinc-300 font-semibold uppercase tracking-wider">Seleccionar modelo StepFun</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-400 font-mono leading-relaxed">
+                        Elige el modelo que se usará por defecto para este nodo.
+                      </p>
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        {stepfunModels.map((model) => (
+                          <button
+                            key={model.id}
+                            type="button"
+                            onClick={() => {
+                              const nameInput = document.querySelector('input[name="nameInput"]') as HTMLInputElement | null;
+                              if (nameInput) nameInput.value = model.id;
+                            }}
+                            className="text-[10px] font-mono px-2 py-1 bg-zinc-950 text-zinc-300 border border-zinc-700 uppercase hover:border-white hover:text-white transition-colors"
+                          >
+                            {model.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Identificador del nodo (nombre)</label>
                     <input name="nameInput" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-700" placeholder={selectedFormProvider === "opencode-go" ? "e.g. OpenCode Go Primary" : "e.g. OpenAI Primary"} />
@@ -807,6 +844,10 @@ export default function SuperAdminCommandCenter() {
                   <div>
                     <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Clave secreta</label>
                     <input name="apiKey" type="password" required className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors placeholder:text-zinc-700 font-mono text-sm" placeholder="sk-..." />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono text-zinc-500 mb-2 uppercase">Endpoint base (baseUrl)</label>
+                    <input name="baseUrl" className="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 p-3 outline-none focus:border-zinc-400 transition-colors font-mono" placeholder={selectedFormProvider ? (providerOptions.find(p => p.id === selectedFormProvider)?.baseUrl || "") : "https://..."} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -830,8 +871,9 @@ export default function SuperAdminCommandCenter() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {providers.map((p) => {
                     const isOpenCodeGo = p.provider === "opencode-go";
+                    const isStepFun = p.provider === "stepfun";
                     return (
-                    <div key={p.id} className={`bg-zinc-900 border p-5 group hover:border-zinc-700 transition-colors relative overflow-hidden ${isOpenCodeGo ? "border-zinc-800" : "border-zinc-800"}`}>
+                    <div key={p.id} className={`bg-zinc-900 border p-5 group hover:border-zinc-700 transition-colors relative overflow-hidden ${isOpenCodeGo || isStepFun ? "border-zinc-800" : "border-zinc-800"}`}>
                       <div className="absolute top-0 right-0 p-4">
                         <span className={`w-2 h-2 block rounded-full ${p.isActive ? "bg-white animate-pulse" : "bg-red-500"}`}></span>
                       </div>
@@ -857,6 +899,17 @@ export default function SuperAdminCommandCenter() {
                                 </span>
                               );
                             })}
+                          </div>
+                        </div>
+                      ) : isStepFun ? (
+                        <div className="mb-4 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono uppercase bg-zinc-900 text-zinc-300 font-semibold px-2 py-1 border border-zinc-800 flex items-center gap-1.5">
+                              Modelo seleccionado
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-mono text-zinc-300">
+                            {p.defaultModel || "step-3.5-flash"}
                           </div>
                         </div>
                       ) : (

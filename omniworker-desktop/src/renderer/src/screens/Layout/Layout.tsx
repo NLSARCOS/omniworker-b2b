@@ -16,6 +16,7 @@ import Schedules from "../Schedules/Schedules";
 import SmartPatterns from "../SmartPatterns/SmartPatterns";
 import Kanban from "../Kanban/Kanban";
 import Account from "../Account/Account";
+import Tokens from "../Tokens/Tokens";
 import RemoteNotice from "../../components/RemoteNotice";
 import VerifyWarningBanner from "../../components/VerifyWarningBanner";
 import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
@@ -35,6 +36,7 @@ import {
   Kanban as KanbanIcon,
   Download,
   Bot,
+  TokenMetrics,
 } from "../../assets/icons";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
@@ -54,6 +56,7 @@ type View =
   | "smartpatterns"
   | "kanban"
   | "gateway"
+  | "tokens"
   | "settings"
   | "account";
 
@@ -69,6 +72,7 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "soul", icon: Sparkles, labelKey: "navigation.soul" },
   { view: "memory", icon: Brain, labelKey: "navigation.memory" },
   { view: "tools", icon: Wrench, labelKey: "navigation.tools" },
+  { view: "tokens", icon: TokenMetrics, labelKey: "navigation.tokens" },
   { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
   { view: "smartpatterns", icon: Brain, labelKey: "navigation.smartpatterns" },
   { view: "gateway", icon: Signal, labelKey: "navigation.gateway" },
@@ -679,6 +683,12 @@ function Layout({
                 }}
               />
             )}
+          </div>
+        )}
+
+        {visitedViews.has("tokens") && (
+          <div style={paneStyle("tokens")}>
+            <Tokens profile={activeProfile} />
           </div>
         )}
 

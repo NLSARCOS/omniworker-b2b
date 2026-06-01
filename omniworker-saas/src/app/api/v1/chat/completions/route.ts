@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { chatCompletionSchema } from "@/lib/validation";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { fetchWithBackoff } from "@/lib/fetch-backoff";
+import { compactMessages } from "@/lib/conversation-compaction";
 
 // Provider → URL mapping
 const PROVIDER_URLS: Record<string, string> = {
@@ -421,6 +422,32 @@ export async function POST(request: Request) {
       shuffledCandidates.push(...[...group].sort(() => Math.random() - 0.5));
     }
 
+    // ── Conversation compaction (virtual model path) ───────────────
+    if (body.messages && body.messages.length > 30 && topProvider?.apiKey) {
+      const userQuery = body.messages.filter((m: any) => m.role === "user").pop()?.content || "";
+      let summaryModel: string;
+      let summaryEndpoint: "chat_completions" | "messages" | undefined;
+      if (topProvider.provider === "opencode-go") {
+        const routing = intelligentModelSelect(body.messages);
+        summaryModel = routing.model;
+        summaryEndpoint = routing.endpoint;
+      } else {
+        summaryModel = topProvider.defaultModel || DEFAULT_PROVIDER_MODELS[topProvider.provider] || "gpt-4o-mini";
+      }
+      const compacted = await compactMessages(body.messages, userQuery, {
+        provider: topProvider.provider,
+        apiKey: topProvider.apiKey,
+        model: summaryModel,
+        endpoint: summaryEndpoint,
+      });
+      console.log("[Compaction]", {
+        before: body.messages.length,
+        after: compacted.length,
+        saved: `${Math.round((1 - compacted.length / body.messages.length) * 100)}%`,
+      });
+      body = { ...body, messages: compacted };
+    }
+
     let aiResponse: Response | null = null;
     let selectedProvider: any = null;
     let selectedRealModel = "";
@@ -783,6 +810,24 @@ export async function POST(request: Request) {
   const promptTokensEst = estimatePromptTokens(body.messages || []);
   const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
   const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
+
+  // ── Conversation compaction (standard path) ────────────────────────
+  if (body.messages && body.messages.length > 30 && candidateProviders.length > 0) {
+    const primary = candidateProviders[0];
+    const userQuery = body.messages.filter((m: any) => m.role === "user").pop()?.content || "";
+    const compacted = await compactMessages(body.messages, userQuery, {
+      provider: primary.provider,
+      apiKey: primary.apiKey,
+      model: requestedModel,
+      endpoint: catalogModel ? catalogModel.endpoint : "chat_completions",
+    });
+    console.log("[Compaction]", {
+      before: body.messages.length,
+      after: compacted.length,
+      saved: `${Math.round((1 - compacted.length / body.messages.length) * 100)}%`,
+    });
+    body = { ...body, messages: compacted };
+  }
 
   // ── Provider fallback loop ──────────────────────────────────────────
   // Try each candidate provider until one succeeds

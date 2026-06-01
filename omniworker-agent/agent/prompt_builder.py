@@ -1448,3 +1448,248 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
     if not sections:
         return ""
     return "# Project Context\n\nThe following project context files have been loaded and should be followed:\n\n" + "\n".join(sections)
+
+
+# =========================================================================
+# Query-relevant retrieval helpers (no external dependencies)
+# =========================================================================
+
+_RELEVANCE_STOP_WORDS = frozenset({
+    "the", "and", "for", "are", "but", "not", "you", "all", "can", "had",
+    "her", "was", "one", "our", "out", "day", "get", "has", "him", "his",
+    "how", "man", "new", "now", "old", "see", "two", "way", "who", "boy",
+    "did", "its", "let", "put", "say", "she", "too", "use", "que", "por",
+    "para", "con", "los", "las", "una", "uno", "del", "al", "como", "mas",
+    "pero", "sus", "le", "ya", "o", "este", "esta", "ese", "esa", "entre",
+    "asi", "esto", "eso", "todo", "toda", "todos", "todas", "sin", "sobre",
+    "tambien", "aun", "aqui", "alli", "hay", "muy", "bien", "cada", "cual",
+    "quien", "cuando", "donde", "porque", "pues", "luego", "hasta", "desde",
+    "durante", "mediante", "segun", "antes", "despues", "dentro", "fuera",
+    "encima", "debajo", "delante", "detras", "junto", "cerca", "lejos",
+    "solo", "sola", "solos", "solas", "mismo", "misma", "mismos", "mismas",
+    "tal", "tales", "otro", "otra", "otros", "otras", "mucho", "mucha",
+    "muchos", "muchas", "poco", "poca", "pocos", "pocas", "demasiado",
+    "demasiada", "demasiados", "demasiadas", "bastante", "bastantes",
+    "tanto", "tanta", "tantos", "tantas", "varios", "varias", "send",
+    "need", "want", "help", "please", "using", "use", "like", "get", "got",
+    "make", "tell", "give", "know", "think", "say", "see", "come", "take",
+    "find", "look", "show", "ask", "try", "feel", "become", "leave", "put",
+    "keep", "let", "begin", "seem", "turn", "start", "talk", "run", "move",
+    "live", "believe", "bring", "happen", "write", "provide", "sit", "stand",
+    "lose", "pay", "meet", "include", "continue", "set", "learn", "change",
+    "lead", "understand", "watch", "follow", "stop", "create", "speak",
+    "read", "allow", "add", "spend", "grow", "open", "walk", "win", "offer",
+    "remember", "love", "consider", "appear", "buy", "wait", "serve", "die",
+    "send", "expect", "build", "stay", "fall", "cut", "reach", "kill",
+    "remain", "suggest", "raise", "pass", "sell", "require", "report",
+    "decide", "pull", "what", "where", "when", "why", "which",
+    "would", "should", "could", "will", "shall", "may", "might", "must",
+})
+
+
+def _extract_keywords(query: str) -> list[str]:
+    """Extract relevant keywords from a query string."""
+    if not query:
+        return []
+    words = re.findall(r"[a-z0-9]+", query.lower())
+    return [w for w in words if len(w) >= 3 and w not in _RELEVANCE_STOP_WORDS]
+
+
+def _score_text(text: str, keywords: list[str]) -> int:
+    """Score text by keyword occurrences (case-insensitive)."""
+    if not text or not keywords:
+        return 0
+    text_lower = text.lower()
+    score = 0
+    for kw in keywords:
+        score += text_lower.count(kw)
+    return score
+
+
+def build_relevant_skills_prompt(
+    query: str,
+    available_tools: "set[str] | None" = None,
+    available_toolsets: "set[str] | None" = None,
+    max_tokens: int = 1000,
+) -> str:
+    """Build a compact, query-relevant skills index for the system prompt.
+
+    Falls back to the full skills index when no query is provided or when
+    keyword extraction yields no terms.
+
+    Strategy:
+      - Score each skill by keyword matches in name, description, and category.
+      - Always retain ``omniworker-agent`` (critical for self-reference).
+      - Cap output at roughly *max_tokens* (~4 chars/token estimate).
+    """
+    full_prompt = build_skills_system_prompt(available_tools, available_toolsets)
+    if not query or not full_prompt:
+        return full_prompt
+
+    keywords = _extract_keywords(query)
+    if not keywords:
+        return full_prompt
+
+    lines = full_prompt.splitlines()
+
+    # Find <available_skills> boundaries
+    start_idx: int | None = None
+    end_idx: int | None = None
+    for i, line in enumerate(lines):
+        if line.strip() == "<available_skills>":
+            start_idx = i
+        elif line.strip() == "</available_skills>":
+            end_idx = i
+            break
+
+    if start_idx is None or end_idx is None:
+        return full_prompt
+
+    header_lines = lines[: start_idx + 1]
+    footer_lines = lines[end_idx:]
+    body_lines = lines[start_idx + 1 : end_idx]
+
+    # Score each skill line
+    scored_skills: list[tuple[int, str, str]] = []
+    current_category = ""
+    for line in body_lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.endswith(":") and not stripped.startswith("-"):
+            current_category = stripped[:-1].strip()
+            continue
+        if stripped.startswith("-"):
+            score = _score_text(line, keywords)
+            if current_category:
+                score += _score_text(current_category, keywords) * 2
+            scored_skills.append((score, line, current_category))
+
+    if not scored_skills:
+        return full_prompt
+
+    # Sort by score descending, then category, then line for stability
+    scored_skills.sort(key=lambda x: (-x[0], x[2], x[1]))
+
+    # Budget: ~4 chars per token + buffer for header/footer
+    max_chars = max_tokens * 4
+    header_text = "\n".join(header_lines)
+    footer_text = "\n".join(footer_lines)
+    used_chars = len(header_text) + len(footer_text) + 100
+
+    selected: list[tuple[int, str, str]] = []
+    for score, line, category in scored_skills:
+        is_omniworker = "omniworker-agent" in line.lower()
+        if not is_omniworker and score <= 0:
+            continue
+        line_chars = len(line) + 1  # +1 for newline
+        if used_chars + line_chars > max_chars and not is_omniworker:
+            break
+        selected.append((score, line, category))
+        used_chars += line_chars
+
+    if not selected:
+        return full_prompt
+
+    # Rebuild with category headers
+    result_lines = list(header_lines)
+    last_category: str | None = None
+    for _score, line, category in selected:
+        if category and category != last_category:
+            result_lines.append(f"  {category}:")
+            last_category = category
+        result_lines.append(line)
+
+    result_lines.extend(footer_lines)
+    return "\n".join(result_lines)
+
+
+def build_relevant_context_prompt(
+    query: str,
+    cwd: Optional[str] = None,
+    skip_soul: bool = False,
+    max_tokens: int = 1000,
+) -> str:
+    """Build a query-relevant context files prompt.
+
+    Loads available context files individually, scores them by keyword
+    relevance to the query, and returns the best match(es) capped at
+    roughly *max_tokens*.
+
+    Strategy:
+      - Score each candidate file (AGENTS.md, .omniworker.md, CLAUDE.md,
+        .cursorrules, SOUL.md) by keyword matches.
+      - Pick the single best-scoring **project context** file.
+      - Include SOUL.md only if it scores well (>= 50% of top score) and
+        fits within the token budget.
+      - Never return more than one project context file + SOUL.md.
+    """
+    if not query:
+        return build_context_files_prompt(cwd=cwd, skip_soul=skip_soul)
+
+    keywords = _extract_keywords(query)
+    if not keywords:
+        return build_context_files_prompt(cwd=cwd, skip_soul=skip_soul)
+
+    if cwd is None:
+        cwd = os.getcwd()
+    cwd_path = Path(cwd).resolve()
+
+    candidates: list[tuple[int, str, str]] = []
+
+    for loader, label in [
+        (_load_agents_md, "agents"),
+        (_load_omniworker_md, "omniworker"),
+        (_load_claude_md, "claude"),
+        (_load_cursorrules, "cursorrules"),
+    ]:
+        content = loader(cwd_path)
+        if content:
+            # Filename/category matches weighted higher than body matches
+            score = _score_text(content, keywords) * 2 + _score_text(label, keywords) * 5
+            candidates.append((score, content, label))
+
+    if not skip_soul:
+        soul = load_soul_md()
+        if soul:
+            score = _score_text(soul, keywords)
+            candidates.append((score, soul, "soul"))
+
+    if not candidates:
+        return ""
+
+    candidates.sort(key=lambda x: -x[0])
+    top_score = candidates[0][0]
+
+    max_chars = max_tokens * 4
+    header = "# Project Context\n\nThe following project context files have been loaded and should be followed:\n\n"
+    used_chars = len(header)
+    selected: list[str] = []
+
+    # Pick the best project context file (non-soul), truncating to budget
+    for score, content, label in candidates:
+        if label == "soul":
+            continue
+        budget_remaining = max_chars - used_chars - 2
+        if len(content) > budget_remaining:
+            content = _truncate_content(content, label, max_chars=budget_remaining)
+        if content:
+            selected.append(content)
+            used_chars += len(content) + 2
+        break  # Only one project context file
+
+    # Conditionally add SOUL.md if it scores reasonably high and fits
+    for score, content, label in candidates:
+        if label == "soul":
+            budget_remaining = max_chars - used_chars - 2
+            if top_score > 0 and score >= top_score * 0.5 and budget_remaining > 200:
+                if len(content) > budget_remaining:
+                    content = _truncate_content(content, label, max_chars=budget_remaining)
+                if content:
+                    selected.append(content)
+            break
+
+    if not selected:
+        return ""
+
+    return header + "\n".join(selected)

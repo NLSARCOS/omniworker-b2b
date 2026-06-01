@@ -149,6 +149,7 @@ model MasterProvider {
   provider     String
   apiKey       String
   defaultModel String   @default("gpt-4o-mini")
+  baseUrl      String?
   isActive     Boolean  @default(true)
   priority     Int      @default(1)
   dailyLimit   Int?

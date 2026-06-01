@@ -10,6 +10,7 @@ export default {
   soul: "Persona",
   memory: "Memori",
   tools: "Alat",
+  tokens: "Metrik Token",
   schedules: "Jadwal",
   smartpatterns: "Pola Pintar",
   kanban: "Kanban",

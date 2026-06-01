@@ -382,6 +382,81 @@ function createWindow(): void {
 
 const activeRequests = new Map<string, AbortController>();
 
+// Token metrics parser — extracts system_prompt_budget entries from agent logs
+function parseTokenMetricsFromLogs(logData: { content: string }): {
+  entries: Array<{
+    session: string;
+    totalTokens: number;
+    stable: number;
+    context: number;
+    volatile: number;
+    tools: number;
+    timestamp: string;
+  }>;
+  latest: {
+    session: string;
+    totalTokens: number;
+    stable: number;
+    context: number;
+    volatile: number;
+    tools: number;
+    baseline: number;
+    savings: number;
+    savingsPercent: number;
+  } | null;
+} {
+  const lines = logData.content.split("\n");
+  const budgetRegex = /system_prompt_budget: session=([^ ]+) total_tokens=(\d+) stable=(\d+) context=(\d+) volatile=(\d+) tools=(\d+)/;
+  const entries: Array<{
+    session: string;
+    totalTokens: number;
+    stable: number;
+    context: number;
+    volatile: number;
+    tools: number;
+    timestamp: string;
+  }> = [];
+
+  for (const line of lines) {
+    const match = line.match(budgetRegex);
+    if (match) {
+      const timestamp = line.substring(0, 23).trim();
+      entries.push({
+        session: match[1],
+        totalTokens: parseInt(match[2], 10),
+        stable: parseInt(match[3], 10),
+        context: parseInt(match[4], 10),
+        volatile: parseInt(match[5], 10),
+        tools: parseInt(match[6], 10),
+        timestamp,
+      });
+    }
+  }
+
+  const last = entries.length > 0 ? entries[entries.length - 1] : null;
+  const baseline = 10000;
+
+  return {
+    entries,
+    latest: last
+      ? {
+          session: last.session,
+          totalTokens: last.totalTokens,
+          stable: last.stable,
+          context: last.context,
+          volatile: last.volatile,
+          tools: last.tools,
+          baseline,
+          savings: baseline - last.totalTokens,
+          savingsPercent:
+            last.totalTokens < baseline
+              ? Math.round(((baseline - last.totalTokens) / baseline) * 100)
+              : 0,
+        }
+      : null,
+  };
+}
+
 function setupIPC(): void {
   // Proxy fetch handler for D1-SEC
   ipcMain.handle(
@@ -1815,6 +1890,16 @@ function setupIPC(): void {
     if (conn.mode === "ssh" && conn.ssh)
       return sshReadLogs(conn.ssh, logFile, lines);
     return readLogs(logFile, lines);
+  });
+
+  // Token metrics — parses system_prompt_budget from agent logs
+  ipcMain.handle("get-token-metrics", () => {
+    const conn = getConnectionConfig();
+    if (conn.mode === "ssh" && conn.ssh) {
+      return sshReadLogs(conn.ssh, "agent.log", 500).then(parseTokenMetricsFromLogs);
+    }
+    const logData = readLogs("agent.log", 500);
+    return parseTokenMetricsFromLogs(logData);
   });
 }
 

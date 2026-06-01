@@ -10,6 +10,7 @@ export default {
   soul: "ペルソナ",
   memory: "メモリ",
   tools: "ツール",
+  tokens: "トークン指標",
   schedules: "スケジュール",
   smartpatterns: "スマートパターン",
   kanban: "カンバン",

@@ -34,6 +34,7 @@ import { stripAnsi, profilePaths } from "./utils";
 import { readModels } from "./models";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { PowerManager } from "./power";
+import { HistoryCache } from "./history-cache";
 const pidsFile = join(OMNIWORKER_HOME, "pids.json");
 
 interface PidEntry {
@@ -358,17 +359,42 @@ function sendMessageViaApi(
   const mc = getModelConfig(profile);
   const controller = new AbortController();
 
-  // Build full conversation from history + current message (standard OpenAI format)
-  const messages: Array<{ role: string; content: string }> = [];
+  const rawMessages: Array<{ role: string; content: string }> = [];
   if (history && history.length > 0) {
     for (const msg of history) {
-      messages.push({
+      rawMessages.push({
         role: msg.role === "agent" ? "assistant" : msg.role,
         content: msg.content,
       });
     }
   }
-  messages.push({ role: "user", content: message });
+  rawMessages.push({ role: "user", content: message });
+
+  const MAX_FULL_MESSAGES = 30;
+  const KEEP_RECENT = 20;
+  let messages = rawMessages;
+  if (rawMessages.length > MAX_FULL_MESSAGES) {
+    try {
+      const historyCache = new HistoryCache();
+      const conversationId = _resumeSessionId || `chat:${profile || "default"}:${Date.now()}`;
+      const cachedSummary = historyCache.getOrCreateSummary(conversationId);
+      const recent = rawMessages.slice(-KEEP_RECENT);
+      if (cachedSummary) {
+        messages = [
+          { role: "system", content: `## Resumen de la conversación anterior\n${cachedSummary}` },
+          ...recent,
+        ];
+      } else {
+        messages = recent;
+      }
+      console.log(
+        `[HistoryCache] conversationId=${conversationId} original=${rawMessages.length} compacted=${messages.length} cachedSummary=${!!cachedSummary}`,
+      );
+    } catch (err) {
+      console.warn("[HistoryCache] compaction failed, sending full history:", err);
+      messages = rawMessages;
+    }
+  }
 
   const body = JSON.stringify({
     model: mc.model || "omniworker-agent",

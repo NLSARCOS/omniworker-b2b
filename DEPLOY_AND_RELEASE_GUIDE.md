@@ -8,6 +8,23 @@ Esta guía explica paso a paso cómo:
 
 ---
 
+## PARTE 0 — Cambios en esta versión
+
+### Desktop (Electron)
+- **HistoryCache local:** agrega `src/main/history-cache.ts` con SQLite local (`better-sqlite3`) para cachear resúmenes de conversación por sesión.
+- **Truncation de historial:** en `src/main/omniworker.ts`, si la conversación supera los 30 mensajes, se compacta localmente manteniendo los últimos 20 e inyectando el resumen cacheado como mensaje `system`.
+- **Tokens screen:** nueva pantalla en el Desktop (`src/renderer/src/screens/Tokens/Tokens.tsx`) para ver métricas de ahorro de tokens del system prompt, con IPC `getTokenMetrics` expuesto por el main process.
+
+### SaaS (Next.js)
+- **Conversation compaction:** nuevo `src/lib/conversation-compaction.ts`. Antes de reenviar mensajes al provider, si hay más de 30 mensajes se genera un resumen del bloque intermedio y se inyecta como mensaje `system`. Esto reduce el prompt enviado al proveedor y estabiliza el uso de tokens en sesiones largas.
+- **Integración en ruta:** `src/app/api/v1/chat/completions/route.ts` ahora aplica `compactMessages()` tanto en el flujo de modelos virtuales como en el flujo estándar, antes de iterar por providers.
+
+### Agent (Python)
+- **FTS5 history enrichment:** en `agent/context_compressor.py`, la generación del resumen ahora puede enriquecerse con contexto relevante del historial previo usando la tabla FTS5 `messages_fts` cuando hay `session_db` disponible.
+- **System prompt budget logging:** en `run_agent.py` se agregó logging de `system_prompt_budget` por sesión con métricas por tier (`stable`, `context`, `volatile`, `tools`). El Desktop lee estos logs para mostrar métricas.
+
+---
+
 ## PARTE 1 — Actualización de la App de Escritorio (Desktop)
 
 La app de escritorio usa `electron-updater` con GitHub Releases como servidor de actualizaciones. Cuando publicás una nueva release en el repositorio `Simplex-lat/omniworker-releases`, los usuarios que ya tienen la app instalada reciben la actualización automáticamente en segundo plano.

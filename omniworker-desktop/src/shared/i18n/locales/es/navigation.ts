@@ -10,6 +10,7 @@ export default {
   soul: "Persona",
   memory: "Memoria",
   tools: "Herramientas",
+  tokens: "Métricas de Tokens",
   schedules: "Programaciones",
   smartpatterns: "Patrones Inteligentes",
   kanban: "Kanban",
