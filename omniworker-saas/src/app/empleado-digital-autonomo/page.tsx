@@ -2,23 +2,23 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Crm Con Inteligencia Artificial — Flux Agent",
-  description: "Descubrí cómo CRM con inteligencia artificial puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam.",
-  keywords: "CRM con inteligencia artificial, automatización, IA, LATAM",
+  title: "Empleado Digital Autónomo — Flux Agent",
+  description: "Descubrí cómo empleado digital autónomo puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam.",
+  keywords: "empleado digital autónomo, automatización, IA, LATAM",
   openGraph: {
-    title: "Crm Con Inteligencia Artificial — Flux Agent",
-    description: "Descubrí cómo CRM con inteligencia artificial puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam.",
-    url: "https://flux.simplex.lat/crm-con-inteligencia-artificial",
+    title: "Empleado Digital Autónomo — Flux Agent",
+    description: "Descubrí cómo empleado digital autónomo puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam.",
+    url: "https://flux.simplex.lat/empleado-digital-autonomo",
     siteName: "Flux Agent",
     locale: "es_LA",
     type: "website",
   },
 };
 
-const FEATURES = [["🔒", "Seguridad empresarial", "Datos protegidos"], ["🧠", "IA avanzada", "Procesamiento inteligente"], ["🔄", "Escalado automático", "Crece sin límites"], ["📱", "Multi-canal", "Web, WhatsApp, mobile"], ["📊", "Analytics en tiempo real", "Métricas que importan"]];
+const FEATURES = [["🧠", "IA avanzada", "Procesamiento inteligente"], ["🎯", "ROI garantizado", "800% en el primer trimestre"], ["🔗", "Integración total", "CRM, WhatsApp, y más"], ["🔒", "Seguridad empresarial", "Datos protegidos"], ["⚡", "Resultados en 14 días", "Implementación express"]];
 const STATS = [{"num": "85%", "label": "Tareas automatizadas"}, {"num": "24/7", "label": "Disponibilidad total"}, {"num": "1/10", "label": "Costo vs empleado"}, {"num": "<30s", "label": "Tiempo respuesta"}];
-const STEPS = [{"n": "01", "title": "Diagnóstico gratuito", "desc": "Analizamos tu proceso de CRM con inteligencia artificial y detectamos oportunidades."}, {"n": "02", "title": "Configuración express", "desc": "Implementamos la solución conectada a tus herramientas en 14 días."}, {"n": "03", "title": "Resultados medibles", "desc": "Monitoreá el impacto en tiempo real con soporte dedicado."}];
-const TESTIMONIALS = [{"quote": "Implementar CRM con inteligencia artificial con Flux Agent cambió nuestra operación. Ahorramos 40hs semanales.", "name": "María González", "role": "CEO · TechStart MX", "result": "↓ 40hs/semana"}, {"quote": "El ROI fue inmediato. En el primer mes ya habíamos recuperado la inversión.", "name": "Carlos Ruiz", "role": "Director · InnovateAR", "result": "↑ 300% ROI"}];
+const STEPS = [{"n": "01", "title": "Diagnóstico gratuito", "desc": "Analizamos tu proceso de empleado digital autónomo y detectamos oportunidades."}, {"n": "02", "title": "Configuración express", "desc": "Implementamos la solución conectada a tus herramientas en 14 días."}, {"n": "03", "title": "Resultados medibles", "desc": "Monitoreá el impacto en tiempo real con soporte dedicado."}];
+const TESTIMONIALS = [{"quote": "Implementar empleado digital autónomo con Flux Agent cambió nuestra operación. Ahorramos 40hs semanales.", "name": "María González", "role": "CEO · TechStart MX", "result": "↓ 40hs/semana"}, {"quote": "El ROI fue inmediato. En el primer mes ya habíamos recuperado la inversión.", "name": "Carlos Ruiz", "role": "Director · InnovateAR", "result": "↑ 300% ROI"}];
 
 export default function Page() {
   return (
@@ -28,10 +28,10 @@ export default function Page() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
-          "name": "Crm Con Inteligencia Artificial — Flux Agent",
-          "description": "Descubrí cómo CRM con inteligencia artificial puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam.",
+          "name": "Empleado Digital Autónomo — Flux Agent",
+          "description": "Descubrí cómo empleado digital autónomo puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam.",
           "provider": { "@type": "Organization", "name": "Simplex Latam" },
-          "url": "https://flux.simplex.lat/crm-con-inteligencia-artificial",
+          "url": "https://flux.simplex.lat/empleado-digital-autonomo",
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "Web",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
@@ -68,11 +68,11 @@ export default function Page() {
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "72px 5vw 88px", display: "grid", gridTemplateColumns: "1fr 360px", gap: 80, alignItems: "start" }}>
           <div>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--neon-dim)", background: "var(--neon-pale)", padding: "8px 14px", display: "inline-block", marginBottom: 28, borderLeft: `3px solid var(--neon)` }}>
-              Crm Con Inteligencia Artificial · By Simplex Latam
+              Empleado Digital Autónomo · By Simplex Latam
             </div>
-            <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 500, fontSize: "clamp(52px, 6vw, 88px)", lineHeight: 0.93, letterSpacing: "-0.04em", color: "var(--ink)", marginBottom: 32 }}>Crm Con Inteligencia Artificial</h1>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: 500, fontSize: "clamp(52px, 6vw, 88px)", lineHeight: 0.93, letterSpacing: "-0.04em", color: "var(--ink)", marginBottom: 32 }}>Empleado Digital Autónomo</h1>
             <p style={{ fontSize: 20, fontWeight: 400, lineHeight: 1.6, color: "var(--ink-soft)", maxWidth: 600, marginBottom: 48, borderLeft: `3px solid var(--rule)`, paddingLeft: 20 }}>
-              Descubrí cómo CRM con inteligencia artificial puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam.
+              Descubrí cómo empleado digital autónomo puede transformar tu empresa. Solución inteligente para automatizar procesos y escalar sin contratar. By Simplex Latam.
             </p>
             <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "var(--neon)", color: "var(--paper)", padding: "18px 36px", borderRadius: 8, fontWeight: 600, fontSize: 17, textDecoration: "none" }}>
               Configurá tu asistente →
@@ -102,7 +102,7 @@ export default function Page() {
         <div style={{ background: "var(--ink)", color: "var(--paper)", padding: "80px 5vw" }}>
           <div style={{ maxWidth: 1280, margin: "0 auto" }}>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--neon)", marginBottom: 20 }}>características</div>
-            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 500, lineHeight: 1.1, marginBottom: 60, maxWidth: 900 }}>Todo lo que necesitás para automatizar CRM con inteligencia artificial.</h2>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 500, lineHeight: 1.1, marginBottom: 60, maxWidth: 900 }}>Todo lo que necesitás para automatizar empleado digital autónomo.</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 2 }}>
               {FEATURES.map((f) => (
                 <div key={f.name} style={{ background: "var(--paper)", color: "var(--ink)", padding: "32px 28px", borderRadius: 2 }}>
@@ -158,7 +158,7 @@ export default function Page() {
         {/* CTA FINAL */}
         <div style={{ background: "var(--neon)", padding: "80px 5vw", textAlign: "center" }}>
           <div style={{ maxWidth: 800, margin: "0 auto" }}>
-            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "clamp(36px, 5vw, 64px)", fontWeight: 600, lineHeight: 1.05, marginBottom: 24, color: "var(--paper)" }}>¿Listo para automatizar CRM con inteligencia artificial?</h2>
+            <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: "clamp(36px, 5vw, 64px)", fontWeight: 600, lineHeight: 1.05, marginBottom: 24, color: "var(--paper)" }}>¿Listo para automatizar empleado digital autónomo?</h2>
             <p style={{ fontSize: 18, color: "var(--paper)", opacity: 0.85, marginBottom: 40 }}>Configurá tu asistente en 14 días. Resultados medibles desde la semana 1.</p>
             <Link href="/register" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "var(--paper)", color: "var(--neon)", padding: "18px 36px", borderRadius: 8, fontWeight: 700, fontSize: 17, textDecoration: "none" }}>
               Empezar ahora →
