@@ -58,6 +58,18 @@ const OPENCODE_GO_ENDPOINTS = {
 
 type OpenCodeEndpoint = keyof typeof OPENCODE_GO_ENDPOINTS;
 
+function isSimpleGreeting(messages: any[]): boolean {
+  const last = messages.filter((m: any) => m.role === "user").pop();
+  if (!last) return false;
+  const text = String(last.content || "").trim();
+  if (!text || text.length > 60) return false;
+  return /^(hola|hello|hi|hey|buenos|buenas|qu[eé] tal|saludos)[\s!¡?.,]*$/i.test(text);
+}
+
+function trimSystemPrompt(systemContent: string): string {
+  return "OmniWorker assistant. Reply briefly. " + systemContent;
+}
+
 // OmniWorker virtual models → role-based system prompts
 const OMNIWORKER_ROLES: Record<string, string> = {
   "omniworker-code": `You are OmniWorker Code, an expert software engineer and coding assistant.
@@ -485,6 +497,24 @@ export async function POST(request: Request) {
       let messages = body.messages || [];
       if (rolePrompt && messages.length > 0) {
         messages = [{ role: "system", content: rolePrompt }, ...messages];
+      }
+
+      // Fast path: simple greetings should not pay for the full system prompt.
+      const _shouldTrim = isSimpleGreeting(messages);
+      if (_shouldTrim) {
+        const systemMsgs = messages.filter((m: any) => m.role === "system");
+        if (systemMsgs.length > 0) {
+          const systemContent = systemMsgs.map((m: any) => m.content).join("\n\n");
+          const trimmed = trimSystemPrompt(systemContent);
+          const nonSystemMsgs = messages.filter((m: any) => m.role !== "system");
+          const firstUserIdx = nonSystemMsgs.findIndex((m: any) => m.role === "user");
+          if (firstUserIdx >= 0) {
+            messages = [...nonSystemMsgs];
+            messages[firstUserIdx] = { ...messages[firstUserIdx], content: trimmed + "\n\n" + messages[firstUserIdx].content };
+          } else {
+            messages = [{ role: "user", content: trimmed }, ...nonSystemMsgs];
+          }
+        }
       }
 
       // Resolve the actual URL — OpenCode Go models may use different endpoints
