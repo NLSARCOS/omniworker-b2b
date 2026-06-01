@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
 };
 
-const FEATURES = [["📊", "Analytics en tiempo real", "Métricas que importan"], ["🔄", "Escalado automático", "Crece sin límites"], ["🎯", "ROI garantizado", "800% en el primer trimestre"], ["🧠", "IA avanzada", "Procesamiento inteligente"], ["🔒", "Seguridad empresarial", "Datos protegidos"]];
+const FEATURES = [["⚡", "Resultados en 14 días", "Implementación express"], ["🔒", "Seguridad empresarial", "Datos protegidos"], ["📱", "Multi-canal", "Web, WhatsApp, mobile"], ["🧠", "IA avanzada", "Procesamiento inteligente"]];
 const STATS = [{"num": "85%", "label": "Tareas automatizadas"}, {"num": "24/7", "label": "Disponibilidad total"}, {"num": "1/10", "label": "Costo vs empleado"}, {"num": "<30s", "label": "Tiempo respuesta"}];
 const STEPS = [{"n": "01", "title": "Diagnóstico gratuito", "desc": "Analizamos tu proceso de CRM con inteligencia artificial y detectamos oportunidades."}, {"n": "02", "title": "Configuración express", "desc": "Implementamos la solución conectada a tus herramientas en 14 días."}, {"n": "03", "title": "Resultados medibles", "desc": "Monitoreá el impacto en tiempo real con soporte dedicado."}];
 const TESTIMONIALS = [{"quote": "Implementar CRM con inteligencia artificial con Flux Agent cambió nuestra operación. Ahorramos 40hs semanales.", "name": "María González", "role": "CEO · TechStart MX", "result": "↓ 40hs/semana"}, {"quote": "El ROI fue inmediato. En el primer mes ya habíamos recuperado la inversión.", "name": "Carlos Ruiz", "role": "Director · InnovateAR", "result": "↑ 300% ROI"}];
