@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
 };
 
-const FEATURES = [["📱", "Multi-canal", "Web, WhatsApp, mobile"], ["⚡", "Resultados en 14 días", "Implementación express"], ["🔗", "Integración total", "CRM, WhatsApp, y más"], ["🎯", "ROI garantizado", "800% en el primer trimestre"], ["🔄", "Escalado automático", "Crece sin límites"], ["📊", "Analytics en tiempo real", "Métricas que importan"]];
+const FEATURES = [["🎯", "ROI garantizado", "800% en el primer trimestre"], ["🧠", "IA avanzada", "Procesamiento inteligente"], ["🔗", "Integración total", "CRM, WhatsApp, y más"], ["📊", "Analytics en tiempo real", "Métricas que importan"], ["🔒", "Seguridad empresarial", "Datos protegidos"]];
 const STATS = [{"num": "85%", "label": "Tareas automatizadas"}, {"num": "24/7", "label": "Disponibilidad total"}, {"num": "1/10", "label": "Costo vs empleado"}, {"num": "<30s", "label": "Tiempo respuesta"}];
 const STEPS = [{"n": "01", "title": "Diagnóstico gratuito", "desc": "Analizamos tu proceso de fuerza laboral autónoma IA y detectamos oportunidades."}, {"n": "02", "title": "Configuración express", "desc": "Implementamos la solución conectada a tus herramientas en 14 días."}, {"n": "03", "title": "Resultados medibles", "desc": "Monitoreá el impacto en tiempo real con soporte dedicado."}];
 const TESTIMONIALS = [{"quote": "Implementar fuerza laboral autónoma IA con Flux Agent cambió nuestra operación. Ahorramos 40hs semanales.", "name": "María González", "role": "CEO · TechStart MX", "result": "↓ 40hs/semana"}, {"quote": "El ROI fue inmediato. En el primer mes ya habíamos recuperado la inversión.", "name": "Carlos Ruiz", "role": "Director · InnovateAR", "result": "↑ 300% ROI"}];
