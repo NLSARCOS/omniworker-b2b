@@ -17,6 +17,8 @@ const PROVIDER_OPTIONS = [
   { id: "ollama",      label: "Ollama (local)", baseUrl: "http://localhost:11434" },
   { id: "opencode-go", label: "OpenCode Go",   baseUrl: "https://opencode.ai/zen/go/v1" },
   { id: "stepfun",    label: "StepFun",        baseUrl: "https://api.stepfun.ai/step_plan/v1" },
+  { id: "kimi-code",  label: "Kimi Code",      baseUrl: "https://api.kimi.com/coding/v1" },
+  { id: "z-ai",       label: "Z.AI",            baseUrl: "https://api.z.ai/api/coding/paas/v4" },
 ];
 
 const STEPFUN_MODELS = [

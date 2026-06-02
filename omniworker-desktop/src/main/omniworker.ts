@@ -948,6 +948,203 @@ function sendMessageViaCli(
 let apiServerAvailable: boolean | null = null; // cached after first check
 
 // ────────────────────────────────────────────────────
+//  Greeting detection — lightweight check for simple chitchat
+// ────────────────────────────────────────────────────
+
+const GREETING_PATTERNS: RegExp[] = [
+  // Single-word greetings
+  /^(hola|hi|hello|hey|buenos?\s*d[ií]as|buenas|gracias|thanks|thank\s*you|bye|adi[oó]s|ok|s[ií]|no|yes|nope|sure|claro|dale|listo|yo|saludos)[\s!.?¡¿]*$/i,
+  // Greeting phrases
+  /^(hola|hello|hi|hey)\s+(como|c[oó]mo)\s+(estas|est[aá]s|te va|va todo|van las cosas)/i,
+  /^(qu[eé]\s*tal|what'?s\s+up|how\s+(are\s+)?you|how'?s\s+it\s+going)/i,
+  /^(buenos?\s+(d[ií]as|d[ií]a|tardes|noches)|good\s+(morning|afternoon|evening|night))/i,
+  /^(todo\s+bien|todo\s+ok|all\s+good|all\s+fine|i'?m\s+fine)/i,
+  /^(c[oó]mo\s+te\s+va|c[oó]mo\s+est[aá]s|how\s+are\s+things)/i,
+  /^(nice\s+to\s+meet|encantado|mucho\s+gusto)/i,
+  /^(bien|perfecto|excelente|genial|cool|nice|great|awesome)[\s!.]*$/i,
+];
+
+/**
+ * Detect simple greeting/chitchat messages that don't need agent tools.
+ * These can bypass the agent gateway entirely to save ~12K tokens.
+ */
+function isSimpleGreeting(message: string): boolean {
+  const trimmed = message.trim();
+  if (!trimmed || trimmed.length > 80) return false;
+  return GREETING_PATTERNS.some((p) => p.test(trimmed));
+}
+
+/**
+ * Send a simple greeting directly to the smart router (local) or SaaS (remote),
+ * completely bypassing the agent gateway and its massive system prompt.
+ * This reduces a ~12K token request to ~50 tokens.
+ */
+function sendSimpleGreeting(
+  message: string,
+  cb: ChatCallbacks,
+  profile?: string,
+): ChatHandle {
+  const controller = new AbortController();
+
+  // In local mode send to smart router; in remote mode send to SaaS
+  const targetUrl = isRemoteMode()
+    ? `${cleanBaseUrl(getApiUrl())}/v1/chat/completions`
+    : `http://127.0.0.1:${SMART_ROUTER_PORT}/v1/chat/completions`;
+
+  const body = JSON.stringify({
+    model: "omniworker-agent",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a helpful and friendly AI assistant. Respond concisely in the same language as the user.",
+      },
+      { role: "user", content: message },
+    ],
+    stream: true,
+  });
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...getRemoteAuthHeader(profile),
+  };
+
+  let finished = false;
+  function finish(error?: string): void {
+    if (finished) return;
+    finished = true;
+    if (error) cb.onError(error);
+    else cb.onDone();
+  }
+
+  const req = http.request(
+    targetUrl,
+    {
+      method: "POST",
+      headers,
+      signal: controller.signal,
+      timeout: 30000,
+    },
+    (res) => {
+      if (res.statusCode !== 200) {
+        let errBody = "";
+        res.on("data", (d: Buffer) => {
+          errBody += d.toString();
+        });
+        res.on("end", () => finish(`Greeting API error ${res.statusCode}`));
+        return;
+      }
+
+      let buffer = "";
+      res.on("data", (chunk: Buffer) => {
+        buffer += chunk.toString();
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() || "";
+
+        for (const part of parts) {
+          for (const line of part.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6);
+            if (data === "[DONE]") {
+              finish();
+              return;
+            }
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) cb.onChunk(content);
+            } catch {
+              /* skip */
+            }
+          }
+        }
+      });
+
+      res.on("end", () => {
+        if (buffer.trim()) {
+          for (const line of buffer.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6);
+            if (data === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) cb.onChunk(content);
+            } catch {
+              /* skip */
+            }
+          }
+        }
+        finish();
+      });
+
+      res.on("error", (err) => finish(`Greeting stream error: ${err.message}`));
+    },
+  );
+
+  req.on("error", (err) => {
+    if (err.name === "AbortError") return;
+    // Fallback: if smart router fails, try the normal agent gateway path
+    console.warn("[GreetingFastPath] Direct send failed, falling back to full path:", err.message);
+    const mc = getModelConfig(profile);
+    const fallbackUrl = `${cleanBaseUrl(getApiUrl())}/v1/chat/completions`;
+    const fallbackBody = JSON.stringify({
+      model: mc.model || "omniworker-agent",
+      messages: [{ role: "user", content: message }],
+      stream: true,
+    });
+    const fallbackReq = http.request(
+      fallbackUrl,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getRemoteAuthHeader(profile) },
+        signal: controller.signal,
+        timeout: 30000,
+      },
+      (fRes) => {
+        if (fRes.statusCode !== 200) {
+          finish(`Fallback API error ${fRes.statusCode}`);
+          return;
+        }
+        let fBuffer = "";
+        fRes.on("data", (chunk: Buffer) => {
+          fBuffer += chunk.toString();
+          const parts = fBuffer.split("\n\n");
+          fBuffer = parts.pop() || "";
+          for (const part of parts) {
+            for (const line of part.split("\n")) {
+              if (!line.startsWith("data: ")) continue;
+              const data = line.slice(6);
+              if (data === "[DONE]") { finish(); return; }
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) cb.onChunk(content);
+              } catch { /* skip */ }
+            }
+          }
+        });
+        fRes.on("end", () => finish());
+        fRes.on("error", (e) => finish(`Fallback error: ${e.message}`));
+      },
+    );
+    fallbackReq.on("error", (e) => finish(`All paths failed: ${e.message}`));
+    fallbackReq.write(fallbackBody);
+    fallbackReq.end();
+  });
+
+  req.on("timeout", () => {
+    req.destroy();
+    finish("Greeting request timed out");
+  });
+
+  req.write(body);
+  req.end();
+
+  return { abort: () => controller.abort() };
+}
+
+// ────────────────────────────────────────────────────
 //  Local SLM Router — classify messages for local vs cloud
 // ────────────────────────────────────────────────────
 
@@ -1171,7 +1368,17 @@ export async function sendMessage(
       const slmHandle = sendMessageViaLocalSlm(message, cb);
       if (slmHandle) return slmHandle;
     }
-    // SLM not available — fall through to gateway/cloud
+    // SLM not available — fall through to greeting fast path or gateway/cloud
+  }
+
+  // ── SIMPLE GREETING FAST PATH ──
+  // For greetings in a fresh conversation, bypass the agent gateway entirely
+  // and send a minimal payload (~50 tokens) directly to the smart router or SaaS.
+  // The agent gateway adds ~10-12K tokens of system prompt + tools which is
+  // wasteful for simple "hola como estas" type messages.
+  if (!resumeSessionId && isSimpleGreeting(message) && (!history || history.length === 0)) {
+    console.log("[GreetingFastPath] Bypassing agent gateway for simple greeting");
+    return sendSimpleGreeting(message, cb, profile);
   }
 
   // Remote mode: always use API, no CLI fallback
@@ -1682,6 +1889,11 @@ export async function startGateway(profile?: string): Promise<boolean> {
     OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
     OMNIWORKER_SAAS_BASE_URL:
       process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
+    // Prevent loading AGENTS.md (~51K chars / ~12K tokens) from the agent repo.
+    // Without this the agent discovers OMNIWORKER_REPO/AGENTS.md via os.getcwd()
+    // and injects the entire dev guide into every conversation — wasting ~12K tokens.
+    // Desktop users aren't coding the agent itself; context files are not needed.
+    TERMINAL_CWD: homedir(),
   };
 
   // Inject ALL profile API keys so the gateway can authenticate with any provider.

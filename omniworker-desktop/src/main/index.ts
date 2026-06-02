@@ -2112,7 +2112,7 @@ function setupUpdater(): void {
       console.error("[Update] killSpawnedProcessesGracefully failed:", err);
     }
 
-    console.log("[Update] Cleanup complete. Scheduling app restart...");
+    console.log("[Update] Cleanup complete. Installing update...");
 
     // Destroy all browser windows to prevent close handlers from blocking
     const windows = BrowserWindow.getAllWindows();
@@ -2124,43 +2124,17 @@ function setupUpdater(): void {
 
     isUpdating = true;
 
-    // Schedule the app to reopen after the update is applied.
-    // Use a detached background process that waits for this app to exit,
-    // then reopens it. This works without code signing unlike quitAndInstall.
-    const { execFile } = require("child_process") as typeof import("child_process");
-    const reopenScript = `
-import subprocess, time, sys, os
-app_path = sys.argv[1]
-time.sleep(3)
-for _ in range(10):
-    try:
-        subprocess.Popen(["open", app_path])
-        break
-    except:
-        time.sleep(1)
-`;
-    const tmpScript = require("path").join(require("os").tmpdir(), "omniworker_reopen.py");
-    require("fs").writeFileSync(tmpScript, reopenScript);
-
-    // Resolve the .app bundle path on macOS
-    let appPath: string;
-    if (process.platform === "darwin") {
-      // exe is /Applications/OmniWorker.app/Contents/MacOS/OmniWorker
-      const exe = app.getPath("exe");
-      appPath = exe.replace(/\/Contents\/MacOS\/[^/]*$/, "");
-    } else {
-      appPath = app.getPath("exe");
-    }
-
-    console.log(`[Update] Scheduling reopen of: ${appPath}`);
-    const reopen = execFile("python3", [tmpScript, appPath], {
-      detached: true,
-      stdio: "ignore",
-    } as any);
-    reopen.unref();
-
-    // autoInstallOnAppQuit = true handles replacing the app files during quit
-    app.quit();
+    // Use electron-updater's quitAndInstall which handles the update properly
+    // This is more reliable than autoInstallOnAppQuit + app.quit()
+    setTimeout(() => {
+      try {
+        autoUpdater.quitAndInstall();
+      } catch (err) {
+        console.error("[Update] quitAndInstall failed:", err);
+        // Fallback: just quit and let autoInstallOnAppQuit handle it
+        app.quit();
+      }
+    }, 1000);
 
     return true;
   });

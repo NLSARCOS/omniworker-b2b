@@ -15,6 +15,7 @@ const PROVIDER_URLS: Record<string, string> = {
   nvidia: "https://integrate.api.nvidia.com/v1/chat/completions",
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
   "z-ai": "https://api.z.ai/api/coding/paas/v4/chat/completions",
+  "kimi-code": "https://api.kimi.com/coding/v1/chat/completions",
 };
 
 // Default model for each provider
@@ -31,7 +32,8 @@ const DEFAULT_PROVIDER_MODELS: Record<string, string> = {
   "opencode-go": "glm-5",
   ollama: "llama3",
   moonshot: "k2.6",
-  "z-ai": "glm-5",
+  "z-ai": "glm-5.1",
+  "kimi-code": "k2.6",
 };
 
 // NVIDIA GLM-specific config: enable thinking but hide reasoning output
@@ -61,13 +63,28 @@ type OpenCodeEndpoint = keyof typeof OPENCODE_GO_ENDPOINTS;
 function isSimpleGreeting(messages: any[]): boolean {
   const last = messages.filter((m: any) => m.role === "user").pop();
   if (!last) return false;
-  const text = String(last.content || "").trim();
-  if (!text || text.length > 60) return false;
-  return /^(hola|hello|hi|hey|buenos|buenas|qu[eé] tal|saludos)[\s!¡?.,]*$/i.test(text);
+  const text = String(last.content || "").trim().toLowerCase();
+  if (!text || text.length > 80) return false;
+
+  // Single-word greetings
+  if (/^(hola|hello|hi|hey|buenos|buenas|saludos|yo|sup|aloha)[\s!¡?.,]*$/i.test(text)) return true;
+
+  // Multi-word greeting phrases
+  const greetingPhrases = [
+    /^(hola|hello|hi|hey)\s+(como|c[oó]mo)\s+(estas|est[aá]s|te va|va todo|van las cosas)/i,
+    /^(qu[eé]\s*tal|what'?s\s+up|how\s+(are\s+)?you|how'?s\s+it\s+going)/i,
+    /^(buenos?\s+(d[ií]as|d[ií]a|tardes|noches)|good\s+(morning|afternoon|evening|night))/i,
+    /^(todo\s+bien|todo\s+ok|all\s+good|all\s+fine|i'?m\s+fine)/i,
+    /^(c[oó]mo\s+te\s+va|c[oó]mo\s+est[aá]s|how\s+are\s+things)/i,
+    /^(nice\s+to\s+meet|encantado|mucho\s+gusto)/i,
+    /^(gracias|thanks|thank\s+you|ty)[\s!.,]*$/i,
+  ];
+
+  return greetingPhrases.some(p => p.test(text));
 }
 
-function trimSystemPrompt(systemContent: string): string {
-  return "OmniWorker assistant. Reply briefly. " + systemContent;
+function trimSystemPrompt(_systemContent: string): string {
+  return "You are a helpful assistant. Reply in 1-2 short sentences.";
 }
 
 // OmniWorker virtual models → role-based system prompts
@@ -167,12 +184,19 @@ async function reconcileStreamBilling(
 
   console.log(`[Reconciliation] Est Cost: ${estimatedCost}, Actual Cost: ${actualCost}, Prompt: ${actual.promptTokens}, Completion: ${actual.completionTokens}`);
 
+  // Refund if we overcharged during pre-deduction
   let refundAmount = 0;
   if (estimatedCost > actualCost) {
     const diff = estimatedCost - actualCost;
-    if (diff > actualCost * 0.10) {
+    if (diff > Math.max(5, actualCost * 0.05)) {
       refundAmount = diff;
     }
+  }
+
+  // Charge more if actual cost exceeded pre-deduction
+  let extraCharge = 0;
+  if (actualCost > estimatedCost) {
+    extraCharge = actualCost - estimatedCost;
   }
 
   if (refundAmount > 0) {
@@ -194,6 +218,25 @@ async function reconcileStreamBilling(
     }
   }
 
+  if (extraCharge > 0) {
+    console.log(`[Reconciliation] Extra charging ${extraCharge} tokens (actual exceeded pre-deduction)`);
+    try {
+      if (licenseId) {
+        await prisma.license.update({
+          where: { id: licenseId },
+          data: { tokenBalance: { decrement: extraCharge } },
+        });
+      } else {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { tokenBalance: { decrement: extraCharge } },
+        });
+      }
+    } catch (e) {
+      console.error("[Reconciliation Extra Charge Error]", e);
+    }
+  }
+
   try {
     await prisma.taskLog.create({
       data: {
@@ -212,22 +255,27 @@ async function reconcileStreamBilling(
 }
 
 function estimatePromptTokens(messages: any[]): number {
-  const fullText = JSON.stringify(messages || []);
-  const totalChars = fullText.length;
-  if (totalChars === 0) return 0;
+  if (!messages || messages.length === 0) return 0;
 
+  let totalChars = 0;
   let nonAsciiCount = 0;
-  for (let i = 0; i < totalChars; i++) {
-    if (fullText.charCodeAt(i) > 127) {
-      nonAsciiCount++;
+
+  for (const msg of messages) {
+    const text = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content || "");
+    totalChars += text.length;
+    for (let i = 0; i < text.length; i++) {
+      if (text.charCodeAt(i) > 127) nonAsciiCount++;
     }
+    // Per-message overhead (~2 tokens for role separators)
+    totalChars += 8;
   }
+
+  if (totalChars === 0) return 0;
 
   const isNonAsciiHeavy = (nonAsciiCount / totalChars) > 0.3;
   const multiplier = isNonAsciiHeavy ? 1.5 : 1.0;
 
-  const baseTokens = Math.max(10, Math.floor(totalChars / 4));
-  return Math.floor(baseTokens * multiplier);
+  return Math.max(5, Math.floor((totalChars / 4) * multiplier));
 }
 
 // ── OpenCode Go Intelligent Routing ──────────────────────────────────
@@ -525,7 +573,7 @@ export async function POST(request: Request) {
 
       // Build provider-specific payload
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (targetProvider === "moonshot") {
+      if (targetProvider === "moonshot" || targetProvider === "kimi-code") {
         headers["User-Agent"] = "KimiCLI/1.5";
       }
       let payload: Record<string, unknown>;
@@ -584,8 +632,16 @@ export async function POST(request: Request) {
 
       // Dynamic cost estimation fallback (e.g. for streaming)
       const promptTokensEst = estimatePromptTokens((payload.messages as any[]) || []);
-      const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
-      const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
+      const _virtIsGreeting = isSimpleGreeting(body.messages || []);
+      const completionTokensEst = isStream
+        ? (_virtIsGreeting ? Math.max(15, Math.floor(promptTokensEst * 0.2)) : Math.max(100, Math.floor(promptTokensEst * 0.3)))
+        : 300;
+      let estimatedCost = Math.max(5, promptTokensEst + completionTokensEst);
+
+      // Light mode cap for short conversations
+      const msgCount = (body.messages || []).length;
+      if (msgCount <= 2) estimatedCost = Math.min(estimatedCost, 50);
+      else if (msgCount <= 5) estimatedCost = Math.min(estimatedCost, 150);
 
       // Apply NVIDIA GLM-specific config (thinking with clear_thinking)
       payload = applyNvidiaGLMConfig(payload, realModel, targetProvider);
@@ -836,12 +892,7 @@ export async function POST(request: Request) {
     console.log(`  - Msg ${i}: role=${msg.role}, char_len=${contentStr.length}, snippet=${contentStr.substring(0, 150).replace(/\s+/g, " ")}...`);
   });
 
-  // Dynamic cost estimation fallback (e.g. for streaming)
-  const promptTokensEst = estimatePromptTokens(body.messages || []);
-  const completionTokensEst = isStream ? Math.max(100, Math.floor(promptTokensEst * 0.3)) : 300;
-  const estimatedCost = Math.max(10, promptTokensEst + completionTokensEst);
-
-  // ── Conversation compaction (standard path) ────────────────────────
+  // ── Conversation compaction (standard path) — BEFORE estimation ─────
   if (body.messages && body.messages.length > 30 && candidateProviders.length > 0) {
     const primary = candidateProviders[0];
     const userQuery = body.messages.filter((m: any) => m.role === "user").pop()?.content || "";
@@ -858,6 +909,36 @@ export async function POST(request: Request) {
     });
     body = { ...body, messages: compacted };
   }
+
+  // ── Greeting optimization (standard path) ────────────────────────
+  const _stdIsGreeting = isSimpleGreeting(body.messages || []);
+  if (_stdIsGreeting) {
+    const msgs = body.messages || [];
+    const systemMsgs = msgs.filter((m: any) => m.role === "system");
+    if (systemMsgs.length > 0) {
+      const trimmed = trimSystemPrompt(systemMsgs.map((m: any) => m.content).join("\n\n"));
+      const nonSystemMsgs = msgs.filter((m: any) => m.role !== "system");
+      const firstUserIdx = nonSystemMsgs.findIndex((m: any) => m.role === "user");
+      if (firstUserIdx >= 0) {
+        nonSystemMsgs[firstUserIdx] = { ...nonSystemMsgs[firstUserIdx], content: trimmed + "\n\n" + nonSystemMsgs[firstUserIdx].content };
+        body = { ...body, messages: nonSystemMsgs };
+      } else {
+        body = { ...body, messages: [{ role: "user", content: trimmed }, ...nonSystemMsgs] };
+      }
+    }
+  }
+
+  // Dynamic cost estimation — AFTER compaction + greeting optimization
+  const promptTokensEst = estimatePromptTokens(body.messages || []);
+  const completionTokensEst = isStream
+    ? (_stdIsGreeting ? Math.max(15, Math.floor(promptTokensEst * 0.2)) : Math.max(100, Math.floor(promptTokensEst * 0.3)))
+    : 300;
+  let estimatedCost = Math.max(5, promptTokensEst + completionTokensEst);
+
+  // Light mode cap for short conversations
+  const msgCount = (body.messages || []).length;
+  if (msgCount <= 2) estimatedCost = Math.min(estimatedCost, 50);
+  else if (msgCount <= 5) estimatedCost = Math.min(estimatedCost, 150);
 
   // ── Provider fallback loop ──────────────────────────────────────────
   // Try each candidate provider until one succeeds
@@ -881,7 +962,7 @@ export async function POST(request: Request) {
 
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (provName === "moonshot") {
+      if (provName === "moonshot" || provName === "kimi-code") {
         headers["User-Agent"] = "KimiCLI/1.5";
       }
       let payload: Record<string, unknown>;

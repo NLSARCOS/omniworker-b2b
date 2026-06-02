@@ -19,6 +19,7 @@ const PROVIDER_TEST_URLS: Record<string, string> = {
   moonshot: "https://api.kimi.com/coding/v1/chat/completions",
   "z-ai": "https://api.z.ai/api/coding/paas/v4/chat/completions",
   stepfun: "https://api.stepfun.ai/step_plan/v1/chat/completions",
+  "kimi-code": "https://api.kimi.com/coding/v1/chat/completions",
 };
 
 // Default test model for each provider
@@ -36,7 +37,8 @@ const PROVIDER_TEST_MODELS: Record<string, string> = {
   ollama: "llama3",
   moonshot: "k2.6",
   "z-ai": "glm-5",
-  stepfun: "step-3.5-flash",
+  stepfun: "step-3.7-flash",
+  "kimi-code": "k2.6",
 };
 
 export async function POST(request: Request) {
@@ -73,7 +75,7 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
-  const testModel = (provider.defaultModel && provider.defaultModel !== "gpt-4o-mini" || provider.provider === "openai")
+  const testModel = provider.defaultModel && provider.defaultModel !== "gpt-4o-mini"
     ? provider.defaultModel
     : (PROVIDER_TEST_MODELS[provider.provider] || "gpt-4o-mini");
 
@@ -81,7 +83,7 @@ export async function POST(request: Request) {
   try {
 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (provider.provider === "moonshot") {
+    if (provider.provider === "moonshot" || provider.provider === "kimi-code") {
       headers["User-Agent"] = "KimiCLI/1.5";
     }
     let payload: Record<string, unknown>;

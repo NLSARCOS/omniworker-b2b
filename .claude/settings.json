@@ -9,5 +9,30 @@
       "mcp__codegraph__codegraph_node",
       "mcp__codegraph__codegraph_status"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codegraph mark-dirty",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codegraph sync"
+          }
+        ]
+      }
+    ]
   }
 }

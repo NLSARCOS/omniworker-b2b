@@ -461,13 +461,13 @@ def simplify_chitchat_payload(data: dict) -> dict:
     Removes the heavy tools schemas and condenses the huge agent system prompt into a concise one.
     """
     simplified = data.copy()
-    
+
     # 1. Remove tools if present
     if "tools" in simplified:
         del simplified["tools"]
     if "tool_choice" in simplified:
         del simplified["tool_choice"]
-        
+
     # 2. Condense system prompt in messages
     messages = simplified.get("messages", [])
     new_messages = []
@@ -480,9 +480,24 @@ def simplify_chitchat_payload(data: dict) -> dict:
             })
         else:
             new_messages.append(msg)
-            
+
     simplified["messages"] = new_messages
     return simplified
+
+
+def is_greeting_message(messages: list) -> bool:
+    """Check if the last user message is a simple greeting/chitchat.
+    This is used independently of classification to optimize greetings
+    even when the agent gateway sends tools (which forces 'cloud' classification).
+    """
+    last_user = ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            last_user = (msg.get("content") or "").strip()
+            break
+    if not last_user or len(last_user) > 80:
+        return False
+    return bool(SIMPLE_PATTERNS.match(last_user))
 
 
 # ────────────────────────────────────────────────────
@@ -508,15 +523,18 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         # Classify the request
         target = classify_request(data)
 
-        # Since we are Cloud-Only, we never use the local SLM.
-        # Instead, if the request is classified as "local" (chitchat),
-        # we optimize the payload to save ~98% of tokens in the cloud.
-        if target == "local":
+        # ── Greeting optimization (defense-in-depth) ──
+        # Apply greeting optimization REGARDLESS of classification.
+        # The agent gateway always sends tools, which forces 'cloud' classification.
+        # Without this, greetings from the agent gateway would never be optimized
+        # and would waste ~12K tokens on the massive system prompt + tool schemas.
+        is_greeting = is_greeting_message(messages)
+        if is_greeting or target == "local":
             try:
                 optimized_data = simplify_chitchat_payload(data)
                 body = json.dumps(optimized_data).encode("utf-8")
                 if ROUTER_LOG:
-                    logger.info("⚡ Chitchat optimized: Payload simplified to save tokens in the cloud.")
+                    logger.info(f"⚡ {'Greeting' if is_greeting else 'Chitchat'} optimized: Payload simplified to save tokens in the cloud (was {target}).")
             except Exception as opt_err:
                 logger.warning(f"Failed to optimize chitchat payload: {opt_err}")
 
