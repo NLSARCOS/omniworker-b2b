@@ -33,56 +33,64 @@ SITE_URL = "https://flux.simplex.lat"
 
 # ─── Keyword Pools ───
 LANDING_KEYWORDS = [
+    # ── Core: fuerza laboral autónoma ──
+    "empleado digital autónomo",
+    "fuerza laboral autónoma IA",
+    "trabajador digital 24/7",
+    "empleados digitales para empresas",
+    "fuerza laboral artificial LATAM",
+    "agente autónomo de ventas",
+    "agente autónomo de cobranzas",
+    "agente autónomo de marketing",
+    "agente autónomo de soporte",
+    "digital employee platform",
+    # ── Casos de uso con framing autónomo ──
     "agente de ventas automatizado",
     "automatización de cobranzas",
-    "chatbot para WhatsApp business",
-    "asistente virtual para clínicas",
     "automatización de campañas marketing",
     "lead scoring automático",
     "CRM con inteligencia artificial",
     "automatización de onboarding",
-    "asistente para e-commerce",
     "gestión de turnos automatizada",
     "seguimiento de clientes automático",
     "automatización de facturación",
-    "chatbot para reservas",
-    "asistente para inmobiliarias",
-    "automatización de encuestas",
-    "agente para atención médica",
-    "automatización de pedidos",
-    "asistente para restaurantes",
-    "CRM para pequeñas empresas",
     "automatización de inventario",
 ]
 
 BLOG_KEYWORDS = [
-    "asistente virtual empresas",
-    "automatización de procesos",
-    "chatbot para empresas",
-    "atención al cliente automatizada",
-    "asistente digital ventas",
-    "automatización WhatsApp negocio",
-    "empleados digitales IA",
+    # ── Core: fuerza laboral autónoma ──
+    "empleado digital autónomo",
+    "fuerza laboral autónoma IA",
+    "trabajador digital 24/7",
+    "empleados digitales para empresas",
+    "fuerza laboral artificial",
     "agentes autónomos empresa",
+    "empleados digitales IA",
+    "digital employee vs chatbot",
+    "reemplazar empleados repetitivos IA",
+    "trabajo autónomo con IA",
+    # ── Casos de uso ──
+    "automatización de procesos",
+    "atención al cliente automatizada",
     "automatización cobranzas",
-    "gestión turnos médica",
-    "recuperación carritos abandonados",
     "automatización RRHH",
     "CRM automatizado LATAM",
     "seguimiento prospectos automático",
-    "asistente virtual e-commerce",
+    "automatización WhatsApp negocio",
+    "recuperación carritos abandonados",
+    "gestión turnos médica",
 ]
 
 BLOG_TEMPLATES = [
-    "cómo {kw} puede transformar tu empresa en 2026",
-    "guía completa de {kw} para empresas latinoamericanas",
-    "{kw}: por qué las empresas que no lo implementan pierden competitividad",
-    "5 señales de que tu empresa necesita {kw} ya",
+    "cómo {kw} reemplaza puestos repetitivos sin despedir a nadie",
+    "guía completa de {kw} para empresas latinoamericanas en 2026",
+    "{kw}: por qué las empresas que no lo adoptan pierden competitividad",
+    "5 señales de que tu empresa necesita {kw} como fuerza laboral",
     "errores comunes al implementar {kw} y cómo evitarlos",
     "{kw} para PYMES: mitos y realidades en LATAM",
-    "el futuro de {kw} en américa latina",
-    "roi de {kw}: cuánto podés ahorrar este mes",
-    "{kw} vs contratar: comparativa real de costos",
+    "el futuro de {kw}: empleados digitales que trabajan 24/7",
+    "roi de {kw}: cuánto ahorrás reemplazando tareas manuales",
+    "{kw} vs contratar personal: comparativa real de costos",
     "caso de éxito: cómo {kw} aumentó la eficiencia un 300%",
 ]
 
@@ -430,22 +438,23 @@ def generate_blog_article(keyword: str, serp_data: dict) -> dict:
 
     sections = []
     sections.append(f"## ¿Qué es {keyword} y por qué importa en 2026?")
-    sections.append(f"{keyword.capitalize()} se ha convertido en una prioridad para empresas latinoamericanas que buscan escalar sin aumentar nómina. Automatizar no es un lujo, es una necesidad.")
+    sections.append(f"{keyword.capitalize()} se ha convertido en una prioridad para empresas latinoamericanas que buscan escalar sin aumentar nómina. No hablamos de un chatbot más: hablamos de un empleado digital autónomo que trabaja 24/7 sin enfermarse ni tomar vacaciones.")
     sections.append(f"## El problema que resuelve {keyword}")
-    sections.append(f"Las empresas enfrentan un desafío común: crecer sin que los costos crezcan en la misma proporción. {keyword.capitalize()} aborda exactamente esto.")
+    sections.append(f"Las empresas enfrentan un desafío común: crecer sin que los costos crezcan en la misma proporción. Contratar más gente no escala. {keyword.capitalize()} despliega una fuerza laboral autónoma que cubre los huecos sin onboarding, sin capacitación, sin costo fijo.")
     sections.append("## Cómo funciona en la práctica")
-    sections.append(f"Imaginá un empleado digital que trabaja 24/7. Eso es lo que Flux Agent ofrece con {keyword}: un asistente configurado para tu proceso.")
+    sections.append(f"Flux Agent no es un asistente: es un empleado digital. Trabaja de forma autónoma, toma decisiones, ejecuta procesos completos de punta a punta. Con {keyword}, configurás un agente que opera sin supervisión constante.")
     sections.append("## Resultados esperados")
     sections.append("- Reducción del 40-70% en tareas repetitivas")
     sections.append("- ROI de 800% en el primer trimestre")
-    sections.append("- Implementación en solo 14 días")
+    sections.append("- Implementación en solo 14 días — sin período de capacitación")
+    sections.append("- 0 días de vacaciones, 0 ausentismo")
     sections.append("## Pasos para implementar")
-    sections.append("1. Diagnosticá tu operación")
-    sections.append("2. Conectá tus herramientas (WhatsApp, CRM, etc.)")
-    sections.append("3. Configurá el asistente")
-    sections.append("4. Revisá resultados")
+    sections.append("1. Diagnosticá tu operación y detectá tareas repetitivas")
+    sections.append("2. Conectá tus herramientas (WhatsApp, CRM, facturación, etc.)")
+    sections.append("3. Desplegá tu empleado digital autónomo")
+    sections.append("4. Monitoreá resultados desde el primer día")
     sections.append("## Conclusión")
-    sections.append(f"{keyword.capitalize()} no es el futuro, es el presente. Flux Agent by Simplex Latam hace que la implementación sea rápida y con garantía de 60 días.")
+    sections.append(f"{keyword.capitalize()} no es el futuro, es el presente. Flux Agent by Simplex Latam despliega fuerza laboral autónoma en 14 días, con garantía de 60 días. Sin chatbots. Sin asistentes. Empleados digitales de verdad.")
     sections.append("---")
     sections.append(f"*Escrito por Flux Agent · By Simplex Latam · {datetime.now().strftime('%B %Y')}*")
 
@@ -542,15 +551,25 @@ def run(count_landing: int = 3, count_blog: int = 2, dry_run: bool = False):
     committed = []
     lang = random.choice(LOCATIONS)[0]
 
-    # LANDINGS
+    # ── Volume research for ALL keywords first ──
+    all_keywords = list(set(LANDING_KEYWORDS + BLOG_KEYWORDS))
+    print(f"📊 Volume research ({len(all_keywords)} unique keywords)...")
+    all_vols = get_keyword_volume(all_keywords) if not dry_run else {}
+    # Sort: highest volume first (unknowns at the end)
+    def vol_sort(kw):
+        v = all_vols.get(kw, 0)
+        return -v if isinstance(v, int) else 0
+
+    # LANDINGS — pick highest-volume unused keywords
     avail_land = [k for k in LANDING_KEYWORDS if k not in used_landing_keys()]
     if not avail_land:
         avail_land = LANDING_KEYWORDS[:]
-    random.shuffle(avail_land)
+    avail_land.sort(key=vol_sort)
+    picked_land = avail_land[:count_landing]
 
-    for i in range(min(count_landing, len(avail_land))):
-        kw = avail_land[i]
-        print(f"[LANDING {i+1}/{count_landing}] {kw}")
+    for i, kw in enumerate(picked_land):
+        vol = all_vols.get(kw, "N/A")
+        print(f"[LANDING {i+1}/{count_landing}] {kw} | Vol: {vol}")
         serp = serp_research(kw, location_code=lang)
         print(f"   SERP: {serp['results']} results")
         page = make_landing_page(kw, serp)
@@ -564,20 +583,16 @@ def run(count_landing: int = 3, count_blog: int = 2, dry_run: bool = False):
 
     print()
 
-    # BLOGS
+    # BLOGS — pick highest-volume unused keywords
     avail_blog = [k for k in BLOG_KEYWORDS if k not in used_blog_keys()]
     if not avail_blog:
         avail_blog = BLOG_KEYWORDS[:]
-    random.shuffle(avail_blog)
+    avail_blog.sort(key=vol_sort)
     blog_kws = avail_blog[:count_blog]
 
-    vols = {}
-    if blog_kws and not dry_run:
-        print(f"[BLOG] Volume research ({len(blog_kws)} keywords)...")
-        vols = get_keyword_volume(blog_kws)
-
     for i, kw in enumerate(blog_kws):
-        print(f"\n[BLOG {i+1}/{count_blog}] {kw} | Vol: {vols.get(kw, 'N/A')}")
+        vol = all_vols.get(kw, "N/A")
+        print(f"\n[BLOG {i+1}/{count_blog}] {kw} | Vol: {vol}")
         serp = serp_research(kw, location_code=lang)
         print(f"   SERP: {serp['results']} results")
         art = generate_blog_article(kw, serp)
