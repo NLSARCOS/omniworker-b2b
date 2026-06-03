@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   },
 };
 
-const FEATURES = [["🔒", "Seguridad empresarial", "Datos protegidos"], ["⚡", "Resultados en 14 días", "Implementación express"], ["🧠", "IA avanzada", "Procesamiento inteligente"], ["🎯", "ROI garantizado", "800% en el primer trimestre"], ["📱", "Multi-canal", "Web, WhatsApp, mobile"]];
+const FEATURES = [["📊", "Analytics en tiempo real", "Métricas que importan"], ["🔒", "Seguridad empresarial", "Datos protegidos"], ["🔄", "Escalado automático", "Crece sin límites"], ["🔗", "Integración total", "CRM, WhatsApp, y más"]];
 const STATS = [{"num": "85%", "label": "Tareas automatizadas"}, {"num": "24/7", "label": "Disponibilidad total"}, {"num": "1/10", "label": "Costo vs empleado"}, {"num": "<30s", "label": "Tiempo respuesta"}];
 const STEPS = [{"n": "01", "title": "Diagnóstico gratuito", "desc": "Analizamos tu proceso de fuerza laboral artificial LATAM y detectamos oportunidades."}, {"n": "02", "title": "Configuración express", "desc": "Implementamos la solución conectada a tus herramientas en 14 días."}, {"n": "03", "title": "Resultados medibles", "desc": "Monitoreá el impacto en tiempo real con soporte dedicado."}];
 const TESTIMONIALS = [{"quote": "Implementar fuerza laboral artificial LATAM con Flux Agent cambió nuestra operación. Ahorramos 40hs semanales.", "name": "María González", "role": "CEO · TechStart MX", "result": "↓ 40hs/semana"}, {"quote": "El ROI fue inmediato. En el primer mes ya habíamos recuperado la inversión.", "name": "Carlos Ruiz", "role": "Director · InnovateAR", "result": "↑ 300% ROI"}];

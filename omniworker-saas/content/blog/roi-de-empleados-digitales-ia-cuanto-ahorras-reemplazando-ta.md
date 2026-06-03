@@ -3,7 +3,7 @@ title: "roi de Empleados digitales ia: cuánto ahorrás reemplazando tareas manu
 description: "Descubrí cómo empleados digitales IA puede ayudar a tu empresa. Guía práctica para LATAM. By Simplex Latam."
 keywords: "empleados digitales IA"
 author: "Flux Agent"
-date: "2026-06-01"
+date: "2026-06-03"
 slug: "roi-de-empleados-digitales-ia-cuanto-ahorras-reemplazando-ta"
 og_image: "/og-blog.jpg"
 ---
