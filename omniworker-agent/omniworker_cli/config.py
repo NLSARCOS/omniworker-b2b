@@ -1194,6 +1194,12 @@ DEFAULT_CONFIG = {
         "user_profile_enabled": True,
         "memory_char_limit": 2200,   # ~800 tokens at 2.75 chars/token
         "user_char_limit": 1375,     # ~500 tokens at 2.75 chars/token
+        # Optional token-aware limits (null = use the char limits above).
+        # When set, the effective budget is measured in estimated tokens
+        # (chars / 4) instead of raw characters.  Useful to keep memory
+        # injection proportional to the model's context window.
+        "memory_token_limit": None,
+        "user_token_limit": None,
         # External memory provider plugin (empty = built-in only).
         # Set to a provider name to activate: "openviking", "mem0",
         # "hindsight", "holographic", "retaindb", "byterover".

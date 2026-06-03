@@ -40,11 +40,14 @@ export async function GET(
     ".yaml": "text/yaml",
   };
 
+  // Update manifests (.yml) must never be cached — a stale latest-mac.yml
+  // delays update detection on clients by up to the cache TTL.
+  const isManifest = ext === ".yml" || ext === ".yaml";
   const headers = new Headers({
     "Content-Type": contentTypes[ext] || "application/octet-stream",
     "Content-Disposition": `attachment; filename="${safeName}"`,
     "Content-Length": stat.size.toString(),
-    "Cache-Control": "public, max-age=3600",
+    "Cache-Control": isManifest ? "no-store" : "public, max-age=3600",
   });
 
   // @ts-expect-error ReadStream is compatible with ReadableStream for NextResponse

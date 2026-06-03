@@ -2009,6 +2009,64 @@ function buildMenu(): void {
   Menu.setApplicationMenu(menu);
 }
 
+/**
+ * Manual update install for macOS without a code-signing certificate.
+ * electron-updater's quitAndInstall() requires a signed app on macOS
+ * (Squirrel.Mac validates the signature and silently fails otherwise),
+ * so we unpack the downloaded .zip ourselves and swap the .app bundle
+ * with a detached shell script that runs after the app quits.
+ */
+function manualMacInstall(zipPath: string): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { spawn } = require("child_process") as typeof import("child_process");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs") as typeof import("fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const os = require("os") as typeof import("os");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pathMod = require("path") as typeof import("path");
+
+    if (!fs.existsSync(zipPath)) {
+      console.error("[Update] manualMacInstall: zip not found:", zipPath);
+      return false;
+    }
+    // .../OmniWorker.app/Contents/MacOS/<binary> → up 3 levels = the .app bundle
+    const appBundle = pathMod.resolve(app.getPath("exe"), "..", "..", "..");
+    if (!appBundle.endsWith(".app")) {
+      console.error("[Update] manualMacInstall: unexpected app path:", appBundle);
+      return false;
+    }
+
+    const script = `#!/bin/bash
+sleep 2
+TMP="$(mktemp -d)"
+ditto -x -k "${zipPath}" "$TMP" || exit 1
+NEWAPP="$(find "$TMP" -maxdepth 2 -name '*.app' -print -quit)"
+if [ -n "$NEWAPP" ]; then
+  rm -rf "${appBundle}"
+  ditto "$NEWAPP" "${appBundle}"
+  xattr -dr com.apple.quarantine "${appBundle}" 2>/dev/null || true
+  open "${appBundle}"
+fi
+rm -rf "$TMP"
+`;
+    const scriptPath = pathMod.join(os.tmpdir(), `omniworker-update-${Date.now()}.sh`);
+    fs.writeFileSync(scriptPath, script, { mode: 0o755 });
+
+    const child = spawn("/bin/bash", [scriptPath], {
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+    console.log("[Update] manualMacInstall: swap script launched, exiting app");
+    return true;
+  } catch (err) {
+    console.error("[Update] manualMacInstall failed:", err);
+    return false;
+  }
+}
+
 function setupUpdater(): void {
   // IPC handlers must always be registered to avoid invoke errors
   ipcMain.handle("get-app-version", () => app.getVersion());
@@ -2030,6 +2088,8 @@ function setupUpdater(): void {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  let downloadedUpdateFile: string | null = null;
+
   autoUpdater.setFeedURL({
     provider: "generic",
     url: "https://flux.simplex.lat/api/downloads/"
@@ -2048,7 +2108,11 @@ function setupUpdater(): void {
     });
   });
 
-  autoUpdater.on("update-downloaded", () => {
+  autoUpdater.on("update-downloaded", (info) => {
+    // Remember where the update file landed — needed for the unsigned-macOS
+    // manual install fallback in the install-update handler.
+    downloadedUpdateFile = (info as { downloadedFile?: string }).downloadedFile || null;
+    console.log("[Update] Downloaded update file:", downloadedUpdateFile);
     mainWindow?.webContents.send("update-downloaded");
   });
 
@@ -2114,6 +2178,24 @@ function setupUpdater(): void {
 
     console.log("[Update] Cleanup complete. Installing update...");
 
+    isUpdating = true;
+
+    // On macOS without a code-signing certificate, Squirrel.Mac rejects the
+    // update and quitAndInstall() silently does nothing — the app just stays
+    // open. Swap the .app bundle ourselves and relaunch.
+    if (process.platform === "darwin" && downloadedUpdateFile) {
+      const launched = manualMacInstall(downloadedUpdateFile);
+      if (launched) {
+        const windows = BrowserWindow.getAllWindows();
+        for (const win of windows) {
+          if (!win.isDestroyed()) win.destroy();
+        }
+        setTimeout(() => app.exit(0), 500);
+        return true;
+      }
+      console.warn("[Update] Manual install failed, falling back to quitAndInstall");
+    }
+
     // Destroy all browser windows to prevent close handlers from blocking
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
@@ -2121,8 +2203,6 @@ function setupUpdater(): void {
         win.destroy();
       }
     }
-
-    isUpdating = true;
 
     // Use electron-updater's quitAndInstall which handles the update properly
     // This is more reliable than autoInstallOnAppQuit + app.quit()
@@ -2139,9 +2219,15 @@ function setupUpdater(): void {
     return true;
   });
 
+  // Initial check shortly after launch...
   setTimeout(() => {
     autoUpdater.checkForUpdates().catch(() => {});
   }, 5000);
+  // ...and periodically while the app stays open. The desktop is expected to
+  // run for days, so a launch-only check means updates are never noticed.
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 2 * 60 * 60 * 1000);
 }
 
 app.whenReady().then(async () => {

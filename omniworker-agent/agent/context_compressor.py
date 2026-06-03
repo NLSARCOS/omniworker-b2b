@@ -941,6 +941,19 @@ class ContextCompressor(ContextEngine):
         "some", "any", "all", "each", "every", "both", "few",
         "other", "about", "up", "out", "into", "over", "after",
         "i", "you", "your",
+        # Spanish stopwords — without these, generic continuation messages
+        # like "continúa" or "dale" produce FTS5 matches against unrelated
+        # old messages and pollute the summary with stale context.
+        "que", "como", "para", "por", "con", "sin", "una", "uno",
+        "unos", "unas", "los", "las", "del", "este", "esta", "esto",
+        "ese", "esa", "eso", "aqui", "ahi", "alli", "pero", "mas",
+        "muy", "donde", "cuando", "porque", "entonces", "tambien",
+        "todo", "toda", "todos", "todas", "nada", "algo", "ser",
+        "son", "fue", "estan", "hay", "hace", "hacer", "tiene",
+        "tengo", "puede", "puedo", "quiero", "vamos", "continua",
+        "continuar", "sigue", "seguir", "dale", "ahora", "hola",
+        "gracias", "bien", "vale", "listo", "bueno", "claro",
+        "favor", "porfa", "amigo",
     })
 
     @staticmethod
@@ -1010,14 +1023,21 @@ class ContextCompressor(ContextEngine):
             if lock is None:
                 return []
 
+            # Recency window: only retrieve from the last 6 hours. Without
+            # this, BM25 happily surfaces messages from old work sessions and
+            # the summary anchors on stale topics ("habla de algo de hace
+            # dos horas"). Rank ties break toward the most recent message.
+            recency_cutoff = time.time() - 6 * 3600
             with lock:
                 cursor = conn.execute(
                     "SELECT fts.content "
                     "FROM messages_fts fts "
+                    "JOIN messages m ON m.id = fts.rowid "
                     "WHERE messages_fts MATCH ? "
-                    "ORDER BY rank "
+                    "AND m.timestamp >= ? "
+                    "ORDER BY rank, m.timestamp DESC "
                     "LIMIT ?",
-                    (sanitized, limit),
+                    (sanitized, recency_cutoff, limit),
                 )
                 rows = cursor.fetchall()
 

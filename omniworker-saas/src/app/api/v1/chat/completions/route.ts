@@ -350,6 +350,17 @@ function classifyPromptComplexity(messages: { role: string; content: string }[])
   if (messageCount > 10) score += 2;
   else if (messageCount > 5) score += 1;
 
+  // Continuation messages ("continúa", "sigue", "dale") carry no signal of
+  // their own but inherit the complexity of the ongoing task. Without this,
+  // a short "continúa" mid-task downgrades to the speed tier and the model
+  // quality drops abruptly.
+  const lastUser = [...userMessages].reverse().find(m => m.role === "user");
+  const lastText = String(lastUser?.content || "").trim().toLowerCase();
+  const isContinuation =
+    lastText.length < 50 &&
+    /^(contin[uú]a|sigue|seguim?os|dale|avanza|adelante|continue|go\s+on|keep\s+going|next|proceed|resume|y\s+ahora|ahora\s+s[ií]|hazlo|do\s+it)\b/.test(lastText);
+  if (isContinuation && messageCount > 3) score = Math.max(score, 2);
+
   // Map score to tier
   if (score >= 5) return "reasoning";
   if (score >= 2) return "balanced";
@@ -562,6 +573,14 @@ export async function POST(request: Request) {
           } else {
             messages = [{ role: "user", content: trimmed }, ...nonSystemMsgs];
           }
+        }
+        // Greetings don't need tool definitions either — agent clients send
+        // dozens of function schemas (~7K tokens) that ride along in `...body`.
+        if (body.tools || body.functions) {
+          const toolsChars = JSON.stringify(body.tools || body.functions).length;
+          console.log(`[GreetingTrim] Stripping tools from greeting request (virtual path): ${toolsChars} chars`);
+          const { tools: _t, tool_choice: _tc, functions: _f, function_call: _fc, ...rest } = body;
+          body = rest;
         }
       }
 
@@ -925,6 +944,14 @@ export async function POST(request: Request) {
       } else {
         body = { ...body, messages: [{ role: "user", content: trimmed }, ...nonSystemMsgs] };
       }
+    }
+    // Greetings don't need tool definitions either — agent clients send
+    // dozens of function schemas (~7K tokens) that ride along in `...body`.
+    if (body.tools || body.functions) {
+      const toolsChars = JSON.stringify(body.tools || body.functions).length;
+      console.log(`[GreetingTrim] Stripping tools from greeting request (standard path): ${toolsChars} chars`);
+      const { tools: _t, tool_choice: _tc, functions: _f, function_call: _fc, ...rest } = body;
+      body = rest;
     }
   }
 
