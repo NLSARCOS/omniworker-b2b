@@ -6078,13 +6078,23 @@ class AIAgent:
                 )
                 if toolset
             }
+            # When a user-message query is available (set once at the start of
+            # the session in run_conversation), select only the skills relevant
+            # to it instead of shipping the full ~17K-char index. If relevance
+            # selection yields nothing or raises, fall back to the full index so
+            # the agent never loses skill visibility.
+            skills_prompt = ""
             if getattr(self, "_system_prompt_query", None):
-                skills_prompt = build_relevant_skills_prompt(
-                    query=self._system_prompt_query,
-                    available_tools=self.valid_tool_names,
-                    available_toolsets=avail_toolsets,
-                )
-            else:
+                try:
+                    skills_prompt = build_relevant_skills_prompt(
+                        query=self._system_prompt_query,
+                        available_tools=self.valid_tool_names,
+                        available_toolsets=avail_toolsets,
+                    )
+                except Exception as exc:
+                    logger.debug("build_relevant_skills_prompt failed: %s", exc)
+                    skills_prompt = ""
+            if not skills_prompt:
                 skills_prompt = build_skills_system_prompt(
                     available_tools=self.valid_tool_names,
                     available_toolsets=avail_toolsets,
@@ -9842,7 +9852,7 @@ class AIAgent:
     # meta-management, and clarification.  Everything else can wait.
     _LAZY_CORE_TOOL_NAMES: frozenset = frozenset({
         "todo", "memory", "clarify", "session_search",
-        "skills_list", "skill_view", "skill_manage",
+        "skills_list", "skill_view",
         "manage_tools", "autolearning",
     })
 
@@ -12440,7 +12450,13 @@ class AIAgent:
         # from disk that the model already knows about (it wrote them!),
         # producing a different system prompt and breaking the Anthropic
         # prefix cache.
-        self._system_prompt_query = user_message
+        # Fix the relevance query once, at the first turn of the session, so
+        # the cached system prompt stays byte-stable for the rest of the
+        # session (the prompt is built only once and replayed verbatim to keep
+        # upstream prefix caches warm). The first user message drives
+        # query-relevant skill / context selection in _build_system_prompt_parts.
+        if not getattr(self, "_system_prompt_query", None):
+            self._system_prompt_query = user_message
         if self._cached_system_prompt is None:
             stored_prompt = None
             if conversation_history and self._session_db:

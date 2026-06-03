@@ -63,11 +63,20 @@ type OpenCodeEndpoint = keyof typeof OPENCODE_GO_ENDPOINTS;
 function isSimpleGreeting(messages: any[]): boolean {
   const last = messages.filter((m: any) => m.role === "user").pop();
   if (!last) return false;
-  const text = String(last.content || "").trim().toLowerCase();
-  if (!text || text.length > 80) return false;
+  const raw = String(last.content || "").trim().toLowerCase();
+  if (!raw || raw.length > 80) return false;
+  // Normalize: strip accents and inner punctuation so "Hola, cómo estás?"
+  // matches the same patterns as "hola como estas". A single comma used to
+  // defeat detection and cost the user the full 10K-token agent prompt.
+  const text = raw
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[.,!?¡¿;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return false;
 
   // Single-word greetings
-  if (/^(hola|hello|hi|hey|buenos|buenas|saludos|yo|sup|aloha)[\s!¡?.,]*$/i.test(text)) return true;
+  if (/^(hola|hello|hi|hey|buenos|buenas|saludos|yo|sup|aloha)$/i.test(text)) return true;
 
   // Multi-word greeting phrases
   const greetingPhrases = [

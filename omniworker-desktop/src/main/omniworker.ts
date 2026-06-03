@@ -971,7 +971,18 @@ const GREETING_PATTERNS: RegExp[] = [
 function isSimpleGreeting(message: string): boolean {
   const trimmed = message.trim();
   if (!trimmed || trimmed.length > 80) return false;
-  return GREETING_PATTERNS.some((p) => p.test(trimmed));
+  // Normalize: strip accents and inner punctuation so "Hola, cómo estás?"
+  // matches the same patterns as "hola como estas". A single comma used to
+  // defeat detection and send the greeting through the full agent path.
+  const normalized = trimmed
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[.,!?¡¿;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized) return false;
+  return GREETING_PATTERNS.some((p) => p.test(normalized));
 }
 
 /**
