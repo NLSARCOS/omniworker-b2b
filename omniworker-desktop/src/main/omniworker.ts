@@ -1038,11 +1038,17 @@ function sendSimpleGreeting(
     },
     (res) => {
       if (res.statusCode !== 200) {
+        // On any non-200 (provider 400/503, quota, etc.) silently fall back to
+        // the full agent path instead of showing an error to the user.
         let errBody = "";
-        res.on("data", (d: Buffer) => {
-          errBody += d.toString();
+        res.on("data", (d: Buffer) => { errBody += d.toString(); });
+        res.on("end", () => {
+          console.warn(`[GreetingFastPath] Provider returned ${res.statusCode}, falling back to full path:`, errBody.slice(0, 200));
+          if (!finished) {
+            finished = true;
+            sendMessageViaApi(message, cb, profile, undefined, undefined);
+          }
         });
-        res.on("end", () => finish(`Greeting API error ${res.statusCode}`));
         return;
       }
 
