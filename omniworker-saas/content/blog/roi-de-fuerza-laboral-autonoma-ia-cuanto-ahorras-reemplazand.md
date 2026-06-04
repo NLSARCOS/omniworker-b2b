@@ -3,7 +3,7 @@ title: "roi de Fuerza laboral autónoma ia: cuánto ahorrás reemplazando tareas
 description: "Descubrí cómo fuerza laboral autónoma IA puede ayudar a tu empresa. Guía práctica para LATAM. By Simplex Latam."
 keywords: "fuerza laboral autónoma IA"
 author: "Flux Agent"
-date: "2026-06-02"
+date: "2026-06-03"
 slug: "roi-de-fuerza-laboral-autonoma-ia-cuanto-ahorras-reemplazand"
 og_image: "/og-blog.jpg"
 ---
