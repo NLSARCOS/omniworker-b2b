@@ -1,4 +1,4 @@
-from omniworker_cli.gateway import _runtime_health_lines
+from flux-agent_cli.gateway import _runtime_health_lines
 
 
 def test_runtime_health_lines_include_fatal_platform_and_startup_reason(monkeypatch):

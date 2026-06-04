@@ -1,6 +1,6 @@
 export const SMART_ROUTER_SCRIPT = `#!/usr/bin/env python3
 """
-OmniWorker Smart Router — Routes LLM inference between local SLM and cloud SaaS.
+Flux Agent Smart Router — Routes LLM inference between local SLM and cloud SaaS.
 
 Architecture:
   Desktop App → Agent Gateway → Smart Router (this, port 8341)
@@ -126,7 +126,7 @@ def get_cloud_connection(use_https, host, port, verify=True):
     return CLOUD_CONN
 
 def resolve_env_path() -> str:
-    home_env = os.environ.get("OMNIWORKER_HOME", "").strip()
+    home_env = os.environ.get("FLUX AGENT_HOME", "").strip()
     if home_env:
         resolved_home = os.path.abspath(home_env)
         parent_dir = os.path.basename(os.path.dirname(resolved_home))
@@ -134,7 +134,7 @@ def resolve_env_path() -> str:
             return os.path.join(resolved_home, ".env")
         root_dir = resolved_home
     else:
-        dot_omni = os.path.expanduser("~/.omniworker")
+        dot_omni = os.path.expanduser("~/.flux-agent")
         dot_hermes = os.path.expanduser("~/.hermes")
         if os.path.exists(dot_omni):
             root_dir = dot_omni
@@ -340,19 +340,15 @@ def classify_request(data: dict) -> str:
         if msg.get("role") == "tool":
             has_tool_results = True
 
+    # Tool calling/availability requires a capable model — always cloud
+    if has_tool_calls or has_tool_results or data.get("tools"):
+        return "cloud"
+
     # ── Fast Path for Simple Chitchat/Greetings ──
     # If the user says just "hola" or "gracias" in a fresh conversation without tools,
     # bypass tools/schemas and simplify payload to save 98%+ of tokens in the cloud.
-    if SIMPLE_PATTERNS.match(trimmed_last) and len(messages) <= 4 and not has_tool_calls and not has_tool_results:
+    if is_greeting_message(messages) and len(messages) <= 4:
         return "local"
-
-    # Tool calling requires a capable model — always cloud
-    if has_tool_calls:
-        return "cloud"
-
-    # If there are tools defined in the request, the agent expects tool calling
-    if data.get("tools"):
-        return "cloud"
 
     # ── Level 3: Inference complexity routing ──
 
@@ -486,18 +482,27 @@ def simplify_chitchat_payload(data: dict) -> dict:
 
 
 def is_greeting_message(messages: list) -> bool:
-    """Check if the last user message is a simple greeting/chitchat.
+    """Check if the conversation is a simple greeting/chitchat.
     This is used independently of classification to optimize greetings
     even when the agent gateway sends tools (which forces 'cloud' classification).
+    A conversation is a simple greeting/chitchat ONLY if:
+    1. There are no tool calls or tool results in the message history.
+    2. All user messages in the history match SIMPLE_PATTERNS.
     """
-    last_user = ""
-    for msg in reversed(messages):
+    has_user_msg = False
+    for msg in messages:
+        # If any tool calls or tool results are present, it's not a greeting chitchat
+        if msg.get("tool_calls") or msg.get("role") == "tool":
+            return False
+            
         if msg.get("role") == "user":
-            last_user = (msg.get("content") or "").strip()
-            break
-    if not last_user or len(last_user) > 80:
-        return False
-    return bool(SIMPLE_PATTERNS.match(last_user))
+            has_user_msg = True
+            content = (msg.get("content") or "").strip()
+            # If any user message doesn't match the simple patterns, it's not a chitchat
+            if not content or len(content) > 80 or not SIMPLE_PATTERNS.match(content):
+                return False
+                
+    return has_user_msg
 
 
 # ────────────────────────────────────────────────────
@@ -529,7 +534,7 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         # Without this, greetings from the agent gateway would never be optimized
         # and would waste ~12K tokens on the massive system prompt + tool schemas.
         is_greeting = is_greeting_message(messages)
-        if is_greeting or target == "local":
+        if is_greeting or (target == "local" and not data.get("tools")):
             try:
                 optimized_data = simplify_chitchat_payload(data)
                 body = json.dumps(optimized_data).encode("utf-8")

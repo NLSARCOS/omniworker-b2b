@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from omniworker_cli.config import (
+from flux-agent_cli.config import (
     get_container_exec_info,
 )
 
@@ -24,37 +24,37 @@ from omniworker_cli.config import (
 @pytest.fixture
 def container_env(tmp_path, monkeypatch):
     """Set up a fake OMNIWORKER_HOME with .container-mode file."""
-    omniworker_home = tmp_path / ".omniworker"
-    omniworker_home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+    flux-agent_home = tmp_path / ".flux-agent"
+    flux-agent_home.mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
     monkeypatch.delenv("OMNIWORKER_DEV", raising=False)
 
-    container_mode = omniworker_home / ".container-mode"
+    container_mode = flux-agent_home / ".container-mode"
     container_mode.write_text(
         "# Written by NixOS activation script. Do not edit manually.\n"
         "backend=podman\n"
-        "container_name=omniworker-agent\n"
-        "exec_user=omniworker\n"
-        "omniworker_bin=/data/current-package/bin/omniworker\n"
+        "container_name=flux-agent-agent\n"
+        "exec_user=flux-agent\n"
+        "flux-agent_bin=/data/current-package/bin/flux-agent\n"
     )
-    return omniworker_home
+    return flux-agent_home
 
 
 def test_get_container_exec_info_returns_metadata(container_env):
     """Reads .container-mode and returns all fields including exec_user."""
-    with patch("omniworker_constants.is_container", return_value=False):
+    with patch("flux-agent_constants.is_container", return_value=False):
         info = get_container_exec_info()
 
     assert info is not None
     assert info["backend"] == "podman"
-    assert info["container_name"] == "omniworker-agent"
-    assert info["exec_user"] == "omniworker"
-    assert info["omniworker_bin"] == "/data/current-package/bin/omniworker"
+    assert info["container_name"] == "flux-agent-agent"
+    assert info["exec_user"] == "flux-agent"
+    assert info["flux-agent_bin"] == "/data/current-package/bin/flux-agent"
 
 
 def test_get_container_exec_info_none_inside_container(container_env):
     """Returns None when we're already inside a container."""
-    with patch("omniworker_constants.is_container", return_value=True):
+    with patch("flux-agent_constants.is_container", return_value=True):
         info = get_container_exec_info()
 
     assert info is None
@@ -62,32 +62,32 @@ def test_get_container_exec_info_none_inside_container(container_env):
 
 def test_get_container_exec_info_none_without_file(tmp_path, monkeypatch):
     """Returns None when .container-mode doesn't exist (native mode)."""
-    omniworker_home = tmp_path / ".omniworker"
-    omniworker_home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+    flux-agent_home = tmp_path / ".flux-agent"
+    flux-agent_home.mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
     monkeypatch.delenv("OMNIWORKER_DEV", raising=False)
 
-    with patch("omniworker_constants.is_container", return_value=False):
+    with patch("flux-agent_constants.is_container", return_value=False):
         info = get_container_exec_info()
 
     assert info is None
 
 
-def test_get_container_exec_info_skipped_when_omniworker_dev(container_env, monkeypatch):
+def test_get_container_exec_info_skipped_when_flux-agent_dev(container_env, monkeypatch):
     """Returns None when OMNIWORKER_DEV=1 is set (dev mode bypass)."""
     monkeypatch.setenv("OMNIWORKER_DEV", "1")
 
-    with patch("omniworker_constants.is_container", return_value=False):
+    with patch("flux-agent_constants.is_container", return_value=False):
         info = get_container_exec_info()
 
     assert info is None
 
 
-def test_get_container_exec_info_not_skipped_when_omniworker_dev_zero(container_env, monkeypatch):
+def test_get_container_exec_info_not_skipped_when_flux-agent_dev_zero(container_env, monkeypatch):
     """OMNIWORKER_DEV=0 does NOT trigger bypass — only '1' does."""
     monkeypatch.setenv("OMNIWORKER_DEV", "0")
 
-    with patch("omniworker_constants.is_container", return_value=False):
+    with patch("flux-agent_constants.is_container", return_value=False):
         info = get_container_exec_info()
 
     assert info is not None
@@ -98,46 +98,46 @@ def test_get_container_exec_info_defaults():
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        omniworker_home = Path(tmpdir) / ".omniworker"
-        omniworker_home.mkdir()
-        (omniworker_home / ".container-mode").write_text(
+        flux-agent_home = Path(tmpdir) / ".flux-agent"
+        flux-agent_home.mkdir()
+        (flux-agent_home / ".container-mode").write_text(
             "# minimal file with no keys\n"
         )
 
-        with patch("omniworker_constants.is_container", return_value=False), \
-             patch.dict(get_container_exec_info.__globals__, {"get_omniworker_home": lambda: omniworker_home}), \
+        with patch("flux-agent_constants.is_container", return_value=False), \
+             patch.dict(get_container_exec_info.__globals__, {"get_flux-agent_home": lambda: flux-agent_home}), \
              patch.dict(os.environ, {}, clear=False):
             os.environ.pop("OMNIWORKER_DEV", None)
             info = get_container_exec_info()
 
         assert info is not None
         assert info["backend"] == "docker"
-        assert info["container_name"] == "omniworker-agent"
-        assert info["exec_user"] == "omniworker"
-        assert info["omniworker_bin"] == "/data/current-package/bin/omniworker"
+        assert info["container_name"] == "flux-agent-agent"
+        assert info["exec_user"] == "flux-agent"
+        assert info["flux-agent_bin"] == "/data/current-package/bin/flux-agent"
 
 
 def test_get_container_exec_info_docker_backend(container_env):
     """Correctly reads docker backend with custom exec_user."""
     (container_env / ".container-mode").write_text(
         "backend=docker\n"
-        "container_name=omniworker-custom\n"
+        "container_name=flux-agent-custom\n"
         "exec_user=myuser\n"
-        "omniworker_bin=/opt/omniworker/bin/omniworker\n"
+        "flux-agent_bin=/opt/flux-agent/bin/flux-agent\n"
     )
 
-    with patch("omniworker_constants.is_container", return_value=False):
+    with patch("flux-agent_constants.is_container", return_value=False):
         info = get_container_exec_info()
 
     assert info["backend"] == "docker"
-    assert info["container_name"] == "omniworker-custom"
+    assert info["container_name"] == "flux-agent-custom"
     assert info["exec_user"] == "myuser"
-    assert info["omniworker_bin"] == "/opt/omniworker/bin/omniworker"
+    assert info["flux-agent_bin"] == "/opt/flux-agent/bin/flux-agent"
 
 
 def test_get_container_exec_info_crashes_on_permission_error(container_env):
     """PermissionError propagates instead of being silently swallowed."""
-    with patch("omniworker_constants.is_container", return_value=False), \
+    with patch("flux-agent_constants.is_container", return_value=False), \
          patch("builtins.open", side_effect=PermissionError("permission denied")):
         with pytest.raises(PermissionError):
             get_container_exec_info()
@@ -152,9 +152,9 @@ def test_get_container_exec_info_crashes_on_permission_error(container_env):
 def docker_container_info():
     return {
         "backend": "docker",
-        "container_name": "omniworker-agent",
-        "exec_user": "omniworker",
-        "omniworker_bin": "/data/current-package/bin/omniworker",
+        "container_name": "flux-agent-agent",
+        "exec_user": "flux-agent",
+        "flux-agent_bin": "/data/current-package/bin/flux-agent",
     }
 
 
@@ -162,16 +162,16 @@ def docker_container_info():
 def podman_container_info():
     return {
         "backend": "podman",
-        "container_name": "omniworker-agent",
-        "exec_user": "omniworker",
-        "omniworker_bin": "/data/current-package/bin/omniworker",
+        "container_name": "flux-agent-agent",
+        "exec_user": "flux-agent",
+        "flux-agent_bin": "/data/current-package/bin/flux-agent",
     }
 
 
 def test_exec_in_container_calls_execvp(docker_container_info):
     """Verifies os.execvp is called with correct args: runtime, tty flags,
     user, env vars, container name, binary, and CLI args."""
-    from omniworker_cli.main import _exec_in_container
+    from flux-agent_cli.main import _exec_in_container
 
     with patch("shutil.which", return_value="/usr/bin/docker"), \
          patch("subprocess.run") as mock_run, \
@@ -190,19 +190,19 @@ def test_exec_in_container_calls_execvp(docker_container_info):
     assert cmd[1] == "exec"
     assert "-it" in cmd
     idx_u = cmd.index("-u")
-    assert cmd[idx_u + 1] == "omniworker"
+    assert cmd[idx_u + 1] == "flux-agent"
     e_indices = [i for i, v in enumerate(cmd) if v == "-e"]
     e_values = [cmd[i + 1] for i in e_indices]
     assert "TERM=xterm-256color" in e_values
     assert "LANG=en_US.UTF-8" in e_values
-    assert "omniworker-agent" in cmd
-    assert "/data/current-package/bin/omniworker" in cmd
+    assert "flux-agent-agent" in cmd
+    assert "/data/current-package/bin/flux-agent" in cmd
     assert "chat" in cmd
 
 
 def test_exec_in_container_non_tty_uses_i_only(docker_container_info):
     """Non-TTY mode uses -i instead of -it."""
-    from omniworker_cli.main import _exec_in_container
+    from flux-agent_cli.main import _exec_in_container
 
     with patch("shutil.which", return_value="/usr/bin/docker"), \
          patch("subprocess.run") as mock_run, \
@@ -220,7 +220,7 @@ def test_exec_in_container_non_tty_uses_i_only(docker_container_info):
 
 def test_exec_in_container_no_runtime_hard_fails(podman_container_info):
     """Hard fails when runtime not found (no fallback)."""
-    from omniworker_cli.main import _exec_in_container
+    from flux-agent_cli.main import _exec_in_container
 
     with patch("shutil.which", return_value=None), \
          patch("subprocess.run") as mock_run, \
@@ -236,7 +236,7 @@ def test_exec_in_container_no_runtime_hard_fails(podman_container_info):
 def test_exec_in_container_sudo_probe_sets_prefix(podman_container_info):
     """When first probe fails and sudo probe succeeds, execvp is called
     with sudo -n prefix."""
-    from omniworker_cli.main import _exec_in_container
+    from flux-agent_cli.main import _exec_in_container
 
     def which_side_effect(name):
         if name == "podman":
@@ -268,7 +268,7 @@ def test_exec_in_container_sudo_probe_sets_prefix(podman_container_info):
 def test_exec_in_container_probe_timeout_prints_message(docker_container_info):
     """TimeoutExpired from probe produces a human-readable error, not a
     raw traceback."""
-    from omniworker_cli.main import _exec_in_container
+    from flux-agent_cli.main import _exec_in_container
 
     with patch("shutil.which", return_value="/usr/bin/docker"), \
          patch("subprocess.run", side_effect=subprocess.TimeoutExpired(
@@ -284,7 +284,7 @@ def test_exec_in_container_probe_timeout_prints_message(docker_container_info):
 def test_exec_in_container_container_not_running_no_sudo(docker_container_info):
     """When runtime exists but container not found and no sudo available,
     prints helpful error about root containers."""
-    from omniworker_cli.main import _exec_in_container
+    from flux-agent_cli.main import _exec_in_container
 
     def which_side_effect(name):
         if name == "docker":

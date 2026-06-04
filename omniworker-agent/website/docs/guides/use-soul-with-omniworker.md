@@ -1,14 +1,14 @@
 ---
 sidebar_position: 7
-title: "Use SOUL.md with OmniWorker"
-description: "How to use SOUL.md to shape OmniWorker Agent's default voice, what belongs there, and how it differs from AGENTS.md and /personality"
+title: "Use SOUL.md with Flux Agent"
+description: "How to use SOUL.md to shape Flux Agent Agent's default voice, what belongs there, and how it differs from AGENTS.md and /personality"
 ---
 
-# Use SOUL.md with OmniWorker
+# Use SOUL.md with Flux Agent
 
-`SOUL.md` is the **primary identity** for your OmniWorker instance. It's the first thing in the system prompt — it defines who the agent is, how it speaks, and what it avoids.
+`SOUL.md` is the **primary identity** for your Flux Agent instance. It's the first thing in the system prompt — it defines who the agent is, how it speaks, and what it avoids.
 
-If you want OmniWorker to feel like the same assistant every time you talk to it — or if you want to replace the OmniWorker persona entirely with your own — this is the file to use.
+If you want Flux Agent to feel like the same assistant every time you talk to it — or if you want to replace the Flux Agent persona entirely with your own — this is the file to use.
 
 ## What SOUL.md is for
 
@@ -16,12 +16,12 @@ Use `SOUL.md` for:
 - tone
 - personality
 - communication style
-- how direct or warm OmniWorker should be
-- what OmniWorker should avoid stylistically
-- how OmniWorker should relate to uncertainty, disagreement, and ambiguity
+- how direct or warm Flux Agent should be
+- what Flux Agent should avoid stylistically
+- how Flux Agent should relate to uncertainty, disagreement, and ambiguity
 
 In short:
-- `SOUL.md` is about who OmniWorker is and how OmniWorker speaks
+- `SOUL.md` is about who Flux Agent is and how Flux Agent speaks
 
 ## What SOUL.md is not for
 
@@ -41,33 +41,33 @@ A good rule:
 
 ## Where it lives
 
-OmniWorker now uses only the global SOUL file for the current instance:
+Flux Agent now uses only the global SOUL file for the current instance:
 
 ```text
-~/.omniworker/SOUL.md
+~/.flux-agent/SOUL.md
 ```
 
-If you run OmniWorker with a custom home directory, it becomes:
+If you run Flux Agent with a custom home directory, it becomes:
 
 ```text
-$OMNIWORKER_HOME/SOUL.md
+$FLUX AGENT_HOME/SOUL.md
 ```
 
 ## First-run behavior
 
-OmniWorker automatically seeds a starter `SOUL.md` for you if one does not already exist.
+Flux Agent automatically seeds a starter `SOUL.md` for you if one does not already exist.
 
 That means most users now begin with a real file they can read and edit immediately.
 
 Important:
-- if you already have a `SOUL.md`, OmniWorker does not overwrite it
-- if the file exists but is empty, OmniWorker adds nothing from it to the prompt
+- if you already have a `SOUL.md`, Flux Agent does not overwrite it
+- if the file exists but is empty, Flux Agent adds nothing from it to the prompt
 
-## How OmniWorker uses it
+## How Flux Agent uses it
 
-When OmniWorker starts a session, it reads `SOUL.md` from `OMNIWORKER_HOME`, scans it for prompt-injection patterns, truncates it if needed, and uses it as the **agent identity** — slot #1 in the system prompt. This means SOUL.md completely replaces the built-in default identity text.
+When Flux Agent starts a session, it reads `SOUL.md` from `FLUX AGENT_HOME`, scans it for prompt-injection patterns, truncates it if needed, and uses it as the **agent identity** — slot #1 in the system prompt. This means SOUL.md completely replaces the built-in default identity text.
 
-If SOUL.md is missing, empty, or cannot be loaded, OmniWorker falls back to a built-in default identity.
+If SOUL.md is missing, empty, or cannot be loaded, Flux Agent falls back to a built-in default identity.
 
 No wrapper language is added around the file. The content itself matters — write the way you want your agent to think and speak.
 
@@ -84,7 +84,7 @@ Push back clearly when an idea is weak.
 Keep answers compact unless deeper detail is useful.
 ```
 
-That alone can noticeably change how OmniWorker feels.
+That alone can noticeably change how Flux Agent feels.
 
 ## Example styles
 
@@ -159,7 +159,7 @@ A weak `SOUL.md` is:
 - trying to micro-manage every response shape
 - mostly generic filler like "be helpful" and "be clear"
 
-OmniWorker already tries to be helpful and clear. `SOUL.md` should add real personality and style, not restate obvious defaults.
+Flux Agent already tries to be helpful and clear. `SOUL.md` should add real personality and style, not restate obvious defaults.
 
 ## Suggested structure
 
@@ -169,16 +169,16 @@ A simple structure that works well:
 
 ```markdown
 # Identity
-Who OmniWorker is.
+Who Flux Agent is.
 
 # Style
-How OmniWorker should sound.
+How Flux Agent should sound.
 
 # Avoid
-What OmniWorker should not do.
+What Flux Agent should not do.
 
 # Defaults
-How OmniWorker should behave when ambiguity appears.
+How Flux Agent should behave when ambiguity appears.
 ```
 
 ## SOUL.md vs /personality
@@ -212,39 +212,39 @@ This is the most common mistake.
 ## How to edit it
 
 ```bash
-nano ~/.omniworker/SOUL.md
+nano ~/.flux-agent/SOUL.md
 ```
 
 or
 
 ```bash
-vim ~/.omniworker/SOUL.md
+vim ~/.flux-agent/SOUL.md
 ```
 
-Then restart OmniWorker or start a new session.
+Then restart Flux Agent or start a new session.
 
 ## A practical workflow
 
 1. Start with the seeded default file
 2. Trim anything that does not feel like the voice you want
 3. Add 4–8 lines that clearly define tone and defaults
-4. Talk to OmniWorker for a while
+4. Talk to Flux Agent for a while
 5. Adjust based on what still feels off
 
 That iterative approach works better than trying to design the perfect personality in one shot.
 
 ## Troubleshooting
 
-### I edited SOUL.md but OmniWorker still sounds the same
+### I edited SOUL.md but Flux Agent still sounds the same
 
 Check:
-- you edited `~/.omniworker/SOUL.md` or `$OMNIWORKER_HOME/SOUL.md`
+- you edited `~/.flux-agent/SOUL.md` or `$FLUX AGENT_HOME/SOUL.md`
 - not some repo-local `SOUL.md`
 - the file is not empty
 - your session was restarted after the edit
 - a `/personality` overlay is not dominating the result
 
-### OmniWorker is ignoring parts of my SOUL.md
+### Flux Agent is ignoring parts of my SOUL.md
 
 Possible causes:
 - higher-priority instructions are overriding it

@@ -85,11 +85,11 @@ def cua_driver_binary_available() -> bool:
 def cua_driver_install_hint() -> str:
     return (
         "cua-driver is not installed. Install with one of:\n"
-        "  omniworker computer-use install\n"
+        "  flux-agent computer-use install\n"
         "Or run the upstream installer directly:\n"
         '  /bin/bash -c "$(curl -fsSL '
         'https://raw.githubusercontent.com/trycua/cua/main/libs/cua-driver/scripts/install.sh)"\n'
-        "Or run `omniworker tools` and enable the Computer Use toolset to install it automatically."
+        "Or run `flux-agent tools` and enable the Computer Use toolset to install it automatically."
     )
 
 
@@ -340,7 +340,7 @@ class CuaDriverBackend(ComputerUseBackend):
     def capture(self, mode: str = "som", app: Optional[str] = None) -> CaptureResult:
         """Capture the frontmost on-screen window (optionally filtered by app name).
 
-        Maps omniworker `capture(mode, app)` → cua-driver `list_windows` +
+        Maps flux-agent `capture(mode, app)` → cua-driver `list_windows` +
         `get_window_state` (ax/som) or `screenshot` (vision).
         """
         # Step 1: enumerate on-screen windows to find target pid/window_id.

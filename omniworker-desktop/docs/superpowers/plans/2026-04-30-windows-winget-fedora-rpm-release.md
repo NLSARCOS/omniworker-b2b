@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extend the existing GitHub Actions release pipeline to produce a Windows NSIS installer + winget manifests, and a Fedora `.rpm`, alongside the existing macOS/Linux artifacts. End state: open a PR from `Aiacos/omniworker-desktop:feat/winget-rpm-release` to `fathah/omniworker-desktop:main`.
+**Goal:** Extend the existing GitHub Actions release pipeline to produce a Windows NSIS installer + winget manifests, and a Fedora `.rpm`, alongside the existing macOS/Linux artifacts. End state: open a PR from `Aiacos/flux-agent-desktop:feat/winget-rpm-release` to `fathah/flux-agent-desktop:main`.
 
 **Architecture:** Two new jobs added to `.github/workflows/release.yml` (Windows build + winget manifest generator), one existing job extended (Linux gets rpm), one job gated on a new `dry_run` input. Winget manifests are filled from YAML templates by a tested Node ESM script and uploaded as a CI artifact for manual submission to `microsoft/winget-pkgs`.
 
@@ -176,8 +176,8 @@ Run: `ls -la dist/*.rpm && rpm -qpi dist/*.rpm | head -20`
 
 Expected:
 
-- A file `dist/omniworker-desktop-0.2.3.rpm` (or current version) of non-trivial size (~120-200 MB)
-- `rpm -qpi` shows `Name: omniworker-desktop`, `Version: 0.2.3`, `Vendor: Nous Research`, `License`, `Summary` matching our `synopsis`.
+- A file `dist/flux-agent-desktop-0.2.3.rpm` (or current version) of non-trivial size (~120-200 MB)
+- `rpm -qpi` shows `Name: flux-agent-desktop`, `Version: 0.2.3`, `Vendor: Nous Research`, `License`, `Summary` matching our `synopsis`.
 
 If the RPM is missing or metadata is wrong, go back to Task 1 and fix.
 
@@ -250,12 +250,12 @@ PackageIdentifier: OmniWorker.OmniWorkerDesktop
 PackageVersion: { { VERSION } }
 PackageLocale: en-US
 Publisher: Nous Research
-PublisherUrl: https://github.com/fathah/omniworker-desktop
-PublisherSupportUrl: https://github.com/fathah/omniworker-desktop/issues
+PublisherUrl: https://github.com/fathah/flux-agent-desktop
+PublisherSupportUrl: https://github.com/fathah/flux-agent-desktop/issues
 PackageName: OmniWorker Agent
-PackageUrl: https://github.com/fathah/omniworker-desktop
+PackageUrl: https://github.com/fathah/flux-agent-desktop
 License: MIT
-LicenseUrl: https://github.com/fathah/omniworker-desktop/blob/main/LICENSE
+LicenseUrl: https://github.com/fathah/flux-agent-desktop/blob/main/LICENSE
 ShortDescription: Self-improving AI assistant desktop app
 Description: |-
   OmniWorker Desktop is a native desktop app for installing, configuring, and chatting
@@ -349,14 +349,14 @@ describe("generateWingetManifests", () => {
     const distDir = join(TEST_DIR, "dist");
     mkdirSync(distDir, { recursive: true });
     writeFileSync(
-      join(distDir, "omniworker-desktop-9.9.9-setup.exe"),
+      join(distDir, "flux-agent-desktop-9.9.9-setup.exe"),
       "fake-installer-bytes",
     );
 
     generateWingetManifests({
       rootDir: TEST_DIR,
       version: "9.9.9",
-      name: "omniworker-desktop",
+      name: "flux-agent-desktop",
       publishOwner: "fathah",
     });
 
@@ -387,14 +387,14 @@ describe("generateWingetManifests", () => {
     const distDir = join(TEST_DIR, "dist");
     mkdirSync(distDir, { recursive: true });
     writeFileSync(
-      join(distDir, "omniworker-desktop-9.9.9-setup.exe"),
+      join(distDir, "flux-agent-desktop-9.9.9-setup.exe"),
       "fake-installer-bytes",
     );
 
     generateWingetManifests({
       rootDir: TEST_DIR,
       version: "9.9.9",
-      name: "omniworker-desktop",
+      name: "flux-agent-desktop",
       publishOwner: "fathah",
     });
 
@@ -411,7 +411,7 @@ describe("generateWingetManifests", () => {
     const content = readFileSync(outFile, "utf-8");
     expect(content).toContain("Version: 9.9.9");
     expect(content).toContain(
-      "Url: https://github.com/fathah/omniworker-desktop/releases/download/v9.9.9/omniworker-desktop-9.9.9-setup.exe",
+      "Url: https://github.com/fathah/flux-agent-desktop/releases/download/v9.9.9/flux-agent-desktop-9.9.9-setup.exe",
     );
     expect(content).toMatch(/Sha: [A-F0-9]{64}/);
     expect(content).toMatch(/Date: \d{4}-\d{2}-\d{2}/);
@@ -423,14 +423,14 @@ describe("generateWingetManifests", () => {
     const distDir = join(TEST_DIR, "dist");
     mkdirSync(distDir, { recursive: true });
     writeFileSync(
-      join(distDir, "omniworker-desktop-9.9.9-setup.exe"),
+      join(distDir, "flux-agent-desktop-9.9.9-setup.exe"),
       "fake-installer-bytes",
     );
 
     generateWingetManifests({
       rootDir: TEST_DIR,
       version: "9.9.9",
-      name: "omniworker-desktop",
+      name: "flux-agent-desktop",
       publishOwner: "fathah",
     });
 
@@ -446,7 +446,7 @@ describe("generateWingetManifests", () => {
     );
     const content = readFileSync(outFile, "utf-8");
     expect(content).toContain(
-      "Notes: https://github.com/fathah/omniworker-desktop/releases/tag/v9.9.9",
+      "Notes: https://github.com/fathah/flux-agent-desktop/releases/tag/v9.9.9",
     );
     expect(content).not.toContain("{{");
   });
@@ -459,7 +459,7 @@ describe("generateWingetManifests", () => {
       generateWingetManifests({
         rootDir: TEST_DIR,
         version: "9.9.9",
-        name: "omniworker-desktop",
+        name: "flux-agent-desktop",
         publishOwner: "fathah",
       }),
     ).toThrow(/installer not found/i);
@@ -525,8 +525,8 @@ export function generateWingetManifests({
     .digest("hex")
     .toUpperCase();
   const releaseDate = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const installerUrl = `https://github.com/${publishOwner}/omniworker-desktop/releases/download/v${version}/${name}-${version}-setup.exe`;
-  const releaseNotesUrl = `https://github.com/${publishOwner}/omniworker-desktop/releases/tag/v${version}`;
+  const installerUrl = `https://github.com/${publishOwner}/flux-agent-desktop/releases/download/v${version}/${name}-${version}-setup.exe`;
+  const releaseNotesUrl = `https://github.com/${publishOwner}/flux-agent-desktop/releases/tag/v${version}`;
 
   const replacements = {
     VERSION: version,
@@ -953,7 +953,7 @@ Locate the current Install section (lines ~22-37):
 ````markdown
 ## Install
 
-Download the latest build from the [Releases](https://github.com/fathah/omniworker-desktop/releases/) page.
+Download the latest build from the [Releases](https://github.com/fathah/flux-agent-desktop/releases/) page.
 
 | Platform | File                  |
 | -------- | --------------------- |
@@ -974,7 +974,7 @@ Replace the table and add a Linux/Windows notes block. The new section:
 ````markdown
 ## Install
 
-Download the latest build from the [Releases](https://github.com/fathah/omniworker-desktop/releases/) page.
+Download the latest build from the [Releases](https://github.com/fathah/flux-agent-desktop/releases/) page.
 
 | Platform       | File                    |
 | -------------- | ----------------------- |
@@ -1000,7 +1000,7 @@ Until then, download the `.exe` from the Releases page.
 ### Fedora (RPM)
 
 ```bash
-sudo dnf install ./omniworker-desktop-<version>.rpm
+sudo dnf install ./flux-agent-desktop-<version>.rpm
 ```
 
 > **Fedora users:** The `.rpm` is not GPG-signed. If your system enforces signature checking, append `--nogpgcheck` to the install command. Auto-update is not supported for `.rpm` builds (limitation of `electron-updater`); reinstall the new `.rpm` to update.
@@ -1072,13 +1072,13 @@ Expected: `nothing to commit, working tree clean`.
 
 ### Task 21: Push branch to Aiacos fork
 
-This step requires push access to `Aiacos/omniworker-desktop` (the user's fork). If pushing requires interactive auth, the human operator runs the command.
+This step requires push access to `Aiacos/flux-agent-desktop` (the user's fork). If pushing requires interactive auth, the human operator runs the command.
 
 - [ ] **Step 1: Push**
 
 Run: `git push -u origin feat/winget-rpm-release`
 
-Expected: branch created on `origin` (which is `Aiacos/omniworker-desktop` per `git remote -v`), tracking set up.
+Expected: branch created on `origin` (which is `Aiacos/flux-agent-desktop` per `git remote -v`), tracking set up.
 
 If push is rejected, resolve auth (e.g., `gh auth login` or SSH key) before retrying. Do not force-push.
 
@@ -1133,7 +1133,7 @@ Expected:
 
 - No `{{...}}` placeholders left.
 - `InstallerSha256` is a 64-character uppercase hex string.
-- `InstallerUrl` points to the `fathah/omniworker-desktop` releases path with the correct version.
+- `InstallerUrl` points to the `fathah/flux-agent-desktop` releases path with the correct version.
 - `ReleaseDate` is today's date (UTC) in `YYYY-MM-DD`.
 - `PackageVersion` matches `package.json`.
 
@@ -1147,13 +1147,13 @@ Run: `rm -rf /tmp/winget-check`
 
 ## Phase 7: Open PR upstream
 
-### Task 24: Open PR to `fathah/omniworker-desktop:main`
+### Task 24: Open PR to `fathah/flux-agent-desktop:main`
 
 This is a "shared state" action visible to others. The human operator confirms before running.
 
 - [ ] **Step 1: Confirm PR target with the user**
 
-Ask the user: "Ready to open the PR from `Aiacos:feat/winget-rpm-release` to `fathah/omniworker-desktop:main`? Or do you want to review the diff one more time first?"
+Ask the user: "Ready to open the PR from `Aiacos:feat/winget-rpm-release` to `fathah/flux-agent-desktop:main`? Or do you want to review the diff one more time first?"
 
 Wait for explicit confirmation.
 
@@ -1163,14 +1163,14 @@ Run:
 
 ```bash
 gh pr create \
-  --repo fathah/omniworker-desktop \
+  --repo fathah/flux-agent-desktop \
   --base main \
   --head Aiacos:feat/winget-rpm-release \
   --title "ci: add Windows (winget) and Fedora (RPM) release artifacts" \
   --body "$(cat <<'EOF'
 ## Summary
 
-- Adds a `release_windows` job that builds an NSIS installer (`omniworker-desktop-<version>-setup.exe`) on `windows-latest`.
+- Adds a `release_windows` job that builds an NSIS installer (`flux-agent-desktop-<version>-setup.exe`) on `windows-latest`.
 - Adds a `generate_winget` job that fills YAML manifest templates (`build/winget/*.template.yaml`) with the installer SHA256 and uploads them as the `winget-manifests-<version>` CI artifact, ready for manual submission to [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs).
 - Extends the existing `release_linux` job to also build an `.rpm` for Fedora alongside the existing `.AppImage` and `.deb`.
 - Adds explicit `oneClick: true` / `perMachine: false` to NSIS (matches electron-builder defaults; pinning prevents future drift) and Linux packaging metadata (`vendor`, `synopsis`, `description`).

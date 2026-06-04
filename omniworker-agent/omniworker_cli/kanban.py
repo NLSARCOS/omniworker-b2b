@@ -1,4 +1,4 @@
-"""CLI for the OmniWorker Kanban board — ``hermes kanban …`` subcommand.
+"""CLI for the Flux Agent Kanban board — ``hermes kanban …`` subcommand.
 
 Exposes the full 15-verb surface documented in the design spec
 (``docs/hermes-kanban-v1-spec.pdf``).  All DB work is delegated to
@@ -23,8 +23,8 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
-from omniworker_cli import kanban_db as kb
-from omniworker_cli.profiles import get_active_profile_name, get_profile_dir, seed_profile_skills
+from flux-agent_cli import kanban_db as kb
+from flux-agent_cli.profiles import get_active_profile_name, get_profile_dir, seed_profile_skills
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ def _parse_workspace_flag(value: str) -> tuple[str, Optional[str]]:
 def _check_dispatcher_presence() -> tuple[bool, str]:
     """Return ``(running, message)``.
 
-    - ``running=True``: a gateway is alive for this OMNIWORKER_HOME and its
+    - ``running=True``: a gateway is alive for this FLUX AGENT_HOME and its
       config has ``kanban.dispatch_in_gateway`` on (default). Message
       is a short status line.
     - ``running=False``: either no gateway is running, or the gateway
@@ -124,7 +124,7 @@ def _check_dispatcher_presence() -> tuple[bool, str]:
 
     # Even if the gateway is up, dispatch_in_gateway may be off.
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
         dispatch_on = bool(cfg.get("kanban", {}).get("dispatch_in_gateway", True))
     except Exception:
@@ -164,7 +164,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         "kanban",
         help="Multi-profile collaboration board (tasks, links, comments)",
         description=(
-            "Durable SQLite-backed task board shared across OmniWorker profiles. "
+            "Durable SQLite-backed task board shared across Flux Agent profiles. "
             "Tasks are claimed atomically, can depend on other tasks, and "
             "are executed by a named profile in an isolated workspace. "
             "See https://hermes-agent.nousresearch.com/docs/user-guide/features/kanban "
@@ -174,7 +174,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     # --- global --board flag ---
     # Applies to every subcommand below. When set, scopes all reads and
     # writes to that board's DB. When omitted, resolves via the
-    # OMNIWORKER_KANBAN_BOARD env var, then the persisted current-board
+    # FLUX AGENT_KANBAN_BOARD env var, then the persisted current-board
     # file, then "default". See kanban_db.get_current_board().
     kanban_parser.add_argument(
         "--board",
@@ -183,7 +183,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         help=(
             "Board slug to operate on. Defaults to the current board "
             "(set via `hermes kanban boards switch <slug>` or the "
-            "OMNIWORKER_KANBAN_BOARD env var). Use `hermes kanban boards list` "
+            "FLUX AGENT_KANBAN_BOARD env var). Use `hermes kanban boards list` "
             "to see all boards."
         ),
     )
@@ -300,7 +300,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     # --- list ---
     p_list = sub.add_parser("list", aliases=["ls"], help="List tasks")
     p_list.add_argument("--mine", action="store_true",
-                        help="Filter by $OMNIWORKER_PROFILE as assignee")
+                        help="Filter by $FLUX AGENT_PROFILE as assignee")
     p_list.add_argument("--assignee", default=None)
     p_list.add_argument("--status", default=None,
                         choices=sorted(kb.VALID_STATUSES))
@@ -392,7 +392,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     p_comment.add_argument("task_id")
     p_comment.add_argument("text", nargs="+", help="Comment body")
     p_comment.add_argument("--author", default=None,
-                           help="Author name (default: $OMNIWORKER_PROFILE or 'user')")
+                           help="Author name (default: $FLUX AGENT_PROFILE or 'user')")
 
     p_complete = sub.add_parser("complete", help="Mark one or more tasks done")
     p_complete.add_argument("task_ids", nargs="+",
@@ -611,7 +611,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         "--author",
         default=None,
         help="Author name recorded on the audit comment "
-             "(default: $OMNIWORKER_PROFILE or 'specifier')",
+             "(default: $FLUX AGENT_PROFILE or 'specifier')",
     )
     p_specify.add_argument(
         "--json",
@@ -648,7 +648,7 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
         "--author",
         default=None,
         help="Author name recorded on the audit comment "
-             "(default: $OMNIWORKER_PROFILE or 'decomposer')",
+             "(default: $FLUX AGENT_PROFILE or 'decomposer')",
     )
     p_decompose.add_argument(
         "--json",
@@ -701,21 +701,21 @@ def kanban_command(args: argparse.Namespace) -> int:
         return _dispatch_boards(args)
 
     # `--board <slug>` applies to every subcommand below by way of an
-    # env-var pin for the duration of this call. Using OMNIWORKER_KANBAN_BOARD
+    # env-var pin for the duration of this call. Using FLUX AGENT_KANBAN_BOARD
     # (rather than threading `board=` through 50+ kb.connect() sites)
     # keeps the patch small and inherits the exact same resolution the
     # dispatcher uses for workers — consistency is a feature here.
     board_override = getattr(args, "board", None)
-    prev_board_env = os.environ.get("OMNIWORKER_KANBAN_BOARD")
+    prev_board_env = os.environ.get("FLUX AGENT_KANBAN_BOARD")
     restore_board_env = False
 
     def _restore_board_env() -> None:
         if not restore_board_env:
             return
         if prev_board_env is None:
-            os.environ.pop("OMNIWORKER_KANBAN_BOARD", None)
+            os.environ.pop("FLUX AGENT_KANBAN_BOARD", None)
         else:
-            os.environ["OMNIWORKER_KANBAN_BOARD"] = prev_board_env
+            os.environ["FLUX AGENT_KANBAN_BOARD"] = prev_board_env
     if board_override:
         try:
             normed = kb._normalize_board_slug(board_override)
@@ -734,14 +734,14 @@ def kanban_command(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
             return 1
-        os.environ["OMNIWORKER_KANBAN_BOARD"] = normed
+        os.environ["FLUX AGENT_KANBAN_BOARD"] = normed
         restore_board_env = True
 
     # Auto-initialize the DB before dispatching any subcommand. init_db
     # is idempotent, so running it every invocation is cheap (one
     # SELECT against sqlite_master when tables already exist) and
     # prevents "no such table: tasks" on first use from a fresh
-    # OMNIWORKER_HOME. Previously only `init` and `daemon` triggered
+    # FLUX AGENT_HOME. Previously only `init` and `daemon` triggered
     # schema creation; `create` / `list` / every other command would
     # error out on a fresh install.
     try:
@@ -809,12 +809,12 @@ def kanban_command(args: argparse.Namespace) -> int:
 
 def _profile_author() -> str:
     """Best-effort author name for an interactive CLI call."""
-    for env in ("OMNIWORKER_PROFILE_NAME", "OMNIWORKER_PROFILE"):
+    for env in ("FLUX AGENT_PROFILE_NAME", "FLUX AGENT_PROFILE"):
         v = os.environ.get(env)
         if v:
             return v
     try:
-        from omniworker_cli.profiles import get_active_profile_name
+        from flux-agent_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "user"
     except Exception:
         return "user"
@@ -830,7 +830,7 @@ def _dispatch_boards(args: argparse.Namespace) -> int:
     Boards management is deliberately separate from the task-level
     commands: it operates on the filesystem (board directories,
     ``current`` pointer, ``board.json``), not on the per-board SQLite
-    DB, so a fresh OMNIWORKER_HOME that has never called ``kanban init``
+    DB, so a fresh FLUX AGENT_HOME that has never called ``kanban init``
     can still run ``boards create`` / ``boards list``.
     """
     sub = getattr(args, "boards_action", None) or "list"
@@ -1274,7 +1274,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
         print(f"  max-retries: {task.max_retries} (task)")
     else:
         try:
-            from omniworker_cli.config import load_config
+            from flux-agent_cli.config import load_config
             cfg = load_config()
             cfg_val = (cfg.get("kanban", {}) or {}).get("failure_limit")
         except Exception:
@@ -1288,7 +1288,7 @@ def _cmd_show(args: argparse.Namespace) -> int:
     # Diagnostics section — surface active distress signals at the top
     # of show output so CLI users see them before scrolling through
     # comments / runs.
-    from omniworker_cli import kanban_diagnostics as kd
+    from flux-agent_cli import kanban_diagnostics as kd
     diags = kd.compute_task_diagnostics(task, events, runs)
     if diags:
         sev_marker = {"warning": "⚠", "error": "!!", "critical": "!!!"}
@@ -1416,8 +1416,8 @@ def _cmd_diagnostics(args: argparse.Namespace) -> int:
     """List active diagnostics on the board. Wraps the same rule engine
     the dashboard uses, so CLI output matches what the UI shows.
     """
-    from omniworker_cli import kanban_diagnostics as kd
-    from omniworker_cli.config import load_config
+    from flux-agent_cli import kanban_diagnostics as kd
+    from flux-agent_cli.config import load_config
 
     diag_config = kd.config_from_runtime_config(load_config())
 
@@ -1592,9 +1592,9 @@ def _cmd_comment(args: argparse.Namespace) -> int:
 
 
 def _worker_run_id_for(task_id: str) -> Optional[int]:
-    if os.environ.get("OMNIWORKER_KANBAN_TASK") != task_id:
+    if os.environ.get("FLUX AGENT_KANBAN_TASK") != task_id:
         return None
-    raw = os.environ.get("OMNIWORKER_KANBAN_RUN_ID")
+    raw = os.environ.get("FLUX AGENT_KANBAN_RUN_ID")
     if not raw:
         return None
     try:
@@ -1918,7 +1918,7 @@ def _cmd_daemon(args: argparse.Namespace) -> int:
 
     def _ready_queue_nonempty() -> bool:
         """Cheap probe — is there at least one ready+assigned+unclaimed
-        task whose assignee maps to a real OmniWorker profile (i.e. one the
+        task whose assignee maps to a real Flux Agent profile (i.e. one the
         dispatcher would actually try to spawn for)?
 
         Filters out tasks assigned to control-plane lanes
@@ -2128,7 +2128,7 @@ def _cmd_context(args: argparse.Namespace) -> int:
 def _cmd_specify(args: argparse.Namespace) -> int:
     """Flesh out a triage task (or all of them) via auxiliary LLM,
     then promote to todo. Thin wrapper over ``kanban_specify``."""
-    from omniworker_cli import kanban_specify as spec
+    from flux-agent_cli import kanban_specify as spec
 
     all_flag = bool(getattr(args, "all_triage", False))
     tenant = getattr(args, "tenant", None)
@@ -2202,7 +2202,7 @@ def _cmd_decompose(args: argparse.Namespace) -> int:
     """Fan a triage task (or all of them) out into a graph of child
     tasks via the auxiliary LLM, routed to specialist profiles by
     description. Thin wrapper over ``kanban_decompose``."""
-    from omniworker_cli import kanban_decompose as decomp
+    from flux-agent_cli import kanban_decompose as decomp
 
     all_flag = bool(getattr(args, "all_triage", False))
     tenant = getattr(args, "tenant", None)

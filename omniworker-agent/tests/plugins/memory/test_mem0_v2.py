@@ -43,7 +43,7 @@ class TestMem0FiltersV2:
         provider = Mem0MemoryProvider()
         provider.initialize("test-session")
         provider._user_id = "u123"
-        provider._agent_id = "omniworker"
+        provider._agent_id = "flux-agent"
         monkeypatch.setattr(provider, "_get_client", lambda: client)
         return provider
 
@@ -90,7 +90,7 @@ class TestMem0FiltersV2:
         assert len(client.captured_add) == 1
         call = client.captured_add[0]
         assert call["user_id"] == "u123"
-        assert call["agent_id"] == "omniworker"
+        assert call["agent_id"] == "flux-agent"
 
     def test_conclude_uses_write_filters(self, monkeypatch):
         client = FakeClientV2()
@@ -101,22 +101,22 @@ class TestMem0FiltersV2:
         assert len(client.captured_add) == 1
         call = client.captured_add[0]
         assert call["user_id"] == "u123"
-        assert call["agent_id"] == "omniworker"
+        assert call["agent_id"] == "flux-agent"
         assert call["infer"] is False
 
     def test_read_filters_no_agent_id(self):
         """Read filters should use user_id only — cross-session recall across agents."""
         provider = Mem0MemoryProvider()
         provider._user_id = "u123"
-        provider._agent_id = "omniworker"
+        provider._agent_id = "flux-agent"
         assert provider._read_filters() == {"user_id": "u123"}
 
     def test_write_filters_include_agent_id(self):
         """Write filters should include agent_id for attribution."""
         provider = Mem0MemoryProvider()
         provider._user_id = "u123"
-        provider._agent_id = "omniworker"
-        assert provider._write_filters() == {"user_id": "u123", "agent_id": "omniworker"}
+        provider._agent_id = "flux-agent"
+        assert provider._write_filters() == {"user_id": "u123", "agent_id": "flux-agent"}
 
 
 # ---------------------------------------------------------------------------
@@ -206,7 +206,7 @@ class TestMem0ResponseUnwrapping:
 class TestMem0Defaults:
     """Ensure we don't break existing users' defaults."""
 
-    def test_default_user_id_omniworker_user(self, monkeypatch, tmp_path):
+    def test_default_user_id_flux-agent_user(self, monkeypatch, tmp_path):
         monkeypatch.setenv("MEM0_API_KEY", "test-key")
         monkeypatch.delenv("MEM0_USER_ID", raising=False)
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
@@ -214,9 +214,9 @@ class TestMem0Defaults:
         provider = Mem0MemoryProvider()
         provider.initialize("test")
 
-        assert provider._user_id == "omniworker-user"
+        assert provider._user_id == "flux-agent-user"
 
-    def test_default_agent_id_omniworker(self, monkeypatch, tmp_path):
+    def test_default_agent_id_flux-agent(self, monkeypatch, tmp_path):
         monkeypatch.setenv("MEM0_API_KEY", "test-key")
         monkeypatch.delenv("MEM0_AGENT_ID", raising=False)
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
@@ -224,4 +224,4 @@ class TestMem0Defaults:
         provider = Mem0MemoryProvider()
         provider.initialize("test")
 
-        assert provider._agent_id == "omniworker"
+        assert provider._agent_id == "flux-agent"

@@ -25,7 +25,7 @@ Generate project ideas via creative constraints.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Creative Ideation

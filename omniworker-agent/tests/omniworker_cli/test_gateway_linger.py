@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-import omniworker_cli.gateway as gateway
+import flux-agent_cli.gateway as gateway
 
 
 class TestEnsureLingerEnabled:
@@ -99,7 +99,7 @@ class TestEnsureLingerEnabled:
 
 
 def test_systemd_install_calls_linger_helper(monkeypatch, tmp_path, capsys):
-    unit_path = tmp_path / "systemd" / "user" / "omniworker-gateway.service"
+    unit_path = tmp_path / "systemd" / "user" / "flux-agent-gateway.service"
 
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
 

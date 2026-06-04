@@ -5,7 +5,7 @@ import pytest
 
 from gateway.config import Platform
 from gateway.run import GatewayRunner
-from omniworker_cli import kanban_db as kb
+from flux-agent_cli import kanban_db as kb
 
 
 class RecordingAdapter:
@@ -123,8 +123,8 @@ def test_kanban_notifier_rewinds_claim_if_adapter_disconnects(tmp_path, monkeypa
 
 
 def test_kanban_db_path_is_test_isolated_from_real_home():
-    omniworker_home = Path(kb.kanban_home())
-    production_db = Path.home() / ".omniworker" / "kanban.db"
+    flux-agent_home = Path(kb.kanban_home())
+    production_db = Path.home() / ".flux-agent" / "kanban.db"
     assert kb.kanban_db_path().resolve() != production_db.resolve()
 
     conn = kb.connect()
@@ -134,7 +134,7 @@ def test_kanban_db_path_is_test_isolated_from_real_home():
     finally:
         conn.close()
 
-    assert kb.kanban_db_path().resolve().is_relative_to(omniworker_home.resolve())
+    assert kb.kanban_db_path().resolve().is_relative_to(flux-agent_home.resolve())
     assert kb.kanban_db_path().resolve() != production_db.resolve()
 
 

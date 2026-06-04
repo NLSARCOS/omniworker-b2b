@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-SWE Runner with OmniWorker Trajectory Format
+SWE Runner with Flux Agent Trajectory Format
 
-A runner that uses OmniWorker-Agent's built-in execution environments
-(local, docker, modal) and outputs trajectories in the OmniWorker-Agent format
+A runner that uses Flux Agent-Agent's built-in execution environments
+(local, docker, modal) and outputs trajectories in the Flux Agent-Agent format
 compatible with batch_runner.py and trajectory_compressor.py.
 
 Features:
-- Uses OmniWorker-Agent's Docker, Modal, or Local environments for command execution
-- Outputs trajectories in OmniWorker format (from/value pairs with <tool_call>/<tool_response> XML)
+- Uses Flux Agent-Agent's Docker, Modal, or Local environments for command execution
+- Outputs trajectories in Flux Agent format (from/value pairs with <tool_call>/<tool_response> XML)
 - Compatible with the trajectory compression pipeline
 - Supports batch processing from JSONL prompt files
 
@@ -65,7 +65,7 @@ def _effective_temperature_for_model(
 
 
 # ============================================================================
-# Terminal Tool Definition (matches OmniWorker-Agent format)
+# Terminal Tool Definition (matches Flux Agent-Agent format)
 # ============================================================================
 
 TERMINAL_TOOL_DEFINITION = {
@@ -125,7 +125,7 @@ def create_environment(
     **kwargs
 ):
     """
-    Create an execution environment using OmniWorker-Agent's built-in backends.
+    Create an execution environment using Flux Agent-Agent's built-in backends.
     
     Args:
         env_type: One of "local", "docker", "modal"
@@ -154,13 +154,13 @@ def create_environment(
 
 
 # ============================================================================
-# Mini-SWE Runner with OmniWorker Trajectory Format
+# Mini-SWE Runner with Flux Agent Trajectory Format
 # ============================================================================
 
 class MiniSWERunner:
     """
-    Agent runner that uses OmniWorker-Agent's built-in execution environments
-    and outputs trajectories in OmniWorker-Agent format.
+    Agent runner that uses Flux Agent-Agent's built-in execution environments
+    and outputs trajectories in Flux Agent-Agent format.
     """
     
     def __init__(
@@ -311,7 +311,7 @@ class MiniSWERunner:
         completed: bool
     ) -> List[Dict[str, Any]]:
         """
-        Convert internal message format to OmniWorker trajectory format.
+        Convert internal message format to Flux Agent trajectory format.
         
         This produces the exact format used by batch_runner.py.
         """
@@ -567,7 +567,7 @@ Complete the user's task step by step."""
             # Cleanup environment
             self._cleanup_env()
         
-        # Convert to OmniWorker trajectory format
+        # Convert to Flux Agent trajectory format
         trajectory = self._convert_to_hermes_format(messages, task, completed)
         
         return {
@@ -653,7 +653,7 @@ def main(
     verbose: bool = False,
 ):
     """
-    Run SWE tasks with OmniWorker trajectory format output.
+    Run SWE tasks with Flux Agent trajectory format output.
     
     Args:
         task: Single task to run (use this OR prompts_file)
@@ -679,7 +679,7 @@ def main(
         # Batch from file
         python mini_swe_runner.py --prompts_file tasks.jsonl --output_file results.jsonl
     """
-    print("🚀 Mini-SWE Runner with OmniWorker Trajectory Format")
+    print("🚀 Mini-SWE Runner with Flux Agent Trajectory Format")
     print("=" * 60)
     
     # Initialize runner

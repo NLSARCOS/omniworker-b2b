@@ -50,16 +50,16 @@ class CopilotACPClientSafetyTests(unittest.TestCase):
         outcome = (((response.get("result") or {}).get("outcome") or {}).get("outcome"))
         self.assertEqual(outcome, "cancelled")
 
-    def test_read_text_file_blocks_internal_omniworker_hub_files(self) -> None:
+    def test_read_text_file_blocks_internal_flux-agent_hub_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             home = Path(tmpdir) / "home"
-            blocked = home / ".omniworker" / "skills" / ".hub" / "index-cache" / "entry.json"
+            blocked = home / ".flux-agent" / "skills" / ".hub" / "index-cache" / "entry.json"
             blocked.parent.mkdir(parents=True, exist_ok=True)
             blocked.write_text('{"token":"sk-test-secret-1234567890"}')
 
             with patch.dict(
                 os.environ,
-                {"HOME": str(home), "OMNIWORKER_HOME": str(home / ".omniworker")},
+                {"HOME": str(home), "OMNIWORKER_HOME": str(home / ".flux-agent")},
                 clear=False,
             ):
                 response = self._dispatch(
@@ -175,12 +175,12 @@ def _fake_popen_capture(captured):
 
 
 def test_run_prompt_prefers_profile_home_when_available(monkeypatch, tmp_path):
-    omniworker_home = tmp_path / "omniworker"
-    profile_home = omniworker_home / "home"
+    flux-agent_home = tmp_path / "flux-agent"
+    profile_home = flux-agent_home / "home"
     profile_home.mkdir(parents=True)
 
     monkeypatch.delenv("HOME", raising=False)
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
 
     captured = {}
     client = _make_home_client(tmp_path)

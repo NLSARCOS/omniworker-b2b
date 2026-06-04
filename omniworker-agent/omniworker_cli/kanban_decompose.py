@@ -14,7 +14,7 @@ and add more tasks if the work isn't done yet.
 Design notes
 ------------
 
-* Mirrors the shape of ``omniworker_cli/kanban_specify.py``: lazy aux
+* Mirrors the shape of ``flux-agent_cli/kanban_specify.py``: lazy aux
   client import inside the function, lenient response parse, never
   raises on expected failure modes.
 
@@ -43,13 +43,13 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from omniworker_cli import kanban_db as kb
-from omniworker_cli import profiles as profiles_mod
+from flux-agent_cli import kanban_db as kb
+from flux-agent_cli import profiles as profiles_mod
 
 logger = logging.getLogger(__name__)
 
 
-_SYSTEM_PROMPT = """You are the Kanban decomposer for the OmniWorker Agent board.
+_SYSTEM_PROMPT = """You are the Kanban decomposer for the Flux Agent Agent board.
 
 A user dropped a rough idea into the Triage column. Your job is to break it
 into a small graph of concrete child tasks and route each one to the best-
@@ -158,9 +158,9 @@ def _extract_json_blob(raw: str) -> Optional[dict]:
 
 
 def _profile_author() -> str:
-    """Mirror of ``omniworker_cli.kanban._profile_author``."""
+    """Mirror of ``flux-agent_cli.kanban._profile_author``."""
     return (
-        os.environ.get("OMNIWORKER_PROFILE")
+        os.environ.get("FLUX AGENT_PROFILE")
         or os.environ.get("USER")
         or "decomposer"
     )
@@ -168,7 +168,7 @@ def _profile_author() -> str:
 
 def _load_config() -> dict:
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         return load_config() or {}
     except Exception:
         return {}

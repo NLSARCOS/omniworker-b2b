@@ -1,14 +1,14 @@
 ---
 sidebar_position: 1
 title: "Messaging Gateway"
-description: "Chat with OmniWorker from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, Home Assistant, Mattermost, Matrix, DingTalk, Yuanbao, Microsoft Teams, LINE, Webhooks, or any OpenAI-compatible frontend via the API server — architecture and setup overview"
+description: "Chat with Flux Agent from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, Home Assistant, Mattermost, Matrix, DingTalk, Yuanbao, Microsoft Teams, LINE, Webhooks, or any OpenAI-compatible frontend via the API server — architecture and setup overview"
 ---
 
 # Messaging Gateway
 
-Chat with OmniWorker from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, Home Assistant, Mattermost, Matrix, DingTalk, Feishu/Lark, WeCom, Weixin, BlueBubbles (iMessage), QQ, Yuanbao, Microsoft Teams, LINE, or your browser. The gateway is a single background process that connects to all your configured platforms, handles sessions, runs cron jobs, and delivers voice messages.
+Chat with Flux Agent from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, Home Assistant, Mattermost, Matrix, DingTalk, Feishu/Lark, WeCom, Weixin, BlueBubbles (iMessage), QQ, Yuanbao, Microsoft Teams, LINE, or your browser. The gateway is a single background process that connects to all your configured platforms, handles sessions, runs cron jobs, and delivers voice messages.
 
-For the full voice feature set — including CLI microphone mode, spoken replies in messaging, and Discord voice-channel conversations — see [Voice Mode](/docs/user-guide/features/voice-mode) and [Use Voice Mode with OmniWorker](/docs/guides/use-voice-mode-with-omniworker).
+For the full voice feature set — including CLI microphone mode, spoken replies in messaging, and Discord voice-channel conversations — see [Voice Mode](/docs/user-guide/features/voice-mode) and [Use Voice Mode with Flux Agent](/docs/guides/use-voice-mode-with-flux-agent).
 
 ## Platform Comparison
 
@@ -42,7 +42,7 @@ For the full voice feature set — including CLI microphone mode, spoken replies
 
 ```mermaid
 flowchart TB
-    subgraph Gateway["OmniWorker Gateway"]
+    subgraph Gateway["Flux Agent Gateway"]
         subgraph Adapters["Platform adapters"]
             tg[Telegram]
             dc[Discord]
@@ -106,7 +106,7 @@ Each platform adapter receives messages, routes them through a per-chat session 
 The easiest way to configure messaging platforms is the interactive wizard:
 
 ```bash
-omniworker gateway setup        # Interactive setup for all messaging platforms
+flux-agent gateway setup        # Interactive setup for all messaging platforms
 ```
 
 This walks you through configuring each platform with arrow-key selection, shows which platforms are already configured, and offers to start/restart the gateway when done.
@@ -114,14 +114,14 @@ This walks you through configuring each platform with arrow-key selection, shows
 ## Gateway Commands
 
 ```bash
-omniworker gateway              # Run in foreground
-omniworker gateway setup        # Configure messaging platforms interactively
-omniworker gateway install      # Install as a user service (Linux) / launchd service (macOS)
-sudo omniworker gateway install --system   # Linux only: install a boot-time system service
-omniworker gateway start        # Start the default service
-omniworker gateway stop         # Stop the default service
-omniworker gateway status       # Check default service status
-omniworker gateway status --system         # Linux only: inspect the system service explicitly
+flux-agent gateway              # Run in foreground
+flux-agent gateway setup        # Configure messaging platforms interactively
+flux-agent gateway install      # Install as a user service (Linux) / launchd service (macOS)
+sudo flux-agent gateway install --system   # Linux only: install a boot-time system service
+flux-agent gateway start        # Start the default service
+flux-agent gateway stop         # Stop the default service
+flux-agent gateway status       # Check default service status
+flux-agent gateway status --system         # Linux only: inspect the system service explicitly
 ```
 
 ## Chat Commands (Inside Messaging)
@@ -149,7 +149,7 @@ omniworker gateway status --system         # Linux only: inspect the system serv
 | `/rollback [number]` | List or restore filesystem checkpoints |
 | `/background <prompt>` | Run a prompt in a separate background session |
 | `/reload-mcp` | Reload MCP servers from config |
-| `/update` | Update OmniWorker Agent to the latest version |
+| `/update` | Update Flux Agent Agent to the latest version |
 | `/help` | Show available commands |
 | `/<skill-name>` | Invoke any installed skill |
 
@@ -169,7 +169,7 @@ Sessions reset based on configurable policies:
 | Idle | 1440 min | Reset after N minutes of inactivity |
 | Both | (combined) | Whichever triggers first |
 
-Configure per-platform overrides in `~/.omniworker/gateway.json`:
+Configure per-platform overrides in `~/.flux-agent/gateway.json`:
 
 ```json
 {
@@ -213,11 +213,11 @@ Instead of manually configuring user IDs, unknown users receive a one-time pairi
 ```bash
 # The user sees: "Pairing code: XKGH5N7P"
 # You approve them with:
-omniworker pairing approve telegram XKGH5N7P
+flux-agent pairing approve telegram XKGH5N7P
 
 # Other pairing commands:
-omniworker pairing list          # View pending + approved users
-omniworker pairing revoke telegram 123456789  # Remove access
+flux-agent pairing list          # View pending + approved users
+flux-agent pairing revoke telegram 123456789  # Remove access
 ```
 
 Pairing codes expire after 1 hour, are rate-limited, and use cryptographic randomness.
@@ -271,13 +271,13 @@ display:
   busy_ack_enabled: true   # set to false to suppress the ⚡/⏳/⏩ chat reply entirely
 ```
 
-The first time you message a busy agent on any platform, OmniWorker appends a one-line reminder to the busy-ack explaining the knob (`"💡 First-time tip — …"`). The reminder fires once per install — a flag under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
+The first time you message a busy agent on any platform, Flux Agent appends a one-line reminder to the busy-ack explaining the knob (`"💡 First-time tip — …"`). The reminder fires once per install — a flag under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
 
 If you find the busy-ack noisy — especially with voice input or rapid-fire messages — set `display.busy_ack_enabled: false`. Your input is still queued/steered/interrupts as normal, only the chat reply is silenced.
 
 ## Tool Progress Notifications
 
-Control how much tool activity is displayed in `~/.omniworker/config.yaml`:
+Control how much tool activity is displayed in `~/.flux-agent/config.yaml`:
 
 ```yaml
 display:
@@ -302,7 +302,7 @@ Run a prompt in a separate background session so the agent works on it independe
 /background Check all servers in the cluster and report any that are down
 ```
 
-OmniWorker confirms immediately:
+Flux Agent confirms immediately:
 
 ```
 🔄 Background task started: "Check all servers in the cluster..."
@@ -320,7 +320,7 @@ Each `/background` prompt spawns a **separate agent instance** that runs asynchr
 
 ### Background Process Notifications
 
-When the agent running a background session uses `terminal(background=true)` to start long-running processes (servers, builds, etc.), the gateway can push status updates to your chat. Control this with `display.background_process_notifications` in `~/.omniworker/config.yaml`:
+When the agent running a background session uses `terminal(background=true)` to start long-running processes (servers, builds, etc.), the gateway can push status updates to your chat. Control this with `display.background_process_notifications` in `~/.flux-agent/config.yaml`:
 
 ```yaml
 display:
@@ -337,7 +337,7 @@ display:
 You can also set this via environment variable:
 
 ```bash
-OMNIWORKER_BACKGROUND_NOTIFICATIONS=result
+FLUX AGENT_BACKGROUND_NOTIFICATIONS=result
 ```
 
 ### Use Cases
@@ -356,52 +356,52 @@ Background tasks on messaging platforms are fire-and-forget — you don't need t
 ### Linux (systemd)
 
 ```bash
-omniworker gateway install               # Install as user service
-omniworker gateway start                 # Start the service
-omniworker gateway stop                  # Stop the service
-omniworker gateway status                # Check status
-journalctl --user -u omniworker-gateway -f  # View logs
+flux-agent gateway install               # Install as user service
+flux-agent gateway start                 # Start the service
+flux-agent gateway stop                  # Stop the service
+flux-agent gateway status                # Check status
+journalctl --user -u flux-agent-gateway -f  # View logs
 
 # Enable lingering (keeps running after logout)
 sudo loginctl enable-linger $USER
 
 # Or install a boot-time system service that still runs as your user
-sudo omniworker gateway install --system
-sudo omniworker gateway start --system
-sudo omniworker gateway status --system
-journalctl -u omniworker-gateway -f
+sudo flux-agent gateway install --system
+sudo flux-agent gateway start --system
+sudo flux-agent gateway status --system
+journalctl -u flux-agent-gateway -f
 ```
 
 Use the user service on laptops and dev boxes. Use the system service on VPS or headless hosts that should come back at boot without relying on systemd linger.
 
-Avoid keeping both the user and system gateway units installed at once unless you really mean to. OmniWorker will warn if it detects both because start/stop/status behavior gets ambiguous.
+Avoid keeping both the user and system gateway units installed at once unless you really mean to. Flux Agent will warn if it detects both because start/stop/status behavior gets ambiguous.
 
 :::info Multiple installations
-If you run multiple OmniWorker installations on the same machine (with different `OMNIWORKER_HOME` directories), each gets its own systemd service name. The default `~/.omniworker` uses `omniworker-gateway`; other installations use `omniworker-gateway-<hash>`. The `omniworker gateway` commands automatically target the correct service for your current `OMNIWORKER_HOME`.
+If you run multiple Flux Agent installations on the same machine (with different `FLUX AGENT_HOME` directories), each gets its own systemd service name. The default `~/.flux-agent` uses `flux-agent-gateway`; other installations use `flux-agent-gateway-<hash>`. The `flux-agent gateway` commands automatically target the correct service for your current `FLUX AGENT_HOME`.
 :::
 
 ### macOS (launchd)
 
 ```bash
-omniworker gateway install               # Install as launchd agent
-omniworker gateway start                 # Start the service
-omniworker gateway stop                  # Stop the service
-omniworker gateway status                # Check status
-tail -f ~/.omniworker/logs/gateway.log   # View logs
+flux-agent gateway install               # Install as launchd agent
+flux-agent gateway start                 # Start the service
+flux-agent gateway stop                  # Stop the service
+flux-agent gateway status                # Check status
+tail -f ~/.flux-agent/logs/gateway.log   # View logs
 ```
 
-The generated plist lives at `~/Library/LaunchAgents/ai.omniworker.gateway.plist`. It includes three environment variables:
+The generated plist lives at `~/Library/LaunchAgents/ai.flux-agent.gateway.plist`. It includes three environment variables:
 
 - **PATH** — your full shell PATH at install time, with the venv `bin/` and `node_modules/.bin` prepended. This ensures user-installed tools (Node.js, ffmpeg, etc.) are available to gateway subprocesses like the WhatsApp bridge.
 - **VIRTUAL_ENV** — points to the Python virtualenv so tools can resolve packages correctly.
-- **OMNIWORKER_HOME** — scopes the gateway to your OmniWorker installation.
+- **FLUX AGENT_HOME** — scopes the gateway to your Flux Agent installation.
 
 :::tip PATH changes after install
-launchd plists are static — if you install new tools (e.g. a new Node.js version via nvm, or ffmpeg via Homebrew) after setting up the gateway, run `omniworker gateway install` again to capture the updated PATH. The gateway will detect the stale plist and reload automatically.
+launchd plists are static — if you install new tools (e.g. a new Node.js version via nvm, or ffmpeg via Homebrew) after setting up the gateway, run `flux-agent gateway install` again to capture the updated PATH. The gateway will detect the stale plist and reload automatically.
 :::
 
 :::info Multiple installations
-Like the Linux systemd service, each `OMNIWORKER_HOME` directory gets its own launchd label. The default `~/.omniworker` uses `ai.omniworker.gateway`; other installations use `ai.omniworker.gateway-<suffix>`.
+Like the Linux systemd service, each `FLUX AGENT_HOME` directory gets its own launchd label. The default `~/.flux-agent` uses `ai.flux-agent.gateway`; other installations use `ai.flux-agent.gateway-<suffix>`.
 :::
 
 ## Platform-Specific Toolsets
@@ -410,29 +410,29 @@ Each platform has its own toolset:
 
 | Platform | Toolset | Capabilities |
 |----------|---------|--------------|
-| CLI | `omniworker-cli` | Full access |
-| Telegram | `omniworker-telegram` | Full tools including terminal |
-| Discord | `omniworker-discord` | Full tools including terminal |
-| WhatsApp | `omniworker-whatsapp` | Full tools including terminal |
-| Slack | `omniworker-slack` | Full tools including terminal |
-| Google Chat | `omniworker-google_chat` | Full tools including terminal |
-| Signal | `omniworker-signal` | Full tools including terminal |
-| SMS | `omniworker-sms` | Full tools including terminal |
-| Email | `omniworker-email` | Full tools including terminal |
-| Home Assistant | `omniworker-homeassistant` | Full tools + HA device control (ha_list_entities, ha_get_state, ha_call_service, ha_list_services) |
-| Mattermost | `omniworker-mattermost` | Full tools including terminal |
-| Matrix | `omniworker-matrix` | Full tools including terminal |
-| DingTalk | `omniworker-dingtalk` | Full tools including terminal |
-| Feishu/Lark | `omniworker-feishu` | Full tools including terminal |
-| WeCom | `omniworker-wecom` | Full tools including terminal |
-| WeCom Callback | `omniworker-wecom-callback` | Full tools including terminal |
-| Weixin | `omniworker-weixin` | Full tools including terminal |
-| BlueBubbles | `omniworker-bluebubbles` | Full tools including terminal |
-| QQBot | `omniworker-qqbot` | Full tools including terminal |
-| Yuanbao | `omniworker-yuanbao` | Full tools including terminal |
-| Microsoft Teams | `omniworker-teams` | Full tools including terminal |
-| API Server | `omniworker-api-server` | Full tools (drops `clarify`, `send_message`, `text_to_speech` — programmatic access doesn't have an interactive user) |
-| Webhooks | `omniworker-webhook` | Full tools including terminal |
+| CLI | `flux-agent-cli` | Full access |
+| Telegram | `flux-agent-telegram` | Full tools including terminal |
+| Discord | `flux-agent-discord` | Full tools including terminal |
+| WhatsApp | `flux-agent-whatsapp` | Full tools including terminal |
+| Slack | `flux-agent-slack` | Full tools including terminal |
+| Google Chat | `flux-agent-google_chat` | Full tools including terminal |
+| Signal | `flux-agent-signal` | Full tools including terminal |
+| SMS | `flux-agent-sms` | Full tools including terminal |
+| Email | `flux-agent-email` | Full tools including terminal |
+| Home Assistant | `flux-agent-homeassistant` | Full tools + HA device control (ha_list_entities, ha_get_state, ha_call_service, ha_list_services) |
+| Mattermost | `flux-agent-mattermost` | Full tools including terminal |
+| Matrix | `flux-agent-matrix` | Full tools including terminal |
+| DingTalk | `flux-agent-dingtalk` | Full tools including terminal |
+| Feishu/Lark | `flux-agent-feishu` | Full tools including terminal |
+| WeCom | `flux-agent-wecom` | Full tools including terminal |
+| WeCom Callback | `flux-agent-wecom-callback` | Full tools including terminal |
+| Weixin | `flux-agent-weixin` | Full tools including terminal |
+| BlueBubbles | `flux-agent-bluebubbles` | Full tools including terminal |
+| QQBot | `flux-agent-qqbot` | Full tools including terminal |
+| Yuanbao | `flux-agent-yuanbao` | Full tools including terminal |
+| Microsoft Teams | `flux-agent-teams` | Full tools including terminal |
+| API Server | `flux-agent-api-server` | Full tools (drops `clarify`, `send_message`, `text_to_speech` — programmatic access doesn't have an interactive user) |
+| Webhooks | `flux-agent-webhook` | Full tools including terminal |
 
 ## Next Steps
 

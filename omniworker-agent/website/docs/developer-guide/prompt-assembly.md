@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "Prompt Assembly"
-description: "How OmniWorker builds the system prompt, preserves cache stability, and injects ephemeral layers"
+description: "How Flux Agent builds the system prompt, preserves cache stability, and injects ephemeral layers"
 ---
 
 # Prompt Assembly
 
-OmniWorker deliberately separates:
+Flux Agent deliberately separates:
 
 - **cached system prompt state**
 - **ephemeral API-call-time additions**
@@ -28,7 +28,7 @@ Primary files:
 
 The cached system prompt is assembled in roughly this order:
 
-1. agent identity — `SOUL.md` from `OMNIWORKER_HOME` when available, otherwise falls back to `DEFAULT_AGENT_IDENTITY` in `prompt_builder.py`
+1. agent identity — `SOUL.md` from `FLUX AGENT_HOME` when available, otherwise falls back to `DEFAULT_AGENT_IDENTITY` in `prompt_builder.py`
 2. tool-aware behavior guidance
 3. Honcho static block (when active)
 4. optional system message
@@ -46,8 +46,8 @@ When `skip_context_files` is set (e.g., subagent delegation), SOUL.md is not loa
 Here is a simplified view of what the final system prompt looks like when all layers are present (comments show the source of each section):
 
 ```
-# Layer 1: Agent Identity (from ~/.omniworker/SOUL.md)
-You are OmniWorker, an AI assistant created by Nous Research.
+# Layer 1: Agent Identity (from ~/.flux-agent/SOUL.md)
+You are Flux Agent, an AI assistant created by Nous Research.
 You are an expert software engineer and researcher.
 You value correctness, clarity, and efficiency.
 ...
@@ -118,12 +118,12 @@ renderable inside a terminal.
 
 ## How SOUL.md appears in the prompt
 
-`SOUL.md` lives at `~/.omniworker/SOUL.md` and serves as the agent's identity — the very first section of the system prompt. The loading logic in `prompt_builder.py` works as follows:
+`SOUL.md` lives at `~/.flux-agent/SOUL.md` and serves as the agent's identity — the very first section of the system prompt. The loading logic in `prompt_builder.py` works as follows:
 
 ```python
 # From agent/prompt_builder.py (simplified)
 def load_soul_md() -> Optional[str]:
-    soul_path = get_omniworker_home() / "SOUL.md"
+    soul_path = get_flux-agent_home() / "SOUL.md"
     if not soul_path.exists():
         return None
     content = soul_path.read_text(encoding="utf-8").strip()
@@ -137,7 +137,7 @@ When `load_soul_md()` returns content, it replaces the hardcoded `DEFAULT_AGENT_
 If `SOUL.md` doesn't exist, the system falls back to:
 
 ```
-You are OmniWorker Agent, an intelligent AI assistant created by Nous Research.
+You are Flux Agent Agent, an intelligent AI assistant created by Nous Research.
 You are helpful, knowledgeable, and direct. You assist users with a wide
 range of tasks including answering questions, writing and editing code,
 analyzing information, creative work, and executing actions via your tools.
@@ -157,7 +157,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 
     # Priority: first match wins — only ONE project context loaded
     project_context = (
-        _load_omniworker_md(cwd_path)       # 1. .omniworker.md / OMNIWORKER.md (walks to git root)
+        _load_flux-agent_md(cwd_path)       # 1. .flux-agent.md / FLUX AGENT.md (walks to git root)
         or _load_agents_md(cwd_path)    # 2. AGENTS.md (cwd only)
         or _load_claude_md(cwd_path)    # 3. CLAUDE.md (cwd only)
         or _load_cursorrules(cwd_path)  # 4. .cursorrules / .cursor/rules/*.mdc
@@ -167,7 +167,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
     if project_context:
         sections.append(project_context)
 
-    # SOUL.md from OMNIWORKER_HOME (independent of project context)
+    # SOUL.md from FLUX AGENT_HOME (independent of project context)
     if not skip_soul:
         soul_content = load_soul_md()
         if soul_content:
@@ -188,7 +188,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 
 | Priority | Files | Search scope | Notes |
 |----------|-------|-------------|-------|
-| 1 | `.omniworker.md`, `OMNIWORKER.md` | CWD up to git root | OmniWorker-native project config |
+| 1 | `.flux-agent.md`, `FLUX AGENT.md` | CWD up to git root | Flux Agent-native project config |
 | 2 | `AGENTS.md` | CWD only | Common agent instruction file |
 | 3 | `CLAUDE.md` | CWD only | Claude Code compatibility |
 | 4 | `.cursorrules`, `.cursor/rules/*.mdc` | CWD only | Cursor compatibility |
@@ -196,7 +196,7 @@ def build_context_files_prompt(cwd=None, skip_soul=False):
 All context files are:
 - **Security scanned** — checked for prompt injection patterns (invisible unicode, "ignore previous instructions", credential exfiltration attempts)
 - **Truncated** — capped at 20,000 characters using 70/20 head/tail ratio with a truncation marker
-- **YAML frontmatter stripped** — `.omniworker.md` frontmatter is removed (reserved for future config overrides)
+- **YAML frontmatter stripped** — `.flux-agent.md` frontmatter is removed (reserved for future config overrides)
 
 ## API-call-time-only layers
 
@@ -217,7 +217,7 @@ Local memory and user profile data are injected as frozen snapshots at session s
 
 `agent/prompt_builder.py` scans and sanitizes project context files using a **priority system** — only one type is loaded (first match wins):
 
-1. `.omniworker.md` / `OMNIWORKER.md` (walks to git root)
+1. `.flux-agent.md` / `FLUX AGENT.md` (walks to git root)
 2. `AGENTS.md` (CWD at startup; subdirectories discovered progressively during the session via `agent/subdirectory_hints.py`)
 3. `CLAUDE.md` (CWD only)
 4. `.cursorrules` / `.cursor/rules/*.mdc` (CWD only)
@@ -232,16 +232,16 @@ The skills system contributes a compact skills index to the prompt when skills t
 
 ## Supported prompt customization surfaces
 
-Most users should treat `agent/prompt_builder.py` as implementation code, not a configuration surface. The supported customization path is to change the prompt inputs OmniWorker already loads, rather than editing Python templates in place.
+Most users should treat `agent/prompt_builder.py` as implementation code, not a configuration surface. The supported customization path is to change the prompt inputs Flux Agent already loads, rather than editing Python templates in place.
 
 ### Use these surfaces first
 
-- `~/.omniworker/SOUL.md` — replace the built-in default identity block with your own agent persona and standing behavior.
-- `~/.omniworker/MEMORY.md` and `~/.omniworker/USER.md` — provide durable cross-session facts and user profile data that should be snapshotted into new sessions.
-- Project context files such as `.omniworker.md`, `OMNIWORKER.md`, `AGENTS.md`, `CLAUDE.md`, or `.cursorrules` — inject repo-specific working rules.
+- `~/.flux-agent/SOUL.md` — replace the built-in default identity block with your own agent persona and standing behavior.
+- `~/.flux-agent/MEMORY.md` and `~/.flux-agent/USER.md` — provide durable cross-session facts and user profile data that should be snapshotted into new sessions.
+- Project context files such as `.flux-agent.md`, `FLUX AGENT.md`, `AGENTS.md`, `CLAUDE.md`, or `.cursorrules` — inject repo-specific working rules.
 - Skills — package reusable workflows and references without editing core prompt code.
-- Optional system prompt config / API overrides — add deployment-specific instruction text without forking OmniWorker.
-- Ephemeral overlays such as `OMNIWORKER_EPHEMERAL_SYSTEM_PROMPT` or prefill messages — add turn-scoped guidance that should not become part of the cached prompt prefix.
+- Optional system prompt config / API overrides — add deployment-specific instruction text without forking Flux Agent.
+- Ephemeral overlays such as `FLUX AGENT_EPHEMERAL_SYSTEM_PROMPT` or prefill messages — add turn-scoped guidance that should not become part of the cached prompt prefix.
 
 ### When to edit code instead
 
@@ -252,7 +252,7 @@ In other words:
 - if you want a different assistant identity, edit `SOUL.md`
 - if you want different repo rules, edit project context files
 - if you want reusable operating procedures, add or modify skills
-- if you want to change how OmniWorker assembles prompts for everyone, change Python and treat it as a code contribution
+- if you want to change how Flux Agent assembles prompts for everyone, change Python and treat it as a code contribution
 
 ## Why prompt assembly is split this way
 

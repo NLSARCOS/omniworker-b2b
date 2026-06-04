@@ -3,8 +3,8 @@ Feishu document comment access-control rules.
 
 3-tier rule resolution: exact doc > wildcard "*" > top-level > code defaults.
 Each field (enabled/policy/allow_from) falls back independently.
-Config: ~/.omniworker/feishu_comment_rules.json (mtime-cached, hot-reload).
-Pairing store: ~/.omniworker/feishu_comment_pairing.json.
+Config: ~/.flux-agent/feishu_comment_rules.json (mtime-cached, hot-reload).
+Pairing store: ~/.flux-agent/feishu_comment_pairing.json.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 # Paths
 # ---------------------------------------------------------------------------
 #
-# Uses the canonical ``get_omniworker_home()`` helper (OMNIWORKER_HOME-aware and
+# Uses the canonical ``get_flux-agent_home()`` helper (OMNIWORKER_HOME-aware and
 # profile-safe). Resolved at import time; this module is lazy-imported by
 # the Feishu comment event handler, which runs long after profile overrides
 # have been applied, so freezing paths here is safe.
 
-RULES_FILE = get_omniworker_home() / "feishu_comment_rules.json"
-PAIRING_FILE = get_omniworker_home() / "feishu_comment_pairing.json"
+RULES_FILE = get_flux-agent_home() / "feishu_comment_rules.json"
+PAIRING_FILE = get_flux-agent_home() / "feishu_comment_pairing.json"
 
 # ---------------------------------------------------------------------------
 # Data models
@@ -351,8 +351,8 @@ def _main() -> int:
     import sys
 
     try:
-        from omniworker_cli.env_loader import load_omniworker_dotenv
-        load_omniworker_dotenv()
+        from flux-agent_cli.env_loader import load_flux-agent_dotenv
+        load_flux-agent_dotenv()
     except Exception:
         pass
 

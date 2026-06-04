@@ -1,7 +1,7 @@
 """Regression test for the `/model` picker confirmation display.
 
 Bug (April 2026): after choosing a model from the interactive `/model` picker,
-``OmniWorkerCLI._apply_model_switch_result()`` printed ``ModelInfo.context_window``
+``Flux AgentCLI._apply_model_switch_result()`` printed ``ModelInfo.context_window``
 straight from models.dev, which always reports the vendor-wide value (e.g.
 gpt-5.5 = 1,050,000 on ``openai``). That ignored provider-specific caps — in
 particular, ChatGPT Codex OAuth enforces 272K on the same slug. The sibling
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from omniworker_cli.model_switch import ModelSwitchResult
+from flux-agent_cli.model_switch import ModelSwitchResult
 
 
 class _FakeModelInfo:
@@ -48,9 +48,9 @@ def _run_display(monkeypatch, result):
 
     captured: list[str] = []
     monkeypatch.setattr(cli_mod, "_cprint", lambda s, *a, **k: captured.append(str(s)))
-    # Avoid writing to ~/.omniworker/config.yaml during the test.
+    # Avoid writing to ~/.flux-agent/config.yaml during the test.
     monkeypatch.setattr(cli_mod, "save_config_value", lambda *a, **k: None)
-    cli_mod.OmniWorkerCLI._apply_model_switch_result(_StubCLI(), result, False)
+    cli_mod.Flux AgentCLI._apply_model_switch_result(_StubCLI(), result, False)
     return captured
 
 

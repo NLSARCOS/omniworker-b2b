@@ -9,7 +9,7 @@ import pytest
 # ── CLI tests ──────────────────────────────────────────────────────────────
 
 class TestCLIQuickCommands:
-    """Test quick command dispatch in OmniWorkerCLI.process_command."""
+    """Test quick command dispatch in Flux AgentCLI.process_command."""
 
     @staticmethod
     def _printed_plain(call_arg):
@@ -18,8 +18,8 @@ class TestCLIQuickCommands:
         return str(call_arg)
 
     def _make_cli(self, quick_commands):
-        from cli import OmniWorkerCLI
-        cli = OmniWorkerCLI.__new__(OmniWorkerCLI)
+        from cli import Flux AgentCLI
+        cli = Flux AgentCLI.__new__(Flux AgentCLI)
         cli.config = {"quick_commands": quick_commands}
         cli.console = MagicMock()
         cli.agent = None
@@ -183,7 +183,7 @@ class TestGatewayQuickCommands:
         """Quick command output must redact sensitive patterns before returning."""
         from gateway.run import GatewayRunner
 
-        # Ensure redaction is active regardless of host OMNIWORKER_REDACT_SECRETS state
+        # Ensure redaction is active regardless of host FLUX AGENT_REDACT_SECRETS state
         # or test ordering (the module snapshots env at import time, so other
         # tests in the same xdist worker can flip the flag).
         monkeypatch.setattr("agent.redact._REDACT_ENABLED", True)

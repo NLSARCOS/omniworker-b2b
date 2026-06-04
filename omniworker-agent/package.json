@@ -1,5 +1,5 @@
 {
-  "name": "omniworker-agent",
+  "name": "flux-agent-agent",
   "version": "1.0.0",
   "description": "An AI agent with advanced tool-calling capabilities, featuring a flexible toolsets system for organizing and managing tools.",
   "private": true,
@@ -8,13 +8,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OmniWorker/OmniWorker-Agent.git"
+    "url": "git+https://github.com/Flux Agent/Flux Agent-Agent.git"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/OmniWorker/OmniWorker-Agent/issues"
+    "url": "https://github.com/Flux Agent/Flux Agent-Agent/issues"
   },
-  "homepage": "https://github.com/OmniWorker/OmniWorker-Agent#readme",
+  "homepage": "https://github.com/Flux Agent/Flux Agent-Agent#readme",
   "dependencies": {
     "@askjo/camofox-browser": "^1.5.2",
     "agent-browser": "^0.26.0"

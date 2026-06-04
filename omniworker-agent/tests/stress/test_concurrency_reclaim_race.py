@@ -38,11 +38,11 @@ WORK_DURATION_S = 2.0  # longer than TTL => reclaimer wins
 WT = str(Path(__file__).resolve().parents[2])
 
 
-def worker_loop(worker_id: int, omniworker_home: str, result_file: str) -> None:
-    os.environ["OMNIWORKER_HOME"] = omniworker_home
-    os.environ["HOME"] = omniworker_home
+def worker_loop(worker_id: int, flux-agent_home: str, result_file: str) -> None:
+    os.environ["OMNIWORKER_HOME"] = flux-agent_home
+    os.environ["HOME"] = flux-agent_home
     sys.path.insert(0, WT)
-    from omniworker_cli import kanban_db as kb
+    from flux-agent_cli import kanban_db as kb
 
     events = []
     start = time.monotonic()
@@ -95,11 +95,11 @@ def worker_loop(worker_id: int, omniworker_home: str, result_file: str) -> None:
         json.dump(events, f)
 
 
-def reclaimer_loop(omniworker_home: str, result_file: str) -> None:
-    os.environ["OMNIWORKER_HOME"] = omniworker_home
-    os.environ["HOME"] = omniworker_home
+def reclaimer_loop(flux-agent_home: str, result_file: str) -> None:
+    os.environ["OMNIWORKER_HOME"] = flux-agent_home
+    os.environ["HOME"] = flux-agent_home
     sys.path.insert(0, WT)
-    from omniworker_cli import kanban_db as kb
+    from flux-agent_cli import kanban_db as kb
 
     events = []
     start = time.monotonic()
@@ -121,11 +121,11 @@ def reclaimer_loop(omniworker_home: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="omniworker_reclaim_race_")
+    home = tempfile.mkdtemp(prefix="flux-agent_reclaim_race_")
     os.environ["OMNIWORKER_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
-    from omniworker_cli import kanban_db as kb
+    from flux-agent_cli import kanban_db as kb
 
     kb.init_db()
     conn = kb.connect()

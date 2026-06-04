@@ -246,15 +246,15 @@ class TestTelegramYamlConfigLoading:
     """Tests for reply_to_mode loaded from config.yaml telegram section."""
 
     def _write_config(self, tmp_path, content: str):
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        (omniworker_home / "config.yaml").write_text(content, encoding="utf-8")
-        return omniworker_home
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        (flux-agent_home / "config.yaml").write_text(content, encoding="utf-8")
+        return flux-agent_home
 
     def test_top_level_reply_to_mode_off(self, tmp_path, monkeypatch):
         """YAML 1.1 parses bare 'off' as boolean False — must map back to 'off'."""
-        omniworker_home = self._write_config(tmp_path, "telegram:\n  reply_to_mode: off\n")
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = self._write_config(tmp_path, "telegram:\n  reply_to_mode: off\n")
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         monkeypatch.delenv("TELEGRAM_REPLY_TO_MODE", raising=False)
 
         load_gateway_config()
@@ -262,8 +262,8 @@ class TestTelegramYamlConfigLoading:
         assert os.environ.get("TELEGRAM_REPLY_TO_MODE") == "off"
 
     def test_top_level_reply_to_mode_all(self, tmp_path, monkeypatch):
-        omniworker_home = self._write_config(tmp_path, "telegram:\n  reply_to_mode: all\n")
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = self._write_config(tmp_path, "telegram:\n  reply_to_mode: all\n")
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         monkeypatch.delenv("TELEGRAM_REPLY_TO_MODE", raising=False)
 
         load_gateway_config()
@@ -272,10 +272,10 @@ class TestTelegramYamlConfigLoading:
 
     def test_extra_reply_to_mode_off(self, tmp_path, monkeypatch):
         """telegram.extra.reply_to_mode is also honoured."""
-        omniworker_home = self._write_config(
+        flux-agent_home = self._write_config(
             tmp_path, "telegram:\n  extra:\n    reply_to_mode: \"off\"\n"
         )
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         monkeypatch.delenv("TELEGRAM_REPLY_TO_MODE", raising=False)
 
         load_gateway_config()
@@ -284,8 +284,8 @@ class TestTelegramYamlConfigLoading:
 
     def test_env_var_takes_precedence_over_yaml(self, tmp_path, monkeypatch):
         """Existing TELEGRAM_REPLY_TO_MODE env var is not overwritten by YAML."""
-        omniworker_home = self._write_config(tmp_path, "telegram:\n  reply_to_mode: all\n")
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = self._write_config(tmp_path, "telegram:\n  reply_to_mode: all\n")
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         monkeypatch.setenv("TELEGRAM_REPLY_TO_MODE", "first")
 
         load_gateway_config()
@@ -294,11 +294,11 @@ class TestTelegramYamlConfigLoading:
 
     def test_top_level_takes_precedence_over_extra(self, tmp_path, monkeypatch):
         """telegram.reply_to_mode wins over telegram.extra.reply_to_mode."""
-        omniworker_home = self._write_config(
+        flux-agent_home = self._write_config(
             tmp_path,
             "telegram:\n  reply_to_mode: all\n  extra:\n    reply_to_mode: \"off\"\n",
         )
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         monkeypatch.delenv("TELEGRAM_REPLY_TO_MODE", raising=False)
 
         load_gateway_config()

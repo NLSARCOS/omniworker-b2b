@@ -353,13 +353,13 @@ class TestPlatformsMerge:
     """Test get_all_platforms() merges with registry."""
 
     def test_get_all_platforms_includes_builtins(self):
-        from omniworker_cli.platforms import get_all_platforms, PLATFORMS
+        from flux-agent_cli.platforms import get_all_platforms, PLATFORMS
         merged = get_all_platforms()
         for key in PLATFORMS:
             assert key in merged
 
     def test_get_all_platforms_includes_plugin(self):
-        from omniworker_cli.platforms import get_all_platforms
+        from flux-agent_cli.platforms import get_all_platforms
         from gateway.platform_registry import platform_registry as _reg
 
         _reg.register(PlatformEntry(
@@ -378,7 +378,7 @@ class TestPlatformsMerge:
             _reg.unregister("testmerge")
 
     def test_platform_label_plugin_fallback(self):
-        from omniworker_cli.platforms import platform_label
+        from flux-agent_cli.platforms import platform_label
         from gateway.platform_registry import platform_registry as _reg
 
         _reg.register(PlatformEntry(
@@ -436,10 +436,10 @@ class TestApplyYamlConfigFnDispatch:
     """
 
     def _write_config(self, tmp_path, content: str):
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        (omniworker_home / "config.yaml").write_text(content, encoding="utf-8")
-        return omniworker_home
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        (flux-agent_home / "config.yaml").write_text(content, encoding="utf-8")
+        return flux-agent_home
 
     def _register_hook(self, name, hook_fn):
         from gateway.platform_registry import platform_registry as _reg
@@ -668,10 +668,10 @@ class TestPluginPlatformSharedKeyBridge:
     """
 
     def _write_config(self, tmp_path, content: str):
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        (omniworker_home / "config.yaml").write_text(content, encoding="utf-8")
-        return omniworker_home
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        (flux-agent_home / "config.yaml").write_text(content, encoding="utf-8")
+        return flux-agent_home
 
     def test_shared_keys_bridged_for_plugin_platform(self, tmp_path, monkeypatch):
         """A plugin platform's ``require_mention``/``dm_policy``/etc. flow into

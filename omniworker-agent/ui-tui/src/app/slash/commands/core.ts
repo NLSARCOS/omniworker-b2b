@@ -1,4 +1,4 @@
-import { forceRedraw } from '@omniworker/ink'
+import { forceRedraw } from '@flux-agent/ink'
 
 import { NO_CONFIRM_DESTRUCTIVE } from '../../../config/env.js'
 import { dailyFortune, randomFortune } from '../../../content/fortunes.js'
@@ -87,7 +87,7 @@ export const coreCommands: SlashCommand[] = [
 
   {
     aliases: ['exit', 'q'],
-    help: 'exit omniworker',
+    help: 'exit flux-agent',
     name: 'quit',
     run: (_arg, ctx) => ctx.session.die()
   },

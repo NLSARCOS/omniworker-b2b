@@ -2,7 +2,7 @@
 
 Renders any content as colored ASCII character video. Audio, video, images, text, or pure math in, MP4/GIF/PNG sequence out. Full RGB color per character cell, 1080p 24fps default. No GPU.
 
-Built for [OmniWorker Agent](https://github.com/OmniWorker/omniworker-agent). Usable in any coding agent. Canonical source lives here; synced to [`OmniWorker/omniworker-agent/skills/creative/ascii-video`](https://github.com/OmniWorker/omniworker-agent/tree/main/skills/creative/ascii-video) via PR.
+Built for [Flux Agent Agent](https://github.com/Flux Agent/flux-agent-agent). Usable in any coding agent. Canonical source lives here; synced to [`Flux Agent/flux-agent-agent/skills/creative/ascii-video`](https://github.com/Flux Agent/flux-agent-agent/tree/main/skills/creative/ascii-video) via PR.
 
 ## What this is
 

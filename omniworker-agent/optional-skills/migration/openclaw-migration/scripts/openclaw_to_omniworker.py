@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""OmniWorker -> OmniWorker migration helper.
+"""Flux Agent -> Flux Agent migration helper.
 
-This script migrates the parts of an OmniWorker user footprint that map cleanly
-into OmniWorker Agent, archives selected unmapped docs for manual review, and
+This script migrates the parts of an Flux Agent user footprint that map cleanly
+into Flux Agent Agent, archives selected unmapped docs for manual review, and
 reports exactly what was skipped and why.
 """
 
@@ -28,9 +28,9 @@ except Exception:  # pragma: no cover - handled at runtime
 ENTRY_DELIMITER = "\n§\n"
 DEFAULT_MEMORY_CHAR_LIMIT = 2200
 DEFAULT_USER_CHAR_LIMIT = 1375
-SKILL_CATEGORY_DIRNAME = "omniworker-imports"
+SKILL_CATEGORY_DIRNAME = "flux-agent-imports"
 SKILL_CATEGORY_DESCRIPTION = (
-    "Skills migrated from an OmniWorker workspace."
+    "Skills migrated from an Flux Agent workspace."
 )
 SKILL_CONFLICT_MODES = {"skip", "overwrite", "rename"}
 SUPPORTED_SECRET_TARGETS={
@@ -45,75 +45,75 @@ WORKSPACE_INSTRUCTIONS_FILENAME = "AGENTS" + ".md"
 MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     "soul": {
         "label": "SOUL.md",
-        "description": "Import the OmniWorker persona file into OmniWorker.",
+        "description": "Import the Flux Agent persona file into Flux Agent.",
     },
     "workspace-agents": {
         "label": "Workspace instructions",
-        "description": "Copy the OmniWorker workspace instructions file into a chosen workspace.",
+        "description": "Copy the Flux Agent workspace instructions file into a chosen workspace.",
     },
     "memory": {
         "label": "MEMORY.md",
-        "description": "Import long-term memory entries into OmniWorker memories.",
+        "description": "Import long-term memory entries into Flux Agent memories.",
     },
     "user-profile": {
         "label": "USER.md",
-        "description": "Import user profile entries into OmniWorker memories.",
+        "description": "Import user profile entries into Flux Agent memories.",
     },
     "messaging-settings": {
         "label": "Messaging settings",
-        "description": "Import OmniWorker-compatible messaging settings such as allowlists and working directory.",
+        "description": "Import Flux Agent-compatible messaging settings such as allowlists and working directory.",
     },
     "secret-settings": {
         "label": "Allowlisted secrets",
-        "description": "Import the small allowlist of OmniWorker-compatible secrets when explicitly enabled.",
+        "description": "Import the small allowlist of Flux Agent-compatible secrets when explicitly enabled.",
     },
     "command-allowlist": {
         "label": "Command allowlist",
-        "description": "Merge OmniWorker exec approval patterns into OmniWorker command_allowlist.",
+        "description": "Merge Flux Agent exec approval patterns into Flux Agent command_allowlist.",
     },
     "skills": {
         "label": "User skills",
-        "description": "Copy OmniWorker skills into ~/.omniworker/skills/omniworker-imports/.",
+        "description": "Copy Flux Agent skills into ~/.flux-agent/skills/flux-agent-imports/.",
     },
     "tts-assets": {
         "label": "TTS assets",
-        "description": "Copy compatible workspace TTS assets into ~/.omniworker/tts/.",
+        "description": "Copy compatible workspace TTS assets into ~/.flux-agent/tts/.",
     },
     "discord-settings": {
         "label": "Discord settings",
-        "description": "Import Discord bot token and allowlist into OmniWorker .env.",
+        "description": "Import Discord bot token and allowlist into Flux Agent .env.",
     },
     "slack-settings": {
         "label": "Slack settings",
-        "description": "Import Slack bot/app tokens and allowlist into OmniWorker .env.",
+        "description": "Import Slack bot/app tokens and allowlist into Flux Agent .env.",
     },
     "whatsapp-settings": {
         "label": "WhatsApp settings",
-        "description": "Import WhatsApp allowlist into OmniWorker .env.",
+        "description": "Import WhatsApp allowlist into Flux Agent .env.",
     },
     "signal-settings": {
         "label": "Signal settings",
-        "description": "Import Signal account, HTTP URL, and allowlist into OmniWorker .env.",
+        "description": "Import Signal account, HTTP URL, and allowlist into Flux Agent .env.",
     },
     "provider-keys": {
         "label": "Provider API keys",
-        "description": "Import model provider API keys into OmniWorker .env (requires --migrate-secrets).",
+        "description": "Import model provider API keys into Flux Agent .env (requires --migrate-secrets).",
     },
     "model-config": {
         "label": "Default model",
-        "description": "Import the default model setting into OmniWorker config.yaml.",
+        "description": "Import the default model setting into Flux Agent config.yaml.",
     },
     "tts-config": {
         "label": "TTS configuration",
-        "description": "Import TTS provider and voice settings into OmniWorker config.yaml.",
+        "description": "Import TTS provider and voice settings into Flux Agent config.yaml.",
     },
     "shared-skills": {
         "label": "Shared skills",
-        "description": "Copy shared OmniWorker skills from ~/.omniworker/skills/ into OmniWorker.",
+        "description": "Copy shared Flux Agent skills from ~/.flux-agent/skills/ into Flux Agent.",
     },
     "daily-memory": {
         "label": "Daily memory files",
-        "description": "Merge daily memory entries from workspace/memory/ into OmniWorker MEMORY.md.",
+        "description": "Merge daily memory entries from workspace/memory/ into Flux Agent MEMORY.md.",
     },
     "archive": {
         "label": "Archive unmapped docs",
@@ -121,23 +121,23 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "mcp-servers": {
         "label": "MCP servers",
-        "description": "Import MCP server definitions from OmniWorker into OmniWorker config.yaml.",
+        "description": "Import MCP server definitions from Flux Agent into Flux Agent config.yaml.",
     },
     "plugins-config": {
         "label": "Plugins configuration",
-        "description": "Archive OmniWorker plugin configuration and installed extensions for manual review.",
+        "description": "Archive Flux Agent plugin configuration and installed extensions for manual review.",
     },
     "cron-jobs": {
         "label": "Cron / scheduled tasks",
-        "description": "Import cron job definitions. Archive for manual recreation via 'omniworker cron'.",
+        "description": "Import cron job definitions. Archive for manual recreation via 'flux-agent cron'.",
     },
     "hooks-config": {
         "label": "Hooks and webhooks",
-        "description": "Archive OmniWorker hook configuration (internal hooks, webhooks, Gmail integration).",
+        "description": "Archive Flux Agent hook configuration (internal hooks, webhooks, Gmail integration).",
     },
     "agent-config": {
         "label": "Agent defaults and multi-agent setup",
-        "description": "Import agent defaults (compaction, context, thinking) into OmniWorker config. Archive multi-agent list.",
+        "description": "Import agent defaults (compaction, context, thinking) into Flux Agent config. Archive multi-agent list.",
     },
     "gateway-config": {
         "label": "Gateway configuration",
@@ -145,11 +145,11 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "session-config": {
         "label": "Session configuration",
-        "description": "Import session reset policies (daily/idle) into OmniWorker session_reset config.",
+        "description": "Import session reset policies (daily/idle) into Flux Agent session_reset config.",
     },
     "full-providers": {
         "label": "Full model provider definitions",
-        "description": "Import custom model providers (baseUrl, apiType, headers) into OmniWorker custom_providers.",
+        "description": "Import custom model providers (baseUrl, apiType, headers) into Flux Agent custom_providers.",
     },
     "deep-channels": {
         "label": "Deep channel configuration",
@@ -157,31 +157,31 @@ MIGRATION_OPTION_METADATA: Dict[str, Dict[str, str]] = {
     },
     "browser-config": {
         "label": "Browser configuration",
-        "description": "Import browser automation settings into OmniWorker config.yaml.",
+        "description": "Import browser automation settings into Flux Agent config.yaml.",
     },
     "tools-config": {
         "label": "Tools configuration",
-        "description": "Import tool settings (exec timeout, sandbox, web search) into OmniWorker config.yaml.",
+        "description": "Import tool settings (exec timeout, sandbox, web search) into Flux Agent config.yaml.",
     },
     "approvals-config": {
         "label": "Approval rules",
-        "description": "Import approval mode and rules into OmniWorker config.yaml approvals section.",
+        "description": "Import approval mode and rules into Flux Agent config.yaml approvals section.",
     },
     "memory-backend": {
         "label": "Memory backend configuration",
-        "description": "Archive OmniWorker memory backend settings (QMD, vector search, citations) for manual review.",
+        "description": "Archive Flux Agent memory backend settings (QMD, vector search, citations) for manual review.",
     },
     "skills-config": {
         "label": "Skills registry configuration",
-        "description": "Archive per-skill enabled/config/env settings from OmniWorker skills.entries.",
+        "description": "Archive per-skill enabled/config/env settings from Flux Agent skills.entries.",
     },
     "ui-identity": {
         "label": "UI and identity settings",
-        "description": "Archive OmniWorker UI theme, assistant identity, and display preferences.",
+        "description": "Archive Flux Agent UI theme, assistant identity, and display preferences.",
     },
     "logging-config": {
         "label": "Logging and diagnostics",
-        "description": "Archive OmniWorker logging and diagnostics configuration.",
+        "description": "Archive Flux Agent logging and diagnostics configuration.",
     },
 }
 MIGRATION_PRESETS: Dict[str, set[str]] = {
@@ -226,7 +226,7 @@ MIGRATION_PRESETS: Dict[str, set[str]] = {
 
 # ───────────────────────────────────────────────────────────────────────
 # Item shape constants — kept stable for downstream consumers of report.json.
-# Inspired by OmniWorker's src/plugin-sdk/migration.ts so both sides speak the
+# Inspired by Flux Agent's src/plugin-sdk/migration.ts so both sides speak the
 # same vocabulary.  Values intentionally match the strings already produced
 # by this script (migrated/archived/skipped/conflict/error) so the addition
 # is backward-compatible.
@@ -324,7 +324,7 @@ def ensure_parent(path: Path) -> None:
 
 
 def resolve_secret_input(value: Any, env: Optional[Dict[str, str]] = None) -> Optional[str]:
-    """Resolve an OmniWorker SecretInput value to a plain string.
+    """Resolve an Flux Agent SecretInput value to a plain string.
 
     SecretInput can be:
     - A plain string: "sk-..."
@@ -355,7 +355,7 @@ def load_yaml_file(path: Path) -> Dict[str, Any]:
 
 def dump_yaml_file(path: Path, data: Dict[str, Any]) -> None:
     if yaml is None:
-        raise RuntimeError("PyYAML is required to update OmniWorker config.yaml")
+        raise RuntimeError("PyYAML is required to update Flux Agent config.yaml")
     ensure_parent(path)
     path.write_text(
         yaml.safe_dump(data, sort_keys=False, allow_unicode=False),
@@ -396,17 +396,17 @@ def backup_existing(path: Path, backup_root: Path) -> Optional[Path]:
 
 
 # ── Brand rewriting ─────────────────────────────────────────
-# Replace OmniWorker brand names with OmniWorker in migrated text so that
+# Replace Flux Agent brand names with Flux Agent in migrated text so that
 # memory entries, user profiles, SOUL.md, and workspace instructions
 # read as self-referential to the new agent identity.
 #
-# Case-preserving: ``OmniWorker`` → ``OmniWorker`` (prose), but lowercase matches
-# like ``omniworker`` → ``omniworker`` (so filesystem paths like ``~/.omniworker``
-# become ``~/.omniworker`` — the real OmniWorker home — not the broken ``~/.OmniWorker``).
+# Case-preserving: ``Flux Agent`` → ``Flux Agent`` (prose), but lowercase matches
+# like ``flux-agent`` → ``flux-agent`` (so filesystem paths like ``~/.flux-agent``
+# become ``~/.flux-agent`` — the real Flux Agent home — not the broken ``~/.Flux Agent``).
 _REBRAND_PATTERNS: List[Tuple[re.Pattern, str]] = [
-    (re.compile(r'\bOpen[\s-]?Claw\b', re.IGNORECASE), 'OmniWorker'),
-    (re.compile(r'\bClawdBot\b', re.IGNORECASE), 'OmniWorker'),
-    (re.compile(r'\bMoltBot\b', re.IGNORECASE), 'OmniWorker'),
+    (re.compile(r'\bOpen[\s-]?Claw\b', re.IGNORECASE), 'Flux Agent'),
+    (re.compile(r'\bClawdBot\b', re.IGNORECASE), 'Flux Agent'),
+    (re.compile(r'\bMoltBot\b', re.IGNORECASE), 'Flux Agent'),
 ]
 
 
@@ -414,10 +414,10 @@ def _case_preserving_replacement(replacement: str):
     """Return a re.sub replacement fn that lowercases the result when the
     matched text was all-lowercase.
 
-    Keeps ``OmniWorker`` → ``OmniWorker`` but maps ``omniworker`` → ``omniworker`` so a
-    filesystem path like ``~/.omniworker/config.yaml`` rewrites to
-    ``~/.omniworker/config.yaml`` (the real OmniWorker home) instead of the broken
-    ``~/.OmniWorker/config.yaml``.
+    Keeps ``Flux Agent`` → ``Flux Agent`` but maps ``flux-agent`` → ``flux-agent`` so a
+    filesystem path like ``~/.flux-agent/config.yaml`` rewrites to
+    ``~/.flux-agent/config.yaml`` (the real Flux Agent home) instead of the broken
+    ``~/.Flux Agent/config.yaml``.
     """
     def _sub(match: "re.Match[str]") -> str:
         matched = match.group(0)
@@ -428,7 +428,7 @@ def _case_preserving_replacement(replacement: str):
 
 
 def rebrand_text(text: str) -> str:
-    """Replace OmniWorker / ClawdBot / MoltBot brand names with OmniWorker.
+    """Replace Flux Agent / ClawdBot / MoltBot brand names with Flux Agent.
 
     Preserves case so filesystem-path matches (lowercase) don't become
     capitalized directory names that don't exist.
@@ -574,7 +574,7 @@ def relative_label(path: Path, root: Path) -> str:
 # like a credential — by key name or by value shape — is replaced with
 # "[redacted]" before the report is written.
 #
-# Modelled on OmniWorker's src/plugin-sdk/migration.ts so both migration tools
+# Modelled on Flux Agent's src/plugin-sdk/migration.ts so both migration tools
 # redact consistently.  Pure function — safe to call on any plain-data dict.
 # ───────────────────────────────────────────────────────────────────────
 REDACTED_MIGRATION_VALUE = "[redacted]"
@@ -668,7 +668,7 @@ def write_report(output_dir: Path, report: Dict[str, Any]) -> None:
         grouped.setdefault(item["status"], []).append(item)
 
     lines = [
-        "# OmniWorker -> OmniWorker Migration Report",
+        "# Flux Agent -> Flux Agent Migration Report",
         "",
         f"- Timestamp: {redacted['timestamp']}",
         f"- Mode: {redacted['mode']}",
@@ -733,7 +733,7 @@ class Migrator:
         self.skill_conflict_mode = skill_conflict_mode.strip().lower() or "skip"
         self.timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         self.output_dir = output_dir or (
-            target_root / "migration" / "omniworker" / self.timestamp if execute else None
+            target_root / "migration" / "flux-agent" / self.timestamp if execute else None
         )
         self.archive_dir = self.output_dir / "archive" if self.output_dir else None
         self.backup_dir = self.output_dir / "backups" if self.output_dir else None
@@ -742,17 +742,17 @@ class Migrator:
         # Once a config.yaml write hits conflict/error mid-run, later
         # config.yaml writes are deliberately short-circuited to avoid
         # leaving config in a partially-written state.  Modelled on
-        # OmniWorker's extensions/migrate-omniworker/apply.ts "blocked by earlier
+        # Flux Agent's extensions/migrate-flux-agent/apply.ts "blocked by earlier
         # apply conflict" sequencing.
         self._config_apply_blocked: bool = False
 
-        # Resolve the configured workspace directory from omniworker.json.
-        # Many users (especially those who started before the OmniWorker rebrand)
+        # Resolve the configured workspace directory from flux-agent.json.
+        # Many users (especially those who started before the Flux Agent rebrand)
         # have a custom workspace path (e.g. ~/clawd/) that differs from the
-        # default ~/.omniworker/workspace/.  Reading agents.defaults.workspace
+        # default ~/.flux-agent/workspace/.  Reading agents.defaults.workspace
         # lets source_candidate() find files in the actual workspace.
         self._custom_workspace: Optional[Path] = None
-        oc_config = self.load_omniworker_config()
+        oc_config = self.load_flux-agent_config()
         ws = (oc_config.get("agents", {}).get("defaults", {}).get("workspace") or "").strip()
         if ws:
             ws_path = Path(ws).expanduser().resolve()
@@ -781,7 +781,7 @@ class Migrator:
     def is_selected(self, option_id: str) -> bool:
         return option_id in self.selected_options
 
-    # Option ids that mutate the OmniWorker config.yaml file.  Once any one of
+    # Option ids that mutate the Flux Agent config.yaml file.  Once any one of
     # them records a conflict/error on config.yaml, subsequent ones are
     # short-circuited to avoid partial writes.  Keep in sync with methods
     # that call load_yaml_file(target_root / "config.yaml") + dump_yaml_file.
@@ -841,7 +841,7 @@ class Migrator:
             candidate = self.source_root / rel
             if candidate.exists():
                 return candidate
-            # OmniWorker renamed workspace/ to workspace-main/ (and workspace-{agentId}
+            # Flux Agent renamed workspace/ to workspace-main/ (and workspace-{agentId}
             # for multi-agent).  Try the new path as a fallback.
             if rel.startswith("workspace/"):
                 suffix = rel[len("workspace/"):]
@@ -856,9 +856,9 @@ class Migrator:
                     return alt
 
         # Final fallback: check the configured workspace directory from
-        # agents.defaults.workspace in omniworker.json.  Users who started
-        # before the OmniWorker rebrand (when the project was named clawd /
-        # clawdbot) often have a custom workspace path outside ~/.omniworker/.
+        # agents.defaults.workspace in flux-agent.json.  Users who started
+        # before the Flux Agent rebrand (when the project was named clawd /
+        # clawdbot) often have a custom workspace path outside ~/.flux-agent/.
         if self._custom_workspace:
             for rel in relative_paths:
                 # Strip the leading "workspace/" or "workspace.default/"
@@ -887,10 +887,10 @@ class Migrator:
 
     def migrate(self) -> Dict[str, Any]:
         if not self.source_root.exists():
-            self.record("source", self.source_root, None, "error", "OmniWorker directory does not exist")
+            self.record("source", self.source_root, None, "error", "Flux Agent directory does not exist")
             return self.build_report()
 
-        config = self.load_omniworker_config()
+        config = self.load_flux-agent_config()
 
         self.run_if_selected("soul", self.migrate_soul)
         self.run_if_selected("workspace-agents", self.migrate_workspace_agents)
@@ -1033,7 +1033,7 @@ class Migrator:
     def _build_warnings(self, summary: Dict[str, int]) -> List[str]:
         """Structured warnings surfaced on the report for downstream consumers.
 
-        Modelled on OmniWorker's extensions/migrate-omniworker/plan.ts warnings[].
+        Modelled on Flux Agent's extensions/migrate-flux-agent/plan.ts warnings[].
         Keep the messages actionable — they show up in summary.md and the
         JSON report.
         """
@@ -1062,7 +1062,7 @@ class Migrator:
             warnings.append(
                 "API keys and other credentials were detected but not imported. "
                 "Re-run with --migrate-secrets to copy supported keys into the "
-                "OmniWorker env file."
+                "Flux Agent env file."
             )
         return warnings
 
@@ -1083,7 +1083,7 @@ class Migrator:
                 else "Review the migration report."
             )
             steps.append(
-                "Start a new OmniWorker session (or /reset) to pick up the imported config."
+                "Start a new Flux Agent session (or /reset) to pick up the imported config."
             )
         if summary.get("conflict", 0) > 0:
             steps.append(
@@ -1135,7 +1135,7 @@ class Migrator:
     def migrate_soul(self) -> None:
         source = self.source_candidate("workspace/SOUL.md", "workspace.default/SOUL.md")
         if not source:
-            self.record("soul", None, self.target_root / "SOUL.md", "skipped", "No OmniWorker SOUL.md found")
+            self.record("soul", None, self.target_root / "SOUL.md", "skipped", "No Flux Agent SOUL.md found")
             return
         self.copy_file(source, self.target_root / "SOUL.md", kind="soul", transform=rebrand_text)
 
@@ -1201,7 +1201,7 @@ class Migrator:
         source = self.source_root / "exec-approvals.json"
         destination = self.target_root / "config.yaml"
         if not source.exists():
-            self.record("command-allowlist", None, destination, "skipped", "No OmniWorker exec approvals file found")
+            self.record("command-allowlist", None, destination, "skipped", "No Flux Agent exec approvals file found")
             return
         if yaml is None:
             self.record("command-allowlist", source, destination, "error", "PyYAML is not available")
@@ -1228,7 +1228,7 @@ class Migrator:
             self.record("command-allowlist", source, destination, "skipped", "No allowlist patterns found")
             return
         if not destination.exists():
-            self.record("command-allowlist", source, destination, "skipped", "OmniWorker config.yaml does not exist yet")
+            self.record("command-allowlist", source, destination, "skipped", "Flux Agent config.yaml does not exist yet")
             return
 
         config = load_yaml_file(destination)
@@ -1256,9 +1256,9 @@ class Migrator:
         else:
             self.record("command-allowlist", source, destination, "migrated", "Would merge patterns", added_patterns=added)
 
-    def load_omniworker_config(self) -> Dict[str, Any]:
+    def load_flux-agent_config(self) -> Dict[str, Any]:
         # Check current name and legacy config filenames
-        for name in ("omniworker.json", "clawdbot.json", "moltbot.json"):
+        for name in ("flux-agent.json", "clawdbot.json", "moltbot.json"):
             config_path = self.source_root / name
             if config_path.exists():
                 try:
@@ -1268,8 +1268,8 @@ class Migrator:
                     continue
         return {}
 
-    def load_omniworker_env(self) -> Dict[str, str]:
-        """Load the OmniWorker .env file for secrets that live there instead of config."""
+    def load_flux-agent_env(self) -> Dict[str, str]:
+        """Load the Flux Agent .env file for secrets that live there instead of config."""
         return parse_env_file(self.source_root / ".env")
 
     def merge_env_values(self, additions: Dict[str, str], kind: str, source: Path) -> None:
@@ -1319,7 +1319,7 @@ class Migrator:
             )
 
     def migrate_messaging_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         additions: Dict[str, str] = {}
 
         workspace = (
@@ -1329,10 +1329,10 @@ class Migrator:
         )
         if isinstance(workspace, str) and workspace.strip():
             ws_path = workspace.strip()
-            # Skip if the workspace points inside the OmniWorker source directory —
-            # that path will be stale after migration and would cause the OmniWorker
-            # gateway to use the old OmniWorker workspace as its cwd, picking up
-            # OmniWorker's AGENTS.md, MEMORY.md, etc.
+            # Skip if the workspace points inside the Flux Agent source directory —
+            # that path will be stale after migration and would cause the Flux Agent
+            # gateway to use the old Flux Agent workspace as its cwd, picking up
+            # Flux Agent's AGENTS.md, MEMORY.md, etc.
             try:
                 inside_source = Path(ws_path).resolve().is_relative_to(self.source_root.resolve())
             except (ValueError, OSError):
@@ -1354,17 +1354,17 @@ class Migrator:
                         additions["TELEGRAM_ALLOWED_USERS"] = ",".join(users)
 
         if additions:
-            self.merge_env_values(additions, "messaging-settings", self.source_root / "omniworker.json")
+            self.merge_env_values(additions, "messaging-settings", self.source_root / "flux-agent.json")
         else:
-            self.record("messaging-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No OmniWorker-compatible messaging settings found")
+            self.record("messaging-settings", self.source_root / "flux-agent.json", self.target_root / ".env", "skipped", "No Flux Agent-compatible messaging settings found")
 
     def handle_secret_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         if self.migrate_secrets:
             self.migrate_secret_settings(config)
             return
 
-        config_path = self.source_root / "omniworker.json"
+        config_path = self.source_root / "flux-agent.json"
         if config_path.exists():
             self.record(
                 "secret-settings",
@@ -1380,7 +1380,7 @@ class Migrator:
                 config_path,
                 self.target_root / ".env",
                 "skipped",
-                "OmniWorker config file not found",
+                "Flux Agent config file not found",
                 supported_targets=sorted(SUPPORTED_SECRET_TARGETS),
             )
 
@@ -1393,20 +1393,20 @@ class Migrator:
             secret_additions["TELEGRAM_BOT_TOKEN"] = telegram_token.strip()
 
         if secret_additions:
-            self.merge_env_values(secret_additions, "secret-settings", self.source_root / "omniworker.json")
+            self.merge_env_values(secret_additions, "secret-settings", self.source_root / "flux-agent.json")
         else:
             self.record(
                 "secret-settings",
-                self.source_root / "omniworker.json",
+                self.source_root / "flux-agent.json",
                 self.target_root / ".env",
                 "skipped",
-                "No allowlisted OmniWorker-compatible secrets found",
+                "No allowlisted Flux Agent-compatible secrets found",
                 supported_targets=sorted(SUPPORTED_SECRET_TARGETS),
             )
 
     def _resolve_channel_secret(self, value: Any) -> Optional[str]:
         """Resolve a channel config value that may be a SecretRef."""
-        return resolve_secret_input(value, self.load_omniworker_env())
+        return resolve_secret_input(value, self.load_flux-agent_env())
 
     @staticmethod
     def _get_channel_field(ch_cfg: Dict[str, Any], field: str) -> Any:
@@ -1422,7 +1422,7 @@ class Migrator:
         return None
 
     def migrate_discord_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         additions: Dict[str, str] = {}
         discord = config.get("channels", {}).get("discord", {})
         if isinstance(discord, dict):
@@ -1435,12 +1435,12 @@ class Migrator:
                 if users:
                     additions["DISCORD_ALLOWED_USERS"] = ",".join(users)
         if additions:
-            self.merge_env_values(additions, "discord-settings", self.source_root / "omniworker.json")
+            self.merge_env_values(additions, "discord-settings", self.source_root / "flux-agent.json")
         else:
-            self.record("discord-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No Discord settings found")
+            self.record("discord-settings", self.source_root / "flux-agent.json", self.target_root / ".env", "skipped", "No Discord settings found")
 
     def migrate_slack_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         additions: Dict[str, str] = {}
         slack = config.get("channels", {}).get("slack", {})
         if isinstance(slack, dict):
@@ -1456,12 +1456,12 @@ class Migrator:
                 if users:
                     additions["SLACK_ALLOWED_USERS"] = ",".join(users)
         if additions:
-            self.merge_env_values(additions, "slack-settings", self.source_root / "omniworker.json")
+            self.merge_env_values(additions, "slack-settings", self.source_root / "flux-agent.json")
         else:
-            self.record("slack-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No Slack settings found")
+            self.record("slack-settings", self.source_root / "flux-agent.json", self.target_root / ".env", "skipped", "No Slack settings found")
 
     def migrate_whatsapp_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         additions: Dict[str, str] = {}
         whatsapp = config.get("channels", {}).get("whatsapp", {})
         if isinstance(whatsapp, dict):
@@ -1471,12 +1471,12 @@ class Migrator:
                 if users:
                     additions["WHATSAPP_ALLOWED_USERS"] = ",".join(users)
         if additions:
-            self.merge_env_values(additions, "whatsapp-settings", self.source_root / "omniworker.json")
+            self.merge_env_values(additions, "whatsapp-settings", self.source_root / "flux-agent.json")
         else:
-            self.record("whatsapp-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No WhatsApp settings found")
+            self.record("whatsapp-settings", self.source_root / "flux-agent.json", self.target_root / ".env", "skipped", "No WhatsApp settings found")
 
     def migrate_signal_settings(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         additions: Dict[str, str] = {}
         signal = config.get("channels", {}).get("signal", {})
         if isinstance(signal, dict):
@@ -1492,14 +1492,14 @@ class Migrator:
                 if users:
                     additions["SIGNAL_ALLOWED_USERS"] = ",".join(users)
         if additions:
-            self.merge_env_values(additions, "signal-settings", self.source_root / "omniworker.json")
+            self.merge_env_values(additions, "signal-settings", self.source_root / "flux-agent.json")
         else:
-            self.record("signal-settings", self.source_root / "omniworker.json", self.target_root / ".env", "skipped", "No Signal settings found")
+            self.record("signal-settings", self.source_root / "flux-agent.json", self.target_root / ".env", "skipped", "No Signal settings found")
 
     def handle_provider_keys(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         if not self.migrate_secrets:
-            config_path = self.source_root / "omniworker.json"
+            config_path = self.source_root / "flux-agent.json"
             self.record(
                 "provider-keys",
                 config_path,
@@ -1516,24 +1516,24 @@ class Migrator:
 
         # Extract provider API keys from models.providers
         # Note: apiKey values can be strings, env templates, or SecretRef objects
-        omniworker_env = self.load_omniworker_env()
+        flux-agent_env = self.load_flux-agent_env()
         providers = config.get("models", {}).get("providers", {})
         if isinstance(providers, dict):
             for provider_name, provider_cfg in providers.items():
                 if not isinstance(provider_cfg, dict):
                     continue
                 raw_key = provider_cfg.get("apiKey")
-                api_key = resolve_secret_input(raw_key, omniworker_env)
+                api_key = resolve_secret_input(raw_key, flux-agent_env)
                 if not api_key:
                     # Warn if a SecretRef with file/exec source was silently unresolvable
                     if isinstance(raw_key, dict) and raw_key.get("source") in ("file", "exec"):
                         self.record(
                             "provider-keys",
-                            self.source_root / "omniworker.json",
+                            self.source_root / "flux-agent.json",
                             None,
                             "skipped",
                             f"Provider '{provider_name}' uses a {raw_key['source']}-backed SecretRef "
-                            f"that cannot be auto-migrated. Add this key manually via: omniworker config set",
+                            f"that cannot be auto-migrated. Add this key manually via: flux-agent config set",
                         )
                     continue
 
@@ -1579,9 +1579,9 @@ class Migrator:
                 if isinstance(oai_key, str) and oai_key.strip():
                     secret_additions["VOICE_TOOLS_OPENAI_KEY"] = oai_key.strip()
 
-        # Also check the OmniWorker .env file — many users store keys there
-        # instead of inline in omniworker.json
-        omniworker_env = self.load_omniworker_env()
+        # Also check the Flux Agent .env file — many users store keys there
+        # instead of inline in flux-agent.json
+        flux-agent_env = self.load_flux-agent_env()
         env_key_mapping = {
             "OPENROUTER_API_KEY": "OPENROUTER_API_KEY",
             "OPENAI_API_KEY": "OPENAI_API_KEY",
@@ -1593,12 +1593,12 @@ class Migrator:
             "ZAI_API_KEY": "ZAI_API_KEY",
             "MINIMAX_API_KEY": "MINIMAX_API_KEY",
         }
-        for oc_key, omniworker_key in env_key_mapping.items():
-            val = omniworker_env.get(oc_key, "").strip()
-            if val and omniworker_key not in secret_additions:
-                secret_additions[omniworker_key] = val
+        for oc_key, flux-agent_key in env_key_mapping.items():
+            val = flux-agent_env.get(oc_key, "").strip()
+            if val and flux-agent_key not in secret_additions:
+                secret_additions[flux-agent_key] = val
 
-        # Check the omniworker.json "env" sub-object — some OmniWorker setups
+        # Check the flux-agent.json "env" sub-object — some Flux Agent setups
         # store API keys here instead of in a separate .env file.
         # Keys can be at env.<KEY> or env.vars.<KEY>.
         json_env = config.get("env")
@@ -1608,10 +1608,10 @@ class Migrator:
             if isinstance(env_vars, dict):
                 sources.append(env_vars)
             for src in sources:
-                for oc_key, omniworker_key in env_key_mapping.items():
+                for oc_key, flux-agent_key in env_key_mapping.items():
                     val = src.get(oc_key)
-                    if isinstance(val, str) and val.strip() and omniworker_key not in secret_additions:
-                        secret_additions[omniworker_key] = val.strip()
+                    if isinstance(val, str) and val.strip() and flux-agent_key not in secret_additions:
+                        secret_additions[flux-agent_key] = val.strip()
 
         # Check per-agent auth-profiles.json for additional credentials
         auth_profiles_path = self.source_root / "agents" / "main" / "agent" / "auth-profiles.json"
@@ -1639,11 +1639,11 @@ class Migrator:
                 pass
 
         if secret_additions:
-            self.merge_env_values(secret_additions, "provider-keys", self.source_root / "omniworker.json")
+            self.merge_env_values(secret_additions, "provider-keys", self.source_root / "flux-agent.json")
         else:
             self.record(
                 "provider-keys",
-                self.source_root / "omniworker.json",
+                self.source_root / "flux-agent.json",
                 self.target_root / ".env",
                 "skipped",
                 "No provider API keys found",
@@ -1651,13 +1651,13 @@ class Migrator:
             )
 
     def migrate_model_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         destination = self.target_root / "config.yaml"
-        source_path = self.source_root / "omniworker.json"
+        source_path = self.source_root / "flux-agent.json"
 
         model_value = config.get("agents", {}).get("defaults", {}).get("model")
         if model_value is None:
-            self.record("model-config", source_path, destination, "skipped", "No default model found in OmniWorker config")
+            self.record("model-config", source_path, destination, "skipped", "No default model found in Flux Agent config")
             return
 
         if isinstance(model_value, dict):
@@ -1671,8 +1671,8 @@ class Migrator:
 
         model_str = model_str.strip()
 
-        # Resolve a model alias against the OmniWorker model catalog.
-        # OmniWorker stores agents.defaults.model as either a bare string or
+        # Resolve a model alias against the Flux Agent model catalog.
+        # Flux Agent stores agents.defaults.model as either a bare string or
         # {"primary": "<value>"}, and that value can be either:
         #   - a full provider/model API ID (e.g. "anthropic/claude-opus-4-6"), or
         #   - a display alias (e.g. "Claude Opus 4.6") that maps to one.
@@ -1698,8 +1698,8 @@ class Migrator:
             self.record("model-config", source_path, destination, "error", "PyYAML is not available")
             return
 
-        omniworker_config = load_yaml_file(destination)
-        current_model = omniworker_config.get("model")
+        flux-agent_config = load_yaml_file(destination)
+        current_model = flux-agent_config.get("model")
         if current_model == model_str:
             self.record("model-config", source_path, destination, "skipped", "Model already set to the same value")
             return
@@ -1709,24 +1709,24 @@ class Migrator:
 
         if self.execute:
             backup_path = self.maybe_backup(destination)
-            existing_model = omniworker_config.get("model")
+            existing_model = flux-agent_config.get("model")
             if isinstance(existing_model, dict):
                 existing_model["default"] = model_str
             else:
-                omniworker_config["model"] = {"default": model_str}
-            dump_yaml_file(destination, omniworker_config)
+                flux-agent_config["model"] = {"default": model_str}
+            dump_yaml_file(destination, flux-agent_config)
             self.record("model-config", source_path, destination, "migrated", backup=str(backup_path) if backup_path else "", model=model_str)
         else:
             self.record("model-config", source_path, destination, "migrated", "Would set model", model=model_str)
 
     def migrate_tts_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         destination = self.target_root / "config.yaml"
-        source_path = self.source_root / "omniworker.json"
+        source_path = self.source_root / "flux-agent.json"
 
         tts = config.get("messages", {}).get("tts", {})
         if not isinstance(tts, dict) or not tts:
-            self.record("tts-config", source_path, destination, "skipped", "No TTS configuration found in OmniWorker config")
+            self.record("tts-config", source_path, destination, "skipped", "No TTS configuration found in Flux Agent config")
             return
 
         if yaml is None:
@@ -1737,15 +1737,15 @@ class Migrator:
 
         provider = tts.get("provider")
         if isinstance(provider, str) and provider in ("elevenlabs", "openai", "edge", "microsoft"):
-            # OmniWorker renamed "edge" to "microsoft"; OmniWorker still uses "edge"
+            # Flux Agent renamed "edge" to "microsoft"; Flux Agent still uses "edge"
             tts_data["provider"] = "edge" if provider == "microsoft" else provider
 
         # TTS provider settings live under messages.tts.providers.{provider}
-        # in OmniWorker (not messages.tts.elevenlabs directly)
+        # in Flux Agent (not messages.tts.elevenlabs directly)
         providers = tts.get("providers") or {}
 
         # Also check the top-level "talk" config which has provider settings too
-        talk_cfg = (config or self.load_omniworker_config()).get("talk") or {}
+        talk_cfg = (config or self.load_flux-agent_config()).get("talk") or {}
         talk_providers = talk_cfg.get("providers") or {}
 
         # Merge: messages.tts.providers takes priority, then talk.providers,
@@ -1800,8 +1800,8 @@ class Migrator:
             self.record("tts-config", source_path, destination, "skipped", "No compatible TTS settings found")
             return
 
-        omniworker_config = load_yaml_file(destination)
-        existing_tts = omniworker_config.get("tts", {})
+        flux-agent_config = load_yaml_file(destination)
+        existing_tts = flux-agent_config.get("tts", {})
         if not isinstance(existing_tts, dict):
             existing_tts = {}
 
@@ -1813,14 +1813,14 @@ class Migrator:
                     merged_tts[key] = {**merged_tts[key], **value}
                 else:
                     merged_tts[key] = value
-            omniworker_config["tts"] = merged_tts
-            dump_yaml_file(destination, omniworker_config)
+            flux-agent_config["tts"] = merged_tts
+            dump_yaml_file(destination, flux-agent_config)
             self.record("tts-config", source_path, destination, "migrated", backup=str(backup_path) if backup_path else "", settings=list(tts_data.keys()))
         else:
             self.record("tts-config", source_path, destination, "migrated", "Would set TTS config", settings=list(tts_data.keys()))
 
     def migrate_shared_skills(self) -> None:
-        # Check all OmniWorker skill sources: managed, personal, project-level
+        # Check all Flux Agent skill sources: managed, personal, project-level
         skill_sources = [
             (self.source_root / "skills", "shared-skills", "managed skills"),
             (Path.home() / ".agents" / "skills", "personal-skills", "personal cross-project skills"),
@@ -1834,10 +1834,10 @@ class Migrator:
                 self._import_skill_directory(source_root, kind_label, desc)
         if not found_any:
             destination_root = self.target_root / "skills" / SKILL_CATEGORY_DIRNAME
-            self.record("shared-skills", None, destination_root, "skipped", "No shared OmniWorker skills directories found")
+            self.record("shared-skills", None, destination_root, "skipped", "No shared Flux Agent skills directories found")
 
     def _import_skill_directory(self, source_root: Path, kind_label: str, desc: str) -> None:
-        """Import skills from a single source directory into omniworker-imports."""
+        """Import skills from a single source directory into flux-agent-imports."""
         destination_root = self.target_root / "skills" / SKILL_CATEGORY_DIRNAME
 
         skill_dirs = [p for p in sorted(source_root.iterdir()) if p.is_dir() and (p / "SKILL.md").exists()]
@@ -1947,7 +1947,7 @@ class Migrator:
         source_root = self.source_candidate("workspace/skills")
         destination_root = self.target_root / "skills" / SKILL_CATEGORY_DIRNAME
         if not source_root or not source_root.exists():
-            self.record("skills", None, destination_root, "skipped", "No OmniWorker skills directory found")
+            self.record("skills", None, destination_root, "skipped", "No Flux Agent skills directory found")
             return
 
         skill_dirs = [p for p in sorted(source_root.iterdir()) if p.is_dir() and (p / "SKILL.md").exists()]
@@ -2059,16 +2059,16 @@ class Migrator:
         ]
         for candidate in candidates:
             if candidate:
-                self.archive_path(candidate, reason="No direct OmniWorker destination; archived for manual review")
+                self.archive_path(candidate, reason="No direct Flux Agent destination; archived for manual review")
 
         for rel in ("workspace/.learnings", "workspace/memory"):
             candidate = self.source_root / rel
             if candidate.exists():
-                self.archive_path(candidate, reason="No direct OmniWorker destination; archived for manual review")
+                self.archive_path(candidate, reason="No direct Flux Agent destination; archived for manual review")
 
         partially_extracted = [
-            ("omniworker.json", "Selected OmniWorker-compatible values were extracted; raw OmniWorker config was not copied."),
-            ("credentials/telegram-default-allowFrom.json", "Selected OmniWorker-compatible values were extracted; raw credentials file was not copied."),
+            ("flux-agent.json", "Selected Flux Agent-compatible values were extracted; raw Flux Agent config was not copied."),
+            ("credentials/telegram-default-allowFrom.json", "Selected Flux Agent-compatible values were extracted; raw credentials file was not copied."),
         ]
         for rel, reason in partially_extracted:
             candidate = self.source_root / rel
@@ -2101,15 +2101,15 @@ class Migrator:
 
     # ── MCP servers ─────────────────────────────────────────────
     def migrate_mcp_servers(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         mcp_raw = (config.get("mcp") or {}).get("servers") or {}
         if not mcp_raw:
-            self.record("mcp-servers", None, None, "skipped", "No MCP servers found in OmniWorker config")
+            self.record("mcp-servers", None, None, "skipped", "No MCP servers found in Flux Agent config")
             return
 
-        omniworker_cfg_path = self.target_root / "config.yaml"
-        omniworker_cfg = load_yaml_file(omniworker_cfg_path)
-        existing_mcp = omniworker_cfg.get("mcp_servers") or {}
+        flux-agent_cfg_path = self.target_root / "config.yaml"
+        flux-agent_cfg = load_yaml_file(flux-agent_cfg_path)
+        existing_mcp = flux-agent_cfg.get("mcp_servers") or {}
         added = 0
 
         for name, srv in mcp_raw.items():
@@ -2117,45 +2117,45 @@ class Migrator:
                 continue
             if name in existing_mcp and not self.overwrite:
                 self.record("mcp-servers", f"mcp.servers.{name}", f"mcp_servers.{name}", "conflict",
-                            "MCP server already exists in OmniWorker config")
+                            "MCP server already exists in Flux Agent config")
                 continue
 
-            omniworker_srv: Dict[str, Any] = {}
+            flux-agent_srv: Dict[str, Any] = {}
             # STDIO transport
             if srv.get("command"):
-                omniworker_srv["command"] = srv["command"]
+                flux-agent_srv["command"] = srv["command"]
                 if srv.get("args"):
-                    omniworker_srv["args"] = srv["args"]
+                    flux-agent_srv["args"] = srv["args"]
                 if srv.get("env"):
-                    omniworker_srv["env"] = srv["env"]
+                    flux-agent_srv["env"] = srv["env"]
                 if srv.get("cwd"):
-                    omniworker_srv["cwd"] = srv["cwd"]
+                    flux-agent_srv["cwd"] = srv["cwd"]
             # HTTP/SSE transport
             if srv.get("url"):
-                omniworker_srv["url"] = srv["url"]
+                flux-agent_srv["url"] = srv["url"]
                 if srv.get("headers"):
-                    omniworker_srv["headers"] = srv["headers"]
+                    flux-agent_srv["headers"] = srv["headers"]
                 if srv.get("auth"):
-                    omniworker_srv["auth"] = srv["auth"]
+                    flux-agent_srv["auth"] = srv["auth"]
             # Common fields
             if srv.get("enabled") is False:
-                omniworker_srv["enabled"] = False
+                flux-agent_srv["enabled"] = False
             if srv.get("timeout"):
-                omniworker_srv["timeout"] = srv["timeout"]
+                flux-agent_srv["timeout"] = srv["timeout"]
             if srv.get("connectTimeout"):
-                omniworker_srv["connect_timeout"] = srv["connectTimeout"]
+                flux-agent_srv["connect_timeout"] = srv["connectTimeout"]
             # Tool filtering
             tools_cfg = srv.get("tools") or {}
             if tools_cfg.get("include") or tools_cfg.get("exclude"):
-                omniworker_srv["tools"] = {}
+                flux-agent_srv["tools"] = {}
                 if tools_cfg.get("include"):
-                    omniworker_srv["tools"]["include"] = tools_cfg["include"]
+                    flux-agent_srv["tools"]["include"] = tools_cfg["include"]
                 if tools_cfg.get("exclude"):
-                    omniworker_srv["tools"]["exclude"] = tools_cfg["exclude"]
+                    flux-agent_srv["tools"]["exclude"] = tools_cfg["exclude"]
             # Sampling
             sampling = srv.get("sampling")
             if sampling and isinstance(sampling, dict):
-                omniworker_srv["sampling"] = {
+                flux-agent_srv["sampling"] = {
                     k: v for k, v in {
                         "enabled": sampling.get("enabled"),
                         "model": sampling.get("model"),
@@ -2165,19 +2165,19 @@ class Migrator:
                     }.items() if v is not None
                 }
 
-            existing_mcp[name] = omniworker_srv
+            existing_mcp[name] = flux-agent_srv
             added += 1
             self.record("mcp-servers", f"mcp.servers.{name}", f"config.yaml mcp_servers.{name}",
                         "migrated", servers_added=added)
 
         if added > 0 and self.execute:
-            self.maybe_backup(omniworker_cfg_path)
-            omniworker_cfg["mcp_servers"] = existing_mcp
-            dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
+            self.maybe_backup(flux-agent_cfg_path)
+            flux-agent_cfg["mcp_servers"] = existing_mcp
+            dump_yaml_file(flux-agent_cfg_path, flux-agent_cfg)
 
     # ── Plugins ───────────────────────────────────────────────
     def migrate_plugins_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         plugins = config.get("plugins") or {}
         if not plugins:
             self.record("plugins-config", None, None, "skipped", "No plugins configuration found")
@@ -2188,10 +2188,10 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "plugins-config.json"
             dest.write_text(json.dumps(plugins, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("plugins-config", "omniworker.json plugins.*", str(dest), "archived",
+            self.record("plugins-config", "flux-agent.json plugins.*", str(dest), "archived",
                         "Plugins config archived for manual review")
         else:
-            self.record("plugins-config", "omniworker.json plugins.*", "archive/plugins-config.json",
+            self.record("plugins-config", "flux-agent.json plugins.*", "archive/plugins-config.json",
                         "archived" if not self.execute else "migrated", "Would archive plugins config")
 
         # Copy extensions directory if it exists
@@ -2215,7 +2215,7 @@ class Migrator:
 
     # ── Cron jobs ─────────────────────────────────────────────
     def migrate_cron_jobs(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         cron = config.get("cron") or {}
         cron_store = self.source_root / "cron"
         found_any = False
@@ -2227,10 +2227,10 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "cron-config.json"
                 dest.write_text(json.dumps(cron, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-                self.record("cron-jobs", "omniworker.json cron.*", str(dest), "archived",
-                            "Cron config archived. Use 'omniworker cron' to recreate jobs manually.")
+                self.record("cron-jobs", "flux-agent.json cron.*", str(dest), "archived",
+                            "Cron config archived. Use 'flux-agent cron' to recreate jobs manually.")
             else:
-                self.record("cron-jobs", "omniworker.json cron.*", "archive/cron-config.json",
+                self.record("cron-jobs", "flux-agent.json cron.*", "archive/cron-config.json",
                             "archived", "Would archive cron config")
 
         # Also check for cron store files even when config.cron is missing
@@ -2247,7 +2247,7 @@ class Migrator:
 
     # ── Hooks ─────────────────────────────────────────────────
     def migrate_hooks_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         hooks = config.get("hooks") or {}
         if not hooks:
             self.record("hooks-config", None, None, "skipped", "No hooks configuration found")
@@ -2258,10 +2258,10 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "hooks-config.json"
             dest.write_text(json.dumps(hooks, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("hooks-config", "omniworker.json hooks.*", str(dest), "archived",
+            self.record("hooks-config", "flux-agent.json hooks.*", str(dest), "archived",
                         "Hooks config archived for manual review")
         else:
-            self.record("hooks-config", "omniworker.json hooks.*", "archive/hooks-config.json",
+            self.record("hooks-config", "flux-agent.json hooks.*", "archive/hooks-config.json",
                         "archived", "Would archive hooks config")
 
         # Copy workspace hooks directory
@@ -2277,7 +2277,7 @@ class Migrator:
 
     # ── Agent config ──────────────────────────────────────────
     def migrate_agent_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         agents = config.get("agents") or {}
         defaults = agents.get("defaults") or {}
         agent_list = agents.get("list") or []
@@ -2286,12 +2286,12 @@ class Migrator:
             self.record("agent-config", None, None, "skipped", "No agent configuration found")
             return
 
-        omniworker_cfg_path = self.target_root / "config.yaml"
-        omniworker_cfg = load_yaml_file(omniworker_cfg_path)
+        flux-agent_cfg_path = self.target_root / "config.yaml"
+        flux-agent_cfg = load_yaml_file(flux-agent_cfg_path)
         changes = False
 
         # Map agent defaults
-        agent_cfg = omniworker_cfg.get("agent") or {}
+        agent_cfg = flux-agent_cfg.get("agent") or {}
         if defaults.get("contextTokens"):
             # No direct mapping but useful context
             pass
@@ -2302,7 +2302,7 @@ class Migrator:
             agent_cfg["verbose"] = defaults["verboseDefault"]
             changes = True
         if defaults.get("thinkingDefault"):
-            # Map OmniWorker thinking -> OmniWorker reasoning_effort
+            # Map Flux Agent thinking -> Flux Agent reasoning_effort
             thinking = defaults["thinkingDefault"]
             if thinking in ("always", "high", "xhigh"):
                 agent_cfg["reasoning_effort"] = "high"
@@ -2315,7 +2315,7 @@ class Migrator:
         # Map compaction -> compression
         compaction = defaults.get("compaction") or {}
         if compaction:
-            compression = omniworker_cfg.get("compression") or {}
+            compression = flux-agent_cfg.get("compression") or {}
             if compaction.get("mode") == "off":
                 compression["enabled"] = False
             else:
@@ -2323,16 +2323,16 @@ class Migrator:
             if compaction.get("timeout"):
                 pass  # No direct mapping
             if compaction.get("model"):
-                aux = omniworker_cfg.setdefault("auxiliary", {})
+                aux = flux-agent_cfg.setdefault("auxiliary", {})
                 aux_comp = aux.setdefault("compression", {})
                 aux_comp["model"] = compaction["model"]
-            omniworker_cfg["compression"] = compression
+            flux-agent_cfg["compression"] = compression
             changes = True
 
         # Map humanDelay
         human_delay = defaults.get("humanDelay") or {}
         if human_delay:
-            hd = omniworker_cfg.get("human_delay") or {}
+            hd = flux-agent_cfg.get("human_delay") or {}
             hd_mode = human_delay.get("mode") or ("natural" if human_delay.get("enabled") else None)
             if hd_mode and hd_mode != "off":
                 hd["mode"] = hd_mode
@@ -2340,40 +2340,40 @@ class Migrator:
                 hd["min_ms"] = human_delay["minMs"]
             if human_delay.get("maxMs"):
                 hd["max_ms"] = human_delay["maxMs"]
-            omniworker_cfg["human_delay"] = hd
+            flux-agent_cfg["human_delay"] = hd
             changes = True
 
         # Map userTimezone
         if defaults.get("userTimezone"):
-            omniworker_cfg["timezone"] = defaults["userTimezone"]
+            flux-agent_cfg["timezone"] = defaults["userTimezone"]
             changes = True
 
         # Map terminal/exec settings
         exec_cfg = (config.get("tools") or {}).get("exec") or {}
         if exec_cfg:
-            terminal_cfg = omniworker_cfg.get("terminal") or {}
+            terminal_cfg = flux-agent_cfg.get("terminal") or {}
             if exec_cfg.get("timeoutSec") or exec_cfg.get("timeout"):
                 terminal_cfg["timeout"] = exec_cfg.get("timeoutSec") or exec_cfg.get("timeout")
                 changes = True
-            omniworker_cfg["terminal"] = terminal_cfg
+            flux-agent_cfg["terminal"] = terminal_cfg
 
         # Map sandbox -> terminal docker settings
         sandbox = defaults.get("sandbox") or {}
         if sandbox and sandbox.get("backend") == "docker":
-            terminal_cfg = omniworker_cfg.get("terminal") or {}
+            terminal_cfg = flux-agent_cfg.get("terminal") or {}
             terminal_cfg["backend"] = "docker"
             if sandbox.get("docker", {}).get("image"):
                 terminal_cfg["docker_image"] = sandbox["docker"]["image"]
-            omniworker_cfg["terminal"] = terminal_cfg
+            flux-agent_cfg["terminal"] = terminal_cfg
             changes = True
 
         if changes:
-            omniworker_cfg["agent"] = agent_cfg
+            flux-agent_cfg["agent"] = agent_cfg
             if self.execute:
-                self.maybe_backup(omniworker_cfg_path)
-                dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("agent-config", "omniworker.json agents.defaults", "config.yaml agent/compression/terminal",
-                        "migrated", "Agent defaults mapped to OmniWorker config")
+                self.maybe_backup(flux-agent_cfg_path)
+                dump_yaml_file(flux-agent_cfg_path, flux-agent_cfg)
+            self.record("agent-config", "flux-agent.json agents.defaults", "config.yaml agent/compression/terminal",
+                        "migrated", "Agent defaults mapped to Flux Agent config")
 
         # Archive multi-agent list
         if agent_list:
@@ -2381,7 +2381,7 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "agents-list.json"
                 dest.write_text(json.dumps(agent_list, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("agent-config", "omniworker.json agents.list", "archive/agents-list.json",
+            self.record("agent-config", "flux-agent.json agents.list", "archive/agents-list.json",
                         "archived", f"Multi-agent setup ({len(agent_list)} agents) archived for manual recreation")
 
         # Archive bindings
@@ -2391,12 +2391,12 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "bindings.json"
                 dest.write_text(json.dumps(bindings, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("agent-config", "omniworker.json bindings", "archive/bindings.json",
+            self.record("agent-config", "flux-agent.json bindings", "archive/bindings.json",
                         "archived", f"Agent routing bindings ({len(bindings)} rules) archived")
 
     # ── Gateway config ────────────────────────────────────────
     def migrate_gateway_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         gateway = config.get("gateway") or {}
         if not gateway:
             self.record("gateway-config", None, None, "skipped", "No gateway configuration found")
@@ -2407,28 +2407,28 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "gateway-config.json"
             dest.write_text(json.dumps(gateway, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("gateway-config", "omniworker.json gateway.*", "archive/gateway-config.json",
-                    "archived", "Gateway config archived. Use 'omniworker gateway' to configure.")
+        self.record("gateway-config", "flux-agent.json gateway.*", "archive/gateway-config.json",
+                    "archived", "Gateway config archived. Use 'flux-agent gateway' to configure.")
 
         # Extract gateway auth token to .env if present
         auth = gateway.get("auth") or {}
         if auth.get("token") and self.migrate_secrets:
-            self._set_env_var("OMNIWORKER_GATEWAY_TOKEN", auth["token"], "gateway.auth.token")
+            self._set_env_var("FLUX AGENT_GATEWAY_TOKEN", auth["token"], "gateway.auth.token")
 
     # ── Session config ────────────────────────────────────────
     def migrate_session_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         session = config.get("session") or {}
         if not session:
             self.record("session-config", None, None, "skipped", "No session configuration found")
             return
 
-        omniworker_cfg_path = self.target_root / "config.yaml"
-        omniworker_cfg = load_yaml_file(omniworker_cfg_path)
-        sr = omniworker_cfg.get("session_reset") or {}
+        flux-agent_cfg_path = self.target_root / "config.yaml"
+        flux-agent_cfg = load_yaml_file(flux-agent_cfg_path)
+        sr = flux-agent_cfg.get("session_reset") or {}
         changes = False
 
-        # OmniWorker uses session.reset (structured) and session.resetTriggers (string array)
+        # Flux Agent uses session.reset (structured) and session.resetTriggers (string array)
         reset = session.get("reset") or {}
         reset_triggers = session.get("resetTriggers") or session.get("reset_triggers") or []
 
@@ -2459,11 +2459,11 @@ class Migrator:
             changes = True
 
         if changes:
-            omniworker_cfg["session_reset"] = sr
+            flux-agent_cfg["session_reset"] = sr
             if self.execute:
-                self.maybe_backup(omniworker_cfg_path)
-                dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("session-config", "omniworker.json session.resetTriggers",
+                self.maybe_backup(flux-agent_cfg_path)
+                dump_yaml_file(flux-agent_cfg_path, flux-agent_cfg)
+            self.record("session-config", "flux-agent.json session.resetTriggers",
                         "config.yaml session_reset", "migrated")
 
         # Archive full session config (identity links, thread bindings, etc.)
@@ -2474,22 +2474,22 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "session-config.json"
                 dest.write_text(json.dumps(complex_session, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("session-config", "omniworker.json session (advanced)",
+            self.record("session-config", "flux-agent.json session (advanced)",
                         "archive/session-config.json", "archived",
                         "Advanced session settings archived (identity links, thread bindings, etc.)")
 
     # ── Full model providers ──────────────────────────────────
     def migrate_full_providers(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         models = config.get("models") or {}
         providers = models.get("providers") or {}
         if not providers:
             self.record("full-providers", None, None, "skipped", "No model providers found")
             return
 
-        omniworker_cfg_path = self.target_root / "config.yaml"
-        omniworker_cfg = load_yaml_file(omniworker_cfg_path)
-        custom_providers = omniworker_cfg.get("custom_providers") or []
+        flux-agent_cfg_path = self.target_root / "config.yaml"
+        flux-agent_cfg = load_yaml_file(flux-agent_cfg_path)
+        custom_providers = flux-agent_cfg.get("custom_providers") or []
         added = 0
 
         # Well-known providers: just extract API keys
@@ -2537,9 +2537,9 @@ class Migrator:
                             f"config.yaml custom_providers[{prov_name}]", "migrated")
 
         if added > 0 and self.execute:
-            self.maybe_backup(omniworker_cfg_path)
-            omniworker_cfg["custom_providers"] = custom_providers
-            dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
+            self.maybe_backup(flux-agent_cfg_path)
+            flux-agent_cfg["custom_providers"] = custom_providers
+            dump_yaml_file(flux-agent_cfg_path, flux-agent_cfg)
 
         # Archive model aliases/catalog
         agent_defaults = (config.get("agents") or {}).get("defaults") or {}
@@ -2554,7 +2554,7 @@ class Migrator:
 
     # ── Deep channel config ───────────────────────────────────
     def migrate_deep_channels(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         channels = config.get("channels") or {}
         if not channels:
             self.record("deep-channels", None, None, "skipped", "No channel configuration found")
@@ -2603,22 +2603,22 @@ class Migrator:
                         continue
                     self._set_env_var(env_key, str(val), f"channels.{ch_name}.{oc_key}")
 
-        # Map Discord-specific settings to OmniWorker config
+        # Map Discord-specific settings to Flux Agent config
         discord_cfg = channels.get("discord") or {}
         if discord_cfg:
-            omniworker_cfg_path = self.target_root / "config.yaml"
-            omniworker_cfg = load_yaml_file(omniworker_cfg_path)
-            discord_omniworker = omniworker_cfg.get("discord") or {}
+            flux-agent_cfg_path = self.target_root / "config.yaml"
+            flux-agent_cfg = load_yaml_file(flux-agent_cfg_path)
+            discord_flux-agent = flux-agent_cfg.get("discord") or {}
             changed = False
             if "requireMention" in discord_cfg:
-                discord_omniworker["require_mention"] = discord_cfg["requireMention"]
+                discord_flux-agent["require_mention"] = discord_cfg["requireMention"]
                 changed = True
             if discord_cfg.get("autoThread") is not None:
-                discord_omniworker["auto_thread"] = discord_cfg["autoThread"]
+                discord_flux-agent["auto_thread"] = discord_cfg["autoThread"]
                 changed = True
             if changed and self.execute:
-                omniworker_cfg["discord"] = discord_omniworker
-                dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
+                flux-agent_cfg["discord"] = discord_flux-agent
+                dump_yaml_file(flux-agent_cfg_path, flux-agent_cfg)
 
         # Archive complex channel configs (group settings, thread bindings, etc.)
         complex_archive = {}
@@ -2636,37 +2636,37 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "channels-deep-config.json"
                 dest.write_text(json.dumps(complex_archive, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("deep-channels", "omniworker.json channels (advanced settings)",
+            self.record("deep-channels", "flux-agent.json channels (advanced settings)",
                         "archive/channels-deep-config.json", "archived",
                         f"Deep channel config for {len(complex_archive)} channels archived")
 
     # ── Browser config ────────────────────────────────────────
     def migrate_browser_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         browser = config.get("browser") or {}
         if not browser:
             self.record("browser-config", None, None, "skipped", "No browser configuration found")
             return
 
-        omniworker_cfg_path = self.target_root / "config.yaml"
-        omniworker_cfg = load_yaml_file(omniworker_cfg_path)
-        browser_omniworker = omniworker_cfg.get("browser") or {}
+        flux-agent_cfg_path = self.target_root / "config.yaml"
+        flux-agent_cfg = load_yaml_file(flux-agent_cfg_path)
+        browser_flux-agent = flux-agent_cfg.get("browser") or {}
         changed = False
 
-        # Map fields that have OmniWorker equivalents
+        # Map fields that have Flux Agent equivalents
         if browser.get("cdpUrl"):
-            browser_omniworker["cdp_url"] = browser["cdpUrl"]
+            browser_flux-agent["cdp_url"] = browser["cdpUrl"]
             changed = True
         if browser.get("headless") is not None:
-            browser_omniworker["headless"] = browser["headless"]
+            browser_flux-agent["headless"] = browser["headless"]
             changed = True
 
         if changed:
-            omniworker_cfg["browser"] = browser_omniworker
+            flux-agent_cfg["browser"] = browser_flux-agent
             if self.execute:
-                self.maybe_backup(omniworker_cfg_path)
-                dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("browser-config", "omniworker.json browser.*", "config.yaml browser",
+                self.maybe_backup(flux-agent_cfg_path)
+                dump_yaml_file(flux-agent_cfg_path, flux-agent_cfg)
+            self.record("browser-config", "flux-agent.json browser.*", "config.yaml browser",
                         "migrated")
 
         # Archive remaining browser settings
@@ -2677,31 +2677,31 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "browser-config.json"
                 dest.write_text(json.dumps(advanced, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("browser-config", "omniworker.json browser (advanced)",
+            self.record("browser-config", "flux-agent.json browser (advanced)",
                         "archive/browser-config.json", "archived")
 
     # ── Tools config ──────────────────────────────────────────
     def migrate_tools_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         tools = config.get("tools") or {}
         if not tools:
             self.record("tools-config", None, None, "skipped", "No tools configuration found")
             return
 
-        omniworker_cfg_path = self.target_root / "config.yaml"
-        omniworker_cfg = load_yaml_file(omniworker_cfg_path)
+        flux-agent_cfg_path = self.target_root / "config.yaml"
+        flux-agent_cfg = load_yaml_file(flux-agent_cfg_path)
         changed = False
 
-        # Map exec timeout -> terminal timeout (field is timeoutSec in OmniWorker)
+        # Map exec timeout -> terminal timeout (field is timeoutSec in Flux Agent)
         exec_cfg = tools.get("exec") or {}
         timeout_val = exec_cfg.get("timeoutSec") or exec_cfg.get("timeout")
         if timeout_val:
-            terminal_cfg = omniworker_cfg.get("terminal") or {}
+            terminal_cfg = flux-agent_cfg.get("terminal") or {}
             terminal_cfg["timeout"] = timeout_val
-            omniworker_cfg["terminal"] = terminal_cfg
+            flux-agent_cfg["terminal"] = terminal_cfg
             changed = True
 
-        # Map web search API key (path: tools.web.search.brave.apiKey in OmniWorker)
+        # Map web search API key (path: tools.web.search.brave.apiKey in Flux Agent)
         web_cfg = tools.get("web") or tools.get("webSearch") or {}
         search_cfg = web_cfg.get("search") or web_cfg if not web_cfg.get("search") else web_cfg["search"]
         brave_cfg = search_cfg.get("brave") or {}
@@ -2710,9 +2710,9 @@ class Migrator:
             self._set_env_var("BRAVE_API_KEY", brave_key, "tools.web.search.brave.apiKey")
 
         if changed and self.execute:
-            self.maybe_backup(omniworker_cfg_path)
-            dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("tools-config", "omniworker.json tools.*", "config.yaml terminal",
+            self.maybe_backup(flux-agent_cfg_path)
+            dump_yaml_file(flux-agent_cfg_path, flux-agent_cfg)
+            self.record("tools-config", "flux-agent.json tools.*", "config.yaml terminal",
                         "migrated")
 
         # Archive full tools config
@@ -2721,32 +2721,32 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "tools-config.json"
                 dest.write_text(json.dumps(tools, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("tools-config", "omniworker.json tools (full)", "archive/tools-config.json",
+            self.record("tools-config", "flux-agent.json tools (full)", "archive/tools-config.json",
                         "archived", "Full tools config archived for reference")
 
     # ── Approvals config ──────────────────────────────────────
     def migrate_approvals_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         approvals = config.get("approvals") or {}
         if not approvals:
             self.record("approvals-config", None, None, "skipped", "No approvals configuration found")
             return
 
-        omniworker_cfg_path = self.target_root / "config.yaml"
-        omniworker_cfg = load_yaml_file(omniworker_cfg_path)
+        flux-agent_cfg_path = self.target_root / "config.yaml"
+        flux-agent_cfg = load_yaml_file(flux-agent_cfg_path)
 
-        # Map approval mode (nested under approvals.exec.mode in OmniWorker)
+        # Map approval mode (nested under approvals.exec.mode in Flux Agent)
         exec_approvals = approvals.get("exec") or {}
         mode = (exec_approvals.get("mode") if isinstance(exec_approvals, dict) else None) or approvals.get("mode") or approvals.get("defaultMode")
         if mode:
             mode_map = {"auto": "off", "always": "manual", "smart": "smart", "manual": "manual"}
-            omniworker_mode = mode_map.get(mode, "manual")
-            omniworker_cfg.setdefault("approvals", {})["mode"] = omniworker_mode
+            flux-agent_mode = mode_map.get(mode, "manual")
+            flux-agent_cfg.setdefault("approvals", {})["mode"] = flux-agent_mode
             if self.execute:
-                self.maybe_backup(omniworker_cfg_path)
-                dump_yaml_file(omniworker_cfg_path, omniworker_cfg)
-            self.record("approvals-config", "omniworker.json approvals.mode",
-                        "config.yaml approvals.mode", "migrated", f"Mapped '{mode}' -> '{omniworker_mode}'")
+                self.maybe_backup(flux-agent_cfg_path)
+                dump_yaml_file(flux-agent_cfg_path, flux-agent_cfg)
+            self.record("approvals-config", "flux-agent.json approvals.mode",
+                        "config.yaml approvals.mode", "migrated", f"Mapped '{mode}' -> '{flux-agent_mode}'")
 
         # Archive full approvals config
         if len(approvals) > 1 and self.archive_dir:
@@ -2754,12 +2754,12 @@ class Migrator:
                 self.archive_dir.mkdir(parents=True, exist_ok=True)
                 dest = self.archive_dir / "approvals-config.json"
                 dest.write_text(json.dumps(approvals, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self.record("approvals-config", "omniworker.json approvals (rules)",
+            self.record("approvals-config", "flux-agent.json approvals (rules)",
                         "archive/approvals-config.json", "archived")
 
     # ── Memory backend ────────────────────────────────────────
     def migrate_memory_backend(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         memory = config.get("memory") or {}
         if not memory:
             self.record("memory-backend", None, None, "skipped", "No memory backend configuration found")
@@ -2769,12 +2769,12 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "memory-backend-config.json"
             dest.write_text(json.dumps(memory, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("memory-backend", "omniworker.json memory.*", "archive/memory-backend-config.json",
+        self.record("memory-backend", "flux-agent.json memory.*", "archive/memory-backend-config.json",
                     "archived", "Memory backend config (QMD, vector search, citations) archived for manual review")
 
     # ── Skills config ─────────────────────────────────────────
     def migrate_skills_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         skills = config.get("skills") or {}
         entries = skills.get("entries") or {}
         if not entries and not skills:
@@ -2785,12 +2785,12 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "skills-registry-config.json"
             dest.write_text(json.dumps(skills, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("skills-config", "omniworker.json skills.*", "archive/skills-registry-config.json",
+        self.record("skills-config", "flux-agent.json skills.*", "archive/skills-registry-config.json",
                     "archived", f"Skills registry config ({len(entries)} entries) archived")
 
     # ── UI / Identity ─────────────────────────────────────────
     def migrate_ui_identity(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         ui = config.get("ui") or {}
         if not ui:
             self.record("ui-identity", None, None, "skipped", "No UI/identity configuration found")
@@ -2800,12 +2800,12 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "ui-identity-config.json"
             dest.write_text(json.dumps(ui, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("ui-identity", "omniworker.json ui.*", "archive/ui-identity-config.json",
+        self.record("ui-identity", "flux-agent.json ui.*", "archive/ui-identity-config.json",
                     "archived", "UI theme and identity settings archived")
 
     # ── Logging / Diagnostics ─────────────────────────────────
     def migrate_logging_config(self, config: Optional[Dict[str, Any]] = None) -> None:
-        config = config or self.load_omniworker_config()
+        config = config or self.load_flux-agent_config()
         logging_cfg = config.get("logging") or {}
         diagnostics = config.get("diagnostics") or {}
         combined = {}
@@ -2821,7 +2821,7 @@ class Migrator:
             self.archive_dir.mkdir(parents=True, exist_ok=True)
             dest = self.archive_dir / "logging-diagnostics-config.json"
             dest.write_text(json.dumps(combined, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        self.record("logging-config", "omniworker.json logging/diagnostics",
+        self.record("logging-config", "flux-agent.json logging/diagnostics",
                     "archive/logging-diagnostics-config.json", "archived")
 
     # ── Helper: set env var ───────────────────────────────────
@@ -2842,7 +2842,7 @@ class Migrator:
         if not self.output_dir:
             return
         notes = [
-            "# OmniWorker -> OmniWorker Migration Notes",
+            "# Flux Agent -> Flux Agent Migration Notes",
             "",
             "This document lists items that require manual attention after migration.",
             "",
@@ -2859,8 +2859,8 @@ class Migrator:
             notes.extend([
                 "## Archived Items (Manual Review Needed)",
                 "",
-                "These OmniWorker configurations were archived because they don't have a",
-                "direct 1:1 mapping in OmniWorker. Review each file and recreate manually:",
+                "These Flux Agent configurations were archived because they don't have a",
+                "direct 1:1 mapping in Flux Agent. Review each file and recreate manually:",
                 "",
             ])
             for item in archived:
@@ -2870,9 +2870,9 @@ class Migrator:
         conflicts = [i for i in self.items if i.status == "conflict"]
         if conflicts:
             notes.extend([
-                "## Conflicts (Existing OmniWorker Config Not Overwritten)",
+                "## Conflicts (Existing Flux Agent Config Not Overwritten)",
                 "",
-                "These items already existed in your OmniWorker config. Re-run with",
+                "These items already existed in your Flux Agent config. Re-run with",
                 "`--overwrite` to force, or merge manually:",
                 "",
             ])
@@ -2890,32 +2890,32 @@ class Migrator:
         )
 
         notes.extend([
-            "## IMPORTANT: Archive the OmniWorker Directory",
+            "## IMPORTANT: Archive the Flux Agent Directory",
             "",
-            "After migration, your OmniWorker directory still exists on disk with workspace",
-            "state files (todo.json, sessions, logs). If the OmniWorker agent discovers these",
-            "directories, it may read/write to them instead of the OmniWorker state, causing",
+            "After migration, your Flux Agent directory still exists on disk with workspace",
+            "state files (todo.json, sessions, logs). If the Flux Agent agent discovers these",
+            "directories, it may read/write to them instead of the Flux Agent state, causing",
             "confusion (e.g., cron jobs reading a different todo list than interactive sessions).",
             "",
-            "**Strongly recommended:** Run `omniworker claw cleanup` to rename the OmniWorker",
-            "directory to `.omniworker.pre-migration`. This prevents the agent from finding it.",
+            "**Strongly recommended:** Run `flux-agent claw cleanup` to rename the Flux Agent",
+            "directory to `.flux-agent.pre-migration`. This prevents the agent from finding it.",
             "The directory is renamed, not deleted — you can undo this at any time.",
             "",
             "If you skip this step and notice the agent getting confused about workspaces",
-            "or todo lists, run `omniworker claw cleanup` to fix it.",
+            "or todo lists, run `flux-agent claw cleanup` to fix it.",
             "",
-            "## OmniWorker-Specific Setup",
+            "## Flux Agent-Specific Setup",
             "",
             "After migration, you may want to:",
-            "- Run `omniworker claw cleanup` to archive the OmniWorker directory (prevents state confusion)",
-            "- Run `omniworker setup` to configure any remaining settings",
-            "- Run `omniworker mcp list` to verify MCP servers were imported correctly",
+            "- Run `flux-agent claw cleanup` to archive the Flux Agent directory (prevents state confusion)",
+            "- Run `flux-agent setup` to configure any remaining settings",
+            "- Run `flux-agent mcp list` to verify MCP servers were imported correctly",
         ])
 
         if has_cron_config_archive:
-            notes.append("- Run `omniworker cron` to recreate scheduled tasks (see archive/cron-config.json)")
+            notes.append("- Run `flux-agent cron` to recreate scheduled tasks (see archive/cron-config.json)")
         elif has_cron_store_archive:
-            notes.append("- Run `omniworker cron` to recreate scheduled tasks (see archived cron-store)")
+            notes.append("- Run `flux-agent cron` to recreate scheduled tasks (see archived cron-store)")
 
         # Check if skills were imported
         has_skills = any(i.kind == "skills" and i.status == "migrated" for i in self.items)
@@ -2940,13 +2940,13 @@ class Migrator:
                 "WhatsApp uses QR-code pairing, not token-based auth. Your allowlist",
                 "was migrated, but you must re-pair the device by running:",
                 "",
-                "    omniworker whatsapp",
+                "    flux-agent whatsapp",
                 "",
             ])
 
         notes.extend([
-            "- Run `omniworker gateway install` if you need the gateway service",
-            "- Review `~/.omniworker/config.yaml` for any adjustments",
+            "- Run `flux-agent gateway install` if you need the gateway service",
+            "- Review `~/.flux-agent/config.yaml` for any adjustments",
             "",
         ])
 
@@ -2958,19 +2958,19 @@ class Migrator:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Migrate OmniWorker user state into OmniWorker Agent.")
-    parser.add_argument("--source", default=str(Path.home() / ".omniworker"), help="OmniWorker home directory")
-    parser.add_argument("--target", default=os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".omniworker"), help="OmniWorker home directory")
+    parser = argparse.ArgumentParser(description="Migrate Flux Agent user state into Flux Agent Agent.")
+    parser.add_argument("--source", default=str(Path.home() / ".flux-agent"), help="Flux Agent home directory")
+    parser.add_argument("--target", default=os.environ.get("FLUX AGENT_HOME") or str(Path.home() / ".flux-agent"), help="Flux Agent home directory")
     parser.add_argument(
         "--workspace-target",
         help="Optional workspace root where the workspace instructions file should be copied",
     )
     parser.add_argument("--execute", action="store_true", help="Apply changes instead of reporting a dry run")
-    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing OmniWorker targets after backing them up")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing Flux Agent targets after backing them up")
     parser.add_argument(
         "--migrate-secrets",
         action="store_true",
-        help="Import a narrow allowlist of OmniWorker-compatible secrets into the target env file",
+        help="Import a narrow allowlist of Flux Agent-compatible secrets into the target env file",
     )
     parser.add_argument(
         "--skill-conflict",
@@ -3044,7 +3044,7 @@ def main() -> int:
 
     print()
     print(f"  ╔══════════════════════════════════════════════════════╗")
-    print(f"  ║   OmniWorker -> OmniWorker Migration   [{mode_label:>8s}]   ║")
+    print(f"  ║   Flux Agent -> Flux Agent Migration   [{mode_label:>8s}]   ║")
     print(f"  ╠══════════════════════════════════════════════════════╣")
     print(f"  ║  Source:  {str(report['source_root'])[:42]:<42s}  ║")
     print(f"  ║  Target:  {str(report['target_root'])[:42]:<42s}  ║")
@@ -3067,7 +3067,7 @@ def main() -> int:
             seen_kinds.add(label)
             dest = item.get("destination") or ""
             if dest.startswith(str(report["target_root"])):
-                dest = "~/.omniworker/" + dest[len(str(report["target_root"])) + 1:]
+                dest = "~/.flux-agent/" + dest[len(str(report["target_root"])) + 1:]
             meta = MIGRATION_OPTION_METADATA.get(label, {})
             display = meta.get("label", label)
             print(f"    ✔ {display:<35s} -> {dest}")
@@ -3113,10 +3113,10 @@ def main() -> int:
     if args.execute:
         print()
         print("  Next steps:")
-        print("    1. Review ~/.omniworker/config.yaml")
-        print("    2. Run: omniworker mcp list")
+        print("    1. Review ~/.flux-agent/config.yaml")
+        print("    2. Run: flux-agent mcp list")
         if any(i["kind"] == "cron-jobs" and i["status"] == "archived" for i in items):
-            print("    3. Recreate cron jobs: omniworker cron")
+            print("    3. Recreate cron jobs: flux-agent cron")
         if report.get("output_dir"):
             print(f"    → Full report: {report['output_dir']}/MIGRATION_NOTES.md")
     elif not args.execute:

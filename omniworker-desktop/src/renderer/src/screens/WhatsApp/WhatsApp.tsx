@@ -72,7 +72,7 @@ export default function WhatsApp({ visible }: WhatsAppProps): React.JSX.Element 
   const [openwaInstallStepMessage, setOpenwaInstallStepMessage] = useState("");
   const [openwaInstallError, setOpenwaInstallError] = useState("");
 
-  const api = window.omniworkerAPI;
+  const api = window.flux-agentAPI;
 
   const handleInstallOpenwa = async (): Promise<void> => {
     if (openwaInstalling) return;
@@ -544,7 +544,7 @@ export default function WhatsApp({ visible }: WhatsAppProps): React.JSX.Element 
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12"></polyline>
                           </svg>
-                          <span>Instalado localmente con éxito en <code>~/.omniworker/openwa</code>.</span>
+                          <span>Instalado localmente con éxito en <code>~/.flux-agent/openwa</code>.</span>
                         </div>
                       )}
 

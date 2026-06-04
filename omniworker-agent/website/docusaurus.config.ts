@@ -7,11 +7,11 @@ const config: Config = {
   tagline: 'The self-improving AI agent',
   favicon: 'img/favicon.ico',
 
-  url: 'https://omniworker-agent.omniworker.com',
+  url: 'https://flux-agent-agent.flux-agent.com',
   baseUrl: '/docs/',
 
   organizationName: 'OmniWorker',
-  projectName: 'omniworker-agent',
+  projectName: 'flux-agent-agent',
 
   onBrokenLinks: 'warn',
 
@@ -73,7 +73,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',  // Docs at the root of /docs/
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/OmniWorker/omniworker-agent/edit/main/website/',
+          editUrl: 'https://github.com/OmniWorker/flux-agent-agent/edit/main/website/',
         },
         blog: false,
         theme: {
@@ -84,7 +84,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/omniworker-agent-banner.png',
+    image: 'img/flux-agent-agent-banner.png',
     colorMode: {
       defaultMode: 'dark',
       respectPrefersColorScheme: true,
@@ -118,12 +118,12 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://omniworker-agent.omniworker.com',
+          href: 'https://flux-agent-agent.flux-agent.com',
           label: 'Home',
           position: 'right',
         },
         {
-          href: 'https://github.com/OmniWorker/omniworker-agent',
+          href: 'https://github.com/OmniWorker/flux-agent-agent',
           label: 'GitHub',
           position: 'right',
         },
@@ -150,19 +150,19 @@ const config: Config = {
           title: 'Community',
           items: [
             { label: 'Discord', href: 'https://discord.gg/OmniWorker' },
-            { label: 'GitHub Discussions', href: 'https://github.com/OmniWorker/omniworker-agent/discussions' },
+            { label: 'GitHub Discussions', href: 'https://github.com/OmniWorker/flux-agent-agent/discussions' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],
         },
         {
           title: 'More',
           items: [
-            { label: 'GitHub', href: 'https://github.com/OmniWorker/omniworker-agent' },
-            { label: 'Nous Research', href: 'https://omniworker.com' },
+            { label: 'GitHub', href: 'https://github.com/OmniWorker/flux-agent-agent' },
+            { label: 'Nous Research', href: 'https://flux-agent.com' },
           ],
         },
       ],
-      copyright: `Built by <a href="https://omniworker.com">Nous Research</a> · MIT License · ${new Date().getFullYear()}`,
+      copyright: `Built by <a href="https://flux-agent.com">Nous Research</a> · MIT License · ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

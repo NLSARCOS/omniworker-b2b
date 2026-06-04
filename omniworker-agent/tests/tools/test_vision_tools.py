@@ -378,7 +378,7 @@ class TestVisionConfig:
         mock_response.choices = [mock_choice]
 
         with (
-            patch("omniworker_cli.config.load_config", return_value={
+            patch("flux-agent_cli.config.load_config", return_value={
                 "auxiliary": {"vision": {"temperature": 1, "timeout": 77}}
             }),
             patch(
@@ -408,7 +408,7 @@ class TestVisionConfig:
         mock_response.choices = [mock_choice]
 
         with (
-            patch("omniworker_cli.config.load_config", return_value={"auxiliary": {"vision": {}}}),
+            patch("flux-agent_cli.config.load_config", return_value={"auxiliary": {"vision": {}}}),
             patch(
                 "tools.vision_tools._image_to_base64_data_url",
                 return_value="data:image/png;base64,abc",

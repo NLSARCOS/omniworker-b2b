@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Hyperliquid CLI Tool for OmniWorker Agent
+Hyperliquid CLI Tool for Flux Agent Agent
 -------------------------------------
 Queries the Hyperliquid info endpoint for market and account data.
 Uses only Python standard library - no external packages required.
@@ -40,13 +40,13 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 
-USER_AGENT = "OmniWorkerAgent/1.0"
+USER_AGENT = "Flux AgentAgent/1.0"
 DEFAULT_USER_ENV = "HYPERLIQUID_USER_ADDRESS"
 DEFAULT_API_BASE = "https://api.hyperliquid.xyz"
 
 
-def _omniworker_home() -> Path:
-    return Path(os.environ.get("OMNIWORKER_HOME", "~/.omniworker")).expanduser()
+def _flux-agent_home() -> Path:
+    return Path(os.environ.get("FLUX AGENT_HOME", "~/.flux-agent")).expanduser()
 
 
 def _dotenv_paths() -> List[Path]:
@@ -55,7 +55,7 @@ def _dotenv_paths() -> List[Path]:
     if project_env.exists():
         paths.append(project_env)
 
-    user_env = _omniworker_home() / ".env"
+    user_env = _flux-agent_home() / ".env"
     if user_env.exists():
         paths.append(user_env)
 
@@ -115,7 +115,7 @@ def _resolve_user(user: Optional[str]) -> str:
 
     sys.exit(
         "Missing Hyperliquid address. Pass <address> explicitly or set "
-        f"{DEFAULT_USER_ENV} in your environment or ~/.omniworker/.env."
+        f"{DEFAULT_USER_ENV} in your environment or ~/.flux-agent/.env."
     )
 
 
@@ -1534,7 +1534,7 @@ def _add_json_flag(parser: argparse.ArgumentParser) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Hyperliquid CLI Tool for OmniWorker Agent")
+    parser = argparse.ArgumentParser(description="Hyperliquid CLI Tool for Flux Agent Agent")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     dexs = subparsers.add_parser("dexs", help="List available perpetual dexs")

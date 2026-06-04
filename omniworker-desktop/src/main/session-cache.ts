@@ -77,7 +77,7 @@ function getDb(): Database.Database | null {
   return new Database(DB_PATH, { readonly: true });
 }
 
-// Sync from omniworker DB to local cache — only fetches new/updated sessions
+// Sync from flux-agent DB to local cache — only fetches new/updated sessions
 export function syncSessionCache(): CachedSession[] {
   const cache = readCache();
   const db = getDb();

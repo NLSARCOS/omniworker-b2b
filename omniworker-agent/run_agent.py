@@ -20,13 +20,13 @@ Usage:
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
 
-# IMPORTANT: omniworker_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See omniworker_bootstrap.py for full rationale.
+# IMPORTANT: flux-agent_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See flux-agent_bootstrap.py for full rationale.
 try:
-    import omniworker_bootstrap  # noqa: F401
+    import flux-agent_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    # Graceful fallback when omniworker_bootstrap isn't registered in the venv
-    # yet — happens during partial ``omniworker update`` where git-reset landed
+    # Graceful fallback when flux-agent_bootstrap isn't registered in the venv
+    # yet — happens during partial ``flux-agent update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
@@ -68,7 +68,7 @@ from urllib.parse import urlparse, parse_qs, urlunparse
 from datetime import datetime
 from pathlib import Path
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 
 
 _OPENAI_CLS_CACHE: Optional[type] = None
@@ -100,17 +100,17 @@ class _OpenAIProxy:
 
 OpenAI = _OpenAIProxy()
 
-# Load .env from ~/.omniworker/.env first, then project root as dev fallback.
+# Load .env from ~/.flux-agent/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from omniworker_cli.env_loader import load_omniworker_dotenv
-from omniworker_cli.timeouts import (
+from flux-agent_cli.env_loader import load_flux-agent_dotenv
+from flux-agent_cli.timeouts import (
     get_provider_request_timeout,
     get_provider_stale_timeout,
 )
 
-_omniworker_home = get_omniworker_home()
+_flux-agent_home = get_flux-agent_home()
 _project_env = Path(__file__).parent / '.env'
-_loaded_env_paths = load_omniworker_dotenv(omniworker_home=_omniworker_home, project_env=_project_env)
+_loaded_env_paths = load_flux-agent_dotenv(flux-agent_home=_flux-agent_home, project_env=_project_env)
 if _loaded_env_paths:
     for _env_path in _loaded_env_paths:
         logger.info("Loaded environment variables from %s", _env_path)
@@ -145,7 +145,7 @@ from agent.error_classifier import classify_api_error, FailoverReason
 from agent.prompt_builder import (
     DEFAULT_AGENT_IDENTITY, PLATFORM_HINTS,
     MEMORY_GUIDANCE, SESSION_SEARCH_GUIDANCE, SKILLS_GUIDANCE,
-    OMNIWORKER_AGENT_HELP_GUIDANCE,
+    FLUX AGENT_AGENT_HELP_GUIDANCE,
     KANBAN_GUIDANCE,
     build_nous_subscription_prompt,
 )
@@ -201,14 +201,14 @@ from agent.trajectory import (
     save_trajectory as _save_trajectory_to_file,
 )
 from utils import atomic_json_write, base_url_host_matches, base_url_hostname, env_var_enabled, normalize_proxy_url
-from omniworker_cli.config import cfg_get
+from flux-agent_cli.config import cfg_get
 
 
 
 class _SafeWriter:
     """Transparent stdio wrapper that catches OSError/ValueError from broken pipes.
 
-    When omniworker-agent runs as a systemd service, Docker container, or headless
+    When flux-agent-agent runs as a systemd service, Docker container, or headless
     daemon, the stdout/stderr pipe can become unavailable (idle timeout, buffer
     exhaustion, socket reset). Any print() call then raises
     ``OSError: [Errno 5] Input/output error``, which can crash agent setup or
@@ -1051,10 +1051,10 @@ _QWEN_CODE_VERSION = "0.14.1"
 
 def _routermint_headers() -> dict:
     """Return the User-Agent RouterMint needs to avoid Cloudflare 1010 blocks."""
-    from omniworker_cli import __version__ as _OMNIWORKER_VERSION
+    from flux-agent_cli import __version__ as _FLUX AGENT_VERSION
 
     return {
-        "User-Agent": f"OmniWorkerAgent/{_OMNIWORKER_VERSION}",
+        "User-Agent": f"Flux AgentAgent/{_FLUX AGENT_VERSION}",
     }
 
 
@@ -1115,7 +1115,7 @@ class AIAgent:
     """
 
     _TOOL_CALL_ARGUMENTS_CORRUPTION_MARKER = (
-        "[omniworker-agent: tool call arguments were corrupted in this session and "
+        "[flux-agent-agent: tool call arguments were corrupted in this session and "
         "have been dropped to keep the conversation alive. See issue #15236.]"
     )
 
@@ -1240,7 +1240,7 @@ class AIAgent:
             skip_context_files (bool): If True, skip auto-injection of SOUL.md, AGENTS.md, and .cursorrules
                 into the system prompt. Use this for batch processing and data generation to avoid
                 polluting trajectories with user-specific persona or project instructions.
-            load_soul_identity (bool): If True, still use ~/.omniworker/SOUL.md as the primary
+            load_soul_identity (bool): If True, still use ~/.flux-agent/SOUL.md as the primary
                 identity even when skip_context_files=True. Project context files from the cwd
                 remain skipped.
         """
@@ -1323,7 +1323,7 @@ class AIAgent:
             pass  # Non-fatal — transport may not exist for all modes yet
 
         try:
-            from omniworker_cli.model_normalize import (
+            from flux-agent_cli.model_normalize import (
                 _AGGREGATOR_PROVIDERS,
                 normalize_model_for_provider,
             )
@@ -1470,7 +1470,7 @@ class AIAgent:
         # sessions with >5-minute pauses between turns (#14971).
         self._cache_ttl = "5m"
         try:
-            from omniworker_cli.config import load_config as _load_pc_cfg
+            from flux-agent_cli.config import load_config as _load_pc_cfg
 
             _pc_cfg = _load_pc_cfg().get("prompt_caching", {}) or {}
             _ttl = _pc_cfg.get("cache_ttl", "5m")
@@ -1506,10 +1506,10 @@ class AIAgent:
         self._or_cache_hits: int = 0
 
         # Centralized logging — agent.log (INFO+) and errors.log (WARNING+)
-        # both live under ~/.omniworker/logs/.  Idempotent, so gateway mode
+        # both live under ~/.flux-agent/logs/.  Idempotent, so gateway mode
         # (which creates a new AIAgent per message) won't duplicate handlers.
-        from omniworker_logging import setup_logging, setup_verbose_logging
-        setup_logging(omniworker_home=_omniworker_home)
+        from flux-agent_logging import setup_logging, setup_verbose_logging
+        setup_logging(flux-agent_home=_flux-agent_home)
 
         if self.verbose_logging:
             setup_verbose_logging()
@@ -1520,11 +1520,11 @@ class AIAgent:
             # root logger's file handlers (agent.log, errors.log) from
             # ever seeing the records, because Python checks
             # logger.isEnabledFor() before handler propagation. We rely
-            # on the fact that omniworker_logging.setup_logging() does not
+            # on the fact that flux-agent_logging.setup_logging() does not
             # install a console StreamHandler in quiet mode — so INFO
             # records flow to the file handlers but never reach a
             # console. Any future noise reduction belongs at the
-            # handler level inside omniworker_logging.py, not here.
+            # handler level inside flux-agent_logging.py, not here.
             pass
         
         # Internal stream callback (set during streaming TTS).
@@ -1628,7 +1628,7 @@ class AIAgent:
             # Guardrail config — read from config.yaml at init time.
             self._bedrock_guardrail_config = None
             try:
-                from omniworker_cli.config import load_config as _load_br_cfg
+                from flux-agent_cli.config import load_config as _load_br_cfg
                 _gr = _load_br_cfg().get("bedrock", {}).get("guardrail", {})
                 if _gr.get("guardrail_identifier") and _gr.get("guardrail_version"):
                     self._bedrock_guardrail_config = {
@@ -1678,7 +1678,7 @@ class AIAgent:
                 elif base_url_host_matches(effective_base, "api.routermint.com"):
                     client_kwargs["default_headers"] = _routermint_headers()
                 elif base_url_host_matches(effective_base, "api.githubcopilot.com"):
-                    from omniworker_cli.models import copilot_default_headers
+                    from flux-agent_cli.models import copilot_default_headers
 
                     client_kwargs["default_headers"] = copilot_default_headers()
                 elif base_url_host_matches(effective_base, "api.kimi.com"):
@@ -1731,7 +1731,7 @@ class AIAgent:
                         # (e.g. alibaba → DASHSCOPE_API_KEY, not ALIBABA_API_KEY).
                         _env_hint = f"{_explicit.upper()}_API_KEY"
                         try:
-                            from omniworker_cli.auth import PROVIDER_REGISTRY
+                            from flux-agent_cli.auth import PROVIDER_REGISTRY
                             _pcfg = PROVIDER_REGISTRY.get(_explicit)
                             if _pcfg and _pcfg.api_key_env_vars:
                                 _env_hint = _pcfg.api_key_env_vars[0]
@@ -1776,13 +1776,13 @@ class AIAgent:
                             raise RuntimeError(
                                 f"Provider '{_explicit}' is set in config.yaml but no API key "
                                 f"was found. Set the {_env_hint} environment "
-                                f"variable, or switch to a different provider with `omniworker model`."
+                                f"variable, or switch to a different provider with `flux-agent model`."
                             )
                     if not getattr(self, "_fallback_activated", False):
                         # No provider configured — reject with a clear message.
                         raise RuntimeError(
-                            "No LLM provider configured. Run `omniworker model` to "
-                            "select a provider, or run `omniworker setup` for first-time "
+                            "No LLM provider configured. Run `flux-agent model` to "
+                            "select a provider, or run `flux-agent setup` for first-time "
                             "configuration."
                         )
             
@@ -1914,16 +1914,16 @@ class AIAgent:
         # session_context.py for concurrency safety (gateway runs multiple
         # sessions in one process).  Also writes os.environ as fallback for
         # CLI mode where ContextVars aren't used.
-        os.environ["OMNIWORKER_SESSION_ID"] = self.session_id
+        os.environ["FLUX AGENT_SESSION_ID"] = self.session_id
         try:
             from gateway.session_context import _SESSION_ID
             _SESSION_ID.set(self.session_id)
         except Exception:
             pass  # CLI/test mode — ContextVar not needed
 
-        # Session logs go into ~/.omniworker/sessions/ alongside gateway sessions
-        omniworker_home = get_omniworker_home()
-        self.logs_dir = omniworker_home / "sessions"
+        # Session logs go into ~/.flux-agent/sessions/ alongside gateway sessions
+        flux-agent_home = get_flux-agent_home()
+        self.logs_dir = flux-agent_home / "sessions"
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.session_log_file = self.logs_dir / f"session_{self.session_id}.json"
         
@@ -1948,6 +1948,15 @@ class AIAgent:
         # SQLite session store (optional -- provided by CLI or gateway)
         self._session_db = session_db
         self._parent_session_id = parent_session_id
+        # Provider-specific state persistence (cross-model continuity)
+        self._provider_state = None
+        self._recovered_provider_state: Dict[str, Any] = {}
+        if session_db is not None:
+            try:
+                from agent.provider_state import ProviderStateStore as _ProviderStateStore
+                self._provider_state = _ProviderStateStore(session_db._conn)
+            except Exception as _pse:
+                logger.debug("ProviderStateStore init failed: %s", _pse)
         self._last_flushed_db_idx = 0  # tracks DB-write cursor to prevent duplicate writes
         self._session_db_created = False  # DB row deferred to run_conversation()
         self._session_init_model_config = {
@@ -1962,7 +1971,7 @@ class AIAgent:
         
         # Load config once for memory, skills, and compression sections
         try:
-            from omniworker_cli.config import load_config as _load_agent_config
+            from flux-agent_cli.config import load_config as _load_agent_config
             _agent_cfg = _load_agent_config()
         except Exception:
             _agent_cfg = {}
@@ -2017,6 +2026,15 @@ class AIAgent:
                     from agent.memory_manager import MemoryManager as _MemoryManager
                     from plugins.memory import load_memory_provider as _load_mem
                     self._memory_manager = _MemoryManager()
+                    # NativeMemory is always registered — zero-config cross-session memory.
+                    # It uses the same SQLite state.db as the session store.
+                    if self._session_db:
+                        try:
+                            from agent.native_memory import NativeMemoryProvider as _NativeMemoryProvider
+                            _native_mem = _NativeMemoryProvider(self._session_db)
+                            self._memory_manager.add_provider(_native_mem)
+                        except Exception as _nme:
+                            logger.debug("NativeMemoryProvider init failed: %s", _nme)
                     _mp = _load_mem(_mem_provider_name)
                     if _mp and _mp.is_available():
                         self._memory_manager.add_provider(_mp)
@@ -2024,7 +2042,7 @@ class AIAgent:
                         _init_kwargs = {
                             "session_id": self.session_id,
                             "platform": platform or "cli",
-                            "omniworker_home": str(get_omniworker_home()),
+                            "flux-agent_home": str(get_flux-agent_home()),
                             "agent_context": "primary",
                         }
                         # Thread session title for memory provider scoping
@@ -2054,10 +2072,10 @@ class AIAgent:
                             _init_kwargs["gateway_session_key"] = self._gateway_session_key
                         # Profile identity for per-profile provider scoping
                         try:
-                            from omniworker_cli.profiles import get_active_profile_name
+                            from flux-agent_cli.profiles import get_active_profile_name
                             _profile = get_active_profile_name()
                             _init_kwargs["agent_identity"] = _profile
-                            _init_kwargs["agent_workspace"] = "omniworker"
+                            _init_kwargs["agent_workspace"] = "flux-agent"
                         except Exception:
                             pass
                         self._memory_manager.initialize_all(**_init_kwargs)
@@ -2215,7 +2233,7 @@ class AIAgent:
         # Resolve custom_providers list once for reuse below (startup
         # context-length override and plugin context-engine init).
         try:
-            from omniworker_cli.config import get_compatible_custom_providers
+            from flux-agent_cli.config import get_compatible_custom_providers
             _custom_providers = get_compatible_custom_providers(_agent_cfg)
         except Exception:
             _custom_providers = _agent_cfg.get("custom_providers")
@@ -2229,7 +2247,7 @@ class AIAgent:
         # Check custom_providers per-model context_length
         if _config_context_length is None and _custom_providers:
             try:
-                from omniworker_cli.config import get_custom_provider_context_length
+                from flux-agent_cli.config import get_custom_provider_context_length
                 _cp_ctx_resolved = get_custom_provider_context_length(
                     model=self.model,
                     base_url=self.base_url,
@@ -2307,7 +2325,7 @@ class AIAgent:
             # Try general plugin system as fallback
             if _selected_engine is None:
                 try:
-                    from omniworker_cli.plugins import get_plugin_context_engine
+                    from flux-agent_cli.plugins import get_plugin_context_engine
                     _candidate = get_plugin_context_engine()
                     if _candidate and _candidate.name == _engine_name:
                         _selected_engine = _candidate
@@ -2368,7 +2386,7 @@ class AIAgent:
             raise ValueError(
                 f"Model {self.model} has a context window of {_ctx:,} tokens, "
                 f"which is below the minimum {MINIMUM_CONTEXT_LENGTH:,} required "
-                f"by OmniWorker Agent.  Choose a model with at least "
+                f"by Flux Agent Agent.  Choose a model with at least "
                 f"{MINIMUM_CONTEXT_LENGTH // 1000}K context, or set "
                 f"model.context_length in config.yaml to override."
             )
@@ -2404,7 +2422,7 @@ class AIAgent:
             try:
                 self.context_compressor.on_session_start(
                     self.session_id,
-                    omniworker_home=str(get_omniworker_home()),
+                    flux-agent_home=str(get_flux-agent_home()),
                     platform=self.platform or "cli",
                     model=self.model,
                     context_length=getattr(self.context_compressor, "context_length", 0),
@@ -2518,6 +2536,60 @@ class AIAgent:
                 "is_anthropic_oauth": self._is_anthropic_oauth,
             })
 
+        # ── Recover session state from DB when resuming an existing session ──
+        # Gateway and API-server paths pass conversation_history into
+        # run_conversation, but fresh agent instances (cache miss, model switch,
+        # or direct API use) should still have _session_messages hydrated so
+        # tools and introspection see the full transcript.
+        if self._session_db and session_id:
+            try:
+                _db_history = self._session_db.get_messages_as_conversation(session_id)
+                if _db_history:
+                    self._session_messages = _db_history
+                    logger.debug(
+                        "Recovered %d messages for session %s from DB",
+                        len(_db_history), session_id,
+                    )
+            except Exception as _db_recover_err:
+                logger.debug("Session message recovery failed: %s", _db_recover_err)
+
+            # Recover provider state for the current provider
+            if self._provider_state:
+                try:
+                    _recovered = self._provider_state.get_recoverable_state(
+                        session_id=session_id,
+                        target_provider=self.provider or "",
+                    )
+                    if _recovered:
+                        self._recovered_provider_state = _recovered
+                        logger.debug(
+                            "Recovered provider state at init for %s: %s",
+                            self.provider, list(_recovered.keys()),
+                        )
+                except Exception as _ps_recover_err:
+                    logger.debug("Provider state recovery at init failed: %s", _ps_recover_err)
+
+            # Recover workspace state from native memory
+            if self._memory_manager:
+                try:
+                    for _provider in self._memory_manager.providers:
+                        if getattr(_provider, "name", "") == "native":
+                            _ws = _provider._native.get_workspace_state()
+                            if _ws and any([
+                                _ws.active_files, _ws.pending_errors,
+                                _ws.last_decisions, _ws.active_goals, _ws.last_task_summary
+                            ]):
+                                # Inject into system prompt via native memory's
+                                # own system_prompt_block() — no need to mutate
+                                # agent state here.
+                                logger.debug(
+                                    "Recovered workspace state for session %s",
+                                    session_id,
+                                )
+                            break
+                except Exception as _ws_recover_err:
+                    logger.debug("Workspace state recovery at init failed: %s", _ws_recover_err)
+
     def _get_session_db_for_recall(self):
         """Return a SessionDB for recall, lazily creating it if an entrypoint forgot.
 
@@ -2529,7 +2601,7 @@ class AIAgent:
         if self._session_db is not None:
             return self._session_db
         try:
-            from omniworker_state import SessionDB
+            from flux-agent_state import SessionDB
 
             self._session_db = SessionDB()
             return self._session_db
@@ -2544,7 +2616,7 @@ class AIAgent:
         try:
             self._session_db.create_session(
                 session_id=self.session_id,
-                source=self.platform or os.environ.get("OMNIWORKER_SESSION_SOURCE", "cli"),
+                source=self.platform or os.environ.get("FLUX AGENT_SESSION_SOURCE", "cli"),
                 model=self.model,
                 model_config=self._session_init_model_config,
                 system_prompt=self._cached_system_prompt,
@@ -2655,13 +2727,13 @@ class AIAgent:
 
     def _ensure_lmstudio_runtime_loaded(self, config_context_length: Optional[int] = None) -> None:
         """
-        Preload the LM Studio model with at least OmniWorker' minimum context.
+        Preload the LM Studio model with at least Flux Agent' minimum context.
         """
         if (self.provider or "").strip().lower() != "lmstudio":
             return
         try:
             from agent.model_metadata import MINIMUM_CONTEXT_LENGTH
-            from omniworker_cli.models import ensure_lmstudio_model_loaded
+            from flux-agent_cli.models import ensure_lmstudio_model_loaded
             if config_context_length is None:
                 config_context_length = getattr(self, "_config_context_length", None)
             target_ctx = max(config_context_length or 0, MINIMUM_CONTEXT_LENGTH)
@@ -2700,7 +2772,7 @@ class AIAgent:
         change persists across turns (unlike fallback which is
         turn-scoped).
         """
-        from omniworker_cli.providers import determine_api_mode
+        from flux-agent_cli.providers import determine_api_mode
 
         # ── Determine api_mode if not provided ──
         if not api_mode:
@@ -2782,6 +2854,22 @@ class AIAgent:
                 shared=True,
             )
 
+        # ── Recover provider-specific state for cross-model continuity ──
+        if self._provider_state:
+            try:
+                _recovered = self._provider_state.get_recoverable_state(
+                    session_id=self.session_id or "",
+                    target_provider=new_provider,
+                )
+                if _recovered:
+                    self._recovered_provider_state = _recovered
+                    logger.debug(
+                        "Recovered provider state for %s: %s",
+                        new_provider, list(_recovered.keys()),
+                    )
+            except Exception as _pr_exc:
+                logger.debug("Provider state recovery failed: %s", _pr_exc)
+
         # ── Re-evaluate prompt caching ──
         self._use_prompt_caching, self._use_native_cache_layout = (
             self._anthropic_prompt_cache_policy(
@@ -2803,7 +2891,7 @@ class AIAgent:
             # custom provider mid-session (closes #15779).
             _sm_custom_providers = None
             try:
-                from omniworker_cli.config import load_config, get_compatible_custom_providers
+                from flux-agent_cli.config import load_config, get_compatible_custom_providers
                 _sm_cfg = load_config()
                 _sm_custom_providers = get_compatible_custom_providers(_sm_cfg)
             except Exception:
@@ -2913,7 +3001,7 @@ class AIAgent:
         all non-forced output is suppressed.
 
         ``suppress_status_output`` is a stricter CLI automation mode used by
-        parseable single-query flows such as ``omniworker chat -q``. In that mode,
+        parseable single-query flows such as ``flux-agent chat -q``. In that mode,
         all status/diagnostic prints routed through ``_vprint`` are suppressed
         so stdout stays machine-readable.
         """
@@ -3204,7 +3292,7 @@ class AIAgent:
         The user-visible status line is intentionally compact: provider,
         error class, attempt N/M, plus ``after Xs`` when the stream dropped
         mid-flight.  Full diagnostic detail goes to ``agent.log`` only —
-        ``omniworker logs --level WARNING | grep "Stream drop"`` to inspect.
+        ``flux-agent logs --level WARNING | grep "Stream drop"`` to inspect.
         """
         kind = "drop mid tool-call" if mid_tool_call else "drop"
         self._log_stream_retry(
@@ -3302,7 +3390,7 @@ class AIAgent:
                 msg = (
                     "⚠ No auxiliary LLM provider configured — context "
                     "compression will drop middle turns without a summary. "
-                    "Run `omniworker setup` or set OPENROUTER_API_KEY."
+                    "Run `flux-agent setup` or set OPENROUTER_API_KEY."
                 )
                 self._compression_warning = msg
                 self._emit_status(msg)
@@ -3337,7 +3425,7 @@ class AIAgent:
                 raise ValueError(
                     f"Auxiliary compression model {aux_model} has a context "
                     f"window of {aux_context:,} tokens, which is below the "
-                    f"minimum {MINIMUM_CONTEXT_LENGTH:,} required by OmniWorker "
+                    f"minimum {MINIMUM_CONTEXT_LENGTH:,} required by Flux Agent "
                     f"Agent.  Choose a compression model with at least "
                     f"{MINIMUM_CONTEXT_LENGTH // 1000}K context (set "
                     f"auxiliary.compression.model in config.yaml), or set "
@@ -3490,19 +3578,19 @@ class AIAgent:
         Priority:
           1. ``providers.<id>.models.<model>.timeout_seconds`` (per-model override)
           2. ``providers.<id>.request_timeout_seconds`` (provider-wide)
-          3. ``OMNIWORKER_API_TIMEOUT`` env var (legacy escape hatch)
+          3. ``FLUX AGENT_API_TIMEOUT`` env var (legacy escape hatch)
           4. 1800.0s default
 
         Used by OpenAI-wire chat completions (streaming and non-streaming) so
         the per-provider config knob wins over the 1800s default.  Without this
-        helper, the hardcoded ``OMNIWORKER_API_TIMEOUT`` fallback would always be
+        helper, the hardcoded ``FLUX AGENT_API_TIMEOUT`` fallback would always be
         passed as a per-call ``timeout=`` kwarg, overriding the client-level
         timeout the AIAgent.__init__ path configured.
         """
         cfg = get_provider_request_timeout(self.provider, self.model)
         if cfg is not None:
             return cfg
-        return float(os.getenv("OMNIWORKER_API_TIMEOUT", 1800.0))
+        return float(os.getenv("FLUX AGENT_API_TIMEOUT", 1800.0))
 
     def _resolved_api_call_stale_timeout_base(self) -> tuple[float, bool]:
         """Resolve the base non-stream stale timeout and whether it is implicit.
@@ -3510,7 +3598,7 @@ class AIAgent:
         Priority:
           1. ``providers.<id>.models.<model>.stale_timeout_seconds``
           2. ``providers.<id>.stale_timeout_seconds``
-          3. ``OMNIWORKER_API_CALL_STALE_TIMEOUT`` env var
+          3. ``FLUX AGENT_API_CALL_STALE_TIMEOUT`` env var
           4. 300.0s default
 
         Returns ``(timeout_seconds, uses_implicit_default)`` so the caller can
@@ -3522,7 +3610,7 @@ class AIAgent:
         if cfg is not None:
             return cfg, False
 
-        env_timeout = os.getenv("OMNIWORKER_API_CALL_STALE_TIMEOUT")
+        env_timeout = os.getenv("FLUX AGENT_API_CALL_STALE_TIMEOUT")
         if env_timeout is not None:
             return float(env_timeout), False
 
@@ -3591,7 +3679,7 @@ class AIAgent:
         # Nous Portal proxies to OpenRouter behind the scenes — identical
         # OpenAI-wire envelope cache_control semantics. Treat it as an
         # OpenRouter-equivalent endpoint for caching layout purposes.
-        is_nous_portal = "omniworker" in eff_base_url.lower()
+        is_nous_portal = "flux-agent" in eff_base_url.lower()
         is_anthropic_wire = eff_api_mode == "anthropic_messages"
         is_native_anthropic = (
             is_anthropic_wire
@@ -3679,7 +3767,7 @@ class AIAgent:
             return False
         if normalized_provider == "copilot":
             try:
-                from omniworker_cli.models import _should_use_copilot_responses_api
+                from flux-agent_cli.models import _should_use_copilot_responses_api
                 return _should_use_copilot_responses_api(model)
             except Exception:
                 # Fall back to the generic GPT-5 rule if Copilot-specific
@@ -3749,7 +3837,7 @@ class AIAgent:
           * ``<function_call>…</function_call>``
           * ``<function_calls>…</function_calls>``
           * ``<function name="…">…</function>`` (Gemma style)
-        Ported from omniworker/omniworker#67318. The ``<function>`` variant is
+        Ported from flux-agent/flux-agent#67318. The ``<function>`` variant is
         boundary-gated (only strips when the tag sits at start-of-line or
         after punctuation and carries a ``name="..."`` attribute) so prose
         mentions like "Use <function> in JavaScript" are preserved.
@@ -3764,7 +3852,7 @@ class AIAgent:
         content = re.sub(r'<reasoning>.*?</reasoning>', '', content, flags=re.DOTALL | re.IGNORECASE)
         content = re.sub(r'<REASONING_SCRATCHPAD>.*?</REASONING_SCRATCHPAD>', '', content, flags=re.DOTALL | re.IGNORECASE)
         content = re.sub(r'<thought>.*?</thought>', '', content, flags=re.DOTALL | re.IGNORECASE)
-        # 1b. Tool-call XML blocks (omniworker/omniworker#67318). Handle the
+        # 1b. Tool-call XML blocks (flux-agent/flux-agent#67318). Handle the
         #     generic tag names first — they have no attribute gating since
         #     a literal <tool_call> in prose is already vanishingly rare.
         for _tc_name in ("tool_call", "tool_calls", "tool_result",
@@ -3808,7 +3896,7 @@ class AIAgent:
         # 3b. Stray tool-call closers. (We do NOT strip bare <function> or
         #     unterminated <function name="..."> because a truncated tail
         #     during streaming may still be valuable to the user; matches
-        #     OmniWorker's intentional asymmetry.)
+        #     Flux Agent's intentional asymmetry.)
         content = re.sub(
             r'</(?:tool_call|tool_calls|tool_result|function_call|function_calls|function)>\s*',
             '',
@@ -4358,12 +4446,12 @@ class AIAgent:
                     _parent_runtime = self._current_main_runtime()
                     _parent_api_mode = _parent_runtime.get("api_mode") or None
                     # The review fork needs to call agent-loop tools (memory,
-                    # skill_manage). Those tools require OmniWorker' own dispatch,
+                    # skill_manage). Those tools require Flux Agent' own dispatch,
                     # which the codex_app_server runtime bypasses entirely
                     # (it runs the turn inside codex's subprocess). So when
                     # the parent is on codex_app_server, downgrade the review
                     # fork to codex_responses — same auth/credentials, but
-                    # talks to the OpenAI Responses API directly so OmniWorker
+                    # talks to the OpenAI Responses API directly so Flux Agent
                     # owns the loop and the agent-loop tools dispatch.
                     if _parent_api_mode == "codex_app_server":
                         _parent_api_mode = "codex_responses"
@@ -4398,7 +4486,7 @@ class AIAgent:
                     # the review fork's outbound HTTP request hits the same
                     # Anthropic/OpenRouter prefix cache the parent warmed.
                     # Without this, the fork rebuilds the system prompt from
-                    # scratch (fresh _omniworker_now() timestamp, fresh
+                    # scratch (fresh _flux-agent_now() timestamp, fresh
                     # session_id, narrower toolset → different skills_prompt)
                     # and the byte-exact prefix-cache key misses. See
                     # issue #25322 and PR #17276 for the full analysis +
@@ -4416,7 +4504,7 @@ class AIAgent:
                     review_agent.session_id = self.session_id
 
                     from model_tools import get_tool_definitions
-                    from omniworker_cli.plugins import (
+                    from flux-agent_cli.plugins import (
                         set_thread_tool_whitelist,
                         clear_thread_tool_whitelist,
                     )
@@ -4539,7 +4627,7 @@ class AIAgent:
             ),
             "session_id": self.session_id or "",
             "parent_session_id": self._parent_session_id or "",
-            "platform": self.platform or os.environ.get("OMNIWORKER_SESSION_SOURCE", "cli"),
+            "platform": self.platform or os.environ.get("FLUX AGENT_SESSION_SOURCE", "cli"),
             "tool_name": "memory",
         }
         if task_id:
@@ -5255,7 +5343,7 @@ class AIAgent:
 
             self._vprint(f"{self.log_prefix}🧾 Request debug dump written to: {dump_file}")
 
-            if env_var_enabled("OMNIWORKER_DUMP_REQUEST_STDOUT"):
+            if env_var_enabled("FLUX AGENT_DUMP_REQUEST_STDOUT"):
                 print(json.dumps(dump_payload, ensure_ascii=False, indent=2, default=str))
 
             return dump_file
@@ -5536,19 +5624,19 @@ class AIAgent:
         """Check whether the per-turn file-mutation verifier footer is on.
 
         Config path: ``display.file_mutation_verifier`` (bool, default True).
-        ``OMNIWORKER_FILE_MUTATION_VERIFIER`` env var overrides config.  Exposed
+        ``FLUX AGENT_FILE_MUTATION_VERIFIER`` env var overrides config.  Exposed
         as a method so tests can patch a single seam without reaching into
         the private ``_turn_failed_file_mutations`` state dict.
         """
         try:
             import os as _os
-            env = _os.environ.get("OMNIWORKER_FILE_MUTATION_VERIFIER")
+            env = _os.environ.get("FLUX AGENT_FILE_MUTATION_VERIFIER")
             if env is not None:
                 return env.strip().lower() not in ("0", "false", "no", "off")
             # Read from the persisted config.yaml so gateway and CLI share
             # the same setting.  Import lazily to avoid a startup-time cycle.
             try:
-                from omniworker_cli.config import load_config as _load_config
+                from flux-agent_cli.config import load_config as _load_config
                 _cfg = _load_config() or {}
             except Exception:
                 _cfg = {}
@@ -5780,6 +5868,7 @@ class AIAgent:
         original_user_message: Any,
         final_response: Any,
         interrupted: bool,
+        tool_results: Any = None,
     ) -> None:
         """Mirror a completed turn into external memory providers.
 
@@ -5815,6 +5904,7 @@ class AIAgent:
             self._memory_manager.sync_all(
                 original_user_message, final_response,
                 session_id=self.session_id or "",
+                tool_results=tool_results,
             )
             self._memory_manager.queue_prefetch_all(
                 original_user_message,
@@ -5986,7 +6076,7 @@ class AIAgent:
 
         Joined into a single string by ``_build_system_prompt`` and
         cached on ``_cached_system_prompt`` for the lifetime of the
-        AIAgent.  OmniWorker never re-renders parts of this string mid-
+        AIAgent.  Flux Agent never re-renders parts of this string mid-
         session — that's the only way to keep upstream prompt caches
         warm across turns.
         """
@@ -5994,7 +6084,7 @@ class AIAgent:
         stable_parts: List[str] = []
 
         # Try SOUL.md as primary identity unless the caller explicitly skipped it.
-        # Some execution modes (cron) still want OMNIWORKER_HOME persona while keeping
+        # Some execution modes (cron) still want FLUX AGENT_HOME persona while keeping
         # cwd project instructions disabled.
         _soul_loaded = False
         if self.load_soul_identity or not self.skip_context_files:
@@ -6007,8 +6097,8 @@ class AIAgent:
             # Fallback to hardcoded identity
             stable_parts.append(DEFAULT_AGENT_IDENTITY)
 
-        # Pointer to the omniworker-agent skill + docs for user questions about OmniWorker itself.
-        stable_parts.append(OMNIWORKER_AGENT_HELP_GUIDANCE)
+        # Pointer to the flux-agent-agent skill + docs for user questions about Flux Agent itself.
+        stable_parts.append(FLUX AGENT_AGENT_HELP_GUIDANCE)
 
         # Tool-aware behavioral guidance: only inject when the tools are loaded
         tool_guidance = []
@@ -6020,7 +6110,7 @@ class AIAgent:
             tool_guidance.append(SKILLS_GUIDANCE)
         # Kanban worker/orchestrator lifecycle — only present when the
         # dispatcher spawned this process (kanban_show check_fn gates on
-        # OMNIWORKER_KANBAN_TASK env var). Normal chat sessions never see
+        # FLUX AGENT_KANBAN_TASK env var). Normal chat sessions never see
         # this block.
         if "kanban_show" in self.valid_tool_names:
             tool_guidance.append(KANBAN_GUIDANCE)
@@ -6148,7 +6238,7 @@ class AIAgent:
 
         if not self.skip_context_files:
             # Use TERMINAL_CWD for context file discovery when set (gateway
-            # mode).  The gateway process runs from the omniworker-agent install
+            # mode).  The gateway process runs from the flux-agent-agent install
             # dir, so os.getcwd() would pick up the repo's AGENTS.md and
             # other dev files — inflating token usage by ~10k for no benefit.
             _context_cwd = os.getenv("TERMINAL_CWD") or None
@@ -6187,8 +6277,8 @@ class AIAgent:
             except Exception:
                 pass
 
-        from omniworker_time import now as _omniworker_now
-        now = _omniworker_now()
+        from flux-agent_time import now as _flux-agent_now
+        now = _flux-agent_now()
         timestamp_line = f"Conversation started: {now.strftime('%A, %B %d, %Y %I:%M %p')}"
         if self.pass_session_id and self.session_id:
             timestamp_line += f"\nSession ID: {self.session_id}"
@@ -6929,7 +7019,7 @@ class AIAgent:
     def _ensure_primary_openai_client(self, *, reason: str) -> Any:
         # Proactively check if SaaS token is expiring soon and refresh it
         try:
-            if os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN") and self._is_saas_token_expiring_soon():
+            if os.getenv("FLUX AGENT_SAAS_REFRESH_TOKEN") and self._is_saas_token_expiring_soon():
                 logger.info("SaaS token is expiring soon. Proactively refreshing...")
                 self._try_refresh_saas_client_credentials()
         except Exception as e:
@@ -7063,7 +7153,7 @@ class AIAgent:
         return any(_contains_image(item) for item in candidates)
 
     def _copilot_headers_for_request(self, *, is_vision: bool) -> dict:
-        from omniworker_cli.copilot_auth import copilot_request_headers
+        from flux-agent_cli.copilot_auth import copilot_request_headers
 
         return copilot_request_headers(is_agent_turn=True, is_vision=is_vision)
 
@@ -7304,7 +7394,7 @@ class AIAgent:
             return False
 
         try:
-            from omniworker_cli.auth import resolve_codex_runtime_credentials
+            from flux-agent_cli.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(force_refresh=force)
         except Exception as exc:
@@ -7333,11 +7423,11 @@ class AIAgent:
             return False
 
         try:
-            from omniworker_cli.auth import resolve_nous_runtime_credentials
+            from flux-agent_cli.auth import resolve_nous_runtime_credentials
 
             creds = resolve_nous_runtime_credentials(
-                min_key_ttl_seconds=max(60, int(os.getenv("OMNIWORKER_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
-                timeout_seconds=float(os.getenv("OMNIWORKER_NOUS_TIMEOUT_SECONDS", "15")),
+                min_key_ttl_seconds=max(60, int(os.getenv("FLUX AGENT_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
+                timeout_seconds=float(os.getenv("FLUX AGENT_NOUS_TIMEOUT_SECONDS", "15")),
                 force_mint=force,
             )
         except Exception as exc:
@@ -7364,9 +7454,9 @@ class AIAgent:
         return True
 
     def _try_refresh_saas_client_credentials(self) -> bool:
-        refresh_token = os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
-        base_url = os.getenv("OMNIWORKER_SAAS_BASE_URL") or os.getenv("CLOUD_API_URL")
-        fingerprint = os.getenv("OMNIWORKER_DEVICE_FINGERPRINT")
+        refresh_token = os.getenv("FLUX AGENT_SAAS_REFRESH_TOKEN")
+        base_url = os.getenv("FLUX AGENT_SAAS_BASE_URL") or os.getenv("CLOUD_API_URL")
+        fingerprint = os.getenv("FLUX AGENT_DEVICE_FINGERPRINT")
 
         if not refresh_token or not base_url:
             return False
@@ -7397,7 +7487,7 @@ class AIAgent:
                     os.environ["OPENAI_API_KEY"] = new_access_token
                     os.environ["CUSTOM_API_KEY"] = new_access_token
                     if new_refresh_token:
-                        os.environ["OMNIWORKER_SAAS_REFRESH_TOKEN"] = new_refresh_token
+                        os.environ["FLUX AGENT_SAAS_REFRESH_TOKEN"] = new_refresh_token
                     
                     self._replace_primary_openai_client(reason="saas_token_refresh")
                     logger.info("SaaS JWT access token refreshed successfully!")
@@ -7448,7 +7538,7 @@ class AIAgent:
             return False
 
         try:
-            from omniworker_cli.copilot_auth import resolve_copilot_token
+            from flux-agent_cli.copilot_auth import resolve_copilot_token
 
             new_token, token_source = resolve_copilot_token()
         except Exception as exc:
@@ -7532,7 +7622,7 @@ class AIAgent:
         elif base_url_host_matches(base_url, "api.routermint.com"):
             self._client_kwargs["default_headers"] = _routermint_headers()
         elif base_url_host_matches(base_url, "api.githubcopilot.com"):
-            from omniworker_cli.models import copilot_default_headers
+            from flux-agent_cli.models import copilot_default_headers
 
             self._client_kwargs["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "api.kimi.com"):
@@ -8162,23 +8252,23 @@ class AIAgent:
             """Stream a chat completions response."""
             import httpx as _httpx
             # Per-provider / per-model request_timeout_seconds (from config.yaml)
-            # wins over the OMNIWORKER_API_TIMEOUT env default if the user set it.
+            # wins over the FLUX AGENT_API_TIMEOUT env default if the user set it.
             _provider_timeout_cfg = get_provider_request_timeout(self.provider, self.model)
             _base_timeout = (
                 _provider_timeout_cfg
                 if _provider_timeout_cfg is not None
-                else float(os.getenv("OMNIWORKER_API_TIMEOUT", 1800.0))
+                else float(os.getenv("FLUX AGENT_API_TIMEOUT", 1800.0))
             )
             # Read timeout: config wins here too.  Otherwise use
-            # OMNIWORKER_STREAM_READ_TIMEOUT (default 120s) for cloud providers.
+            # FLUX AGENT_STREAM_READ_TIMEOUT (default 120s) for cloud providers.
             if _provider_timeout_cfg is not None:
                 _stream_read_timeout = _provider_timeout_cfg
             else:
-                _stream_read_timeout = float(os.getenv("OMNIWORKER_STREAM_READ_TIMEOUT", 120.0))
+                _stream_read_timeout = float(os.getenv("FLUX AGENT_STREAM_READ_TIMEOUT", 120.0))
                 # Local providers (Ollama, llama.cpp, vLLM) can take minutes for
                 # prefill on large contexts before producing the first token.
                 # Auto-increase the httpx read timeout unless the user explicitly
-                # overrode OMNIWORKER_STREAM_READ_TIMEOUT.
+                # overrode FLUX AGENT_STREAM_READ_TIMEOUT.
                 if _stream_read_timeout == 120.0 and self.base_url and is_local_endpoint(self.base_url):
                     _stream_read_timeout = _base_timeout
                     logger.debug(
@@ -8525,7 +8615,7 @@ class AIAgent:
         def _call():
             import httpx as _httpx
 
-            _max_stream_retries = int(os.getenv("OMNIWORKER_STREAM_RETRIES", 2))
+            _max_stream_retries = int(os.getenv("FLUX AGENT_STREAM_RETRIES", 2))
 
             try:
                 for _stream_attempt in range(_max_stream_retries + 1):
@@ -8772,10 +8862,10 @@ class AIAgent:
                 if request_client is not None:
                     self._close_request_openai_client(request_client, reason="stream_request_complete")
 
-        _stream_stale_timeout_base = float(os.getenv("OMNIWORKER_STREAM_STALE_TIMEOUT", 180.0))
+        _stream_stale_timeout_base = float(os.getenv("FLUX AGENT_STREAM_STALE_TIMEOUT", 180.0))
         # Local providers (Ollama, oMLX, llama-cpp) can take 300+ seconds
         # for prefill on large contexts.  Disable the stale detector unless
-        # the user explicitly set OMNIWORKER_STREAM_STALE_TIMEOUT.
+        # the user explicitly set FLUX AGENT_STREAM_STALE_TIMEOUT.
         if _stream_stale_timeout_base == 180.0 and self.base_url and is_local_endpoint(self.base_url):
             _stream_stale_timeout = float("inf")
             logger.debug("Local provider detected (%s) — stale stream timeout disabled", self.base_url)
@@ -9001,7 +9091,7 @@ class AIAgent:
             fb_api_key_hint = (fb.get("api_key") or "").strip() or None
             if not fb_api_key_hint:
                 # key_env and api_key_env are both documented aliases (see
-                # _normalize_custom_provider_entry in omniworker_cli/config.py).
+                # _normalize_custom_provider_entry in flux-agent_cli/config.py).
                 fb_key_env = (fb.get("key_env") or fb.get("api_key_env") or "").strip()
                 if fb_key_env:
                     fb_api_key_hint = os.getenv(fb_key_env, "").strip() or None
@@ -9020,7 +9110,7 @@ class AIAgent:
                     fb_provider)
                 return self._try_activate_fallback()  # try next in chain
             try:
-                from omniworker_cli.model_normalize import normalize_model_for_provider
+                from flux-agent_cli.model_normalize import normalize_model_for_provider
 
                 fb_model = normalize_model_for_provider(fb_model, fb_provider)
             except Exception:
@@ -9571,7 +9661,7 @@ class AIAgent:
         """
         if not _is_multimodal_tool_result(result):
             if isinstance(result, str):
-                max_output_str = os.environ.get("OMNIWORKER_MAX_TOOL_OUTPUT")
+                max_output_str = os.environ.get("FLUX AGENT_MAX_TOOL_OUTPUT")
                 try:
                     max_output = int(max_output_str) if max_output_str is not None else 204800
                 except ValueError:
@@ -9675,7 +9765,7 @@ class AIAgent:
                     "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/bmp": ".bmp",
                 }.get(mime, ".jpg")
                 tmp = tempfile.NamedTemporaryFile(
-                    prefix="omniworker_shrink_", suffix=suffix, delete=False,
+                    prefix="flux-agent_shrink_", suffix=suffix, delete=False,
                 )
                 try:
                     tmp.write(raw)
@@ -9999,7 +10089,7 @@ class AIAgent:
             base_url_host_matches(self._base_url_lower, "models.github.ai")
             or base_url_host_matches(self._base_url_lower, "api.githubcopilot.com")
         )
-        _is_nous = "omniworker" in self._base_url_lower
+        _is_nous = "flux-agent" in self._base_url_lower
         _is_nvidia = "integrate.api.nvidia.com" in self._base_url_lower
         _is_kimi = (
             base_url_host_matches(self.base_url, "api.kimi.com")
@@ -10048,7 +10138,7 @@ class AIAgent:
         _qwen_meta = None
         if _is_qwen:
             _qwen_meta = {
-                "sessionId": self.session_id or "omniworker",
+                "sessionId": self.session_id or "flux-agent",
                 "promptId": str(uuid.uuid4()),
             }
 
@@ -10142,7 +10232,7 @@ class AIAgent:
         Some providers/routes reject `reasoning` with 400s, so gate it to
         known reasoning-capable model families and direct Nous Portal.
         """
-        if base_url_host_matches(self._base_url_lower, "omniworker.com"):
+        if base_url_host_matches(self._base_url_lower, "flux-agent.com"):
             return True
         if base_url_host_matches(self._base_url_lower, "ai-gateway.vercel.sh"):
             return True
@@ -10151,7 +10241,7 @@ class AIAgent:
             or base_url_host_matches(self._base_url_lower, "api.githubcopilot.com")
         ):
             try:
-                from omniworker_cli.models import github_model_reasoning_efforts
+                from flux-agent_cli.models import github_model_reasoning_efforts
 
                 return bool(github_model_reasoning_efforts(self.model))
             except Exception:
@@ -10203,7 +10293,7 @@ class AIAgent:
             if opts or (_time.monotonic() - ts) < 60:
                 return opts
         try:
-            from omniworker_cli.models import lmstudio_model_reasoning_options
+            from flux-agent_cli.models import lmstudio_model_reasoning_options
             opts = lmstudio_model_reasoning_options(
                 self.model, self.base_url, getattr(self, "api_key", ""),
             )
@@ -10228,7 +10318,7 @@ class AIAgent:
     def _github_models_reasoning_extra_body(self) -> dict | None:
         """Format reasoning payload for GitHub Models/OpenAI-compatible routes."""
         try:
-            from omniworker_cli.models import github_model_reasoning_efforts
+            from flux-agent_cli.models import github_model_reasoning_efforts
         except Exception:
             return None
 
@@ -10812,7 +10902,7 @@ class AIAgent:
                 self._session_db.end_session(self.session_id, "compression")
                 old_session_id = self.session_id
                 self.session_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
-                os.environ["OMNIWORKER_SESSION_ID"] = self.session_id
+                os.environ["FLUX AGENT_SESSION_ID"] = self.session_id
                 try:
                     from gateway.session_context import _SESSION_ID
                     _SESSION_ID.set(self.session_id)
@@ -10823,7 +10913,7 @@ class AIAgent:
                 self._session_db_created = False
                 self._session_db.create_session(
                     session_id=self.session_id,
-                    source=self.platform or os.environ.get("OMNIWORKER_SESSION_SOURCE", "cli"),
+                    source=self.platform or os.environ.get("FLUX AGENT_SESSION_SOURCE", "cli"),
                     model=self.model,
                     model_config=self._session_init_model_config,
                     parent_session_id=old_session_id,
@@ -10843,10 +10933,10 @@ class AIAgent:
                 logger.warning("Session DB compression split failed — new session will NOT be indexed: %s", e)
 
         # Notify the context engine that the session_id rotated because of
-        # compression (not a fresh /new). Plugin engines (e.g. omniworker-lcm) use
+        # compression (not a fresh /new). Plugin engines (e.g. flux-agent-lcm) use
         # boundary_reason="compression" to preserve DAG lineage across the
         # rollover instead of re-initializing fresh per-session state.
-        # See omniworker-lcm#68. Built-in ContextCompressor ignores kwargs.
+        # See flux-agent-lcm#68. Built-in ContextCompressor ignores kwargs.
         try:
             _old_sid = locals().get("old_session_id")
             if _old_sid and hasattr(self.context_compressor, "on_session_start"):
@@ -11007,7 +11097,7 @@ class AIAgent:
         block_message: Optional[str] = None
         if not pre_tool_block_checked:
             try:
-                from omniworker_cli.plugins import get_pre_tool_call_block_message
+                from flux-agent_cli.plugins import get_pre_tool_call_block_message
                 block_message = get_pre_tool_call_block_message(
                     function_name, function_args, task_id=effective_task_id or "",
                 )
@@ -11026,7 +11116,7 @@ class AIAgent:
         elif function_name == "session_search":
             session_db = self._get_session_db_for_recall()
             if not session_db:
-                from omniworker_state import format_session_db_unavailable
+                from flux-agent_state import format_session_db_unavailable
                 return json.dumps({"success": False, "error": format_session_db_unavailable()})
             from tools.session_search_tool import session_search as _session_search
             return _session_search(
@@ -11170,7 +11260,7 @@ class AIAgent:
             block_result = None
             blocked_by_guardrail = False
             try:
-                from omniworker_cli.plugins import get_pre_tool_call_block_message
+                from flux-agent_cli.plugins import get_pre_tool_call_block_message
                 block_message = get_pre_tool_call_block_message(
                     function_name, function_args, task_id=effective_task_id or "",
                 )
@@ -11548,7 +11638,7 @@ class AIAgent:
             # Check plugin hooks for a block directive before executing.
             _block_msg: Optional[str] = None
             try:
-                from omniworker_cli.plugins import get_pre_tool_call_block_message
+                from flux-agent_cli.plugins import get_pre_tool_call_block_message
                 _block_msg = get_pre_tool_call_block_message(
                     function_name, function_args, task_id=effective_task_id or "",
                 )
@@ -11657,7 +11747,7 @@ class AIAgent:
             elif function_name == "session_search":
                 session_db = self._get_session_db_for_recall()
                 if not session_db:
-                    from omniworker_state import format_session_db_unavailable
+                    from flux-agent_state import format_session_db_unavailable
                     function_result = json.dumps({"success": False, "error": format_session_db_unavailable()})
                 else:
                     from tools.session_search_tool import session_search as _session_search
@@ -12014,7 +12104,7 @@ class AIAgent:
             )
             _omit_summary_temperature = _raw_summary_temp is _OMIT_TEMP
             _summary_temperature = None if _omit_summary_temperature else _raw_summary_temp
-            _is_nous = "omniworker" in self._base_url_lower
+            _is_nous = "flux-agent" in self._base_url_lower
             # LM Studio uses top-level `reasoning_effort` (not extra_body.reasoning).
             # Mirror ChatCompletionsTransport.build_kwargs() so the summary path
             # — which calls chat.completions.create() directly without going
@@ -12206,12 +12296,12 @@ class AIAgent:
         # Re-read .env so that API keys refreshed by the desktop app's
         # main-process token rotation loop are picked up between turns.
         try:
-            from omniworker_cli.env_loader import load_omniworker_dotenv
-            load_omniworker_dotenv()
+            from flux-agent_cli.env_loader import load_flux-agent_dotenv
+            load_flux-agent_dotenv()
         except Exception:
             pass  # best-effort — don't block the conversation
 
-        # OMNIWORKER INTENT CLASSIFIER (Hybrid Routing)
+        # FLUX AGENT INTENT CLASSIFIER (Hybrid Routing)
         try:
             import os
             import sys
@@ -12221,7 +12311,7 @@ class AIAgent:
             base_url_str = getattr(self, "base_url", "") or ""
             if "8341" in base_url_str or os.environ.get("USE_SMART_ROUTER") == "true":
                 logging.getLogger(__name__).info("Bypassing intent classifier: Smart Router is active as base_url")
-            elif "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("OMNIWORKER_TESTING") == "true":
+            elif "pytest" in sys.modules or os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("FLUX AGENT_TESTING") == "true":
                 logging.getLogger(__name__).info("Bypassing intent classifier: running in test environment")
             else:
                 # Añadir ruta si no está
@@ -12246,10 +12336,10 @@ class AIAgent:
                 self._primary_openai_client = None
                 self._primary_async_openai_client = None
                 
-                logging.getLogger(__name__).info(f"OmniWorker Router -> Model: {self.model} | URL: {self.base_url}")
+                logging.getLogger(__name__).info(f"Flux Agent Router -> Model: {self.model} | URL: {self.base_url}")
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"Error en OmniWorker Intent Classifier: {e}")
+            logging.getLogger(__name__).warning(f"Error en Flux Agent Intent Classifier: {e}")
 
         self._ensure_db_session()
 
@@ -12268,8 +12358,8 @@ class AIAgent:
             pass
 
         # Tag all log records on this thread with the session ID so
-        # ``omniworker logs --session <id>`` can filter a single conversation.
-        from omniworker_logging import set_session_context
+        # ``flux-agent logs --session <id>`` can filter a single conversation.
+        from flux-agent_logging import set_session_context
         set_session_context(self.session_id)
 
         # Bind the skill write-origin ContextVar for this thread so tool
@@ -12479,7 +12569,7 @@ class AIAgent:
                 # continuation).  Plugins can use this to initialise
                 # session-scoped state (e.g. warm a memory cache).
                 try:
-                    from omniworker_cli.plugins import invoke_hook as _invoke_hook
+                    from flux-agent_cli.plugins import invoke_hook as _invoke_hook
                     _invoke_hook(
                         "on_session_start",
                         session_id=self.session_id,
@@ -12499,7 +12589,7 @@ class AIAgent:
         active_system_prompt = self._cached_system_prompt
 
         # ── Preflight message cap compression (A1) ──
-        max_messages_str = os.environ.get("OMNIWORKER_MAX_MESSAGES")
+        max_messages_str = os.environ.get("FLUX AGENT_MAX_MESSAGES")
         try:
             max_messages = int(max_messages_str) if max_messages_str else 500
         except ValueError:
@@ -12607,13 +12697,13 @@ class AIAgent:
         # Context is ALWAYS injected into the user message, never the
         # system prompt.  This preserves the prompt cache prefix — the
         # system prompt stays identical across turns so cached tokens
-        # are reused.  The system prompt is OmniWorker's territory; plugins
+        # are reused.  The system prompt is Flux Agent's territory; plugins
         # contribute context alongside the user's input.
         #
         # All injected context is ephemeral (not persisted to session DB).
         _plugin_user_context = ""
         try:
-            from omniworker_cli.plugins import invoke_hook as _invoke_hook
+            from flux-agent_cli.plugins import invoke_hook as _invoke_hook
             _pre_results = _invoke_hook(
                 "pre_llm_call",
                 session_id=self.session_id,
@@ -12692,7 +12782,7 @@ class AIAgent:
                 _raw_cache = self._memory_manager.prefetch_all(_query) or ""
                 import os
                 try:
-                    _max_chars = int(os.environ.get("OMNIWORKER_PREFETCH_MAX_CHARS", "32000"))
+                    _max_chars = int(os.environ.get("FLUX AGENT_PREFETCH_MAX_CHARS", "32000"))
                 except ValueError:
                     _max_chars = 32000
 
@@ -12708,7 +12798,7 @@ class AIAgent:
 
         # Optional opt-in runtime: if api_mode == codex_app_server, hand the
         # turn to the codex app-server subprocess (terminal/file ops/patching
-        # all run inside Codex). Default OmniWorker path is bypassed entirely.
+        # all run inside Codex). Default Flux Agent path is bypassed entirely.
         # See agent/transports/codex_app_server_session.py for the adapter
         # and references/codex-app-server-runtime.md for the rationale.
         if self.api_mode == "codex_app_server":
@@ -12835,7 +12925,7 @@ class AIAgent:
                         self._pending_steer = (existing + "\n" + _pre_api_steer) if existing else _pre_api_steer
 
             # ── Proactive message cap compression check (A1) ──
-            max_messages_str = os.environ.get("OMNIWORKER_MAX_MESSAGES")
+            max_messages_str = os.environ.get("FLUX AGENT_MAX_MESSAGES")
             try:
                 max_messages = int(max_messages_str) if max_messages_str else 500
             except ValueError:
@@ -12952,9 +13042,9 @@ class AIAgent:
             # NOTE: Plugin context from pre_llm_call hooks is injected into the
             # user message (see injection block above), NOT the system prompt.
             # This is intentional — system prompt modifications break the prompt
-            # cache prefix.  The system prompt is reserved for OmniWorker internals.
+            # cache prefix.  The system prompt is reserved for Flux Agent internals.
             #
-            # OmniWorker invariant: the system prompt is built ONCE per session
+            # Flux Agent invariant: the system prompt is built ONCE per session
             # (cached on ``_cached_system_prompt``) and replayed verbatim on
             # every turn.  We send it as a single content string so the
             # bytes are byte-stable across turns and upstream prompt caches
@@ -13151,7 +13241,7 @@ class AIAgent:
                         api_kwargs = self._get_transport().preflight_kwargs(api_kwargs, allow_stream=False)
 
                     try:
-                        from omniworker_cli.plugins import invoke_hook as _invoke_hook
+                        from flux-agent_cli.plugins import invoke_hook as _invoke_hook
                         request_messages = api_kwargs.get("messages")
                         if not isinstance(request_messages, list):
                             request_messages = api_kwargs.get("input")
@@ -13185,7 +13275,7 @@ class AIAgent:
                     except Exception:
                         pass
 
-                    if env_var_enabled("OMNIWORKER_DUMP_REQUESTS"):
+                    if env_var_enabled("FLUX AGENT_DUMP_REQUESTS"):
                         self._dump_api_request_debug(api_kwargs, reason="preflight")
 
                     # Always prefer the streaming path — even without stream
@@ -14194,7 +14284,7 @@ class AIAgent:
                             continue
                     if (
                         status_code == 401
-                        and os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
+                        and os.getenv("FLUX AGENT_SAAS_REFRESH_TOKEN")
                         and not saas_auth_retry_attempted
                     ):
                         saas_auth_retry_attempted = True
@@ -14214,7 +14304,7 @@ class AIAgent:
                         # Credential refresh didn't help — show diagnostic info.
                         # Most common causes: Portal OAuth expired/revoked,
                         # account out of credits, or agent key blocked.
-                        from omniworker_constants import display_omniworker_home as _dhh_fn
+                        from flux-agent_constants import display_flux-agent_home as _dhh_fn
                         _dhh = _dhh_fn()
                         _body_text = ""
                         try:
@@ -14228,8 +14318,8 @@ class AIAgent:
                             print(f"{self.log_prefix}   Response: {_body_text}")
                         print(f"{self.log_prefix}   Most likely: Portal OAuth expired, account out of credits, or agent key revoked.")
                         print(f"{self.log_prefix}   Troubleshooting:")
-                        print(f"{self.log_prefix}     • Re-authenticate: omniworker login --provider nous")
-                        print(f"{self.log_prefix}     • Check credits / billing: https://portal.omniworker.com")
+                        print(f"{self.log_prefix}     • Re-authenticate: flux-agent login --provider nous")
+                        print(f"{self.log_prefix}     • Check credits / billing: https://portal.flux-agent.com")
                         print(f"{self.log_prefix}     • Verify stored credentials: {_dhh}/auth.json")
                         print(f"{self.log_prefix}     • Switch providers temporarily: /model <model> --provider openrouter")
                     if (
@@ -14259,14 +14349,14 @@ class AIAgent:
                         print(f"{self.log_prefix}   Auth method: {auth_method}")
                         print(f"{self.log_prefix}   Token prefix: {key[:12]}..." if key and len(key) > 12 else f"{self.log_prefix}   Token: (empty or short)")
                         print(f"{self.log_prefix}   Troubleshooting:")
-                        from omniworker_constants import display_omniworker_home as _dhh_fn
+                        from flux-agent_constants import display_flux-agent_home as _dhh_fn
                         _dhh = _dhh_fn()
-                        print(f"{self.log_prefix}     • Check ANTHROPIC_TOKEN in {_dhh}/.env for OmniWorker-managed OAuth/setup tokens")
+                        print(f"{self.log_prefix}     • Check ANTHROPIC_TOKEN in {_dhh}/.env for Flux Agent-managed OAuth/setup tokens")
                         print(f"{self.log_prefix}     • Check ANTHROPIC_API_KEY in {_dhh}/.env for API keys or legacy token values")
                         print(f"{self.log_prefix}     • For API keys: verify at https://platform.claude.com/settings/keys")
                         print(f"{self.log_prefix}     • For Claude Code: run 'claude /login' to refresh, then retry")
-                        print(f"{self.log_prefix}     • Legacy cleanup: omniworker config set ANTHROPIC_TOKEN \"\"")
-                        print(f"{self.log_prefix}     • Clear stale keys: omniworker config set ANTHROPIC_API_KEY \"\"")
+                        print(f"{self.log_prefix}     • Legacy cleanup: flux-agent config set ANTHROPIC_TOKEN \"\"")
+                        print(f"{self.log_prefix}     • Clear stale keys: flux-agent config set ANTHROPIC_API_KEY \"\"")
 
                     # ── Thinking block signature recovery ─────────────────
                     # Anthropic signs thinking blocks against the full turn
@@ -14509,7 +14599,7 @@ class AIAgent:
                     # this on the next pass and try fallback or bail.
                     #
                     # IMPORTANT: Nous Portal multiplexes multiple upstream
-                    # providers (DeepSeek, Kimi, MiMo, OmniWorker).  A 429 can
+                    # providers (DeepSeek, Kimi, MiMo, Flux Agent).  A 429 can
                     # also mean an UPSTREAM provider is out of capacity
                     # for one specific model -- transient, clears in
                     # seconds, nothing to do with the caller's quota.
@@ -14843,10 +14933,10 @@ class AIAgent:
                                 self._vprint(f"{self.log_prefix}   💡 Codex OAuth token was rejected (HTTP 401). Your token may have been", force=True)
                                 self._vprint(f"{self.log_prefix}      refreshed by another client (Codex CLI, VS Code). To fix:", force=True)
                                 self._vprint(f"{self.log_prefix}      1. Run `codex` in your terminal to generate fresh tokens.", force=True)
-                                self._vprint(f"{self.log_prefix}      2. Then run `omniworker auth` to re-authenticate.", force=True)
+                                self._vprint(f"{self.log_prefix}      2. Then run `flux-agent auth` to re-authenticate.", force=True)
                             else:
                                 self._vprint(f"{self.log_prefix}   💡 Your API key was rejected by the provider. Check:", force=True)
-                                self._vprint(f"{self.log_prefix}      • Is the key valid? Run: omniworker setup", force=True)
+                                self._vprint(f"{self.log_prefix}      • Is the key valid? Run: flux-agent setup", force=True)
                                 self._vprint(f"{self.log_prefix}      • Does your account have access to {_model}?", force=True)
                                 if base_url_host_matches(str(_base), "openrouter.ai"):
                                     self._vprint(f"{self.log_prefix}      • Check credits: https://openrouter.ai/settings/credits", force=True)
@@ -15049,7 +15139,20 @@ class AIAgent:
                 normalized = _transport.normalize_response(response, **_normalize_kwargs)
                 assistant_message = normalized
                 finish_reason = normalized.finish_reason
-                
+
+                # Persist provider-specific state for cross-model continuity
+                if self._provider_state and getattr(normalized, "provider_data", None):
+                    try:
+                        self._provider_state.save_turn_state(
+                            session_id=self.session_id or "",
+                            turn_idx=self._user_turn_count,
+                            provider=self.provider,
+                            model=self.model,
+                            provider_data=normalized.provider_data,
+                        )
+                    except Exception as _pds_exc:
+                        logger.debug("ProviderStateStore save failed: %s", _pds_exc)
+
                 # Normalize content to string — some OpenAI-compatible servers
                 # (llama-server, etc.) return content as a dict or list instead
                 # of a plain string, which crashes downstream .strip() calls.
@@ -15072,7 +15175,7 @@ class AIAgent:
                         assistant_message.content = str(raw)
 
                 try:
-                    from omniworker_cli.plugins import invoke_hook as _invoke_hook
+                    from flux-agent_cli.plugins import invoke_hook as _invoke_hook
                     _assistant_tool_calls = getattr(assistant_message, "tool_calls", None) or []
                     _assistant_text = assistant_message.content or ""
                     _invoke_hook(
@@ -15963,7 +16066,7 @@ class AIAgent:
             # protocol violation).  The agent loop strips tools before calling
             # _handle_max_iterations, so the model cannot call kanban_block
             # itself — we must do it on its behalf.
-            _kanban_task = os.environ.get("OMNIWORKER_KANBAN_TASK")
+            _kanban_task = os.environ.get("FLUX AGENT_KANBAN_TASK")
             if _kanban_task:
                 try:
                     handle_function_call(
@@ -16084,7 +16187,7 @@ class AIAgent:
         # First hook to return a string wins; None/empty return leaves text unchanged.
         if final_response and not interrupted:
             try:
-                from omniworker_cli.plugins import invoke_hook as _invoke_hook
+                from flux-agent_cli.plugins import invoke_hook as _invoke_hook
                 _transform_results = _invoke_hook(
                     "transform_llm_output",
                     response_text=final_response,
@@ -16105,7 +16208,7 @@ class AIAgent:
         # to an external memory system).
         if final_response and not interrupted:
             try:
-                from omniworker_cli.plugins import invoke_hook as _invoke_hook
+                from flux-agent_cli.plugins import invoke_hook as _invoke_hook
                 _invoke_hook(
                     "post_llm_call",
                     session_id=self.session_id,
@@ -16191,10 +16294,30 @@ class AIAgent:
             self._iters_since_skill = 0
 
         # External memory provider: sync the completed turn + queue next prefetch.
+        # Extract tool results from the current turn for NativeMemory indexing.
+        _turn_tool_results = None
+        if messages:
+            _last_user_idx = None
+            for _i in reversed(range(len(messages))):
+                if messages[_i].get("role") == "user":
+                    _last_user_idx = _i
+                    break
+            if _last_user_idx is not None:
+                _turn_tool_results = [
+                    {
+                        "content": m.get("content", ""),
+                        "tool_name": m.get("tool_name", ""),
+                        "tool_call_id": m.get("tool_call_id", ""),
+                        "name": m.get("name", ""),
+                    }
+                    for m in messages[_last_user_idx + 1:]
+                    if m.get("role") == "tool"
+                ]
         self._sync_external_memory_for_turn(
             original_user_message=original_user_message,
             final_response=final_response,
             interrupted=interrupted,
+            tool_results=_turn_tool_results,
         )
 
         # Background memory/skill review — runs AFTER the response is delivered
@@ -16229,7 +16352,7 @@ class AIAgent:
         # Fired at the very end of every run_conversation call.
         # Plugins can use this for cleanup, flushing buffers, etc.
         try:
-            from omniworker_cli.plugins import invoke_hook as _invoke_hook
+            from flux-agent_cli.plugins import invoke_hook as _invoke_hook
             _invoke_hook(
                 "on_session_end",
                 session_id=self.session_id,
@@ -16267,7 +16390,7 @@ class AIAgent:
         should_review_memory: bool = False,
     ) -> Dict[str, Any]:
         """Codex app-server runtime path. Hands the entire turn to a `codex
-        app-server` subprocess and projects its events back into OmniWorker'
+        app-server` subprocess and projects its events back into Flux Agent'
         messages list so memory/skill review keep working.
 
         Called from run_conversation() when self.api_mode == "codex_app_server".
@@ -16280,7 +16403,7 @@ class AIAgent:
         # shutdown (see _cleanup hook).
         if not hasattr(self, "_codex_session") or self._codex_session is None:
             cwd = getattr(self, "session_cwd", None) or os.getcwd()
-            # Approval callback: defer to OmniWorker' standard prompt flow if a
+            # Approval callback: defer to Flux Agent' standard prompt flow if a
             # CLI thread has installed one. Gateway / cron contexts get the
             # codex-side fail-closed default.
             try:
@@ -16323,7 +16446,7 @@ class AIAgent:
         # If the turn signalled the underlying client is wedged (deadline
         # blown, post-tool watchdog tripped, OAuth refresh died, subprocess
         # exited), retire the session so the next turn respawns codex
-        # rather than riding the broken process. Mirrors omniworker beta.8's
+        # rather than riding the broken process. Mirrors flux-agent beta.8's
         # "retire timed-out app-server clients" fix.
         if getattr(turn, "should_retire", False):
             logger.warning(
@@ -16368,10 +16491,30 @@ class AIAgent:
         # interrupt/error to avoid feeding partial transcripts to memory.
         if not turn.interrupted and turn.error is None:
             try:
+                # Extract tool results from the current turn for NativeMemory indexing.
+                _turn_tool_results_2 = None
+                if messages:
+                    _last_user_idx_2 = None
+                    for _i2 in reversed(range(len(messages))):
+                        if messages[_i2].get("role") == "user":
+                            _last_user_idx_2 = _i2
+                            break
+                    if _last_user_idx_2 is not None:
+                        _turn_tool_results_2 = [
+                            {
+                                "content": m.get("content", ""),
+                                "tool_name": m.get("tool_name", ""),
+                                "tool_call_id": m.get("tool_call_id", ""),
+                                "name": m.get("name", ""),
+                            }
+                            for m in messages[_last_user_idx_2 + 1:]
+                            if m.get("role") == "tool"
+                        ]
                 self._sync_external_memory_for_turn(
                     original_user_message=original_user_message,
                     final_response=turn.final_text,
                     interrupted=False,
+                    tool_results=_turn_tool_results_2,
                 )
             except Exception:
                 logger.debug("external memory sync raised", exc_info=True)

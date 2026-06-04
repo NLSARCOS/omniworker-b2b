@@ -1,4 +1,4 @@
-import { Box, Text } from '@omniworker/ink'
+import { Box, Text } from '@flux-agent/ink'
 import { useStore } from '@nanostores/react'
 
 import { useGateway } from '../app/gatewayContext.js'

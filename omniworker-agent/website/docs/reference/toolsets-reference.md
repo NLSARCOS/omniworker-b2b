@@ -1,7 +1,7 @@
 ---
 sidebar_position: 4
 title: "Toolsets Reference"
-description: "Reference for OmniWorker core, composite, platform, and dynamic toolsets"
+description: "Reference for Flux Agent core, composite, platform, and dynamic toolsets"
 ---
 
 # Toolsets Reference
@@ -14,30 +14,30 @@ Every tool belongs to exactly one toolset. When you enable a toolset, all tools 
 
 - **Core** — A single logical group of related tools (e.g., `file` bundles `read_file`, `write_file`, `patch`, `search_files`)
 - **Composite** — Combines multiple core toolsets for a common scenario (e.g., `debugging` bundles file, terminal, and web tools)
-- **Platform** — A complete tool configuration for a specific deployment context (e.g., `omniworker-cli` is the default for interactive CLI sessions)
+- **Platform** — A complete tool configuration for a specific deployment context (e.g., `flux-agent-cli` is the default for interactive CLI sessions)
 
 ## Configuring Toolsets
 
 ### Per-session (CLI)
 
 ```bash
-omniworker chat --toolsets web,file,terminal
-omniworker chat --toolsets debugging        # composite — expands to file + terminal + web
-omniworker chat --toolsets all              # everything
+flux-agent chat --toolsets web,file,terminal
+flux-agent chat --toolsets debugging        # composite — expands to file + terminal + web
+flux-agent chat --toolsets all              # everything
 ```
 
 ### Per-platform (config.yaml)
 
 ```yaml
 toolsets:
-  - omniworker-cli          # default for CLI
-  # - omniworker-telegram   # override for Telegram gateway
+  - flux-agent-cli          # default for CLI
+  # - flux-agent-telegram   # override for Telegram gateway
 ```
 
 ### Interactive management
 
 ```bash
-omniworker tools                            # curses UI to enable/disable per platform
+flux-agent tools                            # curses UI to enable/disable per platform
 ```
 
 Or in-session:
@@ -54,20 +54,20 @@ Or in-session:
 |---------|-------|---------|
 | `browser` | `browser_back`, `browser_cdp`, `browser_click`, `browser_console`, `browser_dialog`, `browser_get_images`, `browser_navigate`, `browser_press`, `browser_scroll`, `browser_snapshot`, `browser_type`, `browser_vision`, `web_search` | Core browser automation. Includes `web_search` as a fallback for quick lookups. `browser_cdp` and `browser_dialog` are gated at runtime — registered only when a CDP endpoint is reachable at session start (via `/browser connect`, `browser.cdp_url` config, Browserbase, or Camofox). `browser_dialog` works together with the `pending_dialogs` and `frame_tree` fields that `browser_snapshot` adds when a CDP supervisor is attached. |
 | `clarify` | `clarify` | Ask the user a question when the agent needs clarification. |
-| `code_execution` | `execute_code` | Run Python scripts that call OmniWorker tools programmatically. |
+| `code_execution` | `execute_code` | Run Python scripts that call Flux Agent tools programmatically. |
 | `cronjob` | `cronjob` | Schedule and manage recurring tasks. |
 | `debugging` | composite (`file` + `terminal` + `web`) | Debug bundle — file, process/terminal, web extract/search. |
 | `delegation` | `delegate_task` | Spawn isolated subagent instances for parallel work. |
-| `discord` | `discord` | Core Discord text/embed/DM actions (gateway-only). Active on the `omniworker-discord` toolset. |
-| `discord_admin` | `discord_admin` | Discord moderation (bans, role changes, channel management). Active on the `omniworker-discord` toolset; requires the bot to hold the relevant Discord permissions. |
+| `discord` | `discord` | Core Discord text/embed/DM actions (gateway-only). Active on the `flux-agent-discord` toolset. |
+| `discord_admin` | `discord_admin` | Discord moderation (bans, role changes, channel management). Active on the `flux-agent-discord` toolset; requires the bot to hold the relevant Discord permissions. |
 | `feishu_doc` | `feishu_doc_read` | Read Feishu/Lark document content. Used by the Feishu document-comment intelligent-reply handler. |
-| `feishu_drive` | `feishu_drive_add_comment`, `feishu_drive_list_comments`, `feishu_drive_list_comment_replies`, `feishu_drive_reply_comment` | Feishu/Lark drive comment operations. Scoped to the comment agent; not exposed on `omniworker-cli` or other messaging toolsets. |
+| `feishu_drive` | `feishu_drive_add_comment`, `feishu_drive_list_comments`, `feishu_drive_list_comment_replies`, `feishu_drive_reply_comment` | Feishu/Lark drive comment operations. Scoped to the comment agent; not exposed on `flux-agent-cli` or other messaging toolsets. |
 | `file` | `patch`, `read_file`, `search_files`, `write_file` | File reading, writing, searching, and editing. |
 | `homeassistant` | `ha_call_service`, `ha_get_state`, `ha_list_entities`, `ha_list_services` | Smart home control via Home Assistant. Only available when `HASS_TOKEN` is set. |
 | `computer_use` | `computer_use` | Background macOS desktop control via cua-driver — does not steal cursor/focus. Works with any tool-capable model. macOS only; requires `cua-driver` on `$PATH`. |
 | `image_gen` | `image_generate` | Text-to-image generation via FAL.ai (with opt-in OpenAI / xAI backends). |
 | `video_gen` | `video_generate` | Text-to-video and image-to-video via plugin-registered backends (xAI Grok-Imagine, FAL.ai Veo 3.1 / Pixverse v6 / Kling O3). Pass `image_url` to animate an image; omit it for text-to-video. |
-| `kanban` | `kanban_block`, `kanban_comment`, `kanban_complete`, `kanban_create`, `kanban_heartbeat`, `kanban_link`, `kanban_show` | Multi-agent coordination tools — only registered when the agent is spawned by the kanban dispatcher (`OMNIWORKER_KANBAN_TASK` env set). Lets workers mark tasks done with structured handoffs, block for human input, heartbeat during long ops, comment on threads, and (for orchestrators) fan out into child tasks. |
+| `kanban` | `kanban_block`, `kanban_comment`, `kanban_complete`, `kanban_create`, `kanban_heartbeat`, `kanban_link`, `kanban_show` | Multi-agent coordination tools — only registered when the agent is spawned by the kanban dispatcher (`FLUX AGENT_KANBAN_TASK` env set). Lets workers mark tasks done with structured handoffs, block for human input, heartbeat during long ops, comment on threads, and (for orchestrators) fan out into child tasks. |
 | `memory` | `memory` | Persistent cross-session memory management. |
 | `messaging` | `send_message` | Send messages to other platforms (Telegram, Discord, etc.) from within a session. |
 | `moa` | `mixture_of_agents` | Multi-model consensus via Mixture of Agents. |
@@ -82,38 +82,38 @@ Or in-session:
 | `vision` | `vision_analyze` | Image analysis via vision-capable models. |
 | `video` | `video_analyze` | Video analysis and understanding tools (opt-in, not in the default toolset — add explicitly via `--toolsets`). |
 | `web` | `web_extract`, `web_search` | Web search and page content extraction. |
-| `yuanbao` | `yb_query_group_info`, `yb_query_group_members`, `yb_search_sticker`, `yb_send_dm`, `yb_send_sticker` | Yuanbao DM/group actions and sticker search. Registered only on `omniworker-yuanbao`. |
+| `yuanbao` | `yb_query_group_info`, `yb_query_group_members`, `yb_search_sticker`, `yb_send_dm`, `yb_send_sticker` | Yuanbao DM/group actions and sticker search. Registered only on `flux-agent-yuanbao`. |
 
 ## Platform Toolsets
 
-Platform toolsets define the complete tool configuration for a deployment target. Most messaging platforms use the same set as `omniworker-cli`:
+Platform toolsets define the complete tool configuration for a deployment target. Most messaging platforms use the same set as `flux-agent-cli`:
 
-| Toolset | Differences from `omniworker-cli` |
+| Toolset | Differences from `flux-agent-cli` |
 |---------|-------------------------------|
-| `omniworker-cli` | Full toolset — the default for interactive CLI sessions. Includes file, terminal, web, browser, memory, skills, vision, image_gen, todo, tts, delegation, code_execution, cronjob, session_search, clarify, and `safe` (read-only) bundles plus the standard messaging tools. |
-| `omniworker-acp` | Drops `clarify`, `cronjob`, `image_generate`, `send_message`, `text_to_speech`, and all four Home Assistant tools. Focused on coding tasks in IDE context. |
-| `omniworker-api-server` | Drops `clarify`, `send_message`, and `text_to_speech`. Keeps everything else — suitable for programmatic access where user interaction isn't possible. |
-| `omniworker-cron` | Same as `omniworker-cli`. |
-| `omniworker-telegram` | Same as `omniworker-cli`. |
-| `omniworker-discord` | Adds `discord` and `discord_admin` on top of `omniworker-cli`. |
-| `omniworker-slack` | Same as `omniworker-cli`. |
-| `omniworker-whatsapp` | Same as `omniworker-cli`. |
-| `omniworker-signal` | Same as `omniworker-cli`. |
-| `omniworker-matrix` | Same as `omniworker-cli`. |
-| `omniworker-mattermost` | Same as `omniworker-cli`. |
-| `omniworker-email` | Same as `omniworker-cli`. |
-| `omniworker-sms` | Same as `omniworker-cli`. |
-| `omniworker-bluebubbles` | Same as `omniworker-cli`. |
-| `omniworker-dingtalk` | Same as `omniworker-cli`. |
-| `omniworker-feishu` | Adds the five `feishu_doc_*` / `feishu_drive_*` tools (only used by the document-comment handler, not the regular chat adapter). |
-| `omniworker-qqbot` | Same as `omniworker-cli`. |
-| `omniworker-wecom` | Same as `omniworker-cli`. |
-| `omniworker-wecom-callback` | Same as `omniworker-cli`. |
-| `omniworker-weixin` | Same as `omniworker-cli`. |
-| `omniworker-yuanbao` | Adds the five `yb_*` tools (DM/group/sticker) on top of `omniworker-cli`. |
-| `omniworker-homeassistant` | Same as `omniworker-cli` (the Home Assistant tools are already present by default and activate when `HASS_TOKEN` is set). |
-| `omniworker-webhook` | Same as `omniworker-cli`. |
-| `omniworker-gateway` | Internal gateway orchestrator toolset — union of every `omniworker-<platform>` toolset; used when the gateway needs to accept any message source. |
+| `flux-agent-cli` | Full toolset — the default for interactive CLI sessions. Includes file, terminal, web, browser, memory, skills, vision, image_gen, todo, tts, delegation, code_execution, cronjob, session_search, clarify, and `safe` (read-only) bundles plus the standard messaging tools. |
+| `flux-agent-acp` | Drops `clarify`, `cronjob`, `image_generate`, `send_message`, `text_to_speech`, and all four Home Assistant tools. Focused on coding tasks in IDE context. |
+| `flux-agent-api-server` | Drops `clarify`, `send_message`, and `text_to_speech`. Keeps everything else — suitable for programmatic access where user interaction isn't possible. |
+| `flux-agent-cron` | Same as `flux-agent-cli`. |
+| `flux-agent-telegram` | Same as `flux-agent-cli`. |
+| `flux-agent-discord` | Adds `discord` and `discord_admin` on top of `flux-agent-cli`. |
+| `flux-agent-slack` | Same as `flux-agent-cli`. |
+| `flux-agent-whatsapp` | Same as `flux-agent-cli`. |
+| `flux-agent-signal` | Same as `flux-agent-cli`. |
+| `flux-agent-matrix` | Same as `flux-agent-cli`. |
+| `flux-agent-mattermost` | Same as `flux-agent-cli`. |
+| `flux-agent-email` | Same as `flux-agent-cli`. |
+| `flux-agent-sms` | Same as `flux-agent-cli`. |
+| `flux-agent-bluebubbles` | Same as `flux-agent-cli`. |
+| `flux-agent-dingtalk` | Same as `flux-agent-cli`. |
+| `flux-agent-feishu` | Adds the five `feishu_doc_*` / `feishu_drive_*` tools (only used by the document-comment handler, not the regular chat adapter). |
+| `flux-agent-qqbot` | Same as `flux-agent-cli`. |
+| `flux-agent-wecom` | Same as `flux-agent-cli`. |
+| `flux-agent-wecom-callback` | Same as `flux-agent-cli`. |
+| `flux-agent-weixin` | Same as `flux-agent-cli`. |
+| `flux-agent-yuanbao` | Adds the five `yb_*` tools (DM/group/sticker) on top of `flux-agent-cli`. |
+| `flux-agent-homeassistant` | Same as `flux-agent-cli` (the Home Assistant tools are already present by default and activate when `HASS_TOKEN` is set). |
+| `flux-agent-webhook` | Same as `flux-agent-cli`. |
+| `flux-agent-gateway` | Internal gateway orchestrator toolset — union of every `flux-agent-<platform>` toolset; used when the gateway needs to accept any message source. |
 
 ## Dynamic Toolsets
 
@@ -141,7 +141,7 @@ Define custom toolsets in `config.yaml` to create project-specific bundles:
 
 ```yaml
 toolsets:
-  - omniworker-cli
+  - flux-agent-cli
 custom_toolsets:
   data-science:
     - file
@@ -155,8 +155,8 @@ custom_toolsets:
 
 - `all` or `*` — expands to every registered toolset (built-in + dynamic + plugin)
 
-## Relationship to `omniworker tools`
+## Relationship to `flux-agent tools`
 
-The `omniworker tools` command provides a curses-based UI for toggling individual tools on or off per platform. This operates at the tool level (finer than toolsets) and persists to `config.yaml`. Disabled tools are filtered out even if their toolset is enabled.
+The `flux-agent tools` command provides a curses-based UI for toggling individual tools on or off per platform. This operates at the tool level (finer than toolsets) and persists to `config.yaml`. Disabled tools are filtered out even if their toolset is enabled.
 
 See also: [Tools Reference](./tools-reference.md) for the complete list of individual tools and their parameters.

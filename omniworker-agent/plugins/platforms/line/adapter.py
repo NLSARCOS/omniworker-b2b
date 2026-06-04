@@ -1,5 +1,5 @@
 """
-LINE Messaging API platform adapter for OmniWorker Agent.
+LINE Messaging API platform adapter for Flux Agent Agent.
 
 A bundled platform plugin that runs an aiohttp webhook server, accepts LINE
 webhook events (signature-verified), and relays messages to/from the agent
@@ -41,7 +41,7 @@ Synthesis credits
 -----------------
 
 This file is a synthesis of seven open community PRs adding LINE support
-to OmniWorker Agent. It deliberately ports the *strongest* idea from each into
+to Flux Agent Agent. It deliberately ports the *strongest* idea from each into
 a single plugin-form module that requires zero core edits:
 
 * PR #18153 (leepoweii)   — Template Buttons postback cache state machine,
@@ -1263,7 +1263,7 @@ class LineAdapter(BasePlatformAdapter):
         from trusted internal code, we recheck the resolved path against
         an allowed-roots set before serving. Sources allowed:
         ``tempfile.gettempdir()``, ``/tmp`` (which resolves to
-        ``/private/tmp`` on macOS), and ``OMNIWORKER_HOME``. PR #8398.
+        ``/private/tmp`` on macOS), and ``FLUX AGENT_HOME``. PR #8398.
         """
         from aiohttp import web
 
@@ -1282,15 +1282,15 @@ class LineAdapter(BasePlatformAdapter):
             return web.Response(status=404, text="not found")
 
         try:
-            from omniworker_constants import get_omniworker_home
-            omniworker_home = Path(get_omniworker_home()).resolve()
+            from flux-agent_constants import get_flux-agent_home
+            flux-agent_home = Path(get_flux-agent_home()).resolve()
         except Exception:
-            omniworker_home = Path.home().joinpath(".omniworker").resolve()
+            flux-agent_home = Path.home().joinpath(".flux-agent").resolve()
 
         allowed_roots = {
             Path(tempfile.gettempdir()).resolve(),
             Path("/tmp").resolve(),  # → /private/tmp on macOS
-            omniworker_home,
+            flux-agent_home,
         }
         resolved = path.resolve()
         if not any(_is_relative_to(resolved, r) for r in allowed_roots):
@@ -1488,14 +1488,14 @@ def validate_config(config) -> bool:
 
 
 def is_connected(config) -> bool:
-    """Surface in ``omniworker status`` even before the adapter is instantiated."""
+    """Surface in ``flux-agent status`` even before the adapter is instantiated."""
     return validate_config(config)
 
 
 def _env_enablement() -> Optional[Dict[str, Any]]:
     """Auto-seed PlatformConfig.extra from env-only setups.
 
-    Lets ``omniworker status`` reflect a LINE configuration that lives entirely
+    Lets ``flux-agent status`` reflect a LINE configuration that lives entirely
     in ``.env`` without a ``platforms.line`` block in ``config.yaml``.
     Mirrors the IRC plugin's pattern.
     """
@@ -1562,10 +1562,10 @@ async def _standalone_send(
 
 
 def interactive_setup() -> None:
-    """Minimal stdin wizard for ``omniworker setup line``.
+    """Minimal stdin wizard for ``flux-agent setup line``.
 
     Mirrors the irc/teams style: prompts for the two required vars, plus
-    one optional public URL. Writes to ``~/.omniworker/.env`` via ``omniworker_cli.config``.
+    one optional public URL. Writes to ``~/.flux-agent/.env`` via ``flux-agent_cli.config``.
     """
     print()
     print("LINE Messaging API setup")
@@ -1575,9 +1575,9 @@ def interactive_setup() -> None:
     print()
 
     try:
-        from omniworker_cli.config import get_env_var, set_env_var
+        from flux-agent_cli.config import get_env_var, set_env_var
     except ImportError:
-        print("omniworker_cli.config not available; set LINE_* vars manually in ~/.omniworker/.env")
+        print("flux-agent_cli.config not available; set LINE_* vars manually in ~/.flux-agent/.env")
         return
 
     def _prompt(var: str, prompt: str, *, secret: bool = False) -> None:
@@ -1604,7 +1604,7 @@ def interactive_setup() -> None:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the OmniWorker plugin system at startup."""
+    """Plugin entry point — called by the Flux Agent plugin system at startup."""
     ctx.register_platform(
         name="line",
         label="LINE",

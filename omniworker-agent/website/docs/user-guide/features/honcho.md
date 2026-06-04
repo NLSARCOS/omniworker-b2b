@@ -6,7 +6,7 @@ description: "AI-native persistent memory via Honcho — dialectic reasoning, mu
 
 # Honcho Memory
 
-[Honcho](https://github.com/plastic-labs/honcho) is an AI-native memory backend that adds dialectic reasoning and deep user modeling on top of OmniWorker's built-in memory system. Instead of simple key-value storage, Honcho maintains a running model of who the user is — their preferences, communication style, goals, and patterns — by reasoning about conversations after they happen.
+[Honcho](https://github.com/plastic-labs/honcho) is an AI-native memory backend that adds dialectic reasoning and deep user modeling on top of Flux Agent's built-in memory system. Instead of simple key-value storage, Honcho maintains a running model of who the user is — their preferences, communication style, goals, and patterns — by reasoning about conversations after they happen.
 
 :::info Honcho is a Memory Provider Plugin
 Honcho is integrated into the [Memory Providers](./memory-providers.md) system. All features below are available through the unified memory provider interface.
@@ -28,24 +28,24 @@ Honcho is integrated into the [Memory Providers](./memory-providers.md) system. 
 
 **Session-scoped context**: Base context now includes the session summary alongside the user representation and peer card. This gives the agent awareness of what has already been discussed in the current session, reducing repetition and enabling continuity.
 
-**Multi-agent profiles**: When multiple OmniWorker instances talk to the same user (e.g., a coding assistant and a personal assistant), Honcho maintains separate "peer" profiles. Each peer sees only its own observations and conclusions, preventing cross-contamination of context.
+**Multi-agent profiles**: When multiple Flux Agent instances talk to the same user (e.g., a coding assistant and a personal assistant), Honcho maintains separate "peer" profiles. Each peer sees only its own observations and conclusions, preventing cross-contamination of context.
 
 ## Setup
 
 ```bash
-omniworker memory setup    # select "honcho" from the provider list
+flux-agent memory setup    # select "honcho" from the provider list
 ```
 
 Or configure manually:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 memory:
   provider: honcho
 ```
 
 ```bash
-echo 'HONCHO_API_KEY=***' >> ~/.omniworker/.env
+echo 'HONCHO_API_KEY=***' >> ~/.flux-agent/.env
 ```
 
 Get an API key at [honcho.dev](https://honcho.dev).
@@ -104,7 +104,7 @@ The auto-injected dialectic scales `dialecticReasoningLevel` by query length: +1
 
 ## Configuration Options
 
-Honcho is configured in `~/.honcho/config.json` (global) or `$OMNIWORKER_HOME/honcho.json` (profile-local). The setup wizard handles this for you.
+Honcho is configured in `~/.honcho/config.json` (global) or `$FLUX AGENT_HOME/honcho.json` (profile-local). The setup wizard handles this for you.
 
 ### Full Config Reference
 
@@ -127,7 +127,7 @@ Honcho is configured in `~/.honcho/config.json` (global) or `$OMNIWORKER_HOME/ho
 | `sessionStrategy` | `'per-directory'` | `per-directory`, `per-repo`, `per-session`, or `global` |
 
 **Session strategy** controls how Honcho sessions map to your work:
-- `per-session` — each `omniworker` run gets a fresh session. Clean starts, memory via tools. Recommended for new users.
+- `per-session` — each `flux-agent` run gets a fresh session. Clean starts, memory via tools. Recommended for new users.
 - `per-directory` — one Honcho session per working directory. Context accumulates across runs.
 - `per-repo` — one session per git repository.
 - `global` — single session across all directories.
@@ -183,7 +183,7 @@ Common patterns:
 | AI shouldn't re-model the user from its own replies | `"ai": {"observeMe": true, "observeOthers": false}` |
 | Strong persona the AI peer shouldn't update from self-observation | `"ai": {"observeMe": false, "observeOthers": true}` |
 
-Server-side toggles set via the [Honcho dashboard](https://app.honcho.dev) win over local defaults — OmniWorker syncs them back at session init.
+Server-side toggles set via the [Honcho dashboard](https://app.honcho.dev) win over local defaults — Flux Agent syncs them back at session init.
 
 ## Tools
 
@@ -199,34 +199,34 @@ When Honcho is active as the memory provider, five tools become available:
 
 ## CLI Commands
 
-The `omniworker honcho` subcommand is **only registered when Honcho is the active memory provider** (`memory.provider: honcho` in `config.yaml`). Run `omniworker memory setup` and pick Honcho first; the subcommand appears on the next invocation.
+The `flux-agent honcho` subcommand is **only registered when Honcho is the active memory provider** (`memory.provider: honcho` in `config.yaml`). Run `flux-agent memory setup` and pick Honcho first; the subcommand appears on the next invocation.
 
 ```bash
-omniworker honcho status          # Connection status, config, and key settings
-omniworker honcho setup           # Redirects to `omniworker memory setup`
-omniworker honcho strategy        # Show or set session strategy (per-session/per-directory/per-repo/global)
-omniworker honcho peer            # Show or update peer names + dialectic reasoning level
-omniworker honcho mode            # Show or set recall mode (hybrid/context/tools)
-omniworker honcho tokens          # Show or set token budget for context and dialectic
-omniworker honcho identity        # Seed or show the AI peer's Honcho identity
-omniworker honcho sync            # Sync Honcho config to all existing profiles
-omniworker honcho peers           # Show peer identities across all profiles
-omniworker honcho sessions        # List known Honcho session mappings
-omniworker honcho map             # Map current directory to a Honcho session name
-omniworker honcho enable          # Enable Honcho for the active profile
-omniworker honcho disable         # Disable Honcho for the active profile
-omniworker honcho migrate         # Step-by-step migration guide from omniworker-honcho
+flux-agent honcho status          # Connection status, config, and key settings
+flux-agent honcho setup           # Redirects to `flux-agent memory setup`
+flux-agent honcho strategy        # Show or set session strategy (per-session/per-directory/per-repo/global)
+flux-agent honcho peer            # Show or update peer names + dialectic reasoning level
+flux-agent honcho mode            # Show or set recall mode (hybrid/context/tools)
+flux-agent honcho tokens          # Show or set token budget for context and dialectic
+flux-agent honcho identity        # Seed or show the AI peer's Honcho identity
+flux-agent honcho sync            # Sync Honcho config to all existing profiles
+flux-agent honcho peers           # Show peer identities across all profiles
+flux-agent honcho sessions        # List known Honcho session mappings
+flux-agent honcho map             # Map current directory to a Honcho session name
+flux-agent honcho enable          # Enable Honcho for the active profile
+flux-agent honcho disable         # Disable Honcho for the active profile
+flux-agent honcho migrate         # Step-by-step migration guide from flux-agent-honcho
 ```
 
-## Migrating from `omniworker honcho`
+## Migrating from `flux-agent honcho`
 
-If you previously used the standalone `omniworker honcho setup`:
+If you previously used the standalone `flux-agent honcho setup`:
 
 1. Your existing configuration (`honcho.json` or `~/.honcho/config.json`) is preserved
 2. Your server-side data (memories, conclusions, user profiles) is intact
 3. Set `memory.provider: honcho` in config.yaml to reactivate
 
-No re-login or re-setup needed. Run `omniworker memory setup` and select "honcho" — the wizard detects your existing config.
+No re-login or re-setup needed. Run `flux-agent memory setup` and select "honcho" — the wizard detects your existing config.
 
 ## Full Documentation
 

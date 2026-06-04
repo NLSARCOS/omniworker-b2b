@@ -1,7 +1,7 @@
 ---
 sidebar_position: 11
 title: "Automate Anything with Cron"
-description: "Real-world automation patterns using OmniWorker cron — monitoring, reports, pipelines, and multi-skill workflows"
+description: "Real-world automation patterns using Flux Agent cron — monitoring, reports, pipelines, and multi-skill workflows"
 ---
 
 # Automate Anything with Cron
@@ -15,7 +15,7 @@ Cron jobs run in fresh agent sessions with no memory of your current chat. Promp
 :::
 
 :::tip Don't need the LLM? Use no-agent mode.
-For recurring watchdogs where the script already produces the exact message you want to send (memory alerts, disk alerts, CI pings, heartbeats), skip the LLM entirely with [script-only cron jobs](/docs/guides/cron-script-only). Zero tokens, same scheduler. You can ask OmniWorker to set one up for you in chat — the `cronjob` tool knows when to pick `no_agent=True` and writes the script for you.
+For recurring watchdogs where the script already produces the exact message you want to send (memory alerts, disk alerts, CI pings, heartbeats), skip the LLM entirely with [script-only cron jobs](/docs/guides/cron-script-only). Zero tokens, same scheduler. You can ask Flux Agent to set one up for you in chat — the `cronjob` tool knows when to pick `no_agent=True` and writes the script for you.
 :::
 
 ---
@@ -29,17 +29,17 @@ The `script` parameter is the secret weapon here. A Python script runs before ea
 Create the monitoring script:
 
 ```bash
-mkdir -p ~/.omniworker/scripts
+mkdir -p ~/.flux-agent/scripts
 ```
 
-```python title="~/.omniworker/scripts/watch-site.py"
+```python title="~/.flux-agent/scripts/watch-site.py"
 import hashlib, json, os, urllib.request
 
 URL = "https://example.com/pricing"
-STATE_FILE = os.path.expanduser("~/.omniworker/scripts/.watch-site-state.json")
+STATE_FILE = os.path.expanduser("~/.flux-agent/scripts/.watch-site-state.json")
 
 # Fetch current content
-req = urllib.request.Request(URL, headers={"User-Agent": "OmniWorker-Monitor/1.0"})
+req = urllib.request.Request(URL, headers={"User-Agent": "Flux Agent-Monitor/1.0"})
 content = urllib.request.urlopen(req, timeout=30).read().decode()
 current_hash = hashlib.sha256(content.encode()).hexdigest()
 
@@ -66,7 +66,7 @@ else:
 Set up the cron job:
 
 ```bash
-/cron add "every 1h" "If the script output says CHANGE DETECTED, summarize what changed on the page and why it might matter. If it says NO_CHANGE, respond with just [SILENT]." --script ~/.omniworker/scripts/watch-site.py --name "Pricing monitor" --deliver telegram
+/cron add "every 1h" "If the script output says CHANGE DETECTED, summarize what changed on the page and why it might matter. If it says NO_CHANGE, respond with just [SILENT]." --script ~/.flux-agent/scripts/watch-site.py --name "Pricing monitor" --deliver telegram
 ```
 
 :::tip The [SILENT] Trick
@@ -93,7 +93,7 @@ Keep it under 500 words — highlight only what matters." --name "Weekly AI dige
 From the CLI:
 
 ```bash
-omniworker cron create "0 9 * * 1" \
+flux-agent cron create "0 9 * * 1" \
   "Generate a weekly report covering the top AI news, trending ML GitHub repos, and most-discussed HN posts. Format with sections, include links, keep under 500 words." \
   --name "Weekly AI digest" \
   --deliver telegram
@@ -108,14 +108,14 @@ The `0 9 * * 1` is a standard cron expression: 9:00 AM every Monday.
 Monitor a repository for new issues, PRs, or releases.
 
 ```bash
-/cron add "every 6h" "Check the GitHub repository OmniWorker/omniworker-agent for:
+/cron add "every 6h" "Check the GitHub repository Flux Agent/flux-agent-agent for:
 - New issues opened in the last 6 hours
 - New PRs opened or merged in the last 6 hours
 - Any new releases
 
 Use the terminal to run gh commands:
-  gh issue list --repo OmniWorker/omniworker-agent --state open --json number,title,author,createdAt --limit 10
-  gh pr list --repo OmniWorker/omniworker-agent --state all --json number,title,author,createdAt,mergedAt --limit 10
+  gh issue list --repo Flux Agent/flux-agent-agent --state open --json number,title,author,createdAt --limit 10
+  gh pr list --repo Flux Agent/flux-agent-agent --state all --json number,title,author,createdAt,mergedAt --limit 10
 
 Filter to only items from the last 6 hours. If nothing new, respond with [SILENT].
 Otherwise, provide a concise summary of the activity." --name "Repo watcher" --deliver discord
@@ -131,11 +131,11 @@ Notice how the prompt includes the exact `gh` commands. The cron agent has no me
 
 Scrape data at regular intervals, save to files, and detect trends over time. This pattern combines a script (for collection) with the agent (for analysis).
 
-```python title="~/.omniworker/scripts/collect-prices.py"
+```python title="~/.flux-agent/scripts/collect-prices.py"
 import json, os, urllib.request
 from datetime import datetime
 
-DATA_DIR = os.path.expanduser("~/.omniworker/data/prices")
+DATA_DIR = os.path.expanduser("~/.flux-agent/data/prices")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # Fetch current data (example: crypto prices)
@@ -168,7 +168,7 @@ for r in recent[-6:]:
 
 If prices are flat and nothing notable, respond with [SILENT].
 If there's a significant move, explain what happened." \
-  --script ~/.omniworker/scripts/collect-prices.py \
+  --script ~/.flux-agent/scripts/collect-prices.py \
   --name "Price tracker" \
   --deliver telegram
 ```

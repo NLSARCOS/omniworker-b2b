@@ -8,10 +8,10 @@ description: >
   running locally.
 platforms: [linux, macos, windows]
 version: 1.0.0
-author: OmniWorker Agent + Nous Research
+author: Flux Agent Agent + Nous Research
 license: MIT
 metadata:
-  omniworker:
+  flux-agent:
     tags: [BCI, neurofeedback, health, focus, EEG, cognitive-state, biometrics, neuroskill]
     category: health
     related_skills: []
@@ -19,7 +19,7 @@ metadata:
 
 # NeuroSkill BCI Integration
 
-Connect OmniWorker to a running [NeuroSkill](https://neuroskill.com/) instance to read
+Connect Flux Agent to a running [NeuroSkill](https://neuroskill.com/) instance to read
 real-time brain and body metrics from a BCI wearable. Use this to give
 cognitively-aware responses, suggest interventions, and track mental performance
 over time.

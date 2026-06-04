@@ -2,8 +2,8 @@
   "version": 1,
   "updated_at": "2026-05-11T16:41:16Z",
   "metadata": {
-    "source": "omniworker-agent repo",
-    "docs": "https://omniworker-agent.omniworker.com/docs/reference/model-catalog"
+    "source": "flux-agent-agent repo",
+    "docs": "https://flux-agent-agent.flux-agent.com/docs/reference/model-catalog"
   },
   "providers": {
     "openrouter": {

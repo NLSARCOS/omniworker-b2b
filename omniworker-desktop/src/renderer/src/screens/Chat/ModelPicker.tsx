@@ -1,25 +1,25 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-interface OmniWorkerModel {
+interface Flux AgentModel {
   id: string;
   label: string;
   provider: string;
   model: string;
 }
 
-const OMNIWORKER_MODELS: OmniWorkerModel[] = [
+const FLUX AGENT_MODELS: Flux AgentModel[] = [
   {
     id: "normal",
-    label: "OmniWorker Normal",
-    provider: "omniworker",
-    model: "omniworker",
+    label: "Flux Agent Normal",
+    provider: "flux-agent",
+    model: "flux-agent",
   },
   {
     id: "code",
-    label: "OmniWorker Code",
-    provider: "omniworker",
-    model: "omniworker-code",
+    label: "Flux Agent Code",
+    provider: "flux-agent",
+    model: "flux-agent-code",
   },
 ];
 
@@ -33,10 +33,10 @@ interface ModelPickerProps {
 }
 
 function getDisplayLabel(model: string): string {
-  const found = OMNIWORKER_MODELS.find((m) => m.model === model);
+  const found = FLUX AGENT_MODELS.find((m) => m.model === model);
   if (found) return found.label;
-  if (model === "omniworker-code") return "OmniWorker Code";
-  return "OmniWorker Normal";
+  if (model === "flux-agent-code") return "Flux Agent Code";
+  return "Flux Agent Normal";
 }
 
 export const ModelPicker = memo(function ModelPicker({
@@ -64,7 +64,7 @@ export const ModelPicker = memo(function ModelPicker({
     setIsOpen((v) => !v);
   }
 
-  function select(m: OmniWorkerModel): void {
+  function select(m: Flux AgentModel): void {
     onSelectModel(m.provider, m.model, currentBaseUrl);
     setIsOpen(false);
   }
@@ -81,8 +81,8 @@ export const ModelPicker = memo(function ModelPicker({
       {isOpen && (
         <div className="chat-model-dropdown">
           <div className="chat-model-group">
-            <div className="chat-model-group-label">OmniWorker</div>
-            {OMNIWORKER_MODELS.map((m) => {
+            <div className="chat-model-group-label">Flux Agent</div>
+            {FLUX AGENT_MODELS.map((m) => {
               const active = currentModel === m.model;
               return (
                 <button

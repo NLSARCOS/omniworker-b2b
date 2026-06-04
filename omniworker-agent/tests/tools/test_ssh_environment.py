@@ -109,7 +109,7 @@ class TestControlSocketPath:
 
         env = SSHEnvironment(
             host="9373:9b91:4480:558d:708e:e601:24e8:d8d0",
-            user="omniworker",
+            user="flux-agent",
             port=22,
         )
 

@@ -1,4 +1,4 @@
-name: OmniWorker smoke test
+name: Flux Agent smoke test
 description: >
   Run the image's built-in entrypoint against `--help` and `dashboard --help`
   to catch basic runtime regressions before publishing.  Requires the image
@@ -8,33 +8,33 @@ description: >
 
 inputs:
   image:
-    description: Fully-qualified image tag (e.g. nousresearch/omniworker-agent:test)
+    description: Fully-qualified image tag (e.g. nousresearch/flux-agent-agent:test)
     required: true
 
 runs:
   using: composite
   steps:
-    - name: Ensure /tmp/omniworker-test is omniworker-writable
+    - name: Ensure /tmp/flux-agent-test is flux-agent-writable
       shell: bash
       run: |
-        # The image runs as the omniworker user (UID 10000).  GitHub Actions
-        # creates /tmp/omniworker-test root-owned by default, which omniworker
+        # The image runs as the flux-agent user (UID 10000).  GitHub Actions
+        # creates /tmp/flux-agent-test root-owned by default, which flux-agent
         # can't write to — chown it to match the in-container UID before
-        # bind-mounting.  Real users doing `docker run -v ~/.omniworker:...`
+        # bind-mounting.  Real users doing `docker run -v ~/.flux-agent:...`
         # with their own UID hit the same issue and have their own
-        # remediations (OMNIWORKER_UID env var, or chown locally).
-        mkdir -p /tmp/omniworker-test
-        sudo chown -R 10000:10000 /tmp/omniworker-test
+        # remediations (FLUX AGENT_UID env var, or chown locally).
+        mkdir -p /tmp/flux-agent-test
+        sudo chown -R 10000:10000 /tmp/flux-agent-test
 
-    - name: omniworker --help
+    - name: flux-agent --help
       shell: bash
       run: |
         docker run --rm \
-          -v /tmp/omniworker-test:/opt/data \
-          --entrypoint /opt/omniworker/docker/entrypoint.sh \
+          -v /tmp/flux-agent-test:/opt/data \
+          --entrypoint /opt/flux-agent/docker/entrypoint.sh \
           "${{ inputs.image }}" --help
 
-    - name: omniworker dashboard --help
+    - name: flux-agent dashboard --help
       shell: bash
       run: |
         # Regression guard for #9153: dashboard was present in source but
@@ -42,6 +42,6 @@ runs:
         # the Dockerfile is excluding the dashboard subcommand from the
         # installed package.
         docker run --rm \
-          -v /tmp/omniworker-test:/opt/data \
-          --entrypoint /opt/omniworker/docker/entrypoint.sh \
+          -v /tmp/flux-agent-test:/opt/data \
+          --entrypoint /opt/flux-agent/docker/entrypoint.sh \
           "${{ inputs.image }}" dashboard --help

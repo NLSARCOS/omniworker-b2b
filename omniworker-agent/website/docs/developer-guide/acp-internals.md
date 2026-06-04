@@ -6,7 +6,7 @@ description: "How the ACP adapter works: lifecycle, sessions, event bridge, appr
 
 # ACP Internals
 
-The ACP adapter wraps OmniWorker' synchronous `AIAgent` in an async JSON-RPC stdio server.
+The ACP adapter wraps Flux Agent' synchronous `AIAgent` in an async JSON-RPC stdio server.
 
 Key implementation files:
 
@@ -22,22 +22,22 @@ Key implementation files:
 ## Boot flow
 
 ```text
-omniworker acp / omniworker-acp / python -m acp_adapter
+flux-agent acp / flux-agent-acp / python -m acp_adapter
   -> acp_adapter.entry.main()
   -> parse --version / --check / --setup before server startup
-  -> load ~/.omniworker/.env
+  -> load ~/.flux-agent/.env
   -> configure stderr logging
-  -> construct OmniWorkerACPAgent
+  -> construct Flux AgentACPAgent
   -> acp.run_agent(agent, use_unstable_protocol=True)
 ```
 
-The Zed ACP Registry path launches the same adapter through `uvx --from 'omniworker-agent[acp]==<version>' omniworker-acp`, pointed at the `omniworker-agent` PyPI release.
+The Zed ACP Registry path launches the same adapter through `uvx --from 'flux-agent-agent[acp]==<version>' flux-agent-acp`, pointed at the `flux-agent-agent` PyPI release.
 
 Stdout is reserved for ACP JSON-RPC transport. Human-readable logs go to stderr.
 
 ## Major components
 
-### `OmniWorkerACPAgent`
+### `Flux AgentACPAgent`
 
 `acp_adapter/server.py` implements the ACP agent protocol.
 
@@ -94,15 +94,15 @@ asyncio.run_coroutine_threadsafe(...)
 
 Mapping:
 
-- `allow_once` -> OmniWorker `once`
-- `allow_always` -> OmniWorker `always`
-- reject options -> OmniWorker `deny`
+- `allow_once` -> Flux Agent `once`
+- `allow_always` -> Flux Agent `always`
+- reject options -> Flux Agent `deny`
 
 Timeouts and bridge failures deny by default.
 
 ### Tool rendering helpers
 
-`acp_adapter/tools.py` maps OmniWorker tools to ACP tool kinds and builds editor-facing content.
+`acp_adapter/tools.py` maps Flux Agent tools to ACP tool kinds and builds editor-facing content.
 
 Examples:
 
@@ -116,7 +116,7 @@ Examples:
 ```text
 new_session(cwd)
   -> create SessionState
-  -> create AIAgent(platform="acp", enabled_toolsets=["omniworker-acp"])
+  -> create AIAgent(platform="acp", enabled_toolsets=["flux-agent-acp"])
   -> bind task_id/session_id to cwd override
 
 prompt(..., session_id)
@@ -144,12 +144,12 @@ prompt(..., session_id)
 
 ACP does not implement its own auth store.
 
-Instead it reuses OmniWorker' runtime resolver:
+Instead it reuses Flux Agent' runtime resolver:
 
 - `acp_adapter/auth.py`
-- `omniworker_cli/runtime_provider.py`
+- `flux-agent_cli/runtime_provider.py`
 
-So ACP advertises and uses the currently configured OmniWorker provider/credentials. It also always advertises a terminal setup auth method (`omniworker-setup`, args `--setup`) so first-run registry clients can open OmniWorker' interactive model/provider configuration before starting a normal ACP session.
+So ACP advertises and uses the currently configured Flux Agent provider/credentials. It also always advertises a terminal setup auth method (`flux-agent-setup`, args `--setup`) so first-run registry clients can open Flux Agent' interactive model/provider configuration before starting a normal ACP session.
 
 ## Working directory binding
 
@@ -172,13 +172,13 @@ ACP temporarily installs an approval callback on the terminal tool during prompt
 
 ## Current limitations
 
-- ACP sessions are persisted to the shared `~/.omniworker/state.db` (SessionDB) and transparently restored across process restarts; they appear in `session_search`
+- ACP sessions are persisted to the shared `~/.flux-agent/state.db` (SessionDB) and transparently restored across process restarts; they appear in `session_search`
 - non-text prompt blocks are currently ignored for request text extraction
 - editor-specific UX varies by ACP client implementation
 
 ## Related files
 
 - `tests/acp/` — ACP test suite
-- `toolsets.py` — `omniworker-acp` toolset definition
-- `omniworker_cli/main.py` — `omniworker acp` CLI subcommand
-- `pyproject.toml` — `[acp]` optional dependency + `omniworker-acp` script
+- `toolsets.py` — `flux-agent-acp` toolset definition
+- `flux-agent_cli/main.py` — `flux-agent acp` CLI subcommand
+- `pyproject.toml` — `[acp]` optional dependency + `flux-agent-acp` script

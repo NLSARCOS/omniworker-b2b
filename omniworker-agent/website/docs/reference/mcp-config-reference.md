@@ -1,7 +1,7 @@
 ---
 sidebar_position: 8
 title: "MCP Config Reference"
-description: "Reference for OmniWorker Agent MCP configuration keys, filtering semantics, and utility-tool policy"
+description: "Reference for Flux Agent Agent MCP configuration keys, filtering semantics, and utility-tool policy"
 ---
 
 # MCP Config Reference
@@ -10,7 +10,7 @@ This page is the compact reference companion to the main MCP docs.
 
 For conceptual guidance, see:
 - [MCP (Model Context Protocol)](/docs/user-guide/features/mcp)
-- [Use MCP with OmniWorker](/docs/guides/use-mcp-with-omniworker)
+- [Use MCP with Flux Agent](/docs/guides/use-mcp-with-flux-agent)
 
 ## Root config shape
 
@@ -96,7 +96,7 @@ Result:
 
 ## Utility-tool policy
 
-OmniWorker may register these utility wrappers per MCP server:
+Flux Agent may register these utility wrappers per MCP server:
 
 Resources:
 - `list_resources`
@@ -122,7 +122,7 @@ tools:
 
 ### Capability-aware registration
 
-Even when `resources: true` or `prompts: true`, OmniWorker only registers those utility tools if the MCP session actually exposes the corresponding capability.
+Even when `resources: true` or `prompts: true`, Flux Agent only registers those utility tools if the MCP session actually exposes the corresponding capability.
 
 So this is normal:
 - you enable prompts
@@ -146,7 +146,7 @@ Behavior:
 
 ## Empty result behavior
 
-If filtering removes all server-native tools and no utility tools are registered, OmniWorker does not create an empty MCP runtime toolset for that server.
+If filtering removes all server-native tools and no utility tools are registered, Flux Agent does not create an empty MCP runtime toolset for that server.
 
 ## Example configs
 
@@ -240,8 +240,8 @@ mcp_servers:
 ```
 
 Behavior:
-- OmniWorker uses the MCP SDK's OAuth 2.1 PKCE flow (metadata discovery, dynamic client registration, token exchange, and refresh)
+- Flux Agent uses the MCP SDK's OAuth 2.1 PKCE flow (metadata discovery, dynamic client registration, token exchange, and refresh)
 - On first connect, a browser window opens for authorization
-- Tokens are persisted to `~/.omniworker/mcp-tokens/<server>.json` and reused across sessions
+- Tokens are persisted to `~/.flux-agent/mcp-tokens/<server>.json` and reused across sessions
 - Token refresh is automatic; re-authorization only happens when refresh fails
 - Only applies to HTTP/StreamableHTTP transport (`url`-based servers)

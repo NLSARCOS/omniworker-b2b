@@ -726,7 +726,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 16px", fontWeight: 400 }}>App nativa para macOS, Windows, Linux — v0.5.6</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 <a
-                  href="/api/downloads/omniworker-desktop-0.5.6-x64.dmg"
+                  href="/api/downloads/flux-agent-desktop-0.5.6-x64.dmg"
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 8,
                     padding: "8px 16px", fontSize: 13, fontWeight: 600,
@@ -738,7 +738,7 @@ export default function DashboardPage() {
                   <span>Mac (Intel/Apple Silicon)</span>
                 </a>
                 <a
-                  href="/api/downloads/omniworker-desktop-0.5.6-setup.exe"
+                  href="/api/downloads/flux-agent-desktop-0.5.6-setup.exe"
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 8,
                     padding: "8px 16px", fontSize: 13, fontWeight: 600,
@@ -750,7 +750,7 @@ export default function DashboardPage() {
                   <span>Windows</span>
                 </a>
                 <a
-                  href="/api/downloads/omniworker-desktop-0.5.6.AppImage"
+                  href="/api/downloads/flux-agent-desktop-0.5.6.AppImage"
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 8,
                     padding: "8px 16px", fontSize: 13, fontWeight: 600,

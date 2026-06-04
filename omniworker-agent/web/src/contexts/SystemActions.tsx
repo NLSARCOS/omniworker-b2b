@@ -10,7 +10,7 @@ import {
 
 const ACTION_NAMES: Record<SystemAction, string> = {
   restart: "gateway-restart",
-  update: "omniworker-update",
+  update: "flux-agent-update",
 };
 
 export function SystemActionsProvider({

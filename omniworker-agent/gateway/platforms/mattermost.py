@@ -2,7 +2,7 @@
 
 Connects to a self-hosted (or cloud) Mattermost instance via its REST API
 (v4) and WebSocket for real-time events.  No external Mattermost library
-required — uses aiohttp which is already a OmniWorker dependency.
+required — uses aiohttp which is already a Flux Agent dependency.
 
 Environment variables:
     MATTERMOST_URL              Server URL (e.g. https://mm.example.com)
@@ -33,7 +33,7 @@ from gateway.platforms.base import (
 logger = logging.getLogger(__name__)
 
 # Mattermost post size limit (server default is 16383, but 4000 is the
-# practical limit for readable messages — matching OmniWorker's choice).
+# practical limit for readable messages — matching Flux Agent's choice).
 MAX_POST_LENGTH = 4000
 
 # Channel type codes returned by the Mattermost API.

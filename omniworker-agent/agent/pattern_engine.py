@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ def _is_excluded_prompt(text: str) -> bool:
 def _load_config() -> Dict[str, Any]:
     """Read autolearning config from ~/.hermes/config.yaml."""
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
     except Exception as exc:
         logger.debug("Failed to load config for pattern engine: %s", exc)
@@ -444,7 +444,7 @@ def scan_sessions_from_db(
     cutoff = time.time() - (lookback_days * 86400)
 
     try:
-        from omniworker_state import SessionDB
+        from flux-agent_state import SessionDB
     except Exception as exc:
         logger.warning("Cannot import SessionDB for pattern scan: %s", exc)
         return []

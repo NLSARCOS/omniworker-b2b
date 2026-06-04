@@ -1,6 +1,6 @@
 # google_meet plugin
 
-Let the omniworker agent join a Google Meet call, transcribe it, optionally speak
+Let the flux-agent agent join a Google Meet call, transcribe it, optionally speak
 in it, and do the followup work afterwards.
 
 ## What ships
@@ -14,7 +14,7 @@ in it, and do the followup work afterwards.
 ## Architecture
 
 ```
-┌─ gateway (Linux box, where omniworker runs) ────────────────────────────┐
+┌─ gateway (Linux box, where flux-agent runs) ────────────────────────────┐
 │                                                                      │
 │   agent → meet_join(url, mode='realtime', node='my-mac')             │
 │         │                                                            │
@@ -25,7 +25,7 @@ in it, and do the followup work afterwards.
                                    ▼
 ┌─ node host (user's Mac, signed-in Chrome lives here) ───────────────┐
 │                                                                      │
-│   NodeServer (from `omniworker meet node run`)                           │
+│   NodeServer (from `flux-agent meet node run`)                           │
 │     │                                                                │
 │     ├─ start_bot → process_manager.start() → spawns meet_bot         │
 │     │                                                                │
@@ -49,50 +49,50 @@ Without v2: the "realtime" path is skipped; transcribe runs alone.
 | Path | Purpose |
 |---|---|
 | `plugin.yaml` | manifest |
-| `__init__.py` | `register(ctx)` — registers 5 tools + `on_session_end` hook + `omniworker meet` CLI |
+| `__init__.py` | `register(ctx)` — registers 5 tools + `on_session_end` hook + `flux-agent meet` CLI |
 | `meet_bot.py` | Playwright bot subprocess (standalone, `python -m plugins.google_meet.meet_bot`) |
 | `process_manager.py` | local bot lifecycle + `enqueue_say` |
 | `tools.py` | agent-facing tools + node-routing helper |
-| `cli.py` | `omniworker meet setup / auth / join / status / transcript / say / stop / node ...` |
+| `cli.py` | `flux-agent meet setup / auth / join / status / transcript / say / stop / node ...` |
 | `audio_bridge.py` | v2: PulseAudio null-sink (Linux) + BlackHole probe (macOS) |
 | `realtime/openai_client.py` | v2: `RealtimeSession` + `RealtimeSpeaker` (file-queue → OpenAI Realtime WS → PCM) |
 | `node/protocol.py` | v3: message envelope + validation |
 | `node/registry.py` | v3: `$OMNIWORKER_HOME/workspace/meetings/nodes.json` |
 | `node/server.py` | v3: `NodeServer` (runs on host machine) |
 | `node/client.py` | v3: `NodeClient` (used by tool handlers + CLI on gateway) |
-| `node/cli.py` | v3: `omniworker meet node {run,list,approve,remove,status,ping}` |
+| `node/cli.py` | v3: `flux-agent meet node {run,list,approve,remove,status,ping}` |
 | `SKILL.md` | agent usage guide |
 
 ## Local quick start
 
 ```bash
-omniworker plugins enable google_meet
-omniworker meet install                                      # pip + Chromium
-omniworker meet setup                                        # preflight
-omniworker meet auth                                         # optional
-omniworker meet join https://meet.google.com/abc-defg-hij    # transcribe
+flux-agent plugins enable google_meet
+flux-agent meet install                                      # pip + Chromium
+flux-agent meet setup                                        # preflight
+flux-agent meet auth                                         # optional
+flux-agent meet join https://meet.google.com/abc-defg-hij    # transcribe
 ```
 
 ## Realtime mode
 
 Linux (preferred, most automated):
 ```bash
-omniworker meet install --realtime                     # installs pulseaudio-utils
-echo 'OPENAI_API_KEY=sk-...' >> ~/.omniworker/.env
-omniworker meet join https://meet.google.com/abc-defg-hij --mode realtime
+flux-agent meet install --realtime                     # installs pulseaudio-utils
+echo 'OPENAI_API_KEY=sk-...' >> ~/.flux-agent/.env
+flux-agent meet join https://meet.google.com/abc-defg-hij --mode realtime
 # then from the agent or CLI:
-omniworker meet say "Good morning everyone, I'm the note-taker bot."
+flux-agent meet say "Good morning everyone, I'm the note-taker bot."
 ```
 
 macOS:
 ```bash
-omniworker meet install --realtime     # runs: brew install blackhole-2ch ffmpeg
+flux-agent meet install --realtime     # runs: brew install blackhole-2ch ffmpeg
 # then — manually! — open System Settings → Sound → Input → BlackHole 2ch
-echo 'OPENAI_API_KEY=sk-...' >> ~/.omniworker/.env
-omniworker meet join https://meet.google.com/abc-defg-hij --mode realtime
+echo 'OPENAI_API_KEY=sk-...' >> ~/.flux-agent/.env
+flux-agent meet join https://meet.google.com/abc-defg-hij --mode realtime
 ```
 
-On macOS, omniworker will **not** switch your system audio input automatically — the
+On macOS, flux-agent will **not** switch your system audio input automatically — the
 user has to do it. This is deliberate: switching default input on a whim would
 be a surprising side effect.
 
@@ -102,15 +102,15 @@ On the node machine (e.g. user's Mac with a signed-in Chrome):
 ```bash
 pip install playwright websockets
 python -m playwright install chromium
-omniworker plugins enable google_meet
-omniworker meet node run --display-name my-mac --host 0.0.0.0 --port 18789
+flux-agent plugins enable google_meet
+flux-agent meet node run --display-name my-mac --host 0.0.0.0 --port 18789
 # prints the bearer token on first run; copy it
 ```
 
 On the gateway:
 ```bash
-omniworker meet node approve my-mac ws://<mac-ip>:18789 <token>
-omniworker meet node ping my-mac
+flux-agent meet node approve my-mac ws://<mac-ip>:18789 <token>
+flux-agent meet node ping my-mac
 # now any meet_* tool call accepts node='my-mac' (or 'auto')
 ```
 

@@ -1,42 +1,42 @@
 ---
 sidebar_position: 3
 title: "Discord"
-description: "Set up OmniWorker Agent as a Discord bot"
+description: "Set up Flux Agent Agent as a Discord bot"
 ---
 
 # Discord Setup
 
-OmniWorker Agent integrates with Discord as a bot, letting you chat with your AI assistant through direct messages or server channels. The bot receives your messages, processes them through the OmniWorker Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, voice messages, file attachments, and slash commands.
+Flux Agent Agent integrates with Discord as a bot, letting you chat with your AI assistant through direct messages or server channels. The bot receives your messages, processes them through the Flux Agent Agent pipeline (including tool use, memory, and reasoning), and responds in real time. It supports text, voice messages, file attachments, and slash commands.
 
-Before setup, here's the part most people want to know: how OmniWorker behaves once it's in your server.
+Before setup, here's the part most people want to know: how Flux Agent behaves once it's in your server.
 
-## How OmniWorker Behaves
+## How Flux Agent Behaves
 
 | Context | Behavior |
 |---------|----------|
-| **DMs** | OmniWorker responds to every message. No `@mention` needed. Each DM has its own session. |
-| **Server channels** | By default, OmniWorker only responds when you `@mention` it. If you post in a channel without mentioning it, OmniWorker ignores the message. |
+| **DMs** | Flux Agent responds to every message. No `@mention` needed. Each DM has its own session. |
+| **Server channels** | By default, Flux Agent only responds when you `@mention` it. If you post in a channel without mentioning it, Flux Agent ignores the message. |
 | **Free-response channels** | You can make specific channels mention-free with `DISCORD_FREE_RESPONSE_CHANNELS`, or disable mentions globally with `DISCORD_REQUIRE_MENTION=false`. Messages in these channels are answered inline — auto-threading is skipped so the channel stays a lightweight chat. |
-| **Threads** | OmniWorker replies in the same thread. Mention rules still apply unless that thread or its parent channel is configured as free-response. Threads stay isolated from the parent channel for session history. |
-| **Shared channels with multiple users** | By default, OmniWorker isolates session history per user inside the channel for safety and clarity. Two people talking in the same channel do not share one transcript unless you explicitly disable that. |
-| **Messages mentioning other users** | When `DISCORD_IGNORE_NO_MENTION` is `true` (the default), OmniWorker stays silent if a message @mentions other users but does **not** mention the bot. This prevents the bot from jumping into conversations directed at other people. Set to `false` if you want the bot to respond to all messages regardless of who is mentioned. This only applies in server channels, not DMs. |
+| **Threads** | Flux Agent replies in the same thread. Mention rules still apply unless that thread or its parent channel is configured as free-response. Threads stay isolated from the parent channel for session history. |
+| **Shared channels with multiple users** | By default, Flux Agent isolates session history per user inside the channel for safety and clarity. Two people talking in the same channel do not share one transcript unless you explicitly disable that. |
+| **Messages mentioning other users** | When `DISCORD_IGNORE_NO_MENTION` is `true` (the default), Flux Agent stays silent if a message @mentions other users but does **not** mention the bot. This prevents the bot from jumping into conversations directed at other people. Set to `false` if you want the bot to respond to all messages regardless of who is mentioned. This only applies in server channels, not DMs. |
 
 :::tip
-If you want a normal bot-help channel where people can talk to OmniWorker without tagging it every time, add that channel to `DISCORD_FREE_RESPONSE_CHANNELS`.
+If you want a normal bot-help channel where people can talk to Flux Agent without tagging it every time, add that channel to `DISCORD_FREE_RESPONSE_CHANNELS`.
 :::
 
 ### Discord Gateway Model
 
-OmniWorker on Discord is not a webhook that replies statelessly. It runs through the full messaging gateway, which means each incoming message goes through:
+Flux Agent on Discord is not a webhook that replies statelessly. It runs through the full messaging gateway, which means each incoming message goes through:
 
 1. authorization (`DISCORD_ALLOWED_USERS`)
 2. mention / free-response checks
 3. session lookup
 4. session transcript loading
-5. normal OmniWorker agent execution, including tools, memory, and slash commands
+5. normal Flux Agent agent execution, including tools, memory, and slash commands
 6. response delivery back to Discord
 
-That matters because behavior in a busy server depends on both Discord routing and OmniWorker session policy.
+That matters because behavior in a busy server depends on both Discord routing and Flux Agent session policy.
 
 ### Session Model in Discord
 
@@ -46,7 +46,7 @@ By default:
 - each server thread gets its own session namespace
 - each user in a shared channel gets their own session inside that channel
 
-So if Alice and Bob both talk to OmniWorker in `#research`, OmniWorker treats those as separate conversations by default even though they are using the same visible Discord channel.
+So if Alice and Bob both talk to Flux Agent in `#research`, Flux Agent treats those as separate conversations by default even though they are using the same visible Discord channel.
 
 This is controlled by `config.yaml`:
 
@@ -68,7 +68,7 @@ Shared sessions can be useful for a collaborative room, but they also mean:
 
 ### Interrupts and Concurrency
 
-OmniWorker tracks running agents by session key.
+Flux Agent tracks running agents by session key.
 
 With the default `group_sessions_per_user: true`:
 
@@ -86,7 +86,7 @@ This guide walks you through the full setup process — from creating your bot o
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and sign in with your Discord account.
 2. Click **New Application** in the top-right corner.
-3. Enter a name for your application (e.g., "OmniWorker Agent") and accept the Developer Terms of Service.
+3. Enter a name for your application (e.g., "Flux Agent Agent") and accept the Developer Terms of Service.
 4. Click **Create**.
 
 You'll land on the **General Information** page. Note the **Application ID** — you'll need it later to build the invite URL.
@@ -136,7 +136,7 @@ Click **Save Changes** at the bottom of the page.
 
 ## Step 4: Get the Bot Token
 
-The bot token is the credential OmniWorker Agent uses to log in as your bot. Still on the **Bot** page:
+The bot token is the credential Flux Agent Agent uses to log in as your bot. Still on the **Bot** page:
 
 1. Under the **Token** section, click **Reset Token**.
 2. If you have two-factor authentication enabled on your Discord account, enter your 2FA code.
@@ -208,11 +208,11 @@ These are the minimum permissions your bot needs:
 You need the **Manage Server** permission on the Discord server to invite a bot. If you don't see your server in the dropdown, ask a server admin to use the invite link instead.
 :::
 
-After authorizing, the bot will appear in your server's member list (it will show as offline until you start the OmniWorker gateway).
+After authorizing, the bot will appear in your server's member list (it will show as offline until you start the Flux Agent gateway).
 
 ## Step 7: Find Your Discord User ID
 
-OmniWorker Agent uses your Discord User ID to control who can interact with the bot. To find it:
+Flux Agent Agent uses your Discord User ID to control who can interact with the bot. To find it:
 
 1. Open Discord (desktop or web app).
 2. Go to **Settings** → **Advanced** → toggle **Developer Mode** to **ON**.
@@ -225,21 +225,21 @@ Your User ID is a long number like `284102345871466496`.
 Developer Mode also lets you copy **Channel IDs** and **Server IDs** the same way — right-click the channel or server name and select Copy ID. You'll need a Channel ID if you want to set a home channel manually.
 :::
 
-## Step 8: Configure OmniWorker Agent
+## Step 8: Configure Flux Agent Agent
 
 ### Option A: Interactive Setup (Recommended)
 
 Run the guided setup command:
 
 ```bash
-omniworker gateway setup
+flux-agent gateway setup
 ```
 
 Select **Discord** when prompted, then paste your bot token and user ID when asked.
 
 ### Option B: Manual Configuration
 
-Add the following to your `~/.omniworker/.env` file:
+Add the following to your `~/.flux-agent/.env` file:
 
 ```bash
 # Required
@@ -253,18 +253,18 @@ DISCORD_ALLOWED_USERS=284102345871466496
 Then start the gateway:
 
 ```bash
-omniworker gateway
+flux-agent gateway
 ```
 
 The bot should come online in Discord within a few seconds. Send it a message — either a DM or in a channel it can see — to test.
 
 :::tip
-You can run `omniworker gateway` in the background or as a systemd service for persistent operation. See the deployment docs for details.
+You can run `flux-agent gateway` in the background or as a systemd service for persistent operation. See the deployment docs for details.
 :::
 
 ## Configuration Reference
 
-Discord behavior is controlled through two files: **`~/.omniworker/.env`** for credentials and env-level toggles, and **`~/.omniworker/config.yaml`** for structured settings. Environment variables always take precedence over config.yaml values when both are set.
+Discord behavior is controlled through two files: **`~/.flux-agent/.env`** for credentials and env-level toggles, and **`~/.flux-agent/config.yaml`** for structured settings. Environment variables always take precedence over config.yaml values when both are set.
 
 ### Environment Variables (`.env`)
 
@@ -281,7 +281,7 @@ Discord behavior is controlled through two files: **`~/.omniworker/.env`** for c
 | `DISCORD_FREE_RESPONSE_CHANNELS` | No | — | Comma-separated channel IDs where the bot responds without requiring an `@mention`, even when `DISCORD_REQUIRE_MENTION` is `true`. |
 | `DISCORD_IGNORE_NO_MENTION` | No | `true` | When `true`, the bot stays silent if a message `@mentions` other users but does **not** mention the bot. Prevents the bot from jumping into conversations directed at other people. Only applies in server channels, not DMs. |
 | `DISCORD_AUTO_THREAD` | No | `true` | When `true`, automatically creates a new thread for every `@mention` in a text channel, so each conversation is isolated (similar to Slack behavior). Messages already inside threads or DMs are unaffected. |
-| `DISCORD_ALLOW_BOTS` | No | `"none"` | Controls how the bot handles messages from other Discord bots. `"none"` — ignore all other bots. `"mentions"` — only accept bot messages that `@mention` OmniWorker. `"all"` — accept all bot messages. |
+| `DISCORD_ALLOW_BOTS` | No | `"none"` | Controls how the bot handles messages from other Discord bots. `"none"` — ignore all other bots. `"mentions"` — only accept bot messages that `@mention` Flux Agent. `"all"` — accept all bot messages. |
 | `DISCORD_REACTIONS` | No | `true` | When `true`, the bot adds emoji reactions to messages during processing (👀 when starting, ✅ on success, ❌ on error). Set to `false` to disable reactions entirely. |
 | `DISCORD_IGNORED_CHANNELS` | No | — | Comma-separated channel IDs where the bot **never** responds, even when `@mentioned`. Takes priority over all other channel settings. |
 | `DISCORD_ALLOWED_CHANNELS` | No | — | Comma-separated channel IDs. When set, the bot **only** responds in these channels (plus DMs if allowed). Overrides `config.yaml` `discord.allowed_channels`. Combine with `DISCORD_IGNORED_CHANNELS` to express allow/deny rules. |
@@ -294,12 +294,12 @@ Discord behavior is controlled through two files: **`~/.omniworker/.env`** for c
 | `DISCORD_ALLOW_MENTION_USERS` | No | `true` | When `true` (default), the bot can ping individual users by ID. |
 | `DISCORD_ALLOW_MENTION_REPLIED_USER` | No | `true` | When `true` (default), replying to a message pings the original author. |
 | `DISCORD_PROXY` | No | — | Proxy URL for Discord connections (HTTP, WebSocket, REST). Overrides `HTTPS_PROXY`/`ALL_PROXY`. Supports `http://`, `https://`, and `socks5://` schemes. |
-| `OMNIWORKER_DISCORD_TEXT_BATCH_DELAY_SECONDS` | No | `0.6` | Grace window the adapter waits before flushing a queued text chunk. Useful for smoothing streamed output. |
-| `OMNIWORKER_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS` | No | `2.0` | Delay between split chunks when a single message exceeds Discord's length limit. |
+| `FLUX AGENT_DISCORD_TEXT_BATCH_DELAY_SECONDS` | No | `0.6` | Grace window the adapter waits before flushing a queued text chunk. Useful for smoothing streamed output. |
+| `FLUX AGENT_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS` | No | `2.0` | Delay between split chunks when a single message exceeds Discord's length limit. |
 
 ### Config File (`config.yaml`)
 
-The `discord` section in `~/.omniworker/config.yaml` mirrors the env vars above. Config.yaml settings are applied as defaults — if the equivalent env var is already set, the env var wins.
+The `discord` section in `~/.flux-agent/config.yaml` mirrors the env vars above. Config.yaml settings are applied as defaults — if the equivalent env var is already set, the env var wins.
 
 ```yaml
 # Discord-specific settings
@@ -438,7 +438,7 @@ discord:
 
 Behavior:
 - Exact thread/channel ID matches win.
-- If a message arrives inside a thread or forum post and that thread has no explicit entry, OmniWorker falls back to the parent channel/forum ID.
+- If a message arrives inside a thread or forum post and that thread has no explicit entry, Flux Agent falls back to the parent channel/forum ID.
 - Prompts are applied ephemerally at runtime, so changing them affects future turns immediately without rewriting past session history.
 
 #### `discord.history_backfill`
@@ -488,7 +488,7 @@ discord:
 
 This is a global gateway setting (not Discord-specific) that controls whether users in the same channel get isolated session histories.
 
-When `true`: Alice and Bob talking in `#research` each have their own separate conversation with OmniWorker. When `false`: the entire channel shares one conversation transcript and one running-agent slot.
+When `true`: Alice and Bob talking in `#research` each have their own separate conversation with Flux Agent. When `false`: the entire channel shares one conversation transcript and one running-agent slot.
 
 ```yaml
 group_sessions_per_user: true
@@ -576,18 +576,18 @@ The picker times out after 120 seconds. Only authorized users (those in `DISCORD
 
 ## Native Slash Commands for Skills
 
-OmniWorker automatically registers installed skills as **native Discord Application Commands**. This means skills appear in Discord's autocomplete `/` menu alongside built-in commands.
+Flux Agent automatically registers installed skills as **native Discord Application Commands**. This means skills appear in Discord's autocomplete `/` menu alongside built-in commands.
 
 - Each skill becomes a Discord slash command (e.g., `/code-review`, `/ascii-art`)
 - Skills accept an optional `args` string parameter
 - Discord has a limit of 100 application commands per bot — if you have more skills than available slots, extra skills are skipped with a warning in the logs
 - Skills are registered during bot startup alongside built-in commands like `/model`, `/reset`, and `/background`
 
-No extra configuration is needed — any skill installed via `omniworker skills install` is automatically registered as a Discord slash command on the next gateway restart.
+No extra configuration is needed — any skill installed via `flux-agent skills install` is automatically registered as a Discord slash command on the next gateway restart.
 
 ### Disabling Slash Command Registration
 
-If you run multiple OmniWorker gateways against the same Discord application (e.g. staging + production), only one of them should own the global slash-command registration — otherwise the last startup wins and the registrations flap. Turn slash registration off on the "follower" gateway:
+If you run multiple Flux Agent gateways against the same Discord application (e.g. staging + production), only one of them should own the global slash-command registration — otherwise the last startup wins and the registrations flap. Turn slash registration off on the "follower" gateway:
 
 ```yaml
 gateway:
@@ -611,7 +611,7 @@ The Discord adapter supports native file uploads for every common media type via
 | Audio / Voice | `send_voice` — native voice message when possible, file attachment otherwise |
 | Documents (PDF/ZIP/docx/etc.) | `send_document` — native attachment with download button |
 
-Discord's per-upload size limit depends on the server's boost tier (25 MB free, up to 500 MB). If OmniWorker gets an HTTP 413, the adapter falls back to a link pointing at the local cache path rather than failing silently.
+Discord's per-upload size limit depends on the server's boost tier (25 MB free, up to 500 MB). If Flux Agent gets an HTTP 413, the adapter falls back to a link pointing at the local cache path rather than failing silently.
 
 ## Home Channel
 
@@ -623,7 +623,7 @@ Type `/sethome` in any Discord channel where the bot is present. That channel be
 
 ### Manual Configuration
 
-Add these to your `~/.omniworker/.env`:
+Add these to your `~/.flux-agent/.env`:
 
 ```bash
 DISCORD_HOME_CHANNEL=123456789012345678
@@ -634,19 +634,19 @@ Replace the ID with the actual channel ID (right-click → Copy Channel ID with 
 
 ## Voice Messages
 
-OmniWorker Agent supports Discord voice messages:
+Flux Agent Agent supports Discord voice messages:
 
 - **Incoming voice messages** are automatically transcribed using the configured STT provider: local `faster-whisper` (no key), Groq Whisper (`GROQ_API_KEY`), or OpenAI Whisper (`VOICE_TOOLS_OPENAI_KEY`).
 - **Text-to-speech**: Use `/voice tts` to have the bot send spoken audio responses alongside text replies.
-- **Discord voice channels**: OmniWorker can also join a voice channel, listen to users speaking, and talk back in the channel.
+- **Discord voice channels**: Flux Agent can also join a voice channel, listen to users speaking, and talk back in the channel.
 
 For the full setup and operational guide, see:
 - [Voice Mode](/docs/user-guide/features/voice-mode)
-- [Use Voice Mode with OmniWorker](/docs/guides/use-voice-mode-with-omniworker)
+- [Use Voice Mode with Flux Agent](/docs/guides/use-voice-mode-with-flux-agent)
 
 ## Forum Channels
 
-Discord forum channels (type 15) don't accept direct messages — every post in a forum must be a thread. OmniWorker auto-detects forum channels and creates a new thread post whenever it needs to send there, so `send_message`, TTS, images, voice messages, and file attachments all work without special handling from the agent.
+Discord forum channels (type 15) don't accept direct messages — every post in a forum must be a thread. Flux Agent auto-detects forum channels and creates a new thread post whenever it needs to send there, so `send_message`, TTS, images, voice messages, and file attachments all work without special handling from the agent.
 
 - **Thread name** is derived from the first line of the message (markdown heading prefix stripped, capped at 100 chars). When the message is attachment-only, the filename is used as the fallback thread name.
 - **Attachments** ride along on the starter message of the new thread — no separate upload step, no partial sends.
@@ -683,21 +683,21 @@ Refreshing the directory (`/channels refresh` on platforms that expose it, or a 
 
 ### Bot is offline
 
-**Cause**: The OmniWorker gateway isn't running, or the token is incorrect.
+**Cause**: The Flux Agent gateway isn't running, or the token is incorrect.
 
-**Fix**: Check that `omniworker gateway` is running. Verify `DISCORD_BOT_TOKEN` in your `.env` file. If you recently reset the token, update it.
+**Fix**: Check that `flux-agent gateway` is running. Verify `DISCORD_BOT_TOKEN` in your `.env` file. If you recently reset the token, update it.
 
 ### "User not allowed" / Bot ignores you
 
 **Cause**: Your User ID isn't in `DISCORD_ALLOWED_USERS`.
 
-**Fix**: Add your User ID to `DISCORD_ALLOWED_USERS` in `~/.omniworker/.env` and restart the gateway.
+**Fix**: Add your User ID to `DISCORD_ALLOWED_USERS` in `~/.flux-agent/.env` and restart the gateway.
 
 ### People in the same channel are sharing context unexpectedly
 
 **Cause**: `group_sessions_per_user` is disabled, or the platform cannot provide a user ID for the messages in that context.
 
-**Fix**: Set this in `~/.omniworker/config.yaml` and restart the gateway:
+**Fix**: Set this in `~/.flux-agent/config.yaml` and restart the gateway:
 
 ```yaml
 group_sessions_per_user: true
@@ -716,7 +716,7 @@ Always set `DISCORD_ALLOWED_USERS` (or `DISCORD_ALLOWED_ROLES`) to restrict who 
 For servers where access is managed by roles instead of individual user lists (moderator teams, support staff, internal tooling), use `DISCORD_ALLOWED_ROLES` — a comma-separated list of role IDs. Any member with one of those roles is authorized.
 
 ```bash
-# ~/.omniworker/.env — works alongside or instead of DISCORD_ALLOWED_USERS
+# ~/.flux-agent/.env — works alongside or instead of DISCORD_ALLOWED_USERS
 DISCORD_ALLOWED_ROLES=987654321098765432,876543210987654321
 ```
 
@@ -731,12 +731,12 @@ This is the preferred pattern when the moderation team churns — new moderators
 
 ### Mention Control
 
-By default, OmniWorker blocks the bot from pinging `@everyone`, `@here`, and role mentions, even if its reply contains those tokens. This prevents a poorly-worded prompt or echoed user content from spamming a whole server. Individual `@user` pings and reply-reference pings (the little "replying to…" chip) stay enabled so normal conversation still works.
+By default, Flux Agent blocks the bot from pinging `@everyone`, `@here`, and role mentions, even if its reply contains those tokens. This prevents a poorly-worded prompt or echoed user content from spamming a whole server. Individual `@user` pings and reply-reference pings (the little "replying to…" chip) stay enabled so normal conversation still works.
 
 You can relax these defaults via either env vars or `config.yaml`:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 discord:
   allow_mentions:
     everyone: false      # allow the bot to ping @everyone / @here
@@ -746,7 +746,7 @@ discord:
 ```
 
 ```bash
-# ~/.omniworker/.env — env vars win over config.yaml
+# ~/.flux-agent/.env — env vars win over config.yaml
 DISCORD_ALLOW_MENTION_EVERYONE=false
 DISCORD_ALLOW_MENTION_ROLES=false
 DISCORD_ALLOW_MENTION_USERS=true
@@ -757,6 +757,6 @@ DISCORD_ALLOW_MENTION_REPLIED_USER=true
 Leave `everyone` and `roles` at `false` unless you know exactly why you need them. It is very easy for an LLM to produce the string `@everyone` inside a normal-looking response; without this protection, that would notify every member of your server.
 :::
 
-For more information on securing your OmniWorker Agent deployment, see the [Security Guide](../security.md).
+For more information on securing your Flux Agent Agent deployment, see the [Security Guide](../security.md).
 
 

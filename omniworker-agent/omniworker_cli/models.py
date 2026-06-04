@@ -16,11 +16,11 @@ from difflib import get_close_matches
 from pathlib import Path
 from typing import Any, NamedTuple, Optional
 
-from omniworker_cli import __version__ as _OMNIWORKER_VERSION
+from flux-agent_cli import __version__ as _FLUX AGENT_VERSION
 
 # Identify ourselves so endpoints fronted by Cloudflare's Browser Integrity
 # Check (error 1010) don't reject the default ``Python-urllib/*`` signature.
-_OMNIWORKER_USER_AGENT = f"hermes-cli/{_OMNIWORKER_VERSION}"
+_FLUX AGENT_USER_AGENT = f"hermes-cli/{_FLUX AGENT_VERSION}"
 
 COPILOT_BASE_URL = "https://api.githubcopilot.com"
 COPILOT_MODELS_URL = f"{COPILOT_BASE_URL}/models"
@@ -101,13 +101,13 @@ def _codex_curated_models() -> list[str]:
     This keeps the gateway /model picker in sync with the CLI `hermes model`
     flow without maintaining a separate static list.
     """
-    from omniworker_cli.codex_models import DEFAULT_CODEX_MODELS, _add_forward_compat_models
+    from flux-agent_cli.codex_models import DEFAULT_CODEX_MODELS, _add_forward_compat_models
     return _add_forward_compat_models(list(DEFAULT_CODEX_MODELS))
 
 
 # Static fallback for xAI when the models.dev disk cache is empty (fresh
 # install, offline first run, etc.). Mirrors the xAI-direct model IDs from
-# $OMNIWORKER_HOME/models_dev_cache.json as of 2026-04-28. Whenever xAI renames
+# $FLUX AGENT_HOME/models_dev_cache.json as of 2026-04-28. Whenever xAI renames
 # or retires a model, the disk cache picks it up on the next refresh and the
 # fallback here only matters until that refresh lands.
 #
@@ -136,9 +136,9 @@ def _xai_promote_top(ids: list[str]) -> list[str]:
 def _xai_curated_models() -> list[str]:
     """Derive the xAI-direct curated list from models.dev disk cache.
 
-    Reads $OMNIWORKER_HOME/models_dev_cache.json directly (no network) so this
+    Reads $FLUX AGENT_HOME/models_dev_cache.json directly (no network) so this
     runs at import time without blocking. Falls back to ``_XAI_STATIC_FALLBACK``
-    when the cache is empty or unreadable. OmniWorker refreshes the cache from
+    when the cache is empty or unreadable. Flux Agent refreshes the cache from
     https://models.dev/api.json on normal use, so this list self-heals as
     xAI renames models.
 
@@ -596,7 +596,7 @@ def union_with_portal_free_recommendations(
 
     For free-tier users this is the source of truth: any model the Portal
     flags as free should be selectable, even if the user is running an
-    older OmniWorker that doesn't ship that model in its hardcoded curated
+    older Flux Agent that doesn't ship that model in its hardcoded curated
     list.  This function returns an augmented ``(model_ids, pricing)``
     pair where:
 
@@ -661,7 +661,7 @@ def union_with_portal_paid_recommendations(
     the docs-hosted catalog manifest has been rebuilt since the last release.
 
     For paid-tier users this lets newly-launched paid models surface in the
-    picker even if the user is running an older OmniWorker that doesn't ship
+    picker even if the user is running an older Flux Agent that doesn't ship
     them in its hardcoded curated list. This function returns an augmented
     ``(model_ids, pricing)`` pair where:
 
@@ -735,7 +735,7 @@ def check_nous_free_tier() -> bool:
             return cached_result
 
     try:
-        from omniworker_cli.auth import get_provider_auth_state, resolve_nous_runtime_credentials
+        from flux-agent_cli.auth import get_provider_auth_state, resolve_nous_runtime_credentials
 
         # Ensure we have a fresh token (triggers refresh if needed)
         resolve_nous_runtime_credentials(min_key_ttl_seconds=60)
@@ -830,7 +830,7 @@ def fetch_nous_recommended_models(
 def _resolve_nous_portal_url() -> str:
     """Best-effort lookup of the Portal base URL the user is authed against."""
     try:
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             DEFAULT_NOUS_PORTAL_URL,
             get_provider_auth_state,
         )
@@ -1136,7 +1136,7 @@ def fetch_openrouter_models(
     # drive the picker; the OpenRouter live /v1/models filter (tool support,
     # free pricing) is applied on top either way.
     try:
-        from omniworker_cli.model_catalog import get_curated_openrouter_models
+        from flux-agent_cli.model_catalog import get_curated_openrouter_models
         remote = get_curated_openrouter_models()
     except Exception:
         remote = None
@@ -1202,7 +1202,7 @@ def get_curated_nous_model_ids() -> list[str]:
     unreachable. Always returns a list (never None).
     """
     try:
-        from omniworker_cli.model_catalog import get_curated_nous_models
+        from flux-agent_cli.model_catalog import get_curated_nous_models
         remote = get_curated_nous_models()
     except Exception:
         remote = None
@@ -1232,7 +1232,7 @@ def fetch_ai_gateway_models(
     if _ai_gateway_catalog_cache is not None and not force_refresh:
         return list(_ai_gateway_catalog_cache)
 
-    from omniworker_constants import AI_GATEWAY_BASE_URL
+    from flux-agent_constants import AI_GATEWAY_BASE_URL
 
     fallback = list(VERCEL_AI_GATEWAY_MODELS)
     preferred_ids = [mid for mid, _ in fallback]
@@ -1413,7 +1413,7 @@ def fetch_models_with_pricing(
     url = cache_key.rstrip("/") + "/v1/models"
     headers: dict[str, str] = {
         "Accept": "application/json",
-        "User-Agent": _OMNIWORKER_USER_AGENT,
+        "User-Agent": _FLUX AGENT_USER_AGENT,
     }
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -1456,7 +1456,7 @@ def fetch_ai_gateway_pricing(
     ``prompt`` / ``completion``. This translates. Cache read/write field names
     already match.
     """
-    from omniworker_constants import AI_GATEWAY_BASE_URL
+    from flux-agent_constants import AI_GATEWAY_BASE_URL
 
     cache_key = AI_GATEWAY_BASE_URL.rstrip("/")
     if not force_refresh and cache_key in _pricing_cache:
@@ -1516,7 +1516,7 @@ def _resolve_nous_pricing_credentials() -> tuple[str, str]:
     look broken ("No free models currently available").
     """
     try:
-        from omniworker_cli.auth import resolve_nous_runtime_credentials
+        from flux-agent_cli.auth import resolve_nous_runtime_credentials
         creds = resolve_nous_runtime_credentials()
         if creds:
             return (creds.get("api_key", ""), creds.get("base_url", ""))
@@ -1582,7 +1582,7 @@ def _fetch_novita_pricing(
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Accept": "application/json",
-        "User-Agent": _OMNIWORKER_USER_AGENT,
+        "User-Agent": _FLUX AGENT_USER_AGENT,
     }
 
     try:
@@ -1645,7 +1645,7 @@ def list_available_providers() -> list[dict[str, str]]:
         # Check if this provider has credentials available
         has_creds = False
         try:
-            from omniworker_cli.auth import get_auth_status, has_usable_secret
+            from flux-agent_cli.auth import get_auth_status, has_usable_secret
             if pid == "custom":
                 custom_base_url = _get_custom_base_url() or ""
                 has_creds = bool(custom_base_url.strip())
@@ -1704,7 +1704,7 @@ def parse_model_input(raw: str, current_provider: str) -> tuple[str, str]:
 def _get_custom_base_url() -> str:
     """Get the custom endpoint base_url from config.yaml."""
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         config = load_config()
         model_cfg = config.get("model", {})
         if isinstance(model_cfg, dict):
@@ -1764,7 +1764,7 @@ def _resolve_static_model_alias(
 ) -> Optional[tuple[str, str]]:
     """Resolve short aliases (e.g. sonnet/opus) using static catalogs only."""
     try:
-        from omniworker_cli.model_switch import MODEL_ALIASES
+        from flux-agent_cli.model_switch import MODEL_ALIASES
     except Exception:
         return None
 
@@ -1924,10 +1924,10 @@ def _find_openrouter_slug(model_name: str) -> Optional[str]:
 
 
 def normalize_provider(provider: Optional[str]) -> str:
-    """Normalize provider aliases to OmniWorker' canonical provider ids.
+    """Normalize provider aliases to Flux Agent' canonical provider ids.
 
     Note: ``"auto"`` passes through unchanged — use
-    ``omniworker_cli.auth.resolve_provider()`` to resolve it to a concrete
+    ``flux-agent_cli.auth.resolve_provider()`` to resolve it to a concrete
     provider based on credentials and environment.
     """
     normalized = (provider or "openrouter").strip().lower()
@@ -1992,7 +1992,7 @@ def _strip_vendor_prefix(model_id: str) -> str:
 
 
 def model_supports_fast_mode(model_id: Optional[str]) -> bool:
-    """Return whether OmniWorker should expose the /fast toggle for this model."""
+    """Return whether Flux Agent should expose the /fast toggle for this model."""
     return _is_anthropic_fast_model(model_id) or _is_openai_fast_model(model_id)
 
 
@@ -2052,7 +2052,7 @@ def _resolve_copilot_catalog_api_key() -> str:
     later valid entry is reachable when an earlier one is unsupported.
     """
     try:
-        from omniworker_cli.auth import resolve_api_key_provider_credentials
+        from flux-agent_cli.auth import resolve_api_key_provider_credentials
 
         creds = resolve_api_key_provider_credentials("copilot")
         api_key = str(creds.get("api_key") or "").strip()
@@ -2062,8 +2062,8 @@ def _resolve_copilot_catalog_api_key() -> str:
         pass
 
     try:
-        from omniworker_cli.auth import read_credential_pool
-        from omniworker_cli.copilot_auth import (
+        from flux-agent_cli.auth import read_credential_pool
+        from flux-agent_cli.copilot_auth import (
             exchange_copilot_token,
             validate_copilot_token,
         )
@@ -2166,21 +2166,21 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     falling back to static lists. For providers in ``_MODELS_DEV_PREFERRED``
     (opencode-go/zen, xiaomi, deepseek, smaller inference providers, etc.),
     models.dev entries are merged on top of curated so new models released
-    on the platform appear in ``/model`` without a OmniWorker release.
+    on the platform appear in ``/model`` without a Flux Agent release.
     """
     normalized = normalize_provider(provider)
     if normalized == "openrouter":
         return model_ids(force_refresh=force_refresh)
     if normalized == "openai-codex":
-        from omniworker_cli.codex_models import get_codex_model_ids
+        from flux-agent_cli.codex_models import get_codex_model_ids
 
         # Pass the live OAuth access token so the picker matches whatever
         # ChatGPT lists for this account right now (new models appear without
-        # a OmniWorker release). Falls back to the hardcoded catalog if no token
+        # a Flux Agent release). Falls back to the hardcoded catalog if no token
         # or the endpoint is unreachable.
         access_token = None
         try:
-            from omniworker_cli.auth import resolve_codex_runtime_credentials
+            from flux-agent_cli.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(refresh_if_expiring=True)
             access_token = creds.get("api_key")
@@ -2201,7 +2201,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     if normalized == "nous":
         # Try live Nous Portal /models endpoint
         try:
-            from omniworker_cli.auth import fetch_nous_models, resolve_nous_runtime_credentials
+            from flux-agent_cli.auth import fetch_nous_models, resolve_nous_runtime_credentials
             creds = resolve_nous_runtime_credentials()
             if creds:
                 live = fetch_nous_models(api_key=creds.get("api_key", ""), inference_base_url=creds.get("base_url", ""))
@@ -2211,7 +2211,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
             pass
     if normalized == "stepfun":
         try:
-            from omniworker_cli.auth import resolve_api_key_provider_credentials
+            from flux-agent_cli.auth import resolve_api_key_provider_credentials
 
             creds = resolve_api_key_provider_credentials("stepfun")
             api_key = str(creds.get("api_key") or "").strip()
@@ -2247,7 +2247,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
                 pass
     if normalized == "gmi":
         try:
-            from omniworker_cli.auth import resolve_api_key_provider_credentials
+            from flux-agent_cli.auth import resolve_api_key_provider_credentials
 
             creds = resolve_api_key_provider_credentials("gmi")
             api_key = str(creds.get("api_key") or "").strip()
@@ -2288,7 +2288,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
     # Replaces per-provider copy-paste blocks (stepfun, gmi, zai, etc.).
     try:
         from providers import get_provider_profile
-        from omniworker_cli.auth import resolve_api_key_provider_credentials
+        from flux-agent_cli.auth import resolve_api_key_provider_credentials
 
         _p = get_provider_profile(normalized)
         if _p and _p.auth_type == "api_key" and _p.base_url:
@@ -2405,12 +2405,12 @@ def copilot_default_headers() -> dict[str, str]:
     Copilot CLI send on every request.
     """
     try:
-        from omniworker_cli.copilot_auth import copilot_request_headers
+        from flux-agent_cli.copilot_auth import copilot_request_headers
         return copilot_request_headers(is_agent_turn=True)
     except ImportError:
         return {
             "Editor-Version": COPILOT_EDITOR_VERSION,
-            "User-Agent": "OmniWorkerAgent/1.0",
+            "User-Agent": "Flux AgentAgent/1.0",
             "Openai-Intent": "conversation-edits",
             "x-initiator": "agent",
         }
@@ -2547,7 +2547,7 @@ def _lmstudio_server_root(base_url: Optional[str]) -> Optional[str]:
 
 def _lmstudio_request_headers(api_key: Optional[str] = None) -> dict:
     """Build HTTP headers for LM Studio native API requests."""
-    headers = {"User-Agent": _OMNIWORKER_USER_AGENT}
+    headers = {"User-Agent": _FLUX AGENT_USER_AGENT}
     token = str(api_key or "").strip()
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -2575,7 +2575,7 @@ def _lmstudio_fetch_raw_models(
             payload = json.loads(resp.read().decode())
     except urllib.error.HTTPError as exc:
         if exc.code in {401, 403}:
-            from omniworker_cli.auth import AuthError
+            from flux-agent_cli.auth import AuthError
             raise AuthError(
                 f"LM Studio rejected the request with HTTP {exc.code}.",
                 provider="lmstudio",
@@ -2784,7 +2784,7 @@ _COPILOT_MODEL_ALIASES = {
     "anthropic/claude-sonnet-4": "claude-sonnet-4",
     "anthropic/claude-sonnet-4.5": "claude-sonnet-4.5",
     "anthropic/claude-haiku-4.5": "claude-haiku-4.5",
-    # Dash-notation fallbacks: OmniWorker' default Claude IDs elsewhere use
+    # Dash-notation fallbacks: Flux Agent' default Claude IDs elsewhere use
     # hyphens (anthropic native format), but Copilot's API only accepts
     # dot-notation.  Accept both so users who configure copilot + a
     # default hyphenated Claude model don't hit HTTP 400
@@ -3106,7 +3106,7 @@ def probe_api_models(
         candidates.append((alternate_base, True))
 
     tried: list[str] = []
-    headers: dict[str, str] = {"User-Agent": _OMNIWORKER_USER_AGENT}
+    headers: dict[str, str] = {"User-Agent": _FLUX AGENT_USER_AGENT}
     if api_key and api_mode == "anthropic_messages":
         headers["x-api-key"] = api_key
         headers["anthropic-version"] = "2023-06-01"
@@ -3148,13 +3148,13 @@ def _fetch_ai_gateway_models(timeout: float = 5.0) -> Optional[list[str]]:
         return None
     base_url = os.getenv("AI_GATEWAY_BASE_URL", "").strip()
     if not base_url:
-        from omniworker_constants import AI_GATEWAY_BASE_URL
+        from flux-agent_constants import AI_GATEWAY_BASE_URL
         base_url = AI_GATEWAY_BASE_URL
 
     url = base_url.rstrip("/") + "/models"
     headers: dict[str, str] = {
         "Authorization": f"Bearer {api_key}",
-        "User-Agent": _OMNIWORKER_USER_AGENT,
+        "User-Agent": _FLUX AGENT_USER_AGENT,
     }
     req = urllib.request.Request(url, headers=headers)
     try:
@@ -3209,8 +3209,8 @@ def _strip_ollama_cloud_suffix(model_id: str) -> str:
 
 def _ollama_cloud_cache_path() -> Path:
     """Return the path for the Ollama Cloud model cache."""
-    from omniworker_constants import get_omniworker_home
-    return get_omniworker_home() / "ollama_cloud_models_cache.json"
+    from flux-agent_constants import get_flux-agent_home
+    return get_flux-agent_home() / "ollama_cloud_models_cache.json"
 
 
 def _load_ollama_cloud_cache(*, ignore_ttl: bool = False) -> Optional[dict]:
@@ -3366,7 +3366,7 @@ def validate_requested_model(
         }
 
     if normalized == "lmstudio":
-        from omniworker_cli.auth import AuthError
+        from flux-agent_cli.auth import AuthError
         # Use probe_lmstudio_models so we can distinguish None (unreachable
         # / malformed response) from [] (reachable, but no chat-capable models
         # are loaded). fetch_lmstudio_models collapses both to [].
@@ -3451,7 +3451,7 @@ def validate_requested_model(
 
         message = (
             f"Note: could not reach this custom endpoint's model listing at `{probe.get('probed_url')}`. "
-            f"OmniWorker will still save `{requested}`, but the endpoint should expose `/models` for verification."
+            f"Flux Agent will still save `{requested}`, but the endpoint should expose `/models` for verification."
         )
         if api_mode == "anthropic_messages":
             message += (
@@ -3548,7 +3548,7 @@ def validate_requested_model(
                 "message": (
                     f"Note: `{requested}` was not found in the MiniMax catalog."
                     f"{suggestion_text}"
-                    "\n  MiniMax does not expose a /models endpoint, so OmniWorker cannot verify the model name."
+                    "\n  MiniMax does not expose a /models endpoint, so Flux Agent cannot verify the model name."
                     "\n  The model may still work if it exists on the server."
                 ),
             }

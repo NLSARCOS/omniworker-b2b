@@ -3,38 +3,38 @@ import os
 import sys
 from pathlib import Path
 
-from omniworker_cli.env_loader import load_omniworker_dotenv
+from flux-agent_cli.env_loader import load_flux-agent_dotenv
 
 
 def test_user_env_overrides_stale_shell_values(tmp_path, monkeypatch):
-    home = tmp_path / "omniworker"
+    home = tmp_path / "flux-agent"
     home.mkdir()
     env_file = home / ".env"
     env_file.write_text("OPENAI_BASE_URL=https://new.example/v1\n", encoding="utf-8")
 
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
 
-    loaded = load_omniworker_dotenv(omniworker_home=home)
+    loaded = load_flux-agent_dotenv(flux-agent_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("OPENAI_BASE_URL") == "https://new.example/v1"
 
 
 def test_project_env_overrides_stale_shell_values_when_user_env_missing(tmp_path, monkeypatch):
-    home = tmp_path / "omniworker"
+    home = tmp_path / "flux-agent"
     project_env = tmp_path / ".env"
     project_env.write_text("OPENAI_BASE_URL=https://project.example/v1\n", encoding="utf-8")
 
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
 
-    loaded = load_omniworker_dotenv(omniworker_home=home, project_env=project_env)
+    loaded = load_flux-agent_dotenv(flux-agent_home=home, project_env=project_env)
 
     assert loaded == [project_env]
     assert os.getenv("OPENAI_BASE_URL") == "https://project.example/v1"
 
 
 def test_project_env_is_sanitized_before_loading(tmp_path, monkeypatch):
-    home = tmp_path / "omniworker"
+    home = tmp_path / "flux-agent"
     project_env = tmp_path / ".env"
     project_env.write_text(
         "TELEGRAM_BOT_TOKEN=0123456789:test"
@@ -45,7 +45,7 @@ def test_project_env_is_sanitized_before_loading(tmp_path, monkeypatch):
     monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
-    loaded = load_omniworker_dotenv(omniworker_home=home, project_env=project_env)
+    loaded = load_flux-agent_dotenv(flux-agent_home=home, project_env=project_env)
 
     assert loaded == [project_env]
     assert os.getenv("TELEGRAM_BOT_TOKEN") == "0123456789:test"
@@ -53,7 +53,7 @@ def test_project_env_is_sanitized_before_loading(tmp_path, monkeypatch):
 
 
 def test_user_env_takes_precedence_over_project_env(tmp_path, monkeypatch):
-    home = tmp_path / "omniworker"
+    home = tmp_path / "flux-agent"
     home.mkdir()
     user_env = home / ".env"
     project_env = tmp_path / ".env"
@@ -63,7 +63,7 @@ def test_user_env_takes_precedence_over_project_env(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-    loaded = load_omniworker_dotenv(omniworker_home=home, project_env=project_env)
+    loaded = load_flux-agent_dotenv(flux-agent_home=home, project_env=project_env)
 
     assert loaded == [user_env, project_env]
     assert os.getenv("OPENAI_BASE_URL") == "https://user.example/v1"
@@ -71,7 +71,7 @@ def test_user_env_takes_precedence_over_project_env(tmp_path, monkeypatch):
 
 
 def test_main_import_applies_user_env_over_shell_values(tmp_path, monkeypatch):
-    home = tmp_path / "omniworker"
+    home = tmp_path / "flux-agent"
     home.mkdir()
     (home / ".env").write_text(
         "OPENAI_BASE_URL=https://new.example/v1\nOMNIWORKER_INFERENCE_PROVIDER=custom\n",
@@ -82,8 +82,8 @@ def test_main_import_applies_user_env_over_shell_values(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_BASE_URL", "https://old.example/v1")
     monkeypatch.setenv("OMNIWORKER_INFERENCE_PROVIDER", "openrouter")
 
-    sys.modules.pop("omniworker_cli.main", None)
-    importlib.import_module("omniworker_cli.main")
+    sys.modules.pop("flux-agent_cli.main", None)
+    importlib.import_module("flux-agent_cli.main")
 
     assert os.getenv("OPENAI_BASE_URL") == "https://new.example/v1"
     assert os.getenv("OMNIWORKER_INFERENCE_PROVIDER") == "custom"

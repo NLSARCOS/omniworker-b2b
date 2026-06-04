@@ -7,12 +7,12 @@ sidebar_position: 6
 
 # Web Search & Extract
 
-OmniWorker Agent includes two model-callable web tools backed by multiple providers:
+Flux Agent Agent includes two model-callable web tools backed by multiple providers:
 
 - **`web_search`** — search the web and return ranked results
 - **`web_extract`** — fetch and extract readable content from one or more URLs (with built-in deep-crawl support when the backend provides it)
 
-Both are configured through a single backend selection. Providers are chosen via `omniworker tools` or set directly in `config.yaml`. Recursive crawling capabilities (Firecrawl/Tavily) are exposed through `web_extract` rather than as a separate `web_crawl` tool.
+Both are configured through a single backend selection. Providers are chosen via `flux-agent tools` or set directly in `config.yaml`. Recursive crawling capabilities (Firecrawl/Tavily) are exposed through `web_extract` rather than as a separate `web_crawl` tool.
 
 ## Backends
 
@@ -27,7 +27,7 @@ Both are configured through a single backend selection. Providers are chosen via
 **Per-capability split:** you can use different providers for search and extract independently — for example SearXNG (free) for search and Firecrawl for extract. See [Per-capability configuration](#per-capability-configuration) below.
 
 :::tip Nous Subscribers
-If you have a paid [Nous Portal](https://portal.omniworker.com) subscription, web search and extract are available through the **[Tool Gateway](tool-gateway.md)** via managed Firecrawl — no API key needed. Run `omniworker tools` to enable it.
+If you have a paid [Nous Portal](https://portal.flux-agent.com) subscription, web search and extract are available through the **[Tool Gateway](tool-gateway.md)** via managed Firecrawl — no API key needed. Run `flux-agent tools` to enable it.
 :::
 
 ---
@@ -43,16 +43,16 @@ Backends return raw page markdown, which can be huge (forum threads, docs sites,
 | 500 000 – 2 000 000 | Chunked: split into 100 k-char chunks, summarize each in parallel, then synthesize a final summary (~5 000 chars) |
 | Over 2 000 000 | Refused with a hint to use `web_crawl` with focused extraction instructions or a more specific source |
 
-The summary keeps quotes, code blocks, and key facts in their original formatting — it's a content compressor, not a paraphraser. If summarization fails or times out, OmniWorker falls back to the first ~5 000 chars of raw content rather than a useless error.
+The summary keeps quotes, code blocks, and key facts in their original formatting — it's a content compressor, not a paraphraser. If summarization fails or times out, Flux Agent falls back to the first ~5 000 chars of raw content rather than a useless error.
 
 ### Which model does the summarizing?
 
-The `web_extract` auxiliary task. By default (`auxiliary.web_extract.provider: "auto"`), this is your **main chat model** — same provider, same model as `omniworker model`. That's fine for most setups, but on expensive reasoning models (Opus, MiniMax M2.7, etc.) every long-page extract adds meaningful cost.
+The `web_extract` auxiliary task. By default (`auxiliary.web_extract.provider: "auto"`), this is your **main chat model** — same provider, same model as `flux-agent model`. That's fine for most setups, but on expensive reasoning models (Opus, MiniMax M2.7, etc.) every long-page extract adds meaningful cost.
 
 To route extraction summaries to a cheap, fast model regardless of your main:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 auxiliary:
   web_extract:
     provider: openrouter
@@ -60,7 +60,7 @@ auxiliary:
     timeout: 360       # seconds; raise if you hit summarization timeouts
 ```
 
-Or pick interactively: `omniworker model` → **Configure auxiliary models** → `web_extract`.
+Or pick interactively: `flux-agent model` → **Configure auxiliary models** → `web_extract`.
 
 See [Auxiliary Models](/docs/user-guide/configuration#auxiliary-models) for the full reference and per-task override patterns.
 
@@ -72,12 +72,12 @@ If you specifically need raw, unsummarized page content — for example, you're 
 
 ## Setup
 
-### Quick setup via `omniworker tools`
+### Quick setup via `flux-agent tools`
 
-Run `omniworker tools`, navigate to **Web Search & Extract**, and pick a provider. The wizard prompts for the required URL or API key and writes it to your config.
+Run `flux-agent tools`, navigate to **Web Search & Extract**, and pick a provider. The wizard prompts for the required URL or API key and writes it to your config.
 
 ```bash
-omniworker tools
+flux-agent tools
 ```
 
 ---
@@ -87,7 +87,7 @@ omniworker tools
 Full-featured search, extract, and crawl. Recommended for most users.
 
 ```bash
-# ~/.omniworker/.env
+# ~/.flux-agent/.env
 FIRECRAWL_API_KEY=fc-your-key-here
 ```
 
@@ -96,7 +96,7 @@ Get a key at [firecrawl.dev](https://firecrawl.dev). The free tier includes 500 
 **Self-hosted Firecrawl:** Point at your own instance instead of the cloud API:
 
 ```bash
-# ~/.omniworker/.env
+# ~/.flux-agent/.env
 FIRECRAWL_API_URL=http://localhost:3002
 ```
 
@@ -106,7 +106,7 @@ When `FIRECRAWL_API_URL` is set, the API key is optional (disable server auth wi
 
 ### SearXNG (free, self-hosted)
 
-SearXNG is a privacy-respecting, open-source metasearch engine that aggregates results from 70+ search engines. **No API key required** — just point OmniWorker at a running SearXNG instance.
+SearXNG is a privacy-respecting, open-source metasearch engine that aggregates results from 70+ search engines. **No API key required** — just point Flux Agent at a running SearXNG instance.
 
 SearXNG is **search-only** — `web_extract` (including its crawl modes) requires a separate extract provider.
 
@@ -160,7 +160,7 @@ Open `~/searxng/searxng/settings.yml` and find the `formats` block (around line 
 formats:
   - html
 
-# After (enable JSON for OmniWorker):
+# After (enable JSON for Flux Agent):
 formats:
   - html
   - json
@@ -182,21 +182,21 @@ curl -s "http://localhost:8888/search?q=test&format=json" | python3 -c \
 
 You should see something like `10 results`. If you get a `403 Forbidden`, JSON format is still disabled — recheck step 4.
 
-**7. Configure OmniWorker:**
+**7. Configure Flux Agent:**
 
 ```bash
-# ~/.omniworker/.env
+# ~/.flux-agent/.env
 SEARXNG_URL=http://localhost:8888
 ```
 
-Then select SearXNG as the search backend in `~/.omniworker/config.yaml`:
+Then select SearXNG as the search backend in `~/.flux-agent/config.yaml`:
 
 ```yaml
 web:
   search_backend: "searxng"
 ```
 
-Or set via `omniworker tools` → Web Search & Extract → SearXNG.
+Or set via `flux-agent tools` → Web Search & Extract → SearXNG.
 
 ---
 
@@ -205,7 +205,7 @@ Or set via `omniworker tools` → Web Search & Extract → SearXNG.
 Public SearXNG instances are listed at [searx.space](https://searx.space/). Filter by instances that have **JSON format enabled** (shown in the table).
 
 ```bash
-# ~/.omniworker/.env
+# ~/.flux-agent/.env
 SEARXNG_URL=https://searx.example.com
 ```
 
@@ -220,13 +220,13 @@ Public instances have rate limits, variable uptime, and may disable JSON format 
 SearXNG handles search; you need a separate provider for `web_extract` (including any deep-crawl modes). Use the per-capability keys:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 web:
   search_backend: "searxng"
   extract_backend: "firecrawl"   # or tavily, exa, parallel
 ```
 
-With this config, OmniWorker uses SearXNG for all search queries and Firecrawl for URL extraction — combining free search with high-quality extraction.
+With this config, Flux Agent uses SearXNG for all search queries and Firecrawl for URL extraction — combining free search with high-quality extraction.
 
 ---
 
@@ -235,7 +235,7 @@ With this config, OmniWorker uses SearXNG for all search queries and Firecrawl f
 AI-optimised search, extract, and crawl with a generous free tier.
 
 ```bash
-# ~/.omniworker/.env
+# ~/.flux-agent/.env
 TAVILY_API_KEY=tvly-your-key-here
 ```
 
@@ -248,7 +248,7 @@ Get a key at [app.tavily.com](https://app.tavily.com/home). The free tier includ
 Neural search with semantic understanding. Good for research and finding conceptually related content.
 
 ```bash
-# ~/.omniworker/.env
+# ~/.flux-agent/.env
 EXA_API_KEY=your-exa-key-here
 ```
 
@@ -261,7 +261,7 @@ Get a key at [exa.ai](https://exa.ai). The free tier includes 1 000 searches/mon
 AI-native search and extraction with deep research capabilities.
 
 ```bash
-# ~/.omniworker/.env
+# ~/.flux-agent/.env
 PARALLEL_API_KEY=your-parallel-key-here
 ```
 
@@ -276,7 +276,7 @@ Get access at [parallel.ai](https://parallel.ai).
 Set one provider for all web capabilities:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 web:
   backend: "searxng"   # firecrawl | searxng | tavily | exa | parallel
 ```
@@ -286,7 +286,7 @@ web:
 Use different providers for search vs extract. This lets you combine free search (SearXNG) with a paid extract provider, or vice versa:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 web:
   search_backend: "searxng"     # used by web_search
   extract_backend: "firecrawl"  # used by web_extract (and its deep-crawl modes)
@@ -301,7 +301,7 @@ When per-capability keys are empty, both fall through to `web.backend`. When `we
 
 ### Auto-detection
 
-If no backend is explicitly configured, OmniWorker picks the first available one based on which credentials are set:
+If no backend is explicitly configured, Flux Agent picks the first available one based on which credentials are set:
 
 | Credential present | Auto-selected backend |
 |--------------------|-----------------------|
@@ -315,7 +315,7 @@ If no backend is explicitly configured, OmniWorker picks the first available one
 
 ## Verify your setup
 
-Run `omniworker setup` to see which web backend is detected:
+Run `flux-agent setup` to see which web backend is detected:
 
 ```
 ✅ Web Search & Extract (searxng)
@@ -325,7 +325,7 @@ Or check via the CLI:
 
 ```bash
 # Activate the venv and run the web tools module directly
-source ~/.omniworker/omniworker-agent/.venv/bin/activate
+source ~/.flux-agent/flux-agent-agent/.venv/bin/activate
 python -m tools.web_tools
 ```
 
@@ -382,7 +382,7 @@ The auxiliary model didn't finish summarizing within the configured timeout. Eit
 For agents that need to use SearXNG via `curl` directly (e.g. as a fallback when the web toolset isn't available), install the `searxng-search` optional skill:
 
 ```bash
-omniworker skills install official/research/searxng-search
+flux-agent skills install official/research/searxng-search
 ```
 
 This adds a skill that teaches the agent how to:

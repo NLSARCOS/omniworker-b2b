@@ -1,10 +1,10 @@
 ---
 sidebar_position: 9
-title: "Run OmniWorker Locally with Ollama — Zero API Cost"
-description: "Step-by-step guide to running OmniWorker Agent entirely on your own machine with Ollama and open-weight models like Gemma 4, no cloud API keys or paid subscriptions needed"
+title: "Run Flux Agent Locally with Ollama — Zero API Cost"
+description: "Step-by-step guide to running Flux Agent Agent entirely on your own machine with Ollama and open-weight models like Gemma 4, no cloud API keys or paid subscriptions needed"
 ---
 
-# Run OmniWorker Locally with Ollama — Zero API Cost
+# Run Flux Agent Locally with Ollama — Zero API Cost
 
 ## The Problem
 
@@ -12,12 +12,12 @@ Cloud LLM APIs charge per token. A heavy coding session can cost $5–20. For pe
 
 ## What This Guide Solves
 
-You'll set up OmniWorker Agent running entirely on your own hardware, using [Ollama](https://ollama.com) as the model backend. No API keys, no subscriptions, no data leaving your machine. Once configured, OmniWorker works exactly like it does with OpenRouter or Anthropic — terminal commands, file editing, web browsing, delegation — but the model runs locally.
+You'll set up Flux Agent Agent running entirely on your own hardware, using [Ollama](https://ollama.com) as the model backend. No API keys, no subscriptions, no data leaving your machine. Once configured, Flux Agent works exactly like it does with OpenRouter or Anthropic — terminal commands, file editing, web browsing, delegation — but the model runs locally.
 
 By the end, you'll have:
 
 - Ollama serving one or more open-weight models
-- OmniWorker connected to Ollama as a custom endpoint
+- Flux Agent connected to Ollama as a custom endpoint
 - A working local agent that can edit files, run commands, and browse the web
 - Optional: a Telegram/Discord bot powered entirely by your own hardware
 
@@ -34,8 +34,8 @@ By the end, you'll have:
 Ollama runs on CPU-only servers. A 9B model on a modern 8-core CPU gives ~10 tokens/sec. A 31B model on CPU is slower (~2–5 tokens/sec) — each response takes 30–120 seconds, but it works. A GPU dramatically improves this. For CPU-only setups, widen the API timeout via the env var (it's not a `config.yaml` key):
 
 ```bash
-# ~/.omniworker/.env
-OMNIWORKER_API_TIMEOUT=1800   # 30 minutes — generous for slow local models
+# ~/.flux-agent/.env
+FLUX AGENT_API_TIMEOUT=1800   # 30 minutes — generous for slow local models
 ```
 :::
 
@@ -64,7 +64,7 @@ Choose based on your hardware:
 | `llama3.2:3b` | ~2 GB | 4+ GB | No | Lightweight quick answers only |
 
 :::warning Tool calling matters
-OmniWorker is an **agentic** assistant — it edits files, runs commands, and browses the web through tool calls. Models without tool-call support can only chat; they can't take actions. For the full OmniWorker experience, use a model that supports tools (like `gemma4:31b`).
+Flux Agent is an **agentic** assistant — it edits files, runs commands, and browses the web through tool calls. Models without tool-call support can only chat; they can't take actions. For the full Flux Agent experience, use a model that supports tools (like `gemma4:31b`).
 :::
 
 Pull your chosen model:
@@ -74,7 +74,7 @@ ollama pull gemma4:31b
 ```
 
 :::info Multiple models
-You can pull several models and switch between them inside OmniWorker with `/model`. Ollama loads the active model into memory on demand and unloads idle ones automatically.
+You can pull several models and switch between them inside Flux Agent with `/model`. Ollama loads the active model into memory on demand and unloads idle ones automatically.
 :::
 
 Verify the model works:
@@ -91,12 +91,12 @@ curl http://localhost:11434/v1/chat/completions \
 
 You should see a JSON response with the model's reply.
 
-## Step 3: Configure OmniWorker
+## Step 3: Configure Flux Agent
 
-Run the OmniWorker setup wizard:
+Run the Flux Agent setup wizard:
 
 ```bash
-omniworker setup
+flux-agent setup
 ```
 
 When prompted for a provider, select **Custom Endpoint** and enter:
@@ -105,7 +105,7 @@ When prompted for a provider, select **Custom Endpoint** and enter:
 - **API Key:** Leave empty or type `no-key` (Ollama doesn't need one)
 - **Model:** `gemma4:31b` (or whichever model you pulled)
 
-Alternatively, edit `~/.omniworker/config.yaml` directly:
+Alternatively, edit `~/.flux-agent/config.yaml` directly:
 
 ```yaml
 model:
@@ -114,10 +114,10 @@ model:
   base_url: "http://localhost:11434/v1"
 ```
 
-## Step 4: Start Using OmniWorker
+## Step 4: Start Using Flux Agent
 
 ```bash
-omniworker
+flux-agent
 ```
 
 That's it. You're now running a fully local agent. Try it out:
@@ -130,7 +130,7 @@ You: Read the README.md and summarize what this project does
 You: Create a Python script that fetches the weather for Ho Chi Minh City
 ```
 
-OmniWorker will use the terminal tool, file operations, and your local model — no cloud calls.
+Flux Agent will use the terminal tool, file operations, and your local model — no cloud calls.
 
 ## Step 5: Pick the Right Model for Your Task
 
@@ -168,7 +168,7 @@ EOF
 ollama create gemma4-16k -f /tmp/Modelfile
 ```
 
-Then update your OmniWorker config to use `gemma4-16k` as the model name.
+Then update your Flux Agent config to use `gemma4-16k` as the model name.
 
 ### Keep the Model Loaded
 
@@ -200,12 +200,12 @@ For a 31B model on a 12 GB GPU, you'll get partial offload (~40 layers on GPU, r
 
 ## Step 7: Run as a Gateway Bot (Optional)
 
-Once OmniWorker works locally in the CLI, you can expose it as a Telegram or Discord bot — still running entirely on your hardware.
+Once Flux Agent works locally in the CLI, you can expose it as a Telegram or Discord bot — still running entirely on your hardware.
 
 ### Telegram
 
 1. Create a bot via [@BotFather](https://t.me/BotFather) and get the token
-2. Add to your `~/.omniworker/config.yaml`:
+2. Add to your `~/.flux-agent/config.yaml`:
 
 ```yaml
 model:
@@ -222,7 +222,7 @@ platforms:
 3. Start the gateway:
 
 ```bash
-omniworker gateway
+flux-agent gateway
 ```
 
 Now message your bot on Telegram — it responds using your local model.
@@ -239,7 +239,7 @@ platforms:
     token: "YOUR_DISCORD_BOT_TOKEN"
 ```
 
-3. Start: `omniworker gateway`
+3. Start: `flux-agent gateway`
 
 ## Step 8: Set Up Fallbacks (Optional)
 
@@ -281,8 +281,8 @@ ollama serve
 Smaller models (3B, 7B) sometimes ignore tool-call instructions and produce plain text instead of structured function calls. Solutions:
 
 - **Use a bigger model** — `gemma4:31b` or `gemma2:27b` handle tool calls much better than 3B/7B models.
-- **OmniWorker has auto-repair** — it detects malformed tool calls and attempts to fix them automatically.
-- **Set up a fallback** — if the local model fails 3 times, OmniWorker falls back to a cloud provider.
+- **Flux Agent has auto-repair** — it detects malformed tool calls and attempts to fix them automatically.
+- **Set up a fallback** — if the local model fails 3 times, Flux Agent falls back to a cloud provider.
 
 ### Context window errors
 
@@ -303,7 +303,7 @@ Your only cost is electricity — roughly $0.01–0.05 per session depending on 
 ## What Works Well Locally
 
 - **File editing and code generation** — models 9B+ handle this well
-- **Terminal commands** — OmniWorker wraps the command, runs it, reads output regardless of model
+- **Terminal commands** — Flux Agent wraps the command, runs it, reads output regardless of model
 - **Web browsing** — the browser tool does the fetching; the model just interprets results
 - **Cron jobs and scheduled tasks** — work identically to cloud setups
 - **Multi-platform gateway** — Telegram, Discord, Slack all work with local models

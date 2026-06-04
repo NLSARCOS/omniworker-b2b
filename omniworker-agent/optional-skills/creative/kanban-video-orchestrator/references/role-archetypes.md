@@ -168,7 +168,7 @@ audio's energy.
 
 ### voice-talent / narrator
 
-Generates voiceover audio. Calls a TTS API directly; no OmniWorker skill required
+Generates voiceover audio. Calls a TTS API directly; no Flux Agent skill required
 beyond `kanban-worker`. The user can also supply pre-recorded VO instead of
 generation.
 

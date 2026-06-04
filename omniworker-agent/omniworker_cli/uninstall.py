@@ -1,5 +1,5 @@
 """
-OmniWorker Agent Uninstaller.
+Flux Agent Agent Uninstaller.
 
 Provides options for:
 - Full uninstall: Remove everything including configs and data
@@ -11,9 +11,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 
-from omniworker_cli.colors import Colors, color
+from flux-agent_cli.colors import Colors, color
 
 def log_info(msg: str):
     print(f"{color('→', Colors.CYAN)} {msg}")
@@ -50,7 +50,7 @@ def find_shell_configs() -> list:
 
 
 def remove_path_from_shell_configs():
-    """Remove OmniWorker PATH entries from shell configuration files."""
+    """Remove Flux Agent PATH entries from shell configuration files."""
     configs = find_shell_configs()
     removed_from = []
     
@@ -64,8 +64,8 @@ def remove_path_from_shell_configs():
             skip_next = False
             
             for line in content.split('\n'):
-                # Skip the "# OmniWorker Agent" comment and following line
-                if '# OmniWorker Agent' in line or '# hermes-agent' in line:
+                # Skip the "# Flux Agent Agent" comment and following line
+                if '# Flux Agent Agent' in line or '# hermes-agent' in line:
                     skip_next = True
                     continue
                 if skip_next and ('hermes' in line.lower() and 'PATH' in line):
@@ -106,9 +106,9 @@ def remove_wrapper_script():
     for wrapper in wrapper_paths:
         if wrapper.exists():
             try:
-                # Check if it's our wrapper (contains omniworker_cli reference)
+                # Check if it's our wrapper (contains flux-agent_cli reference)
                 content = wrapper.read_text()
-                if 'omniworker_cli' in content or 'hermes-agent' in content:
+                if 'flux-agent_cli' in content or 'hermes-agent' in content:
                     wrapper.unlink()
                     removed.append(wrapper)
             except Exception as e:
@@ -133,7 +133,7 @@ def uninstall_gateway_service():
 
     # 1. Kill any standalone gateway processes (all platforms, including Termux)
     try:
-        from omniworker_cli.gateway import kill_gateway_processes, find_gateway_pids
+        from flux-agent_cli.gateway import kill_gateway_processes, find_gateway_pids
         pids = find_gateway_pids()
         if pids:
             killed = kill_gateway_processes()
@@ -154,7 +154,7 @@ def uninstall_gateway_service():
     # 2. Linux: uninstall systemd services (both user and system scopes)
     if system == "Linux":
         try:
-            from omniworker_cli.gateway import (
+            from flux-agent_cli.gateway import (
                 get_systemd_unit_path,
                 get_service_name,
                 _systemctl_cmd,
@@ -191,7 +191,7 @@ def uninstall_gateway_service():
     # 3. macOS: uninstall launchd plist
     elif system == "Darwin":
         try:
-            from omniworker_cli.gateway import get_launchd_plist_path
+            from flux-agent_cli.gateway import get_launchd_plist_path
             plist_path = get_launchd_plist_path()
             if plist_path.exists():
                 subprocess.run(["launchctl", "unload", str(plist_path)],
@@ -209,7 +209,7 @@ def uninstall_gateway_service():
     #    uninstall logic stays in exactly one place.
     elif system == "Windows":
         try:
-            from omniworker_cli import gateway_windows
+            from flux-agent_cli import gateway_windows
             if gateway_windows.is_installed() or gateway_windows.is_task_registered() \
                     or gateway_windows.is_startup_entry_installed():
                 try:
@@ -235,7 +235,7 @@ def uninstall_gateway_service():
 # The installer (``scripts/install.ps1``) does four Windows-only things that
 # ``remove_path_from_shell_configs`` / ``remove_wrapper_script`` don't cover:
 #
-#   1. Sets User-scope env vars ``OMNIWORKER_HOME`` and ``OMNIWORKER_GIT_BASH_PATH``
+#   1. Sets User-scope env vars ``FLUX AGENT_HOME`` and ``FLUX AGENT_GIT_BASH_PATH``
 #      via ``[Environment]::SetEnvironmentVariable(..., "User")``.  These
 #      don't live in ~/.bashrc — they're in the Windows registry at
 #      HKCU\Environment.
@@ -260,21 +260,21 @@ def uninstall_gateway_service():
 # or open a new terminal anyway).
 
 
-def _hermes_path_markers(omniworker_home: Path) -> list[str]:
-    """Path-entry substrings that identify OmniWorker-owned User-PATH entries."""
-    root = str(omniworker_home).rstrip("\\/")
+def _hermes_path_markers(flux-agent_home: Path) -> list[str]:
+    """Path-entry substrings that identify Flux Agent-owned User-PATH entries."""
+    root = str(flux-agent_home).rstrip("\\/")
     # Match on prefix so sub-entries (git\cmd, git\bin, git\usr\bin, node, etc.)
     # all get swept.  Also match the bare hermes-agent install dir.
     markers = [root + "\\hermes-agent", root + "\\git", root + "\\node", root + "\\venv"]
-    # Also match if OMNIWORKER_HOME was customised to somewhere else — find-and-nuke
+    # Also match if FLUX AGENT_HOME was customised to somewhere else — find-and-nuke
     # any entry whose path component contains "hermes".  We don't want to catch
     # unrelated entries like "chermes-foo" or "ephermeral", so we look for
     # backslash-hermes as a word-ish boundary.
     return markers
 
 
-def remove_path_from_windows_registry(omniworker_home: Path) -> list[str]:
-    """Strip OmniWorker-owned entries from User-scope PATH in the registry.
+def remove_path_from_windows_registry(flux-agent_home: Path) -> list[str]:
+    """Strip Flux Agent-owned entries from User-scope PATH in the registry.
 
     Returns the list of removed path entries.  Operates on HKCU\\Environment,
     same key the installer wrote to via ``[Environment]::SetEnvironmentVariable``.
@@ -295,7 +295,7 @@ def remove_path_from_windows_registry(omniworker_home: Path) -> list[str]:
                 return []
             # Preserve REG_EXPAND_SZ vs REG_SZ so unexpanded %VARS% survive.
             entries = [e for e in path_value.split(";") if e]
-            markers = _hermes_path_markers(omniworker_home)
+            markers = _hermes_path_markers(flux-agent_home)
             kept: list[str] = []
             for entry in entries:
                 entry_norm = entry.rstrip("\\/")
@@ -313,7 +313,7 @@ def remove_path_from_windows_registry(omniworker_home: Path) -> list[str]:
 
 
 def remove_hermes_env_vars_windows() -> list[str]:
-    """Delete OMNIWORKER_HOME and OMNIWORKER_GIT_BASH_PATH from User-scope env vars."""
+    """Delete FLUX AGENT_HOME and FLUX AGENT_GIT_BASH_PATH from User-scope env vars."""
     try:
         import winreg
     except ImportError:
@@ -323,7 +323,7 @@ def remove_hermes_env_vars_windows() -> list[str]:
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0,
                             winreg.KEY_READ | winreg.KEY_WRITE) as key:
-            for name in ("OMNIWORKER_HOME", "OMNIWORKER_GIT_BASH_PATH"):
+            for name in ("FLUX AGENT_HOME", "FLUX AGENT_GIT_BASH_PATH"):
                 try:
                     winreg.QueryValueEx(key, name)
                 except FileNotFoundError:
@@ -338,13 +338,13 @@ def remove_hermes_env_vars_windows() -> list[str]:
     return removed
 
 
-def remove_portable_tooling_windows(omniworker_home: Path) -> list[Path]:
+def remove_portable_tooling_windows(flux-agent_home: Path) -> list[Path]:
     """Delete PortableGit and Node installs the Windows installer created under
     ``%LOCALAPPDATA%\\hermes\\``.  Only called on full uninstall; they're
     isolated from any system Git / Node so they cannot break other tools."""
     removed: list[Path] = []
     for sub in ("git", "node", "gateway-service"):
-        target = omniworker_home / sub
+        target = flux-agent_home / sub
         if target.exists():
             try:
                 shutil.rmtree(target, ignore_errors=False)
@@ -359,11 +359,11 @@ def _is_windows() -> bool:
     return sys.platform == "win32"
 
 
-def _is_default_omniworker_home(omniworker_home: Path) -> bool:
-    """Return True when ``omniworker_home`` points at the default (non-profile) root."""
+def _is_default_flux-agent_home(flux-agent_home: Path) -> bool:
+    """Return True when ``flux-agent_home`` points at the default (non-profile) root."""
     try:
-        from omniworker_constants import get_default_hermes_root
-        return omniworker_home.resolve() == get_default_hermes_root().resolve()
+        from flux-agent_constants import get_default_hermes_root
+        return flux-agent_home.resolve() == get_default_hermes_root().resolve()
     except Exception:
         return False
 
@@ -373,7 +373,7 @@ def _discover_named_profiles():
     if profile support is unavailable or nothing is installed beyond the
     default root."""
     try:
-        from omniworker_cli.profiles import list_profiles
+        from flux-agent_cli.profiles import list_profiles
     except Exception:
         return []
     try:
@@ -385,11 +385,11 @@ def _discover_named_profiles():
 
 def _uninstall_profile(profile) -> None:
     """Fully uninstall a single named profile: stop its gateway service,
-    remove its alias wrapper, and wipe its OMNIWORKER_HOME directory.
+    remove its alias wrapper, and wipe its FLUX AGENT_HOME directory.
 
     We shell out to ``hermes -p <name> gateway stop|uninstall`` because
     service names, unit paths, and plist paths are all derived from the
-    current OMNIWORKER_HOME and can't be easily switched in-process.
+    current FLUX AGENT_HOME and can't be easily switched in-process.
     """
     import sys as _sys
     name = profile.name
@@ -398,9 +398,9 @@ def _uninstall_profile(profile) -> None:
     log_info(f"Uninstalling profile '{name}'...")
 
     # 1. Stop and remove this profile's gateway service.
-    #    Use `python -m omniworker_cli.main` so we don't depend on a `hermes`
+    #    Use `python -m flux-agent_cli.main` so we don't depend on a `hermes`
     #    wrapper that may be half-removed mid-uninstall.
-    hermes_invocation = [_sys.executable, "-m", "omniworker_cli.main", "--profile", name]
+    hermes_invocation = [_sys.executable, "-m", "flux-agent_cli.main", "--profile", name]
     for subcmd in ("stop", "uninstall"):
         try:
             subprocess.run(
@@ -424,7 +424,7 @@ def _uninstall_profile(profile) -> None:
         except Exception as e:
             log_warn(f"  Could not remove alias {alias_path}: {e}")
 
-    # 3. Wipe the profile's OMNIWORKER_HOME directory.
+    # 3. Wipe the profile's FLUX AGENT_HOME directory.
     try:
         if profile_home.exists():
             shutil.rmtree(profile_home)
@@ -442,26 +442,26 @@ def run_uninstall(args):
     - Keep data: removes code but keeps ~/.hermes/ for future reinstall
     """
     project_root = get_project_root()
-    omniworker_home = get_omniworker_home()
+    flux-agent_home = get_flux-agent_home()
 
     # Detect named profiles when uninstalling from the default root —
-    # offer to clean them up too instead of leaving zombie OMNIWORKER_HOMEs
+    # offer to clean them up too instead of leaving zombie FLUX AGENT_HOMEs
     # and systemd units behind.
-    is_default_profile = _is_default_omniworker_home(omniworker_home)
+    is_default_profile = _is_default_flux-agent_home(flux-agent_home)
     named_profiles = _discover_named_profiles() if is_default_profile else []
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA, Colors.BOLD))
-    print(color("│            ⚕ OmniWorker Agent Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
+    print(color("│            ⚕ Flux Agent Agent Uninstaller                  │", Colors.MAGENTA, Colors.BOLD))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA, Colors.BOLD))
     print()
     
     # Show what will be affected
     print(color("Current Installation:", Colors.CYAN, Colors.BOLD))
     print(f"  Code:    {project_root}")
-    print(f"  Config:  {omniworker_home / 'config.yaml'}")
-    print(f"  Secrets: {omniworker_home / '.env'}")
-    print(f"  Data:    {omniworker_home / 'cron/'}, {omniworker_home / 'sessions/'}, {omniworker_home / 'logs/'}")
+    print(f"  Config:  {flux-agent_home / 'config.yaml'}")
+    print(f"  Secrets: {flux-agent_home / '.env'}")
+    print(f"  Data:    {flux-agent_home / 'cron/'}, {flux-agent_home / 'sessions/'}, {flux-agent_home / 'logs/'}")
     print()
 
     if named_profiles:
@@ -499,7 +499,7 @@ def run_uninstall(args):
 
     # When doing a full uninstall from the default profile, also offer to
     # remove any named profiles — stopping their gateway services, unlinking
-    # their alias wrappers, and wiping their OMNIWORKER_HOME dirs. Otherwise
+    # their alias wrappers, and wiping their FLUX AGENT_HOME dirs. Otherwise
     # those leave zombie services and data behind.
     remove_profiles = False
     if full_uninstall and named_profiles:
@@ -522,7 +522,7 @@ def run_uninstall(args):
     # Final confirmation
     print()
     if full_uninstall:
-        print(color("⚠️  WARNING: This will permanently delete ALL OmniWorker data!", Colors.RED, Colors.BOLD))
+        print(color("⚠️  WARNING: This will permanently delete ALL Flux Agent data!", Colors.RED, Colors.BOLD))
         print(color("   Including: configs, API keys, sessions, scheduled jobs, logs", Colors.RED))
         if remove_profiles:
             print(color(
@@ -531,7 +531,7 @@ def run_uninstall(args):
                 Colors.RED
             ))
     else:
-        print("This will remove the OmniWorker code but keep your configuration and data.")
+        print("This will remove the Flux Agent code but keep your configuration and data.")
     
     print()
     try:
@@ -568,23 +568,23 @@ def run_uninstall(args):
 
     if _is_windows():
         log_info("Removing PATH entries from Windows User environment...")
-        # Expand %LOCALAPPDATA% etc. in omniworker_home so the marker matching is
+        # Expand %LOCALAPPDATA% etc. in flux-agent_home so the marker matching is
         # against fully resolved paths — installer writes literal strings
         # like C:\Users\<u>\AppData\Local\hermes\git\cmd, not %LOCALAPPDATA%.
-        removed_path_entries = remove_path_from_windows_registry(Path(os.path.expandvars(str(omniworker_home))))
+        removed_path_entries = remove_path_from_windows_registry(Path(os.path.expandvars(str(flux-agent_home))))
         if removed_path_entries:
             for entry in removed_path_entries:
                 log_success(f"Removed from User PATH: {entry}")
         else:
-            log_info("No OmniWorker-owned PATH entries in User environment")
+            log_info("No Flux Agent-owned PATH entries in User environment")
 
-        log_info("Removing OMNIWORKER_HOME / OMNIWORKER_GIT_BASH_PATH User env vars...")
+        log_info("Removing FLUX AGENT_HOME / FLUX AGENT_GIT_BASH_PATH User env vars...")
         removed_env = remove_hermes_env_vars_windows()
         if removed_env:
             for name in removed_env:
                 log_success(f"Removed User env var: {name}")
         else:
-            log_info("No OmniWorker-set User env vars to remove")
+            log_info("No Flux Agent-set User env vars to remove")
     
     # 3. Remove wrapper script
     log_info("Removing hermes command...")
@@ -603,7 +603,7 @@ def run_uninstall(args):
     try:
         if project_root.exists():
             # If the install is inside ~/.hermes/, just remove the hermes-agent subdir
-            if omniworker_home in project_root.parents or project_root.parent == omniworker_home:
+            if flux-agent_home in project_root.parents or project_root.parent == flux-agent_home:
                 shutil.rmtree(project_root)
                 log_success(f"Removed {project_root}")
             else:
@@ -616,13 +616,13 @@ def run_uninstall(args):
 
     # 4b. Remove Windows-only installer artifacts that are NOT user data:
     #     PortableGit, bundled Node, gateway-service dir.  Installer put them
-    #     under OMNIWORKER_HOME but they're install tooling, not config — safe to
+    #     under FLUX AGENT_HOME but they're install tooling, not config — safe to
     #     remove even in "keep data" mode.  If we're doing a full uninstall
-    #     the step-5 rmtree(omniworker_home) would sweep them anyway; calling
+    #     the step-5 rmtree(flux-agent_home) would sweep them anyway; calling
     #     this helper there is a no-op since they'll already be gone.
     if _is_windows():
         log_info("Removing Windows installer artifacts (PortableGit, Node, gateway-service)...")
-        removed_artifacts = remove_portable_tooling_windows(omniworker_home)
+        removed_artifacts = remove_portable_tooling_windows(flux-agent_home)
         if removed_artifacts:
             for path in removed_artifacts:
                 log_success(f"Removed {path}")
@@ -632,7 +632,7 @@ def run_uninstall(args):
     # 5. Optionally remove ~/.hermes/ data directory (and named profiles)
     if full_uninstall:
         # 5a. Stop and remove each named profile's gateway service and
-        #     alias wrapper. The profile OMNIWORKER_HOME dirs live under
+        #     alias wrapper. The profile FLUX AGENT_HOME dirs live under
         #     ``<default>/profiles/<name>/`` and will be swept away by the
         #     rmtree below, but services + alias scripts live OUTSIDE the
         #     default root and have to be cleaned up explicitly.
@@ -642,14 +642,14 @@ def run_uninstall(args):
 
         log_info("Removing configuration and data...")
         try:
-            if omniworker_home.exists():
-                shutil.rmtree(omniworker_home)
-                log_success(f"Removed {omniworker_home}")
+            if flux-agent_home.exists():
+                shutil.rmtree(flux-agent_home)
+                log_success(f"Removed {flux-agent_home}")
         except Exception as e:
-            log_warn(f"Could not fully remove {omniworker_home}: {e}")
+            log_warn(f"Could not fully remove {flux-agent_home}: {e}")
             log_info("You may need to manually remove it")
     else:
-        log_info(f"Keeping configuration and data in {omniworker_home}")
+        log_info(f"Keeping configuration and data in {flux-agent_home}")
     
     # Done
     print()
@@ -660,7 +660,7 @@ def run_uninstall(args):
     
     if not full_uninstall:
         print(color("Your configuration and data have been preserved:", Colors.CYAN))
-        print(f"  {omniworker_home}/")
+        print(f"  {flux-agent_home}/")
         print()
         print("To reinstall later with your existing settings:")
         if _is_windows():
@@ -676,5 +676,5 @@ def run_uninstall(args):
         print(color("Reload your shell to complete the process:", Colors.YELLOW))
         print("  source ~/.bashrc  # or ~/.zshrc")
     print()
-    print("Thank you for using OmniWorker Agent! ⚕")
+    print("Thank you for using Flux Agent Agent! ⚕")
     print()

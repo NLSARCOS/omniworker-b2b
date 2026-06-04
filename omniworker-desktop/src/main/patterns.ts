@@ -1,10 +1,10 @@
 import { join } from "path";
 import {
-  OMNIWORKER_HOME,
-  OMNIWORKER_PYTHON,
-  omniworkerCliArgs,
+  FLUX AGENT_HOME,
+  FLUX AGENT_PYTHON,
+  flux-agentCliArgs,
 } from "./installer";
-import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./omniworker";
+import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./flux-agent";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { execFile } from "child_process";
 
@@ -21,12 +21,12 @@ export interface DetectedPattern {
   auto_created_job_id: string | null;
 }
 
-function runOmniWorkerCommand(
+function runFlux AgentCommand(
   args: string[],
   profile?: string,
   timeoutMs = 15000,
 ): Promise<{ success: boolean; output: string; error?: string }> {
-  const cliArgs = omniworkerCliArgs();
+  const cliArgs = flux-agentCliArgs();
   if (profile && profile !== "default") {
     cliArgs.push("-p", profile);
   }
@@ -34,10 +34,10 @@ function runOmniWorkerCommand(
 
   return new Promise((resolve) => {
     execFile(
-      OMNIWORKER_PYTHON,
+      FLUX AGENT_PYTHON,
       cliArgs,
       {
-        cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
+        cwd: join(FLUX AGENT_HOME, "flux-agent-agent"),
         timeout: timeoutMs,
         ...HIDDEN_SUBPROCESS_OPTIONS,
       },
@@ -91,7 +91,7 @@ export async function listDetectedPatterns(
     }
   }
 
-  const result = await runOmniWorkerCommand(["patterns", "list", "--limit", "100"], profile);
+  const result = await runFlux AgentCommand(["patterns", "list", "--limit", "100"], profile);
   if (!result.success) {
     console.error("[PATTERNS] list failed:", result.error);
     return [];
@@ -129,7 +129,7 @@ export async function approvePattern(
     }
   }
 
-  const result = await runOmniWorkerCommand(
+  const result = await runFlux AgentCommand(
     ["patterns", "approve", patternId],
     profile,
   );
@@ -157,7 +157,7 @@ export async function rejectPattern(
     }
   }
 
-  const result = await runOmniWorkerCommand(
+  const result = await runFlux AgentCommand(
     ["patterns", "reject", patternId],
     profile,
   );
@@ -172,7 +172,7 @@ export async function toggleAutoLearning(
   profile?: string,
 ): Promise<{ success: boolean; error?: string }> {
   // For now, this toggles a config key. In the future it could hit an API endpoint.
-  const result = await runOmniWorkerCommand(
+  const result = await runFlux AgentCommand(
     ["config", "set", "autolearning.enabled", enabled ? "true" : "false"],
     profile,
   );

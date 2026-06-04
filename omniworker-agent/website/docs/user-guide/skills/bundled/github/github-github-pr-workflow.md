@@ -17,7 +17,7 @@ GitHub PR lifecycle: branch, commit, open, CI, merge.
 | Source | Bundled (installed by default) |
 | Path | `skills/github/github-pr-workflow` |
 | Version | `1.1.0` |
-| Author | OmniWorker Agent |
+| Author | Flux Agent Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `GitHub`, `Pull-Requests`, `CI/CD`, `Git`, `Automation`, `Merge` |
@@ -26,7 +26,7 @@ GitHub PR lifecycle: branch, commit, open, CI, merge.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # GitHub Pull Request Workflow
@@ -48,8 +48,8 @@ else
   AUTH="git"
   # Ensure we have a token for API calls
   if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ~/.omniworker/.env ] && grep -q "^GITHUB_TOKEN=" ~/.omniworker/.env; then
-      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.omniworker/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+    if [ -f ~/.flux-agent/.env ] && grep -q "^GITHUB_TOKEN=" ~/.flux-agent/.env; then
+      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.flux-agent/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi

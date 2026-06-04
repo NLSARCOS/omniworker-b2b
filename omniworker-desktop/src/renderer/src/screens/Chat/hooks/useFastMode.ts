@@ -15,7 +15,7 @@ export function useFastMode(profile?: string): UseFastModeResult {
   const [fastMode, setFastMode] = useState(false);
 
   useEffect(() => {
-    window.omniworkerAPI
+    window.flux-agentAPI
       .getConfig("agent.service_tier", profile)
       .then((val) => {
         setFastMode(isFastTier(val));
@@ -25,7 +25,7 @@ export function useFastMode(profile?: string): UseFastModeResult {
   const set = useCallback(
     async (next: boolean): Promise<void> => {
       setFastMode(next);
-      await window.omniworkerAPI.setConfig(
+      await window.flux-agentAPI.setConfig(
         "agent.service_tier",
         next ? "fast" : "normal",
         profile,

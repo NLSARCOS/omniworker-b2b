@@ -1,5 +1,5 @@
 """
-Multi-provider authentication system for OmniWorker Agent.
+Multi-provider authentication system for Flux Agent Agent.
 
 Supports OAuth device code flows (Nous Portal, future: OpenAI Codex) and
 traditional API key providers (OpenRouter, custom endpoints). Auth state
@@ -15,7 +15,7 @@ Architecture:
 Nous authentication paths:
 - Invoke JWT (preferred): use a scoped access_token directly for inference.
 - Legacy session key (fallback): mint an opaque 24h key when JWT auth is
-  unavailable, or when OMNIWORKER_AGENT_USE_LEGACY_SESSION_KEYS is set for
+  unavailable, or when FLUX AGENT_AGENT_USE_LEGACY_SESSION_KEYS is set for
   debugging or rollback.
 """
 
@@ -47,8 +47,8 @@ from urllib.parse import parse_qs, urlencode, urlparse
 import httpx
 import yaml
 
-from omniworker_cli.config import get_omniworker_home, get_config_path, read_raw_config
-from omniworker_constants import OPENROUTER_BASE_URL
+from flux-agent_cli.config import get_flux-agent_home, get_config_path, read_raw_config
+from flux-agent_constants import OPENROUTER_BASE_URL
 from utils import atomic_replace, atomic_yaml_write, is_truthy_value
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ DEFAULT_NOUS_CLIENT_ID = "hermes-cli"
 NOUS_LEGACY_AGENT_KEY_SCOPE = "inference:mint_agent_key"
 NOUS_INFERENCE_INVOKE_SCOPE = "inference:invoke"
 DEFAULT_NOUS_SCOPE = f"{NOUS_INFERENCE_INVOKE_SCOPE} {NOUS_LEGACY_AGENT_KEY_SCOPE}"
-NOUS_LEGACY_SESSION_KEYS_ENV = "OMNIWORKER_AGENT_USE_LEGACY_SESSION_KEYS"
+NOUS_LEGACY_SESSION_KEYS_ENV = "FLUX AGENT_AGENT_USE_LEGACY_SESSION_KEYS"
 NOUS_DEVICE_CODE_SOURCE = "device_code"
 NOUS_INFERENCE_AUTH_MODE_AUTO = "auto"
 NOUS_INFERENCE_AUTH_MODE_FRESH = "fresh"
@@ -504,7 +504,7 @@ def get_anthropic_key() -> str:
 
         ANTHROPIC_API_KEY -> ANTHROPIC_TOKEN -> CLAUDE_CODE_OAUTH_TOKEN
     """
-    from omniworker_cli.config import get_env_value
+    from flux-agent_cli.config import get_env_value
 
     for var in PROVIDER_REGISTRY["anthropic"].api_key_env_vars:
         value = get_env_value(var) or os.getenv(var, "")
@@ -581,7 +581,7 @@ def _resolve_api_key_provider_secret(
     if provider_id == "copilot":
         # Use the dedicated copilot auth module for proper token validation
         try:
-            from omniworker_cli.copilot_auth import resolve_copilot_token, get_copilot_api_token
+            from flux-agent_cli.copilot_auth import resolve_copilot_token, get_copilot_api_token
             token, source = resolve_copilot_token()
             if token:
                 return get_copilot_api_token(token), source
@@ -591,7 +591,7 @@ def _resolve_api_key_provider_secret(
             pass
         return "", ""
 
-    from omniworker_cli.config import get_env_value
+    from flux-agent_cli.config import get_env_value
     for env_var in pconfig.api_key_env_vars:
         # Check both os.environ and ~/.hermes/.env file
         val = (get_env_value(env_var) or "").strip()
@@ -780,7 +780,7 @@ def _token_fingerprint(token: Any) -> Optional[str]:
 
 
 def _oauth_trace_enabled() -> bool:
-    raw = os.getenv("OMNIWORKER_OAUTH_TRACE", "").strip().lower()
+    raw = os.getenv("FLUX AGENT_OAUTH_TRACE", "").strip().lower()
     return raw in {"1", "true", "yes", "on"}
 
 
@@ -799,10 +799,10 @@ def _oauth_trace(event: str, *, sequence_id: Optional[str] = None, **fields: Any
 # =============================================================================
 
 def _auth_file_path() -> Path:
-    path = get_omniworker_home() / "auth.json"
-    # Seat belt: if pytest is running and OMNIWORKER_HOME resolves to the real
+    path = get_flux-agent_home() / "auth.json"
+    # Seat belt: if pytest is running and FLUX AGENT_HOME resolves to the real
     # user's auth store, refuse rather than silently corrupt it. This catches
-    # tests that forgot to monkeypatch OMNIWORKER_HOME, tests invoked without the
+    # tests that forgot to monkeypatch FLUX AGENT_HOME, tests invoked without the
     # hermetic conftest, or sandbox escapes via threads/subprocesses. In
     # production (no PYTEST_CURRENT_TEST) this is a single dict lookup.
     if os.environ.get("PYTEST_CURRENT_TEST"):
@@ -814,7 +814,7 @@ def _auth_file_path() -> Path:
         if resolved == real_home_auth:
             raise RuntimeError(
                 f"Refusing to touch real user auth store during test run: {path}. "
-                "Set OMNIWORKER_HOME to a tmp_path in your test fixture, or run "
+                "Set FLUX AGENT_HOME to a tmp_path in your test fixture, or run "
                 "via scripts/run_tests.sh for hermetic CI-parity env."
             )
     return path
@@ -824,18 +824,18 @@ def _global_auth_file_path() -> Optional[Path]:
     """Return the global-root auth.json when the process is in profile mode.
 
     Returns ``None`` when the profile and global root resolve to the same
-    directory (classic mode, or custom OMNIWORKER_HOME that is not a profile).
+    directory (classic mode, or custom FLUX AGENT_HOME that is not a profile).
     Used by read-only fallback paths so providers authed at the root are
     visible to profile processes that haven't configured them locally.
 
     See issue #18594 follow-up (credential_pool shadowing).
     """
     try:
-        from omniworker_constants import get_default_hermes_root
+        from flux-agent_constants import get_default_hermes_root
         global_root = get_default_hermes_root()
     except Exception:
         return None
-    profile_home = get_omniworker_home()
+    profile_home = get_flux-agent_home()
     try:
         if profile_home.resolve(strict=False) == global_root.resolve(strict=False):
             return None
@@ -858,9 +858,9 @@ def _load_global_auth_store() -> Dict[str, Any]:
     or the global auth.json is absent). Never raises on missing file.
 
     Seat belt: under pytest, refuses to read the real user's
-    ``~/.hermes/auth.json`` even when OMNIWORKER_HOME is set to a profile
+    ``~/.hermes/auth.json`` even when FLUX AGENT_HOME is set to a profile
     path. The hermetic conftest does not redirect ``HOME``, so
-    ``get_default_hermes_root()`` for a profile-shaped OMNIWORKER_HOME can
+    ``get_default_hermes_root()`` for a profile-shaped FLUX AGENT_HOME can
     still resolve to the real user's home on a dev machine. That would
     leak real credentials into tests. This guard uses the unmodified
     ``HOME`` env var (what ``os.path.expanduser('~')`` would resolve to),
@@ -1274,7 +1274,7 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
 
     # 2. Check config.yaml model.provider
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model")
         if isinstance(model_cfg, dict):
@@ -1286,7 +1286,7 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
 
     # 3. Check provider-specific env vars
     # Exclude CLAUDE_CODE_OAUTH_TOKEN — it's set by Claude Code itself,
-    # not by the user explicitly configuring anthropic in OmniWorker.
+    # not by the user explicitly configuring anthropic in Flux Agent.
     _IMPLICIT_ENV_VARS = {"CLAUDE_CODE_OAUTH_TOKEN"}
     pconfig = PROVIDER_REGISTRY.get(normalized)
     if pconfig and pconfig.auth_type == "api_key":
@@ -1363,7 +1363,7 @@ def _get_config_hint_for_unknown_provider(provider_name: str) -> str:
     and returns a human-readable diagnostic, or empty string if nothing found.
     """
     try:
-        from omniworker_cli.config import validate_config_structure
+        from flux-agent_cli.config import validate_config_structure
         issues = validate_config_structure()
         if not issues:
             return ""
@@ -1991,7 +1991,7 @@ def resolve_qwen_runtime_credentials(
             code="qwen_access_token_missing",
         )
 
-    base_url = os.getenv("OMNIWORKER_QWEN_BASE_URL", "").strip().rstrip("/") or DEFAULT_QWEN_BASE_URL
+    base_url = os.getenv("FLUX AGENT_QWEN_BASE_URL", "").strip().rstrip("/") or DEFAULT_QWEN_BASE_URL
     return {
         "provider": "qwen-oauth",
         "base_url": base_url,
@@ -2119,11 +2119,11 @@ def _spotify_client_id(
     explicit: Optional[str] = None,
     state: Optional[Dict[str, Any]] = None,
 ) -> str:
-    from omniworker_cli.config import get_env_value
+    from flux-agent_cli.config import get_env_value
 
     candidates = (
         explicit,
-        get_env_value("OMNIWORKER_SPOTIFY_CLIENT_ID"),
+        get_env_value("FLUX AGENT_SPOTIFY_CLIENT_ID"),
         get_env_value("SPOTIFY_CLIENT_ID"),
         state.get("client_id") if isinstance(state, dict) else None,
     )
@@ -2132,7 +2132,7 @@ def _spotify_client_id(
         if cleaned:
             return cleaned
     raise AuthError(
-        "Spotify client_id is required. Set OMNIWORKER_SPOTIFY_CLIENT_ID or pass --client-id.",
+        "Spotify client_id is required. Set FLUX AGENT_SPOTIFY_CLIENT_ID or pass --client-id.",
         provider="spotify",
         code="spotify_client_id_missing",
     )
@@ -2142,11 +2142,11 @@ def _spotify_redirect_uri(
     explicit: Optional[str] = None,
     state: Optional[Dict[str, Any]] = None,
 ) -> str:
-    from omniworker_cli.config import get_env_value
+    from flux-agent_cli.config import get_env_value
 
     candidates = (
         explicit,
-        get_env_value("OMNIWORKER_SPOTIFY_REDIRECT_URI"),
+        get_env_value("FLUX AGENT_SPOTIFY_REDIRECT_URI"),
         get_env_value("SPOTIFY_REDIRECT_URI"),
         state.get("redirect_uri") if isinstance(state, dict) else None,
         DEFAULT_SPOTIFY_REDIRECT_URI,
@@ -2159,10 +2159,10 @@ def _spotify_redirect_uri(
 
 
 def _spotify_api_base_url(state: Optional[Dict[str, Any]] = None) -> str:
-    from omniworker_cli.config import get_env_value
+    from flux-agent_cli.config import get_env_value
 
     candidates = (
-        get_env_value("OMNIWORKER_SPOTIFY_API_BASE_URL"),
+        get_env_value("FLUX AGENT_SPOTIFY_API_BASE_URL"),
         state.get("api_base_url") if isinstance(state, dict) else None,
         DEFAULT_SPOTIFY_API_BASE_URL,
     )
@@ -2174,10 +2174,10 @@ def _spotify_api_base_url(state: Optional[Dict[str, Any]] = None) -> str:
 
 
 def _spotify_accounts_base_url(state: Optional[Dict[str, Any]] = None) -> str:
-    from omniworker_cli.config import get_env_value
+    from flux-agent_cli.config import get_env_value
 
     candidates = (
-        get_env_value("OMNIWORKER_SPOTIFY_ACCOUNTS_BASE_URL"),
+        get_env_value("FLUX AGENT_SPOTIFY_ACCOUNTS_BASE_URL"),
         state.get("accounts_base_url") if isinstance(state, dict) else None,
         DEFAULT_SPOTIFY_ACCOUNTS_BASE_URL,
     )
@@ -2737,7 +2737,7 @@ def _spotify_interactive_setup(redirect_uri_hint: str) -> str:
 
     Raises SystemExit if the user aborts or submits an empty value.
     """
-    from omniworker_cli.config import save_env_value
+    from flux-agent_cli.config import save_env_value
 
     print()
     print("=" * 70)
@@ -2780,14 +2780,14 @@ def _spotify_interactive_setup(redirect_uri_hint: str) -> str:
         raise SystemExit("Spotify setup cancelled: empty Client ID.")
 
     # Persist so subsequent `hermes auth spotify` runs skip the wizard.
-    save_env_value("OMNIWORKER_SPOTIFY_CLIENT_ID", raw)
+    save_env_value("FLUX AGENT_SPOTIFY_CLIENT_ID", raw)
     # Only persist the redirect URI if it's non-default, to avoid pinning
     # users to a value the default might later change to.
     if redirect_uri_hint and redirect_uri_hint != DEFAULT_SPOTIFY_REDIRECT_URI:
-        save_env_value("OMNIWORKER_SPOTIFY_REDIRECT_URI", redirect_uri_hint)
+        save_env_value("FLUX AGENT_SPOTIFY_REDIRECT_URI", redirect_uri_hint)
 
     print()
-    print("Saved OMNIWORKER_SPOTIFY_CLIENT_ID to ~/.hermes/.env")
+    print("Saved FLUX AGENT_SPOTIFY_CLIENT_ID to ~/.hermes/.env")
     print()
     return raw
 
@@ -2797,7 +2797,7 @@ def login_spotify_command(args) -> None:
 
     # Interactive wizard: if no client_id is configured anywhere, walk the
     # user through creating the Spotify developer app instead of crashing
-    # with "OMNIWORKER_SPOTIFY_CLIENT_ID is required".
+    # with "FLUX AGENT_SPOTIFY_CLIENT_ID is required".
     explicit_client_id = getattr(args, "client_id", None)
     try:
         client_id = _spotify_client_id(explicit_client_id, existing_state)
@@ -2831,7 +2831,7 @@ def login_spotify_command(args) -> None:
     print(f"Redirect URI: {redirect_uri}")
     print("Make sure this redirect URI is allow-listed in your Spotify app settings.")
     print()
-    print("Open this URL to authorize OmniWorker:")
+    print("Open this URL to authorize Flux Agent:")
     print(authorize_url)
     print()
     print(f"Full setup guide: {SPOTIFY_DOCS_URL}")
@@ -3037,7 +3037,7 @@ def _print_loopback_ssh_hint(redirect_uri: str, *, docs_url: str | None = None) 
     print(divider)
     print("Remote session detected — SSH tunnel required")
     print(divider)
-    print(f"OmniWorker is waiting for the OAuth callback on {redirect_uri}")
+    print(f"Flux Agent is waiting for the OAuth callback on {redirect_uri}")
     print("but your browser is on a different machine. Run this command")
     print("in a NEW terminal on your local machine BEFORE opening the URL:")
     print()
@@ -3058,13 +3058,13 @@ def _print_loopback_ssh_hint(redirect_uri: str, *, docs_url: str | None = None) 
 # =============================================================================
 # OpenAI Codex auth — tokens stored in ~/.hermes/auth.json (not ~/.codex/)
 #
-# OmniWorker maintains its own Codex OAuth session separate from the Codex CLI
+# Flux Agent maintains its own Codex OAuth session separate from the Codex CLI
 # and VS Code extension. This prevents refresh token rotation conflicts
 # where one app's refresh invalidates the other's session.
 # =============================================================================
 
 def _read_codex_tokens(*, _lock: bool = True) -> Dict[str, Any]:
-    """Read Codex OAuth tokens from OmniWorker auth store (~/.hermes/auth.json).
+    """Read Codex OAuth tokens from Flux Agent auth store (~/.hermes/auth.json).
     
     Returns dict with 'tokens' (access_token, refresh_token) and 'last_refresh'.
     Raises AuthError if no Codex tokens are stored.
@@ -3113,7 +3113,7 @@ def _read_codex_tokens(*, _lock: bool = True) -> Dict[str, Any]:
 
 
 def _save_codex_tokens(tokens: Dict[str, str], last_refresh: str = None) -> None:
-    """Save Codex OAuth tokens to OmniWorker auth store (~/.hermes/auth.json)."""
+    """Save Codex OAuth tokens to Flux Agent auth store (~/.hermes/auth.json)."""
     if last_refresh is None:
         last_refresh = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     with _auth_store_lock():
@@ -3132,7 +3132,7 @@ def refresh_codex_oauth_pure(
     *,
     timeout_seconds: float = 20.0,
 ) -> Dict[str, Any]:
-    """Refresh Codex OAuth tokens without mutating OmniWorker auth state."""
+    """Refresh Codex OAuth tokens without mutating Flux Agent auth state."""
     del access_token  # Access token is only used by callers to decide whether to refresh.
     if not isinstance(refresh_token, str) or not refresh_token.strip():
         raise AuthError(
@@ -3236,7 +3236,7 @@ def _refresh_codex_auth_tokens(
 ) -> Dict[str, str]:
     """Refresh Codex access token using the refresh token.
     
-    Saves the new tokens to OmniWorker auth store automatically.
+    Saves the new tokens to Flux Agent auth store automatically.
     """
     refreshed = refresh_codex_oauth_pure(
         str(tokens.get("access_token", "") or ""),
@@ -3291,17 +3291,17 @@ def resolve_codex_runtime_credentials(
     refresh_if_expiring: bool = True,
     refresh_skew_seconds: int = CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
 ) -> Dict[str, Any]:
-    """Resolve runtime credentials from OmniWorker's own Codex token store."""
+    """Resolve runtime credentials from Flux Agent's own Codex token store."""
     data = _read_codex_tokens()
     tokens = dict(data["tokens"])
     access_token = str(tokens.get("access_token", "") or "").strip()
-    refresh_timeout_seconds = float(os.getenv("OMNIWORKER_CODEX_REFRESH_TIMEOUT_SECONDS", "20"))
+    refresh_timeout_seconds = float(os.getenv("FLUX AGENT_CODEX_REFRESH_TIMEOUT_SECONDS", "20"))
 
     should_refresh = bool(force_refresh)
     if (not should_refresh) and refresh_if_expiring:
         should_refresh = _codex_access_token_is_expiring(access_token, refresh_skew_seconds)
     if should_refresh:
-        # Re-read under lock to avoid racing with other OmniWorker processes
+        # Re-read under lock to avoid racing with other Flux Agent processes
         with _auth_store_lock(timeout_seconds=max(float(AUTH_LOCK_TIMEOUT_SECONDS), refresh_timeout_seconds + 5.0)):
             data = _read_codex_tokens(_lock=False)
             tokens = dict(data["tokens"])
@@ -3316,7 +3316,7 @@ def resolve_codex_runtime_credentials(
                 access_token = str(tokens.get("access_token", "") or "").strip()
 
     base_url = (
-        os.getenv("OMNIWORKER_CODEX_BASE_URL", "").strip().rstrip("/")
+        os.getenv("FLUX AGENT_CODEX_BASE_URL", "").strip().rstrip("/")
         or DEFAULT_CODEX_BASE_URL
     )
 
@@ -3528,7 +3528,7 @@ def refresh_xai_oauth_pure(
         )
     endpoint = token_endpoint.strip() or _xai_oauth_discovery(timeout_seconds)["token_endpoint"]
     # Re-validate cached endpoints on the refresh hot path: an auth.json
-    # written by an older OmniWorker (or hand-edited) may carry a non-xAI
+    # written by an older Flux Agent (or hand-edited) may carry a non-xAI
     # token_endpoint that would receive every future refresh_token in
     # plaintext if we trusted it blindly. Cheap suffix check; fast-fail
     # with a clear error so the user can re-run `hermes model` to refetch.
@@ -3649,7 +3649,7 @@ def resolve_xai_oauth_runtime_credentials(
     data = _read_xai_oauth_tokens()
     tokens = dict(data["tokens"])
     access_token = str(tokens.get("access_token", "") or "").strip()
-    refresh_timeout_seconds = float(os.getenv("OMNIWORKER_XAI_REFRESH_TIMEOUT_SECONDS", "20"))
+    refresh_timeout_seconds = float(os.getenv("FLUX AGENT_XAI_REFRESH_TIMEOUT_SECONDS", "20"))
     discovery = dict(data.get("discovery") or {})
     token_endpoint = str(discovery.get("token_endpoint", "") or "").strip()
     redirect_uri = str(data.get("redirect_uri", "") or "").strip()
@@ -3708,7 +3708,7 @@ def resolve_xai_oauth_runtime_credentials(
                     raise
 
     base_url = (
-        os.getenv("OMNIWORKER_XAI_BASE_URL", "").strip().rstrip("/")
+        os.getenv("FLUX AGENT_XAI_BASE_URL", "").strip().rstrip("/")
         or os.getenv("XAI_BASE_URL", "").strip().rstrip("/")
         or DEFAULT_XAI_OAUTH_BASE_URL
     )
@@ -3760,7 +3760,7 @@ def _resolve_verify(
     effective_ca = (
         ca_bundle
         or tls_state.get("ca_bundle")
-        or os.getenv("OMNIWORKER_CA_BUNDLE")
+        or os.getenv("FLUX AGENT_CA_BUNDLE")
         or os.getenv("SSL_CERT_FILE")
         or os.getenv("REQUESTS_CA_BUNDLE")
     )
@@ -3947,11 +3947,11 @@ def _poll_for_token(
 # so a new `hermes --profile <name> auth add nous --type oauth` can one-tap
 # import instead of running the full device-code flow every time.
 #
-# File lives at ${OMNIWORKER_SHARED_AUTH_DIR}/nous_auth.json, defaulting to
+# File lives at ${FLUX AGENT_SHARED_AUTH_DIR}/nous_auth.json, defaulting to
 # ``<hermes-root>/shared/nous_auth.json`` where ``<hermes-root>`` is what
 # ``get_default_hermes_root()`` returns — ``~/.hermes`` on Linux/macOS,
 # ``%LOCALAPPDATA%\hermes`` on native Windows, or the Docker/custom root.
-# It is OUTSIDE any named profile's OMNIWORKER_HOME so named profiles (which
+# It is OUTSIDE any named profile's FLUX AGENT_HOME so named profiles (which
 # typically live under ``<hermes-root>/profiles/<name>/``) all see the
 # same file.
 #
@@ -3968,33 +3968,33 @@ _nous_shared_lock_holder = threading.local()
 def _nous_shared_auth_dir() -> Path:
     """Resolve the directory that holds the shared Nous token store.
 
-    Honors ``OMNIWORKER_SHARED_AUTH_DIR`` so tests can redirect it to a tmp
+    Honors ``FLUX AGENT_SHARED_AUTH_DIR`` so tests can redirect it to a tmp
     path without touching the real user's home. Defaults to
     ``<hermes-root>/shared/``, where ``<hermes-root>`` is what
-    :func:`omniworker_constants.get_default_hermes_root` returns — so
+    :func:`flux-agent_constants.get_default_hermes_root` returns — so
     Linux/macOS classic installs land at ``~/.hermes/shared/``, native
     Windows installs at ``%LOCALAPPDATA%\\hermes\\shared\\``, and
-    Docker / custom ``OMNIWORKER_HOME`` deployments at
-    ``<OMNIWORKER_HOME>/shared/``. Sits outside any named profile so all
+    Docker / custom ``FLUX AGENT_HOME`` deployments at
+    ``<FLUX AGENT_HOME>/shared/``. Sits outside any named profile so all
     profiles under the same root share the store.
     """
-    override = os.getenv("OMNIWORKER_SHARED_AUTH_DIR", "").strip()
+    override = os.getenv("FLUX AGENT_SHARED_AUTH_DIR", "").strip()
     if override:
         return Path(override).expanduser()
-    from omniworker_constants import get_default_hermes_root
+    from flux-agent_constants import get_default_hermes_root
     return get_default_hermes_root() / "shared"
 
 
 def _nous_shared_store_path() -> Path:
     path = _nous_shared_auth_dir() / NOUS_SHARED_STORE_FILENAME
     # Seat belt: if pytest is running and this resolves to a path under the
-    # real user's OmniWorker root, refuse rather than silently corrupt cross-profile
-    # state. Tests must set OMNIWORKER_SHARED_AUTH_DIR to a tmp_path (conftest
+    # real user's Flux Agent root, refuse rather than silently corrupt cross-profile
+    # state. Tests must set FLUX AGENT_SHARED_AUTH_DIR to a tmp_path (conftest
     # does not do this automatically — mirror the _auth_file_path() guard
     # so forgetting to set it fails loudly instead of writing to the real
     # shared store).
     if os.environ.get("PYTEST_CURRENT_TEST"):
-        from omniworker_constants import get_default_hermes_root
+        from flux-agent_constants import get_default_hermes_root
         real_home_shared = (
             get_default_hermes_root() / "shared" / NOUS_SHARED_STORE_FILENAME
         ).resolve(strict=False)
@@ -4005,7 +4005,7 @@ def _nous_shared_store_path() -> Path:
         if resolved == real_home_shared:
             raise RuntimeError(
                 f"Refusing to touch real user shared Nous auth store during test run: "
-                f"{path}. Set OMNIWORKER_SHARED_AUTH_DIR to a tmp_path in your test fixture."
+                f"{path}. Set FLUX AGENT_SHARED_AUTH_DIR to a tmp_path in your test fixture."
             )
     return path
 
@@ -4025,7 +4025,7 @@ def _nous_shared_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
     try:
         lock_path = _nous_shared_store_path().with_suffix(".lock")
     except RuntimeError:
-        # No OMNIWORKER_HOME yet (pre-setup): fall through without locking.
+        # No FLUX AGENT_HOME yet (pre-setup): fall through without locking.
         yield
         return
 
@@ -4413,19 +4413,19 @@ def _refresh_access_token(
     # Detect the OAuth 2.1 "refresh token reuse" signal from the Nous portal
     # server and surface an actionable message.  This fires when an external
     # process (health-check script, monitoring tool, custom self-heal hook)
-    # called POST /api/oauth/token with OmniWorker's refresh_token without
+    # called POST /api/oauth/token with Flux Agent's refresh_token without
     # persisting the rotated token back to auth.json — the server then
-    # retires the original RT, OmniWorker's next refresh uses it, and the whole
+    # retires the original RT, Flux Agent's next refresh uses it, and the whole
     # session chain gets revoked as a token-theft signal (#15099).
     lowered = description.lower()
     if code == "refresh_token_reused" or "reuse" in lowered or "reuse detected" in lowered:
         description = (
             "Nous Portal detected refresh-token reuse and revoked this session.\n"
             "This usually means an external process (monitoring script, "
-            "custom self-heal hook, or another OmniWorker install sharing "
-            "~/.hermes/auth.json) called POST /api/oauth/token with OmniWorker's "
+            "custom self-heal hook, or another Flux Agent install sharing "
+            "~/.hermes/auth.json) called POST /api/oauth/token with Flux Agent's "
             "refresh token without persisting the rotated token back.\n"
-            "Nous refresh tokens are single-use — only OmniWorker may call the "
+            "Nous refresh tokens are single-use — only Flux Agent may call the "
             "refresh endpoint. For health checks, use `hermes auth status` "
             "instead.\n"
             "Re-authenticate with: hermes auth add nous"
@@ -4504,7 +4504,7 @@ def fetch_nous_models(
         model_id = item.get("id")
         if isinstance(model_id, str) and model_id.strip():
             mid = model_id.strip()
-            # Skip OmniWorker models — they're not reliable for agentic tool-calling
+            # Skip Flux Agent models — they're not reliable for agentic tool-calling
             if "hermes" in mid.lower():
                 continue
             model_ids.append(mid)
@@ -4554,14 +4554,14 @@ def resolve_nous_access_token(
 
         if not state:
             raise AuthError(
-                "OmniWorker is not logged into Nous Portal.",
+                "Flux Agent is not logged into Nous Portal.",
                 provider="nous",
                 relogin_required=True,
             )
 
         portal_base_url = (
             _optional_base_url(state.get("portal_base_url"))
-            or os.getenv("OMNIWORKER_PORTAL_BASE_URL")
+            or os.getenv("FLUX AGENT_PORTAL_BASE_URL")
             or os.getenv("NOUS_PORTAL_BASE_URL")
             or DEFAULT_NOUS_PORTAL_URL
         ).rstrip("/")
@@ -4895,7 +4895,7 @@ def resolve_nous_runtime_credentials(
         state = _load_provider_state(auth_store, "nous")
 
         if not state:
-            raise AuthError("OmniWorker is not logged into Nous Portal.",
+            raise AuthError("Flux Agent is not logged into Nous Portal.",
                             provider="nous", relogin_required=True)
 
         persisted_state = dict(state)
@@ -4903,7 +4903,7 @@ def resolve_nous_runtime_credentials(
 
         portal_base_url = (
             _optional_base_url(state.get("portal_base_url"))
-            or os.getenv("OMNIWORKER_PORTAL_BASE_URL")
+            or os.getenv("FLUX AGENT_PORTAL_BASE_URL")
             or os.getenv("NOUS_PORTAL_BASE_URL")
             or DEFAULT_NOUS_PORTAL_URL
         ).rstrip("/")
@@ -5555,11 +5555,11 @@ def get_external_process_provider_status(provider_id: str) -> Dict[str, Any]:
         return {"configured": False}
 
     command = (
-        os.getenv("OMNIWORKER_COPILOT_ACP_COMMAND", "").strip()
+        os.getenv("FLUX AGENT_COPILOT_ACP_COMMAND", "").strip()
         or os.getenv("COPILOT_CLI_PATH", "").strip()
         or "copilot"
     )
-    raw_args = os.getenv("OMNIWORKER_COPILOT_ACP_ARGS", "").strip()
+    raw_args = os.getenv("FLUX AGENT_COPILOT_ACP_ARGS", "").strip()
     args = shlex.split(raw_args) if raw_args else ["--acp", "--stdio"]
     base_url = os.getenv(pconfig.base_url_env_var, "").strip() if pconfig.base_url_env_var else ""
     if not base_url:
@@ -5632,7 +5632,7 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
     """
     info: Dict[str, Any] = {"provider": "azure-foundry"}
     try:
-        from omniworker_cli.config import load_config, get_env_value
+        from flux-agent_cli.config import load_config, get_env_value
         cfg = load_config()
     except Exception:
         cfg = {}
@@ -5669,7 +5669,7 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
             if not installed:
                 info["hint"] = (
                     "azure-identity not installed. Install with: "
-                    "pip install azure-identity  (or rely on OmniWorker' "
+                    "pip install azure-identity  (or rely on Flux Agent' "
                     "lazy-install at first use)."
                 )
             else:
@@ -5752,17 +5752,17 @@ def resolve_external_process_provider_credentials(provider_id: str) -> Dict[str,
         base_url = pconfig.inference_base_url
 
     command = (
-        os.getenv("OMNIWORKER_COPILOT_ACP_COMMAND", "").strip()
+        os.getenv("FLUX AGENT_COPILOT_ACP_COMMAND", "").strip()
         or os.getenv("COPILOT_CLI_PATH", "").strip()
         or "copilot"
     )
-    raw_args = os.getenv("OMNIWORKER_COPILOT_ACP_ARGS", "").strip()
+    raw_args = os.getenv("FLUX AGENT_COPILOT_ACP_ARGS", "").strip()
     args = shlex.split(raw_args) if raw_args else ["--acp", "--stdio"]
     resolved_command = shutil.which(command) if command else None
     if not resolved_command and not base_url.startswith("acp+tcp://"):
         raise AuthError(
             f"Could not find the Copilot CLI command '{command}'. "
-            "Install GitHub Copilot CLI or set OMNIWORKER_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH.",
+            "Install GitHub Copilot CLI or set FLUX AGENT_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH.",
             provider=provider_id,
             code="missing_copilot_cli",
         )
@@ -5929,7 +5929,7 @@ def _prompt_model_selection(
     If *unavailable_models* is provided, those models are shown grayed out
     and unselectable, with an upgrade link to *portal_url*.
     """
-    from omniworker_cli.models import _format_price_per_mtok
+    from flux-agent_cli.models import _format_price_per_mtok
 
     _unavailable = unavailable_models or []
 
@@ -6039,7 +6039,7 @@ def _prompt_model_selection(
             title=effective_title,
         )
         idx = menu.show()
-        from omniworker_cli.curses_ui import flush_stdin
+        from flux-agent_cli.curses_ui import flush_stdin
         flush_stdin()
         if idx is None:
             return None
@@ -6096,7 +6096,7 @@ def _save_model_choice(model_id: str) -> None:
     The model is stored in config.yaml only — NOT in .env.  This avoids
     conflicts in multi-agent setups where env vars would stomp each other.
     """
-    from omniworker_cli.config import save_config, load_config
+    from flux-agent_cli.config import save_config, load_config
 
     config = load_config()
     # Always use dict format so provider/base_url can be stored alongside
@@ -6125,7 +6125,7 @@ def _login_openai_codex(
 
     del args, pconfig  # kept for parity with other provider login helpers
 
-    # Check for existing OmniWorker-owned credentials
+    # Check for existing Flux Agent-owned credentials
     if not force_new_login:
         try:
             existing = resolve_codex_runtime_credentials()
@@ -6135,7 +6135,7 @@ def _login_openai_codex(
             # the user "Login successful!".
             _resolved_key = existing.get("api_key", "")
             if isinstance(_resolved_key, str) and _resolved_key and not _codex_access_token_is_expiring(_resolved_key, 60):
-                print("Existing Codex credentials found in OmniWorker auth store.")
+                print("Existing Codex credentials found in Flux Agent auth store.")
                 try:
                     reuse = input("Use existing credentials? [Y/n]: ").strip().lower()
                 except (EOFError, KeyboardInterrupt):
@@ -6156,35 +6156,35 @@ def _login_openai_codex(
         cli_tokens = _import_codex_cli_tokens()
         if cli_tokens:
             print("Found existing Codex CLI credentials at ~/.codex/auth.json")
-            print("OmniWorker will create its own session to avoid conflicts with Codex CLI / VS Code.")
+            print("Flux Agent will create its own session to avoid conflicts with Codex CLI / VS Code.")
             try:
                 do_import = input("Import these credentials? (a separate login is recommended) [y/N]: ").strip().lower()
             except (EOFError, KeyboardInterrupt):
                 do_import = "n"
             if do_import in {"y", "yes"}:
                 _save_codex_tokens(cli_tokens)
-                base_url = os.getenv("OMNIWORKER_CODEX_BASE_URL", "").strip().rstrip("/") or DEFAULT_CODEX_BASE_URL
+                base_url = os.getenv("FLUX AGENT_CODEX_BASE_URL", "").strip().rstrip("/") or DEFAULT_CODEX_BASE_URL
                 config_path = _update_config_for_provider("openai-codex", base_url)
                 print()
                 print("Credentials imported. Note: if Codex CLI refreshes its token,")
-                print("OmniWorker will keep working independently with its own session.")
+                print("Flux Agent will keep working independently with its own session.")
                 print(f"  Config updated: {config_path} (model.provider=openai-codex)")
                 return
 
-    # Run a fresh device code flow — OmniWorker gets its own OAuth session
+    # Run a fresh device code flow — Flux Agent gets its own OAuth session
     print()
     print("Signing in to OpenAI Codex...")
-    print("(OmniWorker creates its own session — won't affect Codex CLI or VS Code)")
+    print("(Flux Agent creates its own session — won't affect Codex CLI or VS Code)")
     print()
 
     creds = _codex_device_code_login()
 
-    # Save tokens to OmniWorker auth store
+    # Save tokens to Flux Agent auth store
     _save_codex_tokens(creds["tokens"], creds.get("last_refresh"))
     config_path = _update_config_for_provider("openai-codex", creds.get("base_url", DEFAULT_CODEX_BASE_URL))
     print()
     print("Login successful!")
-    from omniworker_constants import display_omniworker_home as _dhh
+    from flux-agent_constants import display_flux-agent_home as _dhh
     print(f"  Auth state: {_dhh()}/auth.json")
     print(f"  Config updated: {config_path} (model.provider=openai-codex)")
 
@@ -6202,7 +6202,7 @@ def _login_xai_oauth(
             existing = resolve_xai_oauth_runtime_credentials()
             api_key = existing.get("api_key", "")
             if isinstance(api_key, str) and api_key and not _xai_access_token_is_expiring(api_key, 60):
-                print("Existing xAI OAuth credentials found in OmniWorker auth store.")
+                print("Existing xAI OAuth credentials found in Flux Agent auth store.")
                 try:
                     reuse = input("Use existing credentials? [Y/n]: ").strip().lower()
                 except (EOFError, KeyboardInterrupt):
@@ -6221,7 +6221,7 @@ def _login_xai_oauth(
 
     print()
     print("Signing in to xAI Grok OAuth (SuperGrok Subscription)...")
-    print("(OmniWorker creates its own local OAuth session)")
+    print("(Flux Agent creates its own local OAuth session)")
     print()
 
     timeout_seconds = float(getattr(args, "timeout", None) or 20.0)
@@ -6244,7 +6244,7 @@ def _login_xai_oauth(
     config_path = _update_config_for_provider("xai-oauth", creds.get("base_url", DEFAULT_XAI_OAUTH_BASE_URL))
     print()
     print("Login successful!")
-    from omniworker_constants import display_omniworker_home as _dhh
+    from flux-agent_constants import display_flux-agent_home as _dhh
     print(f"  Auth state: {_dhh()}/auth.json")
     print(f"  Config updated: {config_path} (model.provider=xai-oauth)")
 
@@ -6260,7 +6260,7 @@ def _xai_oauth_build_authorize_url(
     # `plan=generic` opts the consent screen into xAI's generic OAuth plan
     # tier instead of falling back to the per-account default. Without it,
     # accounts.x.ai rejects loopback OAuth from non-allowlisted clients.
-    # `referrer=hermes-agent` lets xAI attribute OmniWorker-originated logins
+    # `referrer=hermes-agent` lets xAI attribute Flux Agent-originated logins
     # in their OAuth server logs (we still impersonate the upstream Grok-CLI
     # client_id; this is best-effort attribution until xAI mints us our own).
     authorize_params = {
@@ -6312,7 +6312,7 @@ def _xai_oauth_exchange_code_for_tokens(
     if not code_verifier:
         raise AuthError(
             "xAI token exchange refused locally: PKCE code_verifier is empty. "
-            "This is a bug in OmniWorker — please report at "
+            "This is a bug in Flux Agent — please report at "
             "https://github.com/NousResearch/hermes-agent/issues/26990.",
             provider="xai-oauth",
             code="xai_pkce_verifier_missing",
@@ -6441,7 +6441,7 @@ def _xai_oauth_loopback_login(
             nonce=nonce,
         )
 
-        print("Open this URL to authorize OmniWorker with xAI:")
+        print("Open this URL to authorize Flux Agent with xAI:")
         print(authorize_url)
         callback = _prompt_manual_callback_paste(redirect_uri)
     else:
@@ -6460,7 +6460,7 @@ def _xai_oauth_loopback_login(
                 nonce=nonce,
             )
 
-            print("Open this URL to authorize OmniWorker with xAI:")
+            print("Open this URL to authorize Flux Agent with xAI:")
             print(authorize_url)
             print()
             print(f"Waiting for callback on {redirect_uri}")
@@ -6540,7 +6540,7 @@ def _xai_oauth_loopback_login(
         )
 
     base_url = (
-        os.getenv("OMNIWORKER_XAI_BASE_URL", "").strip().rstrip("/")
+        os.getenv("FLUX AGENT_XAI_BASE_URL", "").strip().rstrip("/")
         or os.getenv("XAI_BASE_URL", "").strip().rstrip("/")
         or DEFAULT_XAI_OAUTH_BASE_URL
     )
@@ -6689,7 +6689,7 @@ def _codex_device_code_login() -> Dict[str, Any]:
 
     # Return tokens for the caller to persist (no longer writes to ~/.codex/)
     base_url = (
-        os.getenv("OMNIWORKER_CODEX_BASE_URL", "").strip().rstrip("/")
+        os.getenv("FLUX AGENT_CODEX_BASE_URL", "").strip().rstrip("/")
         or DEFAULT_CODEX_BASE_URL
     )
 
@@ -6836,7 +6836,7 @@ def _minimax_poll_token(
 
 
 def _minimax_save_auth_state(auth_state: Dict[str, Any]) -> None:
-    """Persist MiniMax OAuth state to OmniWorker auth store (~/.hermes/auth.json)."""
+    """Persist MiniMax OAuth state to Flux Agent auth store (~/.hermes/auth.json)."""
     with _auth_store_lock():
         auth_store = _load_auth_store()
         _save_provider_state(auth_store, "minimax-oauth", auth_state)
@@ -6861,7 +6861,7 @@ def _minimax_oauth_login(
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting OmniWorker login via MiniMax ({region}) OAuth...")
+    print(f"Starting Flux Agent login via MiniMax ({region}) OAuth...")
     print(f"Portal: {portal_base_url}")
 
     with httpx.Client(timeout=httpx.Timeout(timeout_seconds),
@@ -7081,7 +7081,7 @@ def _nous_device_code_login(
     pconfig = PROVIDER_REGISTRY["nous"]
     portal_base_url = (
         portal_base_url
-        or os.getenv("OMNIWORKER_PORTAL_BASE_URL")
+        or os.getenv("FLUX AGENT_PORTAL_BASE_URL")
         or os.getenv("NOUS_PORTAL_BASE_URL")
         or pconfig.portal_base_url
     ).rstrip("/")
@@ -7101,7 +7101,7 @@ def _nous_device_code_login(
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting OmniWorker login via {pconfig.name}...")
+    print(f"Starting Flux Agent login via {pconfig.name}...")
     print(f"Portal: {portal_base_url}")
     if insecure:
         print("TLS verification: disabled (--insecure)")
@@ -7206,7 +7206,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
     insecure = bool(getattr(args, "insecure", False))
     ca_bundle = (
         getattr(args, "ca_bundle", None)
-        or os.getenv("OMNIWORKER_CA_BUNDLE")
+        or os.getenv("FLUX AGENT_CA_BUNDLE")
         or os.getenv("SSL_CERT_FILE")
     )
 
@@ -7292,7 +7292,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                     code="invalid_token",
                 )
 
-            from omniworker_cli.models import (
+            from flux-agent_cli.models import (
                 get_curated_nous_model_ids, get_pricing_for_provider,
                 check_nous_free_tier, partition_nous_models_by_tier,
                 union_with_portal_free_recommendations,
@@ -7310,7 +7310,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                     # The Portal's freeRecommendedModels endpoint is the
                     # source of truth for what's free *right now*. Augment
                     # the curated list with anything new the Portal flags
-                    # as free so users on older OmniWorker builds still see
+                    # as free so users on older Flux Agent builds still see
                     # newly-launched free models without a CLI release.
                     model_ids, pricing = union_with_portal_free_recommendations(
                         model_ids, pricing, _portal_for_recs,
@@ -7406,9 +7406,9 @@ def logout_command(args) -> None:
             _reset_config_provider()
         print(f"Logged out of {provider_name}.")
         if should_reset_config and os.getenv("OPENROUTER_API_KEY"):
-            print("OmniWorker will use OpenRouter for inference.")
+            print("Flux Agent will use OpenRouter for inference.")
         elif should_reset_config:
-            print("Run `hermes model` or configure an API key to use OmniWorker.")
+            print("Run `hermes model` or configure an API key to use Flux Agent.")
         else:
             print("Model provider configuration was unchanged.")
     else:

@@ -1,53 +1,53 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from omniworker_cli.config import (
+from flux-agent_cli.config import (
     format_managed_message,
     get_managed_system,
     recommended_update_command,
 )
-from omniworker_cli.main import cmd_update
+from flux-agent_cli.main import cmd_update
 from tools.skills_hub import OptionalSkillSource
 
 
 def test_get_managed_system_homebrew(monkeypatch):
-    monkeypatch.setenv("OMNIWORKER_MANAGED", "homebrew")
+    monkeypatch.setenv("FLUX AGENT_MANAGED", "homebrew")
 
     assert get_managed_system() == "Homebrew"
-    assert recommended_update_command() == "brew upgrade omniworker-agent"
+    assert recommended_update_command() == "brew upgrade flux-agent-agent"
 
 
 def test_format_managed_message_homebrew(monkeypatch):
-    monkeypatch.setenv("OMNIWORKER_MANAGED", "homebrew")
+    monkeypatch.setenv("FLUX AGENT_MANAGED", "homebrew")
 
-    message = format_managed_message("update OmniWorker Agent")
+    message = format_managed_message("update Flux Agent Agent")
 
     assert "managed by Homebrew" in message
-    assert "brew upgrade omniworker-agent" in message
+    assert "brew upgrade flux-agent-agent" in message
 
 
-def test_recommended_update_command_defaults_to_omniworker_update(monkeypatch):
-    monkeypatch.delenv("OMNIWORKER_MANAGED", raising=False)
+def test_recommended_update_command_defaults_to_flux-agent_update(monkeypatch):
+    monkeypatch.delenv("FLUX AGENT_MANAGED", raising=False)
 
-    assert recommended_update_command() == "omniworker update"
+    assert recommended_update_command() == "flux-agent update"
 
 
 def test_cmd_update_blocks_managed_homebrew(monkeypatch, capsys):
-    monkeypatch.setenv("OMNIWORKER_MANAGED", "homebrew")
+    monkeypatch.setenv("FLUX AGENT_MANAGED", "homebrew")
 
-    with patch("omniworker_cli.main.subprocess.run") as mock_run:
+    with patch("flux-agent_cli.main.subprocess.run") as mock_run:
         cmd_update(SimpleNamespace())
 
     assert not mock_run.called
     captured = capsys.readouterr()
     assert "managed by Homebrew" in captured.err
-    assert "brew upgrade omniworker-agent" in captured.err
+    assert "brew upgrade flux-agent-agent" in captured.err
 
 
 def test_optional_skill_source_honors_env_override(monkeypatch, tmp_path):
     optional_dir = tmp_path / "optional-skills"
     optional_dir.mkdir()
-    monkeypatch.setenv("OMNIWORKER_OPTIONAL_SKILLS", str(optional_dir))
+    monkeypatch.setenv("FLUX AGENT_OPTIONAL_SKILLS", str(optional_dir))
 
     source = OptionalSkillSource()
 

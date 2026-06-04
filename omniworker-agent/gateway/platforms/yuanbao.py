@@ -74,7 +74,7 @@ from gateway.platforms.yuanbao_proto import (
     _parse_fields,
     WS_HEARTBEAT_RUNNING,
     WS_HEARTBEAT_FINISH,
-    OMNIWORKER_INSTANCE_ID,
+    FLUX AGENT_INSTANCE_ID,
     decode_conn_msg,
     decode_inbound_push,
     decode_query_group_info_rsp,
@@ -98,13 +98,13 @@ logger = logging.getLogger(__name__)
 # Version / platform constants (used in AUTH_BIND and sign-token headers)
 # ---------------------------------------------------------------------------
 try:
-    from omniworker_cli import __version__ as _OMNIWORKER_VERSION
+    from flux-agent_cli import __version__ as _FLUX AGENT_VERSION
 except ImportError:
-    _OMNIWORKER_VERSION = "0.0.0"
+    _FLUX AGENT_VERSION = "0.0.0"
 
-_APP_VERSION = _OMNIWORKER_VERSION
-_BOT_VERSION = _OMNIWORKER_VERSION
-_YUANBAO_INSTANCE_ID = str(OMNIWORKER_INSTANCE_ID)  # single source: yuanbao_proto.OMNIWORKER_INSTANCE_ID
+_APP_VERSION = _FLUX AGENT_VERSION
+_BOT_VERSION = _FLUX AGENT_VERSION
+_YUANBAO_INSTANCE_ID = str(FLUX AGENT_INSTANCE_ID)  # single source: yuanbao_proto.FLUX AGENT_INSTANCE_ID
 _OPERATION_SYSTEM = sys.platform
 
 # ---------------------------------------------------------------------------
@@ -971,7 +971,7 @@ class InboundMiddleware(ABC):
 class InboundPipeline:
     """Onion-model middleware pipeline engine for inbound message processing.
 
-    Inspired by OmniWorker's MessagePipeline (extensions/yuanbao/src/business/
+    Inspired by Flux Agent's MessagePipeline (extensions/yuanbao/src/business/
     pipeline/engine.ts).  Supports named middlewares, conditional guards
     (``when``), and ``use_before`` / ``use_after`` / ``remove`` for dynamic
     composition.
@@ -1586,11 +1586,11 @@ class AutoSetHomeMiddleware(InboundMiddleware):
                 adapter._auto_sethome_done = True  # DM seen — no further upgrades needed
             if _should_set:
                 try:
-                    from omniworker_constants import get_omniworker_home
+                    from flux-agent_constants import get_flux-agent_home
                     from utils import atomic_yaml_write
                     import yaml
 
-                    _home = get_omniworker_home()
+                    _home = get_flux-agent_home()
                     config_path = _home / "config.yaml"
                     user_config: dict = {}
                     if config_path.exists():

@@ -57,7 +57,7 @@ export function usePlugins() {
       // re-execute a previously cached <script> URL.
       const baseUrl = `${OMNIWORKER_BASE_PATH}/dashboard-plugins/${manifest.name}/${manifest.entry}`;
       const scriptSrc = import.meta.env.DEV
-        ? `${baseUrl}?omniworker_dv=${Date.now()}`
+        ? `${baseUrl}?flux-agent_dv=${Date.now()}`
         : baseUrl;
       if (!import.meta.env.DEV) {
         if (loadedScripts.current.has(baseUrl)) continue;
@@ -65,7 +65,7 @@ export function usePlugins() {
       }
 
       const script = document.createElement("script");
-      script.setAttribute("data-omniworker-plugin", manifest.name);
+      script.setAttribute("data-flux-agent-plugin", manifest.name);
       script.src = scriptSrc;
       script.async = true;
       // SRI integrity verification — defense against compromised plugin

@@ -20,11 +20,11 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
   );
 
   const loadConfig = useCallback(async (): Promise<void> => {
-    const envData = await window.omniworkerAPI.getEnv(profile);
+    const envData = await window.flux-agentAPI.getEnv(profile);
     setEnv(envData);
-    const gwStatus = await window.omniworkerAPI.gatewayStatus();
+    const gwStatus = await window.flux-agentAPI.gatewayStatus();
     setGatewayRunning(gwStatus);
-    const platforms = await window.omniworkerAPI.getPlatformEnabled(profile);
+    const platforms = await window.flux-agentAPI.getPlatformEnabled(profile);
     setPlatformEnabled(platforms);
   }, [profile]);
 
@@ -35,7 +35,7 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
   // Poll gateway status (10s interval to reduce IPC overhead)
   useEffect(() => {
     const interval = setInterval(async () => {
-      const status = await window.omniworkerAPI.gatewayStatus();
+      const status = await window.flux-agentAPI.gatewayStatus();
       setGatewayRunning(status);
     }, 10000);
     return () => clearInterval(interval);
@@ -47,13 +47,13 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
       gatewayStatusTimeoutRef.current = null;
     }
     if (gatewayRunning) {
-      await window.omniworkerAPI.stopGateway();
+      await window.flux-agentAPI.stopGateway();
       setGatewayRunning(false);
     } else {
-      const started = await window.omniworkerAPI.startGateway();
+      const started = await window.flux-agentAPI.startGateway();
       setGatewayRunning(started);
       gatewayStatusTimeoutRef.current = setTimeout(async () => {
-        const status = await window.omniworkerAPI.gatewayStatus();
+        const status = await window.flux-agentAPI.gatewayStatus();
         setGatewayRunning(status);
         gatewayStatusTimeoutRef.current = null;
       }, 2000);
@@ -67,9 +67,9 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
     }
     const newValue = !platformEnabled[platform];
     setPlatformEnabled((prev) => ({ ...prev, [platform]: newValue }));
-    await window.omniworkerAPI.setPlatformEnabled(platform, newValue, profile);
+    await window.flux-agentAPI.setPlatformEnabled(platform, newValue, profile);
     platformStatusTimeoutRef.current = setTimeout(async () => {
-      const status = await window.omniworkerAPI.gatewayStatus();
+      const status = await window.flux-agentAPI.gatewayStatus();
       setGatewayRunning(status);
       platformStatusTimeoutRef.current = null;
     }, 3000);
@@ -77,7 +77,7 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
 
   async function handleBlur(key: string): Promise<void> {
     const value = env[key] || "";
-    await window.omniworkerAPI.setEnv(key, value, profile);
+    await window.flux-agentAPI.setEnv(key, value, profile);
     setSavedKey(key);
     setTimeout(() => setSavedKey(null), 2000);
   }

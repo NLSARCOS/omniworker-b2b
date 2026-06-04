@@ -1,7 +1,7 @@
 import json
 from unittest.mock import patch
 
-from omniworker_cli.codex_models import DEFAULT_CODEX_MODELS, get_codex_model_ids
+from flux-agent_cli.codex_models import DEFAULT_CODEX_MODELS, get_codex_model_ids
 
 
 def test_get_codex_model_ids_prioritizes_default_and_cache(tmp_path, monkeypatch):
@@ -29,7 +29,7 @@ def test_get_codex_model_ids_prioritizes_default_and_cache(tmp_path, monkeypatch
     assert "gpt-5.1-codex" in models
     assert "gpt-5.3-codex" in models
     # Codex CLI marks Spark unsupported in the public API, but the Codex
-    # backend still accepts it via the OAuth-backed CLI/OmniWorker route.
+    # backend still accepts it via the OAuth-backed CLI/Flux Agent route.
     assert "gpt-5.3-codex-spark" in models
     # Non-codex-suffixed models are included when the cache says they're available
     assert "gpt-5.4" in models
@@ -39,9 +39,9 @@ def test_get_codex_model_ids_prioritizes_default_and_cache(tmp_path, monkeypatch
 
 def test_setup_wizard_codex_import_resolves():
     """Regression test for #712: setup.py must import the correct function name."""
-    # This mirrors the exact import used in omniworker_cli/setup.py line 873.
+    # This mirrors the exact import used in flux-agent_cli/setup.py line 873.
     # A prior bug had 'get_codex_models' (wrong) instead of 'get_codex_model_ids'.
-    from omniworker_cli.codex_models import get_codex_model_ids as setup_import
+    from flux-agent_cli.codex_models import get_codex_model_ids as setup_import
     assert callable(setup_import)
 
 
@@ -59,7 +59,7 @@ def test_get_codex_model_ids_falls_back_to_curated_defaults(tmp_path, monkeypatc
 
 def test_get_codex_model_ids_adds_forward_compat_models_from_templates(monkeypatch):
     monkeypatch.setattr(
-        "omniworker_cli.codex_models._fetch_models_from_api",
+        "flux-agent_cli.codex_models._fetch_models_from_api",
         lambda access_token: ["gpt-5.2-codex"],
     )
 
@@ -82,7 +82,7 @@ def test_fetch_from_api_keeps_supported_in_api_false_models(monkeypatch):
     the separate signal that *should* still filter entries out.
     """
     import sys
-    from omniworker_cli import codex_models
+    from flux-agent_cli import codex_models
 
     class _FakeResp:
         status_code = 200
@@ -111,18 +111,18 @@ def test_fetch_from_api_keeps_supported_in_api_false_models(monkeypatch):
 
 
 def test_model_command_uses_runtime_access_token_for_codex_list(monkeypatch):
-    from omniworker_cli.main import _model_flow_openai_codex
+    from flux-agent_cli.main import _model_flow_openai_codex
 
     captured = {}
     choices = iter(["1"])
 
     monkeypatch.setattr("builtins.input", lambda prompt="": next(choices))
     monkeypatch.setattr(
-        "omniworker_cli.auth.get_codex_auth_status",
+        "flux-agent_cli.auth.get_codex_auth_status",
         lambda: {"logged_in": True},
     )
     monkeypatch.setattr(
-        "omniworker_cli.auth.resolve_codex_runtime_credentials",
+        "flux-agent_cli.auth.resolve_codex_runtime_credentials",
         lambda *args, **kwargs: {"api_key": "codex-access-token"},
     )
 
@@ -136,11 +136,11 @@ def test_model_command_uses_runtime_access_token_for_codex_list(monkeypatch):
         return None
 
     monkeypatch.setattr(
-        "omniworker_cli.codex_models.get_codex_model_ids",
+        "flux-agent_cli.codex_models.get_codex_model_ids",
         _fake_get_codex_model_ids,
     )
     monkeypatch.setattr(
-        "omniworker_cli.auth._prompt_model_selection",
+        "flux-agent_cli.auth._prompt_model_selection",
         _fake_prompt_model_selection,
     )
 
@@ -152,18 +152,18 @@ def test_model_command_uses_runtime_access_token_for_codex_list(monkeypatch):
 
 
 def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypatch, capsys):
-    from omniworker_cli.main import _model_flow_openai_codex
+    from flux-agent_cli.main import _model_flow_openai_codex
 
     captured = {"login_calls": 0}
     choices = iter(["2"])
 
     monkeypatch.setattr("builtins.input", lambda prompt="": next(choices))
     monkeypatch.setattr(
-        "omniworker_cli.auth.get_codex_auth_status",
-        lambda: {"logged_in": True, "source": "omniworker-auth-store"},
+        "flux-agent_cli.auth.get_codex_auth_status",
+        lambda: {"logged_in": True, "source": "flux-agent-auth-store"},
     )
     monkeypatch.setattr(
-        "omniworker_cli.auth.resolve_codex_runtime_credentials",
+        "flux-agent_cli.auth.resolve_codex_runtime_credentials",
         lambda *args, **kwargs: {"api_key": "fresh-codex-token"},
     )
 
@@ -171,13 +171,13 @@ def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypa
         captured["login_calls"] += 1
         captured["force_new_login"] = force_new_login
 
-    monkeypatch.setattr("omniworker_cli.auth._login_openai_codex", _fake_login)
+    monkeypatch.setattr("flux-agent_cli.auth._login_openai_codex", _fake_login)
     monkeypatch.setattr(
-        "omniworker_cli.codex_models.get_codex_model_ids",
+        "flux-agent_cli.codex_models.get_codex_model_ids",
         lambda access_token=None: ["gpt-5.4", "gpt-5.3-codex"],
     )
     monkeypatch.setattr(
-        "omniworker_cli.auth._prompt_model_selection",
+        "flux-agent_cli.auth._prompt_model_selection",
         lambda model_ids, current_model="": None,
     )
 
@@ -191,18 +191,18 @@ def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypa
 
 
 def test_model_command_uses_existing_codex_session_without_relogin(monkeypatch):
-    from omniworker_cli.main import _model_flow_openai_codex
+    from flux-agent_cli.main import _model_flow_openai_codex
 
     choices = iter(["1"])
     captured = {}
 
     monkeypatch.setattr("builtins.input", lambda prompt="": next(choices))
     monkeypatch.setattr(
-        "omniworker_cli.auth.get_codex_auth_status",
-        lambda: {"logged_in": True, "source": "omniworker-auth-store"},
+        "flux-agent_cli.auth.get_codex_auth_status",
+        lambda: {"logged_in": True, "source": "flux-agent-auth-store"},
     )
     monkeypatch.setattr(
-        "omniworker_cli.auth.resolve_codex_runtime_credentials",
+        "flux-agent_cli.auth.resolve_codex_runtime_credentials",
         lambda *args, **kwargs: {"api_key": "existing-codex-token"},
     )
 
@@ -211,15 +211,15 @@ def test_model_command_uses_existing_codex_session_without_relogin(monkeypatch):
         return ["gpt-5.4"]
 
     monkeypatch.setattr(
-        "omniworker_cli.codex_models.get_codex_model_ids",
+        "flux-agent_cli.codex_models.get_codex_model_ids",
         _fake_get_codex_model_ids,
     )
     monkeypatch.setattr(
-        "omniworker_cli.auth._prompt_model_selection",
+        "flux-agent_cli.auth._prompt_model_selection",
         lambda model_ids, current_model="": None,
     )
     monkeypatch.setattr(
-        "omniworker_cli.auth._login_openai_codex",
+        "flux-agent_cli.auth._login_openai_codex",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not reauthenticate")),
     )
 
@@ -232,9 +232,9 @@ def test_model_command_uses_existing_codex_session_without_relogin(monkeypatch):
 
 
 def _make_cli(model="anthropic/claude-opus-4.6", **kwargs):
-    """Create a OmniWorkerCLI with minimal mocking."""
+    """Create a Flux AgentCLI with minimal mocking."""
     import cli as _cli_mod
-    from cli import OmniWorkerCLI
+    from cli import Flux AgentCLI
 
     _clean_config = {
         "model": {
@@ -246,13 +246,13 @@ def _make_cli(model="anthropic/claude-opus-4.6", **kwargs):
         "agent": {},
         "terminal": {"env_type": "local"},
     }
-    clean_env = {"LLM_MODEL": "", "OMNIWORKER_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "FLUX AGENT_MAX_ITERATIONS": ""}
     with (
         patch("cli.get_tool_definitions", return_value=[]),
         patch.dict("os.environ", clean_env, clear=False),
         patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
     ):
-        cli = OmniWorkerCLI(model=model, **kwargs)
+        cli = Flux AgentCLI(model=model, **kwargs)
     return cli
 
 
@@ -345,15 +345,15 @@ class TestNormalizeModelForProvider:
         # Don't pass model= so _model_is_default is True
         with (
             patch("cli.get_tool_definitions", return_value=[]),
-            patch.dict("os.environ", {"LLM_MODEL": "", "OMNIWORKER_MAX_ITERATIONS": ""}, clear=False),
+            patch.dict("os.environ", {"LLM_MODEL": "", "FLUX AGENT_MAX_ITERATIONS": ""}, clear=False),
             patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
         ):
-            from cli import OmniWorkerCLI
-            cli = OmniWorkerCLI()
+            from cli import Flux AgentCLI
+            cli = Flux AgentCLI()
 
         assert cli._model_is_default is True
         with patch(
-            "omniworker_cli.codex_models.get_codex_model_ids",
+            "flux-agent_cli.codex_models.get_codex_model_ids",
             return_value=["gpt-5.3-codex", "gpt-5.4"],
         ):
             changed = cli._normalize_model_for_provider("openai-codex")
@@ -376,14 +376,14 @@ class TestNormalizeModelForProvider:
         }
         with (
             patch("cli.get_tool_definitions", return_value=[]),
-            patch.dict("os.environ", {"LLM_MODEL": "", "OMNIWORKER_MAX_ITERATIONS": ""}, clear=False),
+            patch.dict("os.environ", {"LLM_MODEL": "", "FLUX AGENT_MAX_ITERATIONS": ""}, clear=False),
             patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
         ):
-            from cli import OmniWorkerCLI
-            cli = OmniWorkerCLI()
+            from cli import Flux AgentCLI
+            cli = Flux AgentCLI()
 
         with patch(
-            "omniworker_cli.codex_models.get_codex_model_ids",
+            "flux-agent_cli.codex_models.get_codex_model_ids",
             side_effect=Exception("offline"),
         ):
             changed = cli._normalize_model_for_provider("openai-codex")

@@ -212,14 +212,14 @@ class TestToolsetConsistency:
             for inc in ts["includes"]:
                 assert inc in TOOLSETS, f"{name} includes unknown toolset '{inc}'"
 
-    def test_omniworker_platforms_share_core_tools(self):
-        """All omniworker-* platform toolsets share the same core tools.
+    def test_flux-agent_platforms_share_core_tools(self):
+        """All flux-agent-* platform toolsets share the same core tools.
 
         Platform-specific additions (e.g. ``discord`` / ``discord_admin``
-        on omniworker-discord, gated on DISCORD_BOT_TOKEN) are allowed on top —
+        on flux-agent-discord, gated on DISCORD_BOT_TOKEN) are allowed on top —
         the invariant is that the core set is identical across platforms.
         """
-        platforms = ["omniworker-cli", "omniworker-telegram", "omniworker-discord", "omniworker-whatsapp", "omniworker-slack", "omniworker-signal", "omniworker-homeassistant"]
+        platforms = ["flux-agent-cli", "flux-agent-telegram", "flux-agent-discord", "flux-agent-whatsapp", "flux-agent-slack", "flux-agent-signal", "flux-agent-homeassistant"]
         tool_sets = [set(TOOLSETS[p]["tools"]) for p in platforms]
         # All platforms must contain the shared core; platform-specific
         # extras are OK (subset check, not equality).
@@ -249,8 +249,8 @@ class TestPluginToolsets:
 
 
 class TestDefaultPlatformWebSearchCoverage:
-    def test_omniworker_whatsapp_toolset_includes_web_search(self):
-        assert "web_search" in resolve_toolset("omniworker-whatsapp")
+    def test_flux-agent_whatsapp_toolset_includes_web_search(self):
+        assert "web_search" in resolve_toolset("flux-agent-whatsapp")
 
-    def test_omniworker_api_server_toolset_includes_web_search(self):
-        assert "web_search" in resolve_toolset("omniworker-api-server")
+    def test_flux-agent_api_server_toolset_includes_web_search(self):
+        assert "web_search" in resolve_toolset("flux-agent-api-server")

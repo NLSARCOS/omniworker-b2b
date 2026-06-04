@@ -7,10 +7,10 @@ import pytest
 
 
 def _make_cli_stub():
-    """Create a minimal OmniWorkerCLI-like object with stream state."""
-    from cli import OmniWorkerCLI
+    """Create a minimal Flux AgentCLI-like object with stream state."""
+    from cli import Flux AgentCLI
 
-    cli = OmniWorkerCLI.__new__(OmniWorkerCLI)
+    cli = Flux AgentCLI.__new__(Flux AgentCLI)
     cli.show_reasoning = False
     cli._stream_buf = ""
     cli._stream_started = False

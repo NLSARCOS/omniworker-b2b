@@ -7,43 +7,43 @@ ENV PYTHONUNBUFFERED=1
 
 # Store Playwright browsers outside the volume mount so the build-time
 # install survives the /opt/data volume overlay at runtime.
-ENV PLAYWRIGHT_BROWSERS_PATH=/opt/omniworker/.playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/flux-agent/.playwright
 
 # Install system dependencies in one layer, clear APT cache
 # tini reaps orphaned zombie processes (MCP stdio subprocesses, git, bun, etc.)
-# that would otherwise accumulate when omniworker runs as PID 1. See #15012.
+# that would otherwise accumulate when flux-agent runs as PID 1. See #15012.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential curl nodejs npm python3 ripgrep ffmpeg gcc python3-dev libffi-dev procps git openssh-client docker-cli tini && \
     rm -rf /var/lib/apt/lists/*
 
 # Non-root user for runtime; UID can be overridden via OMNIWORKER_UID at runtime
-RUN useradd -u 10000 -m -d /opt/data omniworker
+RUN useradd -u 10000 -m -d /opt/data flux-agent
 
 COPY --chmod=0755 --from=gosu_source /gosu /usr/local/bin/
 COPY --chmod=0755 --from=uv_source /usr/local/bin/uv /usr/local/bin/uvx /usr/local/bin/
 
-WORKDIR /opt/omniworker
+WORKDIR /opt/flux-agent
 
 # ---------- Layer-cached dependency install ----------
 # Copy only package manifests first so npm install + Playwright are cached
 # unless the lockfiles themselves change.
 #
-# ui-tui/packages/omniworker-ink/ is copied IN FULL (not just its manifests)
+# ui-tui/packages/flux-agent-ink/ is copied IN FULL (not just its manifests)
 # because it is referenced as a `file:` workspace dependency from
 # ui-tui/package.json.  Copying the tree up front lets npm resolve the
 # workspace to real content instead of stopping at a bare package.json.
 COPY package.json package-lock.json ./
 COPY web/package.json web/package-lock.json web/
 COPY ui-tui/package.json ui-tui/package-lock.json ui-tui/
-COPY ui-tui/packages/omniworker-ink/ ui-tui/packages/omniworker-ink/
+COPY ui-tui/packages/flux-agent-ink/ ui-tui/packages/flux-agent-ink/
 
 # `npm_config_install_links=false` forces npm to install `file:` deps as
 # symlinks (the npm 10+ default) even on Debian's older bundled npm 9.x,
 # which defaults to `install-links=true` and installs file deps as *copies*.
 # The host-side package-lock.json is generated with a newer npm that uses
 # symlinks, so an install-as-copy produces a hidden node_modules/.package-lock.json
-# that permanently disagrees with the root lock on the @omniworker/ink entry.
+# that permanently disagrees with the root lock on the @flux-agent/ink entry.
 # That disagreement trips the TUI launcher's `_tui_need_npm_install()`
 # check on every startup and triggers a runtime `npm install` that then
 # fails with EACCES (node_modules/ is root-owned from build time).
@@ -80,7 +80,7 @@ RUN uv sync --frozen --no-install-project --extra all
 
 # ---------- Source code ----------
 # .dockerignore excludes node_modules, so the installs above survive.
-COPY --chown=omniworker:omniworker . .
+COPY --chown=flux-agent:flux-agent . .
 
 # Build browser dashboard and terminal UI assets.
 RUN cd web && npm run build && \
@@ -89,29 +89,29 @@ RUN cd web && npm run build && \
 # ---------- Permissions ----------
 # Make install dir world-readable so any OMNIWORKER_UID can read it at runtime.
 # The venv needs to be traversable too.
-# node_modules trees additionally need to be writable by the omniworker user
+# node_modules trees additionally need to be writable by the flux-agent user
 # so the runtime `npm install` triggered by _tui_need_npm_install() in
-# omniworker_cli/main.py succeeds (see #18800). /opt/omniworker/web is build-time
-# only (OMNIWORKER_WEB_DIST points at omniworker_cli/web_dist) and is intentionally
+# flux-agent_cli/main.py succeeds (see #18800). /opt/flux-agent/web is build-time
+# only (OMNIWORKER_WEB_DIST points at flux-agent_cli/web_dist) and is intentionally
 # not chowned here.
-# The .venv MUST be omniworker-writable so lazy_deps.py can install platform
+# The .venv MUST be flux-agent-writable so lazy_deps.py can install platform
 # packages (discord.py, telegram, slack, etc.) at first gateway boot.
 # Without this, `uv pip install` fails with EACCES and all messaging
 # adapters silently fail to load.  See tools/lazy_deps.py.
 USER root
-RUN chmod -R a+rX /opt/omniworker && \
-    chown -R omniworker:omniworker /opt/omniworker/.venv /opt/omniworker/ui-tui /opt/omniworker/node_modules
+RUN chmod -R a+rX /opt/flux-agent && \
+    chown -R flux-agent:flux-agent /opt/flux-agent/.venv /opt/flux-agent/ui-tui /opt/flux-agent/node_modules
 # Start as root so the entrypoint can usermod/groupmod + gosu.
-# If OMNIWORKER_UID is unset, the entrypoint drops to the default omniworker user (10000).
+# If OMNIWORKER_UID is unset, the entrypoint drops to the default flux-agent user (10000).
 
-# ---------- Link omniworker-agent itself (editable) ----------
+# ---------- Link flux-agent-agent itself (editable) ----------
 # Deps are already installed in the cached layer above; `--no-deps` makes
 # this a fast (~1s) egg-link creation with no resolution or downloads.
 RUN uv pip install --no-cache-dir --no-deps -e "."
 
 # ---------- Runtime ----------
-ENV OMNIWORKER_WEB_DIST=/opt/omniworker/omniworker_cli/web_dist
+ENV OMNIWORKER_WEB_DIST=/opt/flux-agent/flux-agent_cli/web_dist
 ENV OMNIWORKER_HOME=/opt/data
 ENV PATH="/opt/data/.local/bin:${PATH}"
 VOLUME [ "/opt/data" ]
-ENTRYPOINT [ "/usr/bin/tini", "-g", "--", "/opt/omniworker/docker/entrypoint.sh" ]
+ENTRYPOINT [ "/usr/bin/tini", "-g", "--", "/opt/flux-agent/docker/entrypoint.sh" ]

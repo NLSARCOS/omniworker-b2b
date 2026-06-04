@@ -32,8 +32,8 @@ class TestCliTurnRoutePool:
             service_tier=None,
         )
 
-        from cli import OmniWorkerCLI
-        bound = OmniWorkerCLI._resolve_turn_agent_config.__get__(shell)
+        from cli import Flux AgentCLI
+        bound = Flux AgentCLI._resolve_turn_agent_config.__get__(shell)
         route = bound("test message")
 
         assert route["runtime"]["credential_pool"] is fake_pool

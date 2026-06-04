@@ -83,7 +83,7 @@ class _BackgroundLoop:
             return
         self._thread = threading.Thread(
             target=self._run_forever,
-            name="omniworker-lsp-loop",
+            name="flux-agent-lsp-loop",
             daemon=True,
         )
         self._thread.start()
@@ -185,13 +185,13 @@ class LSPService:
 
     @classmethod
     def create_from_config(cls) -> Optional["LSPService"]:
-        """Build a service from ``omniworker_cli.config`` settings.
+        """Build a service from ``flux-agent_cli.config`` settings.
 
         Returns ``None`` if the config can't be loaded.  The service
         itself returns ``is_active()`` False when LSP is disabled.
         """
         try:
-            from omniworker_cli.config import load_config
+            from flux-agent_cli.config import load_config
             cfg = load_config()
         except Exception as e:  # noqa: BLE001
             logger.debug("LSP config load failed: %s", e)
@@ -255,7 +255,7 @@ class LSPService:
 
         Files in already-broken pairs return False so the file_operations
         layer skips the LSP path entirely — no spawn attempts, no
-        timeout cost — until the service is restarted (``omniworker lsp
+        timeout cost — until the service is restarted (``flux-agent lsp
         restart``) or the process exits.
         """
         if not self._enabled:
@@ -578,7 +578,7 @@ class LSPService:
         )
 
     # ------------------------------------------------------------------
-    # status / introspection (used by ``omniworker lsp status``)
+    # status / introspection (used by ``flux-agent lsp status``)
     # ------------------------------------------------------------------
 
     def get_status(self) -> Dict[str, Any]:

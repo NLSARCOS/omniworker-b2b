@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bridge between OmniWorker OAuth token and gws CLI.
+"""Bridge between Flux Agent OAuth token and gws CLI.
 
 Refreshes the token if expired, then executes gws with the valid access token.
 """
@@ -10,16 +10,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Ensure sibling modules (_omniworker_home) are importable when run standalone.
+# Ensure sibling modules (_flux-agent_home) are importable when run standalone.
 _SCRIPTS_DIR = str(Path(__file__).resolve().parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from _omniworker_home import get_omniworker_home
+from _flux-agent_home import get_flux-agent_home
 
 
 def get_token_path() -> Path:
-    return get_omniworker_home() / "google_token.json"
+    return get_flux-agent_home() / "google_token.json"
 
 
 def _normalize_authorized_user_payload(payload: dict) -> dict:

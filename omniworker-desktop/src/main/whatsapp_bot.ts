@@ -7,13 +7,13 @@ import {
 } from "fs";
 import { join } from "path";
 import { createConnection } from "net";
-import { getEnhancedPath, OMNIWORKER_HOME } from "./installer";
+import { getEnhancedPath, FLUX AGENT_HOME } from "./installer";
 import { stripAnsi, safeWriteFile } from "./utils";
 
-const BOT_DIR = join(OMNIWORKER_HOME, "whatsapp-bot");
+const BOT_DIR = join(FLUX AGENT_HOME, "whatsapp-bot");
 const SETTINGS_FILE = join(BOT_DIR, "settings.json");
-const PID_FILE = join(OMNIWORKER_HOME, "whatsapp-bot.pid");
-const PORT_FILE = join(OMNIWORKER_HOME, "whatsapp-bot-port");
+const PID_FILE = join(FLUX AGENT_HOME, "whatsapp-bot.pid");
+const PORT_FILE = join(FLUX AGENT_HOME, "whatsapp-bot-port");
 const LOG_BUFFER_MAX = 50000;
 const DEFAULT_PORT = 8000;
 
@@ -252,8 +252,8 @@ print(result)
 `,
   ];
 
-  // Check if running from omniworker-agent directory
-  const agentDir = join(__dirname, "../../../omniworker-agent");
+  // Check if running from flux-agent-agent directory
+  const agentDir = join(__dirname, "../../../flux-agent-agent");
   const cwd = existsSync(join(agentDir, "tools", "whatsapp_bot.py"))
     ? agentDir
     : process.cwd();
@@ -303,8 +303,8 @@ export async function startWhatsAppBot(): Promise<{
   const port = getSavedPort();
   const env = { ...process.env, PATH: getEnhancedPath() };
 
-  // Load ~/.omniworker/.env to inherit API keys automatically
-  const omniEnvPath = join(OMNIWORKER_HOME, ".env");
+  // Load ~/.flux-agent/.env to inherit API keys automatically
+  const omniEnvPath = join(FLUX AGENT_HOME, ".env");
   if (existsSync(omniEnvPath)) {
     const omniEnvContent = readFileSync(omniEnvPath, "utf-8");
     for (const line of omniEnvContent.split("\n")) {
@@ -337,11 +337,11 @@ export async function startWhatsAppBot(): Promise<{
     }
   }
 
-  // Try OmniWorker's own venv first (reuse installed deps)
+  // Try Flux Agent's own venv first (reuse installed deps)
   const omniVenvPython =
     process.platform === "win32"
-      ? join(OMNIWORKER_HOME, ".venv", "Scripts", "python.exe")
-      : join(OMNIWORKER_HOME, ".venv", "bin", "python");
+      ? join(FLUX AGENT_HOME, ".venv", "Scripts", "python.exe")
+      : join(FLUX AGENT_HOME, ".venv", "bin", "python");
 
   const pythonCmd = existsSync(omniVenvPython)
     ? omniVenvPython

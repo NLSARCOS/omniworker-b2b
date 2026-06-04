@@ -13,10 +13,10 @@ from dataclasses import dataclass, fields, replace
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from omniworker_constants import OPENROUTER_BASE_URL
-from omniworker_cli.config import get_env_value, load_env
-import omniworker_cli.auth as auth_mod
-from omniworker_cli.auth import (
+from flux-agent_constants import OPENROUTER_BASE_URL
+from flux-agent_cli.config import get_env_value, load_env
+import flux-agent_cli.auth as auth_mod
+from flux-agent_cli.auth import (
     CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
     DEFAULT_AGENT_KEY_MIN_TTL_SECONDS,
     PROVIDER_REGISTRY,
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 def _load_config_safe() -> Optional[dict]:
     """Load config.yaml, returning None on any error."""
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
 
         return load_config()
     except Exception:
@@ -299,7 +299,7 @@ def _iter_custom_providers(config: Optional[dict] = None):
     if not isinstance(custom_providers, list):
         # Fall back to the v12+ providers dict via the compatibility layer
         try:
-            from omniworker_cli.config import get_compatible_custom_providers
+            from flux-agent_cli.config import get_compatible_custom_providers
 
             custom_providers = get_compatible_custom_providers(config)
         except Exception:
@@ -548,7 +548,7 @@ class CredentialPool:
     def _sync_xai_oauth_entry_from_auth_store(self, entry: PooledCredential) -> PooledCredential:
         """Sync an xAI OAuth pool entry from auth.json if tokens differ.
 
-        xAI OAuth refresh tokens are single-use.  When another OmniWorker process
+        xAI OAuth refresh tokens are single-use.  When another Flux Agent process
         (or another profile sharing the same auth.json) refreshes the token,
         it writes the new pair to ``providers["xai-oauth"]["tokens"]`` under
         ``_auth_store_lock``.  Without this resync, our in-memory pool entry
@@ -798,7 +798,7 @@ class CredentialPool:
                         logger.debug("Failed to write refreshed token to credentials file: %s", wexc)
             elif self.provider == "openai-codex":
                 # Adopt fresher tokens from auth.json before spending the
-                # refresh_token — single-use tokens consumed by another OmniWorker
+                # refresh_token — single-use tokens consumed by another Flux Agent
                 # process sharing the same auth.json singleton would otherwise
                 # trigger ``refresh_token_reused`` on the next POST.
                 synced = self._sync_codex_entry_from_auth_store(entry)
@@ -958,7 +958,7 @@ class CredentialPool:
                         self._current_id = None
                     self._persist()
                     return None
-            # For openai-codex: same race as xAI/nous — another OmniWorker process
+            # For openai-codex: same race as xAI/nous — another Flux Agent process
             # may have consumed the refresh token between our proactive sync
             # and the HTTP call.  Re-check auth.json and adopt the fresh tokens
             # if they have rotated since.
@@ -1148,7 +1148,7 @@ class CredentialPool:
         for entry in self._entries:
             # For anthropic claude_code entries, sync from the credentials file
             # before any status/refresh checks. This picks up tokens refreshed
-            # by other processes (Claude Code CLI, other OmniWorker profiles).
+            # by other processes (Claude Code CLI, other Flux Agent profiles).
             if (self.provider == "anthropic" and entry.source == "claude_code"
                     and entry.last_status == STATUS_EXHAUSTED):
                 synced = self._sync_anthropic_entry_from_credentials_file(entry)
@@ -1480,18 +1480,18 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     # Shared suppression gate — used at every upsert site so
     # `hermes auth remove <provider> <N>` is stable across all source types.
     try:
-        from omniworker_cli.auth import is_source_suppressed as _is_suppressed
+        from flux-agent_cli.auth import is_source_suppressed as _is_suppressed
     except ImportError:
         def _is_suppressed(_p, _s):  # type: ignore[misc]
             return False
 
     if provider == "anthropic":
-        # Only auto-discover external credentials (Claude Code, OmniWorker PKCE)
+        # Only auto-discover external credentials (Claude Code, Flux Agent PKCE)
         # when the user has explicitly configured anthropic as their provider.
         # Without this gate, auxiliary client fallback chains silently read
         # ~/.claude/.credentials.json without user consent.  See PR #4210.
         try:
-            from omniworker_cli.auth import is_provider_explicitly_configured
+            from flux-agent_cli.auth import is_provider_explicitly_configured
             if not is_provider_explicitly_configured("anthropic"):
                 return changed, active_sources
         except ImportError:
@@ -1587,7 +1587,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         # env vars (COPILOT_GITHUB_TOKEN / GH_TOKEN).  They don't live in
         # the auth store or credential pool, so we resolve them here.
         try:
-            from omniworker_cli.copilot_auth import resolve_copilot_token, get_copilot_api_token
+            from flux-agent_cli.copilot_auth import resolve_copilot_token, get_copilot_api_token
             token, source = resolve_copilot_token()
             if token:
                 api_token = get_copilot_api_token(token)
@@ -1613,11 +1613,11 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     elif provider == "qwen-oauth":
         # Qwen OAuth tokens live in ~/.qwen/oauth_creds.json, written by
         # the Qwen CLI (`qwen auth qwen-oauth`).  They aren't in the
-        # OmniWorker auth store or env vars, so resolve them here.
+        # Flux Agent auth store or env vars, so resolve them here.
         # Use refresh_if_expiring=False to avoid network calls during
         # pool loading / provider discovery.
         try:
-            from omniworker_cli.auth import resolve_qwen_runtime_credentials
+            from flux-agent_cli.auth import resolve_qwen_runtime_credentials
             creds = resolve_qwen_runtime_credentials(refresh_if_expiring=False)
             token = creds.get("api_key", "")
             if token:
@@ -1648,7 +1648,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         # always refreshes on expiry, so instead read raw state here to avoid
         # surprise network calls during provider discovery.
         try:
-            from omniworker_cli.auth import get_provider_auth_state
+            from flux-agent_cli.auth import get_provider_auth_state
             state = get_provider_auth_state("minimax-oauth")
             if state and state.get("access_token"):
                 source_name = "oauth"
@@ -1685,14 +1685,14 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     elif provider == "openai-codex":
         # Respect user suppression — `hermes auth remove openai-codex` marks
         # the device_code source as suppressed so it won't be re-seeded from
-        # the OmniWorker auth store.  Without this gate the removal is instantly
+        # the Flux Agent auth store.  Without this gate the removal is instantly
         # undone on the next load_pool() call.
         if _is_suppressed(provider, "device_code"):
             return changed, active_sources
 
         state = _load_provider_state(auth_store, "openai-codex")
         tokens = state.get("tokens") if isinstance(state, dict) else None
-        # OmniWorker owns its own Codex auth state — we do NOT auto-import from
+        # Flux Agent owns its own Codex auth state — we do NOT auto-import from
         # ~/.codex/auth.json at pool-load time.  OAuth refresh tokens are
         # single-use, so sharing them with Codex CLI / VS Code causes
         # refresh_token_reused race failures.  Users who want to adopt
@@ -1728,7 +1728,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
         tokens = state.get("tokens") if isinstance(state, dict) else None
         if isinstance(tokens, dict) and tokens.get("access_token"):
             active_sources.add("loopback_pkce")
-            from omniworker_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
+            from flux-agent_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
             base_url = DEFAULT_XAI_OAUTH_BASE_URL
             changed |= _upsert_entry(
@@ -1754,7 +1754,7 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
     active_sources: Set[str] = set()
 
     # Prefer ~/.hermes/.env over os.environ — the user's config file is the
-    # authoritative source for OmniWorker credentials. Stale env vars from parent
+    # authoritative source for Flux Agent credentials. Stale env vars from parent
     # processes (Codex CLI, test scripts, etc.) should not override deliberate
     # changes to the .env file.
     def _get_env_prefer_dotenv(key: str) -> str:
@@ -1768,7 +1768,7 @@ def _seed_from_env(provider: str, entries: List[PooledCredential]) -> Tuple[bool
     # Without this gate the removal is silently undone on the next
     # load_pool() call whenever the var is still exported by the shell.
     try:
-        from omniworker_cli.auth import is_source_suppressed as _is_source_suppressed
+        from flux-agent_cli.auth import is_source_suppressed as _is_source_suppressed
     except ImportError:
         def _is_source_suppressed(_p, _s):  # type: ignore[misc]
             return False
@@ -1864,7 +1864,7 @@ def _seed_custom_pool(pool_key: str, entries: List[PooledCredential]) -> Tuple[b
 
     # Shared suppression gate — same pattern as _seed_from_env/_seed_from_singletons.
     try:
-        from omniworker_cli.auth import is_source_suppressed as _is_suppressed
+        from flux-agent_cli.auth import is_source_suppressed as _is_suppressed
     except ImportError:
         def _is_suppressed(_p, _s):  # type: ignore[misc]
             return False

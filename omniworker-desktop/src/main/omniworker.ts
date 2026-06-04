@@ -15,10 +15,10 @@ import { homedir } from "os";
 import http from "http";
 import https from "https";
 import {
-  OMNIWORKER_HOME,
-  OMNIWORKER_REPO,
-  OMNIWORKER_PYTHON,
-  omniworkerCliArgs,
+  FLUX AGENT_HOME,
+  FLUX AGENT_REPO,
+  FLUX AGENT_PYTHON,
+  flux-agentCliArgs,
   getEnhancedPath,
   SAAS_BASE_URL,
 } from "./installer";
@@ -35,7 +35,7 @@ import { readModels } from "./models";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { PowerManager } from "./power";
 import { HistoryCache } from "./history-cache";
-const pidsFile = join(OMNIWORKER_HOME, "pids.json");
+const pidsFile = join(FLUX AGENT_HOME, "pids.json");
 
 interface PidEntry {
   pid: number;
@@ -194,7 +194,7 @@ export function getApiUrl(): string {
   if (conn.mode === "remote" && conn.remoteUrl) {
     return conn.remoteUrl.replace(/\/+$/, "");
   }
-  // Local mode: use the local OmniWorker gateway (port 8642).
+  // Local mode: use the local Flux Agent gateway (port 8642).
   // The gateway runs the full agent with tools (file system, terminal, etc.)
   // and uses the SaaS for LLM inference via the model config's base_url.
   return LOCAL_API_URL;
@@ -310,7 +310,7 @@ function isApiServerReady(): Promise<boolean> {
 
 function ensureApiServerConfig(): void {
   try {
-    const configPath = join(OMNIWORKER_HOME, "config.yaml");
+    const configPath = join(FLUX AGENT_HOME, "config.yaml");
     if (!existsSync(configPath)) return;
     const content = readFileSync(configPath, "utf-8");
     // If api_server is already configured, skip
@@ -354,11 +354,15 @@ function sendMessageViaApi(
   cb: ChatCallbacks,
   profile?: string,
   _resumeSessionId?: string,
-  history?: Array<{ role: string; content: string }>,
+  history?: Array<{ role: string; content: string }> | undefined,
 ): ChatHandle {
   const mc = getModelConfig(profile);
   const controller = new AbortController();
 
+  // Build message list.  When the server has already issued a session ID
+  // and the client did not supply an explicit history snapshot, send only
+  // the current user message so the API server recovers the full transcript
+  // (with tool_calls, reasoning, etc.) from SQLite via X-Flux Agent-Session-Id.
   const rawMessages: Array<{ role: string; content: string }> = [];
   if (history && history.length > 0) {
     for (const msg of history) {
@@ -367,39 +371,25 @@ function sendMessageViaApi(
         content: msg.content,
       });
     }
+    rawMessages.push({ role: "user", content: message });
+  } else if (!_resumeSessionId) {
+    // No session yet and no history — first message of a new conversation.
+    rawMessages.push({ role: "user", content: message });
+  } else {
+    // Session exists and client opted not to send history (to avoid
+    // truncating / losing tool_calls / reasoning).  Only the current
+    // message is sent; the server hydrates the rest from state.db.
+    rawMessages.push({ role: "user", content: message });
   }
-  rawMessages.push({ role: "user", content: message });
 
-  const MAX_FULL_MESSAGES = 30;
-  const KEEP_RECENT = 20;
-  let messages = rawMessages;
-  if (rawMessages.length > MAX_FULL_MESSAGES) {
-    try {
-      const historyCache = new HistoryCache();
-      const conversationId = _resumeSessionId || `chat:${profile || "default"}:${Date.now()}`;
-      const cachedSummary = historyCache.getOrCreateSummary(conversationId);
-      const recent = rawMessages.slice(-KEEP_RECENT);
-      if (cachedSummary) {
-        messages = [
-          { role: "system", content: `## Resumen de la conversación anterior\n${cachedSummary}` },
-          ...recent,
-        ];
-      } else {
-        messages = recent;
-      }
-      console.log(
-        `[HistoryCache] conversationId=${conversationId} original=${rawMessages.length} compacted=${messages.length} cachedSummary=${!!cachedSummary}`,
-      );
-    } catch (err) {
-      console.warn("[HistoryCache] compaction failed, sending full history:", err);
-      messages = rawMessages;
-    }
-  }
+  const messages = rawMessages;
 
   const body = JSON.stringify({
-    model: mc.model || "omniworker-agent",
+    model: mc.model || "flux-agent-agent",
     messages,
     stream: true,
+    // Keep session_id in body for backward-compat with older gateway
+    // versions that don't inspect the header.
     ...(_resumeSessionId ? { session_id: _resumeSessionId } : {}),
   });
 
@@ -407,6 +397,9 @@ function sendMessageViaApi(
     "Content-Type": "application/json",
     ...getRemoteAuthHeader(profile),
   };
+  if (_resumeSessionId) {
+    headers["X-Flux Agent-Session-Id"] = _resumeSessionId;
+  }
 
   let sessionId = _resumeSessionId || "";
   let hasContent = false;
@@ -449,7 +442,7 @@ function sendMessageViaApi(
   function probeRealError(): void {
     // When streaming returns empty, make a non-streaming request to surface the real error
     const probeBody = JSON.stringify({
-      model: mc.model || "omniworker-agent",
+      model: mc.model || "flux-agent-agent",
       messages: [{ role: "user", content: message }],
       stream: false,
     });
@@ -498,7 +491,7 @@ function sendMessageViaApi(
 
   /** Handle a custom SSE event (non-data lines with `event:` prefix). */
   function processCustomEvent(eventType: string, data: string): void {
-    if (eventType === "omniworker.tool.progress" && cb.onToolProgress) {
+    if (eventType === "flux-agent.tool.progress" && cb.onToolProgress) {
       try {
         const payload = JSON.parse(data);
         const label = payload.label || payload.tool || "";
@@ -574,7 +567,7 @@ function sendMessageViaApi(
       timeout: 120000,
     },
     (res) => {
-      const sid = res.headers["x-omniworker-session-id"];
+      const sid = res.headers["x-flux-agent-session-id"];
       if (sid && typeof sid === "string") sessionId = sid;
 
       if (res.statusCode !== 200) {
@@ -610,7 +603,7 @@ function sendMessageViaApi(
         }
         if (!dataLine) return false;
         if (eventType) {
-          // Custom event (e.g. omniworker.tool.progress) — never signals [DONE]
+          // Custom event (e.g. flux-agent.tool.progress) — never signals [DONE]
           processCustomEvent(eventType, dataLine);
           return false;
         }
@@ -689,7 +682,7 @@ function sendMessageViaCli(
   const mc = getModelConfig(profile);
   const profileEnv = readEnv(profile);
 
-  const args = omniworkerCliArgs();
+  const args = flux-agentCliArgs();
   if (profile && profile !== "default") {
     args.push("-p", profile);
   }
@@ -707,11 +700,11 @@ function sendMessageViaCli(
     ...(process.env as Record<string, string>),
     PATH: getEnhancedPath(),
     HOME: homedir(),
-    OMNIWORKER_HOME: OMNIWORKER_HOME,
-    OMNIWORKER_SAAS_BASE_URL:
-      process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
+    FLUX AGENT_HOME: FLUX AGENT_HOME,
+    FLUX AGENT_SAAS_BASE_URL:
+      process.env.FLUX AGENT_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     PYTHONUNBUFFERED: "1",
-    OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
+    FLUX AGENT_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
   };
 
   const secureTokens = getSecureTokens();
@@ -720,12 +713,12 @@ function sendMessageViaCli(
     env.CUSTOM_API_KEY = secureTokens.accessToken;
   }
   if (secureTokens.refreshToken) {
-    env.OMNIWORKER_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
+    env.FLUX AGENT_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
   }
   try {
     const fingerprint = getDeviceFingerprint();
     if (fingerprint) {
-      env.OMNIWORKER_DEVICE_FINGERPRINT = fingerprint;
+      env.FLUX AGENT_DEVICE_FINGERPRINT = fingerprint;
     }
   } catch (err) {
     /* ignore */
@@ -774,10 +767,10 @@ function sendMessageViaCli(
     }
     const isAnthropicProtocol = modelApiMode === "anthropic_messages";
     if (isAnthropicProtocol) {
-      env.OMNIWORKER_INFERENCE_PROVIDER = "anthropic";
+      env.FLUX AGENT_INFERENCE_PROVIDER = "anthropic";
       env.ANTHROPIC_BASE_URL = mc.baseUrl.replace(/\/+$/, "");
     } else {
-      env.OMNIWORKER_INFERENCE_PROVIDER = "custom";
+      env.FLUX AGENT_INFERENCE_PROVIDER = "custom";
       env.OPENAI_BASE_URL = mc.baseUrl.replace(/\/+$/, "");
     }
 
@@ -846,8 +839,8 @@ function sendMessageViaCli(
     }
   };
 
-  const proc = spawn(OMNIWORKER_PYTHON, args, {
-    cwd: OMNIWORKER_REPO,
+  const proc = spawn(FLUX AGENT_PYTHON, args, {
+    cwd: FLUX AGENT_REPO,
     env,
     stdio: ["ignore", "pipe", "pipe"],
     ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -913,7 +906,7 @@ function sendMessageViaCli(
 
   proc.on("close", (code) => {
     releasePowerBlock();
-    console.log(`[OmniWorker Agent] Process closed with code ${code}. hasOutput=${hasOutput}`);
+    console.log(`[Flux Agent Agent] Process closed with code ${code}. hasOutput=${hasOutput}`);
     if (code === 0) {
       cb.onDone(capturedSessionId || undefined);
     } else {
@@ -1003,7 +996,7 @@ function sendSimpleGreeting(
     : `http://127.0.0.1:${SMART_ROUTER_PORT}/v1/chat/completions`;
 
   const body = JSON.stringify({
-    model: "omniworker-agent",
+    model: "flux-agent-agent",
     messages: [
       {
         role: "system",
@@ -1106,7 +1099,7 @@ function sendSimpleGreeting(
     const mc = getModelConfig(profile);
     const fallbackUrl = `${cleanBaseUrl(getApiUrl())}/v1/chat/completions`;
     const fallbackBody = JSON.stringify({
-      model: mc.model || "omniworker-agent",
+      model: mc.model || "flux-agent-agent",
       messages: [{ role: "user", content: message }],
       stream: true,
     });
@@ -1166,7 +1159,7 @@ function sendSimpleGreeting(
 // ────────────────────────────────────────────────────
 
 const LOCAL_SLM_PORT = parseInt(
-  process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
+  process.env.FLUX AGENT_LOCAL_SLM_PORT ?? "8080",
   10,
 );
 
@@ -1335,7 +1328,7 @@ export async function sendMessage(
   cb: ChatCallbacks,
   profile?: string,
   resumeSessionId?: string,
-  history?: Array<{ role: string; content: string }>,
+  history?: Array<{ role: string; content: string }> | undefined,
 ): Promise<ChatHandle> {
   ensureInitialized();
 
@@ -1438,7 +1431,7 @@ function ensureInitialized(): void {
 
 /**
  * Copy bundled local-llm startup scripts from app resources into
- * OMNIWORKER_HOME/local-llm/ so startLocalLlmServer() can find them.
+ * FLUX AGENT_HOME/local-llm/ so startLocalLlmServer() can find them.
  * Safe to call multiple times — only copies if destination is missing.
  */
 function ensureLocalLlmScripts(): void {
@@ -1447,8 +1440,8 @@ function ensureLocalLlmScripts(): void {
     const { app } = require("electron");
     const srcDir = join(app.getAppPath(), "resources", "local-llm-scripts");
     const engineSrcDir = join(app.getAppPath(), "resources", "engine");
-    const destScriptsDir = join(OMNIWORKER_HOME, "local-llm", "scripts");
-    const destEngineDir = join(OMNIWORKER_HOME, "local-llm", "engine");
+    const destScriptsDir = join(FLUX AGENT_HOME, "local-llm", "scripts");
+    const destEngineDir = join(FLUX AGENT_HOME, "local-llm", "engine");
 
     if (!existsSync(srcDir)) return; // not packaged yet (dev mode)
 
@@ -1482,7 +1475,7 @@ function ensureLocalLlmScripts(): void {
     }
 
     // Symlink engine dir so scripts can reference ../engine relative to scripts/
-    const engineLink = join(OMNIWORKER_HOME, "local-llm", "engine");
+    const engineLink = join(FLUX AGENT_HOME, "local-llm", "engine");
     if (existsSync(engineSrcDir) && !existsSync(engineLink)) {
       symlinkSync(engineSrcDir, engineLink);
     }
@@ -1517,7 +1510,7 @@ export function stopHealthPolling(): void {
 let localLlmProcess: ChildProcess | null = null;
 
 const _LOCAL_LLM_PORT_ORIG = parseInt(
-  process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
+  process.env.FLUX AGENT_LOCAL_SLM_PORT ?? "8080",
   10,
 );
 
@@ -1556,13 +1549,13 @@ export async function startLocalLlmServer(): Promise<boolean> {
   }
 
   const scriptPath = join(
-    OMNIWORKER_HOME,
+    FLUX AGENT_HOME,
     "local-llm",
     "scripts",
     "start-local-llm.sh",
   );
   const winScriptPath = join(
-    OMNIWORKER_HOME,
+    FLUX AGENT_HOME,
     "local-llm",
     "scripts",
     "start-local-llm.bat",
@@ -1596,7 +1589,7 @@ export async function startLocalLlmServer(): Promise<boolean> {
     process.platform === "win32" ? ["/c", startScript] : [startScript];
 
   localLlmProcess = spawn(command, args, {
-    cwd: OMNIWORKER_HOME,
+    cwd: FLUX AGENT_HOME,
     env,
     stdio: "ignore",
     ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -1716,7 +1709,7 @@ export async function startSmartRouter(): Promise<boolean> {
     await new Promise((r) => setTimeout(r, 500));
   }
 
-  const routerScript = join(OMNIWORKER_REPO, "smart_router.py");
+  const routerScript = join(FLUX AGENT_REPO, "smart_router.py");
   let shouldWriteScript = false;
   if (!existsSync(routerScript)) {
     shouldWriteScript = true;
@@ -1735,7 +1728,7 @@ export async function startSmartRouter(): Promise<boolean> {
     console.log(
       "[SmartRouter] Writing updated/bundled version of smart_router.py...",
     );
-    mkdirSync(OMNIWORKER_REPO, { recursive: true });
+    mkdirSync(FLUX AGENT_REPO, { recursive: true });
     writeFileSync(routerScript, SMART_ROUTER_SCRIPT);
   }
 
@@ -1765,11 +1758,11 @@ export async function startSmartRouter(): Promise<boolean> {
 
   const routerEnv: Record<string, string> = {
     ...(process.env as Record<string, string>),
-    OMNIWORKER_HOME: OMNIWORKER_HOME,
+    FLUX AGENT_HOME: FLUX AGENT_HOME,
     PATH: getEnhancedPath(),
     HOME: homedir(),
     SMART_ROUTER_PORT: String(SMART_ROUTER_PORT),
-    LOCAL_SLM_PORT: process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
+    LOCAL_SLM_PORT: process.env.FLUX AGENT_LOCAL_SLM_PORT ?? "8080",
     CLOUD_API_URL: cloudApiUrl,
     SMART_ROUTER_LOG: "1", // Enable logging
     FORCE_IPV4: forceIpv4 ? "true" : "false",
@@ -1793,10 +1786,10 @@ export async function startSmartRouter(): Promise<boolean> {
     routerEnv.OPENAI_API_KEY = apiKey;
   }
 
-  const args = [OMNIWORKER_PYTHON, routerScript];
+  const args = [FLUX AGENT_PYTHON, routerScript];
 
   smartRouterProcess = spawn(args[0], args.slice(1), {
-    cwd: OMNIWORKER_REPO,
+    cwd: FLUX AGENT_REPO,
     env: routerEnv,
     stdio: "ignore",
     ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -1901,13 +1894,13 @@ export async function startGateway(profile?: string): Promise<boolean> {
     ...(process.env as Record<string, string>),
     PATH: getEnhancedPath(),
     HOME: homedir(),
-    OMNIWORKER_HOME: OMNIWORKER_HOME,
+    FLUX AGENT_HOME: FLUX AGENT_HOME,
     API_SERVER_ENABLED: "true", // Ensure API server starts with gateway
-    OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
-    OMNIWORKER_SAAS_BASE_URL:
-      process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
+    FLUX AGENT_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
+    FLUX AGENT_SAAS_BASE_URL:
+      process.env.FLUX AGENT_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     // Prevent loading AGENTS.md (~51K chars / ~12K tokens) from the agent repo.
-    // Without this the agent discovers OMNIWORKER_REPO/AGENTS.md via os.getcwd()
+    // Without this the agent discovers FLUX AGENT_REPO/AGENTS.md via os.getcwd()
     // and injects the entire dev guide into every conversation — wasting ~12K tokens.
     // Desktop users aren't coding the agent itself; context files are not needed.
     TERMINAL_CWD: homedir(),
@@ -1927,12 +1920,12 @@ export async function startGateway(profile?: string): Promise<boolean> {
     gatewayEnv.CUSTOM_API_KEY = secureTokens.accessToken;
   }
   if (secureTokens.refreshToken) {
-    gatewayEnv.OMNIWORKER_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
+    gatewayEnv.FLUX AGENT_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
   }
   try {
     const fingerprint = getDeviceFingerprint();
     if (fingerprint) {
-      gatewayEnv.OMNIWORKER_DEVICE_FINGERPRINT = fingerprint;
+      gatewayEnv.FLUX AGENT_DEVICE_FINGERPRINT = fingerprint;
     }
   } catch (err) {
     /* ignore */
@@ -1975,10 +1968,10 @@ export async function startGateway(profile?: string): Promise<boolean> {
   }
 
   const fs = require("fs");
-  const logFd = fs.openSync(join(OMNIWORKER_HOME, "gateway.log"), "a");
+  const logFd = fs.openSync(join(FLUX AGENT_HOME, "gateway.log"), "a");
 
-  gatewayProcess = spawn(OMNIWORKER_PYTHON, omniworkerCliArgs(["gateway"]), {
-    cwd: OMNIWORKER_REPO,
+  gatewayProcess = spawn(FLUX AGENT_PYTHON, flux-agentCliArgs(["gateway"]), {
+    cwd: FLUX AGENT_REPO,
     env: gatewayEnv,
     stdio: ["ignore", logFd, logFd],
     ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -1987,7 +1980,7 @@ export async function startGateway(profile?: string): Promise<boolean> {
   if (gatewayProcess && gatewayProcess.pid) {
     recordPid(gatewayProcess.pid);
     try {
-      const pidFile = join(OMNIWORKER_HOME, "gateway.pid");
+      const pidFile = join(FLUX AGENT_HOME, "gateway.pid");
       fs.writeFileSync(pidFile, gatewayProcess.pid.toString(), "utf-8");
       console.log(`[Gateway] Wrote spawned PID ${gatewayProcess.pid} to ${pidFile}`);
     } catch (err) {
@@ -2027,7 +2020,7 @@ export async function startGateway(profile?: string): Promise<boolean> {
 }
 
 function readPidFile(): number | null {
-  const pidFile = join(OMNIWORKER_HOME, "gateway.pid");
+  const pidFile = join(FLUX AGENT_HOME, "gateway.pid");
   if (!existsSync(pidFile)) return null;
   try {
     const raw = readFileSync(pidFile, "utf-8").trim();
@@ -2059,7 +2052,7 @@ export function stopGateway(force = false): void {
   // Always clear the PID file once we've signalled it. Leaving a stale PID
   // around means the next isGatewayRunning() / stopGateway() call can hit
   // an unrelated process that the OS has since assigned the same PID.
-  const pidFile = join(OMNIWORKER_HOME, "gateway.pid");
+  const pidFile = join(FLUX AGENT_HOME, "gateway.pid");
   if (existsSync(pidFile)) {
     try {
       unlinkSync(pidFile);

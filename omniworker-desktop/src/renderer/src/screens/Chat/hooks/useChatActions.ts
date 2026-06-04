@@ -9,7 +9,7 @@ interface LocalCommands {
 
 interface UseChatActionsArgs {
   profile?: string;
-  omniworkerSessionId: string | null;
+  flux-agentSessionId: string | null;
   messages: ChatMessage[];
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -35,7 +35,7 @@ interface UseChatActionsResult {
  */
 export function useChatActions({
   profile,
-  omniworkerSessionId,
+  flux-agentSessionId,
   messages,
   isLoading,
   setIsLoading,
@@ -64,20 +64,29 @@ export function useChatActions({
   const sendToAgent = useCallback(
     async (text: string): Promise<void> => {
       try {
-        await window.omniworkerAPI.sendMessage(
+        // When we have a server-issued session ID, let the backend recover
+        // the full conversation history from SQLite instead of sending a
+        // truncated / lossy client-side snapshot.
+        const hasSession = Boolean(flux-agentSessionId);
+        const historyLength = messagesRef.current.length;
+        const shouldSendHistory = !hasSession || historyLength <= 10;
+
+        await window.flux-agentAPI.sendMessage(
           text,
           profile,
-          omniworkerSessionId || undefined,
-          messagesRef.current.slice(-50).map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          flux-agentSessionId || undefined,
+          shouldSendHistory
+            ? messagesRef.current.map((m) => ({
+                role: m.role,
+                content: m.content,
+              }))
+            : undefined,
         );
       } catch {
         // onChatError IPC already surfaces this to the user
       }
     },
-    [profile, omniworkerSessionId],
+    [profile, flux-agentSessionId],
   );
 
   const handleSend = useCallback(
@@ -110,7 +119,7 @@ export function useChatActions({
   );
 
   const handleAbort = useCallback(() => {
-    window.omniworkerAPI.abortChat();
+    window.flux-agentAPI.abortChat();
     setIsLoading(false);
     setTimeout(() => chatInputRef.current?.focus(), 50);
   }, [chatInputRef, setIsLoading]);

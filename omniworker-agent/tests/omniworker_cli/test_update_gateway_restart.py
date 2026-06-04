@@ -1,6 +1,6 @@
 """Tests for cmd_update gateway auto-restart — systemd + launchd coverage.
 
-Ensures ``omniworker update`` correctly detects running gateways managed by
+Ensures ``flux-agent update`` correctly detects running gateways managed by
 systemd (Linux) or launchd (macOS) and restarts/informs the user properly,
 rather than leaving zombie processes or telling users to manually restart
 when launchd will auto-respawn.
@@ -13,9 +13,9 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-import omniworker_cli.gateway as gateway_cli
-import omniworker_cli.main as cli_main
-from omniworker_cli.main import cmd_update
+import flux-agent_cli.gateway as gateway_cli
+import flux-agent_cli.main as cli_main
+from flux-agent_cli.main import cmd_update
 
 
 # ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ from omniworker_cli.main import cmd_update
 
 @pytest.fixture(autouse=True)
 def _no_restart_verify_sleep(monkeypatch):
-    """omniworker_cli/main.py uses time.sleep(3) after systemctl restart to
+    """flux-agent_cli/main.py uses time.sleep(3) after systemctl restart to
     verify the service survived. Tests mock subprocess.run — nothing
     actually restarts — so the 3s wait is dead time.
 
@@ -68,18 +68,18 @@ def _make_run_side_effect(
         if "rev-list" in joined:
             return subprocess.CompletedProcess(cmd, 0, stdout=f"{commit_count}\n", stderr="")
 
-        # systemctl list-units omniworker-gateway* — discover all gateway services
+        # systemctl list-units flux-agent-gateway* — discover all gateway services
         if "systemctl" in joined and "list-units" in joined:
             if "--user" in joined and systemd_active:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="omniworker-gateway.service loaded active running OmniWorker Gateway\n",
+                    stdout="flux-agent-gateway.service loaded active running Flux Agent Gateway\n",
                     stderr="",
                 )
             elif "--user" not in joined and system_service_active:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="omniworker-gateway.service loaded active running OmniWorker Gateway\n",
+                    stdout="flux-agent-gateway.service loaded active running Flux Agent Gateway\n",
                     stderr="",
                 )
             return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -103,10 +103,10 @@ def _make_run_side_effect(
                 return subprocess.CompletedProcess(cmd, system_restart_rc, stdout="", stderr=stderr)
             return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
-        # launchctl list ai.omniworker.gateway
+        # launchctl list ai.flux-agent.gateway
         if "launchctl" in joined and "list" in joined:
             if launchctl_loaded:
-                return subprocess.CompletedProcess(cmd, 0, stdout="PID\tStatus\tLabel\n123\t0\tai.omniworker.gateway\n", stderr="")
+                return subprocess.CompletedProcess(cmd, 0, stdout="PID\tStatus\tLabel\n123\t0\tai.flux-agent.gateway\n", stderr="")
             return subprocess.CompletedProcess(cmd, 113, stdout="", stderr="Could not find service")
 
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -155,7 +155,7 @@ class TestLaunchdPlistPath:
         assert "<key>EnvironmentVariables</key>" in plist
         assert "<key>PATH</key>" in plist
         assert "<key>VIRTUAL_ENV</key>" in plist
-        assert "<key>OMNIWORKER_HOME</key>" in plist
+        assert "<key>FLUX AGENT_HOME</key>" in plist
 
     def test_plist_path_includes_venv_bin(self):
         plist = gateway_cli.generate_launchd_plist()
@@ -214,7 +214,7 @@ class TestLaunchdPlistPath:
 
 class TestLaunchdPlistCurrentness:
     def test_launchd_plist_is_current_ignores_path_drift(self, tmp_path, monkeypatch):
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
 
         monkeypatch.setenv("PATH", "/custom/bin:/usr/bin:/bin")
@@ -235,7 +235,7 @@ class TestLaunchdPlistRefresh:
     refresh_systemd_unit_if_needed)."""
 
     def test_refresh_rewrites_stale_plist(self, tmp_path, monkeypatch):
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         plist_path.write_text("<plist>old content</plist>")
 
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
@@ -257,7 +257,7 @@ class TestLaunchdPlistRefresh:
         assert any("bootstrap" in str(c) for c in calls)
 
     def test_refresh_skips_when_current(self, tmp_path, monkeypatch):
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
 
         # Write the current expected content
@@ -283,7 +283,7 @@ class TestLaunchdPlistRefresh:
 
     def test_launchd_start_calls_refresh(self, tmp_path, monkeypatch):
         """launchd_start refreshes the plist before starting."""
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         plist_path.write_text("<plist>old</plist>")
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
 
@@ -303,7 +303,7 @@ class TestLaunchdPlistRefresh:
 
     def test_launchd_start_recreates_missing_plist_and_loads_service(self, tmp_path, monkeypatch):
         """launchd_start self-heals when the plist file is missing entirely."""
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         assert not plist_path.exists()
 
         monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
@@ -338,9 +338,9 @@ class TestCmdUpdateLaunchdRestart:
         self, mock_run, _mock_which, mock_args, capsys, tmp_path, monkeypatch,
     ):
         """When launchd is running the gateway, update should print
-        'auto-restart via launchd' instead of 'Restart it with: omniworker gateway run'."""
+        'auto-restart via launchd' instead of 'Restart it with: flux-agent gateway run'."""
         # Create a fake launchd plist so is_macos + plist.exists() passes
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         plist_path.write_text("<plist/>")
 
         monkeypatch.setattr(
@@ -362,7 +362,7 @@ class TestCmdUpdateLaunchdRestart:
 
         captured = capsys.readouterr().out
         assert "Restarted" in captured
-        assert "Restart manually: omniworker gateway run" not in captured
+        assert "Restart manually: flux-agent gateway run" not in captured
         mock_launchd_restart.assert_called_once_with()
 
     @patch("shutil.which", return_value=None)
@@ -374,7 +374,7 @@ class TestCmdUpdateLaunchdRestart:
         monkeypatch.setattr(
             gateway_cli, "is_macos", lambda: True,
         )
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         # plist does NOT exist — no launchd service
         monkeypatch.setattr(
             gateway_cli, "get_launchd_plist_path", lambda: plist_path,
@@ -391,7 +391,7 @@ class TestCmdUpdateLaunchdRestart:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Restart manually: omniworker gateway run" in captured
+        assert "Restart manually: flux-agent gateway run" in captured
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -403,7 +403,7 @@ class TestCmdUpdateLaunchdRestart:
         monkeypatch.setattr(
             gateway_cli,
             "get_launchd_plist_path",
-            lambda: tmp_path / "ai.omniworker.gateway.plist",
+            lambda: tmp_path / "ai.flux-agent.gateway.plist",
         )
 
         mock_run.side_effect = _make_run_side_effect(
@@ -412,7 +412,7 @@ class TestCmdUpdateLaunchdRestart:
         )
         process = gateway_cli.ProfileGatewayProcess(
             profile="coder",
-            path=tmp_path / ".omniworker" / "profiles" / "coder",
+            path=tmp_path / ".flux-agent" / "profiles" / "coder",
             pid=12345,
         )
 
@@ -435,7 +435,7 @@ class TestCmdUpdateLaunchdRestart:
         # Graceful drain succeeded — no SIGTERM fallback needed.
         kill.assert_not_called()
         assert "Restarting manual gateway profile(s): coder" in captured
-        assert "Restart manually: omniworker gateway run" not in captured
+        assert "Restart manually: flux-agent gateway run" not in captured
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -447,7 +447,7 @@ class TestCmdUpdateLaunchdRestart:
         monkeypatch.setattr(
             gateway_cli,
             "get_launchd_plist_path",
-            lambda: tmp_path / "ai.omniworker.gateway.plist",
+            lambda: tmp_path / "ai.flux-agent.gateway.plist",
         )
 
         mock_run.side_effect = _make_run_side_effect(
@@ -456,7 +456,7 @@ class TestCmdUpdateLaunchdRestart:
         )
         process = gateway_cli.ProfileGatewayProcess(
             profile="coder",
-            path=tmp_path / ".omniworker" / "profiles" / "coder",
+            path=tmp_path / ".flux-agent" / "profiles" / "coder",
             pid=12345,
         )
 
@@ -499,7 +499,7 @@ class TestCmdUpdateLaunchdRestart:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Restarted omniworker-gateway" in captured
+        assert "Restarted flux-agent-gateway" in captured
         # Verify systemctl restart was called
         restart_calls = [
             c for c in mock_run.call_args_list
@@ -540,7 +540,7 @@ class TestCmdUpdateLaunchdRestart:
                 if "--user" in joined:
                     return subprocess.CompletedProcess(
                         cmd, 0,
-                        stdout="omniworker-gateway.service loaded active running\n",
+                        stdout="flux-agent-gateway.service loaded active running\n",
                         stderr="",
                     )
                 return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -603,7 +603,7 @@ class TestCmdUpdateLaunchdRestart:
 
         captured = capsys.readouterr().out
         assert "draining" in captured.lower()
-        assert "Restarted omniworker-gateway" in captured
+        assert "Restarted flux-agent-gateway" in captured
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -637,7 +637,7 @@ class TestCmdUpdateLaunchdRestart:
         # because the gateway ignored SIGUSR1 or the drain budget was
         # exceeded.  cmd_update() should detect this and escalate.
         monkeypatch.setattr(
-            "omniworker_cli.gateway._graceful_restart_via_sigusr1",
+            "flux-agent_cli.gateway._graceful_restart_via_sigusr1",
             lambda pid, drain_timeout: False,
         )
 
@@ -681,7 +681,7 @@ class TestCmdUpdateLaunchdRestart:
                 if "--user" in joined:
                     return subprocess.CompletedProcess(
                         cmd, 0,
-                        stdout="omniworker-gateway.service loaded active running\n",
+                        stdout="flux-agent-gateway.service loaded active running\n",
                         stderr="",
                     )
                 return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -696,7 +696,7 @@ class TestCmdUpdateLaunchdRestart:
         # Simulate a successful graceful drain so cmd_update reaches the
         # post-drain restart bypass.
         monkeypatch.setattr(
-            "omniworker_cli.gateway._graceful_restart_via_sigusr1",
+            "flux-agent_cli.gateway._graceful_restart_via_sigusr1",
             lambda pid, drain_timeout: True,
         )
 
@@ -709,19 +709,19 @@ class TestCmdUpdateLaunchdRestart:
             if "systemctl" in " ".join(str(a) for a in c.args[0])
         ]
 
-        # Must have called ``reset-failed omniworker-gateway`` AND ``start
-        # omniworker-gateway`` explicitly so systemd bypasses RestartSec.
-        reset_calls = [c for c in calls if "reset-failed" in c and "omniworker-gateway" in c]
+        # Must have called ``reset-failed flux-agent-gateway`` AND ``start
+        # flux-agent-gateway`` explicitly so systemd bypasses RestartSec.
+        reset_calls = [c for c in calls if "reset-failed" in c and "flux-agent-gateway" in c]
         start_calls = [
             c for c in calls
-            if "start" in c and "omniworker-gateway" in c and "restart" not in c
+            if "start" in c and "flux-agent-gateway" in c and "restart" not in c
         ]
         assert reset_calls, (
-            f"Expected explicit `reset-failed omniworker-gateway` after graceful drain; "
+            f"Expected explicit `reset-failed flux-agent-gateway` after graceful drain; "
             f"systemctl calls were: {calls}"
         )
         assert start_calls, (
-            f"Expected explicit `start omniworker-gateway` after graceful drain to "
+            f"Expected explicit `start flux-agent-gateway` after graceful drain to "
             f"bypass RestartSec; systemctl calls were: {calls}"
         )
 
@@ -777,7 +777,7 @@ class TestCmdUpdateSystemService:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Restarted omniworker-gateway" in captured
+        assert "Restarted flux-agent-gateway" in captured
         # Verify systemctl restart (no --user) was called
         restart_calls = [
             c for c in mock_run.call_args_list
@@ -831,7 +831,7 @@ class TestCmdUpdateSystemService:
 
         captured = capsys.readouterr().out
         # Both scopes are discovered and restarted
-        assert "Restarted omniworker-gateway" in captured
+        assert "Restarted flux-agent-gateway" in captured
 
 
 # ---------------------------------------------------------------------------
@@ -842,7 +842,7 @@ class TestCmdUpdateSystemService:
 class TestServicePidExclusion:
     """After restarting a service, the stale-process sweep must NOT kill
     the freshly-spawned service PID.  This was the root cause of the bug
-    where ``omniworker update`` would restart the gateway and immediately kill it.
+    where ``flux-agent update`` would restart the gateway and immediately kill it.
     """
 
     @patch("shutil.which", return_value=None)
@@ -851,7 +851,7 @@ class TestServicePidExclusion:
         self, mock_run, _mock_which, mock_args, capsys, monkeypatch, tmp_path,
     ):
         """After launchd restart, the sweep must exclude the service PID."""
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         plist_path.write_text("<plist/>")
 
         monkeypatch.setattr(gateway_cli, "is_macos", lambda: True)
@@ -923,7 +923,7 @@ class TestServicePidExclusion:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Restarted omniworker-gateway" in captured
+        assert "Restarted flux-agent-gateway" in captured
         # Service PID must not be killed
         kill_calls = [
             c for c in mock_kill.call_args_list
@@ -939,7 +939,7 @@ class TestServicePidExclusion:
     ):
         """When both a service PID and a manual PID exist, only the manual one
         is killed."""
-        plist_path = tmp_path / "ai.omniworker.gateway.plist"
+        plist_path = tmp_path / "ai.flux-agent.gateway.plist"
         plist_path.write_text("<plist/>")
 
         monkeypatch.setattr(gateway_cli, "is_macos", lambda: True)
@@ -1000,7 +1000,7 @@ class TestGetServicePids:
             if "list-units" in joined:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="omniworker-gateway.service loaded active running OmniWorker Gateway\n",
+                    stdout="flux-agent-gateway.service loaded active running Flux Agent Gateway\n",
                     stderr="",
                 )
             if "show" in joined and "MainPID" in joined:
@@ -1015,14 +1015,14 @@ class TestGetServicePids:
     def test_returns_launchd_pid(self, monkeypatch):
         monkeypatch.setattr(gateway_cli, "is_linux", lambda: False)
         monkeypatch.setattr(gateway_cli, "is_macos", lambda: True)
-        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.omniworker.gateway")
+        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.flux-agent.gateway")
 
         def fake_run(cmd, **kwargs):
             joined = " ".join(str(c) for c in cmd)
             if "launchctl" in joined and "list" in joined:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="PID\tStatus\tLabel\n67890\t0\tai.omniworker.gateway\n",
+                    stdout="PID\tStatus\tLabel\n67890\t0\tai.flux-agent.gateway\n",
                     stderr="",
                 )
             return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -1050,7 +1050,7 @@ class TestGetServicePids:
             if "list-units" in joined:
                 return subprocess.CompletedProcess(
                     cmd, 0,
-                    stdout="omniworker-gateway.service loaded inactive dead OmniWorker Gateway\n",
+                    stdout="flux-agent-gateway.service loaded inactive dead Flux Agent Gateway\n",
                     stderr="",
                 )
             if "show" in joined and "MainPID" in joined:
@@ -1118,10 +1118,10 @@ class TestFindGatewayPidsExclude:
         assert 200 in pids
 
     def test_filters_to_current_profile(self, monkeypatch, tmp_path):
-        profile_dir = tmp_path / ".omniworker" / "profiles" / "orcha"
+        profile_dir = tmp_path / ".flux-agent" / "profiles" / "orcha"
         profile_dir.mkdir(parents=True)
         monkeypatch.setattr(gateway_cli, "is_windows", lambda: False)
-        monkeypatch.setattr(gateway_cli, "get_omniworker_home", lambda: profile_dir)
+        monkeypatch.setattr(gateway_cli, "get_flux-agent_home", lambda: profile_dir)
         # Bypass /proc scan so the subprocess (ps) fallback is used
         _real_isdir = os.path.isdir
         monkeypatch.setattr("os.path.isdir", lambda p: False if p == "/proc" else _real_isdir(p))
@@ -1131,8 +1131,8 @@ class TestFindGatewayPidsExclude:
             return subprocess.CompletedProcess(
                 cmd, 0,
                 stdout=(
-                    "100 /Users/dgrieco/.omniworker/omniworker-agent/venv/bin/python -m omniworker_cli.main --profile orcha gateway run --replace\n"
-                    "200 /Users/dgrieco/.omniworker/omniworker-agent/venv/bin/python -m omniworker_cli.main --profile other gateway run --replace\n"
+                    "100 /Users/dgrieco/.flux-agent/flux-agent-agent/venv/bin/python -m flux-agent_cli.main --profile orcha gateway run --replace\n"
+                    "200 /Users/dgrieco/.flux-agent/flux-agent-agent/venv/bin/python -m flux-agent_cli.main --profile other gateway run --replace\n"
                 ),
                 stderr="",
             )
@@ -1140,7 +1140,7 @@ class TestFindGatewayPidsExclude:
         monkeypatch.setattr(gateway_cli.subprocess, "run", fake_run)
         monkeypatch.setattr("os.getpid", lambda: 999)
         monkeypatch.setattr(gateway_cli, "_get_service_pids", lambda: set())
-        monkeypatch.setattr(gateway_cli, "_profile_arg", lambda omniworker_home=None: "--profile orcha")
+        monkeypatch.setattr(gateway_cli, "_profile_arg", lambda flux-agent_home=None: "--profile orcha")
 
         pids = gateway_cli.find_gateway_pids()
 
@@ -1153,7 +1153,7 @@ class TestFindGatewayPidsExclude:
 
 
 class TestGatewayModeWritesExitCodeEarly:
-    """When running as ``omniworker update --gateway``, the exit code marker must be
+    """When running as ``flux-agent update --gateway``, the exit code marker must be
     written *before* the gateway restart attempt.  Without this, systemd's
     ``KillMode=mixed`` kills the update process (and its wrapping shell) during
     the cgroup teardown, so the shell epilogue that normally writes the exit
@@ -1170,15 +1170,15 @@ class TestGatewayModeWritesExitCodeEarly:
         monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: False)
         monkeypatch.setattr(gateway_cli, "is_termux", lambda: False)
 
-        # Point OMNIWORKER_HOME at a temp dir so the marker file lands there
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
-        import omniworker_cli.config as _cfg
-        monkeypatch.setattr(_cfg, "get_omniworker_home", lambda: omniworker_home)
+        # Point FLUX AGENT_HOME at a temp dir so the marker file lands there
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        import flux-agent_cli.config as _cfg
+        monkeypatch.setattr(_cfg, "get_flux-agent_home", lambda: flux-agent_home)
         # Also patch the module-level ref used by cmd_update
-        import omniworker_cli.main as _main_mod
-        monkeypatch.setattr(_main_mod, "get_omniworker_home", lambda: omniworker_home)
+        import flux-agent_cli.main as _main_mod
+        monkeypatch.setattr(_main_mod, "get_flux-agent_home", lambda: flux-agent_home)
 
         mock_run.side_effect = _make_run_side_effect(commit_count="1")
 
@@ -1187,7 +1187,7 @@ class TestGatewayModeWritesExitCodeEarly:
         with patch.object(gateway_cli, "find_gateway_pids", return_value=[]):
             cmd_update(args)
 
-        exit_code_path = omniworker_home / ".update_exit_code"
+        exit_code_path = flux-agent_home / ".update_exit_code"
         assert exit_code_path.exists(), ".update_exit_code not written in gateway mode"
         assert exit_code_path.read_text() == "0"
 
@@ -1201,13 +1201,13 @@ class TestGatewayModeWritesExitCodeEarly:
         monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: False)
         monkeypatch.setattr(gateway_cli, "is_termux", lambda: False)
 
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
-        import omniworker_cli.config as _cfg
-        monkeypatch.setattr(_cfg, "get_omniworker_home", lambda: omniworker_home)
-        import omniworker_cli.main as _main_mod
-        monkeypatch.setattr(_main_mod, "get_omniworker_home", lambda: omniworker_home)
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        import flux-agent_cli.config as _cfg
+        monkeypatch.setattr(_cfg, "get_flux-agent_home", lambda: flux-agent_home)
+        import flux-agent_cli.main as _main_mod
+        monkeypatch.setattr(_main_mod, "get_flux-agent_home", lambda: flux-agent_home)
 
         mock_run.side_effect = _make_run_side_effect(commit_count="1")
 
@@ -1216,7 +1216,7 @@ class TestGatewayModeWritesExitCodeEarly:
         with patch.object(gateway_cli, "find_gateway_pids", return_value=[]):
             cmd_update(args)
 
-        exit_code_path = omniworker_home / ".update_exit_code"
+        exit_code_path = flux-agent_home / ".update_exit_code"
         assert not exit_code_path.exists(), ".update_exit_code should not be written outside gateway mode"
 
     @patch("shutil.which", return_value=None)
@@ -1229,15 +1229,15 @@ class TestGatewayModeWritesExitCodeEarly:
         monkeypatch.setattr(gateway_cli, "supports_systemd_services", lambda: True)
         monkeypatch.setattr(gateway_cli, "is_termux", lambda: False)
 
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
-        import omniworker_cli.config as _cfg
-        monkeypatch.setattr(_cfg, "get_omniworker_home", lambda: omniworker_home)
-        import omniworker_cli.main as _main_mod
-        monkeypatch.setattr(_main_mod, "get_omniworker_home", lambda: omniworker_home)
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        import flux-agent_cli.config as _cfg
+        monkeypatch.setattr(_cfg, "get_flux-agent_home", lambda: flux-agent_home)
+        import flux-agent_cli.main as _main_mod
+        monkeypatch.setattr(_main_mod, "get_flux-agent_home", lambda: flux-agent_home)
 
-        exit_code_path = omniworker_home / ".update_exit_code"
+        exit_code_path = flux-agent_home / ".update_exit_code"
 
         # Track whether exit code exists when systemctl restart is called
         exit_code_existed_at_restart = []
@@ -1265,18 +1265,18 @@ class TestGatewayModeWritesExitCodeEarly:
 
 
 class TestCmdUpdateLegacyGatewayWarning:
-    """Tests for the legacy omniworker.service warning printed by `omniworker update`.
+    """Tests for the legacy flux-agent.service warning printed by `flux-agent update`.
 
-    Users who installed OmniWorker before the service rename often have a
-    dormant ``omniworker.service`` that starts flap-fighting the current
-    ``omniworker-gateway.service`` after PR #5646. Every ``omniworker update``
-    should remind them to run ``omniworker gateway migrate-legacy`` until
+    Users who installed Flux Agent before the service rename often have a
+    dormant ``flux-agent.service`` that starts flap-fighting the current
+    ``flux-agent-gateway.service`` after PR #5646. Every ``flux-agent update``
+    should remind them to run ``flux-agent gateway migrate-legacy`` until
     they do.
     """
 
     _OUR_UNIT_TEXT = (
-        "[Unit]\nDescription=OmniWorker Gateway\n[Service]\n"
-        "ExecStart=/usr/bin/python -m omniworker_cli.main gateway run --replace\n"
+        "[Unit]\nDescription=Flux Agent Gateway\n[Service]\n"
+        "ExecStart=/usr/bin/python -m flux-agent_cli.main gateway run --replace\n"
     )
 
     @patch("shutil.which", return_value=None)
@@ -1289,7 +1289,7 @@ class TestCmdUpdateLegacyGatewayWarning:
         system_dir = tmp_path / "system"
         user_dir.mkdir()
         system_dir.mkdir()
-        legacy_path = user_dir / "omniworker.service"
+        legacy_path = user_dir / "flux-agent.service"
         legacy_path.write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
 
         monkeypatch.setattr(
@@ -1307,9 +1307,9 @@ class TestCmdUpdateLegacyGatewayWarning:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Legacy OmniWorker gateway unit(s) detected" in captured
-        assert "omniworker.service" in captured
-        assert "omniworker gateway migrate-legacy" in captured
+        assert "Legacy Flux Agent gateway unit(s) detected" in captured
+        assert "flux-agent.service" in captured
+        assert "flux-agent gateway migrate-legacy" in captured
         assert "(user scope)" in captured
 
     @patch("shutil.which", return_value=None)
@@ -1338,7 +1338,7 @@ class TestCmdUpdateLegacyGatewayWarning:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Legacy OmniWorker gateway" not in captured
+        assert "Legacy Flux Agent gateway" not in captured
         assert "migrate-legacy" not in captured
 
     @patch("shutil.which", return_value=None)
@@ -1346,20 +1346,20 @@ class TestCmdUpdateLegacyGatewayWarning:
     def test_update_does_not_flag_profile_units(
         self, mock_run, _mock_which, mock_args, capsys, tmp_path, monkeypatch,
     ):
-        """Profile units (omniworker-gateway-coder.service) must not trigger the warning.
+        """Profile units (flux-agent-gateway-coder.service) must not trigger the warning.
 
         This is the core safety invariant: the legacy allowlist is
-        ``omniworker.service`` only, no globs.
+        ``flux-agent.service`` only, no globs.
         """
         user_dir = tmp_path / "user"
         system_dir = tmp_path / "system"
         user_dir.mkdir()
         system_dir.mkdir()
         # Drop a profile unit that an over-eager glob would match
-        (user_dir / "omniworker-gateway-coder.service").write_text(
+        (user_dir / "flux-agent-gateway-coder.service").write_text(
             self._OUR_UNIT_TEXT, encoding="utf-8"
         )
-        (user_dir / "omniworker-gateway.service").write_text(
+        (user_dir / "flux-agent-gateway.service").write_text(
             self._OUR_UNIT_TEXT, encoding="utf-8"
         )
 
@@ -1378,8 +1378,8 @@ class TestCmdUpdateLegacyGatewayWarning:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Legacy OmniWorker gateway" not in captured
-        assert "omniworker-gateway-coder.service" not in captured  # not flagged
+        assert "Legacy Flux Agent gateway" not in captured
+        assert "flux-agent-gateway-coder.service" not in captured  # not flagged
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -1391,7 +1391,7 @@ class TestCmdUpdateLegacyGatewayWarning:
         user_dir = tmp_path / "user"
         user_dir.mkdir()
         # Put a file that WOULD match if the check ran
-        (user_dir / "omniworker.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
+        (user_dir / "flux-agent.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
 
         monkeypatch.setattr(
             gateway_cli,
@@ -1410,7 +1410,7 @@ class TestCmdUpdateLegacyGatewayWarning:
 
         captured = capsys.readouterr().out
         # Must not print the warning on non-systemd platforms
-        assert "Legacy OmniWorker gateway" not in captured
+        assert "Legacy Flux Agent gateway" not in captured
 
     @patch("shutil.which", return_value=None)
     @patch("subprocess.run")
@@ -1422,7 +1422,7 @@ class TestCmdUpdateLegacyGatewayWarning:
         system_dir = tmp_path / "system"
         user_dir.mkdir()
         system_dir.mkdir()
-        (system_dir / "omniworker.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
+        (system_dir / "flux-agent.service").write_text(self._OUR_UNIT_TEXT, encoding="utf-8")
 
         monkeypatch.setattr(
             gateway_cli,
@@ -1439,7 +1439,7 @@ class TestCmdUpdateLegacyGatewayWarning:
             cmd_update(mock_args)
 
         captured = capsys.readouterr().out
-        assert "Legacy OmniWorker gateway" in captured
+        assert "Legacy Flux Agent gateway" in captured
         assert "(system scope)" in captured
         assert "sudo" in captured
 
@@ -1461,12 +1461,12 @@ def _systemctl_calls(mock_run, subcommand):
 
 
 class TestCmdUpdateResetFailedBeforeRestart:
-    """`omniworker update` must call `systemctl reset-failed` before every
+    """`flux-agent update` must call `systemctl reset-failed` before every
     fallback `systemctl restart` so a systemd-parked `failed` state from
     earlier auto-restart crashes (CHDIR, OOM, filesystem race) doesn't
     permanently strand the unit.
 
-    Mirrors the recovery pattern `omniworker gateway restart` (systemd_restart)
+    Mirrors the recovery pattern `flux-agent gateway restart` (systemd_restart)
     adopted in PR #20949.  Without this, users hit "gateway never comes
     back after update" until they manually run `systemctl reset-failed`.
     """
@@ -1497,7 +1497,7 @@ class TestCmdUpdateResetFailedBeforeRestart:
             return orig(cmd, **kwargs)
         mock_run.side_effect = wrapped
         monkeypatch.setattr(
-            "omniworker_cli.gateway._graceful_restart_via_sigusr1",
+            "flux-agent_cli.gateway._graceful_restart_via_sigusr1",
             lambda pid, drain_timeout: False,
         )
 
@@ -1508,10 +1508,10 @@ class TestCmdUpdateResetFailedBeforeRestart:
         restart_calls = _systemctl_calls(mock_run, "restart")
 
         assert any(
-            "omniworker-gateway" in " ".join(str(c) for c in call)
+            "flux-agent-gateway" in " ".join(str(c) for c in call)
             for call in reset_calls
         ), (
-            "Expected `systemctl reset-failed omniworker-gateway` before the "
+            "Expected `systemctl reset-failed flux-agent-gateway` before the "
             "fallback `systemctl restart`, got reset_calls=%r" % (reset_calls,)
         )
         assert restart_calls, "Fallback systemctl restart should still run"
@@ -1523,7 +1523,7 @@ class TestCmdUpdateResetFailedBeforeRestart:
             joined = " ".join(str(c) for c in call.args[0])
             if "systemctl" in joined and "reset-failed" in joined and first_reset_idx is None:
                 first_reset_idx = idx
-            if "systemctl" in joined and "restart" in joined and "omniworker-gateway" in joined:
+            if "systemctl" in joined and "restart" in joined and "flux-agent-gateway" in joined:
                 if first_restart_idx is None:
                     first_restart_idx = idx
         assert first_reset_idx is not None and first_restart_idx is not None
@@ -1565,7 +1565,7 @@ class TestCmdUpdateResetFailedBeforeRestart:
                 if "--user" in joined:
                     return subprocess.CompletedProcess(
                         cmd, 0,
-                        stdout="omniworker-gateway.service loaded active running\n",
+                        stdout="flux-agent-gateway.service loaded active running\n",
                         stderr="",
                     )
                 return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -1584,7 +1584,7 @@ class TestCmdUpdateResetFailedBeforeRestart:
 
         # Force graceful SIGUSR1 to fail → fallback restart path.
         monkeypatch.setattr(
-            "omniworker_cli.gateway._graceful_restart_via_sigusr1",
+            "flux-agent_cli.gateway._graceful_restart_via_sigusr1",
             lambda pid, drain_timeout: False,
         )
 
@@ -1597,11 +1597,11 @@ class TestCmdUpdateResetFailedBeforeRestart:
         # Two restart attempts (initial + retry), two reset-failed calls.
         gateway_restarts = [
             c for c in restart_calls
-            if "omniworker-gateway" in " ".join(str(a) for a in c)
+            if "flux-agent-gateway" in " ".join(str(a) for a in c)
         ]
         gateway_resets = [
             c for c in reset_calls
-            if "omniworker-gateway" in " ".join(str(a) for a in c)
+            if "flux-agent-gateway" in " ".join(str(a) for a in c)
         ]
         assert len(gateway_restarts) >= 2, (
             f"Expected both initial + retry restart calls, got {len(gateway_restarts)}"
@@ -1638,7 +1638,7 @@ class TestCmdUpdateResetFailedBeforeRestart:
                 if "--user" in joined:
                     return subprocess.CompletedProcess(
                         cmd, 0,
-                        stdout="omniworker-gateway.service loaded active running\n",
+                        stdout="flux-agent-gateway.service loaded active running\n",
                         stderr="",
                     )
                 return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -1653,7 +1653,7 @@ class TestCmdUpdateResetFailedBeforeRestart:
 
         mock_run.side_effect = side_effect
         monkeypatch.setattr(
-            "omniworker_cli.gateway._graceful_restart_via_sigusr1",
+            "flux-agent_cli.gateway._graceful_restart_via_sigusr1",
             lambda pid, drain_timeout: False,
         )
 
@@ -1670,4 +1670,4 @@ class TestCmdUpdateResetFailedBeforeRestart:
             "know how to escape systemd's parked failed state.  Got:\n"
             f"{captured}"
         )
-        assert "omniworker-gateway" in captured
+        assert "flux-agent-gateway" in captured

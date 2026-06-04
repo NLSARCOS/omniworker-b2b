@@ -10,11 +10,11 @@ import pytest
 @pytest.fixture
 def rate_guard_env(tmp_path, monkeypatch):
     """Isolate rate guard state to a temp directory."""
-    omniworker_home = str(tmp_path / ".omniworker")
-    os.makedirs(omniworker_home, exist_ok=True)
-    monkeypatch.setenv("OMNIWORKER_HOME", omniworker_home)
+    flux-agent_home = str(tmp_path / ".flux-agent")
+    os.makedirs(flux-agent_home, exist_ok=True)
+    monkeypatch.setenv("FLUX AGENT_HOME", flux-agent_home)
     # Clear any cached module-level imports
-    return omniworker_home
+    return flux-agent_home
 
 
 class TestRecordNousRateLimit:
@@ -256,7 +256,7 @@ class TestAuxiliaryClientIntegration:
 class TestIsGenuineNousRateLimit:
     """Tell a real account-level 429 apart from an upstream-capacity 429.
 
-    Nous Portal multiplexes upstreams (DeepSeek, Kimi, MiMo, OmniWorker).
+    Nous Portal multiplexes upstreams (DeepSeek, Kimi, MiMo, Flux Agent).
     A 429 from an upstream out of capacity should NOT trip the
     cross-session breaker; a real user-quota 429 should.
     """

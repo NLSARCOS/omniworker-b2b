@@ -15,7 +15,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-_OMNIWORKER_HOME = Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".omniworker"))
+_OMNIWORKER_HOME = Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".flux-agent"))
 DATA_DIR = _OMNIWORKER_HOME / "skills" / "productivity" / "memento-flashcards" / "data"
 CARDS_FILE = DATA_DIR / "cards.json"
 

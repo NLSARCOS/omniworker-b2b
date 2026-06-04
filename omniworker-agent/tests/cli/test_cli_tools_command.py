@@ -2,12 +2,12 @@
 
 from unittest.mock import MagicMock, patch, call
 
-from cli import OmniWorkerCLI
+from cli import Flux AgentCLI
 
 
 def _make_cli(enabled_toolsets=None):
-    """Build a minimal OmniWorkerCLI stub without running __init__."""
-    cli_obj = OmniWorkerCLI.__new__(OmniWorkerCLI)
+    """Build a minimal Flux AgentCLI stub without running __init__."""
+    cli_obj = Flux AgentCLI.__new__(Flux AgentCLI)
     cli_obj.enabled_toolsets = set(enabled_toolsets or ["web", "memory"])
     cli_obj._command_running = False
     cli_obj.console = MagicMock()
@@ -39,9 +39,9 @@ class TestToolsSlashList:
 
     def test_list_calls_backend(self, capsys):
         cli_obj = _make_cli()
-        with patch("omniworker_cli.tools_config.load_config",
+        with patch("flux-agent_cli.tools_config.load_config",
                    return_value={"platform_toolsets": {"cli": ["web"]}}), \
-             patch("omniworker_cli.tools_config.save_config"):
+             patch("flux-agent_cli.tools_config.save_config"):
             cli_obj._handle_tools_command("/tools list")
         out = capsys.readouterr().out
         assert "web" in out
@@ -49,7 +49,7 @@ class TestToolsSlashList:
     def test_list_does_not_modify_enabled_toolsets(self):
         """List is read-only — self.enabled_toolsets must not change."""
         cli_obj = _make_cli(["web", "memory"])
-        with patch("omniworker_cli.tools_config.load_config",
+        with patch("flux-agent_cli.tools_config.load_config",
                    return_value={"platform_toolsets": {"cli": ["web"]}}):
             cli_obj._handle_tools_command("/tools list")
         assert cli_obj.enabled_toolsets == {"web", "memory"}
@@ -63,11 +63,11 @@ class TestToolsSlashDisableWithReset:
     def test_disable_applies_directly_and_resets_session(self):
         """Disable applies immediately (no confirmation prompt) and resets session."""
         cli_obj = _make_cli(["web", "memory"])
-        with patch("omniworker_cli.tools_config.load_config",
+        with patch("flux-agent_cli.tools_config.load_config",
                    return_value={"platform_toolsets": {"cli": ["web", "memory"]}}), \
-             patch("omniworker_cli.tools_config.save_config"), \
-             patch("omniworker_cli.tools_config._get_platform_tools", return_value={"memory"}), \
-             patch("omniworker_cli.config.load_config", return_value={}), \
+             patch("flux-agent_cli.tools_config.save_config"), \
+             patch("flux-agent_cli.tools_config._get_platform_tools", return_value={"memory"}), \
+             patch("flux-agent_cli.config.load_config", return_value={}), \
              patch.object(cli_obj, "new_session") as mock_reset:
             cli_obj._handle_tools_command("/tools disable web")
         mock_reset.assert_called_once()
@@ -76,11 +76,11 @@ class TestToolsSlashDisableWithReset:
     def test_disable_does_not_prompt_for_confirmation(self):
         """Disable no longer uses input() — it applies directly."""
         cli_obj = _make_cli(["web", "memory"])
-        with patch("omniworker_cli.tools_config.load_config",
+        with patch("flux-agent_cli.tools_config.load_config",
                    return_value={"platform_toolsets": {"cli": ["web", "memory"]}}), \
-             patch("omniworker_cli.tools_config.save_config"), \
-             patch("omniworker_cli.tools_config._get_platform_tools", return_value={"memory"}), \
-             patch("omniworker_cli.config.load_config", return_value={}), \
+             patch("flux-agent_cli.tools_config.save_config"), \
+             patch("flux-agent_cli.tools_config._get_platform_tools", return_value={"memory"}), \
+             patch("flux-agent_cli.config.load_config", return_value={}), \
              patch.object(cli_obj, "new_session"), \
              patch("builtins.input") as mock_input:
             cli_obj._handle_tools_command("/tools disable web")
@@ -89,11 +89,11 @@ class TestToolsSlashDisableWithReset:
     def test_disable_always_resets_session(self):
         """Even without a confirmation prompt, disable always resets the session."""
         cli_obj = _make_cli(["web", "memory"])
-        with patch("omniworker_cli.tools_config.load_config",
+        with patch("flux-agent_cli.tools_config.load_config",
                    return_value={"platform_toolsets": {"cli": ["web", "memory"]}}), \
-             patch("omniworker_cli.tools_config.save_config"), \
-             patch("omniworker_cli.tools_config._get_platform_tools", return_value={"memory"}), \
-             patch("omniworker_cli.config.load_config", return_value={}), \
+             patch("flux-agent_cli.tools_config.save_config"), \
+             patch("flux-agent_cli.tools_config._get_platform_tools", return_value={"memory"}), \
+             patch("flux-agent_cli.config.load_config", return_value={}), \
              patch.object(cli_obj, "new_session") as mock_reset:
             cli_obj._handle_tools_command("/tools disable web")
         mock_reset.assert_called_once()
@@ -113,11 +113,11 @@ class TestToolsSlashEnableWithReset:
     def test_enable_applies_directly_and_resets_session(self):
         """Enable applies immediately (no confirmation prompt) and resets session."""
         cli_obj = _make_cli(["memory"])
-        with patch("omniworker_cli.tools_config.load_config",
+        with patch("flux-agent_cli.tools_config.load_config",
                    return_value={"platform_toolsets": {"cli": ["memory"]}}), \
-             patch("omniworker_cli.tools_config.save_config"), \
-             patch("omniworker_cli.tools_config._get_platform_tools", return_value={"memory", "web"}), \
-             patch("omniworker_cli.config.load_config", return_value={}), \
+             patch("flux-agent_cli.tools_config.save_config"), \
+             patch("flux-agent_cli.tools_config._get_platform_tools", return_value={"memory", "web"}), \
+             patch("flux-agent_cli.config.load_config", return_value={}), \
              patch.object(cli_obj, "new_session") as mock_reset:
             cli_obj._handle_tools_command("/tools enable web")
         mock_reset.assert_called_once()

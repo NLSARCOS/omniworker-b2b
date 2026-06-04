@@ -37,7 +37,7 @@ function SmartPatterns({ profile }: SmartPatternsProps): React.JSX.Element {
   const loadPatterns = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
-      const list = await window.omniworkerAPI.listDetectedPatterns(profile);
+      const list = await window.flux-agentAPI.listDetectedPatterns(profile);
       setPatterns(list);
       setError("");
     } catch (err) {
@@ -56,7 +56,7 @@ function SmartPatterns({ profile }: SmartPatternsProps): React.JSX.Element {
     setActionInProgress(patternId);
     setError("");
     try {
-      const result = await window.omniworkerAPI.approvePattern(patternId, profile);
+      const result = await window.flux-agentAPI.approvePattern(patternId, profile);
       if (result.success) {
         await loadPatterns();
       } else {
@@ -73,7 +73,7 @@ function SmartPatterns({ profile }: SmartPatternsProps): React.JSX.Element {
     setActionInProgress(patternId);
     setError("");
     try {
-      const result = await window.omniworkerAPI.rejectPattern(patternId, profile);
+      const result = await window.flux-agentAPI.rejectPattern(patternId, profile);
       if (result.success) {
         await loadPatterns();
       } else {
@@ -90,7 +90,7 @@ function SmartPatterns({ profile }: SmartPatternsProps): React.JSX.Element {
     const next = !autoLearningEnabled;
     setAutoLearningEnabled(next);
     try {
-      await window.omniworkerAPI.toggleAutoLearning(next, profile);
+      await window.flux-agentAPI.toggleAutoLearning(next, profile);
     } catch (err) {
       console.error("[SmartPatterns] toggle failed:", err);
     }
@@ -223,7 +223,7 @@ function SmartPatterns({ profile }: SmartPatternsProps): React.JSX.Element {
                       data-tooltip={t("smartpatterns.triggerNow")}
                       onClick={async () => {
                         try {
-                          await window.omniworkerAPI.triggerCronJob(
+                          await window.flux-agentAPI.triggerCronJob(
                             pat.auto_created_job_id!,
                             profile
                           );

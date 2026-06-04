@@ -1,4 +1,4 @@
-"""Slash command definitions and autocomplete for the OmniWorker CLI.
+"""Slash command definitions and autocomplete for the Flux Agent CLI.
 
 Central registry for all slash commands. Every consumer -- CLI help, gateway
 dispatch, Telegram BotCommands, Slack subcommand mapping, autocomplete --
@@ -87,7 +87,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[focus topic]"),
     CommandDef("rollback", "List or restore filesystem checkpoints", "Session",
                args_hint="[number]"),
-    CommandDef("snapshot", "Create or restore state snapshots of OmniWorker config/state", "Session",
+    CommandDef("snapshot", "Create or restore state snapshots of Flux Agent config/state", "Session",
                cli_only=True, aliases=("snap",), args_hint="[create|restore <id>|prune]"),
     CommandDef("stop", "Kill all running background processes", "Session"),
     CommandDef("approve", "Approve a pending dangerous command", "Session",
@@ -102,7 +102,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                aliases=("q",), args_hint="<prompt>"),
     CommandDef("steer", "Inject a message after the next tool call without interrupting", "Session",
                args_hint="<prompt>"),
-    CommandDef("goal", "Set a standing goal OmniWorker works on across turns until achieved", "Session",
+    CommandDef("goal", "Set a standing goal Flux Agent works on across turns until achieved", "Session",
                args_hint="[text | pause | resume | clear | status]"),
     CommandDef("subgoal", "Add or manage extra criteria on the active goal", "Session",
                args_hint="[text | remove N | clear]"),
@@ -153,7 +153,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                subcommands=("kaomoji", "emoji", "unicode", "ascii")),
     CommandDef("voice", "Toggle voice mode", "Configuration",
                args_hint="[on|off|tts|status]", subcommands=("on", "off", "tts", "status")),
-    CommandDef("busy", "Control what Enter does while OmniWorker is working", "Configuration",
+    CommandDef("busy", "Control what Enter does while Flux Agent is working", "Configuration",
                cli_only=True, args_hint="[queue|steer|interrupt|status]",
                subcommands=("queue", "steer", "interrupt", "status")),
 
@@ -210,7 +210,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True),
     CommandDef("image", "Attach a local image file for your next prompt", "Info",
                cli_only=True, args_hint="<path>"),
-    CommandDef("update", "Update OmniWorker Agent to the latest version", "Info"),
+    CommandDef("update", "Update Flux Agent Agent to the latest version", "Info"),
     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info"),
 
     # Exit
@@ -382,7 +382,7 @@ def _resolve_config_gates() -> set[str]:
     if not gated:
         return set()
     try:
-        from omniworker_cli.config import read_raw_config
+        from flux-agent_cli.config import read_raw_config
         cfg = read_raw_config()
     except Exception:
         return set()
@@ -444,7 +444,7 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     """Yield (name, description, args_hint) tuples for all plugin slash commands.
 
     Plugin commands are registered via
-    :func:`omniworker_cli.plugins.PluginContext.register_command`. They behave
+    :func:`flux-agent_cli.plugins.PluginContext.register_command`. They behave
     like ``CommandDef`` entries for gateway surfacing: they appear in the
     Telegram command menu, in Slack's ``/hermes`` subcommand mapping, and
     (via :func:`gateway.platforms.discord._register_slash_commands`) in
@@ -455,7 +455,7 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     behavior).
     """
     try:
-        from omniworker_cli.plugins import get_plugin_commands
+        from flux-agent_cli.plugins import get_plugin_commands
     except Exception:
         return []
     try:
@@ -619,7 +619,7 @@ def _collect_gateway_skill_entries(
     # --- Tier 1: Plugin slash commands (never trimmed) ---------------------
     plugin_pairs: list[tuple[str, str]] = []
     try:
-        from omniworker_cli.plugins import get_plugin_commands
+        from flux-agent_cli.plugins import get_plugin_commands
         plugin_cmds = get_plugin_commands()
         for cmd_name in sorted(plugin_cmds):
             name = sanitize_name(cmd_name) if sanitize_name else cmd_name
@@ -988,7 +988,7 @@ def slack_native_slashes() -> list[tuple[str, str, str]]:
     seen: set[str] = set()
 
     # Reserve /hermes as the catch-all top-level command.
-    entries.append(("hermes", "Talk to OmniWorker or run a subcommand", "[subcommand] [args]"))
+    entries.append(("hermes", "Talk to Flux Agent or run a subcommand", "[subcommand] [args]"))
     seen.add("hermes")
 
     def _add(name: str, desc: str, hint: str) -> None:
@@ -1092,7 +1092,7 @@ def _lmstudio_completion_models() -> list[str]:
     # Gate: don't probe 127.0.0.1 on every keystroke for users who don't use LM Studio.
     if not (os.environ.get("LM_API_KEY") or os.environ.get("LM_BASE_URL")):
         try:
-            from omniworker_cli.auth import _load_auth_store
+            from flux-agent_cli.auth import _load_auth_store
             store = _load_auth_store() or {}
             if "lmstudio" not in (store.get("providers") or {}) \
                and "lmstudio" not in (store.get("credential_pool") or {}):
@@ -1103,7 +1103,7 @@ def _lmstudio_completion_models() -> list[str]:
     if _LMSTUDIO_COMPLETION_CACHE and (now - _LMSTUDIO_COMPLETION_CACHE[0]) < 30.0:
         return _LMSTUDIO_COMPLETION_CACHE[1]
     try:
-        from omniworker_cli.models import fetch_lmstudio_models
+        from flux-agent_cli.models import fetch_lmstudio_models
         models = fetch_lmstudio_models(
             api_key=os.environ.get("LM_API_KEY", ""),
             base_url=os.environ.get("LM_BASE_URL") or "http://127.0.0.1:1234/v1",
@@ -1480,7 +1480,7 @@ class SlashCommandCompleter(Completer):
     def _skin_completions(sub_text: str, sub_lower: str):
         """Yield completions for /skin from available skins."""
         try:
-            from omniworker_cli.skin_engine import list_skins
+            from flux-agent_cli.skin_engine import list_skins
             for s in list_skins():
                 name = s["name"]
                 if name.startswith(sub_lower) and name != sub_lower:
@@ -1497,7 +1497,7 @@ class SlashCommandCompleter(Completer):
     def _personality_completions(sub_text: str, sub_lower: str):
         """Yield completions for /personality from configured personalities."""
         try:
-            from omniworker_cli.config import load_config
+            from flux-agent_cli.config import load_config
             personalities = load_config().get("agent", {}).get("personalities", {})
             if "none".startswith(sub_lower) and "none" != sub_lower:
                 yield Completion(
@@ -1526,7 +1526,7 @@ class SlashCommandCompleter(Completer):
         seen = set()
         # Config-based direct aliases (preferred — include provider info)
         try:
-            from omniworker_cli.model_switch import (
+            from flux-agent_cli.model_switch import (
                 _ensure_direct_aliases, DIRECT_ALIASES, MODEL_ALIASES,
             )
             _ensure_direct_aliases()
@@ -1639,7 +1639,7 @@ class SlashCommandCompleter(Completer):
 
         # Plugin-registered slash commands
         try:
-            from omniworker_cli.plugins import get_plugin_commands
+            from flux-agent_cli.plugins import get_plugin_commands
             for cmd_name, cmd_info in get_plugin_commands().items():
                 if cmd_name.startswith(word):
                     desc = str(cmd_info.get("description", "Plugin command"))

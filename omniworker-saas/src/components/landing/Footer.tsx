@@ -108,7 +108,7 @@ export function Footer() {
                 className="inline-block w-2 h-2 rounded-full"
                 style={{ backgroundColor: COLORS.accent }}
               />
-              OmniWorker
+              Flux Agent
             </a>
             <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
               Agente de IA autónomo que se ejecuta en tu equipo. Privacidad total con
@@ -154,7 +154,7 @@ export function Footer() {
       <div className="border-t border-gray-200/60">
         <div className="mx-auto max-w-7xl px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-400">
-            © {new Date().getFullYear()} OmniWorker. Todos los derechos reservados.
+            © {new Date().getFullYear()} Flux Agent. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-4">
             {socialLinks.map((social) => (

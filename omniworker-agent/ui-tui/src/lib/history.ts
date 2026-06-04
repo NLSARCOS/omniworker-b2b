@@ -3,8 +3,8 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 const MAX = 1000
-const dir = process.env.OMNIWORKER_HOME ?? join(homedir(), '.omniworker')
-const file = join(dir, '.omniworker_history')
+const dir = process.env.OMNIWORKER_HOME ?? join(homedir(), '.flux-agent')
+const file = join(dir, '.flux-agent_history')
 
 let cache: string[] | null = null
 

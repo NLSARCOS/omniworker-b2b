@@ -1,4 +1,4 @@
-import { Ansi, Box, NoSelect, Text } from '@omniworker/ink'
+import { Ansi, Box, NoSelect, Text } from '@flux-agent/ink'
 import { memo, useState } from 'react'
 
 import { LONG_MSG } from '../config/limits.js'

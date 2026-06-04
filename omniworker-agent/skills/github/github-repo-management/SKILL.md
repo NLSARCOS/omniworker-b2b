@@ -2,11 +2,11 @@
 name: github-repo-management
 description: "Clone/create/fork repos; manage remotes, releases."
 version: 1.1.0
-author: OmniWorker Agent
+author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [GitHub, Repositories, Git, Releases, Secrets, Configuration]
     related_skills: [github-auth, github-pr-workflow, github-issues]
 ---
@@ -27,8 +27,8 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 else
   AUTH="git"
   if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ~/.omniworker/.env ] && grep -q "^GITHUB_TOKEN=" ~/.omniworker/.env; then
-      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.omniworker/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+    if [ -f ~/.flux-agent/.env ] && grep -q "^GITHUB_TOKEN=" ~/.flux-agent/.env; then
+      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.flux-agent/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi

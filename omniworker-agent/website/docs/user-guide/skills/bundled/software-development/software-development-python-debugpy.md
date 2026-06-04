@@ -17,16 +17,16 @@ Debug Python: pdb REPL + debugpy remote (DAP).
 | Source | Bundled (installed by default) |
 | Path | `skills/software-development/python-debugpy` |
 | Version | `1.0.0` |
-| Author | OmniWorker Agent |
+| Author | Flux Agent Agent |
 | License | MIT |
 | Platforms | linux, macos |
 | Tags | `debugging`, `python`, `pdb`, `debugpy`, `breakpoints`, `dap`, `post-mortem` |
-| Related skills | [`systematic-debugging`](/docs/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`node-inspect-debugger`](/docs/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger), [`debugging-omniworker-tui-commands`](/docs/user-guide/skills/bundled/software-development/software-development-debugging-omniworker-tui-commands) |
+| Related skills | [`systematic-debugging`](/docs/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`node-inspect-debugger`](/docs/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger), [`debugging-flux-agent-tui-commands`](/docs/user-guide/skills/bundled/software-development/software-development-debugging-flux-agent-tui-commands) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Python Debugger (pdb + debugpy)
@@ -47,7 +47,7 @@ Three tools, picked by situation:
 
 - A test fails and the traceback doesn't reveal why a value is wrong
 - You need to step through a function and watch a collection mutate
-- A long-running process (omniworker gateway, tui_gateway) misbehaves and you can't restart it
+- A long-running process (flux-agent gateway, tui_gateway) misbehaves and you can't restart it
 - Post-mortem: an exception fired in prod-ish code and you want to inspect locals at the crash site
 - A subprocess / child (Python `_SlashWorker`, PTY bridge worker) is the actual bug site
 
@@ -112,7 +112,7 @@ python -m pdb path/to/script.py arg1 arg2
 
 ## Recipe 3: Debug a pytest test
 
-The omniworker test runner and pytest both support this:
+The flux-agent test runner and pytest both support this:
 
 ```bash
 # Drop to pdb on failure (or on any raised exception):
@@ -164,12 +164,12 @@ sys.excepthook = excepthook
 
 ## Recipe 5: Remote debug with debugpy (attach to running process)
 
-For long-lived processes: OmniWorker gateway, tui_gateway, a daemon, a process that's already misbehaving and can't be restarted clean.
+For long-lived processes: Flux Agent gateway, tui_gateway, a daemon, a process that's already misbehaving and can't be restarted clean.
 
 ### Setup
 
 ```bash
-source /home/bb/omniworker-agent/.venv/bin/activate
+source /home/bb/flux-agent-agent/.venv/bin/activate
 pip install debugpy
 ```
 
@@ -215,7 +215,7 @@ echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
 
 ### Connecting a client from the terminal
 
-The easiest terminal-side DAP client is VS Code CLI or a small script. From inside OmniWorker you have two practical options:
+The easiest terminal-side DAP client is VS Code CLI or a small script. From inside Flux Agent you have two practical options:
 
 **Option 1: `debugpy`'s own CLI REPL** — not an official feature, but a tiny DAP client script:
 
@@ -260,13 +260,13 @@ This is fine for one-off automation but painful as an interactive UX.
 
 ```json
 {
-  "name": "Attach to OmniWorker",
+  "name": "Attach to Flux Agent",
   "type": "debugpy",
   "request": "attach",
   "connect": { "host": "127.0.0.1", "port": 5678 },
   "justMyCode": false,
   "pathMappings": [
-    { "localRoot": "${workspaceFolder}", "remoteRoot": "/home/bb/omniworker-agent" }
+    { "localRoot": "${workspaceFolder}", "remoteRoot": "/home/bb/flux-agent-agent" }
   ]
 }
 ```
@@ -291,15 +291,15 @@ nc 127.0.0.1 4444
 
 `remote-pdb` is the cleanest agent-friendly choice when `debugpy`'s DAP protocol is overkill. Use `debugpy` only when you actually need IDE integration.
 
-## Debugging OmniWorker-specific Processes
+## Debugging Flux Agent-specific Processes
 
 ### Tests
 See Recipe 3. Always add `-p no:xdist` or run single tests without xdist.
 
 ### `run_agent.py` / CLI — one-shot
-Easiest: add `breakpoint()` near the suspect line, then run `omniworker` normally. Control returns to your terminal at the pause point.
+Easiest: add `breakpoint()` near the suspect line, then run `flux-agent` normally. Control returns to your terminal at the pause point.
 
-### `tui_gateway` subprocess (spawned by `omniworker --tui`)
+### `tui_gateway` subprocess (spawned by `flux-agent --tui`)
 The gateway runs as a child of the Node TUI. Options:
 
 **A. Source-edit the gateway:**
@@ -309,7 +309,7 @@ import debugpy
 debugpy.listen(("127.0.0.1", 5678))
 debugpy.wait_for_client()
 ```
-Start `omniworker --tui`. The TUI will appear frozen (its backend is waiting). Attach a client; execution resumes when you `continue`.
+Start `flux-agent --tui`. The TUI will appear frozen (its backend is waiting). Attach a client; execution resumes when you `continue`.
 
 **B. Use `remote-pdb` at a specific handler:**
 ```python
@@ -345,7 +345,7 @@ Long-lived. Use `remote-pdb` at a handler, or `debugpy` with `--wait-for-client`
 
 8. **`scripts/run_tests.sh` strips credentials and sets `HOME=<tmpdir>`.** If your bug depends on user config or real API keys, it won't reproduce under the wrapper. Debug with raw `pytest` first to repro, then re-confirm under the wrapper.
 
-9. **Forking / multiprocessing.** pdb does not follow forks. Each child needs its own `breakpoint()` or `set_trace()`. For OmniWorker subagents, debug one process at a time.
+9. **Forking / multiprocessing.** pdb does not follow forks. Each child needs its own `breakpoint()` or `set_trace()`. For Flux Agent subagents, debug one process at a time.
 
 ## Verification Checklist
 

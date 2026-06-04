@@ -14,10 +14,10 @@ Connect to a running NeuroSkill instance and incorporate the user's real-time co
 
 | | |
 |---|---|
-| Source | Optional — install with `omniworker skills install official/health/neuroskill-bci` |
+| Source | Optional — install with `flux-agent skills install official/health/neuroskill-bci` |
 | Path | `optional-skills/health/neuroskill-bci` |
 | Version | `1.0.0` |
-| Author | OmniWorker Agent + Nous Research |
+| Author | Flux Agent Agent + Nous Research |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `BCI`, `neurofeedback`, `health`, `focus`, `EEG`, `cognitive-state`, `biometrics`, `neuroskill` |
@@ -25,12 +25,12 @@ Connect to a running NeuroSkill instance and incorporate the user's real-time co
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # NeuroSkill BCI Integration
 
-Connect OmniWorker to a running [NeuroSkill](https://neuroskill.com/) instance to read
+Connect Flux Agent to a running [NeuroSkill](https://neuroskill.com/) instance to read
 real-time brain and body metrics from a BCI wearable. Use this to give
 cognitively-aware responses, suggest interventions, and track mental performance
 over time.

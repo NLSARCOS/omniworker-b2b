@@ -9,9 +9,9 @@ Without the strip, the SDK prepends its own ``/v1/messages`` path and
 requests hit ``https://opencode.ai/zen/go/v1/v1/messages`` — a double
 ``/v1`` that returns OpenCode's website 404 page with HTML body.
 
-``omniworker_cli.runtime_provider.resolve_runtime_provider`` already strips
+``flux-agent_cli.runtime_provider.resolve_runtime_provider`` already strips
 ``/v1`` at fresh agent init (PR #4918), but the ``/model`` mid-session
-switch path in ``omniworker_cli.model_switch.switch_model`` was missing the
+switch path in ``flux-agent_cli.model_switch.switch_model`` was missing the
 same logic — these tests guard against that regression.
 """
 
@@ -19,7 +19,7 @@ from unittest.mock import patch
 
 import pytest
 
-from omniworker_cli.model_switch import switch_model
+from flux-agent_cli.model_switch import switch_model
 
 
 _MOCK_VALIDATION = {
@@ -46,10 +46,10 @@ def _run_opencode_switch(
     """
     effective_runtime_base = runtime_base_url or current_base_url
     with (
-        patch("omniworker_cli.model_switch.resolve_alias", return_value=None),
-        patch("omniworker_cli.model_switch.list_provider_models", return_value=[]),
+        patch("flux-agent_cli.model_switch.resolve_alias", return_value=None),
+        patch("flux-agent_cli.model_switch.list_provider_models", return_value=[]),
         patch(
-            "omniworker_cli.runtime_provider.resolve_runtime_provider",
+            "flux-agent_cli.runtime_provider.resolve_runtime_provider",
             return_value={
                 "api_key": "sk-opencode-fake",
                 "base_url": effective_runtime_base,
@@ -57,12 +57,12 @@ def _run_opencode_switch(
             },
         ),
         patch(
-            "omniworker_cli.models.validate_requested_model",
+            "flux-agent_cli.models.validate_requested_model",
             return_value=_MOCK_VALIDATION,
         ),
-        patch("omniworker_cli.model_switch.get_model_info", return_value=None),
-        patch("omniworker_cli.model_switch.get_model_capabilities", return_value=None),
-        patch("omniworker_cli.models.detect_provider_for_model", return_value=None),
+        patch("flux-agent_cli.model_switch.get_model_info", return_value=None),
+        patch("flux-agent_cli.model_switch.get_model_capabilities", return_value=None),
+        patch("flux-agent_cli.models.detect_provider_for_model", return_value=None),
     ):
         return switch_model(
             raw_input=raw_input,
@@ -281,11 +281,11 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
         }))
 
         # Re-import with the new OMNIWORKER_HOME so config cache is fresh.
-        import omniworker_cli.config as _cfg_mod
+        import flux-agent_cli.config as _cfg_mod
         importlib.reload(_cfg_mod)
-        import omniworker_cli.runtime_provider as _rp_mod
+        import flux-agent_cli.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)
-        import omniworker_cli.model_switch as _ms_mod
+        import flux-agent_cli.model_switch as _ms_mod
         importlib.reload(_ms_mod)
 
         result = _ms_mod.switch_model(
@@ -317,11 +317,11 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
             "model": {"provider": "opencode-go", "default": "minimax-m2.7"},
         }))
 
-        import omniworker_cli.config as _cfg_mod
+        import flux-agent_cli.config as _cfg_mod
         importlib.reload(_cfg_mod)
-        import omniworker_cli.runtime_provider as _rp_mod
+        import flux-agent_cli.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)
-        import omniworker_cli.model_switch as _ms_mod
+        import flux-agent_cli.model_switch as _ms_mod
         importlib.reload(_ms_mod)
 
         result = _ms_mod.switch_model(
@@ -353,11 +353,11 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
             "model": {"provider": "opencode-zen", "default": "kimi-k2.6"},
         }))
 
-        import omniworker_cli.config as _cfg_mod
+        import flux-agent_cli.config as _cfg_mod
         importlib.reload(_cfg_mod)
-        import omniworker_cli.runtime_provider as _rp_mod
+        import flux-agent_cli.runtime_provider as _rp_mod
         importlib.reload(_rp_mod)
-        import omniworker_cli.model_switch as _ms_mod
+        import flux-agent_cli.model_switch as _ms_mod
         importlib.reload(_ms_mod)
 
         result = _ms_mod.switch_model(

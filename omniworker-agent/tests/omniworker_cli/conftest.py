@@ -1,4 +1,4 @@
-"""Fixtures shared across omniworker_cli kanban tests."""
+"""Fixtures shared across flux-agent_cli kanban tests."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import pytest
 
 @pytest.fixture
 def all_assignees_spawnable(monkeypatch):
-    """Pretend every assignee maps to a real OmniWorker profile.
+    """Pretend every assignee maps to a real Flux Agent profile.
 
     Most dispatcher tests use synthetic assignees ("alice", "bob") that
     don't correspond to actual profile directories on disk. Without this
@@ -15,5 +15,5 @@ def all_assignees_spawnable(monkeypatch):
     those tasks into ``skipped_nonspawnable`` instead of spawning, which
     would break tests that assert spawn behavior.
     """
-    from omniworker_cli import profiles
+    from flux-agent_cli import profiles
     monkeypatch.setattr(profiles, "profile_exists", lambda name: True)

@@ -2,11 +2,11 @@
 name: codebase-inspection
 description: "Inspect codebases w/ pygount: LOC, languages, ratios."
 version: 1.0.0
-author: OmniWorker Agent
+author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [LOC, Code Analysis, pygount, Codebase, Metrics, Repository]
     related_skills: [github-repo-management]
 prerequisites:

@@ -1,56 +1,56 @@
 ---
 sidebar_position: 1
 title: "CLI Interface"
-description: "Master the OmniWorker Agent terminal interface — commands, keybindings, personalities, and more"
+description: "Master the Flux Agent Agent terminal interface — commands, keybindings, personalities, and more"
 ---
 
 # CLI Interface
 
-OmniWorker Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
+Flux Agent Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip
-OmniWorker also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `omniworker --tui` — see the [TUI](tui.md) guide.
+Flux Agent also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `flux-agent --tui` — see the [TUI](tui.md) guide.
 :::
 
 ## Running the CLI
 
 ```bash
 # Start an interactive session (default)
-omniworker
+flux-agent
 
 # Single query mode (non-interactive)
-omniworker chat -q "Hello"
+flux-agent chat -q "Hello"
 
 # With a specific model
-omniworker chat --model "anthropic/claude-sonnet-4"
+flux-agent chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-omniworker chat --provider nous        # Use Nous Portal
-omniworker chat --provider openrouter  # Force OpenRouter
+flux-agent chat --provider nous        # Use Nous Portal
+flux-agent chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
-omniworker chat --toolsets "web,terminal,skills"
+flux-agent chat --toolsets "web,terminal,skills"
 
 # Start with one or more skills preloaded
-omniworker -s omniworker-agent-dev,github-auth
-omniworker chat -s github-pr-workflow -q "open a draft PR"
+flux-agent -s flux-agent-agent-dev,github-auth
+flux-agent chat -s github-pr-workflow -q "open a draft PR"
 
 # Resume previous sessions
-omniworker --continue             # Resume the most recent CLI session (-c)
-omniworker --resume <session_id>  # Resume a specific session by ID (-r)
+flux-agent --continue             # Resume the most recent CLI session (-c)
+flux-agent --resume <session_id>  # Resume a specific session by ID (-r)
 
 # Verbose mode (debug output)
-omniworker chat --verbose
+flux-agent chat --verbose
 
 # Isolated git worktree (for running multiple agents in parallel)
-omniworker -w                         # Interactive mode in worktree
-omniworker -w -q "Fix issue #123"     # Single query in worktree
+flux-agent -w                         # Interactive mode in worktree
+flux-agent -w -q "Fix issue #123"     # Single query in worktree
 ```
 
 ## Interface Layout
 
-<img className="docs-terminal-figure" src="/img/docs/cli-layout.svg" alt="Stylized preview of the OmniWorker CLI layout showing the banner, conversation area, and fixed input prompt." />
-<p className="docs-figure-caption">The OmniWorker CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
+<img className="docs-terminal-figure" src="/img/docs/cli-layout.svg" alt="Stylized preview of the Flux Agent CLI layout showing the banner, conversation area, and fixed input prompt." />
+<p className="docs-figure-caption">The Flux Agent CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
 
 The welcome banner shows your model, terminal backend, working directory, available tools, and installed skills at a glance.
 
@@ -85,7 +85,7 @@ Use `/usage` for a detailed breakdown including per-category costs (input vs out
 
 ### Session Resume Display
 
-When resuming a previous session (`omniworker -c` or `omniworker --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
+When resuming a previous session (`flux-agent -c` or `flux-agent --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
 
 ## Keybindings
 
@@ -100,7 +100,7 @@ When resuming a previous session (`omniworker -c` or `omniworker --resume <id>`)
 | `Ctrl+X Ctrl+E` | Emacs-style alternate binding for the external editor (same behavior as `Ctrl+G`). |
 | `Ctrl+C` | Interrupt agent (double-press within 2s to force exit) |
 | `Ctrl+D` | Exit |
-| `Ctrl+Z` | Suspend OmniWorker to background (Unix only). Run `fg` in the shell to resume. |
+| `Ctrl+Z` | Suspend Flux Agent to background (Unix only). Run `fg` in the shell to resume. |
 | `Tab` | Accept auto-suggestion (ghost text) or autocomplete slash commands |
 
 **Multiline paste preview.** When you paste a multi-line block, the CLI echoes a compact single-line preview (`[pasted: 47 lines, 1,842 chars — press Enter to send]`) instead of dumping the whole payload into the scrollback. The full content is still what gets sent; this is just display polish.
@@ -109,7 +109,7 @@ When resuming a previous session (`omniworker -c` or `omniworker --resume <id>`)
 
 ## Slash Commands
 
-Type `/` to see the autocomplete dropdown. OmniWorker supports a large set of CLI slash commands, dynamic skill commands, and user-defined quick commands.
+Type `/` to see the autocomplete dropdown. Flux Agent supports a large set of CLI slash commands, dynamic skill commands, and user-defined quick commands.
 
 Common examples:
 
@@ -122,7 +122,7 @@ Common examples:
 | `/background <prompt>` | Run a prompt in a separate background session |
 | `/skin` | Show or switch the active CLI skin |
 | `/voice on` | Enable CLI voice mode (press `Ctrl+B` to record) |
-| `/voice tts` | Toggle spoken playback for OmniWorker replies |
+| `/voice tts` | Toggle spoken playback for Flux Agent replies |
 | `/reasoning high` | Increase reasoning effort |
 | `/title My Session` | Name the current session |
 
@@ -139,11 +139,11 @@ Commands are case-insensitive — `/HELP` works the same as `/help`. Installed s
 You can define custom commands that run shell commands instantly without invoking the LLM. These work in both the CLI and messaging platforms (Telegram, Discord, etc.).
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 quick_commands:
   status:
     type: exec
-    command: systemctl status omniworker-agent
+    command: systemctl status flux-agent-agent
   gpu:
     type: exec
     command: nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader
@@ -159,15 +159,15 @@ Then type `/status`, `/gpu`, or `/restart` in any chat. See the [Configuration g
 If you already know which skills you want active for the session, pass them at launch time:
 
 ```bash
-omniworker -s omniworker-agent-dev,github-auth
-omniworker chat -s github-pr-workflow -s github-auth
+flux-agent -s flux-agent-agent-dev,github-auth
+flux-agent chat -s github-pr-workflow -s github-auth
 ```
 
-OmniWorker loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
+Flux Agent loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
 
 ## Skill Slash Commands
 
-Every installed skill in `~/.omniworker/skills/` is automatically registered as a slash command. The skill name becomes the command:
+Every installed skill in `~/.flux-agent/skills/` is automatically registered as a slash command. The skill name becomes the command:
 
 ```
 /gif-search funny cats
@@ -190,13 +190,13 @@ Set a predefined personality to change the agent's tone:
 
 Built-in personalities include: `helpful`, `concise`, `technical`, `creative`, `teacher`, `kawaii`, `catgirl`, `pirate`, `shakespeare`, `surfer`, `noir`, `uwu`, `philosopher`, `hype`.
 
-You can also define custom personalities in `~/.omniworker/config.yaml`:
+You can also define custom personalities in `~/.flux-agent/config.yaml`:
 
 ```yaml
 personalities:
   helpful: "You are a helpful, friendly AI assistant."
   kawaii: "You are a kawaii assistant! Use cute expressions..."
-  pirate: "Arrr! Ye be talkin' to Captain OmniWorker..."
+  pirate: "Arrr! Ye be talkin' to Captain Flux Agent..."
   # Add your own!
 ```
 
@@ -219,7 +219,7 @@ Pasting multi-line text is supported — use any of the newline keys above, or s
 
 ### Shift+Enter compatibility
 
-Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by default, so applications cannot distinguish them. OmniWorker recognises `Shift+Enter` only when the terminal sends a distinct sequence via the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or xterm's `modifyOtherKeys` mode.
+Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by default, so applications cannot distinguish them. Flux Agent recognises `Shift+Enter` only when the terminal sends a distinct sequence via the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or xterm's `modifyOtherKeys` mode.
 
 | Terminal | Status |
 |---|---|
@@ -228,7 +228,7 @@ Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by defa
 | Windows Terminal Preview 1.25+ | Supported once the Kitty protocol is enabled in settings |
 | macOS Terminal.app, stock Windows Terminal (stable) | Not supported — `Shift+Enter` is indistinguishable from `Enter` |
 
-Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work everywhere. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches OmniWorker — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
+Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work everywhere. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches Flux Agent — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
 
 ## Interrupting the Agent
 
@@ -250,7 +250,7 @@ The `display.busy_input_mode` config key controls what happens when you press En
 | `"steer"` | Your message is injected into the current run via `/steer`, arriving at the agent after the next tool call — no interrupt, no new turn |
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 display:
   busy_input_mode: "steer"   # or "queue" or "interrupt" (default)
 ```
@@ -269,15 +269,15 @@ You can also change it inside the CLI:
 ```
 
 :::tip First-touch hint
-The very first time you press Enter while OmniWorker is working, OmniWorker prints a one-line reminder explaining the `/busy` knob (`"(tip) Your message interrupted the current run…"`). It only fires once per install — a flag in `config.yaml` under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
+The very first time you press Enter while Flux Agent is working, Flux Agent prints a one-line reminder explaining the `/busy` knob (`"(tip) Your message interrupted the current run…"`). It only fires once per install — a flag in `config.yaml` under `onboarding.seen.busy_input_prompt` latches it. Delete that key to see the tip again.
 :::
 
 ### Suspending to Background
 
-On Unix systems, press **`Ctrl+Z`** to suspend OmniWorker to the background — just like any terminal process. The shell prints a confirmation:
+On Unix systems, press **`Ctrl+Z`** to suspend Flux Agent to the background — just like any terminal process. The shell prints a confirmation:
 
 ```
-OmniWorker Agent has been suspended. Run `fg` to bring OmniWorker Agent back.
+Flux Agent Agent has been suspended. Run `fg` to bring Flux Agent Agent back.
 ```
 
 Type `fg` in your shell to resume the session exactly where you left off. This is not supported on Windows.
@@ -307,7 +307,7 @@ Cycle through display modes with `/verbose`: `off → new → all → verbose`. 
 The `display.tool_preview_length` config key controls the maximum number of characters shown in tool call preview lines (e.g. file paths, terminal commands). The default is `0`, which means no limit — full paths and commands are shown.
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 display:
   tool_preview_length: 80   # Truncate tool previews to 80 chars (0 = no limit)
 ```
@@ -322,7 +322,7 @@ When you exit a CLI session, a resume command is printed:
 
 ```
 Resume this session with:
-  omniworker --resume 20260225_143052_a1b2c3
+  flux-agent --resume 20260225_143052_a1b2c3
 
 Session:        20260225_143052_a1b2c3
 Duration:       12m 34s
@@ -332,21 +332,21 @@ Messages:       28 (5 user, 18 tool calls)
 Resume options:
 
 ```bash
-omniworker --continue                          # Resume the most recent CLI session
-omniworker -c                                  # Short form
-omniworker -c "my project"                     # Resume a named session (latest in lineage)
-omniworker --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
-omniworker --resume "refactoring auth"         # Resume by title
-omniworker -r 20260225_143052_a1b2c3           # Short form
+flux-agent --continue                          # Resume the most recent CLI session
+flux-agent -c                                  # Short form
+flux-agent -c "my project"                     # Resume a named session (latest in lineage)
+flux-agent --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
+flux-agent --resume "refactoring auth"         # Resume by title
+flux-agent -r 20260225_143052_a1b2c3           # Short form
 ```
 
 Resuming restores the full conversation history from SQLite. The agent sees all previous messages, tool calls, and responses — just as if you never left.
 
-Use `/title My Session Name` inside a chat to name the current session, or `omniworker sessions rename <id> <title>` from the command line. Use `omniworker sessions list` to browse past sessions.
+Use `/title My Session Name` inside a chat to name the current session, or `flux-agent sessions rename <id> <title>` from the command line. Use `flux-agent sessions list` to browse past sessions.
 
 ### Session Storage
 
-CLI sessions are stored in OmniWorker's SQLite state database under `~/.omniworker/state.db`. The database keeps:
+CLI sessions are stored in Flux Agent's SQLite state database under `~/.flux-agent/state.db`. The database keeps:
 
 - session metadata (ID, title, timestamps, token counters)
 - message history
@@ -360,7 +360,7 @@ Some messaging adapters also keep per-platform transcript files alongside the da
 Long conversations are automatically summarized when approaching context limits:
 
 ```yaml
-# In ~/.omniworker/config.yaml
+# In ~/.flux-agent/config.yaml
 compression:
   enabled: true
   threshold: 0.50    # Compress at 50% of context limit by default
@@ -381,7 +381,7 @@ Run a prompt in a separate background session while continuing to use the CLI fo
 /background Analyze the logs in /var/log and summarize any errors from today
 ```
 
-OmniWorker immediately confirms the task and gives you back the prompt:
+Flux Agent immediately confirms the task and gives you back the prompt:
 
 ```
 🔄 Background task #1 started: "Analyze the logs in /var/log and summarize..."
@@ -402,7 +402,7 @@ Each `/background` prompt spawns a **completely separate agent session** in a da
 When a background task finishes, the result appears as a panel in your terminal:
 
 ```
-╭─ ⚕ OmniWorker (background #1) ──────────────────────────────────╮
+╭─ ⚕ Flux Agent (background #1) ──────────────────────────────────╮
 │ Found 3 errors in syslog from today:                         │
 │ 1. OOM killer invoked at 03:22 — killed process nginx        │
 │ 2. Disk I/O error on /dev/sda1 at 07:15                      │
@@ -431,5 +431,5 @@ By default, the CLI runs in quiet mode which:
 
 For debug output:
 ```bash
-omniworker chat --verbose
+flux-agent chat --verbose
 ```

@@ -2,25 +2,25 @@
 sidebar_position: 3
 sidebar_label: "Git Worktrees"
 title: "Git Worktrees"
-description: "Run multiple OmniWorker agents safely on the same repository using git worktrees and isolated checkouts"
+description: "Run multiple Flux Agent agents safely on the same repository using git worktrees and isolated checkouts"
 ---
 
 # Git Worktrees
 
-OmniWorker Agent is often used on large, long‑lived repositories. When you want to:
+Flux Agent Agent is often used on large, long‑lived repositories. When you want to:
 
 - Run **multiple agents in parallel** on the same project, or
 - Keep experimental refactors isolated from your main branch,
 
 Git **worktrees** are the safest way to give each agent its own checkout without duplicating the entire repository.
 
-This page shows how to combine worktrees with OmniWorker so each session has a clean, isolated working directory.
+This page shows how to combine worktrees with Flux Agent so each session has a clean, isolated working directory.
 
-## Why Use Worktrees with OmniWorker?
+## Why Use Worktrees with Flux Agent?
 
-OmniWorker treats the **current working directory** as the project root:
+Flux Agent treats the **current working directory** as the project root:
 
-- CLI: the directory where you run `omniworker` or `omniworker chat`
+- CLI: the directory where you run `flux-agent` or `flux-agent chat`
 - Messaging gateways: the directory set by `MESSAGING_CWD`
 
 If you run multiple agents in the **same checkout**, their changes can interfere with each other:
@@ -44,24 +44,24 @@ From your main repository (containing `.git/`), create a new worktree for a feat
 cd /path/to/your/repo
 
 # Create a new branch and worktree in ../repo-feature
-git worktree add ../repo-feature feature/omniworker-experiment
+git worktree add ../repo-feature feature/flux-agent-experiment
 ```
 
 This creates:
 
 - A new directory: `../repo-feature`
-- A new branch: `feature/omniworker-experiment` checked out in that directory
+- A new branch: `feature/flux-agent-experiment` checked out in that directory
 
-Now you can `cd` into the new worktree and run OmniWorker there:
+Now you can `cd` into the new worktree and run Flux Agent there:
 
 ```bash
 cd ../repo-feature
 
-# Start OmniWorker in the worktree
-omniworker
+# Start Flux Agent in the worktree
+flux-agent
 ```
 
-OmniWorker will:
+Flux Agent will:
 
 - See `../repo-feature` as the project root.
 - Use that directory for context files, code edits, and tools.
@@ -74,8 +74,8 @@ You can create multiple worktrees, each with its own branch:
 ```bash
 cd /path/to/your/repo
 
-git worktree add ../repo-experiment-a feature/omniworker-a
-git worktree add ../repo-experiment-b feature/omniworker-b
+git worktree add ../repo-experiment-a feature/flux-agent-a
+git worktree add ../repo-experiment-b feature/flux-agent-b
 ```
 
 In separate terminals:
@@ -83,16 +83,16 @@ In separate terminals:
 ```bash
 # Terminal 1
 cd ../repo-experiment-a
-omniworker
+flux-agent
 
 # Terminal 2
 cd ../repo-experiment-b
-omniworker
+flux-agent
 ```
 
-Each OmniWorker process:
+Each Flux Agent process:
 
-- Works on its own branch (`feature/omniworker-a` vs `feature/omniworker-b`).
+- Works on its own branch (`feature/flux-agent-a` vs `feature/flux-agent-b`).
 - Writes checkpoints under a different shadow repo hash (derived from the worktree path).
 - Can use `/rollback` independently without affecting the other.
 
@@ -122,47 +122,47 @@ Notes:
 
 - `git worktree remove` will refuse to remove a worktree with uncommitted changes unless you force it.
 - Removing a worktree does **not** automatically delete the branch; you can delete or keep the branch using normal `git branch` commands.
-- OmniWorker checkpoint data under `~/.omniworker/checkpoints/` is not automatically pruned when you remove a worktree, but it is usually very small.
+- Flux Agent checkpoint data under `~/.flux-agent/checkpoints/` is not automatically pruned when you remove a worktree, but it is usually very small.
 
 ## Best Practices
 
-- **One worktree per OmniWorker experiment**
+- **One worktree per Flux Agent experiment**
   - Create a dedicated branch/worktree for each substantial change.
   - This keeps diffs focused and PRs small and reviewable.
 - **Name branches after the experiment**
-  - e.g. `feature/omniworker-checkpoints-docs`, `feature/omniworker-refactor-tests`.
+  - e.g. `feature/flux-agent-checkpoints-docs`, `feature/flux-agent-refactor-tests`.
 - **Commit frequently**
   - Use git commits for high‑level milestones.
   - Use [checkpoints and /rollback](./checkpoints-and-rollback.md) as a safety net for tool‑driven edits in between.
-- **Avoid running OmniWorker from the bare repo root when using worktrees**
+- **Avoid running Flux Agent from the bare repo root when using worktrees**
   - Prefer the worktree directories instead, so each agent has a clear scope.
 
-## Using `omniworker -w` (Automatic Worktree Mode)
+## Using `flux-agent -w` (Automatic Worktree Mode)
 
-OmniWorker has a built‑in `-w` flag that **automatically creates a disposable git worktree** with its own branch. You don't need to set up worktrees manually — just `cd` into your repo and run:
+Flux Agent has a built‑in `-w` flag that **automatically creates a disposable git worktree** with its own branch. You don't need to set up worktrees manually — just `cd` into your repo and run:
 
 ```bash
 cd /path/to/your/repo
-omniworker -w
+flux-agent -w
 ```
 
-OmniWorker will:
+Flux Agent will:
 
 - Create a temporary worktree under `.worktrees/` inside your repo.
-- Check out an isolated branch (e.g. `omniworker/omniworker-<hash>`).
+- Check out an isolated branch (e.g. `flux-agent/flux-agent-<hash>`).
 - Run the full CLI session inside that worktree.
 
 This is the easiest way to get worktree isolation. You can also combine it with a single query:
 
 ```bash
-omniworker -w -q "Fix issue #123"
+flux-agent -w -q "Fix issue #123"
 ```
 
-For parallel agents, open multiple terminals and run `omniworker -w` in each — every invocation gets its own worktree and branch automatically.
+For parallel agents, open multiple terminals and run `flux-agent -w` in each — every invocation gets its own worktree and branch automatically.
 
 ## Putting It All Together
 
-- Use **git worktrees** to give each OmniWorker session its own clean checkout.
+- Use **git worktrees** to give each Flux Agent session its own clean checkout.
 - Use **branches** to capture the high‑level history of your experiments.
 - Use **checkpoints + `/rollback`** to recover from mistakes inside each worktree.
 

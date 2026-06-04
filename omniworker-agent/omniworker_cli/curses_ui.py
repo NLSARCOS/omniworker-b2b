@@ -1,4 +1,4 @@
-"""Shared curses-based UI components for OmniWorker CLI.
+"""Shared curses-based UI components for Flux Agent CLI.
 
 Used by `hermes tools` and `hermes skills` for interactive checklists.
 Provides a curses multi-select with keyboard navigation, plus a
@@ -7,7 +7,7 @@ text-based numbered fallback for terminals without curses support.
 import sys
 from typing import Callable, List, Optional, Set
 
-from omniworker_cli.colors import Colors, color
+from flux-agent_cli.colors import Colors, color
 
 
 def flush_stdin() -> None:

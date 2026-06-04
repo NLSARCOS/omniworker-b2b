@@ -258,7 +258,7 @@ jobs:
             .readdirSync(artifactsDir)
             .filter(
               (name) =>
-                name.startsWith(`omniworker-desktop-${version}-`) &&
+                name.startsWith(`flux-agent-desktop-${version}-`) &&
                 name.endsWith("-mac.zip"),
             )
             .sort((a, b) => {
@@ -311,7 +311,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
-          name: OmniWorker Desktop ${{ needs.prepare.outputs.tag }}
+          name: Flux Agent Desktop ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true
           files: |
             artifacts/*.dmg

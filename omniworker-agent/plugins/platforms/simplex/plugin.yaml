@@ -3,16 +3,16 @@ label: SimpleX Chat
 kind: platform
 version: 1.0.0
 description: >
-  SimpleX Chat gateway adapter for OmniWorker Agent.
+  SimpleX Chat gateway adapter for Flux Agent Agent.
   Connects to a local simplex-chat daemon via WebSocket and relays
-  messages between SimpleX contacts/groups and the OmniWorker agent.
+  messages between SimpleX contacts/groups and the Flux Agent agent.
   SimpleX is decentralised and assigns no persistent user IDs —
   every contact is an opaque internal ID generated at connection
   time, making it one of the most private messengers available.
 author: Mibayy
 # ``requires_env`` and ``optional_env`` entries are surfaced in the
-# ``omniworker config`` UI via the platform-plugin env var injector in
-# ``omniworker_cli/config.py``.
+# ``flux-agent config`` UI via the platform-plugin env var injector in
+# ``flux-agent_cli/config.py``.
 requires_env:
   - name: SIMPLEX_WS_URL
     description: "WebSocket URL of the simplex-chat daemon (e.g. ws://127.0.0.1:5225)"

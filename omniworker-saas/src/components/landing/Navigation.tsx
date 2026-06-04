@@ -53,7 +53,7 @@ export function Navigation() {
             className="inline-block w-2 h-2 rounded-full"
             style={{ backgroundColor: COLORS.accent }}
           />
-          OmniWorker
+          Flux Agent
         </a>
 
         {/* Desktop links */}

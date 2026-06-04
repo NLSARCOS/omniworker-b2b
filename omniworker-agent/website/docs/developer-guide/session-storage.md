@@ -1,16 +1,16 @@
 # Session Storage
 
-OmniWorker Agent uses a SQLite database (`~/.omniworker/state.db`) to persist session
+Flux Agent Agent uses a SQLite database (`~/.flux-agent/state.db`) to persist session
 metadata, full message history, and model configuration across CLI and gateway
 sessions. This replaces the earlier per-session JSONL file approach.
 
-Source file: `omniworker_state.py`
+Source file: `flux-agent_state.py`
 
 
 ## Architecture Overview
 
 ```
-~/.omniworker/state.db (SQLite, WAL mode)
+~/.flux-agent/state.db (SQLite, WAL mode)
 ├── sessions              — Session metadata, token counts, billing
 ├── messages              — Full message history per session
 ├── messages_fts          — FTS5 virtual table (content + tool_name + tool_calls)
@@ -156,7 +156,7 @@ Declarative column adds use `ALTER TABLE ADD COLUMN` wrapped in try/except to ha
 
 ## Write Contention Handling
 
-Multiple omniworker processes (gateway + CLI sessions + worktree agents) share one
+Multiple flux-agent processes (gateway + CLI sessions + worktree agents) share one
 `state.db`. The `SessionDB` class handles write contention with:
 
 - **Short SQLite timeout** (1 second) instead of the default 30s
@@ -180,9 +180,9 @@ _CHECKPOINT_EVERY_N_WRITES = 50
 ### Initialize
 
 ```python
-from omniworker_state import SessionDB
+from flux-agent_state import SessionDB
 
-db = SessionDB()                           # Default: ~/.omniworker/state.db
+db = SessionDB()                           # Default: ~/.flux-agent/state.db
 db = SessionDB(db_path=Path("/tmp/test.db"))  # Custom path
 ```
 
@@ -386,10 +386,10 @@ db.delete_session("sess_abc123")
 
 ## Database Location
 
-Default path: `~/.omniworker/state.db`
+Default path: `~/.flux-agent/state.db`
 
-This is derived from `omniworker_constants.get_omniworker_home()` which resolves to
-`~/.omniworker/` by default, or the value of `OMNIWORKER_HOME` environment variable.
+This is derived from `flux-agent_constants.get_flux-agent_home()` which resolves to
+`~/.flux-agent/` by default, or the value of `FLUX AGENT_HOME` environment variable.
 
 The database file, WAL file (`state.db-wal`), and shared-memory file
 (`state.db-shm`) are all created in the same directory.

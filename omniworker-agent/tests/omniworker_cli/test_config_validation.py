@@ -2,7 +2,7 @@
 
 import pytest
 
-from omniworker_cli.config import validate_config_structure, ConfigIssue
+from flux-agent_cli.config import validate_config_structure, ConfigIssue
 
 
 class TestCustomProvidersValidation:

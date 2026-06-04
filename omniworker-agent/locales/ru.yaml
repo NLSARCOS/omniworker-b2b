@@ -1,4 +1,4 @@
-# Каталог статических сообщений OmniWorker -- Русский
+# Каталог статических сообщений Flux Agent -- Русский
 # See locales/en.yaml for the source of truth; keep keys in sync.
 
 approval:
@@ -97,8 +97,8 @@ gateway:
     upload_failed:         "✗ Не удалось загрузить отчёт отладки: {error}"
     header:                "**Отчёт отладки загружен:**"
     auto_delete:           "⏱ Вставки автоматически удалятся через 6 часов."
-    full_logs_hint:        "Для загрузки полных журналов используйте `omniworker debug share` из CLI."
-    share_hint:            "Поделитесь этими ссылками с командой OmniWorker для получения поддержки."
+    full_logs_hint:        "Для загрузки полных журналов используйте `flux-agent debug share` из CLI."
+    share_hint:            "Поделитесь этими ссылками с командой Flux Agent для получения поддержки."
 
   deny:
     stale:                 "❌ Команда отклонена (одобрение устарело)."
@@ -135,7 +135,7 @@ gateway:
     set:                   "⊙ Цель задана (бюджет {budget} ходов): {goal}\nЯ продолжу работу, пока цель не будет достигнута, вы её не приостановите/очистите, или бюджет не исчерпается.\nУправление: /goal status · /goal pause · /goal resume · /goal clear"
 
   help:
-    header:                "📖 **Команды OmniWorker**\n"
+    header:                "📖 **Команды Flux Agent**\n"
     skill_header:          "\n⚡ **Команды навыков** (активных: {count}):"
     more_use_commands:     "\n... и ещё {count}. Используйте `/commands` для полного списка с постраничной разбивкой."
 
@@ -146,7 +146,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ ошибка kanban: {error}"
     subscribed_suffix:     "(подписка оформлена — вы получите уведомление, когда {task_id} завершится или будет заблокирован)"
-    truncated_suffix:      "… (сокращено; используйте `omniworker kanban …` в терминале для полного вывода)"
+    truncated_suffix:      "… (сокращено; используйте `flux-agent kanban …` в терминале для полного вывода)"
     no_output:             "(нет вывода)"
 
   personality:
@@ -214,7 +214,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ Перезапуск шлюза уже выполняется..."
-    restarting:            "♻ Перезапуск шлюза. Если уведомление не придёт в течение 60 секунд, перезапустите из консоли командой `omniworker gateway restart`."
+    restarting:            "♻ Перезапуск шлюза. Если уведомление не придёт в течение 60 секунд, перезапустите из консоли командой `flux-agent gateway restart`."
 
   resume:
     db_unavailable:        "База данных сеансов недоступна."
@@ -246,7 +246,7 @@ gateway:
     success:               "✅ Главный канал установлен на **{name}** (ID: {chat_id}).\nCron-задачи и межплатформенные сообщения будут доставляться сюда."
 
   status:
-    header:                "📊 **Состояние OmniWorker Gateway**"
+    header:                "📊 **Состояние Flux Agent Gateway**"
     session_id:            "**ID сеанса:** `{session_id}`"
     title:                 "**Название:** {title}"
     created:               "**Создано:** {timestamp}"
@@ -281,7 +281,7 @@ gateway:
     topics_user_disallowed:  "Telegram topics включены, но пользователям не разрешено создавать topics.\n\nОткройте @BotFather → выберите своего бота → Bot Settings → Threads Settings, затем выключите 'Disallow users to create new threads'.\n\nЗатем снова отправьте /topic."
     enable_failed:           "Не удалось включить режим Telegram topic: {error}"
     bound_status:            "Этот topic привязан к:\nСеанс: {label}\nID: {session_id}\n\nИспользуйте /new, чтобы заменить этот topic новым сеансом.\nДля параллельной работы откройте All Messages и отправьте там сообщение, чтобы создать другой topic."
-    thread_ready:            "Многосеансовые Telegram topics включены.\n\nЭтот topic будет использоваться как независимый сеанс OmniWorker. Используйте /new, чтобы заменить текущий сеанс этого topic. Для параллельной работы откройте All Messages и отправьте там сообщение, чтобы создать другой topic."
+    thread_ready:            "Многосеансовые Telegram topics включены.\n\nЭтот topic будет использоваться как независимый сеанс Flux Agent. Используйте /new, чтобы заменить текущий сеанс этого topic. Для параллельной работы откройте All Messages и отправьте там сообщение, чтобы создать другой topic."
     untitled_session:        "Сеанс без названия"
 
   undo:
@@ -289,11 +289,11 @@ gateway:
     removed:               "↩️ Отменено сообщений: {count}.\nУдалено: «{preview}»"
 
   update:
-    platform_not_messaging:  "✗ /update доступен только на платформах обмена сообщениями. Выполните `omniworker update` в терминале."
+    platform_not_messaging:  "✗ /update доступен только на платформах обмена сообщениями. Выполните `flux-agent update` в терминале."
     not_git_repo:            "✗ Не git-репозиторий — обновление невозможно."
-    omniworker_cmd_not_found:    "✗ Не удалось найти команду `omniworker`. OmniWorker запущен, но команда обновления не нашла исполняемый файл в PATH или через текущий интерпретатор Python. Попробуйте выполнить `omniworker update` вручную в терминале."
+    flux-agent_cmd_not_found:    "✗ Не удалось найти команду `flux-agent`. Flux Agent запущен, но команда обновления не нашла исполняемый файл в PATH или через текущий интерпретатор Python. Попробуйте выполнить `flux-agent update` вручную в терминале."
     start_failed:            "✗ Не удалось запустить обновление: {error}"
-    starting:                "⚕ Запуск обновления OmniWorker… Я буду транслировать прогресс сюда."
+    starting:                "⚕ Запуск обновления Flux Agent… Я буду транслировать прогресс сюда."
 
   usage:
     rate_limits:              "⏱️ **Ограничения скорости:** {state}"

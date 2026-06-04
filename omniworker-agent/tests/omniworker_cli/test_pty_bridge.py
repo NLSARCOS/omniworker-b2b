@@ -1,4 +1,4 @@
-"""Unit tests for omniworker_cli.pty_bridge — PTY spawning + byte forwarding.
+"""Unit tests for flux-agent_cli.pty_bridge — PTY spawning + byte forwarding.
 
 These tests drive the bridge with minimal POSIX processes (echo, env, sleep,
 printf) to verify it behaves like a PTY you can read/write/resize/close.
@@ -14,7 +14,7 @@ import pytest
 
 pytest.importorskip("ptyprocess", reason="ptyprocess not installed")
 
-from omniworker_cli.pty_bridge import PtyBridge, PtyUnavailableError
+from flux-agent_cli.pty_bridge import PtyBridge, PtyUnavailableError
 
 
 skip_on_windows = pytest.mark.skipif(
@@ -56,10 +56,10 @@ class TestPtyBridgeSpawn:
 @skip_on_windows
 class TestPtyBridgeIO:
     def test_reads_child_stdout(self):
-        bridge = PtyBridge.spawn(["/bin/sh", "-c", "printf omniworker-ok"])
+        bridge = PtyBridge.spawn(["/bin/sh", "-c", "printf flux-agent-ok"])
         try:
-            output = _read_until(bridge, b"omniworker-ok")
-            assert b"omniworker-ok" in output
+            output = _read_until(bridge, b"flux-agent-ok")
+            assert b"flux-agent-ok" in output
         finally:
             bridge.close()
 

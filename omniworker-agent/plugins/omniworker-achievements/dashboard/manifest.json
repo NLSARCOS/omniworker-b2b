@@ -1,7 +1,7 @@
 {
-  "name": "omniworker-achievements",
+  "name": "flux-agent-achievements",
   "label": "Achievements",
-  "description": "Steam-style achievements for vibe coding and agentic OmniWorker workflows.",
+  "description": "Steam-style achievements for vibe coding and agentic Flux Agent workflows.",
   "icon": "Star",
   "version": "0.4.0",
   "tab": { "path": "/achievements", "position": "after:analytics" },

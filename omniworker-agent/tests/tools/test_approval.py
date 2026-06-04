@@ -20,11 +20,11 @@ from tools.approval import (
 
 class TestApprovalModeParsing:
     def test_unquoted_yaml_off_boolean_false_maps_to_off(self):
-        with mock_patch("omniworker_cli.config.load_config", return_value={"approvals": {"mode": False}}):
+        with mock_patch("flux-agent_cli.config.load_config", return_value={"approvals": {"mode": False}}):
             assert _get_approval_mode() == "off"
 
     def test_string_off_still_maps_to_off(self):
-        with mock_patch("omniworker_cli.config.load_config", return_value={"approvals": {"mode": "off"}}):
+        with mock_patch("flux-agent_cli.config.load_config", return_value={"approvals": {"mode": "off"}}):
             assert _get_approval_mode() == "off"
 
 
@@ -361,17 +361,17 @@ class TestTeePattern:
         assert dangerous is True
         assert key is not None
 
-    def test_tee_omniworker_env(self):
-        dangerous, key, desc = detect_dangerous_command("echo x | tee ~/.omniworker/.env")
+    def test_tee_flux-agent_env(self):
+        dangerous, key, desc = detect_dangerous_command("echo x | tee ~/.flux-agent/.env")
         assert dangerous is True
         assert key is not None
 
-    def test_tee_custom_omniworker_home_env(self):
+    def test_tee_custom_flux-agent_home_env(self):
         dangerous, key, desc = detect_dangerous_command("echo x | tee $OMNIWORKER_HOME/.env")
         assert dangerous is True
         assert key is not None
 
-    def test_tee_quoted_custom_omniworker_home_env(self):
+    def test_tee_quoted_custom_flux-agent_home_env(self):
         dangerous, key, desc = detect_dangerous_command('echo x | tee "$OMNIWORKER_HOME/.env"')
         assert dangerous is True
         assert key is not None
@@ -414,7 +414,7 @@ class TestFindExecFullPathRm:
 class TestSensitiveRedirectPattern:
     """Detect shell redirection writes to sensitive user-managed paths."""
 
-    def test_redirect_to_custom_omniworker_home_env(self):
+    def test_redirect_to_custom_flux-agent_home_env(self):
         dangerous, key, desc = detect_dangerous_command("echo x > $OMNIWORKER_HOME/.env")
         assert dangerous is True
         assert key is not None
@@ -611,48 +611,48 @@ class TestGatewayProtection:
     """Prevent agents from starting the gateway outside systemd management."""
 
     def test_gateway_run_with_disown_detected(self):
-        cmd = "kill 1605 && cd ~/.omniworker/omniworker-agent && source venv/bin/activate && python -m omniworker_cli.main gateway run --replace &disown; echo done"
+        cmd = "kill 1605 && cd ~/.flux-agent/flux-agent-agent && source venv/bin/activate && python -m flux-agent_cli.main gateway run --replace &disown; echo done"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "systemctl" in desc
 
     def test_gateway_run_with_ampersand_detected(self):
-        cmd = "python -m omniworker_cli.main gateway run --replace &"
+        cmd = "python -m flux-agent_cli.main gateway run --replace &"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
     def test_gateway_run_with_nohup_detected(self):
-        cmd = "nohup python -m omniworker_cli.main gateway run --replace"
+        cmd = "nohup python -m flux-agent_cli.main gateway run --replace"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
     def test_gateway_run_with_setsid_detected(self):
-        cmd = "omniworker_cli.main gateway run --replace &disown"
+        cmd = "flux-agent_cli.main gateway run --replace &disown"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
     def test_gateway_run_foreground_not_flagged(self):
         """Normal foreground gateway run (as in systemd ExecStart) is fine."""
-        cmd = "python -m omniworker_cli.main gateway run --replace"
+        cmd = "python -m flux-agent_cli.main gateway run --replace"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is False
 
     def test_systemctl_restart_flagged(self):
         """systemctl restart kills running agents and should require approval."""
-        cmd = "systemctl --user restart omniworker-gateway"
+        cmd = "systemctl --user restart flux-agent-gateway"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "stop/restart" in desc
 
-    def test_pkill_omniworker_detected(self):
-        """pkill targeting omniworker/gateway processes must be caught."""
+    def test_pkill_flux-agent_detected(self):
+        """pkill targeting flux-agent/gateway processes must be caught."""
         cmd = 'pkill -f "cli.py --gateway"'
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "self-termination" in desc
 
-    def test_killall_omniworker_detected(self):
-        cmd = "killall omniworker"
+    def test_killall_flux-agent_detected(self):
+        cmd = "killall flux-agent"
         dangerous, key, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "self-termination" in desc
@@ -788,20 +788,20 @@ class TestHeredocScriptExecution:
 
 
 class TestPgrepKillExpansion:
-    """kill -9 $(pgrep omniworker) bypasses the pkill/killall name-matching
+    """kill -9 $(pgrep flux-agent) bypasses the pkill/killall name-matching
     pattern because the command substitution is opaque to regex.
 
     See security audit Test 7.
     """
 
     def test_kill_dollar_pgrep_detected(self):
-        cmd = 'kill -9 $(pgrep -f "omniworker.*gateway")'
+        cmd = 'kill -9 $(pgrep -f "flux-agent.*gateway")'
         dangerous, _, desc = detect_dangerous_command(cmd)
         assert dangerous is True
         assert "pgrep" in desc.lower()
 
     def test_kill_backtick_pgrep_detected(self):
-        cmd = "kill -9 `pgrep omniworker`"
+        cmd = "kill -9 `pgrep flux-agent`"
         dangerous, _, desc = detect_dangerous_command(cmd)
         assert dangerous is True
 
@@ -810,9 +810,9 @@ class TestPgrepKillExpansion:
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 
-    def test_pkill_omniworker_still_detected(self):
+    def test_pkill_flux-agent_still_detected(self):
         """Existing pkill pattern must not regress."""
-        cmd = "pkill -9 omniworker"
+        cmd = "pkill -9 flux-agent"
         dangerous, _, _ = detect_dangerous_command(cmd)
         assert dangerous is True
 

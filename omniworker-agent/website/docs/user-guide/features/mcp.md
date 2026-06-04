@@ -1,33 +1,33 @@
 ---
 sidebar_position: 4
 title: "MCP (Model Context Protocol)"
-description: "Connect OmniWorker Agent to external tool servers via MCP — and control exactly which MCP tools OmniWorker loads"
+description: "Connect Flux Agent Agent to external tool servers via MCP — and control exactly which MCP tools Flux Agent loads"
 ---
 
 # MCP (Model Context Protocol)
 
-MCP lets OmniWorker Agent connect to external tool servers so the agent can use tools that live outside OmniWorker itself — GitHub, databases, file systems, browser stacks, internal APIs, and more.
+MCP lets Flux Agent Agent connect to external tool servers so the agent can use tools that live outside Flux Agent itself — GitHub, databases, file systems, browser stacks, internal APIs, and more.
 
-If you have ever wanted OmniWorker to use a tool that already exists somewhere else, MCP is usually the cleanest way to do it.
+If you have ever wanted Flux Agent to use a tool that already exists somewhere else, MCP is usually the cleanest way to do it.
 
 ## What MCP gives you
 
-- Access to external tool ecosystems without writing a native OmniWorker tool first
+- Access to external tool ecosystems without writing a native Flux Agent tool first
 - Local stdio servers and remote HTTP MCP servers in the same config
 - Automatic tool discovery and registration at startup
 - Utility wrappers for MCP resources and prompts when supported by the server
-- Per-server filtering so you can expose only the MCP tools you actually want OmniWorker to see
+- Per-server filtering so you can expose only the MCP tools you actually want Flux Agent to see
 
 ## Quick start
 
 1. Install MCP support (already included if you used the standard install script):
 
 ```bash
-cd ~/.omniworker/omniworker-agent
+cd ~/.flux-agent/flux-agent-agent
 uv pip install -e ".[mcp]"
 ```
 
-2. Add an MCP server to `~/.omniworker/config.yaml`:
+2. Add an MCP server to `~/.flux-agent/config.yaml`:
 
 ```yaml
 mcp_servers:
@@ -36,13 +36,13 @@ mcp_servers:
     args: ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/projects"]
 ```
 
-3. Start OmniWorker:
+3. Start Flux Agent:
 
 ```bash
-omniworker chat
+flux-agent chat
 ```
 
-4. Ask OmniWorker to use the MCP-backed capability.
+4. Ask Flux Agent to use the MCP-backed capability.
 
 For example:
 
@@ -50,7 +50,7 @@ For example:
 List the files in /home/user/projects and summarize the repo structure.
 ```
 
-OmniWorker will discover the MCP server's tools and use them like any other tool.
+Flux Agent will discover the MCP server's tools and use them like any other tool.
 
 ## Two kinds of MCP servers
 
@@ -74,7 +74,7 @@ Use stdio servers when:
 
 ### HTTP servers
 
-HTTP MCP servers are remote endpoints OmniWorker connects to directly.
+HTTP MCP servers are remote endpoints Flux Agent connects to directly.
 
 ```yaml
 mcp_servers:
@@ -87,11 +87,11 @@ mcp_servers:
 Use HTTP servers when:
 - the MCP server is hosted elsewhere
 - your organization exposes internal MCP endpoints
-- you do not want OmniWorker spawning a local subprocess for that integration
+- you do not want Flux Agent spawning a local subprocess for that integration
 
 ## Basic configuration reference
 
-OmniWorker reads MCP config from `~/.omniworker/config.yaml` under `mcp_servers`.
+Flux Agent reads MCP config from `~/.flux-agent/config.yaml` under `mcp_servers`.
 
 ### Common keys
 
@@ -104,7 +104,7 @@ OmniWorker reads MCP config from `~/.omniworker/config.yaml` under `mcp_servers`
 | `headers` | mapping | HTTP headers for remote servers |
 | `timeout` | number | Tool call timeout |
 | `connect_timeout` | number | Initial connection timeout |
-| `enabled` | bool | If `false`, OmniWorker skips the server entirely |
+| `enabled` | bool | If `false`, Flux Agent skips the server entirely |
 | `tools` | mapping | Per-server tool filtering and utility policy |
 
 ### Minimal stdio example
@@ -126,9 +126,9 @@ mcp_servers:
       Authorization: "Bearer ***"
 ```
 
-## How OmniWorker registers MCP tools
+## How Flux Agent registers MCP tools
 
-OmniWorker prefixes MCP tools so they do not collide with built-in names:
+Flux Agent prefixes MCP tools so they do not collide with built-in names:
 
 ```text
 mcp_<server_name>_<tool_name>
@@ -142,11 +142,11 @@ Examples:
 | `github` | `create-issue` | `mcp_github_create_issue` |
 | `my-api` | `query.data` | `mcp_my_api_query_data` |
 
-In practice, you usually do not need to call the prefixed name manually — OmniWorker sees the tool and chooses it during normal reasoning.
+In practice, you usually do not need to call the prefixed name manually — Flux Agent sees the tool and chooses it during normal reasoning.
 
 ## MCP utility tools
 
-When supported, OmniWorker also registers utility tools around MCP resources and prompts:
+When supported, Flux Agent also registers utility tools around MCP resources and prompts:
 
 - `list_resources`
 - `read_resource`
@@ -161,14 +161,14 @@ These are registered per server with the same prefix pattern, for example:
 ### Important
 
 These utility tools are now capability-aware:
-- OmniWorker only registers resource utilities if the MCP session actually supports resource operations
-- OmniWorker only registers prompt utilities if the MCP session actually supports prompt operations
+- Flux Agent only registers resource utilities if the MCP session actually supports resource operations
+- Flux Agent only registers prompt utilities if the MCP session actually supports prompt operations
 
 So a server that exposes callable tools but no resources/prompts will not get those extra wrappers.
 
 ## Per-server filtering
 
-You can control which tools each MCP server contributes to OmniWorker, allowing fine-grained management of your tool namespace.
+You can control which tools each MCP server contributes to Flux Agent, allowing fine-grained management of your tool namespace.
 
 ### Disable a server entirely
 
@@ -179,7 +179,7 @@ mcp_servers:
     enabled: false
 ```
 
-If `enabled: false`, OmniWorker skips the server completely and does not even attempt a connection.
+If `enabled: false`, Flux Agent skips the server completely and does not even attempt a connection.
 
 ### Whitelist server tools
 
@@ -222,7 +222,7 @@ tools:
 
 ### Filter utility tools too
 
-You can also separately disable OmniWorker-added utility wrappers:
+You can also separately disable Flux Agent-added utility wrappers:
 
 ```yaml
 mcp_servers:
@@ -265,7 +265,7 @@ mcp_servers:
 
 ## What happens if everything is filtered out?
 
-If your config filters out all callable tools and disables or omits all supported utilities, OmniWorker does not create an empty runtime MCP toolset for that server.
+If your config filters out all callable tools and disables or omits all supported utilities, Flux Agent does not create an empty runtime MCP toolset for that server.
 
 That keeps the tool list clean.
 
@@ -273,11 +273,11 @@ That keeps the tool list clean.
 
 ### Discovery time
 
-OmniWorker discovers MCP servers at startup and registers their tools into the normal tool registry.
+Flux Agent discovers MCP servers at startup and registers their tools into the normal tool registry.
 
 ### Dynamic Tool Discovery
 
-MCP servers can notify OmniWorker when their available tools change at runtime by sending a `notifications/tools/list_changed` notification. When OmniWorker receives this notification, it automatically re-fetches the server's tool list and updates the registry — no manual `/reload-mcp` required.
+MCP servers can notify Flux Agent when their available tools change at runtime by sending a `notifications/tools/list_changed` notification. When Flux Agent receives this notification, it automatically re-fetches the server's tool list and updates the registry — no manual `/reload-mcp` required.
 
 This is useful for MCP servers whose capabilities change dynamically (e.g. a server that adds tools when a new database schema is loaded, or removes tools when a service goes offline).
 
@@ -307,7 +307,7 @@ That makes MCP servers easier to reason about at the toolset level.
 
 ### Stdio env filtering
 
-For stdio servers, OmniWorker does not blindly pass your full shell environment.
+For stdio servers, Flux Agent does not blindly pass your full shell environment.
 
 Only explicitly configured `env` plus a safe baseline are passed through. This reduces accidental secret leakage.
 
@@ -382,13 +382,13 @@ Check:
 
 ```bash
 # Verify MCP deps are installed (already included in standard install)
-cd ~/.omniworker/omniworker-agent && uv pip install -e ".[mcp]"
+cd ~/.flux-agent/flux-agent-agent && uv pip install -e ".[mcp]"
 
 node --version
 npx --version
 ```
 
-Then verify your config and restart OmniWorker.
+Then verify your config and restart Flux Agent.
 
 ### Tools not appearing
 
@@ -403,7 +403,7 @@ If you are intentionally filtering, this is expected.
 
 ### Why didn't resource or prompt utilities appear?
 
-Because OmniWorker now only registers those wrappers when both are true:
+Because Flux Agent now only registers those wrappers when both are true:
 1. your config allows them
 2. the server session actually supports the capability
 
@@ -411,7 +411,7 @@ This is intentional and keeps the tool list honest.
 
 ## MCP Sampling Support
 
-MCP servers can request LLM inference from OmniWorker via the `sampling/createMessage` protocol. This allows an MCP server to ask OmniWorker to generate text on its behalf — useful for servers that need LLM capabilities but don't have their own model access.
+MCP servers can request LLM inference from Flux Agent via the `sampling/createMessage` protocol. This allows an MCP server to ask Flux Agent to generate text on its behalf — useful for servers that need LLM capabilities but don't have their own model access.
 
 Sampling is **enabled by default** for all MCP servers (when the MCP SDK supports it). Configure it per-server under the `sampling` key:
 
@@ -442,46 +442,46 @@ mcp_servers:
       enabled: false
 ```
 
-## Running OmniWorker as an MCP server
+## Running Flux Agent as an MCP server
 
-In addition to connecting **to** MCP servers, OmniWorker can also **be** an MCP server. This lets other MCP-capable agents (Claude Code, Cursor, Codex, or any MCP client) use OmniWorker's messaging capabilities — list conversations, read message history, and send messages across all your connected platforms.
+In addition to connecting **to** MCP servers, Flux Agent can also **be** an MCP server. This lets other MCP-capable agents (Claude Code, Cursor, Codex, or any MCP client) use Flux Agent's messaging capabilities — list conversations, read message history, and send messages across all your connected platforms.
 
 ### When to use this
 
-- You want Claude Code, Cursor, or another coding agent to send and read Telegram/Discord/Slack messages through OmniWorker
-- You want a single MCP server that bridges to all of OmniWorker's connected messaging platforms at once
-- You already have a running OmniWorker gateway with connected platforms
+- You want Claude Code, Cursor, or another coding agent to send and read Telegram/Discord/Slack messages through Flux Agent
+- You want a single MCP server that bridges to all of Flux Agent's connected messaging platforms at once
+- You already have a running Flux Agent gateway with connected platforms
 
 ### Quick start
 
 ```bash
-omniworker mcp serve
+flux-agent mcp serve
 ```
 
 This starts a stdio MCP server. The MCP client (not you) manages the process lifecycle.
 
 ### MCP client configuration
 
-Add OmniWorker to your MCP client config. For example, in Claude Code's `~/.claude/claude_desktop_config.json`:
+Add Flux Agent to your MCP client config. For example, in Claude Code's `~/.claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "omniworker": {
-      "command": "omniworker",
+    "flux-agent": {
+      "command": "flux-agent",
       "args": ["mcp", "serve"]
     }
   }
 }
 ```
 
-Or if you installed OmniWorker in a specific location:
+Or if you installed Flux Agent in a specific location:
 
 ```json
 {
   "mcpServers": {
-    "omniworker": {
-      "command": "/home/user/.omniworker/omniworker-agent/venv/bin/omniworker",
+    "flux-agent": {
+      "command": "/home/user/.flux-agent/flux-agent-agent/venv/bin/flux-agent",
       "args": ["mcp", "serve"]
     }
   }
@@ -490,7 +490,7 @@ Or if you installed OmniWorker in a specific location:
 
 ### Available tools
 
-The MCP server exposes 10 tools, matching OmniWorker's channel bridge surface plus a OmniWorker-specific channel browser:
+The MCP server exposes 10 tools, matching Flux Agent's channel bridge surface plus a Flux Agent-specific channel browser:
 
 | Tool | Description |
 |------|-------------|
@@ -507,7 +507,7 @@ The MCP server exposes 10 tools, matching OmniWorker's channel bridge surface pl
 
 ### Event system
 
-The MCP server includes a live event bridge that polls OmniWorker's session database for new messages. This gives MCP clients near-real-time awareness of incoming conversations:
+The MCP server includes a live event bridge that polls Flux Agent's session database for new messages. This gives MCP clients near-real-time awareness of incoming conversations:
 
 ```
 # Poll for new events (non-blocking)
@@ -524,13 +524,13 @@ The event queue is in-memory and starts when the bridge connects. Older messages
 ### Options
 
 ```bash
-omniworker mcp serve              # Normal mode
-omniworker mcp serve --verbose    # Debug logging on stderr
+flux-agent mcp serve              # Normal mode
+flux-agent mcp serve --verbose    # Debug logging on stderr
 ```
 
 ### How it works
 
-The MCP server reads conversation data directly from OmniWorker's session store (`~/.omniworker/sessions/sessions.json` and the SQLite database). A background thread polls the database for new messages and maintains an in-memory event queue. For sending messages, it uses the same `send_message` infrastructure as the OmniWorker agent itself.
+The MCP server reads conversation data directly from Flux Agent's session store (`~/.flux-agent/sessions/sessions.json` and the SQLite database). A background thread polls the database for new messages and maintains an in-memory event queue. For sending messages, it uses the same `send_message` infrastructure as the Flux Agent agent itself.
 
 The gateway does NOT need to be running for read operations (listing conversations, reading history, polling events). It DOES need to be running for send operations, since the platform adapters need active connections.
 
@@ -543,7 +543,7 @@ The gateway does NOT need to be running for read operations (listing conversatio
 
 ## Related docs
 
-- [Use MCP with OmniWorker](/docs/guides/use-mcp-with-omniworker)
+- [Use MCP with Flux Agent](/docs/guides/use-mcp-with-flux-agent)
 - [CLI Commands](/docs/reference/cli-commands)
 - [Slash Commands](/docs/reference/slash-commands)
 - [FAQ](/docs/reference/faq)

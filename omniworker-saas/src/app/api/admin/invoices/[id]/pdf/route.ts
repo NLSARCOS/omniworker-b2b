@@ -27,7 +27,7 @@ function buildInvoicePDF(invoice: any): Promise<Buffer> {
     });
 
     // ── Header ──
-    doc.fontSize(24).font("Helvetica-Bold").text("OMNIWORKER", 50, 50);
+    doc.fontSize(24).font("Helvetica-Bold").text("FLUX AGENT", 50, 50);
     doc.fontSize(10).font("Helvetica").fillColor("#666").text("Factura de Suscripción B2B", 50, 78);
 
     doc.fontSize(10).fillColor("#999").text("Factura #", 400, 50, { align: "right" });
@@ -73,7 +73,7 @@ function buildInvoicePDF(invoice: any): Promise<Buffer> {
 
     doc.rect(50, tableTop + 24, 500, 60).stroke("#ddd");
     doc.fontSize(10).fillColor("#333").font("Helvetica").text(
-      invoice.description || "Pago de suscripción B2B — OmniWorker Platform",
+      invoice.description || "Pago de suscripción B2B — Flux Agent Platform",
       60,
       tableTop + 36,
       { width: 350 }
@@ -88,7 +88,7 @@ function buildInvoicePDF(invoice: any): Promise<Buffer> {
 
     // ── Footer ──
     doc.fontSize(8).fillColor("#aaa").font("Helvetica").text(
-      `Documento generado electrónicamente por OmniWorker SaaS · ID: ${invoice.id}`,
+      `Documento generado electrónicamente por Flux Agent SaaS · ID: ${invoice.id}`,
       50,
       750,
       { align: "center", width: 500 }

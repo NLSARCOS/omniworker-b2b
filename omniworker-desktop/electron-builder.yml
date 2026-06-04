@@ -1,4 +1,4 @@
-appId: com.omniworker.omniworker
+appId: com.flux-agent.flux-agent
 productName: Flux Agent By Simplex
 directories:
   buildResources: build
@@ -34,7 +34,7 @@ extraResources:
       - "**/*"
 
 win:
-  executableName: omniworker-agent
+  executableName: flux-agent-agent
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

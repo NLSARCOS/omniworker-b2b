@@ -2,11 +2,11 @@
 name: arxiv
 description: "Search arXiv papers by keyword, author, category, or ID."
 version: 1.0.0
-author: OmniWorker Agent
+author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [Research, Arxiv, Papers, Academic, Science, API]
     related_skills: [ocr-and-documents]
 ---

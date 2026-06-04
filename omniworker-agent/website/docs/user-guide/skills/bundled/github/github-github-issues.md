@@ -17,7 +17,7 @@ Create, triage, label, assign GitHub issues via gh or REST.
 | Source | Bundled (installed by default) |
 | Path | `skills/github/github-issues` |
 | Version | `1.1.0` |
-| Author | OmniWorker Agent |
+| Author | Flux Agent Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `GitHub`, `Issues`, `Project-Management`, `Bug-Tracking`, `Triage` |
@@ -26,7 +26,7 @@ Create, triage, label, assign GitHub issues via gh or REST.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # GitHub Issues Management
@@ -46,8 +46,8 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 else
   AUTH="git"
   if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ~/.omniworker/.env ] && grep -q "^GITHUB_TOKEN=" ~/.omniworker/.env; then
-      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.omniworker/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+    if [ -f ~/.flux-agent/.env ] && grep -q "^GITHUB_TOKEN=" ~/.flux-agent/.env; then
+      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.flux-agent/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi

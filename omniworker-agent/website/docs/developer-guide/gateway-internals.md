@@ -6,7 +6,7 @@ description: "How the messaging gateway boots, authorizes users, routes sessions
 
 # Gateway Internals
 
-The messaging gateway is the long-running process that connects OmniWorker to 20+ external messaging platforms through a unified architecture.
+The messaging gateway is the long-running process that connects Flux Agent to 20+ external messaging platforms through a unified architecture.
 
 ## Key Files
 
@@ -112,7 +112,7 @@ Pairing state is persisted in `gateway/pairing.py` and survives restarts.
 
 All slash commands in the gateway flow through the same resolution pipeline:
 
-1. `resolve_command()` from `omniworker_cli/commands.py` maps input to canonical name (handles aliases, prefix matching)
+1. `resolve_command()` from `flux-agent_cli/commands.py` maps input to canonical name (handles aliases, prefix matching)
 2. The canonical name is checked against `GATEWAY_KNOWN_COMMANDS`
 3. Handler in `_handle_message()` dispatches based on canonical name
 4. Some commands are gated on config (`gateway_config_gate` on `CommandDef`)
@@ -135,8 +135,8 @@ The gateway reads configuration from multiple sources:
 
 | Source | What it provides |
 |--------|-----------------|
-| `~/.omniworker/.env` | API keys, bot tokens, platform credentials |
-| `~/.omniworker/config.yaml` | Model settings, tool configuration, display options |
+| `~/.flux-agent/.env` | API keys, bot tokens, platform credentials |
+| `~/.flux-agent/config.yaml` | Model settings, tool configuration, display options |
 | Environment variables | Override any of the above |
 
 Unlike the CLI (which uses `load_cli_config()` with hardcoded defaults), the gateway reads `config.yaml` directly via YAML loader. This means config keys that exist in the CLI's defaults dict but not in the user's config file may behave differently between CLI and gateway.
@@ -208,7 +208,7 @@ Gateway hooks are Python modules that respond to lifecycle events:
 | `agent:end` | Agent finishes and returns response |
 | `command:*` | Any slash command is executed |
 
-Hooks are discovered from `gateway/builtin_hooks/` (an extension point — currently empty in the shipped distribution; `_register_builtin_hooks()` is a no-op stub) and `~/.omniworker/hooks/` (user-installed). Each hook is a directory with a `HOOK.yaml` manifest and `handler.py`.
+Hooks are discovered from `gateway/builtin_hooks/` (an extension point — currently empty in the shipped distribution; `_register_builtin_hooks()` is a no-op stub) and `~/.flux-agent/hooks/` (user-installed). Each hook is a directory with a `HOOK.yaml` manifest and `handler.py`.
 
 ## Memory Provider Integration
 
@@ -247,11 +247,11 @@ The gateway runs periodic maintenance alongside message handling:
 
 The gateway runs as a long-lived process, managed via:
 
-- `omniworker gateway start` / `omniworker gateway stop` — manual control
+- `flux-agent gateway start` / `flux-agent gateway stop` — manual control
 - `systemctl` (Linux) or `launchctl` (macOS) — service management
-- PID file at `~/.omniworker/gateway.pid` — profile-scoped process tracking
+- PID file at `~/.flux-agent/gateway.pid` — profile-scoped process tracking
 
-**Profile-scoped vs global**: `start_gateway()` uses profile-scoped PID files. `omniworker gateway stop` stops only the current profile's gateway. `omniworker gateway stop --all` uses global `ps aux` scanning to kill all gateway processes (used during updates).
+**Profile-scoped vs global**: `start_gateway()` uses profile-scoped PID files. `flux-agent gateway stop` stops only the current profile's gateway. `flux-agent gateway stop --all` uses global `ps aux` scanning to kill all gateway processes (used during updates).
 
 ## Related Docs
 

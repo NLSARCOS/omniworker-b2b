@@ -1,4 +1,4 @@
-"""Shared ANSI color utilities for OmniWorker CLI modules."""
+"""Shared ANSI color utilities for Flux Agent CLI modules."""
 
 import os
 import sys

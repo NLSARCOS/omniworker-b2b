@@ -1,75 +1,75 @@
-"""Tests for OmniWorker migration integration in the setup wizard."""
+"""Tests for Flux Agent migration integration in the setup wizard."""
 
 from argparse import Namespace
 from types import ModuleType
 from unittest.mock import MagicMock, patch
 
-from omniworker_cli import setup as setup_mod
+from flux-agent_cli import setup as setup_mod
 
 
 # ---------------------------------------------------------------------------
-# _offer_omniworker_migration — unit tests
+# _offer_flux-agent_migration — unit tests
 # ---------------------------------------------------------------------------
 
 
 class TestOfferOpenclawMigration:
-    """Test the _offer_omniworker_migration helper in isolation."""
+    """Test the _offer_flux-agent_migration helper in isolation."""
 
-    def test_skips_when_no_omniworker_dir(self, tmp_path):
-        """Should return False immediately when ~/.omniworker does not exist."""
-        with patch("omniworker_cli.setup.Path.home", return_value=tmp_path):
-            assert setup_mod._offer_omniworker_migration(tmp_path / ".omniworker") is False
+    def test_skips_when_no_flux-agent_dir(self, tmp_path):
+        """Should return False immediately when ~/.flux-agent does not exist."""
+        with patch("flux-agent_cli.setup.Path.home", return_value=tmp_path):
+            assert setup_mod._offer_flux-agent_migration(tmp_path / ".flux-agent") is False
 
     def test_skips_when_migration_script_missing(self, tmp_path):
         """Should return False when the migration script file is absent."""
-        omniworker_dir = tmp_path / ".omniworker"
-        omniworker_dir.mkdir()
+        flux-agent_dir = tmp_path / ".flux-agent"
+        flux-agent_dir.mkdir()
         with (
-            patch("omniworker_cli.setup.Path.home", return_value=tmp_path),
+            patch("flux-agent_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", tmp_path / "nonexistent.py"),
         ):
-            assert setup_mod._offer_omniworker_migration(tmp_path / ".omniworker") is False
+            assert setup_mod._offer_flux-agent_migration(tmp_path / ".flux-agent") is False
 
     def test_skips_when_user_declines(self, tmp_path):
         """Should return False when user declines the migration prompt."""
-        omniworker_dir = tmp_path / ".omniworker"
-        omniworker_dir.mkdir()
-        script = tmp_path / "omniworker_to_omniworker.py"
+        flux-agent_dir = tmp_path / ".flux-agent"
+        flux-agent_dir.mkdir()
+        script = tmp_path / "flux-agent_to_flux-agent.py"
         script.write_text("# placeholder")
         with (
-            patch("omniworker_cli.setup.Path.home", return_value=tmp_path),
+            patch("flux-agent_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", script),
             patch.object(setup_mod, "prompt_yes_no", return_value=False),
         ):
-            assert setup_mod._offer_omniworker_migration(tmp_path / ".omniworker") is False
+            assert setup_mod._offer_flux-agent_migration(tmp_path / ".flux-agent") is False
 
     def test_runs_migration_when_user_accepts(self, tmp_path):
         """Should run dry-run preview first, then execute after confirmation."""
-        omniworker_dir = tmp_path / ".omniworker"
-        omniworker_dir.mkdir()
+        flux-agent_dir = tmp_path / ".flux-agent"
+        flux-agent_dir.mkdir()
 
-        # Create a fake omniworker home with config
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        config_path = omniworker_home / "config.yaml"
+        # Create a fake flux-agent home with config
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        config_path = flux-agent_home / "config.yaml"
         config_path.write_text("agent:\n  max_turns: 90\n")
 
         # Build a fake migration module
-        fake_mod = ModuleType("omniworker_to_omniworker")
+        fake_mod = ModuleType("flux-agent_to_flux-agent")
         fake_mod.resolve_selected_options = MagicMock(return_value={"soul", "memory"})
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
             "summary": {"migrated": 3, "skipped": 1, "conflict": 0, "error": 0},
             "items": [{"kind": "config", "status": "migrated", "destination": "/tmp/x"}],
-            "output_dir": str(omniworker_home / "migration"),
+            "output_dir": str(flux-agent_home / "migration"),
         }
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
-        script = tmp_path / "omniworker_to_omniworker.py"
+        script = tmp_path / "flux-agent_to_flux-agent.py"
         script.write_text("# placeholder")
 
         with (
-            patch("omniworker_cli.setup.Path.home", return_value=tmp_path),
+            patch("flux-agent_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", script),
             # Both prompts answered Yes: preview offer + proceed confirmation
             patch.object(setup_mod, "prompt_yes_no", return_value=True),
@@ -87,7 +87,7 @@ class TestOfferOpenclawMigration:
 
             mock_spec.loader.exec_module = exec_module
 
-            result = setup_mod._offer_omniworker_migration(omniworker_home)
+            result = setup_mod._offer_flux-agent_migration(flux-agent_home)
 
         assert result is True
         fake_mod.resolve_selected_options.assert_called_once_with(
@@ -115,15 +115,15 @@ class TestOfferOpenclawMigration:
 
     def test_user_declines_after_preview(self, tmp_path):
         """Should return False when user sees preview but declines to proceed."""
-        omniworker_dir = tmp_path / ".omniworker"
-        omniworker_dir.mkdir()
+        flux-agent_dir = tmp_path / ".flux-agent"
+        flux-agent_dir.mkdir()
 
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        config_path = omniworker_home / "config.yaml"
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        config_path = flux-agent_home / "config.yaml"
         config_path.write_text("agent:\n  max_turns: 90\n")
 
-        fake_mod = ModuleType("omniworker_to_omniworker")
+        fake_mod = ModuleType("flux-agent_to_flux-agent")
         fake_mod.resolve_selected_options = MagicMock(return_value={"soul", "memory"})
         fake_migrator = MagicMock()
         fake_migrator.migrate.return_value = {
@@ -132,14 +132,14 @@ class TestOfferOpenclawMigration:
         }
         fake_mod.Migrator = MagicMock(return_value=fake_migrator)
 
-        script = tmp_path / "omniworker_to_omniworker.py"
+        script = tmp_path / "flux-agent_to_flux-agent.py"
         script.write_text("# placeholder")
 
         # First prompt (preview): Yes, Second prompt (proceed): No
         prompt_responses = iter([True, False])
 
         with (
-            patch("omniworker_cli.setup.Path.home", return_value=tmp_path),
+            patch("flux-agent_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", script),
             patch.object(setup_mod, "prompt_yes_no", side_effect=prompt_responses),
             patch.object(setup_mod, "get_config_path", return_value=config_path),
@@ -155,7 +155,7 @@ class TestOfferOpenclawMigration:
 
             mock_spec.loader.exec_module = exec_module
 
-            result = setup_mod._offer_omniworker_migration(omniworker_home)
+            result = setup_mod._offer_flux-agent_migration(flux-agent_home)
 
         assert result is False
         # Only dry-run Migrator was created, not the execute one
@@ -165,18 +165,18 @@ class TestOfferOpenclawMigration:
 
     def test_handles_migration_error_gracefully(self, tmp_path):
         """Should catch exceptions and return False."""
-        omniworker_dir = tmp_path / ".omniworker"
-        omniworker_dir.mkdir()
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        config_path = omniworker_home / "config.yaml"
+        flux-agent_dir = tmp_path / ".flux-agent"
+        flux-agent_dir.mkdir()
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        config_path = flux-agent_home / "config.yaml"
         config_path.write_text("")
 
-        script = tmp_path / "omniworker_to_omniworker.py"
+        script = tmp_path / "flux-agent_to_flux-agent.py"
         script.write_text("# placeholder")
 
         with (
-            patch("omniworker_cli.setup.Path.home", return_value=tmp_path),
+            patch("flux-agent_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", script),
             patch.object(setup_mod, "prompt_yes_no", return_value=True),
             patch.object(setup_mod, "get_config_path", return_value=config_path),
@@ -185,24 +185,24 @@ class TestOfferOpenclawMigration:
                 side_effect=RuntimeError("boom"),
             ),
         ):
-            result = setup_mod._offer_omniworker_migration(omniworker_home)
+            result = setup_mod._offer_flux-agent_migration(flux-agent_home)
 
         assert result is False
 
     def test_creates_config_if_missing(self, tmp_path):
         """Should bootstrap config.yaml before running migration."""
-        omniworker_dir = tmp_path / ".omniworker"
-        omniworker_dir.mkdir()
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        config_path = omniworker_home / "config.yaml"
+        flux-agent_dir = tmp_path / ".flux-agent"
+        flux-agent_dir.mkdir()
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        config_path = flux-agent_home / "config.yaml"
         # config does NOT exist yet
 
-        script = tmp_path / "omniworker_to_omniworker.py"
+        script = tmp_path / "flux-agent_to_flux-agent.py"
         script.write_text("# placeholder")
 
         with (
-            patch("omniworker_cli.setup.Path.home", return_value=tmp_path),
+            patch("flux-agent_cli.setup.Path.home", return_value=tmp_path),
             patch.object(setup_mod, "_OPENCLAW_SCRIPT", script),
             patch.object(setup_mod, "prompt_yes_no", return_value=True),
             patch.object(setup_mod, "get_config_path", return_value=config_path),
@@ -213,7 +213,7 @@ class TestOfferOpenclawMigration:
                 side_effect=RuntimeError("stop early"),
             ),
         ):
-            setup_mod._offer_omniworker_migration(omniworker_home)
+            setup_mod._offer_flux-agent_migration(flux-agent_home)
 
         # save_config should have been called to bootstrap the file
         mock_save.assert_called_once_with({"agent": {}})
@@ -233,26 +233,26 @@ def _first_time_args() -> Namespace:
 
 
 class TestSetupWizardOpenclawIntegration:
-    """Verify _offer_omniworker_migration is called during first-time setup."""
+    """Verify _offer_flux-agent_migration is called during first-time setup."""
 
     def test_migration_offered_during_first_time_setup(self, tmp_path):
-        """On first-time setup, _offer_omniworker_migration should be called."""
+        """On first-time setup, _offer_flux-agent_migration should be called."""
         args = _first_time_args()
 
         with (
-            patch.object(setup_mod, "ensure_omniworker_home"),
+            patch.object(setup_mod, "ensure_flux-agent_home"),
             patch.object(setup_mod, "load_config", return_value={}),
-            patch.object(setup_mod, "get_omniworker_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_flux-agent_home", return_value=tmp_path),
             patch.object(setup_mod, "get_env_value", return_value=""),
             patch.object(setup_mod, "is_interactive_stdin", return_value=True),
-            patch("omniworker_cli.auth.get_active_provider", return_value=None),
+            patch("flux-agent_cli.auth.get_active_provider", return_value=None),
             # User presses Enter to start
             patch("builtins.input", return_value=""),
             # Select "Full setup" (index 1) so we exercise the full path
             patch.object(setup_mod, "prompt_choice", return_value=1),
             # Mock the migration offer
             patch.object(
-                setup_mod, "_offer_omniworker_migration", return_value=False
+                setup_mod, "_offer_flux-agent_migration", return_value=False
             ) as mock_migration,
             # Mock the actual setup sections so they don't run
             patch.object(setup_mod, "setup_model_provider"),
@@ -277,15 +277,15 @@ class TestSetupWizardOpenclawIntegration:
             return {}
 
         with (
-            patch.object(setup_mod, "ensure_omniworker_home"),
+            patch.object(setup_mod, "ensure_flux-agent_home"),
             patch.object(setup_mod, "load_config", side_effect=tracking_load_config),
-            patch.object(setup_mod, "get_omniworker_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_flux-agent_home", return_value=tmp_path),
             patch.object(setup_mod, "get_env_value", return_value=""),
             patch.object(setup_mod, "is_interactive_stdin", return_value=True),
-            patch("omniworker_cli.auth.get_active_provider", return_value=None),
+            patch("flux-agent_cli.auth.get_active_provider", return_value=None),
             patch("builtins.input", return_value=""),
             patch.object(setup_mod, "prompt_choice", return_value=1),
-            patch.object(setup_mod, "_offer_omniworker_migration", return_value=True),
+            patch.object(setup_mod, "_offer_flux-agent_migration", return_value=True),
             patch.object(setup_mod, "setup_model_provider"),
             patch.object(setup_mod, "setup_terminal_backend"),
             patch.object(setup_mod, "setup_agent_settings"),
@@ -305,19 +305,19 @@ class TestSetupWizardOpenclawIntegration:
         reloaded_config = {"model": {"provider": "openrouter"}}
 
         with (
-            patch.object(setup_mod, "ensure_omniworker_home"),
+            patch.object(setup_mod, "ensure_flux-agent_home"),
             patch.object(
                 setup_mod,
                 "load_config",
                 side_effect=[initial_config, reloaded_config],
             ),
-            patch.object(setup_mod, "get_omniworker_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_flux-agent_home", return_value=tmp_path),
             patch.object(setup_mod, "get_env_value", return_value=""),
             patch.object(setup_mod, "is_interactive_stdin", return_value=True),
-            patch("omniworker_cli.auth.get_active_provider", return_value=None),
+            patch("flux-agent_cli.auth.get_active_provider", return_value=None),
             patch("builtins.input", return_value=""),
             patch.object(setup_mod, "prompt_choice", return_value=1),
-            patch.object(setup_mod, "_offer_omniworker_migration", return_value=True),
+            patch.object(setup_mod, "_offer_flux-agent_migration", return_value=True),
             patch.object(setup_mod, "setup_model_provider") as setup_model_provider,
             patch.object(setup_mod, "setup_terminal_backend"),
             patch.object(setup_mod, "setup_agent_settings"),
@@ -335,19 +335,19 @@ class TestSetupWizardOpenclawIntegration:
         args = _first_time_args()
 
         with (
-            patch.object(setup_mod, "ensure_omniworker_home"),
+            patch.object(setup_mod, "ensure_flux-agent_home"),
             patch.object(setup_mod, "load_config", return_value={}),
-            patch.object(setup_mod, "get_omniworker_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_flux-agent_home", return_value=tmp_path),
             patch.object(
                 setup_mod,
                 "get_env_value",
                 side_effect=lambda k: "sk-xxx" if k == "OPENROUTER_API_KEY" else "",
             ),
-            patch("omniworker_cli.auth.get_active_provider", return_value=None),
+            patch("flux-agent_cli.auth.get_active_provider", return_value=None),
             # Returning user picks "Exit"
             patch.object(setup_mod, "prompt_choice", return_value=9),
             patch.object(
-                setup_mod, "_offer_omniworker_migration", return_value=False
+                setup_mod, "_offer_flux-agent_migration", return_value=False
             ) as mock_migration,
         ):
             setup_mod.run_setup_wizard(args)
@@ -417,9 +417,9 @@ class TestGetSectionConfigSummary:
             return ""
 
         # Also patch gateway module's binding since _platform_status()
-        # reads from omniworker_cli.gateway.get_env_value after the setup
+        # reads from flux-agent_cli.gateway.get_env_value after the setup
         # flows were unified via platform_registry.
-        import omniworker_cli.gateway as gateway_mod
+        import flux-agent_cli.gateway as gateway_mod
         with patch.object(setup_mod, "get_env_value", side_effect=env_side), \
              patch.object(gateway_mod, "get_env_value", side_effect=env_side):
             result = setup_mod._get_section_config_summary({}, "gateway")
@@ -442,7 +442,7 @@ class TestGetSectionConfigSummary:
     # Regression tests for issue #13025: the model / gateway summaries used
     # stale, hardcoded env-var allowlists that drifted from the real setup +
     # status flows.  Every case below would previously return ``None`` and
-    # force OmniWorker migration to re-run setup for an already-configured
+    # force Flux Agent migration to re-run setup for an already-configured
     # section.
 
     def test_model_recognises_zai_glm_api_key(self):
@@ -473,7 +473,7 @@ class TestGetSectionConfigSummary:
         def env_side(key):
             return "true" if key == "WHATSAPP_ENABLED" else ""
 
-        import omniworker_cli.gateway as gateway_mod
+        import flux-agent_cli.gateway as gateway_mod
         with patch.object(setup_mod, "get_env_value", side_effect=env_side), \
              patch.object(gateway_mod, "get_env_value", side_effect=env_side):
             result = setup_mod._get_section_config_summary({}, "gateway")
@@ -485,7 +485,7 @@ class TestGetSectionConfigSummary:
         def env_side(key):
             return "http://signal.local" if key == "SIGNAL_HTTP_URL" else ""
 
-        import omniworker_cli.gateway as gateway_mod
+        import flux-agent_cli.gateway as gateway_mod
         with patch.object(setup_mod, "get_env_value", side_effect=env_side), \
              patch.object(gateway_mod, "get_env_value", side_effect=env_side):
             result = setup_mod._get_section_config_summary({}, "gateway")
@@ -538,7 +538,7 @@ class TestGetSectionConfigSummary:
         """Every built-in platform should be recognised by its primary
         env-var sentinel — i.e. the summary must not drift from the
         registry used by the setup checklist."""
-        from omniworker_cli.gateway import _PLATFORMS
+        from flux-agent_cli.gateway import _PLATFORMS
 
         for plat in _PLATFORMS:
             label = plat["label"]
@@ -554,7 +554,7 @@ class TestGetSectionConfigSummary:
                 if _target == "WHATSAPP_ENABLED":
                     return "true"
                 return "x"
-            import omniworker_cli.gateway as gateway_mod
+            import flux-agent_cli.gateway as gateway_mod
             with patch.object(setup_mod, "get_env_value", side_effect=env_side), \
                  patch.object(gateway_mod, "get_env_value", side_effect=env_side):
                 result = setup_mod._get_section_config_summary({}, "gateway")
@@ -619,27 +619,27 @@ class TestSetupWizardSkipsConfiguredSections:
                 return "sk-xxx"
             return ""
 
-        def fake_migration(omniworker_home):
+        def fake_migration(flux-agent_home):
             migration_done["value"] = True
             return True
 
         reloaded_config = {"model": "openai/gpt-4"}
 
         with (
-            patch.object(setup_mod, "ensure_omniworker_home"),
+            patch.object(setup_mod, "ensure_flux-agent_home"),
             patch.object(
                 setup_mod, "load_config",
                 side_effect=[{}, reloaded_config],
             ),
-            patch.object(setup_mod, "get_omniworker_home", return_value=tmp_path),
+            patch.object(setup_mod, "get_flux-agent_home", return_value=tmp_path),
             patch.object(setup_mod, "get_env_value", side_effect=env_side),
             patch.object(setup_mod, "is_interactive_stdin", return_value=True),
-            patch("omniworker_cli.auth.get_active_provider", return_value=None),
+            patch("flux-agent_cli.auth.get_active_provider", return_value=None),
             patch("builtins.input", return_value=""),
             patch.object(setup_mod, "prompt_choice", return_value=1),
             # Migration succeeds and flips the env_side flag
             patch.object(
-                setup_mod, "_offer_omniworker_migration",
+                setup_mod, "_offer_flux-agent_migration",
                 side_effect=fake_migration,
             ),
             # User says No to all reconfig prompts

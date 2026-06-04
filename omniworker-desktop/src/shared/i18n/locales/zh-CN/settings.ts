@@ -1,7 +1,7 @@
 export default {
   title: "设置",
   sections: {
-    omniworkerAgent: "Flux Agent",
+    flux-agentAgent: "Flux Agent",
     appearance: "外观",
     credentialPool: "凭据池",
   },
@@ -66,7 +66,7 @@ export default {
     "在 <code>{{path}}</code> 发现 Flux Agent。你可以将配置、API Key、会话和技能迁移到 Flux Agent。",
   migrationDismiss: "不再显示",
   migrating: "迁移中...",
-  migrateToOmniWorker: "迁移到 Flux Agent",
+  migrateToFlux Agent: "迁移到 Flux Agent",
   skip: "跳过",
   appearanceHint: "选择你偏好的界面外观",
   apiKeyPlaceholder: "API Key",
@@ -87,7 +87,7 @@ export default {
   save: "保存",
   serverConfigTitle: "服务器配置",
   serverConfigHint:
-    "你已连接到远程 Flux Agent 服务器。模型选择、提供商 API Key 和凭据均在服务器的 <code>~/.omniworker/.env</code> 和 <code>config.yaml</code> 中管理。请在主机上编辑（例如 <code>docker exec -it Flux Agent vi /opt/data/.env</code>）然后重启容器。",
+    "你已连接到远程 Flux Agent 服务器。模型选择、提供商 API Key 和凭据均在服务器的 <code>~/.flux-agent/.env</code> 和 <code>config.yaml</code> 中管理。请在主机上编辑（例如 <code>docker exec -it Flux Agent vi /opt/data/.env</code>）然后重启容器。",
   connectionMode: "模式",
   switchedToLocal: "已切换到本地模式",
 } as const;

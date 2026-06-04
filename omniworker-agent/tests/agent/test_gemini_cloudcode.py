@@ -30,7 +30,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_env(monkeypatch, tmp_path):
-    home = tmp_path / ".omniworker"
+    home = tmp_path / ".flux-agent"
     home.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
@@ -368,7 +368,7 @@ class TestHeadlessDetection:
         monkeypatch.setenv("SSH_CONNECTION", "1.2.3.4 22 5.6.7.8 9876")
         assert _is_headless() is True
 
-    def test_detects_omniworker_headless(self, monkeypatch):
+    def test_detects_flux-agent_headless(self, monkeypatch):
         from agent.google_oauth import _is_headless
 
         monkeypatch.setenv("OMNIWORKER_HEADLESS", "1")
@@ -1114,20 +1114,20 @@ class TestGeminiHttpErrorParsing:
 
 class TestProviderRegistration:
     def test_registry_entry(self):
-        from omniworker_cli.auth import PROVIDER_REGISTRY
+        from flux-agent_cli.auth import PROVIDER_REGISTRY
 
         assert "google-gemini-cli" in PROVIDER_REGISTRY
         assert PROVIDER_REGISTRY["google-gemini-cli"].auth_type == "oauth_external"
 
     def test_google_gemini_alias_still_goes_to_api_key_gemini(self):
         """Regression guard: don't shadow the existing google-gemini → gemini alias."""
-        from omniworker_cli.auth import resolve_provider
+        from flux-agent_cli.auth import resolve_provider
 
         assert resolve_provider("google-gemini") == "gemini"
 
     def test_runtime_provider_raises_when_not_logged_in(self):
-        from omniworker_cli.auth import AuthError
-        from omniworker_cli.runtime_provider import resolve_runtime_provider
+        from flux-agent_cli.auth import AuthError
+        from flux-agent_cli.runtime_provider import resolve_runtime_provider
 
         with pytest.raises(AuthError) as exc_info:
             resolve_runtime_provider(requested="google-gemini-cli")
@@ -1135,7 +1135,7 @@ class TestProviderRegistration:
 
     def test_runtime_provider_returns_correct_shape_when_logged_in(self):
         from agent.google_oauth import GoogleCredentials, save_credentials
-        from omniworker_cli.runtime_provider import resolve_runtime_provider
+        from flux-agent_cli.runtime_provider import resolve_runtime_provider
 
         save_credentials(GoogleCredentials(
             access_token="live-tok",
@@ -1154,18 +1154,18 @@ class TestProviderRegistration:
         assert result["email"] == "t@e.com"
 
     def test_determine_api_mode(self):
-        from omniworker_cli.providers import determine_api_mode
+        from flux-agent_cli.providers import determine_api_mode
 
         assert determine_api_mode("google-gemini-cli", "cloudcode-pa://google") == "chat_completions"
 
     def test_oauth_capable_set_preserves_existing(self):
-        from omniworker_cli.auth_commands import _OAUTH_CAPABLE_PROVIDERS
+        from flux-agent_cli.auth_commands import _OAUTH_CAPABLE_PROVIDERS
 
         for required in ("anthropic", "nous", "openai-codex", "qwen-oauth", "google-gemini-cli"):
             assert required in _OAUTH_CAPABLE_PROVIDERS
 
     def test_config_env_vars_registered(self):
-        from omniworker_cli.config import OPTIONAL_ENV_VARS
+        from flux-agent_cli.config import OPTIONAL_ENV_VARS
 
         for key in (
             "OMNIWORKER_GEMINI_CLIENT_ID",
@@ -1177,14 +1177,14 @@ class TestProviderRegistration:
 
 class TestAuthStatus:
     def test_not_logged_in(self):
-        from omniworker_cli.auth import get_auth_status
+        from flux-agent_cli.auth import get_auth_status
 
         s = get_auth_status("google-gemini-cli")
         assert s["logged_in"] is False
 
     def test_logged_in_reports_email_and_project(self):
         from agent.google_oauth import GoogleCredentials, save_credentials
-        from omniworker_cli.auth import get_auth_status
+        from flux-agent_cli.auth import get_auth_status
 
         save_credentials(GoogleCredentials(
             access_token="tok", refresh_token="rt",
@@ -1201,7 +1201,7 @@ class TestAuthStatus:
 
 class TestGquotaCommand:
     def test_gquota_registered(self):
-        from omniworker_cli.commands import COMMANDS
+        from flux-agent_cli.commands import COMMANDS
 
         assert "/gquota" in COMMANDS
 

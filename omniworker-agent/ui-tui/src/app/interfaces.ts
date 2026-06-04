@@ -1,4 +1,4 @@
-import type { ScrollBoxHandle } from '@omniworker/ink'
+import type { ScrollBoxHandle } from '@flux-agent/ink'
 import type { MutableRefObject, ReactNode, RefObject, SetStateAction } from 'react'
 
 import type { PasteEvent } from '../components/textInput.js'

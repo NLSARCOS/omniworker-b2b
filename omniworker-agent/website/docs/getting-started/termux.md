@@ -1,19 +1,19 @@
 ---
 sidebar_position: 3
 title: "Android / Termux"
-description: "Run OmniWorker Agent directly on an Android phone with Termux"
+description: "Run Flux Agent Agent directly on an Android phone with Termux"
 ---
 
-# OmniWorker on Android with Termux
+# Flux Agent on Android with Termux
 
-This is the tested path for running OmniWorker Agent directly on an Android phone through [Termux](https://termux.dev/).
+This is the tested path for running Flux Agent Agent directly on an Android phone through [Termux](https://termux.dev/).
 
 It gives you a working local CLI on the phone, plus the core extras that are currently known to install cleanly on Android.
 
 ## What is supported in the tested path?
 
 The tested Termux bundle installs:
-- the OmniWorker CLI
+- the Flux Agent CLI
 - cron support
 - PTY/background terminal support
 - Telegram gateway support (manual / best-effort background runs)
@@ -37,23 +37,23 @@ A few features still need desktop/server-style dependencies that are not publish
 - Docker-based terminal isolation is not available inside Termux
 - Android may still suspend Termux background jobs, so gateway persistence is best-effort rather than a normal managed service
 
-That does not stop OmniWorker from working well as a phone-native CLI agent — it just means the recommended mobile install is intentionally narrower than the desktop/server install.
+That does not stop Flux Agent from working well as a phone-native CLI agent — it just means the recommended mobile install is intentionally narrower than the desktop/server install.
 
 ---
 
 ## Option 1: One-line installer
 
-OmniWorker now ships a Termux-aware installer path:
+Flux Agent now ships a Termux-aware installer path:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
 ```
 
 On Termux, the installer automatically:
 - uses `pkg` for system packages
 - creates the venv with `python -m venv`
 - attempts the broad `.[termux-all]` extra first and falls back to the smaller `.[termux]` extra (then a base install) — the curl installer matches this order automatically
-- links `omniworker` into `$PREFIX/bin` so it stays on your Termux PATH
+- links `flux-agent` into `$PREFIX/bin` so it stays on your Termux PATH
 - skips the untested browser / WhatsApp bootstrap
 
 If you want the explicit commands or need to debug a failed install, use the manual path below.
@@ -77,11 +77,11 @@ Why these packages?
 - `ripgrep` — fast file search
 - `ffmpeg` — media / TTS conversions
 
-### 2. Clone OmniWorker
+### 2. Clone Flux Agent
 
 ```bash
-git clone --recurse-submodules https://github.com/OmniWorker/omniworker-agent.git
-cd omniworker-agent
+git clone --recurse-submodules https://github.com/Flux Agent/flux-agent-agent.git
+cd flux-agent-agent
 ```
 
 If you already cloned without submodules:
@@ -113,25 +113,25 @@ If you only want the minimal core agent, this also works:
 python -m pip install -e '.' -c constraints-termux.txt
 ```
 
-### 5. Put `omniworker` on your Termux PATH
+### 5. Put `flux-agent` on your Termux PATH
 
 ```bash
-ln -sf "$PWD/venv/bin/omniworker" "$PREFIX/bin/omniworker"
+ln -sf "$PWD/venv/bin/flux-agent" "$PREFIX/bin/flux-agent"
 ```
 
-`$PREFIX/bin` is already on PATH in Termux, so this makes the `omniworker` command persist across new shells without re-activating the venv every time.
+`$PREFIX/bin` is already on PATH in Termux, so this makes the `flux-agent` command persist across new shells without re-activating the venv every time.
 
 ### 6. Verify the install
 
 ```bash
-omniworker version
-omniworker doctor
+flux-agent version
+flux-agent doctor
 ```
 
-### 7. Start OmniWorker
+### 7. Start Flux Agent
 
 ```bash
-omniworker
+flux-agent
 ```
 
 ---
@@ -141,15 +141,15 @@ omniworker
 ### Configure a model
 
 ```bash
-omniworker model
+flux-agent model
 ```
 
-Or set keys directly in `~/.omniworker/.env`.
+Or set keys directly in `~/.flux-agent/.env`.
 
 ### Re-run the full interactive setup wizard later
 
 ```bash
-omniworker setup
+flux-agent setup
 ```
 
 ### Install optional Node dependencies manually
@@ -203,7 +203,7 @@ export ANDROID_API_LEVEL="$(getprop ro.build.version.sdk)"
 python -m pip install -e '.[termux]' -c constraints-termux.txt
 ```
 
-### `omniworker doctor` says ripgrep or Node is missing
+### `flux-agent doctor` says ripgrep or Node is missing
 
 Install them with Termux packages:
 
@@ -238,5 +238,5 @@ If you hit a new Android-specific issue, please open a GitHub issue with:
 - your Android version
 - `termux-info`
 - `python --version`
-- `omniworker doctor`
+- `flux-agent doctor`
 - the exact install command and full error output

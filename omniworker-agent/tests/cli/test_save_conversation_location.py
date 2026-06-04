@@ -1,10 +1,10 @@
 """Tests for /save — the conversation snapshot slash command.
 
-Regression: the old implementation wrote ``omniworker_conversation_<ts>.json``
+Regression: the old implementation wrote ``flux-agent_conversation_<ts>.json``
 to the current working directory (CWD). Users who ran /save expected the
-file to be discoverable via ``omniworker sessions browse``, but CWD-resident
+file to be discoverable via ``flux-agent sessions browse``, but CWD-resident
 snapshots are not indexed in the state DB and are generally invisible.
-The fix writes snapshots under ``~/.omniworker/sessions/saved/`` and prints
+The fix writes snapshots under ``~/.flux-agent/sessions/saved/`` and prints
 the absolute path plus the resume hint for the live session.
 """
 
@@ -21,15 +21,15 @@ import pytest
 
 
 @pytest.fixture
-def omniworker_home(tmp_path, monkeypatch):
-    home = tmp_path / ".omniworker"
+def flux-agent_home(tmp_path, monkeypatch):
+    home = tmp_path / ".flux-agent"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("OMNIWORKER_HOME", str(home))
-    # Clear any cached omniworker_home computation
-    import omniworker_constants
-    if hasattr(omniworker_constants, "_omniworker_home_cache"):
-        omniworker_constants._omniworker_home_cache = None
+    monkeypatch.setenv("FLUX AGENT_HOME", str(home))
+    # Clear any cached flux-agent_home computation
+    import flux-agent_constants
+    if hasattr(flux-agent_constants, "_flux-agent_home_cache"):
+        flux-agent_constants._flux-agent_home_cache = None
     return home
 
 
@@ -43,15 +43,15 @@ def _make_stub_cli(history):
     )
 
 
-def test_save_conversation_writes_under_omniworker_home(omniworker_home, tmp_path, monkeypatch, capsys):
-    """Snapshot must land under ~/.omniworker/sessions/saved/, not CWD."""
+def test_save_conversation_writes_under_flux-agent_home(flux-agent_home, tmp_path, monkeypatch, capsys):
+    """Snapshot must land under ~/.flux-agent/sessions/saved/, not CWD."""
     # Change CWD to a different directory to prove the file does NOT go there.
     work = tmp_path / "somewhere-else"
     work.mkdir()
     monkeypatch.chdir(work)
 
-    # Import fresh to pick up the OMNIWORKER_HOME fixture
-    for mod in [m for m in sys.modules if m.startswith("cli") or m == "omniworker_constants"]:
+    # Import fresh to pick up the FLUX AGENT_HOME fixture
+    for mod in [m for m in sys.modules if m.startswith("cli") or m == "flux-agent_constants"]:
         sys.modules.pop(mod, None)
 
     import cli  # noqa: F401  (module under test)
@@ -62,16 +62,16 @@ def test_save_conversation_writes_under_omniworker_home(omniworker_home, tmp_pat
     ])
 
     # Call the unbound method against our stub.
-    cli.OmniWorkerCLI.save_conversation(stub)
+    cli.Flux AgentCLI.save_conversation(stub)
 
     # File must NOT be in CWD
-    cwd_leak = list(work.glob("omniworker_conversation_*.json"))
+    cwd_leak = list(work.glob("flux-agent_conversation_*.json"))
     assert not cwd_leak, f"snapshot leaked to CWD: {cwd_leak}"
 
-    # File MUST be under ~/.omniworker/sessions/saved/
-    saved_dir = omniworker_home / "sessions" / "saved"
+    # File MUST be under ~/.flux-agent/sessions/saved/
+    saved_dir = flux-agent_home / "sessions" / "saved"
     assert saved_dir.is_dir(), "expected saved/ subdirectory to be created"
-    files = list(saved_dir.glob("omniworker_conversation_*.json"))
+    files = list(saved_dir.glob("flux-agent_conversation_*.json"))
     assert len(files) == 1, files
 
     payload = json.loads(files[0].read_text())
@@ -85,18 +85,18 @@ def test_save_conversation_writes_under_omniworker_home(omniworker_home, tmp_pat
     # User-facing message must include the absolute path AND the resume hint.
     out = capsys.readouterr().out
     assert str(files[0]) in out, out
-    assert "omniworker --resume 20260101_120000_abc123" in out, out
+    assert "flux-agent --resume 20260101_120000_abc123" in out, out
 
 
-def test_save_conversation_empty_history_does_nothing(omniworker_home, capsys):
-    for mod in [m for m in sys.modules if m.startswith("cli") or m == "omniworker_constants"]:
+def test_save_conversation_empty_history_does_nothing(flux-agent_home, capsys):
+    for mod in [m for m in sys.modules if m.startswith("cli") or m == "flux-agent_constants"]:
         sys.modules.pop(mod, None)
     import cli
 
     stub = _make_stub_cli([])
-    cli.OmniWorkerCLI.save_conversation(stub)
+    cli.Flux AgentCLI.save_conversation(stub)
 
-    saved_dir = omniworker_home / "sessions" / "saved"
+    saved_dir = flux-agent_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())
     out = capsys.readouterr().out
     assert "No conversation to save" in out

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: "Provider Runtime Resolution"
-description: "How OmniWorker resolves providers, credentials, API modes, and auxiliary models at runtime"
+description: "How Flux Agent resolves providers, credentials, API modes, and auxiliary models at runtime"
 ---
 
 # Provider Runtime Resolution
 
-OmniWorker has a shared provider runtime resolver used across:
+Flux Agent has a shared provider runtime resolver used across:
 
 - CLI
 - gateway
@@ -16,14 +16,14 @@ OmniWorker has a shared provider runtime resolver used across:
 
 Primary implementation:
 
-- `omniworker_cli/runtime_provider.py` — credential resolution, `_resolve_custom_runtime()`
-- `omniworker_cli/auth.py` — provider registry, `resolve_provider()`
-- `omniworker_cli/model_switch.py` — shared `/model` switch pipeline (CLI + gateway)
+- `flux-agent_cli/runtime_provider.py` — credential resolution, `_resolve_custom_runtime()`
+- `flux-agent_cli/auth.py` — provider registry, `resolve_provider()`
+- `flux-agent_cli/model_switch.py` — shared `/model` switch pipeline (CLI + gateway)
 - `agent/auxiliary_client.py` — auxiliary model routing
 - `providers/` — ABC + registry entry points (`ProviderProfile`, `register_provider`, `get_provider_profile`, `list_providers`)
-- `plugins/model-providers/<name>/` — per-provider plugins (bundled) that declare `api_mode`, `base_url`, `env_vars`, `fallback_models` and register themselves into the registry on first access. User plugins at `$OMNIWORKER_HOME/plugins/model-providers/<name>/` override bundled ones of the same name.
+- `plugins/model-providers/<name>/` — per-provider plugins (bundled) that declare `api_mode`, `base_url`, `env_vars`, `fallback_models` and register themselves into the registry on first access. User plugins at `$FLUX AGENT_HOME/plugins/model-providers/<name>/` override bundled ones of the same name.
 
-`get_provider_profile()` in `providers/` returns a `ProviderProfile` for a given provider id. `runtime_provider.py` calls this at resolution time to get the canonical `base_url`, `env_vars` priority list, `api_mode`, and `fallback_models` without needing to duplicate that data in multiple files. Adding a new plugin under `plugins/model-providers/<your-provider>/` (or `$OMNIWORKER_HOME/plugins/model-providers/<your-provider>/`) that calls `register_provider()` is enough for `runtime_provider.py` to pick it up — no branch needed in the resolver itself.
+`get_provider_profile()` in `providers/` returns a `ProviderProfile` for a given provider id. `runtime_provider.py` calls this at resolution time to get the canonical `base_url`, `env_vars` priority list, `api_mode`, and `fallback_models` without needing to duplicate that data in multiple files. Adding a new plugin under `plugins/model-providers/<your-provider>/` (or `$FLUX AGENT_HOME/plugins/model-providers/<your-provider>/`) that calls `register_provider()` is enough for `runtime_provider.py` to pick it up — no branch needed in the resolver itself.
 
 If you are trying to add a new first-class inference provider, read [Adding Providers](./adding-providers.md) and the [Model Provider Plugin guide](./model-provider-plugin.md) alongside this page.
 
@@ -36,7 +36,7 @@ At a high level, provider resolution uses:
 3. environment variables
 4. provider-specific defaults or auto resolution
 
-That ordering matters because OmniWorker treats the saved model/provider choice as the source of truth for normal runs. This prevents a stale shell export from silently overriding the endpoint a user last selected in `omniworker model`.
+That ordering matters because Flux Agent treats the saved model/provider choice as the source of truth for normal runs. This prevents a stale shell export from silently overriding the endpoint a user last selected in `flux-agent model`.
 
 ## Providers
 
@@ -85,9 +85,9 @@ The runtime resolver returns data such as:
 
 ## Why this matters
 
-This resolver is the main reason OmniWorker can share auth/runtime logic between:
+This resolver is the main reason Flux Agent can share auth/runtime logic between:
 
-- `omniworker chat`
+- `flux-agent chat`
 - gateway message handling
 - cron jobs running in fresh sessions
 - ACP editor sessions
@@ -95,11 +95,11 @@ This resolver is the main reason OmniWorker can share auth/runtime logic between
 
 ## AI Gateway
 
-Set `AI_GATEWAY_API_KEY` in `~/.omniworker/.env` and run with `--provider ai-gateway`. OmniWorker fetches available models from the gateway's `/models` endpoint, filtering to language models with tool-use support.
+Set `AI_GATEWAY_API_KEY` in `~/.flux-agent/.env` and run with `--provider ai-gateway`. Flux Agent fetches available models from the gateway's `/models` endpoint, filtering to language models with tool-use support.
 
 ## OpenRouter, AI Gateway, and custom OpenAI-compatible base URLs
 
-OmniWorker contains logic to avoid leaking the wrong API key to a custom endpoint when multiple provider keys exist (e.g. `OPENROUTER_API_KEY`, `AI_GATEWAY_API_KEY`, and `OPENAI_API_KEY`).
+Flux Agent contains logic to avoid leaking the wrong API key to a custom endpoint when multiple provider keys exist (e.g. `OPENROUTER_API_KEY`, `AI_GATEWAY_API_KEY`, and `OPENAI_API_KEY`).
 
 Each provider's API key is scoped to its own base URL:
 
@@ -107,7 +107,7 @@ Each provider's API key is scoped to its own base URL:
 - `AI_GATEWAY_API_KEY` is only sent to `ai-gateway.vercel.sh` endpoints
 - `OPENAI_API_KEY` is used for custom endpoints and as a fallback
 
-OmniWorker also distinguishes between:
+Flux Agent also distinguishes between:
 
 - a real custom endpoint selected by the user
 - the OpenRouter fallback path used when no custom endpoint is configured
@@ -123,7 +123,7 @@ That distinction is especially important for:
 
 Anthropic is not just "via OpenRouter" anymore.
 
-When provider resolution selects `anthropic`, OmniWorker uses:
+When provider resolution selects `anthropic`, Flux Agent uses:
 
 - `api_mode = anthropic_messages`
 - the native Anthropic Messages API
@@ -133,8 +133,8 @@ Credential resolution for native Anthropic now prefers refreshable Claude Code c
 
 - Claude Code credential files are treated as the preferred source when they include refreshable auth
 - manual `ANTHROPIC_TOKEN` / `CLAUDE_CODE_OAUTH_TOKEN` values still work as explicit overrides
-- OmniWorker preflights Anthropic credential refresh before native Messages API calls
-- OmniWorker still retries once on a 401 after rebuilding the Anthropic client, as a fallback path
+- Flux Agent preflights Anthropic credential refresh before native Messages API calls
+- Flux Agent still retries once on a 401 after rebuilding the Anthropic client, as a fallback path
 
 ## OpenAI Codex path
 
@@ -157,15 +157,15 @@ Auxiliary tasks such as:
 
 can use their own provider/model routing rather than the main conversational model.
 
-When an auxiliary task is configured with provider `main`, OmniWorker resolves that through the same shared runtime path as normal chat. In practice that means:
+When an auxiliary task is configured with provider `main`, Flux Agent resolves that through the same shared runtime path as normal chat. In practice that means:
 
 - env-driven custom endpoints still work
-- custom endpoints saved via `omniworker model` / `config.yaml` also work
+- custom endpoints saved via `flux-agent model` / `config.yaml` also work
 - auxiliary routing can tell the difference between a real saved custom endpoint and the OpenRouter fallback
 
 ## Fallback models
 
-OmniWorker supports a configured fallback provider chain — a list of `(provider, model)` entries tried in order when the primary model encounters errors. The legacy single-pair `fallback_model` dict is still accepted for back-compat (and migrated on first write).
+Flux Agent supports a configured fallback provider chain — a list of `(provider, model)` entries tried in order when the primary model encounters errors. The legacy single-pair `fallback_model` dict is still accepted for back-compat (and migrated on first write).
 
 ### How it works internally
 

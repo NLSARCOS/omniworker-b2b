@@ -1,4 +1,4 @@
-import { Box, Text, useStdout } from '@omniworker/ink'
+import { Box, Text, useStdout } from '@flux-agent/ink'
 import { useEffect, useState } from 'react'
 import unicodeSpinners from 'unicode-animations'
 
@@ -320,7 +320,7 @@ export function SessionPanel({ info, sid, t }: SessionPanelProps) {
               - run{' '}
             </Text>
             <Text bold color={t.color.warn}>
-              {info.update_command || 'omniworker update'}
+              {info.update_command || 'flux-agent update'}
             </Text>
             <Text bold={false} color={t.color.warn} dimColor>
               {' '}

@@ -1,4 +1,4 @@
-"""Tests for the specifier module + `omniworker kanban specify` CLI surface.
+"""Tests for the specifier module + `flux-agent kanban specify` CLI surface.
 
 The auxiliary LLM client is mocked — these tests don't hit any network or
 real provider. They exercise the prompt plumbing, response parsing, DB
@@ -14,14 +14,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from omniworker_cli import kanban as kanban_cli
-from omniworker_cli import kanban_db as kb
-from omniworker_cli import kanban_specify as spec
+from flux-agent_cli import kanban as kanban_cli
+from flux-agent_cli import kanban_db as kb
+from flux-agent_cli import kanban_specify as spec
 
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    home = tmp_path / ".omniworker"
+    home = tmp_path / ".flux-agent"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -219,7 +219,7 @@ def test_list_triage_ids(kanban_home):
 # ---------------------------------------------------------------------------
 
 def _run_cli(*argv: str) -> int:
-    """Invoke the `omniworker kanban …` argparse surface directly."""
+    """Invoke the `flux-agent kanban …` argparse surface directly."""
     root = argparse.ArgumentParser()
     subp = root.add_subparsers(dest="cmd")
     kanban_cli.build_parser(subp)

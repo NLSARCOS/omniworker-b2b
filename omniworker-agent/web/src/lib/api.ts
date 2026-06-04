@@ -1,6 +1,6 @@
 // The dashboard can be served either at the root of its host (e.g.
 // https://kanban.tilos.com/) or under a URL prefix when reverse-proxied
-// (e.g. https://mission-control.tilos.com/omniworker/). The Python backend
+// (e.g. https://mission-control.tilos.com/flux-agent/). The Python backend
 // injects ``window.__OMNIWORKER_BASE_PATH__`` into index.html based on the
 // incoming ``X-Forwarded-Prefix`` header so the SPA can address its own
 // ``/api/...`` and ``/dashboard-plugins/...`` URLs correctly without a
@@ -269,7 +269,7 @@ export const api = {
   restartGateway: () =>
     fetchJSON<ActionResponse>("/api/gateway/restart", { method: "POST" }),
   updateOmniWorker: () =>
-    fetchJSON<ActionResponse>("/api/omniworker/update", { method: "POST" }),
+    fetchJSON<ActionResponse>("/api/flux-agent/update", { method: "POST" }),
   getActionStatus: (name: string, lines = 200) =>
     fetchJSON<ActionStatusResponse>(
       `/api/actions/${encodeURIComponent(name)}/status?lines=${lines}`,
@@ -375,7 +375,7 @@ export interface StatusResponse {
   gateway_running: boolean;
   gateway_state: string | null;
   gateway_updated_at: string | null;
-  omniworker_home: string;
+  flux-agent_home: string;
   latest_config_version: number;
   release_date: string;
   version: string;

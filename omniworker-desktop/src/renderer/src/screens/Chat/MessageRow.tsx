@@ -8,7 +8,7 @@ import type { ChatMessage } from "./types";
 export const APPROVAL_RE =
   /⚠️.*dangerous|requires? (your )?approval|\/approve.*\/deny|do you want (me )?to (proceed|continue|run|execute)/i;
 
-export const OmniWorkerAvatar = memo(function OmniWorkerAvatar({
+export const Flux AgentAvatar = memo(function Flux AgentAvatar({
   size = 30,
 }: {
   size?: number;
@@ -58,7 +58,7 @@ export const MessageRow = memo(function MessageRow({
       {msg.role === "user" ? (
         <div className="chat-avatar chat-avatar-user">U</div>
       ) : (
-        <OmniWorkerAvatar />
+        <Flux AgentAvatar />
       )}
       <div className={`chat-bubble chat-bubble-${msg.role}`}>
         {msg.role === "agent" ? (

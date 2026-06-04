@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Monitor a running video-production kanban. Polls `omniworker kanban list` and
+Monitor a running video-production kanban. Polls `flux-agent kanban list` and
 `events` for a tenant and surfaces issues (stuck tasks, missing heartbeats,
 repeated retries, dependency deadlocks).
 
@@ -26,25 +26,25 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 
-def omniworker_available() -> bool:
-    return shutil.which("omniworker") is not None
+def flux-agent_available() -> bool:
+    return shutil.which("flux-agent") is not None
 
 
 def kanban_list(tenant: str) -> list[dict]:
     """Returns parsed task rows. Falls back to plain stdout parsing if JSON
-    output isn't supported by the installed omniworker CLI."""
+    output isn't supported by the installed flux-agent CLI."""
     try:
         out = subprocess.run(
-            ["omniworker", "kanban", "list", "--tenant", tenant, "--json"],
+            ["flux-agent", "kanban", "list", "--tenant", tenant, "--json"],
             capture_output=True, text=True, check=False,
         )
         if out.returncode == 0 and out.stdout.strip().startswith("["):
             return json.loads(out.stdout)
     except (FileNotFoundError, json.JSONDecodeError):
         pass
-    # Fallback: textual parse of `omniworker kanban list`
+    # Fallback: textual parse of `flux-agent kanban list`
     out = subprocess.run(
-        ["omniworker", "kanban", "list", "--tenant", tenant],
+        ["flux-agent", "kanban", "list", "--tenant", tenant],
         capture_output=True, text=True, check=False,
     )
     rows = []
@@ -68,7 +68,7 @@ def kanban_list(tenant: str) -> list[dict]:
 
 def kanban_show(task_id: str) -> dict | None:
     out = subprocess.run(
-        ["omniworker", "kanban", "show", task_id, "--json"],
+        ["flux-agent", "kanban", "show", task_id, "--json"],
         capture_output=True, text=True, check=False,
     )
     if out.returncode != 0:
@@ -171,8 +171,8 @@ def main():
                     help="Print one snapshot and exit (no polling loop)")
     args = ap.parse_args()
 
-    if not omniworker_available():
-        print("ERROR: 'omniworker' CLI not found in PATH", file=sys.stderr)
+    if not flux-agent_available():
+        print("ERROR: 'flux-agent' CLI not found in PATH", file=sys.stderr)
         sys.exit(1)
 
     if args.once:

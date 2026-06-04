@@ -1,1 +1,1 @@
-"""ACP (Agent Communication Protocol) adapter for omniworker-agent."""
+"""ACP (Agent Communication Protocol) adapter for flux-agent-agent."""

@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
 title: "Contributing"
-description: "How to contribute to OmniWorker Agent — dev setup, code style, PR process"
+description: "How to contribute to Flux Agent Agent — dev setup, code style, PR process"
 ---
 
 # Contributing
 
-Thank you for contributing to OmniWorker Agent! This guide covers setting up your dev environment, understanding the codebase, and getting your PR merged.
+Thank you for contributing to Flux Agent Agent! This guide covers setting up your dev environment, understanding the codebase, and getting your PR merged.
 
 ## Contribution Priorities
 
@@ -22,8 +22,8 @@ We value contributions in this order:
 
 ## Common contribution paths
 
-- Building a custom/local tool without modifying OmniWorker core? Start with [Build a OmniWorker Plugin](../guides/build-a-omniworker-plugin.md)
-- Building a new built-in core tool for OmniWorker itself? Start with [Adding Tools](./adding-tools.md)
+- Building a custom/local tool without modifying Flux Agent core? Start with [Build a Flux Agent Plugin](../guides/build-a-flux-agent-plugin.md)
+- Building a new built-in core tool for Flux Agent itself? Start with [Adding Tools](./adding-tools.md)
 - Building a new skill? Start with [Creating Skills](./creating-skills.md)
 - Building a new inference provider? Start with [Adding Providers](./adding-providers.md)
 
@@ -41,8 +41,8 @@ We value contributions in this order:
 ### Clone and Install
 
 ```bash
-git clone --recurse-submodules https://github.com/OmniWorker/omniworker-agent.git
-cd omniworker-agent
+git clone --recurse-submodules https://github.com/Flux Agent/flux-agent-agent.git
+cd flux-agent-agent
 
 # Create venv with Python 3.11
 uv venv venv --python 3.11
@@ -58,12 +58,12 @@ npm install
 ### Configure for Development
 
 ```bash
-mkdir -p ~/.omniworker/{cron,sessions,logs,memories,skills}
-cp cli-config.yaml.example ~/.omniworker/config.yaml
-touch ~/.omniworker/.env
+mkdir -p ~/.flux-agent/{cron,sessions,logs,memories,skills}
+cp cli-config.yaml.example ~/.flux-agent/config.yaml
+touch ~/.flux-agent/.env
 
 # Add at minimum an LLM provider key:
-echo 'OPENROUTER_API_KEY=sk-or-v1-your-key' >> ~/.omniworker/.env
+echo 'OPENROUTER_API_KEY=sk-or-v1-your-key' >> ~/.flux-agent/.env
 ```
 
 ### Run
@@ -71,11 +71,11 @@ echo 'OPENROUTER_API_KEY=sk-or-v1-your-key' >> ~/.omniworker/.env
 ```bash
 # Symlink for global access
 mkdir -p ~/.local/bin
-ln -sf "$(pwd)/venv/bin/omniworker" ~/.local/bin/omniworker
+ln -sf "$(pwd)/venv/bin/flux-agent" ~/.local/bin/flux-agent
 
 # Verify
-omniworker doctor
-omniworker chat -q "Hello"
+flux-agent doctor
+flux-agent chat -q "Hello"
 ```
 
 ### Run Tests
@@ -90,11 +90,11 @@ pytest tests/ -v
 - **Comments**: Only when explaining non-obvious intent, trade-offs, or API quirks
 - **Error handling**: Catch specific exceptions. Use `logger.warning()`/`logger.error()` with `exc_info=True` for unexpected errors
 - **Cross-platform**: Never assume Unix (see below)
-- **Profile-safe paths**: Never hardcode `~/.omniworker` — use `get_omniworker_home()` from `omniworker_constants` for code paths and `display_omniworker_home()` for user-facing messages. See [AGENTS.md](https://github.com/OmniWorker/omniworker-agent/blob/main/AGENTS.md#profiles-multi-instance-support) for full rules.
+- **Profile-safe paths**: Never hardcode `~/.flux-agent` — use `get_flux-agent_home()` from `flux-agent_constants` for code paths and `display_flux-agent_home()` for user-facing messages. See [AGENTS.md](https://github.com/Flux Agent/flux-agent-agent/blob/main/AGENTS.md#profiles-multi-instance-support) for full rules.
 
 ## Cross-Platform Compatibility
 
-OmniWorker officially supports **Linux, macOS, WSL2, and native Windows (early beta — via PowerShell install)**.  Native Windows uses Git Bash (from [Git for Windows](https://git-scm.com/download/win)) for shell commands.  A few features require POSIX kernel primitives and are gated: the dashboard's embedded PTY terminal pane (`/chat` tab) is WSL2-only. The native-Windows path is new and moves fast — if you're doing Windows-heavy dev, expect to hit and fix rough edges.
+Flux Agent officially supports **Linux, macOS, WSL2, and native Windows (early beta — via PowerShell install)**.  Native Windows uses Git Bash (from [Git for Windows](https://git-scm.com/download/win)) for shell commands.  A few features require POSIX kernel primitives and are gated: the dashboard's embedded PTY terminal pane (`/chat` tab) is WSL2-only. The native-Windows path is new and moves fast — if you're doing Windows-heavy dev, expect to hit and fix rough edges.
 
 When contributing code, keep these rules in mind:
 
@@ -149,7 +149,7 @@ Use `pathlib.Path` instead of string concatenation with `/`.
 
 ## Security Considerations
 
-OmniWorker has terminal access. Security matters.
+Flux Agent has terminal access. Security matters.
 
 ### Existing Protections
 
@@ -186,7 +186,7 @@ refactor/description   # Code restructuring
 ### Before Submitting
 
 1. **Run tests**: `pytest tests/ -v`
-2. **Test manually**: Run `omniworker` and exercise the code path you changed
+2. **Test manually**: Run `flux-agent` and exercise the code path you changed
 3. **Check cross-platform impact**: Consider macOS and different Linux distros
 4. **Keep PRs focused**: One logical change per PR
 
@@ -226,18 +226,18 @@ fix(security): prevent shell injection in sudo password piping
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/OmniWorker/omniworker-agent/issues)
-- Include: OS, Python version, OmniWorker version (`omniworker version`), full error traceback
+- Use [GitHub Issues](https://github.com/Flux Agent/flux-agent-agent/issues)
+- Include: OS, Python version, Flux Agent version (`flux-agent version`), full error traceback
 - Include steps to reproduce
 - Check existing issues before creating duplicates
 - For security vulnerabilities, please report privately
 
 ## Community
 
-- **Discord**: [discord.gg/OmniWorker](https://discord.gg/OmniWorker)
+- **Discord**: [discord.gg/Flux Agent](https://discord.gg/Flux Agent)
 - **GitHub Discussions**: For design proposals and architecture discussions
 - **Skills Hub**: Upload specialized skills and share with the community
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](https://github.com/OmniWorker/omniworker-agent/blob/main/LICENSE).
+By contributing, you agree that your contributions will be licensed under the [MIT License](https://github.com/Flux Agent/flux-agent-agent/blob/main/LICENSE).

@@ -30,7 +30,7 @@ def test_main_version_prints_without_starting_server(monkeypatch, capsys):
 
     output = capsys.readouterr().out.strip()
     assert output
-    assert "Starting omniworker-agent ACP adapter" not in output
+    assert "Starting flux-agent-agent ACP adapter" not in output
 
 
 def test_main_check_prints_ok_without_starting_server(monkeypatch, capsys):
@@ -38,16 +38,16 @@ def test_main_check_prints_ok_without_starting_server(monkeypatch, capsys):
 
     entry.main(["--check"])
 
-    assert capsys.readouterr().out.strip() == "OmniWorker ACP check OK"
+    assert capsys.readouterr().out.strip() == "Flux Agent ACP check OK"
 
 
 def test_main_setup_runs_model_configuration(monkeypatch):
     calls = {}
 
-    def fake_omniworker_main():
+    def fake_flux-agent_main():
         calls["argv"] = sys.argv[:]
 
-    monkeypatch.setattr("omniworker_cli.main.main", fake_omniworker_main)
+    monkeypatch.setattr("flux-agent_cli.main.main", fake_flux-agent_main)
     # Pretend stdin is not a TTY so the follow-up browser prompt is skipped.
     # That keeps this test focused on the model-setup wiring; the
     # browser-prompt path has its own test below.
@@ -61,7 +61,7 @@ def test_main_setup_runs_model_configuration(monkeypatch):
 def test_main_setup_offers_browser_install_when_tty(monkeypatch):
     """When stdin is a TTY and the user answers yes, model setup is followed
     by a browser-tools bootstrap call."""
-    monkeypatch.setattr("omniworker_cli.main.main", lambda: None)
+    monkeypatch.setattr("flux-agent_cli.main.main", lambda: None)
     monkeypatch.setattr("sys.stdin.isatty", lambda: True)
     monkeypatch.setattr("builtins.input", lambda *_args, **_kwargs: "y")
 
@@ -78,7 +78,7 @@ def test_main_setup_offers_browser_install_when_tty(monkeypatch):
 
 
 def test_main_setup_skips_browser_prompt_on_no(monkeypatch):
-    monkeypatch.setattr("omniworker_cli.main.main", lambda: None)
+    monkeypatch.setattr("flux-agent_cli.main.main", lambda: None)
     monkeypatch.setattr("sys.stdin.isatty", lambda: True)
     monkeypatch.setattr("builtins.input", lambda *_args, **_kwargs: "")
 
@@ -95,7 +95,7 @@ def test_main_setup_skips_browser_prompt_on_no(monkeypatch):
 
 
 def test_main_setup_browser_invokes_bundled_script(monkeypatch):
-    """`omniworker-acp --setup-browser` must shell out to the bundled bootstrap
+    """`flux-agent-acp --setup-browser` must shell out to the bundled bootstrap
     script — never reimplement the install logic inline."""
     monkeypatch.setattr("platform.system", lambda: "Linux")
 
@@ -189,8 +189,8 @@ def test_bootstrap_scripts_ship_with_package():
     sh_text = sh.read_text(encoding="utf-8")
     ps1_text = ps1.read_text(encoding="utf-8")
 
-    # Sanity: scripts know how to find the OmniWorker-managed Node prefix.
-    assert "OMNIWORKER_HOME" in sh_text
+    # Sanity: scripts know how to find the Flux Agent-managed Node prefix.
+    assert "FLUX AGENT_HOME" in sh_text
     assert "agent-browser" in sh_text
-    assert "OmniWorkerHome" in ps1_text
+    assert "Flux AgentHome" in ps1_text
     assert "agent-browser" in ps1_text

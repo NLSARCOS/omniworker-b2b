@@ -85,9 +85,9 @@ class TestNormalizeAuxProvider:
 
 class TestReadCodexAccessToken:
     def test_valid_auth_store(self, tmp_path, monkeypatch):
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -95,18 +95,18 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         result = _read_codex_access_token()
         assert result == "tok-123"
 
     def test_pool_without_selected_entry_falls_back_to_auth_store(self, tmp_path, monkeypatch):
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
 
         valid_jwt = "eyJhbGciOiJSUzI1NiJ9.eyJleHAiOjk5OTk5OTk5OTl9.sig"
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(True, None)), \
-             patch("omniworker_cli.auth._read_codex_tokens", return_value={
+             patch("flux-agent_cli.auth._read_codex_tokens", return_value={
                  "tokens": {"access_token": valid_jwt, "refresh_token": "refresh"}
              }):
             result = _read_codex_access_token()
@@ -114,18 +114,18 @@ class TestReadCodexAccessToken:
         assert result == valid_jwt
 
     def test_missing_returns_none(self, tmp_path, monkeypatch):
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _read_codex_access_token()
         assert result is None
 
     def test_empty_token_returns_none(self, tmp_path, monkeypatch):
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -133,7 +133,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         result = _read_codex_access_token()
         assert result is None
 
@@ -165,9 +165,9 @@ class TestReadCodexAccessToken:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -175,7 +175,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _read_codex_access_token()
         assert result is None, "Expired JWT should return None"
@@ -190,9 +190,9 @@ class TestReadCodexAccessToken:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         valid_jwt = f"{header}.{payload}.fakesig"
 
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -200,15 +200,15 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         result = _read_codex_access_token()
         assert result == valid_jwt
 
     def test_non_jwt_token_passes_through(self, tmp_path, monkeypatch):
         """Non-JWT tokens (no dots) should be returned as-is."""
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -216,7 +216,7 @@ class TestReadCodexAccessToken:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         result = _read_codex_access_token()
         assert result == "plain-token-no-jwt"
 
@@ -362,9 +362,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -372,7 +372,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
 
         # Set up Anthropic as fallback
         monkeypatch.setenv("ANTHROPIC_TOKEN", "sk-ant-oat01-test-fallback")
@@ -394,9 +394,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -404,7 +404,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-test-key")
 
         with patch("agent.auxiliary_client.OpenAI") as mock_openai:
@@ -425,9 +425,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -435,7 +435,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
 
         # Simulate Ollama or custom endpoint
         with patch("agent.auxiliary_client._resolve_custom_runtime",
@@ -447,10 +447,10 @@ class TestExpiredCodexFallback:
                 assert client is not None
 
 
-    def test_omniworker_oauth_file_sets_oauth_flag(self, monkeypatch):
+    def test_flux-agent_oauth_file_sets_oauth_flag(self, monkeypatch):
         """OAuth-style tokens should get is_oauth=*** (token is not sk-ant-api-*)."""
         # Mock resolve_anthropic_token to return an OAuth-style token
-        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat-omniworker-token"), \
+        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-oat-flux-agent-token"), \
              patch("agent.anthropic_adapter.build_anthropic_client") as mock_build, \
              patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             mock_build.return_value = MagicMock()
@@ -468,9 +468,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         no_exp_jwt = f"{header}.{payload}.fakesig"
 
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -478,7 +478,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         result = _read_codex_access_token()
         assert result == no_exp_jwt, "JWT without exp should pass through"
 
@@ -489,9 +489,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(b"not-json-content").rstrip(b"=").decode()
         bad_jwt = f"{header}.{payload}.fakesig"
 
-        omniworker_home = tmp_path / "omniworker"
-        omniworker_home.mkdir(parents=True, exist_ok=True)
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent"
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -499,7 +499,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         result = _read_codex_access_token()
         assert result == bad_jwt, "JWT with invalid JSON payload should pass through"
 
@@ -576,7 +576,7 @@ class TestGetTextAuxiliaryClient:
         with (
             patch("agent.auxiliary_client.load_pool", return_value=_Pool()),
             patch("agent.auxiliary_client.OpenAI"),
-            patch("omniworker_cli.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
+            patch("flux-agent_cli.auth._read_codex_tokens", side_effect=AssertionError("legacy codex store should not run")),
         ):
             from agent.auxiliary_client import _build_codex_client
 
@@ -660,7 +660,7 @@ class TestAuxiliaryPoolAwareness:
         with (
             patch("agent.auxiliary_client.load_pool", return_value=_Pool()),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
-            patch("omniworker_cli.models.get_nous_recommended_aux_model", return_value=None),
+            patch("flux-agent_cli.models.get_nous_recommended_aux_model", return_value=None),
         ):
             from agent.auxiliary_client import _try_nous
 
@@ -673,11 +673,11 @@ class TestAuxiliaryPoolAwareness:
 
     def test_try_nous_uses_portal_recommendation_for_text(self):
         """When the Portal recommends a compaction model, _try_nous honors it."""
-        fresh_base = "https://inference-api.omniworker.com/v1"
+        fresh_base = "https://inference-api.flux-agent.com/v1"
         with (
             patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
             patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("omniworker_cli.models.get_nous_recommended_aux_model", return_value="minimax/minimax-m2.7") as mock_rec,
+            patch("flux-agent_cli.models.get_nous_recommended_aux_model", return_value="minimax/minimax-m2.7") as mock_rec,
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
         ):
             from agent.auxiliary_client import _try_nous
@@ -691,11 +691,11 @@ class TestAuxiliaryPoolAwareness:
 
     def test_try_nous_uses_portal_recommendation_for_vision(self):
         """Vision tasks should ask for the vision-specific recommendation."""
-        fresh_base = "https://inference-api.omniworker.com/v1"
+        fresh_base = "https://inference-api.flux-agent.com/v1"
         with (
             patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
             patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("omniworker_cli.models.get_nous_recommended_aux_model", return_value="google/gemini-3-flash-preview") as mock_rec,
+            patch("flux-agent_cli.models.get_nous_recommended_aux_model", return_value="google/gemini-3-flash-preview") as mock_rec,
             patch("agent.auxiliary_client.OpenAI"),
         ):
             from agent.auxiliary_client import _try_nous
@@ -707,11 +707,11 @@ class TestAuxiliaryPoolAwareness:
 
     def test_try_nous_falls_back_when_recommendation_lookup_raises(self):
         """If the Portal lookup throws, we must still return a usable model."""
-        fresh_base = "https://inference-api.omniworker.com/v1"
+        fresh_base = "https://inference-api.flux-agent.com/v1"
         with (
             patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "***"}),
             patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", fresh_base)),
-            patch("omniworker_cli.models.get_nous_recommended_aux_model", side_effect=RuntimeError("portal down")),
+            patch("flux-agent_cli.models.get_nous_recommended_aux_model", side_effect=RuntimeError("portal down")),
             patch("agent.auxiliary_client.OpenAI"),
         ):
             from agent.auxiliary_client import _try_nous
@@ -725,11 +725,11 @@ class TestAuxiliaryPoolAwareness:
             status_code = 401
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.omniworker.com/v1"
+        stale_client.base_url = "https://inference-api.flux-agent.com/v1"
         stale_client.chat.completions.create.side_effect = _Auth401("stale nous key")
 
         fresh_client = MagicMock()
-        fresh_client.base_url = "https://inference-api.omniworker.com/v1"
+        fresh_client.base_url = "https://inference-api.flux-agent.com/v1"
         fresh_client.chat.completions.create.return_value = {"ok": True}
 
         with (
@@ -737,7 +737,7 @@ class TestAuxiliaryPoolAwareness:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client.OpenAI", return_value=fresh_client),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.omniworker.com/v1")),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.flux-agent.com/v1")),
         ):
             result = call_llm(
                 task="compression",
@@ -754,11 +754,11 @@ class TestAuxiliaryPoolAwareness:
             status_code = 401
 
         stale_client = MagicMock()
-        stale_client.base_url = "https://inference-api.omniworker.com/v1"
+        stale_client.base_url = "https://inference-api.flux-agent.com/v1"
         stale_client.chat.completions.create = AsyncMock(side_effect=_Auth401("stale nous key"))
 
         fresh_async_client = MagicMock()
-        fresh_async_client.base_url = "https://inference-api.omniworker.com/v1"
+        fresh_async_client.base_url = "https://inference-api.flux-agent.com/v1"
         fresh_async_client.chat.completions.create = AsyncMock(return_value={"ok": True})
 
         with (
@@ -766,7 +766,7 @@ class TestAuxiliaryPoolAwareness:
             patch("agent.auxiliary_client._get_cached_client", return_value=(stale_client, "nous-model")),
             patch("agent.auxiliary_client._to_async_client", return_value=(fresh_async_client, "nous-model")),
             patch("agent.auxiliary_client._validate_llm_response", side_effect=lambda resp, _task: resp),
-            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.omniworker.com/v1")),
+            patch("agent.auxiliary_client._resolve_nous_runtime_api", return_value=("fresh-agent-key", "https://inference-api.flux-agent.com/v1")),
         ):
             result = await async_call_llm(
                 task="session_search",
@@ -1047,7 +1047,7 @@ class TestCallLlmPaymentFallback:
 def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
     """_resolve_api_key_provider must not try anthropic when user never configured it."""
     from collections import OrderedDict
-    from omniworker_cli.auth import ProviderConfig
+    from flux-agent_cli.auth import ProviderConfig
 
     # Build a minimal registry with only "anthropic" so the loop is guaranteed
     # to reach it without being short-circuited by earlier providers.
@@ -1068,9 +1068,9 @@ def test_resolve_api_key_provider_skips_unconfigured_anthropic(monkeypatch):
         return None, None
 
     monkeypatch.setattr("agent.auxiliary_client._try_anthropic", mock_try_anthropic)
-    monkeypatch.setattr("omniworker_cli.auth.PROVIDER_REGISTRY", fake_registry)
+    monkeypatch.setattr("flux-agent_cli.auth.PROVIDER_REGISTRY", fake_registry)
     monkeypatch.setattr(
-        "omniworker_cli.auth.is_provider_explicitly_configured",
+        "flux-agent_cli.auth.is_provider_explicitly_configured",
         lambda pid: False,
     )
 
@@ -1314,7 +1314,7 @@ class TestAuxiliaryTaskExtraBody:
             }
         }
 
-        with patch("omniworker_cli.config.load_config", return_value=config), patch(
+        with patch("flux-agent_cli.config.load_config", return_value=config), patch(
             "agent.auxiliary_client._get_cached_client",
             return_value=(client, "glm-4.5-air"),
         ):
@@ -1345,7 +1345,7 @@ class TestAuxiliaryTaskExtraBody:
             }
         }
 
-        with patch("omniworker_cli.config.load_config", return_value=config), patch(
+        with patch("flux-agent_cli.config.load_config", return_value=config), patch(
             "agent.auxiliary_client._get_cached_client",
             return_value=(client, "glm-4.5-air"),
         ):
@@ -2134,7 +2134,7 @@ class TestAuxiliaryClientPoisonedCacheEviction:
     Otherwise the next auxiliary call (compression retry, memory flush,
     background review) reuses the closed httpx transport and fails with
     ``Connection error`` even though the main provider route is healthy.
-    See https://github.com/OmniWorker/omniworker-agent/issues/23432.
+    See https://github.com/Flux Agent/flux-agent-agent/issues/23432.
     """
 
     def test_evict_cached_client_instance_drops_direct_match(self):
@@ -2355,7 +2355,7 @@ class TestBuildCallKwargsToolDedup:
     Providers like Google Vertex, Azure, and Bedrock reject requests with
     duplicate tool names (HTTP 400).  This guard converts a hard failure into
     a warning log so agent turns succeed even if an upstream injection path
-    regresses.  See: https://github.com/OmniWorker/omniworker-agent/issues/18478
+    regresses.  See: https://github.com/Flux Agent/flux-agent-agent/issues/18478
     """
 
     def _make_tool(self, name: str) -> dict:

@@ -1,5 +1,5 @@
 """
-Interactive setup wizard for OmniWorker Agent.
+Interactive setup wizard for Flux Agent Agent.
 
 Modular wizard with independently-runnable sections:
   1. Model & Provider — choose your AI provider and model
@@ -22,10 +22,10 @@ import copy
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from omniworker_cli.nous_subscription import get_nous_subscription_features
+from flux-agent_cli.nous_subscription import get_nous_subscription_features
 from tools.tool_backend_helpers import managed_nous_tools_enabled
 from utils import base_url_hostname
-from omniworker_constants import get_optional_skills_dir
+from flux-agent_constants import get_optional_skills_dir
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def _supports_same_provider_pool_setup(provider: str) -> bool:
         return False
     if provider == "openrouter":
         return True
-    from omniworker_cli.auth import PROVIDER_REGISTRY
+    from flux-agent_cli.auth import PROVIDER_REGISTRY
 
     pconfig = PROVIDER_REGISTRY.get(provider)
     if not pconfig:
@@ -131,10 +131,10 @@ def _set_reasoning_effort(config: Dict[str, Any], effort: str) -> None:
 
 
 # Import config helpers
-from omniworker_cli.config import (
+from flux-agent_cli.config import (
     cfg_get,
     DEFAULT_CONFIG,
-    get_omniworker_home,
+    get_flux-agent_home,
     get_config_path,
     get_env_path,
     load_config,
@@ -142,11 +142,11 @@ from omniworker_cli.config import (
     save_env_value,
     remove_env_value,
     get_env_value,
-    ensure_omniworker_home,
+    ensure_flux-agent_home,
 )
-# display_omniworker_home imported lazily at call sites (stale-module safety during hermes update)
+# display_flux-agent_home imported lazily at call sites (stale-module safety during hermes update)
 
-from omniworker_cli.colors import Colors, color
+from flux-agent_cli.colors import Colors, color
 
 
 def print_header(title: str):
@@ -155,7 +155,7 @@ def print_header(title: str):
     print(color(f"◆ {title}", Colors.CYAN, Colors.BOLD))
 
 
-from omniworker_cli.cli_output import (  # noqa: E402
+from flux-agent_cli.cli_output import (  # noqa: E402
     print_error,
     print_info,
     print_success,
@@ -177,13 +177,13 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("⚕ OmniWorker Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ Flux Agent Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
     print_info("The interactive wizard cannot be used here.")
     print()
-    print_info("Configure OmniWorker using environment variables or config commands:")
+    print_info("Configure Flux Agent using environment variables or config commands:")
     print_info("  hermes config set model.provider custom")
     print_info("  hermes config set model.base_url http://localhost:8080/v1")
     print_info("  hermes config set model.default your-model-name")
@@ -227,7 +227,7 @@ def _sanitize_pasted_input(value: str) -> str:
 
 def _curses_prompt_choice(question: str, choices: list, default: int = 0, description: str | None = None) -> int:
     """Single-select menu using curses. Delegates to curses_radiolist."""
-    from omniworker_cli.curses_ui import curses_radiolist
+    from flux-agent_cli.curses_ui import curses_radiolist
     return curses_radiolist(question, choices, selected=default, cancel_returns=-1, description=description)
 
 
@@ -317,7 +317,7 @@ def prompt_checklist(title: str, items: list, pre_selected: list = None) -> list
     if pre_selected is None:
         pre_selected = []
 
-    from omniworker_cli.curses_ui import curses_checklist
+    from flux-agent_cli.curses_ui import curses_checklist
 
     chosen = curses_checklist(
         title,
@@ -356,7 +356,7 @@ def _prompt_api_key(var: dict):
         print_warning("  Skipped (configure later with 'hermes setup')")
 
 
-def _print_setup_summary(config: dict, omniworker_home):
+def _print_setup_summary(config: dict, flux-agent_home):
     """Print the setup completion summary."""
     # Tool availability summary
     print()
@@ -435,7 +435,7 @@ def _print_setup_summary(config: dict, omniworker_home):
         _img_backend = None
         try:
             from agent.image_gen_registry import list_providers
-            from omniworker_cli.plugins import _ensure_plugins_discovered
+            from flux-agent_cli.plugins import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             for _p in list_providers():
@@ -459,7 +459,7 @@ def _print_setup_summary(config: dict, omniworker_home):
     # users who don't care about video gen with a "missing" status line.
     try:
         from agent.video_gen_registry import list_providers as _list_video_providers
-        from omniworker_cli.plugins import _ensure_plugins_discovered as _ensure_plugins
+        from flux-agent_cli.plugins import _ensure_plugins_discovered as _ensure_plugins
         _ensure_plugins()
         _video_backend = None
         for _vp in _list_video_providers():
@@ -528,7 +528,7 @@ def _print_setup_summary(config: dict, omniworker_home):
 
     # Spotify (OAuth via hermes auth spotify — check auth.json, not env vars)
     try:
-        from omniworker_cli.auth import get_provider_auth_state
+        from flux-agent_cli.auth import get_provider_auth_state
         _spotify_state = get_provider_auth_state("spotify") or {}
         if _spotify_state.get("access_token") or _spotify_state.get("refresh_token"):
             tool_status.append(("Spotify (PKCE OAuth)", True, None))
@@ -572,7 +572,7 @@ def _print_setup_summary(config: dict, omniworker_home):
         print_warning(
             "Some tools are disabled. Run 'hermes setup tools' to configure them,"
         )
-        from omniworker_constants import display_omniworker_home as _dhh
+        from flux-agent_constants import display_flux-agent_home as _dhh
         print_warning(f"or edit {_dhh()}/.env directly to add the missing API keys.")
         print()
 
@@ -596,13 +596,13 @@ def _print_setup_summary(config: dict, omniworker_home):
     print()
 
     # Show file locations prominently
-    from omniworker_constants import display_omniworker_home as _dhh
+    from flux-agent_constants import display_flux-agent_home as _dhh
     print(color(f"📁 All your files are in {_dhh()}/:", Colors.CYAN, Colors.BOLD))
     print()
     print(f"   {color('Settings:', Colors.YELLOW)}  {get_config_path()}")
     print(f"   {color('API Keys:', Colors.YELLOW)}  {get_env_path()}")
     print(
-        f"   {color('Data:', Colors.YELLOW)}      {omniworker_home}/cron/, sessions/, logs/"
+        f"   {color('Data:', Colors.YELLOW)}      {flux-agent_home}/cron/, sessions/, logs/"
     )
     print()
 
@@ -797,7 +797,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     When *quick* is True, skips credential rotation, vision, and TTS
     configuration — used by the streamlined first-time quick setup.
     """
-    from omniworker_cli.config import load_config, save_config
+    from flux-agent_cli.config import load_config, save_config
 
     print_header("Inference Provider")
     print_info("Choose how to connect to your main chat model.")
@@ -806,7 +806,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
 
     # Delegate to the shared hermes model flow — handles provider picker,
     # credential prompting, model selection, and config persistence.
-    from omniworker_cli.main import select_provider_and_model
+    from flux-agent_cli.main import select_provider_and_model
     try:
         select_provider_and_model()
     except (SystemExit, KeyboardInterrupt):
@@ -839,7 +839,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
         try:
             from types import SimpleNamespace
             from agent.credential_pool import load_pool
-            from omniworker_cli.auth_commands import auth_add_command
+            from flux-agent_cli.auth_commands import auth_add_command
 
             pool = load_pool(selected_provider)
             entries = pool.entries()
@@ -849,7 +849,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
             print()
             print_header("Same-Provider Fallback & Rotation")
             print_info(
-                "OmniWorker can keep multiple credentials for one provider and rotate between"
+                "Flux Agent can keep multiple credentials for one provider and rotate between"
             )
             print_info(
                 "them when a credential is exhausted or rate-limited. This preserves"
@@ -946,7 +946,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
         print()
         print_header("Vision & Image Analysis (optional)")
         print_info(f"Vision uses a separate multimodal backend. {_prov_display}")
-        print_info("doesn't currently provide one OmniWorker can auto-use for vision,")
+        print_info("doesn't currently provide one Flux Agent can auto-use for vision,")
         print_info("so choose a backend now or skip and configure later.")
         print()
 
@@ -1098,7 +1098,7 @@ def _xai_oauth_logged_in_for_setup() -> bool:
     through ``hermes model`` -> xAI Grok OAuth (SuperGrok Subscription).
     """
     try:
-        from omniworker_cli.auth import get_xai_oauth_auth_status
+        from flux-agent_cli.auth import get_xai_oauth_auth_status
 
         return bool(get_xai_oauth_auth_status().get("logged_in"))
     except Exception:
@@ -1112,7 +1112,7 @@ def _run_xai_oauth_login_from_setup() -> bool:
     to whatever the user picked next, e.g. Edge TTS).
     """
     try:
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             DEFAULT_XAI_OAUTH_BASE_URL,
             _is_remote_session,
             _save_xai_oauth_tokens,
@@ -1252,7 +1252,7 @@ def _setup_tts_provider(config: dict):
 
     elif selected == "xai":
         # Resolution order: existing OAuth tokens (free for SuperGrok subscribers
-        # via the OmniWorker auth store) > existing XAI_API_KEY > prompt the user.
+        # via the Flux Agent auth store) > existing XAI_API_KEY > prompt the user.
         # When neither is configured, offer both options instead of forcing the
         # API-key path — xAI TTS works fine with OAuth bearer tokens too.
         oauth_logged_in = _xai_oauth_logged_in_for_setup()
@@ -1293,7 +1293,7 @@ def _setup_tts_provider(config: dict):
                     save_env_value("XAI_API_KEY", api_key)
                     print_success("xAI TTS API key saved")
                 else:
-                    from omniworker_constants import display_omniworker_home as _dhh
+                    from flux-agent_constants import display_flux-agent_home as _dhh
                     print_warning(
                         "No xAI API key provided for TTS. Configure XAI_API_KEY "
                         f"via hermes setup model or {_dhh()}/.env to use xAI TTS. "
@@ -1394,7 +1394,7 @@ def setup_terminal_backend(config: dict):
     """Configure the terminal execution backend."""
     import platform as _platform
     print_header("Terminal Backend")
-    print_info("Choose where OmniWorker runs shell commands and code.")
+    print_info("Choose where Flux Agent runs shell commands and code.")
     print_info("This affects tool execution, file access, and isolation.")
     print_info(f"   Guide: {_DOCS_BASE}/developer-guide/environments")
     print()
@@ -1762,10 +1762,10 @@ def _apply_default_agent_settings(config: dict):
     """Apply recommended defaults for all agent settings without prompting."""
     config.setdefault("agent", {})["max_turns"] = 90
     # config.yaml is the authoritative source for max_turns; the gateway
-    # bridges it into OMNIWORKER_MAX_ITERATIONS at startup. We no longer write
+    # bridges it into FLUX AGENT_MAX_ITERATIONS at startup. We no longer write
     # to .env to avoid the dual-source inconsistency that caused the
     # 60-vs-500 bug (stale .env entry silently shadowing config.yaml).
-    remove_env_value("OMNIWORKER_MAX_ITERATIONS")
+    remove_env_value("FLUX AGENT_MAX_ITERATIONS")
 
     config.setdefault("display", {})["tool_progress"] = "all"
 
@@ -1812,10 +1812,10 @@ def setup_agent_settings(config: dict):
             # Write to config.yaml (authoritative) only. Also clean up any
             # stale .env entry from earlier setup runs — the gateway's
             # bridge in gateway/run.py now unconditionally derives
-            # OMNIWORKER_MAX_ITERATIONS from agent.max_turns at startup.
+            # FLUX AGENT_MAX_ITERATIONS from agent.max_turns at startup.
             config.setdefault("agent", {})["max_turns"] = max_iter
             config.pop("max_turns", None)
-            remove_env_value("OMNIWORKER_MAX_ITERATIONS")
+            remove_env_value("FLUX AGENT_MAX_ITERATIONS")
             print_success(f"Max iterations set to {max_iter}")
     except ValueError:
         print_warning("Invalid number, keeping current value")
@@ -2015,7 +2015,7 @@ def _setup_telegram():
         print_info("⚠️  No allowlist set - anyone who finds your bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where OmniWorker delivers cron job results,")
+    print_info("📬 Home Channel: where Flux Agent delivers cron job results,")
     print_info("   cross-platform messages, and notifications.")
     print_info("   For Telegram DMs, this is your user ID (same as above).")
 
@@ -2079,7 +2079,7 @@ def _setup_discord():
         print_info("⚠️  No allowlist set - anyone in servers with your bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where OmniWorker delivers cron job results,")
+    print_info("📬 Home Channel: where Flux Agent delivers cron job results,")
     print_info("   cross-platform messages, and notifications.")
     print_info("   To get a channel ID: right-click a channel → Copy Channel ID")
     print_info("   (requires Developer Mode in Discord settings)")
@@ -2161,7 +2161,7 @@ def _setup_slack():
         print_info("   Set SLACK_ALLOW_ALL_USERS=true or GATEWAY_ALLOW_ALL_USERS=true only if you intentionally want open workspace access.")
 
     print()
-    print_info("📬 Home Channel: where OmniWorker delivers cron job results,")
+    print_info("📬 Home Channel: where Flux Agent delivers cron job results,")
     print_info("   cross-platform messages, and notifications.")
     print_info("   To get a channel ID: open the channel in Slack, then right-click")
     print_info("   the channel name → Copy link — the ID starts with C (e.g. C01ABC2DE3F).")
@@ -2172,7 +2172,7 @@ def _setup_slack():
 
 
 def _write_slack_manifest_and_instruct():
-    """Generate the Slack manifest, write it under OMNIWORKER_HOME, and print
+    """Generate the Slack manifest, write it under FLUX AGENT_HOME, and print
     paste-into-Slack instructions.
 
     Exposed as its own helper so both the initial setup flow and the
@@ -2182,14 +2182,14 @@ def _write_slack_manifest_and_instruct():
     the whole Slack setup.
     """
     try:
-        from omniworker_cli.slack_cli import _build_full_manifest
-        from omniworker_constants import get_omniworker_home
+        from flux-agent_cli.slack_cli import _build_full_manifest
+        from flux-agent_constants import get_flux-agent_home
 
         manifest = _build_full_manifest(
-            bot_name="OmniWorker",
-            bot_description="Your OmniWorker agent on Slack",
+            bot_name="Flux Agent",
+            bot_description="Your Flux Agent agent on Slack",
         )
-        target = Path(get_omniworker_home()) / "slack-manifest.json"
+        target = Path(get_flux-agent_home()) / "slack-manifest.json"
         target.parent.mkdir(parents=True, exist_ok=True)
         import json as _json
         target.write_text(
@@ -2204,7 +2204,7 @@ def _write_slack_manifest_and_instruct():
         )
         print_info(
             "   Re-run `hermes slack manifest --write` anytime to refresh after "
-            "OmniWorker adds new commands."
+            "Flux Agent adds new commands."
         )
     except Exception as exc:  # pragma: no cover - best-effort UX helper
         print_warning(f"Couldn't write Slack manifest: {exc}")
@@ -2292,7 +2292,7 @@ def _setup_matrix():
             print_info("⚠️  No allowlist set - anyone who can message the bot can use it!")
 
         print()
-        print_info("📬 Home Room: where OmniWorker delivers cron job results and notifications.")
+        print_info("📬 Home Room: where Flux Agent delivers cron job results and notifications.")
         print_info("   Room IDs look like !abc123:server (shown in Element room settings)")
         print_info("   You can also set this later by typing /set-home in a Matrix room.")
         home_room = prompt("Home room ID (leave empty to set later with /set-home)")
@@ -2335,7 +2335,7 @@ def _setup_mattermost():
         print_info("⚠️  No allowlist set - anyone who can message the bot can use it!")
 
     print()
-    print_info("📬 Home Channel: where OmniWorker delivers cron job results and notifications.")
+    print_info("📬 Home Channel: where Flux Agent delivers cron job results and notifications.")
     print_info("   To get a channel ID: click channel name → View Info → copy the ID")
     print_info("   You can also set this later by typing /set-home in a Mattermost channel.")
     home_channel = prompt("Home channel ID (leave empty to set later with /set-home)")
@@ -2353,7 +2353,7 @@ def _setup_bluebubbles():
         if not prompt_yes_no("Reconfigure BlueBubbles?", False):
             return
 
-    print_info("Connects OmniWorker to iMessage via BlueBubbles — a free, open-source")
+    print_info("Connects Flux Agent to iMessage via BlueBubbles — a free, open-source")
     print_info("macOS server that bridges iMessage to any device.")
     print_info("   Requires a Mac running BlueBubbles Server v1.0.0+")
     print_info("   Download: https://bluebubbles.app/")
@@ -2411,7 +2411,7 @@ def _setup_bluebubbles():
 
 def _setup_qqbot():
     """Configure QQ Bot (Official API v2) via gateway setup."""
-    from omniworker_cli.gateway import _setup_qqbot as _gateway_setup_qqbot
+    from flux-agent_cli.gateway import _setup_qqbot as _gateway_setup_qqbot
     _gateway_setup_qqbot()
 
 
@@ -2450,7 +2450,7 @@ def _setup_webhooks():
     save_env_value("WEBHOOK_ENABLED", "true")
     print()
     print_success("Webhooks enabled! Next steps:")
-    from omniworker_constants import display_omniworker_home as _dhh
+    from flux-agent_constants import display_flux-agent_home as _dhh
     print_info(f"   1. Define webhook routes in {_dhh()}/config.yaml")
     print_info("   2. Point your service (GitHub, GitLab, etc.) at:")
     print_info("      http://your-server:8644/webhooks/<route-name>")
@@ -2464,10 +2464,10 @@ def _setup_webhooks():
 
 def setup_gateway(config: dict):
     """Configure messaging platform integrations."""
-    from omniworker_cli.gateway import _all_platforms, _platform_status, _configure_platform
+    from flux-agent_cli.gateway import _all_platforms, _platform_status, _configure_platform
 
     print_header("Messaging Platforms")
-    print_info("Connect to messaging platforms to chat with OmniWorker from anywhere.")
+    print_info("Connect to messaging platforms to chat with Flux Agent from anywhere.")
     print_info("Toggle with Space, confirm with Enter.")
     print()
 
@@ -2548,7 +2548,7 @@ def setup_gateway(config: dict):
         _is_macos = _platform.system() == "Darwin"
         _is_windows = _platform.system() == "Windows"
 
-        from omniworker_cli.gateway import (
+        from flux-agent_cli.gateway import (
             _is_service_installed,
             _is_service_running,
             supports_systemd_services,
@@ -2592,7 +2592,7 @@ def setup_gateway(config: dict):
                     elif _is_macos:
                         launchd_restart()
                     elif _is_windows:
-                        from omniworker_cli import gateway_windows
+                        from flux-agent_cli import gateway_windows
                         gateway_windows.restart()
                 except UserSystemdUnavailableError as e:
                     print_error("  Restart failed — user systemd not reachable:")
@@ -2617,7 +2617,7 @@ def setup_gateway(config: dict):
                     elif _is_macos:
                         launchd_start()
                     elif _is_windows:
-                        from omniworker_cli import gateway_windows
+                        from flux-agent_cli import gateway_windows
                         gateway_windows.start()
                 except UserSystemdUnavailableError as e:
                     print_error("  Start failed — user systemd not reachable:")
@@ -2653,7 +2653,7 @@ def setup_gateway(config: dict):
                         # Task AND starts it immediately (via schtasks /Run
                         # or a direct spawn fallback), so no separate start
                         # prompt is needed here.
-                        from omniworker_cli import gateway_windows
+                        from flux-agent_cli import gateway_windows
                         gateway_windows.install(force=False)
                         did_install = True
                         started_inline = True
@@ -2682,7 +2682,7 @@ def setup_gateway(config: dict):
                     print_info("  Or as a boot-time service: sudo hermes gateway install --system")
                 print_info("  Or run in foreground:  hermes gateway")
         else:
-            from omniworker_constants import is_container
+            from flux-agent_constants import is_container
             if is_container():
                 print_info("Start the gateway to bring your bots online:")
                 print_info("   hermes gateway run          # Run as container main process")
@@ -2712,7 +2712,7 @@ def setup_tools(config: dict, first_install: bool = False):
         first_install: When True, uses the simplified first-install flow
             (no platform menu, prompts for all unconfigured API keys).
     """
-    from omniworker_cli.tools_config import tools_command
+    from flux-agent_cli.tools_config import tools_command
 
     tools_command(first_install=first_install, config=config)
 
@@ -2726,7 +2726,7 @@ def _model_section_has_credentials(config: dict) -> bool:
     """Return True when any known inference provider has usable credentials.
 
     Sources of truth:
-      * ``PROVIDER_REGISTRY`` in ``omniworker_cli.auth`` — lists every supported
+      * ``PROVIDER_REGISTRY`` in ``flux-agent_cli.auth`` — lists every supported
         provider along with its ``api_key_env_vars``.
       * ``active_provider`` in the auth store — covers OAuth device-code /
         external-OAuth providers (Nous, Codex, Qwen, Gemini CLI, ...).
@@ -2734,14 +2734,14 @@ def _model_section_has_credentials(config: dict) -> bool:
         ``OPENAI_API_KEY`` / ``OPENROUTER_API_KEY`` values through OpenRouter.
     """
     try:
-        from omniworker_cli.auth import get_active_provider
+        from flux-agent_cli.auth import get_active_provider
         if get_active_provider():
             return True
     except Exception:
         pass
 
     try:
-        from omniworker_cli.auth import PROVIDER_REGISTRY
+        from flux-agent_cli.auth import PROVIDER_REGISTRY
     except Exception:
         PROVIDER_REGISTRY = {}  # type: ignore[assignment]
 
@@ -2794,7 +2794,7 @@ def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]
     """Return a short summary if a setup section is already configured, else None.
 
     Used after OpenClaw migration to detect which sections can be skipped.
-    ``get_env_value`` is the module-level import from omniworker_cli.config
+    ``get_env_value`` is the module-level import from flux-agent_cli.config
     so that test patches on ``setup_mod.get_env_value`` take effect.
     """
     if section_key == "model":
@@ -2816,7 +2816,7 @@ def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]
         return f"max turns: {max_turns}"
 
     elif section_key == "gateway":
-        from omniworker_cli.gateway import _all_platforms, _platform_status
+        from flux-agent_cli.gateway import _all_platforms, _platform_status
         # Count any non-empty status other than the "not configured" sentinel —
         # platforms like WhatsApp ("enabled, not paired"), Matrix ("configured
         # + E2EE"), and Signal ("partially configured") all indicate the user
@@ -2903,15 +2903,15 @@ def _load_openclaw_migration_module():
 
 # Item kinds that represent high-impact changes warranting explicit warnings.
 # Gateway tokens/channels can hijack messaging platforms from the old agent.
-# Config values may have different semantics between OpenClaw and OmniWorker.
+# Config values may have different semantics between OpenClaw and Flux Agent.
 # Instruction/context files (.md) can contain incompatible setup procedures.
 _HIGH_IMPACT_KIND_KEYWORDS = {
-    "gateway": "⚠ Gateway/messaging — this will configure OmniWorker to use your OpenClaw messaging channels",
-    "telegram": "⚠ Telegram — this will point OmniWorker at your OpenClaw Telegram bot",
-    "slack": "⚠ Slack — this will point OmniWorker at your OpenClaw Slack workspace",
-    "discord": "⚠ Discord — this will point OmniWorker at your OpenClaw Discord bot",
-    "whatsapp": "⚠ WhatsApp — this will point OmniWorker at your OpenClaw WhatsApp connection",
-    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to OmniWorker equivalents",
+    "gateway": "⚠ Gateway/messaging — this will configure Flux Agent to use your OpenClaw messaging channels",
+    "telegram": "⚠ Telegram — this will point Flux Agent at your OpenClaw Telegram bot",
+    "slack": "⚠ Slack — this will point Flux Agent at your OpenClaw Slack workspace",
+    "discord": "⚠ Discord — this will point Flux Agent at your OpenClaw Discord bot",
+    "whatsapp": "⚠ WhatsApp — this will point Flux Agent at your OpenClaw WhatsApp connection",
+    "config": "⚠ Config values — OpenClaw settings may not map 1:1 to Flux Agent equivalents",
     "soul": "⚠ Instruction file — may contain OpenClaw-specific setup/restart procedures",
     "memory": "⚠ Memory/context file — may reference OpenClaw-specific infrastructure",
     "context": "⚠ Context file — may contain OpenClaw-specific instructions",
@@ -2955,7 +2955,7 @@ def _print_migration_preview(report: dict):
         print()
 
     if conflict_items:
-        print(color("  Would overwrite (conflicts with existing OmniWorker config):", Colors.YELLOW))
+        print(color("  Would overwrite (conflicts with existing Flux Agent config):", Colors.YELLOW))
         for item in conflict_items:
             kind = item.get("kind", "unknown")
             reason = item.get("reason", "already exists")
@@ -2976,13 +2976,13 @@ def _print_migration_preview(report: dict):
         for warning in sorted(warnings_shown):
             print(color(f"    {warning}", Colors.YELLOW))
         print()
-        print(color("  Note: OpenClaw config values may have different semantics in OmniWorker.", Colors.YELLOW))
-        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ OmniWorker's yolo mode.", Colors.YELLOW))
+        print(color("  Note: OpenClaw config values may have different semantics in Flux Agent.", Colors.YELLOW))
+        print(color("  For example, OpenClaw's tool_call_execution: \"auto\" ≠ Flux Agent's yolo mode.", Colors.YELLOW))
         print(color("  Instruction files (.md) from OpenClaw may contain incompatible procedures.", Colors.YELLOW))
         print()
 
 
-def _offer_openclaw_migration(omniworker_home: Path) -> bool:
+def _offer_openclaw_migration(flux-agent_home: Path) -> bool:
     """Detect ~/.openclaw and offer to migrate during first-time setup.
 
     Runs a dry-run first to show the user exactly what would be imported,
@@ -3000,7 +3000,7 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
     print()
     print_header("OpenClaw Installation Detected")
     print_info(f"Found OpenClaw data at {openclaw_dir}")
-    print_info("OmniWorker can preview what would be imported before making any changes.")
+    print_info("Flux Agent can preview what would be imported before making any changes.")
     print()
 
     if not prompt_yes_no("Would you like to see what can be imported?", default=True):
@@ -3030,7 +3030,7 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
         selected = mod.resolve_selected_options(None, None, preset="full")
         dry_migrator = mod.Migrator(
             source_root=openclaw_dir.resolve(),
-            target_root=omniworker_home.resolve(),
+            target_root=flux-agent_home.resolve(),
             execute=False,  # dry-run — no files modified
             workspace_target=None,
             overwrite=True,  # show everything including conflicts
@@ -3070,15 +3070,15 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
         )
         return False
 
-    # Execute the migration — overwrite=False so existing OmniWorker configs are
+    # Execute the migration — overwrite=False so existing Flux Agent configs are
     # preserved. The user saw the preview; conflicts are skipped by default.
     try:
         migrator = mod.Migrator(
             source_root=openclaw_dir.resolve(),
-            target_root=omniworker_home.resolve(),
+            target_root=flux-agent_home.resolve(),
             execute=True,
             workspace_target=None,
-            overwrite=False,  # preserve existing OmniWorker config
+            overwrite=False,  # preserve existing Flux Agent config
             migrate_secrets=True,
             output_dir=None,
             selected_options=selected,
@@ -3101,7 +3101,7 @@ def _offer_openclaw_migration(omniworker_home: Path) -> bool:
     if migrated:
         print_success(f"Imported {migrated} item(s) from OpenClaw.")
     if conflicts:
-        print_info(f"Skipped {conflicts} item(s) that already exist in OmniWorker (use hermes claw migrate --overwrite to force).")
+        print_info(f"Skipped {conflicts} item(s) that already exist in Flux Agent (use hermes claw migrate --overwrite to force).")
     if skipped:
         print_info(f"Skipped {skipped} item(s) (not found or unchanged).")
     if errors:
@@ -3141,11 +3141,11 @@ def run_setup_wizard(args):
       hermes setup tools     — just tool configuration
       hermes setup agent     — just agent settings
     """
-    from omniworker_cli.config import is_managed, managed_error
+    from flux-agent_cli.config import is_managed, managed_error
     if is_managed():
         managed_error("run setup wizard")
         return
-    ensure_omniworker_home()
+    ensure_flux-agent_home()
 
     reset_requested = bool(getattr(args, "reset", False))
     if reset_requested:
@@ -3156,7 +3156,7 @@ def run_setup_wizard(args):
     quick_requested = bool(getattr(args, "quick", False))
 
     config = load_config()
-    omniworker_home = get_omniworker_home()
+    flux-agent_home = get_flux-agent_home()
 
     # Back up existing config before setup modifies it (#3522)
     config_path = get_config_path()
@@ -3196,7 +3196,7 @@ def run_setup_wizard(args):
                         Colors.MAGENTA,
                     )
                 )
-                print(color(f"│     ⚕ OmniWorker Setup — {label:<34s} │", Colors.MAGENTA))
+                print(color(f"│     ⚕ Flux Agent Setup — {label:<34s} │", Colors.MAGENTA))
                 print(
                     color(
                         "└─────────────────────────────────────────────────────────┘",
@@ -3214,7 +3214,7 @@ def run_setup_wizard(args):
         return
 
     # Check if this is an existing installation with a provider configured
-    from omniworker_cli.auth import get_active_provider
+    from flux-agent_cli.auth import get_active_provider
 
     active_provider = get_active_provider()
     is_existing = (
@@ -3232,7 +3232,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│             ⚕ OmniWorker Agent Setup Wizard                │", Colors.MAGENTA
+            "│             ⚕ Flux Agent Agent Setup Wizard                │", Colors.MAGENTA
         )
     )
     print(
@@ -3243,7 +3243,7 @@ def run_setup_wizard(args):
     )
     print(
         color(
-            "│  Let's configure your OmniWorker Agent installation.       │", Colors.MAGENTA
+            "│  Let's configure your Flux Agent Agent installation.       │", Colors.MAGENTA
         )
     )
     print(
@@ -3267,12 +3267,12 @@ def run_setup_wizard(args):
         # missing items" flow (useful after a partial OpenClaw migration
         # or when a required API key got cleared).
         if quick_requested:
-            _run_quick_setup(config, omniworker_home)
+            _run_quick_setup(config, flux-agent_home)
             return
 
         print()
         print_header("Reconfigure")
-        print_success("You already have OmniWorker configured.")
+        print_success("You already have Flux Agent configured.")
         print_info("Running the full wizard — each prompt shows your current value.")
         print_info("Press Enter to keep it, or type a new value to change it.")
         print_info("")
@@ -3292,24 +3292,24 @@ def run_setup_wizard(args):
             print()
 
         # Offer OpenClaw migration before configuration begins
-        migration_ran = _offer_openclaw_migration(omniworker_home)
+        migration_ran = _offer_openclaw_migration(flux-agent_home)
         if migration_ran:
             config = load_config()
 
-        setup_mode = prompt_choice("How would you like to set up OmniWorker?", [
+        setup_mode = prompt_choice("How would you like to set up Flux Agent?", [
             "Quick setup — provider, model & messaging (recommended)",
             "Full setup — configure everything",
         ], 0)
 
         if setup_mode == 0:
-            _run_first_time_quick_setup(config, omniworker_home, is_existing)
+            _run_first_time_quick_setup(config, flux-agent_home, is_existing)
             return
 
     # ── Full Setup — run all sections ──
     print_header("Configuration Location")
     print_info(f"Config file:  {get_config_path()}")
     print_info(f"Secrets file: {get_env_path()}")
-    print_info(f"Data folder:  {omniworker_home}")
+    print_info(f"Data folder:  {flux-agent_home}")
     print_info(f"Install dir:  {PROJECT_ROOT}")
     print()
     print_info("You can edit these files directly or use 'hermes config edit'")
@@ -3346,10 +3346,10 @@ def run_setup_wizard(args):
         print_info(f"Previous config backed up to: {_backup_path}")
         print_info("If setup changed a value you customized, restore it with:")
         print_info(f"  cp {_backup_path} {config_path}")
-    _print_setup_summary(config, omniworker_home)
+    _print_setup_summary(config, flux-agent_home)
 
 
-def _run_first_time_quick_setup(config: dict, omniworker_home, is_existing: bool):
+def _run_first_time_quick_setup(config: dict, flux-agent_home, is_existing: bool):
     """Streamlined first-time setup: provider, model, terminal & messaging.
 
     Applies sensible defaults for TTS (Edge), agent settings, and tools —
@@ -3389,12 +3389,12 @@ def _run_first_time_quick_setup(config: dict, omniworker_home, is_existing: bool
         print_info("  Connect Telegram/Discord:  hermes setup gateway")
     print()
 
-    _print_setup_summary(config, omniworker_home)
+    _print_setup_summary(config, flux-agent_home)
 
 
-def _run_quick_setup(config: dict, omniworker_home):
+def _run_quick_setup(config: dict, flux-agent_home):
     """Quick setup — only configure items that are missing."""
-    from omniworker_cli.config import (
+    from flux-agent_cli.config import (
         get_missing_env_vars,
         get_missing_config_fields,
         check_config_version,
@@ -3485,7 +3485,7 @@ def _run_quick_setup(config: dict, omniworker_home):
     if missing_messaging:
         print()
         print_header("Messaging Platforms")
-        print_info("Connect OmniWorker to messaging apps to chat from anywhere.")
+        print_info("Connect Flux Agent to messaging apps to chat from anywhere.")
         print_info("You can configure these later with 'hermes setup gateway'.")
 
         # Group by platform (preserving order)
@@ -3555,4 +3555,4 @@ def _run_quick_setup(config: dict, omniworker_home):
         save_config(config)
 
     # Jump to summary
-    _print_setup_summary(config, omniworker_home)
+    _print_setup_summary(config, flux-agent_home)

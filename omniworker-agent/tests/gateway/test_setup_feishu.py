@@ -1,4 +1,4 @@
-"""Tests for _setup_feishu() in omniworker_cli/gateway.py.
+"""Tests for _setup_feishu() in flux-agent_cli/gateway.py.
 
 Verifies that the interactive setup writes env vars that correctly drive the
 Feishu adapter: credentials, connection mode, DM policy, and group policy.
@@ -39,19 +39,19 @@ def _run_setup_feishu(
     def mock_get(name):
         return existing_env.get(name, "")
 
-    with patch("omniworker_cli.gateway.save_env_value", side_effect=mock_save), \
-         patch("omniworker_cli.gateway.get_env_value", side_effect=mock_get), \
-         patch("omniworker_cli.gateway.prompt_yes_no", side_effect=prompt_yes_no_responses), \
-         patch("omniworker_cli.gateway.prompt_choice", side_effect=prompt_choice_responses), \
-         patch("omniworker_cli.gateway.prompt", side_effect=prompt_responses), \
-         patch("omniworker_cli.gateway.print_info"), \
-         patch("omniworker_cli.gateway.print_success"), \
-         patch("omniworker_cli.gateway.print_warning"), \
-         patch("omniworker_cli.gateway.print_error"), \
-         patch("omniworker_cli.gateway.color", side_effect=lambda t, c: t), \
+    with patch("flux-agent_cli.gateway.save_env_value", side_effect=mock_save), \
+         patch("flux-agent_cli.gateway.get_env_value", side_effect=mock_get), \
+         patch("flux-agent_cli.gateway.prompt_yes_no", side_effect=prompt_yes_no_responses), \
+         patch("flux-agent_cli.gateway.prompt_choice", side_effect=prompt_choice_responses), \
+         patch("flux-agent_cli.gateway.prompt", side_effect=prompt_responses), \
+         patch("flux-agent_cli.gateway.print_info"), \
+         patch("flux-agent_cli.gateway.print_success"), \
+         patch("flux-agent_cli.gateway.print_warning"), \
+         patch("flux-agent_cli.gateway.print_error"), \
+         patch("flux-agent_cli.gateway.color", side_effect=lambda t, c: t), \
          patch("gateway.platforms.feishu.qr_register", return_value=qr_result):
 
-        from omniworker_cli.gateway import _setup_feishu
+        from flux-agent_cli.gateway import _setup_feishu
         _setup_feishu()
 
     return saved_env

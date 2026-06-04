@@ -256,7 +256,7 @@ class TestConfigMigration:
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
         # Re-import to pick up the new OMNIWORKER_HOME
         import importlib
-        import omniworker_cli.config as cfg_mod
+        import flux-agent_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         result = cfg_mod.migrate_config(interactive=False, quiet=True)
@@ -282,7 +282,7 @@ class TestConfigMigration:
 
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
         import importlib
-        import omniworker_cli.config as cfg_mod
+        import flux-agent_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg_mod.migrate_config(interactive=False, quiet=True)

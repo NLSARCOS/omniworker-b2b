@@ -11,7 +11,7 @@ import { I18nContext, type I18nContextValue } from "./I18nContext";
 
 void sharedI18n.use(initReactI18next);
 
-const STORAGE_KEY = "omniworker-locale";
+const STORAGE_KEY = "flux-agent-locale";
 
 function readStoredLocale(): AppLocale {
   try {
@@ -38,7 +38,7 @@ export function I18nProvider({
   useEffect(() => {
     let cancelled = false;
 
-    void window.omniworkerAPI
+    void window.flux-agentAPI
       ?.getLocale?.()
       .then((mainLocale) => {
         if (cancelled || !mainLocale || mainLocale === locale) return;
@@ -57,7 +57,7 @@ export function I18nProvider({
     if (sharedI18n.language !== locale) {
       setSharedLocale(locale);
     }
-    void window.omniworkerAPI?.setLocale?.(locale).catch(() => {
+    void window.flux-agentAPI?.setLocale?.(locale).catch(() => {
       /* ignore */
     });
     try {

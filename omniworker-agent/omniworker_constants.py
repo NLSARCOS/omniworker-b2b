@@ -1,4 +1,4 @@
-"""Shared constants for OmniWorker Agent.
+"""Shared constants for Flux Agent Agent.
 
 Import-safe module with no dependencies — can be imported from anywhere
 without risk of circular imports.
@@ -11,55 +11,55 @@ from pathlib import Path
 
 _profile_fallback_warned: bool = False
 _UNSET = object()
-_OMNIWORKER_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
-    "_OMNIWORKER_HOME_OVERRIDE", default=_UNSET
+_FLUX AGENT_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
+    "_FLUX AGENT_HOME_OVERRIDE", default=_UNSET
 )
 
 
-def set_omniworker_home_override(path: str | Path | None) -> Token:
-    """Set a context-local OmniWorker home override and return its reset token.
+def set_flux-agent_home_override(path: str | Path | None) -> Token:
+    """Set a context-local Flux Agent home override and return its reset token.
 
     This is for in-process, per-task scoping.  It deliberately does not mutate
     ``os.environ`` because that is shared by every thread in the process.
     """
     value: str | object = _UNSET if path is None else str(path)
-    return _OMNIWORKER_HOME_OVERRIDE.set(value)
+    return _FLUX AGENT_HOME_OVERRIDE.set(value)
 
 
-def reset_omniworker_home_override(token: Token) -> None:
-    """Restore the previous context-local OmniWorker home override."""
-    _OMNIWORKER_HOME_OVERRIDE.reset(token)
+def reset_flux-agent_home_override(token: Token) -> None:
+    """Restore the previous context-local Flux Agent home override."""
+    _FLUX AGENT_HOME_OVERRIDE.reset(token)
 
 
-def get_omniworker_home_override() -> str | None:
-    """Return the active context-local OmniWorker home override, if any."""
-    override = _OMNIWORKER_HOME_OVERRIDE.get()
+def get_flux-agent_home_override() -> str | None:
+    """Return the active context-local Flux Agent home override, if any."""
+    override = _FLUX AGENT_HOME_OVERRIDE.get()
     if override is _UNSET or not override:
         return None
     return str(override)
 
 
-def get_omniworker_home() -> Path:
-    """Return the OmniWorker home directory (default: ~/.hermes).
+def get_flux-agent_home() -> Path:
+    """Return the Flux Agent home directory (default: ~/.hermes).
 
-    Reads OMNIWORKER_HOME env var, falls back to ~/.hermes.
+    Reads FLUX AGENT_HOME env var, falls back to ~/.hermes.
     This is the single source of truth — all other copies should import this.
 
-    When ``OMNIWORKER_HOME`` is unset but an ``active_profile`` file indicates
+    When ``FLUX AGENT_HOME`` is unset but an ``active_profile`` file indicates
     a non-default profile is active, logs a loud one-shot warning to
     ``errors.log`` so cross-profile data corruption is diagnosable instead
     of silent.  Behavior is unchanged otherwise — we still return
     ``~/.hermes`` — because raising here would brick 30+ module-level
     callers that import this at load time.  Subprocess spawners are
-    expected to propagate ``OMNIWORKER_HOME`` explicitly (see the systemd
-    template in ``omniworker_cli/gateway.py`` and the kanban dispatcher in
-    ``omniworker_cli/kanban_db.py``).  See https://github.com/NousResearch/hermes-agent/issues/18594.
+    expected to propagate ``FLUX AGENT_HOME`` explicitly (see the systemd
+    template in ``flux-agent_cli/gateway.py`` and the kanban dispatcher in
+    ``flux-agent_cli/kanban_db.py``).  See https://github.com/NousResearch/hermes-agent/issues/18594.
     """
-    override = get_omniworker_home_override()
+    override = get_flux-agent_home_override()
     if override:
         return Path(override)
 
-    val = os.environ.get("OMNIWORKER_HOME", "").strip()
+    val = os.environ.get("FLUX AGENT_HOME", "").strip()
     if val:
         return Path(val)
 
@@ -84,11 +84,11 @@ def get_omniworker_home() -> Path:
             # on consoles where a StreamHandler is already attached.
             import sys
             msg = (
-                f"[OMNIWORKER_HOME fallback] OMNIWORKER_HOME is unset but active "
+                f"[FLUX AGENT_HOME fallback] FLUX AGENT_HOME is unset but active "
                 f"profile is {active!r}. Falling back to ~/.hermes, which "
                 f"is the DEFAULT profile — not {active!r}. Any data this "
                 f"process writes will land in the wrong profile. The "
-                f"subprocess spawner should pass OMNIWORKER_HOME explicitly "
+                f"subprocess spawner should pass FLUX AGENT_HOME explicitly "
                 f"(see issue #18594)."
             )
             try:
@@ -101,15 +101,15 @@ def get_omniworker_home() -> Path:
 
 
 def get_default_hermes_root() -> Path:
-    """Return the root OmniWorker directory for profile-level operations.
+    """Return the root Flux Agent directory for profile-level operations.
 
     In standard deployments this is ``~/.hermes``.
 
-    In Docker or custom deployments where ``OMNIWORKER_HOME`` points outside
-    ``~/.hermes`` (e.g. ``/opt/data``), returns ``OMNIWORKER_HOME`` directly
+    In Docker or custom deployments where ``FLUX AGENT_HOME`` points outside
+    ``~/.hermes`` (e.g. ``/opt/data``), returns ``FLUX AGENT_HOME`` directly
     — that IS the root.
 
-    In profile mode where ``OMNIWORKER_HOME`` is ``<root>/profiles/<name>``,
+    In profile mode where ``FLUX AGENT_HOME`` is ``<root>/profiles/<name>``,
     returns ``<root>`` so that ``profile list`` can see all profiles.
     Works both for standard (``~/.hermes/profiles/coder``) and Docker
     (``/opt/data/profiles/coder``) layouts.
@@ -117,13 +117,13 @@ def get_default_hermes_root() -> Path:
     Import-safe — no dependencies beyond stdlib.
     """
     native_home = Path.home() / ".hermes"
-    env_home = os.environ.get("OMNIWORKER_HOME", "")
+    env_home = os.environ.get("FLUX AGENT_HOME", "")
     if not env_home:
         return native_home
     env_path = Path(env_home)
     try:
         env_path.resolve().relative_to(native_home.resolve())
-        # OMNIWORKER_HOME is under ~/.hermes (normal or profile mode)
+        # FLUX AGENT_HOME is under ~/.hermes (normal or profile mode)
         return native_home
     except ValueError:
         pass
@@ -135,7 +135,7 @@ def get_default_hermes_root() -> Path:
     if env_path.parent.name == "profiles":
         return env_path.parent.parent
 
-    # Not a profile path — OMNIWORKER_HOME itself is the root
+    # Not a profile path — FLUX AGENT_HOME itself is the root
     return env_path
 
 
@@ -143,43 +143,43 @@ def get_optional_skills_dir(default: Path | None = None) -> Path:
     """Return the optional-skills directory, honoring package-manager wrappers.
 
     Packaged installs may ship ``optional-skills`` outside the Python package
-    tree and expose it via ``OMNIWORKER_OPTIONAL_SKILLS``.
+    tree and expose it via ``FLUX AGENT_OPTIONAL_SKILLS``.
     """
-    override = os.getenv("OMNIWORKER_OPTIONAL_SKILLS", "").strip()
+    override = os.getenv("FLUX AGENT_OPTIONAL_SKILLS", "").strip()
     if override:
         return Path(override)
     if default is not None:
         return default
-    return get_omniworker_home() / "optional-skills"
+    return get_flux-agent_home() / "optional-skills"
 
 
 def get_hermes_dir(new_subpath: str, old_name: str) -> Path:
-    """Resolve a OmniWorker subdirectory with backward compatibility.
+    """Resolve a Flux Agent subdirectory with backward compatibility.
 
     New installs get the consolidated layout (e.g. ``cache/images``).
     Existing installs that already have the old path (e.g. ``image_cache``)
     keep using it — no migration required.
 
     Args:
-        new_subpath: Preferred path relative to OMNIWORKER_HOME (e.g. ``"cache/images"``).
-        old_name: Legacy path relative to OMNIWORKER_HOME (e.g. ``"image_cache"``).
+        new_subpath: Preferred path relative to FLUX AGENT_HOME (e.g. ``"cache/images"``).
+        old_name: Legacy path relative to FLUX AGENT_HOME (e.g. ``"image_cache"``).
 
     Returns:
         Absolute ``Path`` — old location if it exists on disk, otherwise the new one.
     """
-    home = get_omniworker_home()
+    home = get_flux-agent_home()
     old_path = home / old_name
     if old_path.exists():
         return old_path
     return home / new_subpath
 
 
-get_omniworker_dir = get_hermes_dir
+get_flux-agent_dir = get_hermes_dir
 
 
 
-def display_omniworker_home() -> str:
-    """Return a user-friendly display string for the current OMNIWORKER_HOME.
+def display_flux-agent_home() -> str:
+    """Return a user-friendly display string for the current FLUX AGENT_HOME.
 
     Uses ``~/`` shorthand for readability::
 
@@ -189,9 +189,9 @@ def display_omniworker_home() -> str:
 
     Use this in **user-facing** print/log messages instead of hardcoding
     ``~/.hermes``.  For code that needs a real ``Path``, use
-    :func:`get_omniworker_home` instead.
+    :func:`get_flux-agent_home` instead.
     """
-    home = get_omniworker_home()
+    home = get_flux-agent_home()
     try:
         return "~/" + str(home.relative_to(Path.home()))
     except ValueError:
@@ -201,9 +201,9 @@ def display_omniworker_home() -> str:
 def get_subprocess_home() -> str | None:
     """Return a per-profile HOME directory for subprocesses, or None.
 
-    When ``{OMNIWORKER_HOME}/home/`` exists on disk, subprocesses should use it
+    When ``{FLUX AGENT_HOME}/home/`` exists on disk, subprocesses should use it
     as ``HOME`` so system tools (git, ssh, gh, npm …) write their configs
-    inside the OmniWorker data directory instead of the OS-level ``/root`` or
+    inside the Flux Agent data directory instead of the OS-level ``/root`` or
     ``~/``.  This provides:
 
     * **Docker persistence** — tool configs land inside the persistent volume.
@@ -215,10 +215,10 @@ def get_subprocess_home() -> str | None:
     Activation is directory-based: if the ``home/`` subdirectory doesn't
     exist, returns ``None`` and behavior is unchanged.
     """
-    omniworker_home = get_omniworker_home_override() or os.getenv("OMNIWORKER_HOME")
-    if not omniworker_home:
+    flux-agent_home = get_flux-agent_home_override() or os.getenv("FLUX AGENT_HOME")
+    if not flux-agent_home:
         return None
-    profile_home = os.path.join(omniworker_home, "home")
+    profile_home = os.path.join(flux-agent_home, "home")
     if os.path.isdir(profile_home):
         return profile_home
     return None
@@ -311,23 +311,23 @@ def is_container() -> bool:
 
 
 def get_config_path() -> Path:
-    """Return the path to ``config.yaml`` under OMNIWORKER_HOME.
+    """Return the path to ``config.yaml`` under FLUX AGENT_HOME.
 
-    Replaces the ``get_omniworker_home() / "config.yaml"`` pattern repeated
-    in 7+ files (skill_utils.py, omniworker_logging.py, omniworker_time.py, etc.).
+    Replaces the ``get_flux-agent_home() / "config.yaml"`` pattern repeated
+    in 7+ files (skill_utils.py, flux-agent_logging.py, flux-agent_time.py, etc.).
     """
-    return get_omniworker_home() / "config.yaml"
+    return get_flux-agent_home() / "config.yaml"
 
 
 def get_skills_dir() -> Path:
-    """Return the path to the skills directory under OMNIWORKER_HOME."""
-    return get_omniworker_home() / "skills"
+    """Return the path to the skills directory under FLUX AGENT_HOME."""
+    return get_flux-agent_home() / "skills"
 
 
 
 def get_env_path() -> Path:
-    """Return the path to the ``.env`` file under OMNIWORKER_HOME."""
-    return get_omniworker_home() / ".env"
+    """Return the path to the ``.env`` file under FLUX AGENT_HOME."""
+    return get_flux-agent_home() / ".env"
 
 
 # ─── Network Preferences ─────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-# OmniWorker Achievements Implementation Spec (Detailed)
+# Flux Agent Achievements Implementation Spec (Detailed)
 
 This document is implementation-facing detail to execute the performance refactor later.
 
@@ -48,7 +48,7 @@ Responsibilities:
 - expose age and staleness checks
 
 Storage path:
-- `~/.omniworker/plugins/omniworker-achievements/scan_snapshot.json`
+- `~/.flux-agent/plugins/flux-agent-achievements/scan_snapshot.json`
 
 Methods (conceptual):
 - `get()` -> snapshot | null
@@ -125,7 +125,7 @@ Compatibility guidance:
 - Add metadata keys without breaking old callers.
 
 Checkpoint file (new):
-- `~/.omniworker/plugins/omniworker-achievements/scan_checkpoint.json`
+- `~/.flux-agent/plugins/flux-agent-achievements/scan_checkpoint.json`
 
 Suggested checkpoint shape:
 ```json
@@ -204,9 +204,9 @@ Notes:
 - frontend request hygiene: `dashboard/dist/index.js` (or source if available)
 - plugin metadata: `dashboard/manifest.json`
 - persisted runtime files:
-  - `~/.omniworker/plugins/omniworker-achievements/state.json` (existing unlock state)
-  - `~/.omniworker/plugins/omniworker-achievements/scan_snapshot.json` (new)
-  - `~/.omniworker/plugins/omniworker-achievements/scan_checkpoint.json` (new)
+  - `~/.flux-agent/plugins/flux-agent-achievements/state.json` (existing unlock state)
+  - `~/.flux-agent/plugins/flux-agent-achievements/scan_snapshot.json` (new)
+  - `~/.flux-agent/plugins/flux-agent-achievements/scan_checkpoint.json` (new)
 
 ---
 

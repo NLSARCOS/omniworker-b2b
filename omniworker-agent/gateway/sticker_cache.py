@@ -12,10 +12,10 @@ import json
 import time
 from typing import Optional
 
-from omniworker_cli.config import get_omniworker_home
+from flux-agent_cli.config import get_flux-agent_home
 
 
-CACHE_PATH = get_omniworker_home() / "sticker_cache.json"
+CACHE_PATH = get_flux-agent_home() / "sticker_cache.json"
 
 # Vision prompt for describing stickers -- kept concise to save tokens
 STICKER_VISION_PROMPT = (

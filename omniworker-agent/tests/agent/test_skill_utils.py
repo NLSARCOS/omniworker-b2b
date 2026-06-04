@@ -3,11 +3,11 @@
 from agent.skill_utils import extract_skill_conditions
 
 
-def test_metadata_as_dict_with_omniworker():
-    """Normal case: metadata is a dict containing omniworker keys."""
+def test_metadata_as_dict_with_flux-agent():
+    """Normal case: metadata is a dict containing flux-agent keys."""
     frontmatter = {
         "metadata": {
-            "omniworker": {
+            "flux-agent": {
                 "fallback_for_toolsets": ["toolset_a"],
                 "requires_toolsets": ["toolset_b"],
                 "fallback_for_tools": ["tool_x"],

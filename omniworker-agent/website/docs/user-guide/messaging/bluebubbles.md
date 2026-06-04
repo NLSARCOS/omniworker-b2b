@@ -1,13 +1,13 @@
 # BlueBubbles (iMessage)
 
-Connect OmniWorker to Apple iMessage via [BlueBubbles](https://bluebubbles.app/) — a free, open-source macOS server that bridges iMessage to any device.
+Connect Flux Agent to Apple iMessage via [BlueBubbles](https://bluebubbles.app/) — a free, open-source macOS server that bridges iMessage to any device.
 
 ## Prerequisites
 
 - A **Mac** (always on) running [BlueBubbles Server](https://bluebubbles.app/)
 - Apple ID signed into Messages.app on that Mac
 - BlueBubbles Server v1.0.0+ (webhooks require this version)
-- Network connectivity between OmniWorker and the BlueBubbles server
+- Network connectivity between Flux Agent and the BlueBubbles server
 
 ## Setup
 
@@ -21,17 +21,17 @@ In BlueBubbles Server → **Settings → API**, note:
 - **Server URL** (e.g., `http://192.168.1.10:1234`)
 - **Server Password**
 
-### 3. Configure OmniWorker
+### 3. Configure Flux Agent
 
 Run the setup wizard:
 
 ```bash
-omniworker gateway setup
+flux-agent gateway setup
 ```
 
 Select **BlueBubbles (iMessage)** and enter your server URL and password.
 
-Or set environment variables directly in `~/.omniworker/.env`:
+Or set environment variables directly in `~/.flux-agent/.env`:
 
 ```bash
 BLUEBUBBLES_SERVER_URL=http://192.168.1.10:1234
@@ -43,18 +43,18 @@ BLUEBUBBLES_PASSWORD=your-server-password
 Choose one approach:
 
 **DM Pairing (recommended):**
-When someone messages your iMessage, OmniWorker automatically sends them a pairing code. Approve it with:
+When someone messages your iMessage, Flux Agent automatically sends them a pairing code. Approve it with:
 ```bash
-omniworker pairing approve bluebubbles <CODE>
+flux-agent pairing approve bluebubbles <CODE>
 ```
-Use `omniworker pairing list` to see pending codes and approved users.
+Use `flux-agent pairing list` to see pending codes and approved users.
 
-**Pre-authorize specific users** (in `~/.omniworker/.env`):
+**Pre-authorize specific users** (in `~/.flux-agent/.env`):
 ```bash
 BLUEBUBBLES_ALLOWED_USERS=user@icloud.com,+15551234567
 ```
 
-**Open access** (in `~/.omniworker/.env`):
+**Open access** (in `~/.flux-agent/.env`):
 ```bash
 BLUEBUBBLES_ALLOW_ALL_USERS=true
 ```
@@ -62,20 +62,20 @@ BLUEBUBBLES_ALLOW_ALL_USERS=true
 ### 5. Start the Gateway
 
 ```bash
-omniworker gateway run
+flux-agent gateway run
 ```
 
-OmniWorker will connect to your BlueBubbles server, register a webhook, and start listening for iMessage messages.
+Flux Agent will connect to your BlueBubbles server, register a webhook, and start listening for iMessage messages.
 
 ## How It Works
 
 ```
-iMessage → Messages.app → BlueBubbles Server → Webhook → OmniWorker
-OmniWorker → BlueBubbles REST API → Messages.app → iMessage
+iMessage → Messages.app → BlueBubbles Server → Webhook → Flux Agent
+Flux Agent → BlueBubbles REST API → Messages.app → iMessage
 ```
 
 - **Inbound:** BlueBubbles sends webhook events to a local listener when new messages arrive. No polling — instant delivery.
-- **Outbound:** OmniWorker sends messages via the BlueBubbles REST API.
+- **Outbound:** Flux Agent sends messages via the BlueBubbles REST API.
 - **Media:** Images, voice messages, videos, and documents are supported in both directions. Inbound attachments are downloaded and cached locally for the agent to process.
 
 ## Environment Variables
@@ -91,7 +91,7 @@ OmniWorker → BlueBubbles REST API → Messages.app → iMessage
 | `BLUEBUBBLES_ALLOWED_USERS` | No | — | Comma-separated authorized users |
 | `BLUEBUBBLES_ALLOW_ALL_USERS` | No | `false` | Allow all users |
 
-Auto-marking messages as read is controlled by the `send_read_receipts` key under `platforms.bluebubbles.extra` in `~/.omniworker/config.yaml` (default: `true`). There is no corresponding environment variable.
+Auto-marking messages as read is controlled by the `send_read_receipts` key under `platforms.bluebubbles.extra` in `~/.flux-agent/config.yaml` (default: `true`). There is no corresponding environment variable.
 
 ## Features
 
@@ -114,7 +114,7 @@ Shows "typing..." in the iMessage conversation while the agent is processing. Re
 Automatically marks messages as read after processing. Requires Private API.
 
 ### Chat Addressing
-You can address chats by email or phone number — OmniWorker resolves them to BlueBubbles chat GUIDs automatically. No need to use raw GUID format.
+You can address chats by email or phone number — Flux Agent resolves them to BlueBubbles chat GUIDs automatically. No need to use raw GUID format.
 
 ## Private API
 
@@ -136,7 +136,7 @@ Without the Private API, basic text messaging and media still work.
 ### Messages not arriving
 - Check that the webhook is registered in BlueBubbles Server → Settings → API → Webhooks
 - Verify the webhook URL is reachable from the Mac
-- Check `omniworker logs gateway` for webhook errors (or `omniworker logs -f` to follow in real-time)
+- Check `flux-agent logs gateway` for webhook errors (or `flux-agent logs -f` to follow in real-time)
 
 ### "Private API helper not connected"
 - Install the Private API helper: [docs.bluebubbles.app](https://docs.bluebubbles.app/helper-bundle/installation)

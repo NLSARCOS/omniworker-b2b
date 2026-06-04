@@ -1,7 +1,7 @@
 # Design System: Apple
 
 
-> **OmniWorker Agent — Implementation Notes**
+> **Flux Agent Agent — Implementation Notes**
 >
 > The original site uses proprietary fonts. For self-contained HTML output, use these CDN substitutes:
 > - **Primary:** `system-ui` | **Mono:** `SF Mono (system)`

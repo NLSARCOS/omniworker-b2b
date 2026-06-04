@@ -1,7 +1,7 @@
-"""OmniWorker-managed Camofox state helpers.
+"""Flux Agent-managed Camofox state helpers.
 
 Provides profile-scoped identity and state directory paths for Camofox
-persistent browser profiles.  When managed persistence is enabled, OmniWorker
+persistent browser profiles.  When managed persistence is enabled, Flux Agent
 sends a deterministic userId derived from the active profile so that
 Camofox can map it to the same persistent browser profile directory
 across restarts.
@@ -13,7 +13,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, Optional
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 
 CAMOFOX_STATE_DIR_NAME = "browser_auth"
 CAMOFOX_STATE_SUBDIR = "camofox"
@@ -21,13 +21,13 @@ CAMOFOX_STATE_SUBDIR = "camofox"
 
 def get_camofox_state_dir() -> Path:
     """Return the profile-scoped root directory for Camofox persistence."""
-    return get_omniworker_home() / CAMOFOX_STATE_DIR_NAME / CAMOFOX_STATE_SUBDIR
+    return get_flux-agent_home() / CAMOFOX_STATE_DIR_NAME / CAMOFOX_STATE_SUBDIR
 
 
 def get_camofox_identity(task_id: Optional[str] = None) -> Dict[str, str]:
-    """Return the stable OmniWorker-managed Camofox identity for this profile.
+    """Return the stable Flux Agent-managed Camofox identity for this profile.
 
-    The user identity is profile-scoped (same OmniWorker profile = same userId).
+    The user identity is profile-scoped (same Flux Agent profile = same userId).
     The session key is scoped to the logical browser task so newly created
     tabs within the same profile reuse the same identity contract.
     """

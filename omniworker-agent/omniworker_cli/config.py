@@ -1,5 +1,5 @@
 """
-Configuration management for OmniWorker Agent.
+Configuration management for Flux Agent Agent.
 
 Config files are stored in ~/.hermes/ for easy access:
 - ~/.hermes/config.yaml  - All settings (model, toolsets, terminal, etc.)
@@ -135,19 +135,19 @@ _EXTRA_ENV_KEYS = frozenset({
     # Langfuse observability plugin — optional tuning keys + standard SDK vars.
     # Activation is via plugins.enabled (opt-in through `hermes plugins enable
     # observability/langfuse`); credentials gate the plugin at runtime.
-    "OMNIWORKER_LANGFUSE_ENV",
-    "OMNIWORKER_LANGFUSE_RELEASE",
-    "OMNIWORKER_LANGFUSE_SAMPLE_RATE",
-    "OMNIWORKER_LANGFUSE_MAX_CHARS",
-    "OMNIWORKER_LANGFUSE_DEBUG",
+    "FLUX AGENT_LANGFUSE_ENV",
+    "FLUX AGENT_LANGFUSE_RELEASE",
+    "FLUX AGENT_LANGFUSE_SAMPLE_RATE",
+    "FLUX AGENT_LANGFUSE_MAX_CHARS",
+    "FLUX AGENT_LANGFUSE_DEBUG",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
     "LANGFUSE_BASE_URL",
 })
 import yaml
 
-from omniworker_cli.colors import Colors, color
-from omniworker_cli.default_soul import DEFAULT_SOUL_MD
+from flux-agent_cli.colors import Colors, color
+from flux-agent_cli.default_soul import DEFAULT_SOUL_MD
 
 
 # =============================================================================
@@ -165,24 +165,24 @@ _MANAGED_SYSTEM_NAMES = {
 
 def get_managed_system() -> Optional[str]:
     """Return the package manager owning this install, if any."""
-    raw = os.getenv("OMNIWORKER_MANAGED", "").strip()
+    raw = os.getenv("FLUX AGENT_MANAGED", "").strip()
     if raw:
         normalized = raw.lower()
         if normalized in _MANAGED_TRUE_VALUES:
             return "NixOS"
         return _MANAGED_SYSTEM_NAMES.get(normalized, raw)
 
-    managed_marker = get_omniworker_home() / ".managed"
+    managed_marker = get_flux-agent_home() / ".managed"
     if managed_marker.exists():
         return "NixOS"
     return None
 
 
 def is_managed() -> bool:
-    """Check if OmniWorker is running in package-manager-managed mode.
+    """Check if Flux Agent is running in package-manager-managed mode.
 
-    Two signals: the OMNIWORKER_MANAGED env var (set by the systemd service),
-    or a .managed marker file in OMNIWORKER_HOME (set by the NixOS activation
+    Two signals: the FLUX AGENT_MANAGED env var (set by the systemd service),
+    or a .managed marker file in FLUX AGENT_HOME (set by the NixOS activation
     script, so interactive shells also see it).
     """
     return get_managed_system() is not None
@@ -202,16 +202,16 @@ def get_managed_update_command() -> Optional[str]:
 
 
 def detect_install_method(project_root: Optional[Path] = None) -> str:
-    """Detect how OmniWorker was installed: 'docker', 'nixos', 'homebrew', 'git', or 'pip'.
+    """Detect how Flux Agent was installed: 'docker', 'nixos', 'homebrew', 'git', or 'pip'.
 
     Resolution order:
     1. Stamped ``~/.hermes/.install_method`` file (written by installers)
-    2. OMNIWORKER_MANAGED env / .managed marker (NixOS, Homebrew)
+    2. FLUX AGENT_MANAGED env / .managed marker (NixOS, Homebrew)
     3. Container detection (/.dockerenv, /run/.containerenv, cgroup)
     4. .git directory presence -> 'git'
     5. Fallback -> 'pip'
     """
-    stamp = get_omniworker_home() / ".install_method"
+    stamp = get_flux-agent_home() / ".install_method"
     try:
         method = stamp.read_text(encoding="utf-8").strip().lower()
         if method:
@@ -221,7 +221,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
     managed = get_managed_system()
     if managed:
         return managed.lower().replace(" ", "-")
-    from omniworker_constants import is_container
+    from flux-agent_constants import is_container
     if is_container():
         return "docker"
     if project_root is None:
@@ -233,7 +233,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
 
 def stamp_install_method(method: str) -> None:
     """Write the install method to ~/.hermes/.install_method."""
-    stamp = get_omniworker_home() / ".install_method"
+    stamp = get_flux-agent_home() / ".install_method"
     try:
         stamp.parent.mkdir(parents=True, exist_ok=True)
         stamp.write_text(method + "\n", encoding="utf-8")
@@ -267,16 +267,16 @@ def recommended_update_command() -> str:
     return recommended_update_command_for_method(method)
 
 
-def format_managed_message(action: str = "modify this OmniWorker installation") -> str:
+def format_managed_message(action: str = "modify this Flux Agent installation") -> str:
     """Build a user-facing error for managed installs."""
     managed_system = get_managed_system() or "a package manager"
-    raw = os.getenv("OMNIWORKER_MANAGED", "").strip().lower()
+    raw = os.getenv("FLUX AGENT_MANAGED", "").strip().lower()
 
     if managed_system == "NixOS":
         env_hint = "true" if raw in _MANAGED_TRUE_VALUES else raw or "true"
         return (
-            f"Cannot {action}: this OmniWorker installation is managed by NixOS "
-            f"(OMNIWORKER_MANAGED={env_hint}).\n"
+            f"Cannot {action}: this Flux Agent installation is managed by NixOS "
+            f"(FLUX AGENT_MANAGED={env_hint}).\n"
             "Edit services.hermes-agent.settings in your configuration.nix and run:\n"
             "  sudo nixos-rebuild switch"
         )
@@ -284,15 +284,15 @@ def format_managed_message(action: str = "modify this OmniWorker installation") 
     if managed_system == "Homebrew":
         env_hint = raw or "homebrew"
         return (
-            f"Cannot {action}: this OmniWorker installation is managed by Homebrew "
-            f"(OMNIWORKER_MANAGED={env_hint}).\n"
+            f"Cannot {action}: this Flux Agent installation is managed by Homebrew "
+            f"(FLUX AGENT_MANAGED={env_hint}).\n"
             "Use:\n"
             "  brew upgrade hermes-agent"
         )
 
     return (
-        f"Cannot {action}: this OmniWorker installation is managed by {managed_system}.\n"
-        "Use your package manager to upgrade or reinstall OmniWorker."
+        f"Cannot {action}: this Flux Agent installation is managed by {managed_system}.\n"
+        "Use your package manager to upgrade or reinstall Flux Agent."
     )
 
 def managed_error(action: str = "modify configuration"):
@@ -305,24 +305,24 @@ def managed_error(action: str = "modify configuration"):
 # =============================================================================
 
 def get_container_exec_info() -> Optional[dict]:
-    """Read container mode metadata from OMNIWORKER_HOME/.container-mode.
+    """Read container mode metadata from FLUX AGENT_HOME/.container-mode.
 
     Returns a dict with keys: backend, container_name, exec_user, hermes_bin
     or None if container mode is not active, we're already inside the
-    container, or OMNIWORKER_DEV=1 is set.
+    container, or FLUX AGENT_DEV=1 is set.
 
     The .container-mode file is written by the NixOS activation script when
     container.enable = true. It tells the host CLI to exec into the container
     instead of running locally.
     """
-    if os.environ.get("OMNIWORKER_DEV") == "1":
+    if os.environ.get("FLUX AGENT_DEV") == "1":
         return None
 
-    from omniworker_constants import is_container
+    from flux-agent_constants import is_container
     if is_container():
         return None
 
-    container_mode_file = get_omniworker_home() / ".container-mode"
+    container_mode_file = get_flux-agent_home() / ".container-mode"
 
     try:
         info = {}
@@ -353,17 +353,17 @@ def get_container_exec_info() -> Optional[dict]:
 # Config paths
 # =============================================================================
 
-# Re-export from omniworker_constants — canonical definition lives there.
-from omniworker_constants import get_omniworker_home  # noqa: F811,E402
+# Re-export from flux-agent_constants — canonical definition lives there.
+from flux-agent_constants import get_flux-agent_home  # noqa: F811,E402
 from utils import atomic_replace
 
 def get_config_path() -> Path:
     """Get the main config file path."""
-    return get_omniworker_home() / "config.yaml"
+    return get_flux-agent_home() / "config.yaml"
 
 def get_env_path() -> Path:
     """Get the .env file path (for API keys)."""
-    return get_omniworker_home() / ".env"
+    return get_flux-agent_home() / ".env"
 
 def get_project_root() -> Path:
     """Get the project installation directory."""
@@ -376,16 +376,16 @@ def _secure_dir(path):
     permissions (0750) so interactive users in the hermes group can
     share state with the gateway service.
 
-    The mode can be overridden via the OMNIWORKER_HOME_MODE environment variable
-    (e.g. OMNIWORKER_HOME_MODE=0701) for deployments where a web server (nginx,
-    caddy, etc.) needs to traverse OMNIWORKER_HOME to reach a served subdirectory.
+    The mode can be overridden via the FLUX AGENT_HOME_MODE environment variable
+    (e.g. FLUX AGENT_HOME_MODE=0701) for deployments where a web server (nginx,
+    caddy, etc.) needs to traverse FLUX AGENT_HOME to reach a served subdirectory.
     The execute-only bit on a directory permits cd-through without exposing
     directory listings.
     """
     if is_managed():
         return
     try:
-        mode_str = os.environ.get("OMNIWORKER_HOME_MODE", "").strip()
+        mode_str = os.environ.get("FLUX AGENT_HOME_MODE", "").strip()
         mode = int(mode_str, 8) if mode_str else 0o700
     except ValueError:
         mode = 0o700
@@ -398,13 +398,13 @@ def _secure_dir(path):
 def _is_container() -> bool:
     """Detect if we're running inside a Docker/Podman/LXC container.
 
-    When OmniWorker runs in a container with volume-mounted config files, forcing
+    When Flux Agent runs in a container with volume-mounted config files, forcing
     0o600 permissions breaks multi-process setups where the gateway and
     dashboard run as different UIDs or the volume mount requires broader
     permissions.
     """
     # Explicit opt-out
-    if os.environ.get("OMNIWORKER_CONTAINER") or os.environ.get("OMNIWORKER_SKIP_CHMOD"):
+    if os.environ.get("FLUX AGENT_CONTAINER") or os.environ.get("FLUX AGENT_SKIP_CHMOD"):
         return True
     # Docker / Podman marker file
     if os.path.exists("/.dockerenv"):
@@ -427,7 +427,7 @@ def _secure_file(path):
     group-readable permissions (0640) on config files.
 
     Skipped in containers — Docker/Podman volume mounts often need broader
-    permissions.  Set OMNIWORKER_SKIP_CHMOD=1 to force-skip on other systems.
+    permissions.  Set FLUX AGENT_SKIP_CHMOD=1 to force-skip on other systems.
     """
     if is_managed() or _is_container():
         return
@@ -439,7 +439,7 @@ def _secure_file(path):
 
 
 def _ensure_default_soul_md(home: Path) -> None:
-    """Seed a default SOUL.md into OMNIWORKER_HOME if the user doesn't have one yet."""
+    """Seed a default SOUL.md into FLUX AGENT_HOME if the user doesn't have one yet."""
     soul_path = home / "SOUL.md"
     if soul_path.exists():
         return
@@ -447,18 +447,18 @@ def _ensure_default_soul_md(home: Path) -> None:
     _secure_file(soul_path)
 
 
-def ensure_omniworker_home():
+def ensure_flux-agent_home():
     """Ensure ~/.hermes directory structure exists with secure permissions.
 
     In managed mode (NixOS), dirs are created by the activation script with
     setgid + group-writable (2770). We skip mkdir and set umask(0o007) so
     any files created (e.g. SOUL.md) are group-writable (0660).
     """
-    home = get_omniworker_home()
+    home = get_flux-agent_home()
     if is_managed():
         old_umask = os.umask(0o007)
         try:
-            _ensure_omniworker_home_managed(home)
+            _ensure_flux-agent_home_managed(home)
         finally:
             os.umask(old_umask)
     else:
@@ -474,11 +474,11 @@ def ensure_omniworker_home():
         _ensure_default_soul_md(home)
 
 
-def _ensure_omniworker_home_managed(home: Path):
+def _ensure_flux-agent_home_managed(home: Path):
     """Managed-mode variant: verify dirs exist (activation creates them), seed SOUL.md."""
     if not home.is_dir():
         raise RuntimeError(
-            f"OMNIWORKER_HOME {home} does not exist. "
+            f"FLUX AGENT_HOME {home} does not exist. "
             "Run 'sudo nixos-rebuild switch' first."
         )
     for subdir in ("cron", "sessions", "logs", "memories"):
@@ -527,7 +527,7 @@ DEFAULT_CONFIG = {
         # provider timeouts, 5xx, etc.) before the agent surfaces the
         # failure.  The OpenAI SDK already does its own low-level retries
         # (max_retries=2 default) for transient network errors; this is
-        # the OmniWorker-level retry loop that wraps the whole call.  Lower
+        # the Flux Agent-level retry loop that wraps the whole call.  Lower
         # this to 1 if you use fallback providers and want fast failover
         # on flaky primaries; raise it if you prefer to tolerate longer
         # provider hiccups on a single provider.
@@ -604,13 +604,13 @@ DEFAULT_CONFIG = {
         # (bash doesn't source bashrc in non-interactive login mode) or
         # zsh-specific files like ``~/.zshrc`` / ``~/.zprofile``.
         # Paths support ``~`` / ``${VAR}``. Missing files are silently
-        # skipped. When empty, OmniWorker auto-sources ``~/.profile``,
+        # skipped. When empty, Flux Agent auto-sources ``~/.profile``,
         # ``~/.bash_profile``, and ``~/.bashrc`` (in that order) if the
         # snapshot shell is bash (this is the ``auto_source_bashrc``
         # behaviour — disable with that key if you want strict login-only
         # semantics).
         "shell_init_files": [],
-        # When true (default), OmniWorker sources the user's shell rc files
+        # When true (default), Flux Agent sources the user's shell rc files
         # (``~/.profile``, ``~/.bash_profile``, ``~/.bashrc``) in the
         # login shell used to build the environment snapshot. This
         # captures PATH additions, shell functions, and aliases — which a
@@ -627,7 +627,7 @@ DEFAULT_CONFIG = {
         "docker_forward_env": [],
         # Explicit environment variables to set inside Docker containers.
         # Unlike docker_forward_env (which reads values from the host process),
-        # docker_env lets you specify exact key-value pairs — useful when OmniWorker
+        # docker_env lets you specify exact key-value pairs — useful when Flux Agent
         # runs as a systemd service without access to the user's shell environment.
         # Example: {"SSH_AUTH_SOCK": "/run/user/1000/ssh-agent.sock"}
         "docker_env": {},
@@ -658,7 +658,7 @@ DEFAULT_CONFIG = {
         # are owned by your host user instead of root, which avoids needing
         # `sudo chown` after container runs. Default off to preserve behavior
         # for images whose entrypoints expect to start as root (e.g. the
-        # bundled OmniWorker image, which drops to the `hermes` user via gosu).
+        # bundled Flux Agent image, which drops to the `hermes` user via gosu).
         # When on, SETUID/SETGID caps are omitted from the container since
         # no privilege drop is needed.
         "docker_run_as_host_user": False,
@@ -696,12 +696,12 @@ DEFAULT_CONFIG = {
         "dialog_policy": "must_respond",  # must_respond | auto_dismiss | auto_accept
         "dialog_timeout_s": 300,  # Safety auto-dismiss after N seconds under must_respond
         "camofox": {
-            # When true, OmniWorker sends a stable profile-scoped userId to Camofox
+            # When true, Flux Agent sends a stable profile-scoped userId to Camofox
             # so the server maps it to a persistent Firefox profile automatically.
             # When false (default), each session gets a random userId (ephemeral).
             "managed_persistence": False,
             # Optional externally managed Camofox identity. Useful when another
-            # app owns the visible browser and OmniWorker should operate in it.
+            # app owns the visible browser and Flux Agent should operate in it.
             "user_id": "",
             "session_key": "",
             # Rehydrate tab_id from Camofox before creating a new tab.
@@ -754,7 +754,7 @@ DEFAULT_CONFIG = {
     "file_read_max_chars": 100_000,
 
     # Tool-output truncation thresholds. When terminal output or a
-    # single read_file page exceeds these limits, OmniWorker truncates the
+    # single read_file page exceeds these limits, Flux Agent truncates the
     # payload sent to the model (keeping head + tail for terminal,
     # enforcing pagination for read_file). Tuning these trades context
     # footprint against how much raw output the model can see in one
@@ -813,7 +813,7 @@ DEFAULT_CONFIG = {
                                       # (which bypasses the failure cooldown) or /new.
                                       # Set to False to restore historical behavior
                                       # (drop + static placeholder). When False, dropped
-                                      # messages are persisted to ~/.omniworker/recovery/
+                                      # messages are persisted to ~/.flux-agent/recovery/
                                       # before being removed.
     },
 
@@ -1013,7 +1013,7 @@ DEFAULT_CONFIG = {
         # When true, `hermes --tui` auto-resumes the most recent human-
         # facing session on launch instead of forging a fresh one.
         # Mirrors `hermes -c` muscle memory.  Default off so existing
-        # users aren't surprised.  OMNIWORKER_TUI_RESUME=<id> always wins.
+        # users aren't surprised.  FLUX AGENT_TUI_RESUME=<id> always wins.
         "tui_auto_resume_recent": False,
         "bell_on_complete": False,
         "show_reasoning": False,
@@ -1259,13 +1259,13 @@ DEFAULT_CONFIG = {
     # Goals — persistent cross-turn goals (Ralph-style loop).
     # After every turn, a lightweight judge call asks the auxiliary model
     # whether the active /goal is satisfied by the assistant's last
-    # response. If not, OmniWorker feeds a continuation prompt back into the
+    # response. If not, Flux Agent feeds a continuation prompt back into the
     # same session and keeps working until the goal is done, the turn
     # budget is exhausted, or the user pauses/clears it. Judge failures
     # fail OPEN (continue) so a flaky judge never wedges progress — the
     # turn budget is the real backstop.
     "goals": {
-        # Max continuation turns before OmniWorker auto-pauses the goal and
+        # Max continuation turns before Flux Agent auto-pauses the goal and
         # asks the user to /goal resume. Protects against judge false
         # negatives (goal actually done but judge says continue) and
         # unbounded model spend on fuzzy / unachievable goals.
@@ -1277,7 +1277,7 @@ DEFAULT_CONFIG = {
     # always goes to ~/.hermes/skills/.
     "skills": {
         "external_dirs": [],   # e.g. ["~/.agents/skills", "/shared/team-skills"]
-        # Substitute ${OMNIWORKER_SKILL_DIR} and ${OMNIWORKER_SESSION_ID} in SKILL.md
+        # Substitute ${FLUX AGENT_SKILL_DIR} and ${FLUX AGENT_SESSION_ID} in SKILL.md
         # content with the absolute skill directory and the active session id
         # before the agent sees it.  Lets skill authors reference bundled
         # scripts without the agent having to join paths.
@@ -1394,7 +1394,7 @@ DEFAULT_CONFIG = {
     # WhatsApp platform settings (gateway mode)
     "whatsapp": {
         # Reply prefix prepended to every outgoing WhatsApp message.
-        # Default (None) uses the built-in "⚕ *OmniWorker Agent*" header.
+        # Default (None) uses the built-in "⚕ *Flux Agent Agent*" header.
         # Set to "" (empty string) to disable the header entirely.
         # Supports \n for newlines, e.g. "🤖 *My Bot*\n──────\n"
     },
@@ -1447,7 +1447,7 @@ DEFAULT_CONFIG = {
         # through tools.slash_confirm — native yes/no buttons on Telegram,
         # Discord, and Slack; text fallback elsewhere.  Users click "Always
         # Approve" to silence the prompt permanently; that flips this key to
-        # false.  TUI has its own modal overlay (OMNIWORKER_TUI_NO_CONFIRM=1 to
+        # false.  TUI has its own modal overlay (FLUX AGENT_TUI_NO_CONFIRM=1 to
         # opt out there).
         "destructive_slash_confirm": True,
     },
@@ -1467,7 +1467,7 @@ DEFAULT_CONFIG = {
     "hooks": {},
 
     # Auto-accept shell-hook registrations without a TTY prompt.  Also
-    # toggleable per-invocation via --accept-hooks or OMNIWORKER_ACCEPT_HOOKS=1.
+    # toggleable per-invocation via --accept-hooks or FLUX AGENT_ACCEPT_HOOKS=1.
     # Gateway / cron / non-interactive runs need this (or one of the other
     # channels) to pick up newly-added hooks.
     "hooks_auto_accept": False,
@@ -1494,9 +1494,9 @@ DEFAULT_CONFIG = {
         # compromised package, rotated credentials). Acked advisories no
         # longer trigger the startup banner. Add via `hermes doctor --ack
         # <id>`; remove by editing the list directly. See
-        # ``omniworker_cli/security_advisories.py`` for the catalog.
+        # ``flux-agent_cli/security_advisories.py`` for the catalog.
         "acked_advisories": [],
-        # Allow OmniWorker to lazy-install opt-in backend packages from PyPI
+        # Allow Flux Agent to lazy-install opt-in backend packages from PyPI
         # the first time the user enables a backend that needs them
         # (e.g. installing ``elevenlabs`` when the user picks ElevenLabs as
         # their TTS provider). Set to false to require explicit
@@ -1513,7 +1513,7 @@ DEFAULT_CONFIG = {
         # Maximum number of due jobs to run in parallel per tick.
         # null/0 = unbounded (limited only by thread count).
         # 1 = serial (pre-v0.9 behaviour).
-        # Also overridable via OMNIWORKER_CRON_MAX_PARALLEL env var.
+        # Also overridable via FLUX AGENT_CRON_MAX_PARALLEL env var.
         "max_parallel_jobs": None,
     },
 
@@ -1660,10 +1660,10 @@ DEFAULT_CONFIG = {
 
     # ``hermes update`` behaviour.
     "updates": {
-        # Run a full ``hermes backup``-style zip of OMNIWORKER_HOME before every
-        # ``hermes update``.  Backups land in ``<OMNIWORKER_HOME>/backups/`` and
+        # Run a full ``hermes backup``-style zip of FLUX AGENT_HOME before every
+        # ``hermes update``.  Backups land in ``<FLUX AGENT_HOME>/backups/`` and
         # can be restored with ``hermes import <path>``.  Off by default —
-        # on large OMNIWORKER_HOME directories the zip can add minutes to every
+        # on large FLUX AGENT_HOME directories the zip can add minutes to every
         # update.  Set to true to re-enable, or pass ``--backup`` to opt in
         # for a single update run.
         "pre_update_backup": False,
@@ -1701,7 +1701,7 @@ DEFAULT_CONFIG = {
 
         # How to handle missing server binaries.
         # ``"auto"`` — try to install via npm/go/pip into
-        #              ``<OMNIWORKER_HOME>/lsp/bin/`` on first use.
+        #              ``<FLUX AGENT_HOME>/lsp/bin/`` on first use.
         # ``"manual"`` — only use binaries already on PATH.
         # ``"off"`` — alias for ``manual``.
         "install_strategy": "auto",
@@ -2021,7 +2021,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "OMNIWORKER_QWEN_BASE_URL": {
+    "FLUX AGENT_QWEN_BASE_URL": {
         "description": "Qwen Portal base URL override (default: https://portal.qwen.ai/v1)",
         "prompt": "Qwen Portal base URL (leave empty for default)",
         "url": None,
@@ -2029,7 +2029,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "OMNIWORKER_GEMINI_CLIENT_ID": {
+    "FLUX AGENT_GEMINI_CLIENT_ID": {
         "description": "Google OAuth client ID for google-gemini-cli (optional; defaults to Google's public gemini-cli client)",
         "prompt": "Google OAuth client ID (optional — leave empty to use the public default)",
         "url": "https://console.cloud.google.com/apis/credentials",
@@ -2037,7 +2037,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "OMNIWORKER_GEMINI_CLIENT_SECRET": {
+    "FLUX AGENT_GEMINI_CLIENT_SECRET": {
         "description": "Google OAuth client secret for google-gemini-cli (optional)",
         "prompt": "Google OAuth client secret (optional)",
         "url": "https://console.cloud.google.com/apis/credentials",
@@ -2045,7 +2045,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "OMNIWORKER_GEMINI_PROJECT_ID": {
+    "FLUX AGENT_GEMINI_PROJECT_ID": {
         "description": "GCP project ID for paid Gemini tiers (free tier auto-provisions)",
         "prompt": "GCP project ID for Gemini OAuth (leave empty for free tier)",
         "url": None,
@@ -2221,7 +2221,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "TOOL_GATEWAY_USER_TOKEN": {
-        "description": "Explicit Nous Subscriber access token for tool-gateway requests (optional; otherwise read from the OmniWorker auth store)",
+        "description": "Explicit Nous Subscriber access token for tool-gateway requests (optional; otherwise read from the Flux Agent auth store)",
         "prompt": "Tool-gateway user token",
         "url": None,
         "password": True,
@@ -2392,21 +2392,21 @@ OPTIONAL_ENV_VARS = {
     },
 
     # ── Langfuse observability ──
-    "OMNIWORKER_LANGFUSE_PUBLIC_KEY": {
+    "FLUX AGENT_LANGFUSE_PUBLIC_KEY": {
         "description": "Langfuse project public key (pk-lf-...)",
         "prompt": "Langfuse public key",
         "url": "https://cloud.langfuse.com",
         "password": False,
         "category": "tool",
     },
-    "OMNIWORKER_LANGFUSE_SECRET_KEY": {
+    "FLUX AGENT_LANGFUSE_SECRET_KEY": {
         "description": "Langfuse project secret key (sk-lf-...)",
         "prompt": "Langfuse secret key",
         "url": "https://cloud.langfuse.com",
         "password": True,
         "category": "tool",
     },
-    "OMNIWORKER_LANGFUSE_BASE_URL": {
+    "FLUX AGENT_LANGFUSE_BASE_URL": {
         "description": "Langfuse server URL (default: https://cloud.langfuse.com)",
         "prompt": "Langfuse server URL (leave empty for cloud.langfuse.com)",
         "url": None,
@@ -2571,7 +2571,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "MATRIX_DEVICE_ID": {
-        "description": "Stable Matrix device ID for E2EE persistence across restarts (e.g. OMNIWORKER_BOT)",
+        "description": "Stable Matrix device ID for E2EE persistence across restarts (e.g. FLUX AGENT_BOT)",
         "prompt": "Matrix device ID (stable across restarts)",
         "url": None,
         "password": False,
@@ -2740,15 +2740,15 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "GATEWAY_PROXY_URL": {
-        "description": "URL of a remote OmniWorker API server to forward messages to (proxy mode). When set, the gateway handles platform I/O only — all agent work is delegated to the remote server. Use for Docker E2EE containers that relay to a host agent. Also configurable via gateway.proxy_url in config.yaml.",
-        "prompt": "Remote OmniWorker API server URL (e.g. http://192.168.1.100:8642)",
+        "description": "URL of a remote Flux Agent API server to forward messages to (proxy mode). When set, the gateway handles platform I/O only — all agent work is delegated to the remote server. Use for Docker E2EE containers that relay to a host agent. Also configurable via gateway.proxy_url in config.yaml.",
+        "prompt": "Remote Flux Agent API server URL (e.g. http://192.168.1.100:8642)",
         "url": None,
         "password": False,
         "category": "messaging",
         "advanced": True,
     },
     "GATEWAY_PROXY_KEY": {
-        "description": "Bearer token for authenticating with the remote OmniWorker API server (proxy mode). Must match the API_SERVER_KEY on the remote host.",
+        "description": "Bearer token for authenticating with the remote Flux Agent API server (proxy mode). Must match the API_SERVER_KEY on the remote host.",
         "prompt": "Remote API server auth key",
         "url": None,
         "password": True,
@@ -2787,38 +2787,38 @@ OPTIONAL_ENV_VARS = {
         "password": True,
         "category": "setting",
     },
-    "OMNIWORKER_MAX_ITERATIONS": {
+    "FLUX AGENT_MAX_ITERATIONS": {
         "description": "Maximum tool-calling iterations per conversation (default: 90)",
         "prompt": "Max iterations",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    # OMNIWORKER_TOOL_PROGRESS and OMNIWORKER_TOOL_PROGRESS_MODE are deprecated —
+    # FLUX AGENT_TOOL_PROGRESS and FLUX AGENT_TOOL_PROGRESS_MODE are deprecated —
     # now configured via display.tool_progress in config.yaml (off|new|all|verbose).
     # Gateway falls back to these env vars for backward compatibility.
-    "OMNIWORKER_TOOL_PROGRESS": {
+    "FLUX AGENT_TOOL_PROGRESS": {
         "description": "(deprecated) Use display.tool_progress in config.yaml instead",
         "prompt": "Tool progress (deprecated — use config.yaml)",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "OMNIWORKER_TOOL_PROGRESS_MODE": {
+    "FLUX AGENT_TOOL_PROGRESS_MODE": {
         "description": "(deprecated) Use display.tool_progress in config.yaml instead",
         "prompt": "Progress mode (deprecated — use config.yaml)",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "OMNIWORKER_PREFILL_MESSAGES_FILE": {
+    "FLUX AGENT_PREFILL_MESSAGES_FILE": {
         "description": "Path to JSON file with ephemeral prefill messages for few-shot priming",
         "prompt": "Prefill messages file path",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "OMNIWORKER_EPHEMERAL_SYSTEM_PROMPT": {
+    "FLUX AGENT_EPHEMERAL_SYSTEM_PROMPT": {
         "description": "Ephemeral system prompt injected at API-call time (never persisted to sessions)",
         "prompt": "Ephemeral system prompt",
         "url": None,
@@ -3084,7 +3084,7 @@ def _normalize_custom_provider_entry(
     if isinstance(models, dict) and models:
         normalized["models"] = models
     elif isinstance(models, list) and models:
-        # Hand-edited configs (and older OmniWorker versions) write ``models`` as
+        # Hand-edited configs (and older Flux Agent versions) write ``models`` as
         # a plain list of model ids. Preserve them by converting to the dict
         # shape downstream code expects; otherwise normalize silently drops
         # the list and /model shows the provider with (0) models.
@@ -3187,7 +3187,7 @@ def get_custom_provider_context_length(
     used by:
       * ``AIAgent.__init__`` (startup resolution)
       * ``AIAgent.switch_model`` (mid-session ``/model`` switch)
-      * ``omniworker_cli.model_switch.resolve_display_context_length`` (``/model`` confirmation display)
+      * ``flux-agent_cli.model_switch.resolve_display_context_length`` (``/model`` confirmation display)
       * ``gateway.run._format_session_info`` (``/info`` display)
       * ``agent.model_metadata.get_model_context_length`` (when custom_providers is threaded through)
 
@@ -3405,7 +3405,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
     if cp and not model_cfg:
         issues.append(ConfigIssue(
             "warning",
-            "custom_providers defined but no 'model' section — OmniWorker won't know which provider to use",
+            "custom_providers defined but no 'model' section — Flux Agent won't know which provider to use",
             "Add a model section:\n"
             "  model:\n"
             "    provider: custom\n"
@@ -3482,7 +3482,7 @@ def warn_deprecated_cwd_env_vars(config: Optional[Dict[str, Any]] = None) -> Non
             f"this is deprecated."
         )
     if lines:
-        hint_path = os.environ.get("OMNIWORKER_HOME", "~/.hermes")
+        hint_path = os.environ.get("FLUX AGENT_HOME", "~/.hermes")
         lines.insert(0, "\033[33m⚠ Deprecated .env settings detected:\033[0m")
         lines.append(
             f"  \033[2mMove to config.yaml instead:  "
@@ -3525,14 +3525,14 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
         if not isinstance(display, dict):
             display = {}
         if "tool_progress" not in display:
-            old_enabled = get_env_value("OMNIWORKER_TOOL_PROGRESS")
-            old_mode = get_env_value("OMNIWORKER_TOOL_PROGRESS_MODE")
+            old_enabled = get_env_value("FLUX AGENT_TOOL_PROGRESS")
+            old_mode = get_env_value("FLUX AGENT_TOOL_PROGRESS_MODE")
             if old_enabled and old_enabled.lower() in {"false", "0", "no"}:
                 display["tool_progress"] = "off"
-                results["config_added"].append("display.tool_progress=off (from OMNIWORKER_TOOL_PROGRESS=false)")
+                results["config_added"].append("display.tool_progress=off (from FLUX AGENT_TOOL_PROGRESS=false)")
             elif old_mode and old_mode.lower() in {"new", "all"}:
                 display["tool_progress"] = old_mode.lower()
-                results["config_added"].append(f"display.tool_progress={old_mode.lower()} (from OMNIWORKER_TOOL_PROGRESS_MODE)")
+                results["config_added"].append(f"display.tool_progress={old_mode.lower()} (from FLUX AGENT_TOOL_PROGRESS_MODE)")
             else:
                 display["tool_progress"] = "all"
                 results["config_added"].append("display.tool_progress=all (default)")
@@ -3545,10 +3545,10 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     if current_ver < 5:
         config = load_config()
         if "timezone" not in config:
-            old_tz = os.getenv("OMNIWORKER_TIMEZONE", "")
+            old_tz = os.getenv("FLUX AGENT_TIMEZONE", "")
             if old_tz and old_tz.strip():
                 config["timezone"] = old_tz.strip()
-                results["config_added"].append(f"timezone={old_tz.strip()} (from OMNIWORKER_TIMEZONE)")
+                results["config_added"].append(f"timezone={old_tz.strip()} (from FLUX AGENT_TIMEZONE)")
             else:
                 config["timezone"] = ""
                 results["config_added"].append("timezone= (empty, uses server-local)")
@@ -3794,10 +3794,10 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 disabled = []
             disabled_set = set(disabled)
 
-            # Scan ``$OMNIWORKER_HOME/plugins/`` for currently installed user plugins.
+            # Scan ``$FLUX AGENT_HOME/plugins/`` for currently installed user plugins.
             grandfathered: List[str] = []
             try:
-                user_plugins_dir = get_omniworker_home() / "plugins"
+                user_plugins_dir = get_flux-agent_home() / "plugins"
                 if user_plugins_dir.is_dir():
                     for child in sorted(user_plugins_dir.iterdir()):
                         if not child.is_dir():
@@ -3854,11 +3854,11 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     #      base_url, api_key, timeout, extra_body) — canonical slot for
     #      routing the curator fork to a cheaper aux model.
     #   3. Creates `~/.hermes/logs/curator/` if missing (belt-and-suspenders
-    #      on top of ensure_omniworker_home() — old profiles that predate this
+    #      on top of ensure_flux-agent_home() — old profiles that predate this
     #      migration still benefit).
     if current_ver < 23:
         try:
-            curator_dir = get_omniworker_home() / "logs" / "curator"
+            curator_dir = get_flux-agent_home() / "logs" / "curator"
             curator_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             results["warnings"].append(f"Could not create {curator_dir}: {e}")
@@ -4252,7 +4252,7 @@ def cfg_get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> A
       3. ``cfg is None`` (callers sometimes pass ``load_config() or None``).
 
     Named ``cfg_get`` rather than ``cfg_path`` to avoid shadowing the
-    ubiquitous ``cfg_path = _omniworker_home / "config.yaml"`` local variable
+    ubiquitous ``cfg_path = _flux-agent_home / "config.yaml"`` local variable
     that appears in gateway/run.py, cron/scheduler.py, main.py, etc.
 
     Explicit ``None`` values are returned as-is (matches ``dict.get(key,
@@ -4330,11 +4330,11 @@ def load_config() -> Dict[str, Any]:
     the cached value when unchanged, since most call sites mutate the
     result (e.g. ``cfg["model"]["default"] = ...`` before ``save_config``).
     The cache is keyed on ``str(config_path)`` so profile switches
-    (which change ``OMNIWORKER_HOME`` and therefore ``get_config_path()``)
+    (which change ``FLUX AGENT_HOME`` and therefore ``get_config_path()``)
     don't collide.
     """
     with _CONFIG_LOCK:
-        ensure_omniworker_home()
+        ensure_flux-agent_home()
         config_path = get_config_path()
         path_key = str(config_path)
 
@@ -4459,7 +4459,7 @@ def save_config(config: Dict[str, Any]):
             return
         from utils import atomic_yaml_write
 
-        ensure_omniworker_home()
+        ensure_flux-agent_home()
         config_path = get_config_path()
         current_normalized = _normalize_root_model_keys(_normalize_max_turns_config(config))
         normalized = current_normalized
@@ -4581,7 +4581,7 @@ def _sanitize_env_lines(lines: list) -> list:
     2. Stale ``KEY=***`` placeholder entries left by incomplete setup runs.
 
     Uses a known-keys set (OPTIONAL_ENV_VARS + _EXTRA_ENV_KEYS) so we only
-    split on real OmniWorker env var names, avoiding false positives from values
+    split on real Flux Agent env var names, avoiding false positives from values
     that happen to contain uppercase text with ``=``.
     """
     # Build the known keys set lazily from OPTIONAL_ENV_VARS + extras.
@@ -4728,7 +4728,7 @@ def save_env_value(key: str, value: str):
     value = value.replace("\n", "").replace("\r", "")
     # API keys / tokens must be ASCII — strip non-ASCII with a warning.
     value = _check_non_ascii_credential(key, value)
-    ensure_omniworker_home()
+    ensure_flux-agent_home()
     env_path = get_env_path()
 
     # On Windows, open() defaults to the system locale (cp1252) which can
@@ -4881,7 +4881,7 @@ def reload_env() -> int:
     """Re-read ~/.hermes/.env into os.environ. Returns count of vars updated.
 
     Adds/updates vars that changed and removes vars that were deleted from
-    the .env file (but only vars known to OmniWorker — OPTIONAL_ENV_VARS and
+    the .env file (but only vars known to Flux Agent — OPTIONAL_ENV_VARS and
     _EXTRA_ENV_KEYS — to avoid clobbering unrelated environment).
     """
     env_vars = load_env()
@@ -4891,7 +4891,7 @@ def reload_env() -> int:
         if os.environ.get(key) != value:
             os.environ[key] = value
             count += 1
-    # Remove known OmniWorker vars that are no longer in .env
+    # Remove known Flux Agent vars that are no longer in .env
     for key in known_keys:
         if key not in env_vars and key in os.environ:
             del os.environ[key]
@@ -4930,7 +4930,7 @@ def show_config():
     
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│              ⚕ OmniWorker Configuration                    │", Colors.CYAN))
+    print(color("│              ⚕ Flux Agent Configuration                    │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
     
     # Paths
@@ -4959,7 +4959,7 @@ def show_config():
     for env_key, name in keys:
         value = get_env_value(env_key)
         print(f"  {name:<14} {redact_key(value)}")
-    from omniworker_cli.auth import get_anthropic_key
+    from flux-agent_cli.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     print(f"  {'Anthropic':<14} {redact_key(anthropic_value)}")
     
@@ -5187,7 +5187,7 @@ def set_config_value(key: str, value: str):
     _set_nested(user_config, key, value)
     
     # Write only user config back (not the full merged defaults)
-    ensure_omniworker_home()
+    ensure_flux-agent_home()
     from utils import atomic_yaml_write
     atomic_yaml_write(config_path, user_config, sort_keys=False)
     

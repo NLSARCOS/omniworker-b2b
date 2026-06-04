@@ -1,6 +1,6 @@
 """CLI commands for Honcho integration management.
 
-Handles: omniworker honcho setup | status | sessions | map | peer
+Handles: flux-agent honcho setup | status | sessions | map | peer
 """
 
 from __future__ import annotations
@@ -10,9 +10,9 @@ import os
 import sys
 from pathlib import Path
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 from plugins.memory.honcho.client import resolve_active_host, resolve_config_path, HOST
-from omniworker_cli.config import cfg_get
+from flux-agent_cli.config import cfg_get
 
 
 def clone_honcho_for_profile(profile_name: str) -> bool:
@@ -96,7 +96,7 @@ def cmd_enable(args) -> None:
     """Enable Honcho for the active profile."""
     cfg = _read_config()
     host = _host_key()
-    label = f"[{host}] " if host != "omniworker" else ""
+    label = f"[{host}] " if host != "flux-agent" else ""
     block = cfg.setdefault("hosts", {}).setdefault(host, {})
 
     if block.get("enabled") is True:
@@ -139,7 +139,7 @@ def cmd_disable(args) -> None:
     """Disable Honcho for the active profile."""
     cfg = _read_config()
     host = _host_key()
-    label = f"[{host}] " if host != "omniworker" else ""
+    label = f"[{host}] " if host != "flux-agent" else ""
     block = cfg_get(cfg, "hosts", host, default={})
 
     if not block or block.get("enabled") is False:
@@ -155,11 +155,11 @@ def cmd_disable(args) -> None:
 def cmd_sync(args) -> None:
     """Sync Honcho config to all existing profiles.
 
-    Scans all OmniWorker profiles and creates host blocks for any that don't
+    Scans all Flux Agent profiles and creates host blocks for any that don't
     have one yet. Inherits settings from the default host block.
     """
     try:
-        from omniworker_cli.profiles import list_profiles
+        from flux-agent_cli.profiles import list_profiles
         profiles = list_profiles()
     except Exception as e:
         print(f"  Could not list profiles: {e}\n")
@@ -167,7 +167,7 @@ def cmd_sync(args) -> None:
 
     cfg = _read_config()
     if not cfg:
-        print("  No Honcho config found. Run 'omniworker honcho setup' first.\n")
+        print("  No Honcho config found. Run 'flux-agent honcho setup' first.\n")
         return
 
     hosts = cfg.get("hosts", {})
@@ -175,7 +175,7 @@ def cmd_sync(args) -> None:
     has_key = bool(cfg.get("apiKey") or os.environ.get("HONCHO_API_KEY"))
 
     if not default_block and not has_key:
-        print("  Honcho not configured on default profile. Run 'omniworker honcho setup' first.\n")
+        print("  Honcho not configured on default profile. Run 'flux-agent honcho setup' first.\n")
         return
 
     created = 0
@@ -184,7 +184,7 @@ def cmd_sync(args) -> None:
         if p.name == "default":
             continue
         if clone_honcho_for_profile(p.name):
-            print(f"  + {p.name} -> omniworker.{p.name}")
+            print(f"  + {p.name} -> flux-agent.{p.name}")
             created += 1
         else:
             skipped += 1
@@ -201,10 +201,10 @@ def cmd_sync(args) -> None:
 def sync_honcho_profiles_quiet() -> int:
     """Sync Honcho host blocks for all profiles. Returns count of newly created blocks.
 
-    Called from `omniworker update` -- no output, no exceptions.
+    Called from `flux-agent update` -- no output, no exceptions.
     """
     try:
-        from omniworker_cli.profiles import list_profiles
+        from flux-agent_cli.profiles import list_profiles
         profiles = list_profiles()
     except Exception:
         return 0
@@ -231,7 +231,7 @@ _profile_override: str | None = None
 
 
 def _host_key() -> str:
-    """Return the active Honcho host key, derived from the current OmniWorker profile."""
+    """Return the active Honcho host key, derived from the current Flux Agent profile."""
     if _profile_override:
         if _profile_override in ("default", "custom"):
             return HOST
@@ -247,11 +247,11 @@ def _config_path() -> Path:
 def _local_config_path() -> Path:
     """Return the instance-local Honcho config path for writing.
 
-    Always returns $OMNIWORKER_HOME/honcho.json so each profile/instance gets
+    Always returns $FLUX AGENT_HOME/honcho.json so each profile/instance gets
     its own config file.  The global ~/.honcho/config.json is only used as
     a read fallback (via resolve_config_path) for cross-app interop.
     """
-    return get_omniworker_home() / "honcho.json"
+    return get_flux-agent_home() / "honcho.json"
 
 
 def _read_config() -> dict:
@@ -361,7 +361,7 @@ def cmd_setup(args) -> None:
     write_path = _local_config_path()
     read_path = _config_path()
     print("\nHoncho memory setup\n" + "─" * 40)
-    print("  Honcho gives OmniWorker persistent cross-session memory.")
+    print("  Honcho gives Flux Agent persistent cross-session memory.")
     print(f"  Config: {write_path}")
     if read_path != write_path and read_path.exists():
         print(f"  (seeding from existing config at {read_path})")
@@ -371,7 +371,7 @@ def cmd_setup(args) -> None:
         return
 
     hosts = cfg.setdefault("hosts", {})
-    omniworker_host = hosts.setdefault(_host_key(), {})
+    flux-agent_host = hosts.setdefault(_host_key(), {})
 
     # --- 1. Cloud or local? ---
     print("  Deployment:")
@@ -416,38 +416,38 @@ def cmd_setup(args) -> None:
 
         if not cfg.get("apiKey"):
             print("\n  No API key configured. Get yours at https://app.honcho.dev")
-            print("  Run 'omniworker honcho setup' again once you have a key.\n")
+            print("  Run 'flux-agent honcho setup' again once you have a key.\n")
             return
 
     # --- 3. Identity ---
-    current_peer = omniworker_host.get("peerName") or cfg.get("peerName", "")
+    current_peer = flux-agent_host.get("peerName") or cfg.get("peerName", "")
     new_peer = _prompt("Your name (user peer)", default=current_peer or os.getenv("USER", "user"))
     if new_peer:
-        omniworker_host["peerName"] = new_peer
+        flux-agent_host["peerName"] = new_peer
 
-    current_ai = omniworker_host.get("aiPeer") or cfg.get("aiPeer", "omniworker")
+    current_ai = flux-agent_host.get("aiPeer") or cfg.get("aiPeer", "flux-agent")
     new_ai = _prompt("AI peer name", default=current_ai)
     if new_ai:
-        omniworker_host["aiPeer"] = new_ai
+        flux-agent_host["aiPeer"] = new_ai
 
-    current_workspace = omniworker_host.get("workspace") or cfg.get("workspace", "omniworker")
+    current_workspace = flux-agent_host.get("workspace") or cfg.get("workspace", "flux-agent")
     new_workspace = _prompt("Workspace ID", default=current_workspace)
     if new_workspace:
-        omniworker_host["workspace"] = new_workspace
+        flux-agent_host["workspace"] = new_workspace
 
     # --- 4. Observation mode ---
-    current_obs = omniworker_host.get("observationMode") or cfg.get("observationMode", "directional")
+    current_obs = flux-agent_host.get("observationMode") or cfg.get("observationMode", "directional")
     print("\n  Observation mode:")
     print("    directional  -- all observations on, each AI peer builds its own view (default)")
     print("    unified      -- shared pool, user observes self, AI observes others only")
     new_obs = _prompt("Observation mode", default=current_obs)
     if new_obs in ("unified", "directional"):
-        omniworker_host["observationMode"] = new_obs
+        flux-agent_host["observationMode"] = new_obs
     else:
-        omniworker_host["observationMode"] = "directional"
+        flux-agent_host["observationMode"] = "directional"
 
     # --- 5. Write frequency ---
-    current_wf = str(omniworker_host.get("writeFrequency") or cfg.get("writeFrequency", "async"))
+    current_wf = str(flux-agent_host.get("writeFrequency") or cfg.get("writeFrequency", "async"))
     print("\n  Write frequency:")
     print("    async   -- background thread, no token cost (recommended)")
     print("    turn    -- sync write after every turn")
@@ -455,12 +455,12 @@ def cmd_setup(args) -> None:
     print("    N       -- write every N turns (e.g. 5)")
     new_wf = _prompt("Write frequency", default=current_wf)
     try:
-        omniworker_host["writeFrequency"] = int(new_wf)
+        flux-agent_host["writeFrequency"] = int(new_wf)
     except (ValueError, TypeError):
-        omniworker_host["writeFrequency"] = new_wf if new_wf in ("async", "turn", "session") else "async"
+        flux-agent_host["writeFrequency"] = new_wf if new_wf in ("async", "turn", "session") else "async"
 
     # --- 6. Recall mode ---
-    _raw_recall = omniworker_host.get("recallMode") or cfg.get("recallMode", "hybrid")
+    _raw_recall = flux-agent_host.get("recallMode") or cfg.get("recallMode", "hybrid")
     current_recall = "hybrid" if _raw_recall not in ("hybrid", "context", "tools") else _raw_recall
     print("\n  Recall mode:")
     print("    hybrid  -- auto-injected context + Honcho tools available (default)")
@@ -468,29 +468,29 @@ def cmd_setup(args) -> None:
     print("    tools   -- Honcho tools only, no auto-injected context")
     new_recall = _prompt("Recall mode", default=current_recall)
     if new_recall in ("hybrid", "context", "tools"):
-        omniworker_host["recallMode"] = new_recall
+        flux-agent_host["recallMode"] = new_recall
 
     # --- 7. Context token budget ---
-    current_ctx_tokens = omniworker_host.get("contextTokens") or cfg.get("contextTokens")
+    current_ctx_tokens = flux-agent_host.get("contextTokens") or cfg.get("contextTokens")
     current_display = str(current_ctx_tokens) if current_ctx_tokens else "uncapped"
     print("\n  Context injection per turn (hybrid/context recall modes only):")
     print("    uncapped -- no limit (default)")
     print("    N        -- token limit per turn (e.g. 1200)")
     new_ctx_tokens = _prompt("Context tokens", default=current_display)
     if new_ctx_tokens.strip().lower() in ("none", "uncapped", "no limit"):
-        omniworker_host.pop("contextTokens", None)
+        flux-agent_host.pop("contextTokens", None)
     elif new_ctx_tokens.strip() == "":
         pass  # keep current
     else:
         try:
             val = int(new_ctx_tokens)
             if val >= 0:
-                omniworker_host["contextTokens"] = val
+                flux-agent_host["contextTokens"] = val
         except (ValueError, TypeError):
             pass  # keep current
 
     # --- 7b. Dialectic cadence ---
-    current_dialectic = str(omniworker_host.get("dialecticCadence") or cfg.get("dialecticCadence") or "2")
+    current_dialectic = str(flux-agent_host.get("dialecticCadence") or cfg.get("dialecticCadence") or "2")
     print("\n  Dialectic cadence:")
     print("    How often Honcho rebuilds its user model (LLM call on Honcho backend).")
     print("    1 = every turn, 2 = every other turn, 3+ = sparser.")
@@ -499,13 +499,13 @@ def cmd_setup(args) -> None:
     try:
         val = int(new_dialectic)
         if val >= 1:
-            omniworker_host["dialecticCadence"] = val
+            flux-agent_host["dialecticCadence"] = val
     except (ValueError, TypeError):
-        omniworker_host["dialecticCadence"] = 2
+        flux-agent_host["dialecticCadence"] = 2
 
     # --- 7c. Dialectic reasoning level ---
     current_reasoning = (
-        omniworker_host.get("dialecticReasoningLevel")
+        flux-agent_host.get("dialecticReasoningLevel")
         or cfg.get("dialecticReasoningLevel")
         or "low"
     )
@@ -518,12 +518,12 @@ def cmd_setup(args) -> None:
     print("    max      -- thorough audit-level analysis")
     new_reasoning = _prompt("Reasoning level", default=current_reasoning)
     if new_reasoning in ("minimal", "low", "medium", "high", "max"):
-        omniworker_host["dialecticReasoningLevel"] = new_reasoning
+        flux-agent_host["dialecticReasoningLevel"] = new_reasoning
     else:
-        omniworker_host["dialecticReasoningLevel"] = "low"
+        flux-agent_host["dialecticReasoningLevel"] = "low"
 
     # --- 8. Session strategy ---
-    current_strat = omniworker_host.get("sessionStrategy") or cfg.get("sessionStrategy", "per-session")
+    current_strat = flux-agent_host.get("sessionStrategy") or cfg.get("sessionStrategy", "per-session")
     print("\n  Session strategy:")
     print("    per-session   -- each run starts clean, Honcho injects context automatically")
     print("    per-directory -- reuses session per dir, prior context auto-injected each run")
@@ -531,24 +531,24 @@ def cmd_setup(args) -> None:
     print("    global        -- single session across all directories")
     new_strat = _prompt("Session strategy", default=current_strat)
     if new_strat in ("per-session", "per-repo", "per-directory", "global"):
-        omniworker_host["sessionStrategy"] = new_strat
+        flux-agent_host["sessionStrategy"] = new_strat
 
-    omniworker_host["enabled"] = True
-    omniworker_host.setdefault("saveMessages", True)
+    flux-agent_host["enabled"] = True
+    flux-agent_host.setdefault("saveMessages", True)
 
     _write_config(cfg)
     print(f"\n  Config written to {write_path}")
 
     # --- Auto-enable Honcho as memory provider in config.yaml ---
     try:
-        from omniworker_cli.config import load_config, save_config
-        omniworker_config = load_config()
-        omniworker_config.setdefault("memory", {})["provider"] = "honcho"
-        save_config(omniworker_config)
+        from flux-agent_cli.config import load_config, save_config
+        flux-agent_config = load_config()
+        flux-agent_config.setdefault("memory", {})["provider"] = "honcho"
+        save_config(flux-agent_config)
         print("  Memory provider set to 'honcho' in config.yaml")
     except Exception as e:
         print(f"  Could not auto-enable in config.yaml: {e}")
-        print("  Run: omniworker config set memory.provider honcho")
+        print("  Run: flux-agent config set memory.provider honcho")
 
     # --- Test connection ---
     print("  Testing connection... ", end="", flush=True)
@@ -578,19 +578,19 @@ def cmd_setup(args) -> None:
     print("    honcho_reasoning -- ask Honcho a question, synthesized answer")
     print("    honcho_conclude  -- persist a user fact to memory")
     print("\n  Other commands:")
-    print("    omniworker honcho status     -- show full config")
-    print("    omniworker honcho mode       -- change recall/observation mode")
-    print("    omniworker honcho tokens     -- tune context and dialectic budgets")
-    print("    omniworker honcho peer       -- update peer names")
-    print("    omniworker honcho map <name> -- map this directory to a session name\n")
+    print("    flux-agent honcho status     -- show full config")
+    print("    flux-agent honcho mode       -- change recall/observation mode")
+    print("    flux-agent honcho tokens     -- tune context and dialectic budgets")
+    print("    flux-agent honcho peer       -- update peer names")
+    print("    flux-agent honcho map <name> -- map this directory to a session name\n")
 
 
 def _active_profile_name() -> str:
-    """Return the active OmniWorker profile name (respects --target-profile override)."""
+    """Return the active Flux Agent profile name (respects --target-profile override)."""
     if _profile_override:
         return _profile_override
     try:
-        from omniworker_cli.profiles import get_active_profile_name
+        from flux-agent_cli.profiles import get_active_profile_name
         return get_active_profile_name()
     except Exception:
         return "default"
@@ -602,7 +602,7 @@ def _all_profile_host_configs() -> list[tuple[str, str, dict]]:
     Reads honcho.json once and maps each profile to its host block.
     """
     try:
-        from omniworker_cli.profiles import list_profiles
+        from flux-agent_cli.profiles import list_profiles
         profiles = list_profiles()
     except Exception:
         return [(_active_profile_name(), _host_key(), {})]
@@ -635,7 +635,7 @@ def cmd_status(args) -> None:
     try:
         import honcho  # noqa: F401
     except ImportError:
-        print("  honcho-ai is not installed. Run: omniworker honcho setup\n")
+        print("  honcho-ai is not installed. Run: flux-agent honcho setup\n")
         return
 
     cfg = _read_config()
@@ -645,7 +645,7 @@ def cmd_status(args) -> None:
 
     if not cfg:
         print(f"  No Honcho config found at {active_path}")
-        print("  Run 'omniworker honcho setup' to configure.\n")
+        print("  Run 'flux-agent honcho setup' to configure.\n")
         return
 
     try:
@@ -796,7 +796,7 @@ def cmd_sessions(args) -> None:
 
     if not sessions:
         print("  No session mappings configured.\n")
-        print("  Add one with: omniworker honcho map <session-name>")
+        print("  Add one with: flux-agent honcho map <session-name>")
         print(f"  Or edit {_config_path()} directly.\n")
         return
 
@@ -847,16 +847,16 @@ def cmd_peer(args) -> None:
     if user_name is None and ai_name is None and reasoning is None:
         # Show current values
         hosts = cfg.get("hosts", {})
-        omniworker = hosts.get(_host_key(), {})
-        user = omniworker.get('peerName') or cfg.get('peerName') or '(not set)'
-        ai = omniworker.get('aiPeer') or cfg.get('aiPeer') or _host_key()
-        lvl = omniworker.get("dialecticReasoningLevel") or cfg.get("dialecticReasoningLevel") or "low"
-        max_chars = omniworker.get("dialecticMaxChars") or cfg.get("dialecticMaxChars") or 600
+        flux-agent = hosts.get(_host_key(), {})
+        user = flux-agent.get('peerName') or cfg.get('peerName') or '(not set)'
+        ai = flux-agent.get('aiPeer') or cfg.get('aiPeer') or _host_key()
+        lvl = flux-agent.get("dialecticReasoningLevel") or cfg.get("dialecticReasoningLevel") or "low"
+        max_chars = flux-agent.get("dialecticMaxChars") or cfg.get("dialecticMaxChars") or 600
         print("\nHoncho peers\n" + "─" * 40)
         print(f"  User peer:   {user}")
         print("    Your identity in Honcho. Messages you send build this peer's card.")
         print(f"  AI peer:     {ai}")
-        print("    OmniWorker' identity in Honcho. Seed with 'omniworker honcho identity <file>'.")
+        print("    Flux Agent' identity in Honcho. Seed with 'flux-agent honcho identity <file>'.")
         print("    Dialectic calls ask this peer questions to warm session context.")
         print()
         print(f"  Dialectic reasoning:  {lvl}  ({', '.join(REASONING_LEVELS)})")
@@ -864,7 +864,7 @@ def cmd_peer(args) -> None:
         return
 
     host = _host_key()
-    label = f"[{host}] " if host != "omniworker" else ""
+    label = f"[{host}] " if host != "flux-agent" else ""
 
     if user_name is not None:
         cfg.setdefault("hosts", {}).setdefault(host, {})["peerName"] = user_name.strip()
@@ -909,7 +909,7 @@ def cmd_mode(args) -> None:
         for m, desc in MODES.items():
             marker = " <-" if m == current else ""
             print(f"  {m:<10}  {desc}{marker}")
-        print(f"\n  Set with: omniworker honcho mode [hybrid|context|tools]\n")
+        print(f"\n  Set with: flux-agent honcho mode [hybrid|context|tools]\n")
         return
 
     if mode_arg not in MODES:
@@ -917,7 +917,7 @@ def cmd_mode(args) -> None:
         return
 
     host = _host_key()
-    label = f"[{host}] " if host != "omniworker" else ""
+    label = f"[{host}] " if host != "flux-agent" else ""
     cfg.setdefault("hosts", {}).setdefault(host, {})["recallMode"] = mode_arg
     _write_config(cfg)
     print(f"  {label}Recall mode -> {mode_arg}  ({MODES[mode_arg]})\n")
@@ -944,7 +944,7 @@ def cmd_strategy(args) -> None:
         for s, desc in STRATEGIES.items():
             marker = " <-" if s == current else ""
             print(f"  {s:<15}  {desc}{marker}")
-        print(f"\n  Set with: omniworker honcho strategy [per-session|per-directory|per-repo|global]\n")
+        print(f"\n  Set with: flux-agent honcho strategy [per-session|per-directory|per-repo|global]\n")
         return
 
     if strat_arg not in STRATEGIES:
@@ -952,7 +952,7 @@ def cmd_strategy(args) -> None:
         return
 
     host = _host_key()
-    label = f"[{host}] " if host != "omniworker" else ""
+    label = f"[{host}] " if host != "flux-agent" else ""
     cfg.setdefault("hosts", {}).setdefault(host, {})["sessionStrategy"] = strat_arg
     _write_config(cfg)
     print(f"  {label}Session strategy -> {strat_arg}  ({STRATEGIES[strat_arg]})\n")
@@ -962,15 +962,15 @@ def cmd_tokens(args) -> None:
     """Show or set token budget settings."""
     cfg = _read_config()
     hosts = cfg.get("hosts", {})
-    omniworker = hosts.get(_host_key(), {})
+    flux-agent = hosts.get(_host_key(), {})
 
     context = getattr(args, "context", None)
     dialectic = getattr(args, "dialectic", None)
 
     if context is None and dialectic is None:
-        ctx_tokens = omniworker.get("contextTokens") or cfg.get("contextTokens") or "(Honcho default)"
-        d_chars = omniworker.get("dialecticMaxChars") or cfg.get("dialecticMaxChars") or 600
-        d_level = omniworker.get("dialecticReasoningLevel") or cfg.get("dialecticReasoningLevel") or "low"
+        ctx_tokens = flux-agent.get("contextTokens") or cfg.get("contextTokens") or "(Honcho default)"
+        d_chars = flux-agent.get("dialecticMaxChars") or cfg.get("dialecticMaxChars") or 600
+        d_level = flux-agent.get("dialecticReasoningLevel") or cfg.get("dialecticReasoningLevel") or "low"
         print("\nHoncho budgets\n" + "─" * 40)
         print()
         print(f"  Context     {ctx_tokens} tokens")
@@ -978,15 +978,15 @@ def cmd_tokens(args) -> None:
         print("    the user and session, injected directly into the system prompt.")
         print()
         print(f"  Dialectic   {d_chars} chars, reasoning: {d_level}")
-        print("    AI-to-AI inference. OmniWorker asks Honcho's AI peer a question")
+        print("    AI-to-AI inference. Flux Agent asks Honcho's AI peer a question")
         print("    (e.g. \"what were we working on?\") and Honcho runs its own model")
         print("    to synthesize an answer. Used for first-turn session continuity.")
         print("    Level controls how much reasoning Honcho spends on the answer.")
-        print("\n  Set with: omniworker honcho tokens [--context N] [--dialectic N]\n")
+        print("\n  Set with: flux-agent honcho tokens [--context N] [--dialectic N]\n")
         return
 
     host = _host_key()
-    label = f"[{host}] " if host != "omniworker" else ""
+    label = f"[{host}] " if host != "flux-agent" else ""
     changed = False
     if context is not None:
         cfg.setdefault("hosts", {}).setdefault(host, {})["contextTokens"] = context
@@ -1006,7 +1006,7 @@ def cmd_identity(args) -> None:
     """Seed AI peer identity or show both peer representations."""
     cfg = _read_config()
     if not _resolve_api_key(cfg):
-        print("  No API key configured. Run 'omniworker honcho setup' first.\n")
+        print("  No API key configured. Run 'flux-agent honcho setup' first.\n")
         return
 
     file_path = getattr(args, "file", None)
@@ -1043,7 +1043,7 @@ def cmd_identity(args) -> None:
             print(ai_rep["card"])
         else:
             print("  No representation built yet.")
-            print("  Run 'omniworker honcho identity <file>' to seed one.")
+            print("  Run 'flux-agent honcho identity <file>' to seed one.")
         print()
         return
 
@@ -1052,8 +1052,8 @@ def cmd_identity(args) -> None:
         print(f"  User peer: {hcfg.peer_name or 'not set'}")
         print(f"  AI peer:   {hcfg.ai_peer}")
         print()
-        print("    omniworker honcho identity --show        — show both peer representations")
-        print("    omniworker honcho identity <file>        — seed AI peer from SOUL.md or any .md/.txt\n")
+        print("    flux-agent honcho identity --show        — show both peer representations")
+        print("    flux-agent honcho identity <file>        — seed AI peer from SOUL.md or any .md/.txt\n")
         return
 
     from pathlib import Path
@@ -1077,12 +1077,12 @@ def cmd_identity(args) -> None:
 
 
 def cmd_migrate(args) -> None:
-    """Step-by-step migration guide: OmniWorker native memory → OmniWorker + Honcho."""
+    """Step-by-step migration guide: Flux Agent native memory → Flux Agent + Honcho."""
     from pathlib import Path
 
-    # ── Detect OmniWorker native memory files ──────────────────────────────────
+    # ── Detect Flux Agent native memory files ──────────────────────────────────
     cwd = Path(os.getcwd())
-    omniworker_home = Path.home() / ".omniworker"
+    flux-agent_home = Path.home() / ".flux-agent"
 
     # User peer: facts about the user
     user_file_names = ["USER.md", "MEMORY.md"]
@@ -1092,12 +1092,12 @@ def cmd_migrate(args) -> None:
     user_files: list[Path] = []
     agent_files: list[Path] = []
     for name in user_file_names:
-        for d in [cwd, omniworker_home]:
+        for d in [cwd, flux-agent_home]:
             p = d / name
             if p.exists() and p not in user_files:
                 user_files.append(p)
     for name in agent_file_names:
-        for d in [cwd, omniworker_home]:
+        for d in [cwd, flux-agent_home]:
             p = d / name
             if p.exists() and p not in agent_files:
                 agent_files.append(p)
@@ -1105,9 +1105,9 @@ def cmd_migrate(args) -> None:
     cfg = _read_config()
     has_key = bool(_resolve_api_key(cfg))
 
-    print("\nHoncho migration: OmniWorker native memory → OmniWorker\n" + "─" * 50)
+    print("\nHoncho migration: Flux Agent native memory → Flux Agent\n" + "─" * 50)
     print()
-    print("  OmniWorker's native memory stores context in local markdown files")
+    print("  Flux Agent's native memory stores context in local markdown files")
     print("  (USER.md, MEMORY.md, SOUL.md, ...) and injects them via QMD search.")
     print("  Honcho replaces that with a cloud-backed, LLM-observable memory layer:")
     print("  context is retrieved semantically, injected automatically each turn,")
@@ -1122,25 +1122,25 @@ def cmd_migrate(args) -> None:
         print(f"  Honcho API key already configured: {masked}")
         print("  Skip to Step 2.")
     else:
-        print("  Honcho is a cloud memory service that gives OmniWorker persistent memory")
+        print("  Honcho is a cloud memory service that gives Flux Agent persistent memory")
         print("  across sessions. You need an API key to use it.")
         print()
         print("  1. Get your API key at https://app.honcho.dev")
-        print("  2. Run:  omniworker honcho setup")
+        print("  2. Run:  flux-agent honcho setup")
         print("     Paste the key when prompted.")
         print()
-        answer = _prompt("  Run 'omniworker honcho setup' now?", default="y")
+        answer = _prompt("  Run 'flux-agent honcho setup' now?", default="y")
         if answer.lower() in ("y", "yes"):
             cmd_setup(args)
             cfg = _read_config()
             has_key = bool(cfg.get("apiKey", ""))
         else:
             print()
-            print("  Run 'omniworker honcho setup' when ready, then re-run this walkthrough.")
+            print("  Run 'flux-agent honcho setup' when ready, then re-run this walkthrough.")
 
     # ── Step 2: Detected files ────────────────────────────────────────────────
     print()
-    print("Step 2  Detected OmniWorker memory files")
+    print("Step 2  Detected Flux Agent memory files")
     print()
     if user_files or agent_files:
         if user_files:
@@ -1152,9 +1152,9 @@ def cmd_migrate(args) -> None:
             for f in agent_files:
                 print(f"    {f}")
     else:
-        print("  No OmniWorker native memory files found in cwd or ~/.omniworker/.")
+        print("  No Flux Agent native memory files found in cwd or ~/.flux-agent/.")
         print("  If your files are elsewhere, copy them here before continuing,")
-        print("  or seed them manually:  omniworker honcho identity <path/to/file>")
+        print("  or seed them manually:  flux-agent honcho identity <path/to/file>")
 
     # ── Step 3: Migrate user memory ───────────────────────────────────────────
     print()
@@ -1167,13 +1167,13 @@ def cmd_migrate(args) -> None:
     if user_files:
         print(f"  Found: {', '.join(f.name for f in user_files)}")
         print()
-        print("  These are picked up automatically the first time you run 'omniworker'")
+        print("  These are picked up automatically the first time you run 'flux-agent'")
         print("  with Honcho configured and no prior session history.")
-        print("  (OmniWorker calls migrate_memory_files() on first session init.)")
+        print("  (Flux Agent calls migrate_memory_files() on first session init.)")
         print()
         print("  If you want to migrate them now without starting a session:")
         for f in user_files:
-            print("    omniworker honcho migrate  — this step handles it interactively")
+            print("    flux-agent honcho migrate  — this step handles it interactively")
         if has_key:
             answer = _prompt("  Upload user memory files to Honcho now?", default="y")
             if answer.lower() in ("y", "yes"):
@@ -1204,7 +1204,7 @@ def cmd_migrate(args) -> None:
                 except Exception as e:
                     print(f"  Failed: {e}")
         else:
-            print("  Run 'omniworker honcho setup' first, then re-run this step.")
+            print("  Run 'flux-agent honcho setup' first, then re-run this step.")
     else:
         print("  No user memory files detected. Nothing to migrate here.")
 
@@ -1213,10 +1213,10 @@ def cmd_migrate(args) -> None:
     print("Step 4  Seed AI identity files → Honcho AI peer")
     print()
     print("  SOUL.md, IDENTITY.md, AGENTS.md, TOOLS.md, BOOTSTRAP.md define the")
-    print("  agent's character, capabilities, and behavioral rules. In OmniWorker")
+    print("  agent's character, capabilities, and behavioral rules. In Flux Agent")
     print("  these are injected via file search at prompt-build time.")
     print()
-    print("  In OmniWorker, they are seeded once into Honcho's AI peer through the")
+    print("  In Flux Agent, they are seeded once into Honcho's AI peer through the")
     print("  observation pipeline. Honcho builds a representation from them and")
     print("  from every subsequent assistant message (observe_me=True). Over time")
     print("  the representation reflects actual behavior, not just declaration.")
@@ -1250,30 +1250,30 @@ def cmd_migrate(args) -> None:
                 except Exception as e:
                     print(f"  Failed: {e}")
         else:
-            print("  Run 'omniworker honcho setup' first, then seed manually:")
+            print("  Run 'flux-agent honcho setup' first, then seed manually:")
             for f in agent_files:
-                print(f"    omniworker honcho identity {f}")
+                print(f"    flux-agent honcho identity {f}")
     else:
         print("  No agent identity files detected.")
-        print("  To seed manually:  omniworker honcho identity <path/to/SOUL.md>")
+        print("  To seed manually:  flux-agent honcho identity <path/to/SOUL.md>")
 
     # ── Step 5: What changes ──────────────────────────────────────────────────
     print()
-    print("Step 5  What changes vs. OmniWorker native memory")
+    print("Step 5  What changes vs. Flux Agent native memory")
     print()
     print("  Storage")
-    print("    OmniWorker: markdown files on disk, searched via QMD at prompt-build time.")
-    print("    OmniWorker:   cloud-backed Honcho peers. Files can stay on disk as source")
+    print("    Flux Agent: markdown files on disk, searched via QMD at prompt-build time.")
+    print("    Flux Agent:   cloud-backed Honcho peers. Files can stay on disk as source")
     print("              of truth; Honcho holds the live representation.")
     print()
     print("  Context injection")
-    print("    OmniWorker: file excerpts injected synchronously before each LLM call.")
-    print("    OmniWorker:   Honcho context fetched async at turn end, injected next turn.")
+    print("    Flux Agent: file excerpts injected synchronously before each LLM call.")
+    print("    Flux Agent:   Honcho context fetched async at turn end, injected next turn.")
     print("              First turn has no Honcho context; subsequent turns are loaded.")
     print()
     print("  Memory growth")
-    print("    OmniWorker: you edit files manually to update memory.")
-    print("    OmniWorker:   Honcho observes every message and updates representations")
+    print("    Flux Agent: you edit files manually to update memory.")
+    print("    Flux Agent:   Honcho observes every message and updates representations")
     print("              automatically. Files become the seed, not the live store.")
     print()
     print("  Honcho tools (available to the agent during conversation)")
@@ -1284,24 +1284,24 @@ def cmd_migrate(args) -> None:
     print("    honcho_conclude      — write a conclusion/fact back to memory")
     print()
     print("  Session naming")
-    print("    OmniWorker: no persistent session concept — files are global.")
-    print("    OmniWorker:   per-session by default — each run gets its own session")
-    print("              Map a custom name:  omniworker honcho map <session-name>")
+    print("    Flux Agent: no persistent session concept — files are global.")
+    print("    Flux Agent:   per-session by default — each run gets its own session")
+    print("              Map a custom name:  flux-agent honcho map <session-name>")
 
     # ── Step 6: Next steps ────────────────────────────────────────────────────
     print()
     print("Step 6  Next steps")
     print()
     if not has_key:
-        print("  1. omniworker honcho setup              — configure API key (required)")
-        print("  2. omniworker honcho migrate            — re-run this walkthrough")
+        print("  1. flux-agent honcho setup              — configure API key (required)")
+        print("  2. flux-agent honcho migrate            — re-run this walkthrough")
     else:
-        print("  1. omniworker honcho status             — verify Honcho connection")
-        print("  2. omniworker                           — start a session")
+        print("  1. flux-agent honcho status             — verify Honcho connection")
+        print("  2. flux-agent                           — start a session")
         print("     (user memory files auto-uploaded on first turn if not done above)")
-        print("  3. omniworker honcho identity --show    — verify AI peer representation")
-        print("  4. omniworker honcho tokens             — tune context and dialectic budgets")
-        print("  5. omniworker honcho mode               — view or change memory mode")
+        print("  3. flux-agent honcho identity --show    — verify AI peer representation")
+        print("  4. flux-agent honcho tokens             — tune context and dialectic budgets")
+        print("  5. flux-agent honcho mode               — view or change memory mode")
     print()
 
 
@@ -1314,8 +1314,8 @@ def honcho_command(args) -> None:
     if sub == "setup":
         # Redirect to memory setup — honcho setup goes through the unified path
         print("\n  Honcho is configured via the memory provider system.")
-        print("  Running 'omniworker memory setup'...\n")
-        from omniworker_cli.memory_setup import cmd_setup_provider
+        print("  Running 'flux-agent memory setup'...\n")
+        from flux-agent_cli.memory_setup import cmd_setup_provider
         cmd_setup_provider("honcho")
         return
     elif sub is None:
@@ -1352,10 +1352,10 @@ def honcho_command(args) -> None:
 
 
 def register_cli(subparser) -> None:
-    """Build the ``omniworker honcho`` argparse subcommand tree.
+    """Build the ``flux-agent honcho`` argparse subcommand tree.
 
     Called by the plugin CLI registration system during argparse setup.
-    The *subparser* is the parser for ``omniworker honcho``.
+    The *subparser* is the parser for ``flux-agent honcho``.
     """
 
     subparser.add_argument(
@@ -1366,7 +1366,7 @@ def register_cli(subparser) -> None:
 
     subs.add_parser(
         "setup",
-        help="Initial Honcho setup (redirects to omniworker memory setup)",
+        help="Initial Honcho setup (redirects to flux-agent memory setup)",
     )
 
     status_parser = subs.add_parser(
@@ -1442,7 +1442,7 @@ def register_cli(subparser) -> None:
 
     subs.add_parser(
         "migrate",
-        help="Step-by-step migration guide from omniworker-honcho to OmniWorker Honcho",
+        help="Step-by-step migration guide from flux-agent-honcho to Flux Agent Honcho",
     )
     subs.add_parser("enable", help="Enable Honcho for the active profile")
     subs.add_parser("disable", help="Disable Honcho for the active profile")

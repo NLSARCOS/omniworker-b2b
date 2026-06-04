@@ -12,7 +12,7 @@ const electronAPI = {
   },
 };
 
-const omniworkerAPI = {
+const flux-agentAPI = {
   // Installation
   checkInstall: (): Promise<{
     installed: boolean;
@@ -60,19 +60,19 @@ const omniworkerAPI = {
     return () => ipcRenderer.removeListener("install-progress", handler);
   },
 
-  // OmniWorker engine info
-  getOmniWorkerVersion: (): Promise<string | null> =>
-    ipcRenderer.invoke("get-omniworker-version"),
-  refreshOmniWorkerVersion: (): Promise<string | null> =>
-    ipcRenderer.invoke("refresh-omniworker-version"),
-  runOmniWorkerDoctor: (): Promise<string> =>
-    ipcRenderer.invoke("run-omniworker-doctor"),
-  runOmniWorkerUpdate: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke("run-omniworker-update"),
+  // Flux Agent engine info
+  getFlux AgentVersion: (): Promise<string | null> =>
+    ipcRenderer.invoke("get-flux-agent-version"),
+  refreshFlux AgentVersion: (): Promise<string | null> =>
+    ipcRenderer.invoke("refresh-flux-agent-version"),
+  runFlux AgentDoctor: (): Promise<string> =>
+    ipcRenderer.invoke("run-flux-agent-doctor"),
+  runFlux AgentUpdate: (): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("run-flux-agent-update"),
 
-  // OmniWorker migration
-  checkOmniWorker: (): Promise<{ found: boolean; path: string | null }> =>
-    ipcRenderer.invoke("check-omniworker"),
+  // Flux Agent migration
+  checkFlux Agent: (): Promise<{ found: boolean; path: string | null }> =>
+    ipcRenderer.invoke("check-flux-agent"),
   runClawMigrate: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("run-claw-migrate"),
 
@@ -93,8 +93,8 @@ const omniworkerAPI = {
   setConfig: (key: string, value: string, profile?: string): Promise<boolean> =>
     ipcRenderer.invoke("set-config", key, value, profile),
 
-  getOmniWorkerHome: (profile?: string): Promise<string> =>
-    ipcRenderer.invoke("get-omniworker-home", profile),
+  getFlux AgentHome: (profile?: string): Promise<string> =>
+    ipcRenderer.invoke("get-flux-agent-home", profile),
 
   getModelConfig: (
     profile?: string,
@@ -189,7 +189,7 @@ const omniworkerAPI = {
     message: string,
     profile?: string,
     resumeSessionId?: string,
-    history?: Array<{ role: string; content: string }>,
+    history?: Array<{ role: string; content: string }> | undefined,
   ): Promise<{ response: string; sessionId?: string }> =>
     ipcRenderer.invoke(
       "send-message",
@@ -974,16 +974,16 @@ const omniworkerAPI = {
     ipcRenderer.invoke("open-external", url),
 
   // Backup / Import (legacy)
-  runOmniWorkerBackup: (
+  runFlux AgentBackup: (
     profile?: string,
   ): Promise<{ success: boolean; path?: string; error?: string }> =>
-    ipcRenderer.invoke("run-omniworker-backup", profile),
+    ipcRenderer.invoke("run-flux-agent-backup", profile),
 
-  runOmniWorkerImport: (
+  runFlux AgentImport: (
     archivePath: string,
     profile?: string,
   ): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke("run-omniworker-import", archivePath, profile),
+    ipcRenderer.invoke("run-flux-agent-import", archivePath, profile),
 
   // Enhanced Backup / Import
   scanBackupData: (
@@ -1034,8 +1034,8 @@ const omniworkerAPI = {
   },
 
   // Debug dump
-  runOmniWorkerDump: (): Promise<string> =>
-    ipcRenderer.invoke("run-omniworker-dump"),
+  runFlux AgentDump: (): Promise<string> =>
+    ipcRenderer.invoke("run-flux-agent-dump"),
 
   // Memory providers
   discoverMemoryProviders: (
@@ -1171,7 +1171,7 @@ const omniworkerAPI = {
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld("electron", electronAPI);
-    contextBridge.exposeInMainWorld("omniworkerAPI", omniworkerAPI);
+    contextBridge.exposeInMainWorld("flux-agentAPI", flux-agentAPI);
   } catch (error) {
     console.error(error);
   }
@@ -1179,5 +1179,5 @@ if (process.contextIsolated) {
   // @ts-ignore (define in dts)
   window.electron = electronAPI;
   // @ts-ignore (define in dts)
-  window.omniworkerAPI = omniworkerAPI;
+  window.flux-agentAPI = flux-agentAPI;
 }

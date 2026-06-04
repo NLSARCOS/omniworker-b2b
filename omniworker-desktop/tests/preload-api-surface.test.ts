@@ -10,7 +10,7 @@ const preloadTypes = readFileSync(
 );
 
 /**
- * Extract method names from the omniworkerAPI object in preload/index.ts.
+ * Extract method names from the flux-agentAPI object in preload/index.ts.
  * Matches lines like `  methodName: (...` or `  methodName: ()`.
  */
 function extractPreloadMethods(src: string): string[] {

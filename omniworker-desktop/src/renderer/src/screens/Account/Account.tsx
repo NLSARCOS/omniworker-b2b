@@ -109,12 +109,12 @@ export default function Account({
     if (authToken) {
       setActiveToken(authToken);
     } else {
-      window.omniworkerAPI.getTokens().then((tokens: any) => {
+      window.flux-agentAPI.getTokens().then((tokens: any) => {
         if (tokens?.accessToken) {
           setActiveToken(tokens.accessToken);
         } else {
           // Try to fallback to reading CUSTOM_API_KEY from environment
-          window.omniworkerAPI.getEnv().then((envs: any) => {
+          window.flux-agentAPI.getEnv().then((envs: any) => {
             const key = envs?.CUSTOM_API_KEY || envs?.OPENAI_API_KEY;
             if (key) {
               setActiveToken(key);
@@ -146,8 +146,8 @@ export default function Account({
       let fingerprint = "";
       let deviceName = "";
       try {
-        fingerprint = await window.omniworkerAPI.getDeviceFingerprint();
-        deviceName = await window.omniworkerAPI.getDeviceName();
+        fingerprint = await window.flux-agentAPI.getDeviceFingerprint();
+        deviceName = await window.flux-agentAPI.getDeviceName();
       } catch (e) {
         console.error("[Account] Failed to get device info:", e);
       }
@@ -208,7 +208,7 @@ export default function Account({
   };
 
   const handleCopyApiKey = () => {
-    window.omniworkerAPI.getEnv().then((e: any) => {
+    window.flux-agentAPI.getEnv().then((e: any) => {
       const key = e?.CUSTOM_API_KEY;
       if (key) {
         navigator.clipboard.writeText(key);
@@ -229,11 +229,11 @@ export default function Account({
       "Initializing diagnostics...\n[SYSTEM] Connecting to local gateway daemon...\n[SYSTEM] Resolving routing graphs...\n[SYSTEM] Loading AI configurations..."
     );
     try {
-      const isGateway = await window.omniworkerAPI.gatewayStatus();
-      const isRouter = await window.omniworkerAPI.smartRouterStatus();
-      const doctorOutput = await window.omniworkerAPI.runOmniWorkerDoctor();
+      const isGateway = await window.flux-agentAPI.gatewayStatus();
+      const isRouter = await window.flux-agentAPI.smartRouterStatus();
+      const doctorOutput = await window.flux-agentAPI.runFlux AgentDoctor();
       setValidationOutput(
-        `--- Service Status ---\nGateway Running: ${isGateway ? "ONLINE" : "OFFLINE"}\nSmart Router Running: ${isRouter ? "ONLINE" : "OFFLINE"}\n\n--- OmniWorker Doctor Output ---\n${doctorOutput}`
+        `--- Service Status ---\nGateway Running: ${isGateway ? "ONLINE" : "OFFLINE"}\nSmart Router Running: ${isRouter ? "ONLINE" : "OFFLINE"}\n\n--- Flux Agent Doctor Output ---\n${doctorOutput}`
       );
     } catch (err: any) {
       setValidationOutput("Error during validation: " + err.message);
@@ -296,7 +296,7 @@ export default function Account({
       <div className="account-header" style={{ marginBottom: "20px" }}>
         <h1 className="account-title" style={{ margin: 0 }}>
           <Shield size={24} style={{ color: "var(--accent)" }} />
-          {t("account.title") || "OmniWorker Profile"}
+          {t("account.title") || "Flux Agent Profile"}
         </h1>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <button
@@ -663,7 +663,7 @@ export default function Account({
                   "[MUTATION] Initializing component validation and missing tool installations..."
                 );
                 try {
-                  const res = await window.omniworkerAPI.startInstall(
+                  const res = await window.flux-agentAPI.startInstall(
                     activeToken || undefined,
                   );
                   if (res.success) {

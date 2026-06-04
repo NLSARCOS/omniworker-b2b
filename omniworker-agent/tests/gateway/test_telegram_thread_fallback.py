@@ -1,6 +1,6 @@
 """Tests for Telegram topic/thread routing fallbacks.
 
-Supergroup forum topics route with ``message_thread_id``. OmniWorker-created
+Supergroup forum topics route with ``message_thread_id``. Flux Agent-created
 private DM topic lanes are different: live Telegram testing showed they only
 stay in the expected lane when sends include both the private topic
 ``message_thread_id`` and a ``reply_to_message_id`` anchor to the triggering
@@ -237,7 +237,7 @@ async def test_send_typing_does_not_fall_back_to_root_for_dm_topic():
 
 @pytest.mark.asyncio
 async def test_send_typing_skips_api_call_for_dm_topic_reply_fallback():
-    """OmniWorker-created DM topic lanes have no working Bot API typing route.
+    """Flux Agent-created DM topic lanes have no working Bot API typing route.
 
     ``send_chat_action`` only accepts ``message_thread_id``, which Telegram's
     Bot API 10.0 rejects for these lanes — the call would silently fail and
@@ -354,7 +354,7 @@ async def test_gateway_runner_busy_ack_replies_to_triggering_message_for_telegra
     """GatewayRunner's duplicate thread metadata must match the base helper."""
     from gateway import run as gateway_run
 
-    monkeypatch.setattr(gateway_run, "_omniworker_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_flux-agent_home", tmp_path)
     GatewayRunner = gateway_run.GatewayRunner
 
     class BusyAdapter:
@@ -412,8 +412,8 @@ async def test_gateway_runner_busy_ack_replies_to_triggering_message_for_telegra
 
 
 @pytest.mark.asyncio
-async def test_send_uses_reply_fallback_for_omniworker_dm_topics():
-    """OmniWorker-created Telegram DM topics route with thread id plus reply anchor."""
+async def test_send_uses_reply_fallback_for_flux-agent_dm_topics():
+    """Flux Agent-created Telegram DM topics route with thread id plus reply anchor."""
     adapter = _make_adapter()
     call_log = []
 
@@ -441,7 +441,7 @@ async def test_send_uses_reply_fallback_for_omniworker_dm_topics():
 
 @pytest.mark.asyncio
 async def test_send_uses_metadata_reply_fallback_for_streaming_dm_topics():
-    """Metadata-only sends still stay in OmniWorker-created Telegram DM topics."""
+    """Metadata-only sends still stay in Flux Agent-created Telegram DM topics."""
     adapter = _make_adapter()
     call_log = []
 

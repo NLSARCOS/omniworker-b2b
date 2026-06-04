@@ -1,11 +1,11 @@
 """
-Session Insights Engine for OmniWorker Agent.
+Session Insights Engine for Flux Agent Agent.
 
 Analyzes historical session data from the SQLite state database to produce
 comprehensive usage insights — token consumption, cost estimates, tool usage
 patterns, activity trends, model/platform breakdowns, and session metrics.
 
-Inspired by Claude Code's /insights command, adapted for OmniWorker Agent's
+Inspired by Claude Code's /insights command, adapted for Flux Agent Agent's
 multi-platform architecture with additional cost estimation and platform
 breakdown capabilities.
 
@@ -103,7 +103,7 @@ class InsightsEngine:
         Initialize with a SessionDB instance.
 
         Args:
-            db: A SessionDB instance (from omniworker_state.py)
+            db: A SessionDB instance (from flux-agent_state.py)
         """
         self.db = db
         self._conn = db._conn
@@ -738,7 +738,7 @@ class InsightsEngine:
         # Header
         lines.append("")
         lines.append("  ╔══════════════════════════════════════════════════════════╗")
-        lines.append("  ║                    📊 OmniWorker Insights                    ║")
+        lines.append("  ║                    📊 Flux Agent Insights                    ║")
         period_label = f"Last {days} days"
         if src_filter:
             period_label += f" ({src_filter})"
@@ -873,7 +873,7 @@ class InsightsEngine:
         o = report["overview"]
         days = report["days"]
 
-        lines.append(f"📊 **OmniWorker Insights** — Last {days} days\n")
+        lines.append(f"📊 **Flux Agent Insights** — Last {days} days\n")
 
         # Overview
         lines.append(f"**Sessions:** {o['total_sessions']} | **Messages:** {o['total_messages']:,} | **Tool calls:** {o['total_tool_calls']:,}")

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import cli as cli_module
-from cli import OmniWorkerCLI
+from cli import Flux AgentCLI
 
 
 class _FakeBuffer:
@@ -19,7 +19,7 @@ class _FakeBuffer:
 
 
 def _make_cli_stub():
-    cli = OmniWorkerCLI.__new__(OmniWorkerCLI)
+    cli = Flux AgentCLI.__new__(Flux AgentCLI)
     cli._approval_state = None
     cli._approval_deadline = 0
     cli._approval_lock = threading.Lock()
@@ -333,9 +333,9 @@ class TestCliApprovalUi:
                 time.sleep(0.01)
 
         assert seen["approval"].__self__ is cli
-        assert seen["approval"].__func__ is OmniWorkerCLI._approval_callback
+        assert seen["approval"].__func__ is Flux AgentCLI._approval_callback
         assert seen["sudo"].__self__ is cli
-        assert seen["sudo"].__func__ is OmniWorkerCLI._sudo_password_callback
+        assert seen["sudo"].__func__ is Flux AgentCLI._sudo_password_callback
         assert not cli._background_tasks
 
 

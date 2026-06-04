@@ -223,7 +223,7 @@ def test_persist_dm_topic_thread_id_writes_config(tmp_path):
         }
     }
 
-    config_file = tmp_path / ".omniworker" / "config.yaml"
+    config_file = tmp_path / ".flux-agent" / "config.yaml"
     config_file.parent.mkdir(parents=True)
     with open(config_file, "w") as f:
         yaml.dump(config_data, f)
@@ -231,7 +231,7 @@ def test_persist_dm_topic_thread_id_writes_config(tmp_path):
     adapter = _make_adapter()
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"OMNIWORKER_HOME": str(tmp_path / ".omniworker")}):
+         patch.dict(os.environ, {"OMNIWORKER_HOME": str(tmp_path / ".flux-agent")}):
         adapter._persist_dm_topic_thread_id(111, "General", 999)
 
     with open(config_file) as f:
@@ -263,7 +263,7 @@ def test_persist_dm_topic_thread_id_skips_if_already_set(tmp_path):
         }
     }
 
-    config_file = tmp_path / ".omniworker" / "config.yaml"
+    config_file = tmp_path / ".flux-agent" / "config.yaml"
     config_file.parent.mkdir(parents=True)
     with open(config_file, "w") as f:
         yaml.dump(config_data, f)
@@ -304,7 +304,7 @@ def test_persist_dm_topic_thread_id_preserves_config_on_write_failure(tmp_path):
         }
     }
 
-    config_file = tmp_path / ".omniworker" / "config.yaml"
+    config_file = tmp_path / ".flux-agent" / "config.yaml"
     config_file.parent.mkdir(parents=True)
     original_text = yaml.dump(config_data)
     config_file.write_text(original_text, encoding="utf-8")
@@ -315,7 +315,7 @@ def test_persist_dm_topic_thread_id_preserves_config_on_write_failure(tmp_path):
         raise RuntimeError("boom")
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"OMNIWORKER_HOME": str(tmp_path / ".omniworker")}), \
+         patch.dict(os.environ, {"OMNIWORKER_HOME": str(tmp_path / ".flux-agent")}), \
          patch("yaml.dump", side_effect=fail_dump):
         adapter._persist_dm_topic_thread_id(111, "General", 999)
 
@@ -407,13 +407,13 @@ def test_get_dm_topic_info_hot_reloads_from_config(tmp_path):
             }
         }
     }
-    config_file = tmp_path / ".omniworker" / "config.yaml"
+    config_file = tmp_path / ".flux-agent" / "config.yaml"
     config_file.parent.mkdir(parents=True)
     with open(config_file, "w") as f:
         yaml.dump(config_data, f)
 
     with patch.object(Path, "home", return_value=tmp_path), \
-         patch.dict(os.environ, {"OMNIWORKER_HOME": str(tmp_path / ".omniworker")}):
+         patch.dict(os.environ, {"OMNIWORKER_HOME": str(tmp_path / ".flux-agent")}):
         result = adapter._get_dm_topic_info("111", "555")
 
     assert result is not None
@@ -714,7 +714,7 @@ def test_group_topic_chat_id_int_string_coercion():
         {
             "chat_id": "-1001234567890",  # string, not int
             "topics": [
-                {"name": "Dev", "thread_id": "7", "skill": "omniworker-agent-dev"},
+                {"name": "Dev", "thread_id": "7", "skill": "flux-agent-agent-dev"},
             ],
         }
     ])
@@ -724,7 +724,7 @@ def test_group_topic_chat_id_int_string_coercion():
     )
     event = adapter._build_message_event(msg, MessageType.TEXT)
 
-    assert event.auto_skill == "omniworker-agent-dev"
+    assert event.auto_skill == "flux-agent-agent-dev"
     assert event.source.chat_topic == "Dev"
 
 

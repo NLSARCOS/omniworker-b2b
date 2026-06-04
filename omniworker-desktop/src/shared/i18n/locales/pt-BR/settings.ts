@@ -1,7 +1,7 @@
 export default {
   title: "Configurações",
   sections: {
-    omniworkerAgent: "Flux Agent",
+    flux-agentAgent: "Flux Agent",
     appearance: "Aparência",
     credentialPool: "Pool de Credenciais",
   },
@@ -71,7 +71,7 @@ export default {
     "Encontramos o Flux Agent em <code>{{path}}</code>. Você pode migrar sua configuração, chaves de API, sessões e habilidades para o Flux Agent.",
   migrationDismiss: "Não mostrar novamente",
   migrating: "Migrando...",
-  migrateToOmniWorker: "Migrar para o Flux Agent",
+  migrateToFlux Agent: "Migrar para o Flux Agent",
   skip: "Pular",
   appearanceHint: "Escolha a aparência preferida da interface",
   apiKeyPlaceholder: "Chave da API",
@@ -93,7 +93,7 @@ export default {
   save: "Salvar",
   serverConfigTitle: "Configuração do Servidor",
   serverConfigHint:
-    "Você está conectado a um servidor remoto do Flux Agent. A seleção de modelos, as chaves de API dos provedores e as credenciais são gerenciadas no host remoto em <code>~/.omniworker/.env</code> e <code>config.yaml</code>. Edite-os lá e reinicie o servidor.",
+    "Você está conectado a um servidor remoto do Flux Agent. A seleção de modelos, as chaves de API dos provedores e as credenciais são gerenciadas no host remoto em <code>~/.flux-agent/.env</code> e <code>config.yaml</code>. Edite-os lá e reinicie o servidor.",
   connectionMode: "Modo",
   switchedToLocal: "Mudou para o modo local",
 } as const;

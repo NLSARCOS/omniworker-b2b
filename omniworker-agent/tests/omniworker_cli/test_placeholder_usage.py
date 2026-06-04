@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
-from omniworker_cli.config import config_command, show_config
-from omniworker_cli.setup import _print_setup_summary
+from flux-agent_cli.config import config_command, show_config
+from flux-agent_cli.setup import _print_setup_summary
 
 
 def test_config_set_usage_marks_placeholders(capsys):
@@ -18,7 +18,7 @@ def test_config_set_usage_marks_placeholders(capsys):
 
     assert exc.value.code == 1
     out = capsys.readouterr().out
-    assert "Usage: omniworker config set <key> <value>" in out
+    assert "Usage: flux-agent config set <key> <value>" in out
 
 
 def test_config_unknown_command_help_marks_placeholders(capsys):
@@ -29,7 +29,7 @@ def test_config_unknown_command_help_marks_placeholders(capsys):
 
     assert exc.value.code == 1
     out = capsys.readouterr().out
-    assert "omniworker config set <key> <value>   Set a config value" in out
+    assert "flux-agent config set <key> <value>   Set a config value" in out
 
 
 def test_show_config_marks_placeholders(tmp_path, capsys):
@@ -37,7 +37,7 @@ def test_show_config_marks_placeholders(tmp_path, capsys):
         show_config()
 
     out = capsys.readouterr().out
-    assert "omniworker config set <key> <value>" in out
+    assert "flux-agent config set <key> <value>" in out
 
 
 def test_setup_summary_marks_placeholders(tmp_path, capsys):
@@ -45,4 +45,4 @@ def test_setup_summary_marks_placeholders(tmp_path, capsys):
         _print_setup_summary({"tts": {"provider": "edge"}}, tmp_path)
 
     out = capsys.readouterr().out
-    assert "omniworker config set <key> <value>" in out
+    assert "flux-agent config set <key> <value>" in out

@@ -2,7 +2,7 @@
 """Measure token savings from query-relevant skills/context retrieval.
 
 Usage:
-    cd omniworker-agent
+    cd flux-agent-agent
     python3 scripts/measure_retrieval_tokens.py
 """
 
@@ -25,7 +25,7 @@ QUERIES = [
     "How do I deploy a Docker container to AWS?",
     "Write a Python script to fetch stock prices",
     "Set up a CI/CD pipeline with GitHub Actions",
-    "How do I configure OmniWorker to use Claude?",
+    "How do I configure Flux Agent to use Claude?",
     "Create a React component with Tailwind CSS",
     "Analyze this CSV file and plot the results",
     "Debug why my PostgreSQL connection is failing",
@@ -58,7 +58,7 @@ def measure():
 
     # --- Context files ---
     print("\n--- CONTEXT FILES PROMPT ---\n")
-    # script is in omniworker-agent/scripts/ → go up two levels for monorepo root
+    # script is in flux-agent-agent/scripts/ → go up two levels for monorepo root
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     full_context = build_context_files_prompt(cwd=project_root)
     full_ctx_tokens = estimate_tokens_rough(full_context)

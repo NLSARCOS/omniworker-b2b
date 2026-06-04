@@ -111,7 +111,7 @@ class TestGetAndPoll:
 class TestOrphanedPipeReconciliation:
     """Regression tests for issue #17327.
 
-    `omniworker update` in Feishu spawned a background subprocess that restarted
+    `flux-agent update` in Feishu spawned a background subprocess that restarted
     the gateway; the direct child exited quickly but a descendant daemon
     held the stdout pipe open. `_reader_loop.finally` never ran, so
     `session.exited` stayed False and the agent polled 74 times over 7
@@ -489,11 +489,11 @@ class TestSpawnEnvSanitization:
 
         bg_command = env.commands[0][0]
         assert session.pid == 4321
-        assert "/data/data/com.termux/files/usr/tmp/omniworker_bg_" in bg_command
+        assert "/data/data/com.termux/files/usr/tmp/flux-agent_bg_" in bg_command
         assert ".exit" in bg_command
         assert "rc=$?;" in bg_command
-        assert " > /tmp/omniworker_bg_" not in bg_command
-        assert "cat /tmp/omniworker_bg_" not in bg_command
+        assert " > /tmp/flux-agent_bg_" not in bg_command
+        assert "cat /tmp/flux-agent_bg_" not in bg_command
         fake_thread.start.assert_called_once()
 
     def test_env_poller_quotes_temp_paths_with_spaces(self, registry):
@@ -520,14 +520,14 @@ class TestSpawnEnvSanitization:
             registry._env_poller_loop(
                 session,
                 env,
-                "/path with spaces/omniworker_bg.log",
-                "/path with spaces/omniworker_bg.pid",
-                "/path with spaces/omniworker_bg.exit",
+                "/path with spaces/flux-agent_bg.log",
+                "/path with spaces/flux-agent_bg.pid",
+                "/path with spaces/flux-agent_bg.exit",
             )
 
-        assert env.commands[0][0] == "cat '/path with spaces/omniworker_bg.log' 2>/dev/null"
-        assert env.commands[1][0] == "kill -0 \"$(cat '/path with spaces/omniworker_bg.pid' 2>/dev/null)\" 2>/dev/null; echo $?"
-        assert env.commands[2][0] == "cat '/path with spaces/omniworker_bg.exit' 2>/dev/null"
+        assert env.commands[0][0] == "cat '/path with spaces/flux-agent_bg.log' 2>/dev/null"
+        assert env.commands[1][0] == "kill -0 \"$(cat '/path with spaces/flux-agent_bg.pid' 2>/dev/null)\" 2>/dev/null; echo $?"
+        assert env.commands[2][0] == "cat '/path with spaces/flux-agent_bg.exit' 2>/dev/null"
 
 
 # =========================================================================

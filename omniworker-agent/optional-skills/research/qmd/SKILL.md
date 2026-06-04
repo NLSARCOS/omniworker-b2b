@@ -2,11 +2,11 @@
 name: qmd
 description: Search personal knowledge bases, notes, docs, and meeting transcripts locally using qmd — a hybrid retrieval engine with BM25, vector search, and LLM reranking. Supports CLI and MCP integration.
 version: 1.0.0
-author: OmniWorker Agent + Teknium
+author: Flux Agent Agent + Teknium
 license: MIT
 platforms: [macos, linux]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [Search, Knowledge-Base, RAG, Notes, MCP, Local-AI]
     related_skills: [obsidian, native-mcp, arxiv]
 ---
@@ -220,13 +220,13 @@ qmd multi-get "journals/*.md" --json  # Batch retrieve by glob
 ## MCP Integration (Recommended)
 
 qmd exposes an MCP server that provides search tools directly to
-OmniWorker Agent via the native MCP client. This is the preferred
+Flux Agent Agent via the native MCP client. This is the preferred
 integration — once configured, the agent gets qmd tools automatically
 without needing to load this skill.
 
 ### Option A: Stdio Mode (Simple)
 
-Add to `~/.omniworker/config.yaml`:
+Add to `~/.flux-agent/config.yaml`:
 
 ```yaml
 mcp_servers:
@@ -254,7 +254,7 @@ qmd mcp --http --daemon
 # Runs on http://localhost:8181 by default
 ```
 
-Then configure OmniWorker Agent to connect via HTTP:
+Then configure Flux Agent Agent to connect via HTTP:
 
 ```yaml
 mcp_servers:

@@ -2,18 +2,18 @@
 name: codex
 description: "Delegate coding to OpenAI Codex CLI (features, PRs)."
 version: 1.0.0
-author: OmniWorker Agent
+author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [Coding-Agent, Codex, OpenAI, Code-Review, Refactoring]
-    related_skills: [claude-code, omniworker-agent]
+    related_skills: [claude-code, flux-agent-agent]
 ---
 
 # Codex CLI
 
-Delegate coding tasks to [Codex](https://github.com/openai/codex) via the OmniWorker terminal. Codex is OpenAI's autonomous coding agent CLI.
+Delegate coding tasks to [Codex](https://github.com/openai/codex) via the Flux Agent terminal. Codex is OpenAI's autonomous coding agent CLI.
 
 ## When to use
 
@@ -32,8 +32,8 @@ Requires the codex CLI and a git repository.
 - **Must run inside a git repository** — Codex refuses to run outside one
 - Use `pty=true` in terminal calls — Codex is an interactive terminal app
 
-For OmniWorker itself, `model.provider: openai-codex` uses OmniWorker-managed Codex
-OAuth from `~/.omniworker/auth.json` after `omniworker auth add openai-codex`. For the
+For Flux Agent itself, `model.provider: openai-codex` uses Flux Agent-managed Codex
+OAuth from `~/.flux-agent/auth.json` after `flux-agent auth add openai-codex`. For the
 standalone Codex CLI, a valid CLI OAuth session may live under
 `~/.codex/auth.json`; do not treat a missing `OPENAI_API_KEY` alone as proof
 that Codex auth is missing.

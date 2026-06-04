@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Skills Hub — Source adapters and hub state management for the OmniWorker Skills Hub.
+Skills Hub — Source adapters and hub state management for the Flux Agent Skills Hub.
 
 This is a library module (not an agent tool). It provides:
   - GitHubAuth: Shared GitHub API authentication (PAT, gh CLI, GitHub App)
@@ -10,7 +10,7 @@ This is a library module (not an agent tool). It provides:
   - HubLockFile: Track provenance of installed hub skills
   - Hub state directory management (quarantine, audit log, taps, index cache)
 
-Used by omniworker_cli/skills_hub.py for CLI commands and the /skills slash command.
+Used by flux-agent_cli/skills_hub.py for CLI commands and the /skills slash command.
 """
 
 import hashlib
@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin, urlparse, urlunparse
 
@@ -45,8 +45,8 @@ logger = logging.getLogger(__name__)
 # Paths
 # ---------------------------------------------------------------------------
 
-OMNIWORKER_HOME = get_omniworker_home()
-SKILLS_DIR = OMNIWORKER_HOME / "skills"
+FLUX AGENT_HOME = get_flux-agent_home()
+SKILLS_DIR = FLUX AGENT_HOME / "skills"
 HUB_DIR = SKILLS_DIR / ".hub"
 LOCK_FILE = HUB_DIR / "lock.json"
 QUARANTINE_DIR = HUB_DIR / "quarantine"
@@ -439,9 +439,9 @@ class GitHubSource(SkillSource):
         tags = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            omniworker_meta = metadata.get("omniworker", {})
-            if isinstance(omniworker_meta, dict):
-                tags = omniworker_meta.get("tags", [])
+            flux-agent_meta = metadata.get("flux-agent", {})
+            if isinstance(flux-agent_meta, dict):
+                tags = flux-agent_meta.get("tags", [])
         if not tags:
             raw_tags = fm.get("tags", [])
             tags = raw_tags if isinstance(raw_tags, list) else []
@@ -1034,9 +1034,9 @@ class UrlSource(SkillSource):
         tags: List[str] = []
         metadata = fm.get("metadata", {})
         if isinstance(metadata, dict):
-            omniworker_meta = metadata.get("omniworker", {})
-            if isinstance(omniworker_meta, dict):
-                raw_tags = omniworker_meta.get("tags", [])
+            flux-agent_meta = metadata.get("flux-agent", {})
+            if isinstance(flux-agent_meta, dict):
+                raw_tags = flux-agent_meta.get("tags", [])
                 if isinstance(raw_tags, list):
                     tags = [str(t) for t in raw_tags]
         return SkillMeta(
@@ -2330,7 +2330,7 @@ class LobeHubSource(SkillSource):
             f"name: {identifier}",
             f"description: {description[:500]}",
             "metadata:",
-            "  omniworker:",
+            "  flux-agent:",
             f"    tags: [{', '.join(str(t) for t in tag_list)}]",
             "  lobehub:",
             "    source: lobehub",
@@ -2360,12 +2360,12 @@ class OptionalSkillSource(SkillSource):
 
     These skills are official (maintained by Nous Research) but not activated
     by default — they don't appear in the system prompt and aren't copied to
-    ~/.omniworker/skills/ during setup.  They are discoverable via the Skills Hub
+    ~/.flux-agent/skills/ during setup.  They are discoverable via the Skills Hub
     (search / install / inspect) and labelled "official" with "builtin" trust.
     """
 
     def __init__(self):
-        from omniworker_constants import get_optional_skills_dir
+        from flux-agent_constants import get_optional_skills_dir
 
         self._optional_dir = get_optional_skills_dir(
             Path(__file__).parent.parent / "optional-skills"
@@ -2489,9 +2489,9 @@ class OptionalSkillSource(SkillSource):
             tags = []
             meta_block = fm.get("metadata", {})
             if isinstance(meta_block, dict):
-                omniworker_meta = meta_block.get("omniworker", {})
-                if isinstance(omniworker_meta, dict):
-                    tags = omniworker_meta.get("tags", [])
+                flux-agent_meta = meta_block.get("flux-agent", {})
+                if isinstance(flux-agent_meta, dict):
+                    tags = flux-agent_meta.get("tags", [])
 
             rel_path = str(parent.relative_to(self._optional_dir))
 
@@ -2907,39 +2907,39 @@ def check_for_skill_updates(
 
 
 # ---------------------------------------------------------------------------
-# OmniWorker centralized index source
+# Flux Agent centralized index source
 # ---------------------------------------------------------------------------
 
-OMNIWORKER_INDEX_URL = "https://omniworker-agent.omniworker.com/docs/api/skills-index.json"
-OMNIWORKER_INDEX_CACHE_FILE = INDEX_CACHE_DIR / "omniworker-index.json"
-OMNIWORKER_INDEX_TTL = 6 * 3600  # 6 hours
+FLUX AGENT_INDEX_URL = "https://flux-agent-agent.flux-agent.com/docs/api/skills-index.json"
+FLUX AGENT_INDEX_CACHE_FILE = INDEX_CACHE_DIR / "flux-agent-index.json"
+FLUX AGENT_INDEX_TTL = 6 * 3600  # 6 hours
 
 
-def _load_omniworker_index() -> Optional[dict]:
+def _load_flux-agent_index() -> Optional[dict]:
     """Fetch the centralized skills index, with local cache.
 
     The index is a JSON file hosted on the docs site, rebuilt daily by CI.
-    We cache it locally for OMNIWORKER_INDEX_TTL seconds to avoid repeated
+    We cache it locally for FLUX AGENT_INDEX_TTL seconds to avoid repeated
     downloads within a session.
     """
     # Check local cache
-    if OMNIWORKER_INDEX_CACHE_FILE.exists():
+    if FLUX AGENT_INDEX_CACHE_FILE.exists():
         try:
-            age = time.time() - OMNIWORKER_INDEX_CACHE_FILE.stat().st_mtime
-            if age < OMNIWORKER_INDEX_TTL:
-                return json.loads(OMNIWORKER_INDEX_CACHE_FILE.read_text())
+            age = time.time() - FLUX AGENT_INDEX_CACHE_FILE.stat().st_mtime
+            if age < FLUX AGENT_INDEX_TTL:
+                return json.loads(FLUX AGENT_INDEX_CACHE_FILE.read_text())
         except (OSError, json.JSONDecodeError):
             pass
 
     # Fetch from docs site
     try:
-        resp = httpx.get(OMNIWORKER_INDEX_URL, timeout=15, follow_redirects=True)
+        resp = httpx.get(FLUX AGENT_INDEX_URL, timeout=15, follow_redirects=True)
         if resp.status_code != 200:
-            logger.debug("OmniWorker index fetch returned %d", resp.status_code)
+            logger.debug("Flux Agent index fetch returned %d", resp.status_code)
             return _load_stale_index_cache()
         data = resp.json()
     except (httpx.HTTPError, json.JSONDecodeError) as e:
-        logger.debug("OmniWorker index fetch failed: %s", e)
+        logger.debug("Flux Agent index fetch failed: %s", e)
         return _load_stale_index_cache()
 
     # Validate structure
@@ -2948,8 +2948,8 @@ def _load_omniworker_index() -> Optional[dict]:
 
     # Cache locally
     try:
-        OMNIWORKER_INDEX_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        OMNIWORKER_INDEX_CACHE_FILE.write_text(json.dumps(data))
+        FLUX AGENT_INDEX_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        FLUX AGENT_INDEX_CACHE_FILE.write_text(json.dumps(data))
     except OSError:
         pass
 
@@ -2958,16 +2958,16 @@ def _load_omniworker_index() -> Optional[dict]:
 
 def _load_stale_index_cache() -> Optional[dict]:
     """Fall back to stale cache when the network fetch fails."""
-    if OMNIWORKER_INDEX_CACHE_FILE.exists():
+    if FLUX AGENT_INDEX_CACHE_FILE.exists():
         try:
-            return json.loads(OMNIWORKER_INDEX_CACHE_FILE.read_text())
+            return json.loads(FLUX AGENT_INDEX_CACHE_FILE.read_text())
         except (OSError, json.JSONDecodeError):
             pass
     return None
 
 
-class OmniWorkerIndexSource(SkillSource):
-    """Skill source backed by the centralized OmniWorker Skills Index.
+class Flux AgentIndexSource(SkillSource):
+    """Skill source backed by the centralized Flux Agent Skills Index.
 
     The index is a JSON catalog published to the docs site and rebuilt
     daily by CI.  It contains metadata + resolved GitHub paths for every
@@ -2988,7 +2988,7 @@ class OmniWorkerIndexSource(SkillSource):
 
     def _ensure_loaded(self) -> dict:
         if not self._loaded:
-            self._index = _load_omniworker_index()
+            self._index = _load_flux-agent_index()
             self._loaded = True
         return self._index or {}
 
@@ -2998,7 +2998,7 @@ class OmniWorkerIndexSource(SkillSource):
         return self._github
 
     def source_id(self) -> str:
-        return "omniworker-index"
+        return "flux-agent-index"
 
     @property
     def is_available(self) -> bool:
@@ -3052,7 +3052,7 @@ class OmniWorkerIndexSource(SkillSource):
         if resolved:
             bundle = self._get_github().fetch(resolved)
             if bundle:
-                bundle.source = entry.get("source", "omniworker-index")
+                bundle.source = entry.get("source", "flux-agent-index")
                 bundle.identifier = identifier
                 return bundle
 
@@ -3063,7 +3063,7 @@ class OmniWorkerIndexSource(SkillSource):
             github_id = f"{repo}/{path}"
             bundle = self._get_github().fetch(github_id)
             if bundle:
-                bundle.source = entry.get("source", "omniworker-index")
+                bundle.source = entry.get("source", "flux-agent-index")
                 bundle.identifier = identifier
                 return bundle
 
@@ -3112,7 +3112,7 @@ class OmniWorkerIndexSource(SkillSource):
         return SkillMeta(
             name=entry.get("name", ""),
             description=entry.get("description", ""),
-            source=entry.get("source", "omniworker-index"),
+            source=entry.get("source", "flux-agent-index"),
             identifier=entry.get("identifier", ""),
             trust_level=entry.get("trust_level", "community"),
             repo=entry.get("repo"),
@@ -3135,7 +3135,7 @@ def create_source_router(auth: Optional[GitHubAuth] = None) -> List[SkillSource]
 
     sources: List[SkillSource] = [
         OptionalSkillSource(),        # Official optional skills (highest priority)
-        OmniWorkerIndexSource(auth=auth), # Centralized index (search + resolved install paths)
+        Flux AgentIndexSource(auth=auth), # Centralized index (search + resolved install paths)
         SkillsShSource(auth=auth),
         WellKnownSkillSource(),
         UrlSource(),                  # Direct HTTP(S) URL to a SKILL.md file
@@ -3188,7 +3188,7 @@ def parallel_search_sources(
                                   "claude-marketplace", "lobehub", "well-known"})
     if source_filter == "all":
         for src in sources:
-            if (src.source_id() == "omniworker-index"
+            if (src.source_id() == "flux-agent-index"
                     and getattr(src, "is_available", False)):
                 _index_available = True
                 break

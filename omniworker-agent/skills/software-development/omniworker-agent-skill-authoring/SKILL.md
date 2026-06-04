@@ -1,30 +1,30 @@
 ---
-name: omniworker-agent-skill-authoring
+name: flux-agent-agent-skill-authoring
 description: "Author in-repo SKILL.md: frontmatter, validator, structure."
 version: 1.0.0
-author: OmniWorker Agent
+author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
-    tags: [skills, authoring, omniworker-agent, conventions, skill-md]
+  flux-agent:
+    tags: [skills, authoring, flux-agent-agent, conventions, skill-md]
     related_skills: [writing-plans, requesting-code-review]
 ---
 
-# Authoring OmniWorker-Agent Skills (in-repo)
+# Authoring Flux Agent-Agent Skills (in-repo)
 
 ## Overview
 
 There are two places a SKILL.md can live:
 
-1. **User-local:** `~/.omniworker/skills/<maybe-category>/<name>/SKILL.md` — personal, not shared. Created via `skill_manage(action='create')`.
-2. **In-repo (this skill is about this case):** `/home/bb/omniworker-agent/skills/<category>/<name>/SKILL.md` — committed, shipped with the package. Use `write_file` + `git add`. `skill_manage(action='create')` does NOT target this tree.
+1. **User-local:** `~/.flux-agent/skills/<maybe-category>/<name>/SKILL.md` — personal, not shared. Created via `skill_manage(action='create')`.
+2. **In-repo (this skill is about this case):** `/home/bb/flux-agent-agent/skills/<category>/<name>/SKILL.md` — committed, shipped with the package. Use `write_file` + `git add`. `skill_manage(action='create')` does NOT target this tree.
 
 ## When to Use
 
 - User asks you to add a skill "in this branch / repo / commit"
-- You're committing a reusable workflow that should ship with omniworker-agent
-- You're editing an existing skill under `/home/bb/omniworker-agent/skills/` (use `patch` for small edits, `write_file` for rewrites; `skill_manage` still works for patch on in-repo skills, but not for `create`)
+- You're committing a reusable workflow that should ship with flux-agent-agent
+- You're editing an existing skill under `/home/bb/flux-agent-agent/skills/` (use `patch` for small edits, `write_file` for rewrites; `skill_manage` still works for patch on in-repo skills, but not for `create`)
 
 ## Required Frontmatter
 
@@ -44,10 +44,10 @@ Peer-matched shape used by every skill under `skills/software-development/`:
 name: my-skill-name               # lowercase, hyphens, ≤64 chars (MAX_NAME_LENGTH)
 description: Use when <trigger>. <one-line behavior>.
 version: 1.0.0
-author: OmniWorker Agent
+author: Flux Agent Agent
 license: MIT
 metadata:
-  omniworker:
+  flux-agent:
     tags: [short, descriptive, tags]
     related_skills: [other-skill, another-skill]
 ---
@@ -78,7 +78,7 @@ One or two paragraphs: what and why.
 ## <Topic sections specific to the skill>
 - Quick-reference tables are common
 - Code blocks with exact commands
-- OmniWorker-specific recipes (tests via scripts/run_tests.sh, ui-tui paths, etc.)
+- Flux Agent-specific recipes (tests via scripts/run_tests.sh, ui-tui paths, etc.)
 
 ## Common Pitfalls
 Numbered list of mistakes and their fixes.
@@ -127,7 +127,7 @@ Pick the closest existing category. Don't invent new top-level categories casual
 
 ## Cross-Referencing Other Skills
 
-`metadata.omniworker.related_skills` unions both trees (`skills/` in-repo and `~/.omniworker/skills/`) at load time. You CAN reference a user-local skill from an in-repo skill, but it won't resolve for other users who clone the repo fresh. Prefer referencing only in-repo skills from in-repo skills. If a frequently-referenced skill lives only in `~/.omniworker/skills/`, consider promoting it to the repo.
+`metadata.flux-agent.related_skills` unions both trees (`skills/` in-repo and `~/.flux-agent/skills/`) at load time. You CAN reference a user-local skill from an in-repo skill, but it won't resolve for other users who clone the repo fresh. Prefer referencing only in-repo skills from in-repo skills. If a frequently-referenced skill lives only in `~/.flux-agent/skills/`, consider promoting it to the repo.
 
 ## Editing Existing In-Repo Skills
 
@@ -138,7 +138,7 @@ Pick the closest existing category. Don't invent new top-level categories casual
 
 ## Common Pitfalls
 
-1. **Using `skill_manage(action='create')` for an in-repo skill.** It writes to `~/.omniworker/skills/`, not the repo tree. Use `write_file` for in-repo creation.
+1. **Using `skill_manage(action='create')` for an in-repo skill.** It writes to `~/.flux-agent/skills/`, not the repo tree. Use `write_file` for in-repo creation.
 
 2. **Leading whitespace before `---`.** The validator checks `content.startswith("---")`; any leading blank line or BOM fails validation.
 
@@ -154,9 +154,9 @@ Pick the closest existing category. Don't invent new top-level categories casual
 
 ## Verification Checklist
 
-- [ ] File is at `skills/<category>/<name>/SKILL.md` (not in `~/.omniworker/skills/`)
+- [ ] File is at `skills/<category>/<name>/SKILL.md` (not in `~/.flux-agent/skills/`)
 - [ ] Frontmatter starts at byte 0 with `---`, closes with `\n---\n`
-- [ ] `name`, `description`, `version`, `author`, `license`, `metadata.omniworker.{tags, related_skills}` all present
+- [ ] `name`, `description`, `version`, `author`, `license`, `metadata.flux-agent.{tags, related_skills}` all present
 - [ ] Name ≤ 64 chars, lowercase + hyphens
 - [ ] Description ≤ 1024 chars and starts with "Use when ..."
 - [ ] Total file ≤ 100,000 chars (aim for 8-15k)

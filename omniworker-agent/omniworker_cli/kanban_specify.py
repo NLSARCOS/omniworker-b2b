@@ -15,7 +15,7 @@ and then flips the task ``triage -> todo`` via
 Design notes
 ------------
 
-* This module intentionally mirrors ``omniworker_cli/goals.py`` — same aux
+* This module intentionally mirrors ``flux-agent_cli/goals.py`` — same aux
   client pattern, same "empty config => skip, don't crash" tolerance.
   Keeps the surface area tiny and the failure modes predictable.
 
@@ -38,12 +38,12 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from omniworker_cli import kanban_db as kb
+from flux-agent_cli import kanban_db as kb
 
 logger = logging.getLogger(__name__)
 
 
-_SYSTEM_PROMPT = """You are the Kanban triage specifier for the OmniWorker Agent board.
+_SYSTEM_PROMPT = """You are the Kanban triage specifier for the Flux Agent Agent board.
 A user dropped a rough idea into the Triage column. Your job is to turn it
 into a concrete, actionable task spec that an autonomous worker can pick up
 and execute without further clarification.
@@ -123,10 +123,10 @@ def _extract_json_blob(raw: str) -> Optional[dict]:
 
 
 def _profile_author() -> str:
-    """Mirror of ``omniworker_cli.kanban._profile_author``. Kept local to
+    """Mirror of ``flux-agent_cli.kanban._profile_author``. Kept local to
     avoid a circular import when kanban.py imports this module."""
     return (
-        os.environ.get("OMNIWORKER_PROFILE")
+        os.environ.get("FLUX AGENT_PROFILE")
         or os.environ.get("USER")
         or "specifier"
     )

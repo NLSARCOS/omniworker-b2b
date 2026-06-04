@@ -24,21 +24,21 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 @pytest.fixture
 def cron_env(tmp_path, monkeypatch):
     """Isolated cron environment with temp OMNIWORKER_HOME."""
-    omniworker_home = tmp_path / ".omniworker"
-    omniworker_home.mkdir()
-    (omniworker_home / "cron").mkdir()
-    (omniworker_home / "cron" / "output").mkdir()
-    (omniworker_home / "scripts").mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+    flux-agent_home = tmp_path / ".flux-agent"
+    flux-agent_home.mkdir()
+    (flux-agent_home / "cron").mkdir()
+    (flux-agent_home / "cron" / "output").mkdir()
+    (flux-agent_home / "scripts").mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
 
     # Clear cached module-level paths
     import cron.jobs as jobs_mod
-    monkeypatch.setattr(jobs_mod, "OMNIWORKER_DIR", omniworker_home)
-    monkeypatch.setattr(jobs_mod, "CRON_DIR", omniworker_home / "cron")
-    monkeypatch.setattr(jobs_mod, "JOBS_FILE", omniworker_home / "cron" / "jobs.json")
-    monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", omniworker_home / "cron" / "output")
+    monkeypatch.setattr(jobs_mod, "OMNIWORKER_DIR", flux-agent_home)
+    monkeypatch.setattr(jobs_mod, "CRON_DIR", flux-agent_home / "cron")
+    monkeypatch.setattr(jobs_mod, "JOBS_FILE", flux-agent_home / "cron" / "jobs.json")
+    monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", flux-agent_home / "cron" / "output")
 
-    return omniworker_home
+    return flux-agent_home
 
 
 class TestJobScriptField:
@@ -296,7 +296,7 @@ class TestScriptPathContainment:
     """
 
     def test_absolute_path_outside_scripts_dir_blocked(self, cron_env):
-        """Absolute paths outside ~/.omniworker/scripts/ must be rejected."""
+        """Absolute paths outside ~/.flux-agent/scripts/ must be rejected."""
         from cron.scheduler import _run_job_script
 
         # Create a script outside the scripts dir

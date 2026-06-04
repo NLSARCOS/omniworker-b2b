@@ -1915,7 +1915,7 @@ The user has requested that this compaction PRIORITISE preserving all informatio
             # RECOVERY: persist dropped messages before they are lost forever
             try:
                 import pathlib, time as _time
-                recovery_dir = pathlib.Path.home() / ".omniworker" / "recovery"
+                recovery_dir = pathlib.Path.home() / ".flux-agent" / "recovery"
                 recovery_dir.mkdir(parents=True, exist_ok=True)
                 session_id = getattr(self, '_session_id', 'unknown')
                 ts = int(_time.time())

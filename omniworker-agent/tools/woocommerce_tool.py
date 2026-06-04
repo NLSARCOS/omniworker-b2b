@@ -1,4 +1,4 @@
-"""WooCommerce integration tool for the OmniWorker agent.
+"""WooCommerce integration tool for the Flux Agent agent.
 
 Reads credentials from environment variables:
   WOOCOMMERCE_STORE_URL   (e.g. https://my-store.com)

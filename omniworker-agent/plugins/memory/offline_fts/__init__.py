@@ -1,4 +1,4 @@
-"""Offline FTS5 SQLite Memory Provider for OmniWorker.
+"""Offline FTS5 SQLite Memory Provider for Flux Agent.
 
 Uses the local SQLite state.db (which already has FTS5 virtual tables
 and triggers indexing all messages) to find relevant conversation context offline.
@@ -35,33 +35,108 @@ class OfflineFTSMemoryProvider(MemoryProvider):
 
     def initialize(self, session_id: str, **kwargs) -> None:
         self._active_session_id = session_id
-        home = kwargs.get("omniworker_home", str(Path.home() / ".omniworker"))
+        home = kwargs.get("flux-agent_home", str(Path.home() / ".flux-agent"))
         self._db_path = Path(home) / "state.db"
 
         try:
-            from omniworker_state import SessionDB
+            from flux-agent_state import SessionDB
             self._session_db = SessionDB(db_path=self._db_path)
             logger.info("offline_fts: initialized with state.db at %s", self._db_path)
         except Exception as e:
             logger.error("offline_fts: failed to initialize SessionDB: %s", e)
 
+    def _get_session_lineage(self, session_id: str, max_depth: int = 5) -> List[str]:
+        """Walk the parent_session_id chain to find related sessions."""
+        chain = [session_id]
+        if not self._session_db:
+            return chain
+        try:
+            current = session_id
+            for _ in range(max_depth):
+                row = self._session_db.get_session(current)
+                parent = (row or {}).get("parent_session_id", "")
+                if not parent or parent in chain:
+                    break
+                chain.append(parent)
+                current = parent
+        except Exception:
+            pass
+        return chain
+
+    @staticmethod
+    def _recency_factor(timestamp) -> float:
+        """Exponential decay: half-life of 24 hours."""
+        if not timestamp:
+            return 0.1  # Very old / no timestamp
+        try:
+            import time
+            age_hours = (time.time() - float(timestamp)) / 3600.0
+            if age_hours < 0:
+                age_hours = 0
+            # 0.5^(age_hours / 24) — 1.0 at now, 0.5 at 24h, 0.25 at 48h
+            return 0.5 ** (age_hours / 24.0)
+        except Exception:
+            return 0.1
+
+    @staticmethod
+    def _snippet_fingerprint(text: str) -> str:
+        """Cheap dedup fingerprint: lowercase, strip whitespace, take first 150 chars."""
+        return " ".join(text.lower().split())[:150]
+
     def _search(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         if not self._session_db:
             return []
         try:
-            # Retrieve relevant messages using FTS5 BM25 relevance
-            results = self._session_db.search_messages(
+            # Pull extra results for re-scoring and dedup
+            raw_results = self._session_db.search_messages(
                 query=query,
-                limit=limit + 2,  # Pull a few extra to filter out active user query
+                limit=limit * 3 + 5,
             )
 
-            output = []
-            for r in results:
+            # Build session lineage for affinity scoring
+            session_chain = set(self._get_session_lineage(self._active_session_id))
+
+            seen_fingerprints: set = set()
+            scored: list = []
+
+            for r in raw_results:
                 snippet = r.get("snippet") or ""
-                # Exclude the exact user query from the active session to avoid echoing the current turn
+                if not snippet.strip():
+                    continue
+
+                # Skip exact echo of the current query
                 if r.get("session_id") == self._active_session_id and snippet.strip() == query.strip():
                     continue
 
+                # Dedup: skip near-identical snippets
+                fp = self._snippet_fingerprint(snippet)
+                if fp in seen_fingerprints:
+                    continue
+                seen_fingerprints.add(fp)
+
+                # Composite score: BM25 rank × recency × session_affinity × role_weight
+                # BM25 rank from SQLite is negative (lower = better), normalize to positive
+                bm25_rank = abs(r.get("rank", -1.0))
+                base_score = 1.0 / (1.0 + bm25_rank)  # Normalize to 0-1 range
+
+                recency = self._recency_factor(r.get("timestamp"))
+
+                # Session affinity: results from the current session chain are 2x more relevant
+                session_boost = 2.0 if r.get("session_id") in session_chain else 1.0
+
+                # Role weight: assistant responses (especially with decisions) are more valuable
+                role_boost = 1.5 if r.get("role") == "assistant" else 1.0
+
+                composite_score = base_score * recency * session_boost * role_boost
+
+                scored.append((r, composite_score))
+
+            # Sort by composite score descending
+            scored.sort(key=lambda x: x[1], reverse=True)
+
+            output = []
+            for r, _score in scored[:limit]:
+                snippet = r.get("snippet") or ""
                 output.append({
                     "id": r.get("id"),
                     "session_id": r.get("session_id"),
@@ -69,9 +144,9 @@ class OfflineFTSMemoryProvider(MemoryProvider):
                     "content": snippet,
                     "snippet": snippet,
                     "source": r.get("source"),
-                    "timestamp": r.get("timestamp")
+                    "timestamp": r.get("timestamp"),
                 })
-            return output[:limit]
+            return output
         except Exception as e:
             logger.warning("offline_fts: search failed: %s", e)
             return []

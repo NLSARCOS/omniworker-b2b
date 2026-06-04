@@ -11,7 +11,7 @@ the colon is a variant tag, not a vendor separator.
 import pytest
 from unittest.mock import patch
 
-from omniworker_cli.model_switch import switch_model
+from flux-agent_cli.model_switch import switch_model
 
 
 # Shared mock context — skip network calls, credential resolution, catalog lookups
@@ -20,14 +20,14 @@ _MOCK_VALIDATION = {"accepted": True, "persist": True, "recognized": True, "mess
 
 def _run_switch(raw_input: str, current_provider: str = "openrouter") -> str:
     """Run switch_model with mocked dependencies, return the resolved model name."""
-    with patch("omniworker_cli.model_switch.resolve_alias", return_value=None), \
-         patch("omniworker_cli.model_switch.list_provider_models", return_value=[]), \
-         patch("omniworker_cli.runtime_provider.resolve_runtime_provider",
+    with patch("flux-agent_cli.model_switch.resolve_alias", return_value=None), \
+         patch("flux-agent_cli.model_switch.list_provider_models", return_value=[]), \
+         patch("flux-agent_cli.runtime_provider.resolve_runtime_provider",
                return_value={"api_key": "test", "base_url": "", "api_mode": "chat_completions"}), \
-         patch("omniworker_cli.models.validate_requested_model", return_value=_MOCK_VALIDATION), \
-         patch("omniworker_cli.model_switch.get_model_info", return_value=None), \
-         patch("omniworker_cli.model_switch.get_model_capabilities", return_value=None), \
-         patch("omniworker_cli.models.detect_provider_for_model", return_value=None):
+         patch("flux-agent_cli.models.validate_requested_model", return_value=_MOCK_VALIDATION), \
+         patch("flux-agent_cli.model_switch.get_model_info", return_value=None), \
+         patch("flux-agent_cli.model_switch.get_model_capabilities", return_value=None), \
+         patch("flux-agent_cli.models.detect_provider_for_model", return_value=None):
         result = switch_model(
             raw_input=raw_input,
             current_provider=current_provider,

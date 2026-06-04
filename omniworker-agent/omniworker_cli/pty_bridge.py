@@ -3,7 +3,7 @@
 Wraps a child process behind a pseudo-terminal so its ANSI output can be
 streamed to a browser-side terminal emulator (xterm.js) and typed
 keystrokes can be fed back in.  The only caller today is the
-``/api/pty`` WebSocket endpoint in ``omniworker_cli.web_server``.
+``/api/pty`` WebSocket endpoint in ``flux-agent_cli.web_server``.
 
 Design constraints:
 
@@ -102,7 +102,7 @@ class PtyBridge:
             if sys.platform.startswith("win"):
                 raise PtyUnavailableError(
                     "Pseudo-terminals are unavailable on this platform. "
-                    "OmniWorker Agent supports Windows only via WSL."
+                    "Flux Agent Agent supports Windows only via WSL."
                 )
             if ptyprocess is None:
                 raise PtyUnavailableError(

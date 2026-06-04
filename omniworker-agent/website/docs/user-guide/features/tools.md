@@ -1,7 +1,7 @@
 ---
 sidebar_position: 1
 title: "Tools & Toolsets"
-description: "Overview of OmniWorker Agent's tools — what's available, how toolsets work, and terminal backends"
+description: "Overview of Flux Agent Agent's tools — what's available, how toolsets work, and terminal backends"
 ---
 
 # Tools & Toolsets
@@ -10,7 +10,7 @@ Tools are functions that extend the agent's capabilities. They're organized into
 
 ## Available Tools
 
-OmniWorker ships with a broad built-in tool registry covering web search, browser automation, terminal execution, file editing, memory, delegation, RL training, messaging delivery, Home Assistant, and more.
+Flux Agent ships with a broad built-in tool registry covering web search, browser automation, terminal execution, file editing, memory, delegation, RL training, messaging delivery, Home Assistant, and more.
 
 :::note
 **Honcho cross-session memory** is available as a memory provider plugin (`plugins/memory/honcho/`), not as a built-in toolset. See [Plugins](./plugins.md) for installation.
@@ -32,25 +32,25 @@ High-level categories:
 For the authoritative code-derived registry, see [Built-in Tools Reference](/docs/reference/tools-reference) and [Toolsets Reference](/docs/reference/toolsets-reference).
 
 :::tip Nous Tool Gateway
-Paid [Nous Portal](https://portal.omniworker.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `omniworker model` to enable it, or configure individual tools with `omniworker tools`.
+Paid [Nous Portal](https://portal.flux-agent.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `flux-agent model` to enable it, or configure individual tools with `flux-agent tools`.
 :::
 
 ## Using Toolsets
 
 ```bash
 # Use specific toolsets
-omniworker chat --toolsets "web,terminal"
+flux-agent chat --toolsets "web,terminal"
 
 # See all available tools
-omniworker tools
+flux-agent tools
 
 # Configure tools per platform (interactive)
-omniworker tools
+flux-agent tools
 ```
 
 Common toolsets include `web`, `search`, `terminal`, `file`, `browser`, `vision`, `image_gen`, `moa`, `skills`, `tts`, `todo`, `memory`, `session_search`, `cronjob`, `code_execution`, `delegation`, `clarify`, `homeassistant`, `messaging`, `spotify`, `discord`, `discord_admin`, `debugging`, `safe`, and `rl`.
 
-See [Toolsets Reference](/docs/reference/toolsets-reference) for the full set, including platform presets such as `omniworker-cli`, `omniworker-telegram`, and dynamic MCP toolsets like `mcp-<server>`.
+See [Toolsets Reference](/docs/reference/toolsets-reference) for the full set, including platform presets such as `flux-agent-cli`, `flux-agent-telegram`, and dynamic MCP toolsets like `mcp-<server>`.
 
 ## Terminal Backends
 
@@ -69,7 +69,7 @@ The terminal tool can execute commands in different environments:
 ### Configuration
 
 ```yaml
-# In ~/.omniworker/config.yaml
+# In ~/.flux-agent/config.yaml
 terminal:
   backend: local    # or: docker, ssh, singularity, modal, daytona, vercel_sandbox
   cwd: "."          # Working directory
@@ -84,9 +84,9 @@ terminal:
   docker_image: python:3.11-slim
 ```
 
-**One persistent container, shared across the whole process.** OmniWorker starts a single long-lived container on first use (`docker run -d ... sleep 2h`) and routes every terminal, file, and `execute_code` call through `docker exec` into that same container. Working-directory changes, installed packages, environment tweaks, and files written to `/workspace` all carry over from one tool call to the next, across `/new`, `/reset`, and `delegate_task` subagents, for the lifetime of the OmniWorker process. The container is stopped and removed on shutdown.
+**One persistent container, shared across the whole process.** Flux Agent starts a single long-lived container on first use (`docker run -d ... sleep 2h`) and routes every terminal, file, and `execute_code` call through `docker exec` into that same container. Working-directory changes, installed packages, environment tweaks, and files written to `/workspace` all carry over from one tool call to the next, across `/new`, `/reset`, and `delegate_task` subagents, for the lifetime of the Flux Agent process. The container is stopped and removed on shutdown.
 
-This means the Docker backend behaves like a persistent sandbox VM, not a fresh container per command. If you `pip install foo` once, it's there for the rest of the session. If you `cd /workspace/project`, subsequent `ls` calls see that directory. See [Configuration → Docker Backend](../configuration.md#docker-backend) for the full lifecycle details and the `container_persistent` flag that controls whether `/workspace` and `/root` survive across OmniWorker restarts.
+This means the Docker backend behaves like a persistent sandbox VM, not a fresh container per command. If you `pip install foo` once, it's there for the rest of the session. If you `cd /workspace/project`, subsequent `ls` calls see that directory. See [Configuration → Docker Backend](../configuration.md#docker-backend) for the full lifecycle details and the `container_persistent` flag that controls whether `/workspace` and `/root` survive across Flux Agent restarts.
 
 ### SSH Backend
 
@@ -97,7 +97,7 @@ terminal:
   backend: ssh
 ```
 ```bash
-# Set credentials in ~/.omniworker/.env
+# Set credentials in ~/.flux-agent/.env
 TERMINAL_SSH_HOST=my-server.example.com
 TERMINAL_SSH_USER=myuser
 TERMINAL_SSH_KEY=~/.ssh/id_rsa
@@ -110,8 +110,8 @@ TERMINAL_SSH_KEY=~/.ssh/id_rsa
 apptainer build ~/python.sif docker://python:3.11-slim
 
 # Configure
-omniworker config set terminal.backend singularity
-omniworker config set terminal.singularity_image ~/python.sif
+flux-agent config set terminal.backend singularity
+flux-agent config set terminal.singularity_image ~/python.sif
 ```
 
 ### Modal (Serverless Cloud)
@@ -119,34 +119,34 @@ omniworker config set terminal.singularity_image ~/python.sif
 ```bash
 uv pip install modal
 modal setup
-omniworker config set terminal.backend modal
+flux-agent config set terminal.backend modal
 ```
 
 ### Vercel Sandbox
 
 ```bash
-pip install 'omniworker-agent[vercel]'
-omniworker config set terminal.backend vercel_sandbox
-omniworker config set terminal.vercel_runtime node24
+pip install 'flux-agent-agent[vercel]'
+flux-agent config set terminal.backend vercel_sandbox
+flux-agent config set terminal.vercel_runtime node24
 ```
 
-Authenticate with all three of `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, and `VERCEL_TEAM_ID`. This access-token setup is the supported path for deployments and normal long-running OmniWorker processes on Render, Railway, Docker, and similar hosts. Supported runtimes are `node24`, `node22`, and `python3.13`; OmniWorker defaults to `/vercel/sandbox` as the remote workspace root.
+Authenticate with all three of `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, and `VERCEL_TEAM_ID`. This access-token setup is the supported path for deployments and normal long-running Flux Agent processes on Render, Railway, Docker, and similar hosts. Supported runtimes are `node24`, `node22`, and `python3.13`; Flux Agent defaults to `/vercel/sandbox` as the remote workspace root.
 
-For one-off local development, OmniWorker also accepts short-lived Vercel OIDC tokens:
+For one-off local development, Flux Agent also accepts short-lived Vercel OIDC tokens:
 
 ```bash
-VERCEL_OIDC_TOKEN="$(vc project token <project-name>)" omniworker chat
+VERCEL_OIDC_TOKEN="$(vc project token <project-name>)" flux-agent chat
 ```
 
 From a linked Vercel project directory:
 
 ```bash
-VERCEL_OIDC_TOKEN="$(vc project token)" omniworker chat
+VERCEL_OIDC_TOKEN="$(vc project token)" flux-agent chat
 ```
 
-With `container_persistent: true`, OmniWorker uses Vercel snapshots to preserve filesystem state across sandbox recreation for the same task. This can include OmniWorker-synced credentials, skills, and cache files inside the sandbox. Snapshots do not preserve live processes, PID space, or the same live sandbox identity.
+With `container_persistent: true`, Flux Agent uses Vercel snapshots to preserve filesystem state across sandbox recreation for the same task. This can include Flux Agent-synced credentials, skills, and cache files inside the sandbox. Snapshots do not preserve live processes, PID space, or the same live sandbox identity.
 
-Background terminal commands use OmniWorker' generic non-local process flow: spawn, poll, wait, log, and kill work through the normal process tool while the sandbox is alive, but OmniWorker does not provide native Vercel detached-process recovery after cleanup or restart.
+Background terminal commands use Flux Agent' generic non-local process flow: spawn, poll, wait, log, and kill work through the normal process tool while the sandbox is alive, but Flux Agent does not provide native Vercel detached-process recovery after cleanup or restart.
 
 Leave `container_disk` unset or at the shared default `51200`; custom disk sizing is unsupported for Vercel Sandbox and will fail diagnostics/backend creation.
 
@@ -199,8 +199,8 @@ PTY mode (`pty=true`) enables interactive CLI tools like Codex and Claude Code.
 
 ## Sudo Support
 
-If a command needs sudo, you'll be prompted for your password (cached for the session). Or set `SUDO_PASSWORD` in `~/.omniworker/.env`.
+If a command needs sudo, you'll be prompted for your password (cached for the session). Or set `SUDO_PASSWORD` in `~/.flux-agent/.env`.
 
 :::warning
-On messaging platforms, if sudo fails, the output includes a tip to add `SUDO_PASSWORD` to `~/.omniworker/.env`.
+On messaging platforms, if sudo fails, the output includes a tip to add `SUDO_PASSWORD` to `~/.flux-agent/.env`.
 :::

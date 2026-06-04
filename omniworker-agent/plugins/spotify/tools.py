@@ -1,10 +1,10 @@
-"""Native Spotify tools for OmniWorker (registered via plugins/spotify)."""
+"""Native Spotify tools for Flux Agent (registered via plugins/spotify)."""
 
 from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from omniworker_cli.auth import get_auth_status
+from flux-agent_cli.auth import get_auth_status
 from plugins.spotify.client import (
     SpotifyAPIError,
     SpotifyAuthRequiredError,

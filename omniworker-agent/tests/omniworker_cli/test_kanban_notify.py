@@ -3,7 +3,7 @@ import pytest
 
 from pathlib import Path
 from types import SimpleNamespace
-from omniworker_cli import kanban_db as kb
+from flux-agent_cli import kanban_db as kb
 from unittest.mock import AsyncMock, MagicMock, patch
 
 
@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    home = tmp_path / ".omniworker"
+    home = tmp_path / ".flux-agent"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -26,7 +26,7 @@ async def test_notifier_unsubs_after_completed_event(kanban_home):
     """
     Subscription should be remove after completed event
     """
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
     from gateway.run import GatewayRunner
     from gateway.config import Platform
 
@@ -85,7 +85,7 @@ async def test_notifier_unsubs_after_abnormal_events(kind, kanban_home):
     a truly final status (done / archived) — see the comment on
     TERMINAL_KINDS in gateway/run.py and PR #21398.
     """
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
     from gateway.run import GatewayRunner
     from gateway.config import Platform
 
@@ -149,7 +149,7 @@ async def test_notifier_second_blocked_delivers(kanban_home):
     """
     After the first blocked, should receive second blocked notification.
     """
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
     from gateway.run import GatewayRunner
     from gateway.config import Platform
 
@@ -240,7 +240,7 @@ async def test_notifier_second_blocked_delivers(kanban_home):
 @pytest.mark.asyncio
 async def test_notifier_does_not_call_init_db(kanban_home):
     """Notifier watcher path must not invoke `_kb.init_db` (issue #21378)."""
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
     from gateway.run import GatewayRunner
     from gateway.config import Platform
 
@@ -270,7 +270,7 @@ async def test_notifier_does_not_call_init_db(kanban_home):
         return real_init_db(*args, **kwargs)
 
     with patch("gateway.run.asyncio.sleep", side_effect=_fast_sleep), \
-         patch("omniworker_cli.kanban_db.init_db", side_effect=_spy_init_db):
+         patch("flux-agent_cli.kanban_db.init_db", side_effect=_spy_init_db):
         await asyncio.wait_for(
             runner._kanban_notifier_watcher(interval=1),
             timeout=10.0,
@@ -291,7 +291,7 @@ def test_dispatcher_tick_does_not_call_init_db(kanban_home, monkeypatch):
     per process. The explicit `init_db()` call was redundant and triggered a
     second migration on a second connection that raced the first.
     """
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
     from gateway.run import GatewayRunner
     from unittest.mock import patch
 
@@ -325,7 +325,7 @@ def test_dispatcher_tick_does_not_call_init_db(kanban_home, monkeypatch):
 @pytest.mark.asyncio
 async def test_notifier_skips_subscription_owned_by_other_profile(kanban_home):
     """Each gateway keeps its watcher on, but only the subscribing profile claims."""
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
     from gateway.run import GatewayRunner
     from gateway.config import Platform
 
@@ -381,7 +381,7 @@ async def test_notifier_skips_subscription_owned_by_other_profile(kanban_home):
 @pytest.mark.asyncio
 async def test_notifier_delivers_subscription_owned_by_current_profile(kanban_home):
     """The gateway for the profile that created/subscribed the task reports it."""
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
     from gateway.run import GatewayRunner
     from gateway.config import Platform
 

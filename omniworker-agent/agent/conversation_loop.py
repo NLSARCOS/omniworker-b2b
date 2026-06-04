@@ -64,8 +64,8 @@ from agent.prompt_caching import apply_anthropic_cache_control
 from agent.retry_utils import jittered_backoff
 from agent.trajectory import has_incomplete_scratchpad
 from agent.usage_pricing import estimate_usage_cost, normalize_usage
-from omniworker_constants import display_omniworker_home as _dhh_fn
-from omniworker_logging import set_session_context
+from flux-agent_constants import display_flux-agent_home as _dhh_fn
+from flux-agent_logging import set_session_context
 from tools.schema_sanitizer import strip_pattern_and_format
 from tools.skill_provenance import set_current_write_origin
 from utils import base_url_host_matches, env_var_enabled
@@ -158,7 +158,7 @@ def _restore_or_build_system_prompt(agent, system_message, conversation_history)
     # session is created (not on continuation).  Plugins can use this
     # to initialise session-scoped state (e.g. warm a memory cache).
     try:
-        from omniworker_cli.plugins import invoke_hook as _invoke_hook
+        from flux-agent_cli.plugins import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_start",
             session_id=agent.session_id,
@@ -234,7 +234,7 @@ def run_conversation(
 
     # Tag all log records on this thread with the session ID so
     # ``hermes logs --session <id>`` can filter a single conversation.
-    from omniworker_logging import set_session_context
+    from flux-agent_logging import set_session_context
     set_session_context(agent.session_id)
 
     # Bind the skill write-origin ContextVar for this thread so tool
@@ -420,7 +420,7 @@ def run_conversation(
     active_system_prompt = agent._cached_system_prompt
 
     # ── Preflight message cap compression (A1) ──
-    max_messages_str = os.environ.get("OMNIWORKER_MAX_MESSAGES")
+    max_messages_str = os.environ.get("FLUX AGENT_MAX_MESSAGES")
     try:
         max_messages = int(max_messages_str) if max_messages_str else 500
     except ValueError:
@@ -528,13 +528,13 @@ def run_conversation(
     # Context is ALWAYS injected into the user message, never the
     # system prompt.  This preserves the prompt cache prefix — the
     # system prompt stays identical across turns so cached tokens
-    # are reused.  The system prompt is OmniWorker's territory; plugins
+    # are reused.  The system prompt is Flux Agent's territory; plugins
     # contribute context alongside the user's input.
     #
     # All injected context is ephemeral (not persisted to session DB).
     _plugin_user_context = ""
     try:
-        from omniworker_cli.plugins import invoke_hook as _invoke_hook
+        from flux-agent_cli.plugins import invoke_hook as _invoke_hook
         _pre_results = _invoke_hook(
             "pre_llm_call",
             session_id=agent.session_id,
@@ -616,7 +616,7 @@ def run_conversation(
 
     # Optional opt-in runtime: if api_mode == codex_app_server, hand the
     # turn to the codex app-server subprocess (terminal/file ops/patching
-    # all run inside Codex). Default OmniWorker path is bypassed entirely.
+    # all run inside Codex). Default Flux Agent path is bypassed entirely.
     # See agent/transports/codex_app_server_session.py for the adapter
     # and references/codex-app-server-runtime.md for the rationale.
     if agent.api_mode == "codex_app_server":
@@ -740,7 +740,7 @@ def run_conversation(
                     agent._pending_steer = (existing + "\n" + _pre_api_steer) if existing else _pre_api_steer
 
         # ── Proactive message cap compression check (A1) ──
-        max_messages_str = os.environ.get("OMNIWORKER_MAX_MESSAGES")
+        max_messages_str = os.environ.get("FLUX AGENT_MAX_MESSAGES")
         try:
             max_messages = int(max_messages_str) if max_messages_str else 500
         except ValueError:
@@ -857,9 +857,9 @@ def run_conversation(
         # NOTE: Plugin context from pre_llm_call hooks is injected into the
         # user message (see injection block above), NOT the system prompt.
         # This is intentional — system prompt modifications break the prompt
-        # cache prefix.  The system prompt is reserved for OmniWorker internals.
+        # cache prefix.  The system prompt is reserved for Flux Agent internals.
         #
-        # OmniWorker invariant: the system prompt is built ONCE per session
+        # Flux Agent invariant: the system prompt is built ONCE per session
         # (cached on ``_cached_system_prompt``) and replayed verbatim on
         # every turn.  We send it as a single content string so the
         # bytes are byte-stable across turns and upstream prompt caches
@@ -1055,7 +1055,7 @@ def run_conversation(
                     api_kwargs = agent._get_transport().preflight_kwargs(api_kwargs, allow_stream=False)
 
                 try:
-                    from omniworker_cli.plugins import invoke_hook as _invoke_hook
+                    from flux-agent_cli.plugins import invoke_hook as _invoke_hook
                     request_messages = api_kwargs.get("messages")
                     if not isinstance(request_messages, list):
                         request_messages = api_kwargs.get("input")
@@ -1089,7 +1089,7 @@ def run_conversation(
                 except Exception:
                     pass
 
-                if env_var_enabled("OMNIWORKER_DUMP_REQUESTS"):
+                if env_var_enabled("FLUX AGENT_DUMP_REQUESTS"):
                     agent._dump_api_request_debug(api_kwargs, reason="preflight")
 
                 # Always prefer the streaming path — even without stream
@@ -2114,7 +2114,7 @@ def run_conversation(
                     # Credential refresh didn't help — show diagnostic info.
                     # Most common causes: Portal OAuth expired/revoked,
                     # account out of credits, or agent key blocked.
-                    from omniworker_constants import display_omniworker_home as _dhh_fn
+                    from flux-agent_constants import display_flux-agent_home as _dhh_fn
                     _dhh = _dhh_fn()
                     _body_text = ""
                     try:
@@ -2170,9 +2170,9 @@ def run_conversation(
                         print(f"{agent.log_prefix}   Auth method: {auth_method}")
                         print(f"{agent.log_prefix}   Token prefix: {key[:12]}..." if isinstance(key, str) and len(key) > 12 else f"{agent.log_prefix}   Token: (empty or short)")
                     print(f"{agent.log_prefix}   Troubleshooting:")
-                    from omniworker_constants import display_omniworker_home as _dhh_fn
+                    from flux-agent_constants import display_flux-agent_home as _dhh_fn
                     _dhh = _dhh_fn()
-                    print(f"{agent.log_prefix}     • Check ANTHROPIC_TOKEN in {_dhh}/.env for OmniWorker-managed OAuth/setup tokens")
+                    print(f"{agent.log_prefix}     • Check ANTHROPIC_TOKEN in {_dhh}/.env for Flux Agent-managed OAuth/setup tokens")
                     print(f"{agent.log_prefix}     • Check ANTHROPIC_API_KEY in {_dhh}/.env for API keys or legacy token values")
                     print(f"{agent.log_prefix}     • For API keys: verify at https://platform.claude.com/settings/keys")
                     print(f"{agent.log_prefix}     • For Claude Code: run 'claude /login' to refresh, then retry")
@@ -2420,7 +2420,7 @@ def run_conversation(
                 # this on the next pass and try fallback or bail.
                 #
                 # IMPORTANT: Nous Portal multiplexes multiple upstream
-                # providers (DeepSeek, Kimi, MiMo, OmniWorker).  A 429 can
+                # providers (DeepSeek, Kimi, MiMo, Flux Agent).  A 429 can
                 # also mean an UPSTREAM provider is out of capacity
                 # for one specific model -- transient, clears in
                 # seconds, nothing to do with the caller's quota.
@@ -2481,7 +2481,7 @@ def run_conversation(
 
                 # Actionable hint for GitHub Models (Azure) 413 errors.
                 # The free tier enforces a hard 8K token cap per request,
-                # which OmniWorker' system prompt + tool schemas alone exceed.
+                # which Flux Agent' system prompt + tool schemas alone exceed.
                 # Compression can't help — the floor is the system prompt
                 # itself, not the conversation — so surface a clear "not
                 # compatible" message instead of looping into three futile
@@ -2496,7 +2496,7 @@ def run_conversation(
                         force=True,
                     )
                     agent._vprint(
-                        f"{agent.log_prefix}      request at ~8K tokens. OmniWorker' system prompt + tool schemas baseline",
+                        f"{agent.log_prefix}      request at ~8K tokens. Flux Agent' system prompt + tool schemas baseline",
                         force=True,
                     )
                     agent._vprint(
@@ -3020,7 +3020,7 @@ def run_conversation(
                     assistant_message.content = str(raw)
 
             try:
-                from omniworker_cli.plugins import invoke_hook as _invoke_hook
+                from flux-agent_cli.plugins import invoke_hook as _invoke_hook
                 _assistant_tool_calls = getattr(assistant_message, "tool_calls", None) or []
                 _assistant_text = assistant_message.content or ""
                 _invoke_hook(
@@ -3888,7 +3888,7 @@ def run_conversation(
         # protocol violation).  The agent loop strips tools before calling
         # _handle_max_iterations, so the model cannot call kanban_block
         # itself — we must do it on its behalf.
-        _kanban_task = os.environ.get("OMNIWORKER_KANBAN_TASK")
+        _kanban_task = os.environ.get("FLUX AGENT_KANBAN_TASK")
         if _kanban_task:
             try:
                 _ra().handle_function_call(
@@ -4009,7 +4009,7 @@ def run_conversation(
     # First hook to return a string wins; None/empty return leaves text unchanged.
     if final_response and not interrupted:
         try:
-            from omniworker_cli.plugins import invoke_hook as _invoke_hook
+            from flux-agent_cli.plugins import invoke_hook as _invoke_hook
             _transform_results = _invoke_hook(
                 "transform_llm_output",
                 response_text=final_response,
@@ -4030,7 +4030,7 @@ def run_conversation(
     # to an external memory system).
     if final_response and not interrupted:
         try:
-            from omniworker_cli.plugins import invoke_hook as _invoke_hook
+            from flux-agent_cli.plugins import invoke_hook as _invoke_hook
             _invoke_hook(
                 "post_llm_call",
                 session_id=agent.session_id,
@@ -4145,7 +4145,7 @@ def run_conversation(
     # Fired at the very end of every run_conversation call.
     # Plugins can use this for cleanup, flushing buffers, etc.
     try:
-        from omniworker_cli.plugins import invoke_hook as _invoke_hook
+        from flux-agent_cli.plugins import invoke_hook as _invoke_hook
         _invoke_hook(
             "on_session_end",
             session_id=agent.session_id,

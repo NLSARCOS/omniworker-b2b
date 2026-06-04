@@ -4,11 +4,11 @@ sidebar_position: 9
 
 # Adding a Platform Adapter
 
-This guide covers adding a new messaging platform to the OmniWorker gateway. A platform adapter connects OmniWorker to an external messaging service (Telegram, Discord, WeCom, etc.) so users can interact with the agent through that service.
+This guide covers adding a new messaging platform to the Flux Agent gateway. A platform adapter connects Flux Agent to an external messaging service (Telegram, Discord, WeCom, etc.) so users can interact with the agent through that service.
 
 :::tip
 There are two ways to add a platform:
-- **Plugin** (recommended for community/third-party): Drop a plugin directory into `~/.omniworker/plugins/` — zero core code changes needed. See [Plugin Path](#plugin-path-recommended) below.
+- **Plugin** (recommended for community/third-party): Drop a plugin directory into `~/.flux-agent/plugins/` — zero core code changes needed. See [Plugin Path](#plugin-path-recommended) below.
 - **Built-in**: Modify 20+ files across code, config, and docs. Use the [Built-in Checklist](#step-by-step-checklist) below.
 :::
 
@@ -30,17 +30,17 @@ Inbound messages are received by the adapter and forwarded via `self.handle_mess
 
 ## Plugin Path (Recommended)
 
-The plugin system lets you add a platform adapter without modifying any core OmniWorker code. Your plugin is a directory with two files:
+The plugin system lets you add a platform adapter without modifying any core Flux Agent code. Your plugin is a directory with two files:
 
 ```
-~/.omniworker/plugins/my-platform/
+~/.flux-agent/plugins/my-platform/
   PLUGIN.yaml      # Plugin metadata
   adapter.py       # Adapter class + register() entry point
 ```
 
 ### PLUGIN.yaml
 
-Plugin metadata. The `requires_env` and `optional_env` blocks auto-populate `omniworker config` UI entries (see [Surfacing Env Vars](#surfacing-env-vars-in-omniworker-config) below).
+Plugin metadata. The `requires_env` and `optional_env` blocks auto-populate `flux-agent config` UI entries (see [Surfacing Env Vars](#surfacing-env-vars-in-flux-agent-config) below).
 
 ```yaml
 name: my-platform
@@ -115,7 +115,7 @@ def _env_enablement() -> dict | None:
 
 
 def register(ctx):
-    """Plugin entry point — called by the OmniWorker plugin system."""
+    """Plugin entry point — called by the Flux Agent plugin system."""
     ctx.register_platform(
         name="my_platform",
         label="My Platform",
@@ -184,7 +184,7 @@ When you call `ctx.register_platform()`, the following integration points are ha
 | Env-only auto-enable | `env_enablement_fn` seeds `PlatformConfig.extra` + `home_channel` |
 | YAML config bridge | `apply_yaml_config_fn` translates `config.yaml` keys into env vars / extras |
 | Cron delivery | `cron_deliver_env_var` makes `deliver=<name>` work |
-| `omniworker config` UI entries | `requires_env` / `optional_env` in `plugin.yaml` auto-populate |
+| `flux-agent config` UI entries | `requires_env` / `optional_env` in `plugin.yaml` auto-populate |
 | send_message tool | Routes through live gateway adapter |
 | Webhook cross-platform delivery | Registry checked for known platforms |
 | `/update` command access | `allow_update_command` flag |
@@ -192,15 +192,15 @@ When you call `ctx.register_platform()`, the following integration points are ha
 | System prompt hints | `platform_hint` injected into LLM context |
 | Message chunking | `max_message_length` for smart splitting |
 | PII redaction | `pii_safe` flag |
-| `omniworker status` | Shows plugin platforms with `(plugin)` tag |
-| `omniworker gateway setup` | Plugin platforms appear in setup menu |
-| `omniworker tools` / `omniworker skills` | Plugin platforms in per-platform config |
+| `flux-agent status` | Shows plugin platforms with `(plugin)` tag |
+| `flux-agent gateway setup` | Plugin platforms appear in setup menu |
+| `flux-agent tools` / `flux-agent skills` | Plugin platforms in per-platform config |
 | Token lock (multi-profile) | Use `acquire_scoped_lock()` in your `connect()` |
 | Orphaned config warning | Descriptive log when plugin is missing |
 
 ## Env-Driven Auto-Configuration
 
-Most users set up a platform by dropping env vars into `~/.omniworker/.env` rather than editing `config.yaml`. The `env_enablement_fn` hook lets your plugin pick those env vars up **before** the adapter is constructed, so `omniworker gateway status`, `get_connected_platforms()`, and cron delivery see the correct state without instantiating the platform SDK.
+Most users set up a platform by dropping env vars into `~/.flux-agent/.env` rather than editing `config.yaml`. The `env_enablement_fn` hook lets your plugin pick those env vars up **before** the adapter is constructed, so `flux-agent gateway status`, `get_connected_platforms()`, and cron delivery see the correct state without instantiating the platform SDK.
 
 ```python
 def _env_enablement() -> dict | None:
@@ -296,7 +296,7 @@ The scheduler reads this env var when resolving the home target for `deliver=my_
 
 ### Out-of-process cron delivery
 
-`cron_deliver_env_var` makes your platform a recognized `deliver=` target. To make the actual send succeed when the cron job runs in a separate process from the gateway (i.e., `omniworker cron run` separate from `omniworker gateway`), register a `standalone_sender_fn`:
+`cron_deliver_env_var` makes your platform a recognized `deliver=` target. To make the actual send succeed when the cron job runs in a separate process from the gateway (i.e., `flux-agent cron run` separate from `flux-agent gateway`), register a `standalone_sender_fn`:
 
 ```python
 async def _standalone_send(
@@ -325,9 +325,9 @@ Why this hook is necessary: built-in platforms (Telegram, Discord, Slack, etc.) 
 
 The function receives the same `pconfig` and `chat_id` that the live adapter would, plus optional `thread_id`, `media_files`, and `force_document` keyword arguments. Returning `{"success": True, "message_id": ...}` is treated as a successful delivery; returning `{"error": "..."}` surfaces the message in cron's `delivery_errors`. Exceptions raised inside the function are caught by the dispatcher and reported as `Plugin standalone send failed: <reason>`. Reference implementations live in `plugins/platforms/{irc,teams,google_chat}/adapter.py`.
 
-## Surfacing Env Vars in `omniworker config`
+## Surfacing Env Vars in `flux-agent config`
 
-`omniworker_cli/config.py` scans `plugins/platforms/*/plugin.yaml` at import time and auto-populates `OPTIONAL_ENV_VARS` from `requires_env` and (optional) `optional_env` blocks. Use the rich-dict form to contribute proper descriptions, prompts, password flags, and URLs — the CLI setup UI picks them up for free.
+`flux-agent_cli/config.py` scans `plugins/platforms/*/plugin.yaml` at import time and auto-populates `OPTIONAL_ENV_VARS` from `requires_env` and (optional) `optional_env` blocks. Use the rich-dict form to contribute proper descriptions, prompts, password flags, and URLs — the CLI setup UI picks them up for free.
 
 ```yaml
 # plugins/platforms/my_platform/plugin.yaml
@@ -336,7 +336,7 @@ label: My Platform
 kind: platform
 version: 1.0.0
 description: >
-  My Platform gateway adapter for OmniWorker Agent.
+  My Platform gateway adapter for Flux Agent Agent.
 author: Your Name
 requires_env:
   - name: MY_PLATFORM_TOKEN
@@ -345,7 +345,7 @@ requires_env:
     url: "https://my-platform.example.com/bots"
     password: true
   - name: MY_PLATFORM_CHANNEL
-    description: "Channel to join (e.g. #omniworker)"
+    description: "Channel to join (e.g. #flux-agent)"
     prompt: "Channel"
     password: false
 optional_env:
@@ -461,7 +461,7 @@ See `plugins/platforms/irc/` in the repo for a complete working example — a fu
 ## Step-by-Step Checklist (Built-in Path)
 
 :::note
-This checklist is for adding a platform directly to the OmniWorker core codebase — typically done by core contributors for officially supported platforms. Community/third-party platforms should use the [Plugin Path](#plugin-path-recommended) above.
+This checklist is for adding a platform directly to the Flux Agent core codebase — typically done by core contributors for officially supported platforms. Community/third-party platforms should use the [Plugin Path](#plugin-path-recommended) above.
 :::
 
 ### 1. Platform Enum
@@ -557,12 +557,12 @@ Five touchpoints:
 
 ### 6. CLI Integration
 
-1. **`omniworker_cli/config.py`** — Add all `NEWPLAT_*` vars to `_EXTRA_ENV_KEYS`
-2. **`omniworker_cli/gateway.py`** — Add entry to `_PLATFORMS` list with key, label, emoji, token_var, setup_instructions, and vars
-3. **`omniworker_cli/platforms.py`** — Add `PlatformInfo` entry with label and default_toolset (used by `skills_config` and `tools_config` TUIs)
-4. **`omniworker_cli/setup.py`** — Add `_setup_newplat()` function (can delegate to `gateway.py`) and add tuple to the messaging platforms list
-5. **`omniworker_cli/status.py`** — Add platform detection entry: `"NewPlat": ("NEWPLAT_TOKEN", "NEWPLAT_HOME_CHANNEL")`
-6. **`omniworker_cli/dump.py`** — Add `"newplat": "NEWPLAT_TOKEN"` to platform detection dict
+1. **`flux-agent_cli/config.py`** — Add all `NEWPLAT_*` vars to `_EXTRA_ENV_KEYS`
+2. **`flux-agent_cli/gateway.py`** — Add entry to `_PLATFORMS` list with key, label, emoji, token_var, setup_instructions, and vars
+3. **`flux-agent_cli/platforms.py`** — Add `PlatformInfo` entry with label and default_toolset (used by `skills_config` and `tools_config` TUIs)
+4. **`flux-agent_cli/setup.py`** — Add `_setup_newplat()` function (can delegate to `gateway.py`) and add tuple to the messaging platforms list
+5. **`flux-agent_cli/status.py`** — Add platform detection entry: `"NewPlat": ("NEWPLAT_TOKEN", "NEWPLAT_HOME_CHANNEL")`
+6. **`flux-agent_cli/dump.py`** — Add `"newplat": "NEWPLAT_TOKEN"` to platform detection dict
 
 ### 7. Tools
 
@@ -571,8 +571,8 @@ Five touchpoints:
 
 ### 8. Toolsets
 
-1. **`toolsets.py`** — Add `"omniworker-newplat"` toolset definition with `_OMNIWORKER_CORE_TOOLS`
-2. **`toolsets.py`** — Add `"omniworker-newplat"` to the `"omniworker-gateway"` includes list
+1. **`toolsets.py`** — Add `"flux-agent-newplat"` toolset definition with `_FLUX AGENT_CORE_TOOLS`
+2. **`toolsets.py`** — Add `"flux-agent-newplat"` to the `"flux-agent-gateway"` includes list
 
 ### 9. Optional: Platform Hints
 
@@ -606,7 +606,7 @@ Create `tests/gateway/test_newplat.py` covering:
 | `website/docs/user-guide/messaging/newplat.md` | Full platform setup page |
 | `website/docs/user-guide/messaging/index.md` | Platform comparison table, architecture diagram, toolsets table, security section, next-steps link |
 | `website/docs/reference/environment-variables.md` | All NEWPLAT_* env vars |
-| `website/docs/reference/toolsets-reference.md` | omniworker-newplat toolset |
+| `website/docs/reference/toolsets-reference.md` | flux-agent-newplat toolset |
 | `website/docs/integrations/index.md` | Platform link |
 | `website/sidebars.ts` | Sidebar entry for the docs page |
 | `website/docs/developer-guide/architecture.md` | Adapter count + listing |

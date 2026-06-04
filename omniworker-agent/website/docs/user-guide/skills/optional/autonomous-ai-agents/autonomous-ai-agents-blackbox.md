@@ -14,24 +14,24 @@ Delegate coding tasks to Blackbox AI CLI agent. Multi-model agent with built-in 
 
 | | |
 |---|---|
-| Source | Optional — install with `omniworker skills install official/autonomous-ai-agents/blackbox` |
+| Source | Optional — install with `flux-agent skills install official/autonomous-ai-agents/blackbox` |
 | Path | `optional-skills/autonomous-ai-agents/blackbox` |
 | Version | `1.0.0` |
-| Author | OmniWorker Agent (Nous Research) |
+| Author | Flux Agent Agent (Nous Research) |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Coding-Agent`, `Blackbox`, `Multi-Agent`, `Judge`, `Multi-Model` |
-| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`omniworker-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-omniworker-agent) |
+| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`flux-agent-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-flux-agent-agent) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Blackbox CLI
 
-Delegate coding tasks to [Blackbox AI](https://www.blackbox.ai/) via the OmniWorker terminal. Blackbox is a multi-model coding agent CLI that dispatches tasks to multiple LLMs (Claude, Codex, Gemini, Blackbox Pro) and uses a judge to select the best implementation.
+Delegate coding tasks to [Blackbox AI](https://www.blackbox.ai/) via the Flux Agent terminal. Blackbox is a multi-model coding agent CLI that dispatches tasks to multiple LLMs (Claude, Codex, Gemini, Blackbox Pro) and uses a judge to select the best implementation.
 
 The CLI is [open-source](https://github.com/blackboxaicode/cli) (GPL-3.0, TypeScript, forked from Gemini CLI) and supports interactive sessions, non-interactive one-shots, checkpointing, MCP, and vision model switching.
 

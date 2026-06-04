@@ -286,7 +286,7 @@ class TestFileSync:
             lambda: [
                 {
                     "host_path": str(src),
-                    "container_path": "/root/.omniworker/credentials/token.txt",
+                    "container_path": "/root/.flux-agent/credentials/token.txt",
                 }
             ],
         )
@@ -298,7 +298,7 @@ class TestFileSync:
         uploaded = vercel_sdk.current.write_files_calls[0]
         assert uploaded == [
             {
-                "path": "/home/vercel/.omniworker/credentials/token.txt",
+                "path": "/home/vercel/.flux-agent/credentials/token.txt",
                 "content": b"secret-token",
             }
         ]
@@ -313,7 +313,7 @@ class TestFileSync:
             lambda: [
                 {
                     "host_path": str(src),
-                    "container_path": "/root/.omniworker/credentials/token.txt",
+                    "container_path": "/root/.flux-agent/credentials/token.txt",
                 }
             ],
         )
@@ -330,7 +330,7 @@ class TestFileSync:
         assert result == {"output": "hello\n", "returncode": 0}
         assert vercel_sdk.current.write_files_calls[-1] == [
             {
-                "path": "/home/vercel/.omniworker/credentials/token.txt",
+                "path": "/home/vercel/.flux-agent/credentials/token.txt",
                 "content": b"updated-secret-token",
             }
         ]
@@ -338,8 +338,8 @@ class TestFileSync:
     def test_cleanup_syncs_back_snapshots_closes_and_is_idempotent(
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
-        omniworker_home = tmp_path / ".omniworker"
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         src = tmp_path / "token.txt"
         src.write_text("host-token")
         monkeypatch.setattr(
@@ -347,7 +347,7 @@ class TestFileSync:
             lambda: [
                 {
                     "host_path": str(src),
-                    "container_path": "/root/.omniworker/credentials/token.txt",
+                    "container_path": "/root/.flux-agent/credentials/token.txt",
                 }
             ],
         )
@@ -364,9 +364,9 @@ class TestFileSync:
         sandbox.snapshot_id = "snap_cleanup"
         vercel_sdk.current.download_file_content = _tar_bytes(
             {
-                "home/vercel/.omniworker/credentials/token.txt": b"remote-token",
-                "home/vercel/.omniworker/credentials/new.txt": b"new-remote",
-                "home/vercel/.omniworker/unmapped/skip.txt": b"skip",
+                "home/vercel/.flux-agent/credentials/token.txt": b"remote-token",
+                "home/vercel/.flux-agent/credentials/new.txt": b"new-remote",
+                "home/vercel/.flux-agent/unmapped/skip.txt": b"skip",
             }
         )
 
@@ -391,7 +391,7 @@ class TestFileSync:
             lambda: [
                 {
                     "host_path": str(src),
-                    "container_path": "/root/.omniworker/credentials/token.txt",
+                    "container_path": "/root/.flux-agent/credentials/token.txt",
                 }
             ],
         )
@@ -506,8 +506,8 @@ class TestSnapshotPersistence:
     def test_create_restores_from_saved_snapshot(
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
-        omniworker_home = tmp_path / ".omniworker"
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         vercel_module._store_snapshot("task-123", "snap_saved")
         restored = _FakeSandbox(cwd="/restored")
         vercel_sdk.create_side_effects.append(restored)
@@ -524,8 +524,8 @@ class TestSnapshotPersistence:
     def test_restore_failure_prunes_snapshot_and_falls_back_to_fresh_sandbox(
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
-        omniworker_home = tmp_path / ".omniworker"
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         vercel_module._store_snapshot("task-123", "snap_stale")
         fresh = _FakeSandbox(cwd="/fresh")
         vercel_sdk.create_side_effects.extend(
@@ -545,8 +545,8 @@ class TestSnapshotPersistence:
     def test_cleanup_stops_when_snapshot_fails_without_storing_metadata(
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
-        omniworker_home = tmp_path / ".omniworker"
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         env = make_env()
         sandbox = vercel_sdk.current
         sandbox.snapshot_side_effects.append(RuntimeError("snapshot failed"))
@@ -561,8 +561,8 @@ class TestSnapshotPersistence:
     def test_non_persistent_cleanup_stops_without_snapshot(
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
-        omniworker_home = tmp_path / ".omniworker"
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         env = make_env(persistent_filesystem=False)
         sandbox = vercel_sdk.current
 
@@ -576,8 +576,8 @@ class TestSnapshotPersistence:
     def test_persistent_cleanup_without_task_id_stops_without_snapshot(
         self, make_env, vercel_module, vercel_sdk, monkeypatch, tmp_path
     ):
-        omniworker_home = tmp_path / ".omniworker"
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
         env = make_env(task_id="")
         sandbox = vercel_sdk.current
 

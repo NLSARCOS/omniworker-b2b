@@ -14,7 +14,7 @@ Pharmaceutical research assistant for drug discovery workflows. Search bioactive
 
 | | |
 |---|---|
-| Source | Optional — install with `omniworker skills install official/research/drug-discovery` |
+| Source | Optional — install with `flux-agent skills install official/research/drug-discovery` |
 | Path | `optional-skills/research/drug-discovery` |
 | Version | `1.0.0` |
 | Author | bennytimz |
@@ -25,7 +25,7 @@ Pharmaceutical research assistant for drug discovery workflows. Search bioactive
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Drug Discovery & Pharmaceutical Research

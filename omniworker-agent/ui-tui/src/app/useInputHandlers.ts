@@ -1,4 +1,4 @@
-import { forceRedraw, useInput } from '@omniworker/ink'
+import { forceRedraw, useInput } from '@flux-agent/ink'
 import { useStore } from '@nanostores/react'
 import { useEffect, useRef } from 'react'
 

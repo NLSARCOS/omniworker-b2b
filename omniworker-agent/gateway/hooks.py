@@ -26,10 +26,10 @@ from typing import Any, Callable, Dict, List, Optional
 
 import yaml
 
-from omniworker_cli.config import get_omniworker_home
+from flux-agent_cli.config import get_flux-agent_home
 
 
-HOOKS_DIR = get_omniworker_home() / "hooks"
+HOOKS_DIR = get_flux-agent_home() / "hooks"
 
 
 class HookRegistry:

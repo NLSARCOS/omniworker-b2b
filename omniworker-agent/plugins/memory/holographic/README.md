@@ -9,17 +9,17 @@ None — uses SQLite (always available). NumPy optional for HRR algebra.
 ## Setup
 
 ```bash
-omniworker memory setup    # select "holographic"
+flux-agent memory setup    # select "holographic"
 ```
 
 Or manually:
 ```bash
-omniworker config set memory.provider holographic
+flux-agent config set memory.provider holographic
 ```
 
 ## Config
 
-Config in `config.yaml` under `plugins.omniworker-memory-store`:
+Config in `config.yaml` under `plugins.flux-agent-memory-store`:
 
 | Key | Default | Description |
 |-----|---------|-------------|

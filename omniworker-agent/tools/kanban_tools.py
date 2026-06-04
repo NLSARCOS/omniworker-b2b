@@ -2,15 +2,15 @@
 
 These tools are only registered into the model's schema when the agent is
 running under the dispatcher (env var ``OMNIWORKER_KANBAN_TASK`` set). A
-normal ``omniworker chat`` session sees **zero** kanban tools in its schema.
+normal ``flux-agent chat`` session sees **zero** kanban tools in its schema.
 
-Why tools instead of just shelling out to ``omniworker kanban``?
+Why tools instead of just shelling out to ``flux-agent kanban``?
 
 1. **Backend portability.** A worker whose terminal tool points at Docker
-   / Modal / Singularity / SSH would run ``omniworker kanban complete …``
-   inside the container, where ``omniworker`` isn't installed and the DB
+   / Modal / Singularity / SSH would run ``flux-agent kanban complete …``
+   inside the container, where ``flux-agent`` isn't installed and the DB
    isn't mounted. Tools run in the agent's Python process, so they
-   always reach ``~/.omniworker/kanban.db`` regardless of terminal backend.
+   always reach ``~/.flux-agent/kanban.db`` regardless of terminal backend.
 
 2. **No shell-quoting footguns.** Passing ``--metadata '{"x": [...]}'``
    through shlex+argparse is fragile. Structured tool args skip it.
@@ -18,8 +18,8 @@ Why tools instead of just shelling out to ``omniworker kanban``?
 3. **Better errors.** Tool-call failures return structured JSON the
    model can reason about, not stderr strings it has to parse.
 
-Humans continue to use the CLI (``omniworker kanban …``), the dashboard
-(``omniworker dashboard``), and the slash command (``/kanban …``) — all
+Humans continue to use the CLI (``flux-agent kanban …``), the dashboard
+(``flux-agent dashboard``), and the slash command (``/kanban …``) — all
 three bypass the agent entirely. The tools are ONLY for the worker
 agent's handoff back to the kernel.
 """
@@ -48,7 +48,7 @@ def _profile_has_kanban_toolset() -> bool:
     # negligible overhead. The check_fn results are further TTL-cached
     # (~30s) by the tool registry.
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
         toolsets = cfg.get("toolsets", [])
         return "kanban" in toolsets
@@ -63,7 +63,7 @@ def _check_kanban_mode() -> bool:
     2. The current profile has ``kanban`` in its toolsets config
        (orchestrator profiles like techlead that route work via Kanban).
 
-    Humans running ``omniworker chat`` without the kanban toolset see zero
+    Humans running ``flux-agent chat`` without the kanban toolset see zero
     kanban tools. Workers spawned by the kanban dispatcher (gateway-
     embedded by default) and orchestrator profiles with the kanban
     toolset enabled see the Kanban lifecycle tool surface.
@@ -147,7 +147,7 @@ def _enforce_worker_task_ownership(tid: str) -> Optional[str]:
 def _connect():
     """Import + connect lazily so the module imports cleanly in non-kanban
     contexts (e.g. test rigs that import every tool module)."""
-    from omniworker_cli import kanban_db as kb
+    from flux-agent_cli import kanban_db as kb
     return kb, kb.connect()
 
 
@@ -534,7 +534,7 @@ def _handle_comment(args: dict, **kw) -> str:
     # into the next worker's system prompt by ``build_worker_context``
     # as ``**{author}** (timestamp): {body}`` — accepting an
     # ``args["author"]`` override let a worker forge a comment from
-    # an authoritative-looking name like ``omniworker-system`` and poison
+    # an authoritative-looking name like ``flux-agent-system`` and poison
     # the future-worker context with what reads as a system directive.
     # Cross-task commenting itself remains unrestricted (see #19713) —
     # comments are the deliberate handoff channel between tasks.

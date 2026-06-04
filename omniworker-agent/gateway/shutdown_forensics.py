@@ -168,9 +168,9 @@ def snapshot_shutdown_context(received_signal: Any = None) -> Dict[str, Any]:
     # _PLANNED_STOP_MARKER_FILENAME); we use string literals here so the
     # signal-handler path stays import-light.
     try:
-        omniworker_home_str = os.environ.get("OMNIWORKER_HOME")
-        if omniworker_home_str:
-            takeover_path = Path(omniworker_home_str) / ".gateway-takeover.json"
+        flux-agent_home_str = os.environ.get("OMNIWORKER_HOME")
+        if flux-agent_home_str:
+            takeover_path = Path(flux-agent_home_str) / ".gateway-takeover.json"
             if takeover_path.exists():
                 try:
                     raw = takeover_path.read_text(encoding="utf-8")
@@ -181,7 +181,7 @@ def snapshot_shutdown_context(received_signal: Any = None) -> Dict[str, Any]:
                     )
                 except OSError:
                     pass
-            planned_stop_path = Path(omniworker_home_str) / ".gateway-planned-stop.json"
+            planned_stop_path = Path(flux-agent_home_str) / ".gateway-planned-stop.json"
             if planned_stop_path.exists():
                 try:
                     raw = planned_stop_path.read_text(encoding="utf-8")
@@ -394,7 +394,7 @@ def check_systemd_timing_alignment(drain_timeout: float) -> Optional[Dict[str, A
     timeout_stop_sec = timeout_us / 1_000_000.0
     # systemd needs headroom for: post-interrupt kill, adapter disconnect,
     # SessionDB close, file unlinks, etc.  30s matches the unit-template
-    # constant in omniworker_cli/gateway.py.
+    # constant in flux-agent_cli/gateway.py.
     headroom = 30.0
     expected = drain_timeout + headroom
     return {

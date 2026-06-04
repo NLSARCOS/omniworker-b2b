@@ -28,7 +28,7 @@ describe("I18nProvider", () => {
   const setLocale = vi.fn().mockResolvedValue(DEFAULT_ACTIVE_LOCALE);
 
   beforeEach(() => {
-    (window as any).omniworkerAPI = {
+    (window as any).flux-agentAPI = {
       getLocale,
       setLocale,
     };
@@ -41,7 +41,7 @@ describe("I18nProvider", () => {
   afterEach(() => {
     setSharedLocale(DEFAULT_ACTIVE_LOCALE);
     try {
-      localStorage.removeItem("omniworker-locale");
+      localStorage.removeItem("flux-agent-locale");
     } catch {
       /* ignore */
     }

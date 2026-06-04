@@ -1,4 +1,4 @@
-import type { ScrollBoxHandle } from '@omniworker/ink'
+import type { ScrollBoxHandle } from '@flux-agent/ink'
 
 import type { SelectionApi } from './interfaces.js'
 

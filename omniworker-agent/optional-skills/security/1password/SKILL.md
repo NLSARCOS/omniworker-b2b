@@ -2,11 +2,11 @@
 name: 1password
 description: Set up and use 1Password CLI (op). Use when installing the CLI, enabling desktop app integration, signing in, and reading/injecting secrets for commands.
 version: 1.0.0
-author: arceus77-7, enhanced by OmniWorker Agent
+author: arceus77-7, enhanced by Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [security, secrets, 1password, op, cli]
     category: security
 setup:
@@ -27,7 +27,7 @@ Use this skill when the user wants secrets managed through 1Password instead of 
 - 1Password account
 - 1Password CLI (`op`) installed
 - One of: desktop app integration, service account token (`OP_SERVICE_ACCOUNT_TOKEN`), or Connect server
-- `tmux` available for stable authenticated sessions during OmniWorker terminal calls (desktop app flow only)
+- `tmux` available for stable authenticated sessions during Flux Agent terminal calls (desktop app flow only)
 
 ## When to Use
 
@@ -39,9 +39,9 @@ Use this skill when the user wants secrets managed through 1Password instead of 
 
 ## Authentication Methods
 
-### Service Account (recommended for OmniWorker)
+### Service Account (recommended for Flux Agent)
 
-Set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.omniworker/.env` (the skill will prompt for this on first load).
+Set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.flux-agent/.env` (the skill will prompt for this on first load).
 No desktop app needed. Supports `op read`, `op inject`, `op run`.
 
 ```bash
@@ -85,17 +85,17 @@ op --version
 
 3. Choose an auth method above and configure it.
 
-## OmniWorker Execution Pattern (desktop app flow)
+## Flux Agent Execution Pattern (desktop app flow)
 
-OmniWorker terminal commands are non-interactive by default and can lose auth context between calls.
+Flux Agent terminal commands are non-interactive by default and can lose auth context between calls.
 For reliable `op` use with desktop app integration, run sign-in and secret operations inside a dedicated tmux session.
 
 Note: This is NOT needed when using `OP_SERVICE_ACCOUNT_TOKEN` — the token persists across terminal calls automatically.
 
 ```bash
-SOCKET_DIR="${TMPDIR:-/tmp}/omniworker-tmux-sockets"
+SOCKET_DIR="${TMPDIR:-/tmp}/flux-agent-tmux-sockets"
 mkdir -p "$SOCKET_DIR"
-SOCKET="$SOCKET_DIR/omniworker-op.sock"
+SOCKET="$SOCKET_DIR/flux-agent-op.sock"
 SESSION="op-auth-$(date +%Y%m%d-%H%M%S)"
 
 tmux -S "$SOCKET" new -d -s "$SESSION" -n shell

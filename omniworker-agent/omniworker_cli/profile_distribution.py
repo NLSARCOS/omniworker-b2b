@@ -1,6 +1,6 @@
-"""Profile distributions — shareable, packaged OmniWorker profiles via git.
+"""Profile distributions — shareable, packaged Flux Agent profiles via git.
 
-A distribution is a OmniWorker profile published as a git repository (or
+A distribution is a Flux Agent profile published as a git repository (or
 installed from a local directory for development). Install with one command
 from a git URL, update in place, and keep your local memories / sessions /
 credentials untouched.
@@ -100,7 +100,7 @@ USER_OWNED_EXCLUDE: frozenset = frozenset({
     "auth.json", ".env",
     # Databases & runtime state
     "state.db", "state.db-shm", "state.db-wal",
-    "omniworker_state.db", "response_store.db",
+    "flux-agent_state.db", "response_store.db",
     "response_store.db-shm", "response_store.db-wal",
     "gateway.pid", "gateway_state.json", "processes.json",
     "auth.lock", "active_profile", ".update_check",
@@ -320,7 +320,7 @@ def check_hermes_requires(spec: str, current_version: str) -> None:
     }[op]
     if not ok:
         raise DistributionError(
-            f"This distribution requires OmniWorker {op}{target}, "
+            f"This distribution requires Flux Agent {op}{target}, "
             f"but you have {current_version}."
         )
 
@@ -333,7 +333,7 @@ def check_hermes_requires(spec: str, current_version: str) -> None:
 def _env_template_from_manifest(manifest: DistributionManifest) -> str:
     """Generate a ``.env.template`` body from env_requires."""
     lines = [
-        "# Environment variables required by this OmniWorker distribution.",
+        "# Environment variables required by this Flux Agent distribution.",
         "# Copy to `.env` and fill in your own values before running.",
         "",
     ]
@@ -410,7 +410,7 @@ def _stage_source(source: str, workdir: Path) -> Tuple[Path, str]:
         if not (cloned / MANIFEST_FILENAME).is_file():
             raise DistributionError(
                 f"No {MANIFEST_FILENAME} at the root of {src_str!r}. "
-                "This repository is not a OmniWorker profile distribution."
+                "This repository is not a Flux Agent profile distribution."
             )
         return cloned, src_str
 
@@ -472,19 +472,19 @@ def plan_install(
     override_name: Optional[str] = None,
 ) -> InstallPlan:
     """Stage *source* and produce a plan describing what install would do."""
-    from omniworker_cli.profiles import (
+    from flux-agent_cli.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,
     )
-    from omniworker_cli import __version__ as hermes_version
+    from flux-agent_cli import __version__ as hermes_version
 
     staged, provenance = _stage_source(source, workdir)
     manifest = read_manifest(staged)
     if manifest is None:
         raise DistributionError(
             f"No {MANIFEST_FILENAME} found at the distribution root — "
-            "this source is not a OmniWorker distribution."
+            "this source is not a Flux Agent distribution."
         )
 
     # Version check up-front so we fail fast
@@ -590,7 +590,7 @@ def install_distribution(
     Returns the resolved :class:`InstallPlan`.  Use :func:`plan_install`
     first if you want to preview + prompt the user before calling this.
     """
-    from omniworker_cli.profiles import (
+    from flux-agent_cli.profiles import (
         check_alias_collision,
         create_wrapper_script,
     )
@@ -633,7 +633,7 @@ def update_distribution(
     data (memories, sessions, auth) is never touched.  ``config.yaml`` is
     preserved unless ``force_config`` is True.
     """
-    from omniworker_cli.profiles import (
+    from flux-agent_cli.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,
@@ -685,7 +685,7 @@ def describe_distribution(profile_name: str) -> Dict[str, Any]:
     Returns an empty dict if the profile exists but has no manifest.
     Raises DistributionError if the profile itself doesn't exist.
     """
-    from omniworker_cli.profiles import (
+    from flux-agent_cli.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,

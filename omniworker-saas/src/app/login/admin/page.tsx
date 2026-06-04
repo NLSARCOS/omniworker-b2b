@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full bg-zinc-950 border border-zinc-800 p-3 font-mono text-lg focus:outline-none focus:border-red-500 transition-colors text-white placeholder-zinc-700"
-              placeholder="root@omniworker.com"
+              placeholder="root@flux-agent.com"
             />
           </div>
 

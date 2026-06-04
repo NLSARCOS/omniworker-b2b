@@ -1,4 +1,4 @@
-"""Tests for the update check mechanism in omniworker_cli.banner."""
+"""Tests for the update check mechanism in flux-agent_cli.banner."""
 
 import json
 import os
@@ -12,16 +12,16 @@ import pytest
 
 def test_version_string_no_v_prefix():
     """__version__ should be bare semver without a 'v' prefix."""
-    from omniworker_cli import __version__
+    from flux-agent_cli import __version__
     assert not __version__.startswith("v"), f"__version__ should not start with 'v', got {__version__!r}"
 
 
 def test_check_for_updates_uses_cache(tmp_path, monkeypatch):
     """When cache is fresh, check_for_updates should return cached value without calling git."""
-    from omniworker_cli.banner import check_for_updates
+    from flux-agent_cli.banner import check_for_updates
 
     # Create a fake git repo and fresh cache
-    repo_dir = tmp_path / "omniworker-agent"
+    repo_dir = tmp_path / "flux-agent-agent"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
 
@@ -29,7 +29,7 @@ def test_check_for_updates_uses_cache(tmp_path, monkeypatch):
     cache_file.write_text(json.dumps({"ts": time.time(), "behind": 3}))
 
     monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-    with patch("omniworker_cli.banner.subprocess.run") as mock_run:
+    with patch("flux-agent_cli.banner.subprocess.run") as mock_run:
         result = check_for_updates()
 
     assert result == 3
@@ -38,9 +38,9 @@ def test_check_for_updates_uses_cache(tmp_path, monkeypatch):
 
 def test_check_for_updates_expired_cache(tmp_path, monkeypatch):
     """When cache is expired, check_for_updates should call git fetch."""
-    from omniworker_cli.banner import check_for_updates
+    from flux-agent_cli.banner import check_for_updates
 
-    repo_dir = tmp_path / "omniworker-agent"
+    repo_dir = tmp_path / "flux-agent-agent"
     repo_dir.mkdir()
     (repo_dir / ".git").mkdir()
 
@@ -51,7 +51,7 @@ def test_check_for_updates_expired_cache(tmp_path, monkeypatch):
     mock_result = MagicMock(returncode=0, stdout="5\n")
 
     monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-    with patch("omniworker_cli.banner.subprocess.run", return_value=mock_result) as mock_run:
+    with patch("flux-agent_cli.banner.subprocess.run", return_value=mock_result) as mock_run:
         result = check_for_updates()
 
     assert result == 5
@@ -60,16 +60,16 @@ def test_check_for_updates_expired_cache(tmp_path, monkeypatch):
 
 def test_check_for_updates_no_git_dir(tmp_path, monkeypatch):
     """Returns None when .git directory doesn't exist anywhere."""
-    import omniworker_cli.banner as banner
+    import flux-agent_cli.banner as banner
 
     # Create a fake banner.py so the fallback path also has no .git
-    fake_banner = tmp_path / "omniworker_cli" / "banner.py"
+    fake_banner = tmp_path / "flux-agent_cli" / "banner.py"
     fake_banner.parent.mkdir(parents=True, exist_ok=True)
     fake_banner.touch()
 
     monkeypatch.setattr(banner, "__file__", str(fake_banner))
     monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-    with patch("omniworker_cli.banner.subprocess.run") as mock_run:
+    with patch("flux-agent_cli.banner.subprocess.run") as mock_run:
         result = banner.check_for_updates()
     assert result is None
     mock_run.assert_not_called()
@@ -77,15 +77,15 @@ def test_check_for_updates_no_git_dir(tmp_path, monkeypatch):
 
 def test_check_for_updates_fallback_to_project_root(tmp_path, monkeypatch):
     """Dev install: falls back to Path(__file__).parent.parent when OMNIWORKER_HOME has no git repo."""
-    import omniworker_cli.banner as banner
+    import flux-agent_cli.banner as banner
 
     project_root = Path(banner.__file__).parent.parent.resolve()
     if not (project_root / ".git").exists():
         pytest.skip("Not running from a git checkout")
 
-    # Point OMNIWORKER_HOME at a temp dir with no omniworker-agent/.git
+    # Point OMNIWORKER_HOME at a temp dir with no flux-agent-agent/.git
     monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-    with patch("omniworker_cli.banner.subprocess.run") as mock_run:
+    with patch("flux-agent_cli.banner.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="0\n")
         result = banner.check_for_updates()
     # Should have fallen back to project root and run git commands
@@ -94,7 +94,7 @@ def test_check_for_updates_fallback_to_project_root(tmp_path, monkeypatch):
 
 def test_prefetch_non_blocking():
     """prefetch_update_check() should return immediately without blocking."""
-    import omniworker_cli.banner as banner
+    import flux-agent_cli.banner as banner
 
     # Reset module state
     banner._update_result = None
@@ -115,10 +115,10 @@ def test_prefetch_non_blocking():
 
 def test_invalidate_update_cache_clears_all_profiles(tmp_path):
     """_invalidate_update_cache() should delete .update_check from ALL profiles."""
-    from omniworker_cli.main import _invalidate_update_cache
+    from flux-agent_cli.main import _invalidate_update_cache
 
-    # Build a fake ~/.omniworker with default + two named profiles
-    default_home = tmp_path / ".omniworker"
+    # Build a fake ~/.flux-agent with default + two named profiles
+    default_home = tmp_path / ".flux-agent"
     default_home.mkdir()
     (default_home / ".update_check").write_text('{"ts":1,"behind":50}')
 
@@ -140,9 +140,9 @@ def test_invalidate_update_cache_clears_all_profiles(tmp_path):
 
 def test_invalidate_update_cache_no_profiles_dir(tmp_path):
     """Works fine when no profiles directory exists (single-profile setup)."""
-    from omniworker_cli.main import _invalidate_update_cache
+    from flux-agent_cli.main import _invalidate_update_cache
 
-    default_home = tmp_path / ".omniworker"
+    default_home = tmp_path / ".flux-agent"
     default_home.mkdir()
     (default_home / ".update_check").write_text('{"ts":1,"behind":5}')
 

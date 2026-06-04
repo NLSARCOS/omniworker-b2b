@@ -1,8 +1,8 @@
 """
-IRC Platform Adapter for OmniWorker Agent.
+IRC Platform Adapter for Flux Agent Agent.
 
 A plugin-based gateway adapter that connects to an IRC server and relays
-messages to/from the OmniWorker agent.  Zero external dependencies — uses
+messages to/from the Flux Agent agent.  Zero external dependencies — uses
 Python's stdlib asyncio for the IRC protocol.
 
 Configuration in config.yaml::
@@ -14,8 +14,8 @@ Configuration in config.yaml::
           extra:
             server: irc.libera.chat
             port: 6697
-            nickname: omniworker-bot
-            channel: "#omniworker"
+            nickname: flux-agent-bot
+            channel: "#flux-agent"
             use_tls: true
             server_password: ""       # optional server password
             nickserv_password: ""     # optional NickServ identification
@@ -109,7 +109,7 @@ class IRCAdapter(BasePlatformAdapter):
         # Connection settings (env vars override config.yaml)
         self.server = os.getenv("IRC_SERVER") or extra.get("server", "")
         self.port = int(os.getenv("IRC_PORT") or extra.get("port", 6697))
-        self.nickname = os.getenv("IRC_NICKNAME") or extra.get("nickname", "omniworker-bot")
+        self.nickname = os.getenv("IRC_NICKNAME") or extra.get("nickname", "flux-agent-bot")
         self.channel = os.getenv("IRC_CHANNEL") or extra.get("channel", "")
         self.use_tls = (
             os.getenv("IRC_USE_TLS", "").lower() in ("1", "true", "yes")
@@ -191,7 +191,7 @@ class IRCAdapter(BasePlatformAdapter):
         if self.server_password:
             await self._send_raw(f"PASS {self.server_password}")
         await self._send_raw(f"NICK {self.nickname}")
-        await self._send_raw(f"USER {self.nickname} 0 * :OmniWorker Agent")
+        await self._send_raw(f"USER {self.nickname} 0 * :Flux Agent Agent")
 
         # Start receive loop
         self._recv_task = asyncio.create_task(self._receive_loop())
@@ -229,7 +229,7 @@ class IRCAdapter(BasePlatformAdapter):
         self._mark_disconnected()
         if self._writer and not self._writer.is_closing():
             try:
-                await self._send_raw("QUIT :OmniWorker Agent shutting down")
+                await self._send_raw("QUIT :Flux Agent Agent shutting down")
                 await asyncio.sleep(0.5)
             except Exception:
                 pass
@@ -411,7 +411,7 @@ class IRCAdapter(BasePlatformAdapter):
 
         # ERR_NICKNAMEINUSE (433) — nick collision during registration
         if command == "433":
-            # Retry with incrementing suffix: omniworker_, omniworker_1, omniworker_2...
+            # Retry with incrementing suffix: flux-agent_, flux-agent_1, flux-agent_2...
             base = self.nickname.rstrip("_0123456789")
             suffix_match = re.search(r"_(\d+)$", self._current_nick)
             if suffix_match:
@@ -521,7 +521,7 @@ def check_requirements() -> bool:
     channel = os.getenv("IRC_CHANNEL", "")
     # Also accept config.yaml-only configuration (no env vars).
     # The gateway passes PlatformConfig; we just check env for the
-    # omniworker setup / requirements check path.
+    # flux-agent setup / requirements check path.
     return bool(server and channel)
 
 
@@ -534,12 +534,12 @@ def validate_config(config) -> bool:
 
 
 def interactive_setup() -> None:
-    """Interactive `omniworker gateway setup` flow for the IRC platform.
+    """Interactive `flux-agent gateway setup` flow for the IRC platform.
 
-    Lazy-imports ``omniworker_cli.setup`` helpers so the plugin stays importable
+    Lazy-imports ``flux-agent_cli.setup`` helpers so the plugin stays importable
     in non-CLI contexts (gateway runtime, tests).
     """
-    from omniworker_cli.setup import (
+    from flux-agent_cli.setup import (
         prompt,
         prompt_yes_no,
         save_env_value,
@@ -557,7 +557,7 @@ def interactive_setup() -> None:
         if not prompt_yes_no("Reconfigure IRC?", False):
             return
 
-    print_info("Connect OmniWorker to an IRC network. Uses Python stdlib — no extra packages needed.")
+    print_info("Connect Flux Agent to an IRC network. Uses Python stdlib — no extra packages needed.")
     print_info("   Works with Libera.Chat, OFTC, your own ZNC/InspIRCd, etc.")
     print()
 
@@ -582,7 +582,7 @@ def interactive_setup() -> None:
         save_env_value("IRC_PORT", "")
 
     nickname = prompt(
-        "Bot nickname (e.g. omniworker-bot)",
+        "Bot nickname (e.g. flux-agent-bot)",
         default=get_env_value("IRC_NICKNAME") or "",
     )
     if not nickname:
@@ -591,7 +591,7 @@ def interactive_setup() -> None:
     save_env_value("IRC_NICKNAME", nickname.strip())
 
     channel = prompt(
-        "Channel to join (e.g. #omniworker — comma-separate for multiple)",
+        "Channel to join (e.g. #flux-agent — comma-separate for multiple)",
         default=get_env_value("IRC_CHANNEL") or "",
     )
     if not channel:
@@ -636,8 +636,8 @@ def interactive_setup() -> None:
             print_info("No nicks allowed — the bot will ignore all messages until you add nicks.")
 
     print()
-    print_success("IRC configuration saved to ~/.omniworker/.env")
-    print_info("Restart the gateway for changes to take effect: omniworker gateway restart")
+    print_success("IRC configuration saved to ~/.flux-agent/.env")
+    print_info("Restart the gateway for changes to take effect: flux-agent gateway restart")
 
 
 def is_connected(config) -> bool:
@@ -726,8 +726,8 @@ async def _standalone_send(
     """Open an ephemeral IRC connection, send a PRIVMSG, and quit.
 
     Used by ``tools/send_message_tool._send_via_adapter`` when the gateway
-    runner is not in this process (e.g. ``omniworker cron`` running as a
-    separate process from ``omniworker gateway``).  Without this hook,
+    runner is not in this process (e.g. ``flux-agent cron`` running as a
+    separate process from ``flux-agent gateway``).  Without this hook,
     ``deliver=irc`` cron jobs fail with ``No live adapter for platform``.
 
     The standalone client uses a distinct nick suffix (``-cron``) so it
@@ -753,7 +753,7 @@ async def _standalone_send(
     except (TypeError, ValueError):
         return {"error": f"IRC standalone send: invalid port {port_value!r}"}
 
-    nickname = os.getenv("IRC_NICKNAME") or extra.get("nickname", "omniworker-bot")
+    nickname = os.getenv("IRC_NICKNAME") or extra.get("nickname", "flux-agent-bot")
     use_tls_env = os.getenv("IRC_USE_TLS")
     if use_tls_env is not None:
         use_tls = use_tls_env.lower() in ("1", "true", "yes")
@@ -773,7 +773,7 @@ async def _standalone_send(
     # that may already be holding the configured nickname.  Cap to 24 chars
     # so subsequent collision retries do not overflow the 30-char NICKLEN
     # most networks enforce.
-    nick_base = nickname.rstrip("_0123456789-")[:24] or "omniworker-bot"
+    nick_base = nickname.rstrip("_0123456789-")[:24] or "flux-agent-bot"
     standalone_nick = f"{nick_base}-cron"[:30]
     plain = IRCAdapter._strip_markdown(message)
 
@@ -798,7 +798,7 @@ async def _standalone_send(
         if server_password:
             await _raw(f"PASS {_strip_irc_control_chars(server_password)}")
         await _raw(f"NICK {standalone_nick}")
-        await _raw(f"USER {standalone_nick} 0 * :OmniWorker Agent (cron)")
+        await _raw(f"USER {standalone_nick} 0 * :Flux Agent Agent (cron)")
 
         loop = asyncio.get_running_loop()
         deadline = loop.time() + 15.0
@@ -925,7 +925,7 @@ async def _standalone_send(
 
 
 def register(ctx):
-    """Plugin entry point: called by the OmniWorker plugin system."""
+    """Plugin entry point: called by the Flux Agent plugin system."""
     ctx.register_platform(
         name="irc",
         label="IRC",

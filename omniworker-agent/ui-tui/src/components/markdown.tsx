@@ -1,4 +1,4 @@
-import { Box, Link, stringWidth, Text } from '@omniworker/ink'
+import { Box, Link, stringWidth, Text } from '@flux-agent/ink'
 import { Fragment, memo, type ReactNode, useMemo } from 'react'
 
 import { ensureEmojiPresentation } from '../lib/emoji.js'
@@ -206,7 +206,7 @@ const renderTable = (k: number, rows: string[][], t: Theme) => {
   // counts them as one, which collapses Chinese / Japanese / Korean
   // tables into drift across rows.  `stringWidth` (Bun.stringWidth
   // fast path + an East-Asian-width-aware fallback, memoised in
-  // @omniworker/ink) returns the actual cell count.
+  // @flux-agent/ink) returns the actual cell count.
   const cellWidth = (raw: string) => stringWidth(stripInlineMarkup(raw))
 
   const widths = rows[0]!.map((_, ci) => Math.max(...rows.map(r => cellWidth(r[ci] ?? ''))))

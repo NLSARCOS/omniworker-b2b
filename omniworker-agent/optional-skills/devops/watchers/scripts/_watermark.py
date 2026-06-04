@@ -32,9 +32,9 @@ def _state_dir() -> Path:
     override = os.environ.get("WATCHER_STATE_DIR")
     if override:
         return Path(override)
-    # Default: $OMNIWORKER_HOME/watcher-state/, falling back to ~/.omniworker/watcher-state/.
-    omniworker_home = os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".omniworker")
-    return Path(omniworker_home) / "watcher-state"
+    # Default: $OMNIWORKER_HOME/watcher-state/, falling back to ~/.flux-agent/watcher-state/.
+    flux-agent_home = os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".flux-agent")
+    return Path(flux-agent_home) / "watcher-state"
 
 
 class Watermark:

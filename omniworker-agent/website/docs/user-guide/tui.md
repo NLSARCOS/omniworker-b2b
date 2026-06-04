@@ -1,46 +1,46 @@
 ---
 sidebar_position: 2
 title: "TUI"
-description: "Launch the modern terminal UI for OmniWorker — mouse-friendly, rich overlays, and non-blocking input."
+description: "Launch the modern terminal UI for Flux Agent — mouse-friendly, rich overlays, and non-blocking input."
 ---
 
 # TUI
 
-The TUI is the modern front-end for OmniWorker — a terminal UI backed by the same Python runtime as the [Classic CLI](cli.md). Same agent, same sessions, same slash commands; a cleaner, more responsive surface for interacting with them.
+The TUI is the modern front-end for Flux Agent — a terminal UI backed by the same Python runtime as the [Classic CLI](cli.md). Same agent, same sessions, same slash commands; a cleaner, more responsive surface for interacting with them.
 
-It's the recommended way to run OmniWorker interactively.
+It's the recommended way to run Flux Agent interactively.
 
 ## Launch
 
 ```bash
 # Launch the TUI
-omniworker --tui
+flux-agent --tui
 
 # Resume the latest TUI session (falls back to the latest classic session)
-omniworker --tui -c
-omniworker --tui --continue
+flux-agent --tui -c
+flux-agent --tui --continue
 
 # Resume a specific session by ID or title
-omniworker --tui -r 20260409_000000_aa11bb
-omniworker --tui --resume "my t0p session"
+flux-agent --tui -r 20260409_000000_aa11bb
+flux-agent --tui --resume "my t0p session"
 
 # Run source directly — skips the prebuild step (for TUI contributors)
-omniworker --tui --dev
+flux-agent --tui --dev
 ```
 
 You can also enable it via env var:
 
 ```bash
-export OMNIWORKER_TUI=1
-omniworker          # now uses the TUI
-omniworker chat     # same
+export FLUX AGENT_TUI=1
+flux-agent          # now uses the TUI
+flux-agent chat     # same
 ```
 
 The classic CLI remains available as the default. Anything documented in [CLI Interface](cli.md) — slash commands, quick commands, skill preloading, personalities, multi-line input, interrupts — works in the TUI identically.
 
 ## Why the TUI
 
-- **Instant first frame** — the banner paints before the app finishes loading, so the terminal never feels frozen while OmniWorker is starting.
+- **Instant first frame** — the banner paints before the app finishes loading, so the terminal never feels frozen while Flux Agent is starting.
 - **Non-blocking input** — type and queue messages before the session is ready. Your first prompt sends the moment the agent comes online.
 - **Rich overlays** — model picker, session picker, approval and clarification prompts all render as modal panels rather than inline flows.
 - **Live session panel** — tools and skills fill in progressively as they initialize.
@@ -52,18 +52,18 @@ Same [skins](features/skins.md) and [personalities](features/personality.md) app
 
 ## Requirements
 
-- **Node.js** ≥ 20 — the TUI runs as a subprocess launched from the Python CLI. `omniworker doctor` verifies this.
+- **Node.js** ≥ 20 — the TUI runs as a subprocess launched from the Python CLI. `flux-agent doctor` verifies this.
 - **TTY** — like the classic CLI, piping stdin or running in non-interactive environments falls back to single-query mode.
 
-On first launch OmniWorker installs the TUI's Node dependencies into `ui-tui/node_modules` (one-time, a few seconds). Subsequent launches are fast. If you pull a new OmniWorker version, the TUI bundle is rebuilt automatically when sources are newer than the dist.
+On first launch Flux Agent installs the TUI's Node dependencies into `ui-tui/node_modules` (one-time, a few seconds). Subsequent launches are fast. If you pull a new Flux Agent version, the TUI bundle is rebuilt automatically when sources are newer than the dist.
 
 ### External prebuild
 
-Distributions that ship a prebuilt bundle (Nix, system packages) can point OmniWorker at it:
+Distributions that ship a prebuilt bundle (Nix, system packages) can point Flux Agent at it:
 
 ```bash
-export OMNIWORKER_TUI_DIR=/path/to/prebuilt/ui-tui
-omniworker --tui
+export FLUX AGENT_TUI_DIR=/path/to/prebuilt/ui-tui
+flux-agent --tui
 ```
 
 The directory must contain `dist/entry.js`.
@@ -92,7 +92,7 @@ All slash commands work unchanged. A few are TUI-owned — they produce richer o
 | `/details` | Toggle verbose tool-call details (global or per-section) |
 | `/usage` | Rich token / cost / context panel |
 | `/agents` (alias `/tasks`) | Observability overlay — live subagent tree with kill/pause controls, per-branch cost / token / file rollups, turn-by-turn history |
-| `/reload` | Re-reads `~/.omniworker/.env` into the running TUI process so newly added API keys take effect without a restart |
+| `/reload` | Re-reads `~/.flux-agent/.env` into the running TUI process so newly added API keys take effect without a restart |
 | `/mouse` | Toggle mouse tracking on/off at runtime (also persists to `display.mouse_tracking` in `config.yaml`) |
 
 Every other slash command (including installed skills, quick commands, and personality toggles) works identically to the classic CLI. See [Slash Commands Reference](../reference/slash-commands.md).
@@ -107,19 +107,19 @@ This is always-on — nothing to configure. Classic CLI keeps the raw TeX.
 
 The TUI auto-detects light terminals and swaps to the light theme accordingly. Detection works in three layers:
 
-1. `OMNIWORKER_TUI_THEME` env var — highest priority. Values: `light`, `dark`, or a raw 6-char background hex (e.g. `ffffff`, `1a1a2e`).
+1. `FLUX AGENT_TUI_THEME` env var — highest priority. Values: `light`, `dark`, or a raw 6-char background hex (e.g. `ffffff`, `1a1a2e`).
 2. `COLORFGBG` env var — the classic "what's my background color?" hint used by xterm-derived terminals.
 3. Terminal background probe via OSC 11 — works on modern terminals (Ghostty, Warp, iTerm2, WezTerm, Kitty) that don't set `COLORFGBG`.
 
 If you want the light theme permanently regardless of terminal:
 
 ```bash
-export OMNIWORKER_TUI_THEME=light
+export FLUX AGENT_TUI_THEME=light
 ```
 
 ## Busy indicator styles
 
-The status-bar busy indicator is pluggable — the default rotates OmniWorker' kawaii face palette every 2.5 seconds during agent work. Pick a different style via config or the `/indicator` slash command:
+The status-bar busy indicator is pluggable — the default rotates Flux Agent' kawaii face palette every 2.5 seconds during agent work. Pick a different style via config or the `/indicator` slash command:
 
 ```yaml
 display:
@@ -130,12 +130,12 @@ Or in-session: `/indicator emoji` (etc.). Styles ship with matched glyph widths 
 
 ## Auto-resume
 
-By default, `omniworker --tui` starts a fresh session each launch. To re-attach to the most recent TUI session automatically (useful when your terminal or SSH connection drops unexpectedly), opt in:
+By default, `flux-agent --tui` starts a fresh session each launch. To re-attach to the most recent TUI session automatically (useful when your terminal or SSH connection drops unexpectedly), opt in:
 
 ```bash
-export OMNIWORKER_TUI_RESUME=1          # most-recent TUI session
+export FLUX AGENT_TUI_RESUME=1          # most-recent TUI session
 # or:
-export OMNIWORKER_TUI_RESUME=<session-id>   # specific session
+export FLUX AGENT_TUI_RESUME=<session-id>   # specific session
 ```
 
 Unset the variable or pass `--resume <id>` explicitly to override on a per-launch basis.
@@ -156,12 +156,12 @@ The per-skin status-bar colors and thresholds are shared with the classic CLI �
 
 The status line also shows:
 
-- **Working directory with git branch** — `~/projects/omniworker-agent (docs/two-week-gap-sweep)`. The branch suffix updates when you `git checkout` in a side terminal (mtime-cached) so the TUI reflects your actual active branch, not whatever it was at launch.
+- **Working directory with git branch** — `~/projects/flux-agent-agent (docs/two-week-gap-sweep)`. The branch suffix updates when you `git checkout` in a side terminal (mtime-cached) so the TUI reflects your actual active branch, not whatever it was at launch.
 - **Per-prompt elapsed time** — `⏱ 12s/3m 45s` while the turn is running (live), frozen to `⏲ 32s / 3m 45s` after the turn completes. First number is time since last user message; second is total session duration. Resets on every new prompt.
 
 ## Configuration
 
-The TUI respects all standard OmniWorker config: `~/.omniworker/config.yaml`, profiles, personalities, skins, quick commands, credential pools, memory providers, tool/skill enablement. No TUI-specific config file exists.
+The TUI respects all standard Flux Agent config: `~/.flux-agent/config.yaml`, profiles, personalities, skins, quick commands, credential pools, memory providers, tool/skill enablement. No TUI-specific config file exists.
 
 A handful of keys tune the TUI surface specifically:
 
@@ -211,15 +211,15 @@ existing configs keep working unchanged.
 
 ## Sessions
 
-Sessions are shared between the TUI and the classic CLI — both write to the same `~/.omniworker/state.db`. You can start a session in one, resume in the other. The session picker surfaces sessions from both sources, with a source tag.
+Sessions are shared between the TUI and the classic CLI — both write to the same `~/.flux-agent/state.db`. You can start a session in one, resume in the other. The session picker surfaces sessions from both sources, with a source tag.
 
 See [Sessions](sessions.md) for lifecycle, search, compression, and export.
 
 ## Reverting to the classic CLI
 
-Launching `omniworker` (without `--tui`) stays on the classic CLI. To make a machine prefer the TUI, set `OMNIWORKER_TUI=1` in your shell profile. To go back, unset it.
+Launching `flux-agent` (without `--tui`) stays on the classic CLI. To make a machine prefer the TUI, set `FLUX AGENT_TUI=1` in your shell profile. To go back, unset it.
 
-If the TUI fails to launch (no Node, missing bundle, TTY issue), OmniWorker prints a diagnostic and falls back — rather than leaving you stuck.
+If the TUI fails to launch (no Node, missing bundle, TTY issue), Flux Agent prints a diagnostic and falls back — rather than leaving you stuck.
 
 ## See also
 

@@ -158,7 +158,7 @@ Only one engine can be registered. A second plugin attempting to register is rej
 
 ## Configuration
 
-Users select your engine via `omniworker plugins` → Provider Plugins → Context Engine, or by editing `config.yaml`:
+Users select your engine via `flux-agent plugins` → Provider Plugins → Context Engine, or by editing `config.yaml`:
 
 ```yaml
 context:

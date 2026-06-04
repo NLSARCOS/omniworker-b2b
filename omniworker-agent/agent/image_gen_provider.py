@@ -164,9 +164,9 @@ def resolve_aspect_ratio(value: Optional[str]) -> str:
 
 def _images_cache_dir() -> Path:
     """Return ``$OMNIWORKER_HOME/cache/images/``, creating parents as needed."""
-    from omniworker_constants import get_omniworker_home
+    from flux-agent_constants import get_flux-agent_home
 
-    path = get_omniworker_home() / "cache" / "images"
+    path = get_flux-agent_home() / "cache" / "images"
     path.mkdir(parents=True, exist_ok=True)
     return path
 

@@ -2,12 +2,12 @@
 
 from unittest.mock import patch
 
-from cli import OmniWorkerCLI
+from cli import Flux AgentCLI
 
 
 class TestCLILoadingIndicator:
     def _make_cli(self):
-        cli_obj = OmniWorkerCLI.__new__(OmniWorkerCLI)
+        cli_obj = Flux AgentCLI.__new__(Flux AgentCLI)
         cli_obj._app = None
         cli_obj._last_invalidate = 0.0
         cli_obj._command_running = False

@@ -1,5 +1,5 @@
 /**
- * OmniWorker SaaS — Landing Page Content
+ * Flux Agent SaaS — Landing Page Content
  * Frameworks: PAS (Problem-Agitation-Solution) + AIDA (Attention-Interest-Desire-Action)
  * Voice: Professional, direct, confident. Zero fluff. Every word earns its place.
  * Language: Neutral Spanish (LATAM-friendly, no regional slang)
@@ -91,9 +91,9 @@ export const SITE_CONFIG: {
   title: string;
   description: string;
 } = {
-  title: "OmniWorker — Agentes de IA que ejecutan, no solo conversan",
+  title: "Flux Agent — Agentes de IA que ejecutan, no solo conversan",
   description:
-    "OmniWorker es la plataforma de agentes autónomos de IA para operaciones empresariales. Se ejecuta localmente para máxima privacidad, con gateway en la nube opcional. Automatiza documentos, datos, comunicaciones y flujos de trabajo sin equipo técnico.",
+    "Flux Agent es la plataforma de agentes autónomos de IA para operaciones empresariales. Se ejecuta localmente para máxima privacidad, con gateway en la nube opcional. Automatiza documentos, datos, comunicaciones y flujos de trabajo sin equipo técnico.",
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -132,7 +132,7 @@ export const HERO: {
   headline:
     "Elimina 40 horas semanales de trabajo operativo sin contratar a nadie",
   subheadline:
-    "OmniWorker despliega agentes de IA que procesan documentos, sincronizan datos, responden mensajes y ejecutan flujos de trabajo 24/7. Se ejecuta en tu infraestructura. Sin llamadas de ventas. Sin tarjeta de crédito.",
+    "Flux Agent despliega agentes de IA que procesan documentos, sincronizan datos, responden mensajes y ejecutan flujos de trabajo 24/7. Se ejecuta en tu infraestructura. Sin llamadas de ventas. Sin tarjeta de crédito.",
   cta: {
     primary: "Comenzar gratis — desplegar en 60 segundos",
     secondary: "Ver demo en vivo",
@@ -152,7 +152,7 @@ export const LOGOS: {
   title: string;
   partners: string[];
 } = {
-  title: "Equipos de operaciones de todo tamaño ya automatizan con OmniWorker",
+  title: "Equipos de operaciones de todo tamaño ya automatizan con Flux Agent",
   partners: [
     "Notion",
     "Slack",
@@ -211,7 +211,7 @@ export const SOLUTION: {
   headline:
     "Agentes que ejecutan flujos de trabajo completos, no solo responden preguntas",
   subheadline:
-    "OmniWorker combina modelos de lenguaje con herramientas empresariales reales. Tus agentes leen documentos, actualizan bases de datos, envían mensajes y toman decisiones operativas sin intervención humana.",
+    "Flux Agent combina modelos de lenguaje con herramientas empresariales reales. Tus agentes leen documentos, actualizan bases de datos, envían mensajes y toman decisiones operativas sin intervención humana.",
   features: [
     {
       icon: "document",
@@ -265,7 +265,7 @@ export const HOW_IT_WORKS: {
       number: "01",
       title: "Conecta tus herramientas",
       description:
-        "Integra tus sistemas existentes en minutos. OmniWorker se conecta con 200+ aplicaciones empresariales sin código ni configuraciones complejas. Tus datos permanecen en tu infraestructura.",
+        "Integra tus sistemas existentes en minutos. Flux Agent se conecta con 200+ aplicaciones empresariales sin código ni configuraciones complejas. Tus datos permanecen en tu infraestructura.",
     },
     {
       number: "02",
@@ -331,7 +331,7 @@ export const ENTERPRISE: {
   headline:
     "Seguridad, escalabilidad y cumplimiento que exigen las operaciones a gran escala",
   subheadline:
-    "OmniWorker Enterprise incluye despliegue on-premise, auditoría completa de acciones, control de acceso basado en roles y soporte con SLA garantizado. Mantén el control total mientras escalas.",
+    "Flux Agent Enterprise incluye despliegue on-premise, auditoría completa de acciones, control de acceso basado en roles y soporte con SLA garantizado. Mantén el control total mientras escalas.",
   cta: "Hablar con el equipo de ventas",
   features: [
     {
@@ -366,7 +366,7 @@ export const TESTIMONIALS: {
   items: [
     {
       quote:
-        "Antes teníamos a dos personas dedicadas exclusivamente a procesar facturas y conciliar pagos. Ahora el agente de OmniWorker maneja el 94% del volumen sin intervención. Revisamos solo las excepciones.",
+        "Antes teníamos a dos personas dedicadas exclusivamente a procesar facturas y conciliar pagos. Ahora el agente de Flux Agent maneja el 94% del volumen sin intervención. Revisamos solo las excepciones.",
       author: "Mariana Cortés",
       role: "Directora de Operaciones",
       company: "Finova Logística",
@@ -465,14 +465,14 @@ export const FAQ: {
   headline: "Todo lo que necesitas saber antes de desplegar tu primer agente",
   items: [
     {
-      question: "¿OmniWorker es un chatbot? ¿En qué se diferencia?",
+      question: "¿Flux Agent es un chatbot? ¿En qué se diferencia?",
       answer:
-        "No. Los chatbots responden preguntas. Los agentes de OmniWorker ejecutan acciones: leen documentos, actualizan bases de datos, envían mensajes, aprueban transacciones y completan flujos de trabajo completos sin intervención humana. Si un chatbot es un asistente conversacional, un agente de OmniWorker es un colaborador operativo que trabaja 24/7.",
+        "No. Los chatbots responden preguntas. Los agentes de Flux Agent ejecutan acciones: leen documentos, actualizan bases de datos, envían mensajes, aprueban transacciones y completan flujos de trabajo completos sin intervención humana. Si un chatbot es un asistente conversacional, un agente de Flux Agent es un colaborador operativo que trabaja 24/7.",
     },
     {
       question: "¿Mis datos están seguros? ¿Dónde se procesan?",
       answer:
-        "OmniWorker se ejecuta localmente por defecto. Tus datos nunca salen de tu infraestructura a menos que actives el gateway en la nube opcional. Incluso en ese caso, usamos cifrado end-to-end, no almacenamos datos de entrenamiento y cumplimos con SOC 2, GDPR y estándares sectoriales. En el plan Enterprise, puedes desplegar en tu VPC dedicada o centros de datos propios.",
+        "Flux Agent se ejecuta localmente por defecto. Tus datos nunca salen de tu infraestructura a menos que actives el gateway en la nube opcional. Incluso en ese caso, usamos cifrado end-to-end, no almacenamos datos de entrenamiento y cumplimos con SOC 2, GDPR y estándares sectoriales. En el plan Enterprise, puedes desplegar en tu VPC dedicada o centros de datos propios.",
     },
     {
       question: "¿Necesito un equipo técnico para implementarlo?",
@@ -480,9 +480,9 @@ export const FAQ: {
         "No. El 94% de nuestros usuarios configuran su primer agente sin escribir una sola línea de código. Describes la tarea en lenguaje natural, conectas tus herramientas mediante interfaces visuales y el sistema genera el flujo automáticamente. Para casos complejos, ofrecemos onboarding personalizado en el plan Enterprise.",
     },
     {
-      question: "¿Con qué herramientas se integra OmniWorker?",
+      question: "¿Con qué herramientas se integra Flux Agent?",
       answer:
-        "OmniWorker se conecta con más de 200 aplicaciones empresariales incluyendo Salesforce, HubSpot, Slack, Notion, Airtable, Google Workspace, Microsoft 365, Stripe, QuickBooks, SAP, Shopify y bases de datos SQL/NoSQL. Además, nuestra API permite integraciones personalizadas para sistemas propietarios.",
+        "Flux Agent se conecta con más de 200 aplicaciones empresariales incluyendo Salesforce, HubSpot, Slack, Notion, Airtable, Google Workspace, Microsoft 365, Stripe, QuickBooks, SAP, Shopify y bases de datos SQL/NoSQL. Además, nuestra API permite integraciones personalizadas para sistemas propietarios.",
     },
     {
       question: "¿Qué pasa si el agente comete un error?",
@@ -530,7 +530,7 @@ export const FOOTER: {
   columns: FooterColumn[];
   copyright: string;
 } = {
-  tagline: "OmniWorker — Agentes que ejecutan, no solo conversan.",
+  tagline: "Flux Agent — Agentes que ejecutan, no solo conversan.",
   columns: [
     {
       title: "Producto",
@@ -577,5 +577,5 @@ export const FOOTER: {
       ],
     },
   ],
-  copyright: "© 2026 OmniWorker. Todos los derechos reservados.",
+  copyright: "© 2026 Flux Agent. Todos los derechos reservados.",
 };

@@ -1,4 +1,4 @@
-"""Tests for OmniWorkerCLI initialization -- catches configuration bugs
+"""Tests for Flux AgentCLI initialization -- catches configuration bugs
 that only manifest at runtime (not in mocked unit tests)."""
 
 import os
@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
-    """Create a OmniWorkerCLI instance with minimal mocking."""
+    """Create a Flux AgentCLI instance with minimal mocking."""
     import importlib
 
     _clean_config = {
@@ -25,7 +25,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
     }
     if config_overrides:
         _clean_config.update(config_overrides)
-    clean_env = {"LLM_MODEL": "", "OMNIWORKER_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "FLUX AGENT_MAX_ITERATIONS": ""}
     if env_overrides:
         clean_env.update(env_overrides)
     prompt_toolkit_stubs = {
@@ -51,7 +51,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
         _cli_mod = importlib.reload(_cli_mod)
         with patch.object(_cli_mod, "get_tool_definitions", return_value=[]), \
              patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}):
-            return _cli_mod.OmniWorkerCLI(**kwargs)
+            return _cli_mod.Flux AgentCLI(**kwargs)
 
 
 class TestMaxTurnsResolution:
@@ -73,12 +73,12 @@ class TestMaxTurnsResolution:
 
     def test_env_var_max_turns(self):
         """Env var is used when config file doesn't set max_turns."""
-        cli_obj = _make_cli(env_overrides={"OMNIWORKER_MAX_ITERATIONS": "42"})
+        cli_obj = _make_cli(env_overrides={"FLUX AGENT_MAX_ITERATIONS": "42"})
         assert cli_obj.max_turns == 42
 
     def test_invalid_env_var_max_turns_falls_back_to_default(self):
         """Invalid env values should not crash CLI init."""
-        cli_obj = _make_cli(env_overrides={"OMNIWORKER_MAX_ITERATIONS": "not-a-number"})
+        cli_obj = _make_cli(env_overrides={"FLUX AGENT_MAX_ITERATIONS": "not-a-number"})
         assert cli_obj.max_turns == 90
 
     def test_legacy_root_max_turns_is_used_when_agent_key_exists_without_value(self):
@@ -255,11 +255,11 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "[You #1]" in output
-        assert "[OmniWorker #2]" in output
+        assert "[Flux Agent #2]" in output
         assert "(requested 2 tool calls)" in output
         assert "[Tools]" in output
         assert "(2 tool messages hidden)" in output
-        assert "[OmniWorker #3]" in output
+        assert "[Flux Agent #3]" in output
         assert "[You #4]" in output
         assert "[You #5]" not in output
         assert "A" * 250 in output
@@ -278,8 +278,8 @@ class TestHistoryDisplay:
             },
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running OmniWorker Agent",
-                "preview": "check running gateways for omniworker agent",
+                "title": "Checking Running Flux Agent Agent",
+                "preview": "check running gateways for flux-agent agent",
                 "last_active": 0,
             },
         ]
@@ -288,7 +288,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "No messages in the current chat yet" in output
-        assert "Checking Running OmniWorker Agent" in output
+        assert "Checking Running Flux Agent Agent" in output
         assert "20260401_201329_d85961" in output
         assert "/resume" in output
         assert "Current preview" not in output
@@ -306,8 +306,8 @@ class TestHistoryDisplay:
             },
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running OmniWorker Agent",
-                "preview": "check running gateways for omniworker agent",
+                "title": "Checking Running Flux Agent Agent",
+                "preview": "check running gateways for flux-agent agent",
                 "last_active": 0,
             },
         ]
@@ -316,7 +316,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "Recent sessions" in output
-        assert "Checking Running OmniWorker Agent" in output
+        assert "Checking Running Flux Agent Agent" in output
         assert "Use /resume <session id or title> to continue" in output
 
     def test_sessions_command_no_args_lists_recent_sessions(self, capsys):
@@ -333,8 +333,8 @@ class TestHistoryDisplay:
         cli._session_db.list_sessions_rich.return_value = [
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running OmniWorker Agent",
-                "preview": "check running gateways for omniworker agent",
+                "title": "Checking Running Flux Agent Agent",
+                "preview": "check running gateways for flux-agent agent",
                 "last_active": 0,
             },
         ]
@@ -346,7 +346,7 @@ class TestHistoryDisplay:
 
         assert "Unknown command" not in output
         assert "Recent sessions" in output
-        assert "Checking Running OmniWorker Agent" in output
+        assert "Checking Running Flux Agent Agent" in output
         assert "20260401_201329_d85961" in output
 
     def test_sessions_list_subcommand_lists_recent_sessions(self, capsys):
@@ -357,8 +357,8 @@ class TestHistoryDisplay:
         cli._session_db.list_sessions_rich.return_value = [
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running OmniWorker Agent",
-                "preview": "check running gateways for omniworker agent",
+                "title": "Checking Running Flux Agent Agent",
+                "preview": "check running gateways for flux-agent agent",
                 "last_active": 0,
             },
         ]
@@ -368,7 +368,7 @@ class TestHistoryDisplay:
 
         assert "Unknown command" not in output
         assert "Recent sessions" in output
-        assert "Checking Running OmniWorker Agent" in output
+        assert "Checking Running Flux Agent Agent" in output
 
     def test_sessions_with_target_delegates_to_resume(self):
         """/sessions <id_or_title> behaves identically to /resume <id_or_title>.
@@ -379,10 +379,10 @@ class TestHistoryDisplay:
         """
         cli = _make_cli()
         with patch.object(cli, "_handle_resume_command") as mock_resume:
-            cli.process_command("/sessions Checking Running OmniWorker Agent")
+            cli.process_command("/sessions Checking Running Flux Agent Agent")
 
         mock_resume.assert_called_once_with(
-            "/resume Checking Running OmniWorker Agent"
+            "/resume Checking Running Flux Agent Agent"
         )
 
     def test_sessions_command_is_dispatched(self):
@@ -410,11 +410,11 @@ class TestRootLevelProviderOverride:
         """model.provider takes priority — root-level provider is only a fallback."""
         import yaml
 
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
 
-        config_path = omniworker_home / "config.yaml"
+        config_path = flux-agent_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "provider": "opencode-go",  # stale root-level key
             "model": {
@@ -424,7 +424,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_omniworker_home", omniworker_home)
+        monkeypatch.setattr(cli, "_flux-agent_home", flux-agent_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["provider"] == "openrouter"
@@ -433,11 +433,11 @@ class TestRootLevelProviderOverride:
         """Even when model.provider is the default 'auto', root-level provider is ignored."""
         import yaml
 
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
 
-        config_path = omniworker_home / "config.yaml"
+        config_path = flux-agent_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "provider": "opencode-go",  # stale root key
             "model": {
@@ -447,7 +447,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_omniworker_home", omniworker_home)
+        monkeypatch.setattr(cli, "_flux-agent_home", flux-agent_home)
         cfg = cli.load_cli_config()
 
         # Root-level "opencode-go" must NOT leak through
@@ -457,12 +457,12 @@ class TestRootLevelProviderOverride:
         """Classic CLI must expose terminal.vercel_runtime to terminal_tool.py."""
         import yaml
 
-        omniworker_home = tmp_path / ".omniworker"
-        omniworker_home.mkdir()
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        flux-agent_home = tmp_path / ".flux-agent"
+        flux-agent_home.mkdir()
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
         monkeypatch.delenv("TERMINAL_VERCEL_RUNTIME", raising=False)
 
-        config_path = omniworker_home / "config.yaml"
+        config_path = flux-agent_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "terminal": {
                 "backend": "vercel_sandbox",
@@ -471,7 +471,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_omniworker_home", omniworker_home)
+        monkeypatch.setattr(cli, "_flux-agent_home", flux-agent_home)
         cfg = cli.load_cli_config()
 
         assert cfg["terminal"]["vercel_runtime"] == "python3.13"
@@ -479,7 +479,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_root_model_keys_moves_to_model(self):
         """_normalize_root_model_keys migrates root keys into model section."""
-        from omniworker_cli.config import _normalize_root_model_keys
+        from flux-agent_cli.config import _normalize_root_model_keys
 
         config = {
             "provider": "opencode-go",
@@ -498,7 +498,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_root_model_keys_does_not_override_existing(self):
         """Existing model.provider is never overridden by root-level key."""
-        from omniworker_cli.config import _normalize_root_model_keys
+        from flux-agent_cli.config import _normalize_root_model_keys
 
         config = {
             "provider": "stale-provider",
@@ -513,7 +513,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_root_context_length_migrates_to_model(self):
         """Root-level context_length is migrated into the model section."""
-        from omniworker_cli.config import _normalize_root_model_keys
+        from flux-agent_cli.config import _normalize_root_model_keys
 
         config = {
             "context_length": 128000,
@@ -527,7 +527,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_root_context_length_does_not_override_existing(self):
         """Existing model.context_length is not overridden by root-level key."""
-        from omniworker_cli.config import _normalize_root_model_keys
+        from flux-agent_cli.config import _normalize_root_model_keys
 
         config = {
             "context_length": 256000,
@@ -542,7 +542,7 @@ class TestRootLevelProviderOverride:
 
     def test_normalize_root_context_length_with_string_model(self):
         """Root-level context_length is migrated even when model is a string."""
-        from omniworker_cli.config import _normalize_root_model_keys
+        from flux-agent_cli.config import _normalize_root_model_keys
 
         config = {
             "context_length": 128000,

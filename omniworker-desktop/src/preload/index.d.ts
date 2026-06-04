@@ -110,7 +110,7 @@ interface KanbanCreateTaskInput {
   maxRetries?: number;
 }
 
-interface OmniWorkerAPI {
+interface Flux AgentAPI {
   // Installation
   checkInstall: () => Promise<InstallStatus>;
   verifyInstall: () => Promise<boolean>;
@@ -125,14 +125,14 @@ interface OmniWorkerAPI {
     callback: (progress: InstallProgress) => void,
   ) => () => void;
 
-  // OmniWorker engine info
-  getOmniWorkerVersion: () => Promise<string | null>;
-  refreshOmniWorkerVersion: () => Promise<string | null>;
-  runOmniWorkerDoctor: () => Promise<string>;
-  runOmniWorkerUpdate: () => Promise<{ success: boolean; error?: string }>;
+  // Flux Agent engine info
+  getFlux AgentVersion: () => Promise<string | null>;
+  refreshFlux AgentVersion: () => Promise<string | null>;
+  runFlux AgentDoctor: () => Promise<string>;
+  runFlux AgentUpdate: () => Promise<{ success: boolean; error?: string }>;
 
-  // OmniWorker migration
-  checkOmniWorker: () => Promise<{ found: boolean; path: string | null }>;
+  // Flux Agent migration
+  checkFlux Agent: () => Promise<{ found: boolean; path: string | null }>;
   runClawMigrate: () => Promise<{ success: boolean; error?: string }>;
 
   getLocale: () => Promise<AppLocale>;
@@ -143,7 +143,7 @@ interface OmniWorkerAPI {
   setEnv: (key: string, value: string, profile?: string) => Promise<boolean>;
   getConfig: (key: string, profile?: string) => Promise<string | null>;
   setConfig: (key: string, value: string, profile?: string) => Promise<boolean>;
-  getOmniWorkerHome: (profile?: string) => Promise<string>;
+  getFlux AgentHome: (profile?: string) => Promise<string>;
   getModelConfig: (
     profile?: string,
   ) => Promise<{ provider: string; model: string; baseUrl: string }>;
@@ -203,7 +203,7 @@ interface OmniWorkerAPI {
     message: string,
     profile?: string,
     resumeSessionId?: string,
-    history?: Array<{ role: string; content: string }>,
+    history?: Array<{ role: string; content: string }> | undefined,
   ) => Promise<{ response: string; sessionId?: string }>;
   abortChat: () => Promise<void>;
   onChatChunk: (callback: (chunk: string) => void) => () => void;
@@ -692,10 +692,10 @@ interface OmniWorkerAPI {
   openExternal: (url: string) => Promise<void>;
 
   // Backup / Import
-  runOmniWorkerBackup: (
+  runFlux AgentBackup: (
     profile?: string,
   ) => Promise<{ success: boolean; path?: string; error?: string }>;
-  runOmniWorkerImport: (
+  runFlux AgentImport: (
     archivePath: string,
     profile?: string,
   ) => Promise<{ success: boolean; error?: string }>;
@@ -734,7 +734,7 @@ interface OmniWorkerAPI {
   onAppStateChanged: (callback: () => void) => () => void;
 
   // Debug dump
-  runOmniWorkerDump: () => Promise<string>;
+  runFlux AgentDump: () => Promise<string>;
 
   // Memory providers
   discoverMemoryProviders: (profile?: string) => Promise<
@@ -895,6 +895,6 @@ interface OmniWorkerAPI {
 declare global {
   interface Window {
     electron: ElectronAPI;
-    omniworkerAPI: OmniWorkerAPI;
+    flux-agentAPI: Flux AgentAPI;
   }
 }

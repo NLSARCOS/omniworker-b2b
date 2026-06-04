@@ -59,12 +59,40 @@ async function generateSummary(
   userQuery: string,
   config: CompactionConfig
 ): Promise<string> {
-  const prompt = `Resume la siguiente conversación de forma concisa, manteniendo los puntos clave, decisiones y contexto necesario para continuar. La pregunta actual del usuario es: "${userQuery}".
+  // Truncate very long messages in the middle section to cap extraction cost
+  const truncatedMiddle = middle.map(m => ({
+    role: m.role,
+    content: m.content.length > 800 ? m.content.slice(0, 800) + "..." : m.content,
+  }));
 
-Conversación:
-${middle.map(m => `[${m.role}]: ${m.content}`).join("\n\n")}
+  const prompt = `Analyze the following conversation and produce a structured summary that preserves ALL important context for session continuity.
 
-Resumen (máximo 3-4 párrafos):`;
+Your summary MUST include these sections:
+
+## Status
+One line: what is currently being worked on.
+
+## Decisions
+Bullet list of ALL technical/design decisions made:
+- Technology choices (stack, libraries, frameworks)
+- Architecture decisions (patterns, data flow)
+- Implementation choices (algorithms, data structures)
+
+## Code & Files
+List specific files, functions, classes, or code snippets mentioned.
+
+## Problems & Solutions
+Any issues encountered and how they were resolved.
+
+## Context
+Brief paragraph with remaining context needed to continue the conversation naturally.
+
+Current user query: "${userQuery}"
+
+Conversation:
+${truncatedMiddle.map(m => \`[\${m.role}]: \${m.content}\`).join("\\n\\n")}
+
+Structured summary:`;
 
   let url = PROVIDER_URLS[config.provider] || PROVIDER_URLS.openai;
   if (config.provider === "opencode-go" && config.endpoint) {

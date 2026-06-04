@@ -8,7 +8,7 @@ description: "Classic watchdog cron jobs that skip the LLM entirely — a script
 
 Sometimes you already know exactly what message you want to send. You don't need an agent to reason about it — you just need a script to run on a timer, and its output (if any) to land in Telegram / Discord / Slack / Signal.
 
-OmniWorker calls this **no-agent mode**. It's the cron system minus the LLM.
+Flux Agent calls this **no-agent mode**. It's the cron system minus the LLM.
 
 ```
    ┌──────────────────┐          ┌──────────────────┐
@@ -26,7 +26,7 @@ OmniWorker calls this **no-agent mode**. It's the cron system minus the LLM.
 
 - **No LLM call.** Zero tokens, zero agent loop, zero model spend.
 - **Script is the job.** The script decides whether to alert. Emit output → message gets sent. Emit nothing → silent tick.
-- **Bash or Python.** `.sh` / `.bash` files run under `/bin/bash`; any other extension runs under the current Python interpreter. Anything in `~/.omniworker/scripts/` is accepted.
+- **Bash or Python.** `.sh` / `.bash` files run under `/bin/bash`; any other extension runs under the current Python interpreter. Anything in `~/.flux-agent/scripts/` is accepted.
 - **Same scheduler.** Lives in `cronjob` alongside LLM jobs — pausing, resuming, listing, logs, and delivery targeting all work the same way.
 
 ## When to Use It
@@ -43,13 +43,13 @@ Use a normal (LLM-driven) cron job when you need the agent to **decide** what to
 
 ## Create One from Chat
 
-The real win of no-agent mode is that the agent itself can set up the watchdog for you — no editor, no shell, no remembering CLI flags. You describe what you want, OmniWorker writes the script, schedules it, and tells you when it'll fire.
+The real win of no-agent mode is that the agent itself can set up the watchdog for you — no editor, no shell, no remembering CLI flags. You describe what you want, Flux Agent writes the script, schedules it, and tells you when it'll fire.
 
 ### Example transcript
 
 > **You:** ping me on telegram if RAM is over 85% every 5 minutes
 >
-> **OmniWorker:** *(writes `~/.omniworker/scripts/memory-watchdog.sh`, then calls `cronjob(...)` with `no_agent=true`)*
+> **Flux Agent:** *(writes `~/.flux-agent/scripts/memory-watchdog.sh`, then calls `cronjob(...)` with `no_agent=true`)*
 >
 > Set up. Runs every 5 min, alerts Telegram only when RAM is over 85%. Script: `memory-watchdog.sh`. Job ID: `abc123`.
 
@@ -58,7 +58,7 @@ Under the hood, the agent makes two tool calls:
 ```python
 # 1. Write the check script
 write_file(
-    path="~/.omniworker/scripts/memory-watchdog.sh",
+    path="~/.flux-agent/scripts/memory-watchdog.sh",
     content='''#!/usr/bin/env bash
 ram_pct=$(free | awk '/^Mem:/ {printf "%d", $3 * 100 / $2}')
 if [ "$ram_pct" -ge 85 ]; then
@@ -83,7 +83,7 @@ From that point on every tick is free: the scheduler runs the script, pipes its 
 
 ### What the agent decides for you
 
-When you phrase a request like "alert me when X" or "every N minutes check Y and tell me if Z", OmniWorker' `cronjob` tool description tells it to reach for `no_agent=True` whenever the message content is fully determined by the script. It falls back to the normal LLM-driven path when the request needs reasoning (*"summarize the new issues"*, *"pick the most interesting headlines"*, *"draft a friendly reminder"*).
+When you phrase a request like "alert me when X" or "every N minutes check Y and tell me if Z", Flux Agent' `cronjob` tool description tells it to reach for `no_agent=True` whenever the message content is fully determined by the script. It falls back to the normal LLM-driven path when the request needs reasoning (*"summarize the new issues"*, *"pick the most interesting headlines"*, *"draft a friendly reminder"*).
 
 You don't have to specify `--no-agent` yourself. Just describe the behavior.
 
@@ -93,13 +93,13 @@ The agent can pause, resume, edit, and remove jobs the same way it creates them:
 
 > **You:** stop the memory watchdog for tonight
 >
-> **OmniWorker:** *(calls `cronjob(action='pause', job_id='abc123')`)*
+> **Flux Agent:** *(calls `cronjob(action='pause', job_id='abc123')`)*
 >
-> Paused. Resume with "turn it back on" or via `omniworker cron resume abc123`.
+> Paused. Resume with "turn it back on" or via `flux-agent cron resume abc123`.
 
 > **You:** change it to every 15 minutes
 >
-> **OmniWorker:** *(calls `cronjob(action='update', job_id='abc123', schedule='every 15m')`)*
+> **Flux Agent:** *(calls `cronjob(action='update', job_id='abc123', schedule='every 15m')`)*
 
 The full lifecycle (create / list / update / pause / resume / run-now / remove) is available to the agent without you learning any CLI commands.
 
@@ -109,7 +109,7 @@ Prefer the shell? The CLI path gives you the same result with three commands:
 
 ```bash
 # 1. Write your script
-cat > ~/.omniworker/scripts/memory-watchdog.sh <<'EOF'
+cat > ~/.flux-agent/scripts/memory-watchdog.sh <<'EOF'
 #!/usr/bin/env bash
 # Alert when RAM usage is over 85%. Silent otherwise.
 RAM_PCT=$(free | awk '/^Mem:/ {printf "%d", $3 * 100 / $2}')
@@ -118,18 +118,18 @@ if [ "$RAM_PCT" -ge 85 ]; then
 fi
 # Empty stdout = silent run; no message sent.
 EOF
-chmod +x ~/.omniworker/scripts/memory-watchdog.sh
+chmod +x ~/.flux-agent/scripts/memory-watchdog.sh
 
 # 2. Schedule it
-omniworker cron create "every 5m" \
+flux-agent cron create "every 5m" \
   --no-agent \
   --script memory-watchdog.sh \
   --deliver telegram \
   --name "memory-watchdog"
 
 # 3. Verify
-omniworker cron list
-omniworker cron run <job_id>    # fire it once to test
+flux-agent cron list
+flux-agent cron run <job_id>    # fire it once to test
 ```
 
 That's the whole thing. No prompt, no skill, no model.
@@ -149,7 +149,7 @@ The "silent when empty" behavior is the key to the classic watchdog pattern: the
 
 ## Script Rules
 
-Scripts must live in `~/.omniworker/scripts/`. This is enforced at both job-creation time and run time — absolute paths, `~/` expansion, and path-traversal patterns (`../`) are rejected. The same directory is shared with the pre-check script gate used by LLM jobs.
+Scripts must live in `~/.flux-agent/scripts/`. This is enforced at both job-creation time and run time — absolute paths, `~/` expansion, and path-traversal patterns (`../`) are rejected. The same directory is shared with the pre-check script gate used by LLM jobs.
 
 Interpreter choice is by file extension:
 
@@ -165,10 +165,10 @@ We intentionally do NOT honour `#!/...` shebangs — keeping the interpreter set
 Same as all other cron jobs:
 
 ```bash
-omniworker cron create "every 5m"        # interval
-omniworker cron create "every 2h"
-omniworker cron create "0 9 * * *"       # standard cron: 9am daily
-omniworker cron create "30m"             # one-shot: run once in 30 minutes
+flux-agent cron create "every 5m"        # interval
+flux-agent cron create "every 2h"
+flux-agent cron create "0 9 * * *"       # standard cron: 9am daily
+flux-agent cron create "30m"             # one-shot: run once in 30 minutes
 ```
 
 See the [cron feature reference](/docs/user-guide/features/cron) for the full syntax.
@@ -184,21 +184,21 @@ See the [cron feature reference](/docs/user-guide/features/cron) for the full sy
 --deliver discord:#ops
 --deliver slack:#engineering
 --deliver signal:+15551234567
---deliver local                          # just save to ~/.omniworker/cron/output/
+--deliver local                          # just save to ~/.flux-agent/cron/output/
 ```
 
-No running gateway is required at script-run time for bot-token platforms (Telegram, Discord, Slack, Signal, SMS, WhatsApp) — the tool calls each platform's REST endpoint directly using the credentials already in `~/.omniworker/.env` / `~/.omniworker/config.yaml`.
+No running gateway is required at script-run time for bot-token platforms (Telegram, Discord, Slack, Signal, SMS, WhatsApp) — the tool calls each platform's REST endpoint directly using the credentials already in `~/.flux-agent/.env` / `~/.flux-agent/config.yaml`.
 
 ## Editing and Lifecycle
 
 ```bash
-omniworker cron list                                    # see all jobs
-omniworker cron pause <job_id>                          # stop firing, keep definition
-omniworker cron resume <job_id>
-omniworker cron edit <job_id> --schedule "every 10m"    # adjust cadence
-omniworker cron edit <job_id> --agent                   # flip to LLM mode
-omniworker cron edit <job_id> --no-agent --script …     # flip back
-omniworker cron remove <job_id>                         # delete it
+flux-agent cron list                                    # see all jobs
+flux-agent cron pause <job_id>                          # stop firing, keep definition
+flux-agent cron resume <job_id>
+flux-agent cron edit <job_id> --schedule "every 10m"    # adjust cadence
+flux-agent cron edit <job_id> --agent                   # flip to LLM mode
+flux-agent cron edit <job_id> --no-agent --script …     # flip back
+flux-agent cron remove <job_id>                         # delete it
 ```
 
 Everything that works on LLM jobs (pause, resume, manual trigger, delivery target changes) works on no-agent jobs too.
@@ -206,7 +206,7 @@ Everything that works on LLM jobs (pause, resume, manual trigger, delivery targe
 ## Worked Example: Disk Space Alert
 
 ```bash
-cat > ~/.omniworker/scripts/disk-alert.sh <<'EOF'
+cat > ~/.flux-agent/scripts/disk-alert.sh <<'EOF'
 #!/usr/bin/env bash
 # Alert when / or /home is over 90% full.
 THRESHOLD=90
@@ -216,9 +216,9 @@ df -h / /home 2>/dev/null | awk -v t="$THRESHOLD" '
   }
 '
 EOF
-chmod +x ~/.omniworker/scripts/disk-alert.sh
+chmod +x ~/.flux-agent/scripts/disk-alert.sh
 
-omniworker cron create "*/15 * * * *" \
+flux-agent cron create "*/15 * * * *" \
   --no-agent \
   --script disk-alert.sh \
   --deliver telegram \
@@ -231,11 +231,11 @@ Silent when both filesystems are under 90%; fires exactly one line per over-thre
 
 | Approach | What runs | When to use |
 |----------|-----------|-------------|
-| `cronjob --no-agent` (this page) | Your script on OmniWorker' schedule | Recurring watchdogs / alerts / metrics that don't need reasoning |
+| `cronjob --no-agent` (this page) | Your script on Flux Agent' schedule | Recurring watchdogs / alerts / metrics that don't need reasoning |
 | `cronjob` (default, LLM) | Agent with optional pre-check script | When the message content requires reasoning over data |
-| OS cron + `curl` to a [webhook subscription](/docs/user-guide/messaging/webhooks) | Your script on the OS schedule | When OmniWorker might be unhealthy (the thing you're monitoring) |
+| OS cron + `curl` to a [webhook subscription](/docs/user-guide/messaging/webhooks) | Your script on the OS schedule | When Flux Agent might be unhealthy (the thing you're monitoring) |
 
-For critical system-health watchdogs that must fire *even when the gateway is down*, use OS-level cron with a plain `curl` to a OmniWorker webhook subscription (or any external alerting endpoint) — those run as independent OS processes and don't depend on OmniWorker being up. The in-gateway scheduler is the right choice when the thing being monitored is external.
+For critical system-health watchdogs that must fire *even when the gateway is down*, use OS-level cron with a plain `curl` to a Flux Agent webhook subscription (or any external alerting endpoint) — those run as independent OS processes and don't depend on Flux Agent being up. The in-gateway scheduler is the right choice when the thing being monitored is external.
 
 ## Related
 

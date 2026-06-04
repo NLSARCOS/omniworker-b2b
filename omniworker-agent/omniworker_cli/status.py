@@ -1,7 +1,7 @@
 """
 Status command for hermes CLI.
 
-Shows the status of all OmniWorker Agent components.
+Shows the status of all Flux Agent Agent components.
 """
 
 import os
@@ -12,14 +12,14 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-from omniworker_cli.auth import AuthError, resolve_provider
-from omniworker_cli.colors import Colors, color
-from omniworker_cli.config import get_env_path, get_env_value, get_omniworker_home, load_config
-from omniworker_cli.models import provider_label
-from omniworker_cli.nous_subscription import get_nous_subscription_features
-from omniworker_cli.runtime_provider import resolve_requested_provider
-from omniworker_cli.vercel_auth import describe_vercel_auth
-from omniworker_constants import OPENROUTER_MODELS_URL
+from flux-agent_cli.auth import AuthError, resolve_provider
+from flux-agent_cli.colors import Colors, color
+from flux-agent_cli.config import get_env_path, get_env_value, get_flux-agent_home, load_config
+from flux-agent_cli.models import provider_label
+from flux-agent_cli.nous_subscription import get_nous_subscription_features
+from flux-agent_cli.runtime_provider import resolve_requested_provider
+from flux-agent_cli.vercel_auth import describe_vercel_auth
+from flux-agent_constants import OPENROUTER_MODELS_URL
 from tools.tool_backend_helpers import managed_nous_tools_enabled
 
 def check_mark(ok: bool) -> str:
@@ -84,17 +84,17 @@ def _effective_provider_label() -> str:
     return provider_label(effective)
 
 
-from omniworker_constants import is_termux as _is_termux
+from flux-agent_constants import is_termux as _is_termux
 
 
 def show_status(args):
-    """Show status of all OmniWorker Agent components."""
+    """Show status of all Flux Agent Agent components."""
     show_all = getattr(args, 'all', False)
     deep = getattr(args, 'deep', False)
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│                 ⚕ OmniWorker Agent Status                  │", Colors.CYAN))
+    print(color("│                 ⚕ Flux Agent Agent Status                  │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
 
     # =========================================================================
@@ -166,7 +166,7 @@ def show_status(args):
         display = redact_key(value) if not show_all else value
         print(f"  {name:<12}  {check_mark(has_key)} {display}")
 
-    from omniworker_cli.auth import get_anthropic_key
+    from flux-agent_cli.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     anthropic_display = redact_key(anthropic_value) if not show_all else anthropic_value
     print(f"  {'Anthropic':<12}  {check_mark(bool(anthropic_value))} {anthropic_display}")
@@ -178,7 +178,7 @@ def show_status(args):
     print(color("◆ Auth Providers", Colors.CYAN, Colors.BOLD))
 
     try:
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             get_nous_auth_status,
             get_codex_auth_status,
             get_qwen_auth_status,
@@ -262,7 +262,7 @@ def show_status(args):
     # xAI OAuth — separate try/except so an import failure here cannot
     # disrupt the already-printed Nous/Codex/Qwen/MiniMax rows above.
     try:
-        from omniworker_cli.auth import get_xai_oauth_auth_status
+        from flux-agent_cli.auth import get_xai_oauth_auth_status
         xai_oauth_status = get_xai_oauth_auth_status() or {}
     except Exception:
         xai_oauth_status = {}
@@ -344,7 +344,7 @@ def show_status(args):
     # users with foreign configs don't see noise. Auth rejection vs. silent
     # empty list is the most common LM Studio support case.
     if _effective_provider_label() == "LM Studio":
-        from omniworker_cli.models import probe_lmstudio_models
+        from flux-agent_cli.models import probe_lmstudio_models
         model_cfg = config.get("model")
         base = (model_cfg.get("base_url") if isinstance(model_cfg, dict) else None) or get_env_value("LM_BASE_URL") or "http://127.0.0.1:1234/v1"
         try:
@@ -460,7 +460,7 @@ def show_status(args):
     print(color("◆ Gateway Service", Colors.CYAN, Colors.BOLD))
 
     try:
-        from omniworker_cli.gateway import get_gateway_runtime_snapshot, _format_gateway_pids
+        from flux-agent_cli.gateway import get_gateway_runtime_snapshot, _format_gateway_pids
 
         snapshot = get_gateway_runtime_snapshot()
         is_running = snapshot.running
@@ -495,7 +495,7 @@ def show_status(args):
     print()
     print(color("◆ Scheduled Jobs", Colors.CYAN, Colors.BOLD))
 
-    jobs_file = get_omniworker_home() / "cron" / "jobs.json"
+    jobs_file = get_flux-agent_home() / "cron" / "jobs.json"
     if jobs_file.exists():
         import json
         try:
@@ -515,7 +515,7 @@ def show_status(args):
     print()
     print(color("◆ Sessions", Colors.CYAN, Colors.BOLD))
 
-    sessions_file = get_omniworker_home() / "sessions" / "sessions.json"
+    sessions_file = get_flux-agent_home() / "sessions" / "sessions.json"
     if sessions_file.exists():
         import json
         try:

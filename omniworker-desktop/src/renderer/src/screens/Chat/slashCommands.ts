@@ -93,7 +93,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   },
   {
     name: "/update",
-    description: "Update OmniWorker to the latest version",
+    description: "Update Flux Agent to the latest version",
     category: "agent",
   },
   // Tools & capabilities
@@ -135,7 +135,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { name: "/persona", description: "Show current persona", category: "info" },
   {
     name: "/version",
-    description: "Show OmniWorker version",
+    description: "Show Flux Agent version",
     category: "info",
   },
 ];

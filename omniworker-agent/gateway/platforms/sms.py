@@ -55,9 +55,9 @@ def check_sms_requirements() -> bool:
 
 class SmsAdapter(BasePlatformAdapter):
     """
-    Twilio SMS <-> OmniWorker gateway adapter.
+    Twilio SMS <-> Flux Agent gateway adapter.
 
-    Each inbound phone number gets its own OmniWorker session (multi-tenant).
+    Each inbound phone number gets its own Flux Agent session (multi-tenant).
     Replies are always sent from the configured TWILIO_PHONE_NUMBER.
     """
 

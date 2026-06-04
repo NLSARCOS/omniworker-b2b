@@ -1,7 +1,7 @@
 # Design System: xAI
 
 
-> **OmniWorker Agent — Implementation Notes**
+> **Flux Agent Agent — Implementation Notes**
 >
 > The original site uses proprietary fonts. For self-contained HTML output, use these CDN substitutes:
 > - **Primary:** `Geist Mono` | **Mono:** `Geist Mono`

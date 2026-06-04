@@ -4,7 +4,7 @@
 //   logFrameEvent (ink.onFrame) → yoga / renderer / diff / optimize / write
 //                                 phases + yoga counters + scroll fast-path
 //
-// Both gate on OMNIWORKER_DEV_PERF=1 and dump JSON-lines (default ~/.omniworker/perf.log,
+// Both gate on OMNIWORKER_DEV_PERF=1 and dump JSON-lines (default ~/.flux-agent/perf.log,
 // override OMNIWORKER_DEV_PERF_LOG). Tagged { src: 'react' | 'frame' } for jq.
 // OMNIWORKER_DEV_PERF_MS (default 2) skips sub-ms idle frames; set 0 to capture all.
 //
@@ -15,13 +15,13 @@ import { appendFileSync, mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import type { FrameEvent } from '@omniworker/ink'
-import { scrollFastPathStats } from '@omniworker/ink'
+import type { FrameEvent } from '@flux-agent/ink'
+import { scrollFastPathStats } from '@flux-agent/ink'
 import { Profiler, type ProfilerOnRenderCallback, type ReactNode } from 'react'
 
 const ENABLED = /^(?:1|true|yes|on)$/i.test((process.env.OMNIWORKER_DEV_PERF ?? '').trim())
 const THRESHOLD_MS = Number(process.env.OMNIWORKER_DEV_PERF_MS ?? '2') || 0
-const LOG_PATH = process.env.OMNIWORKER_DEV_PERF_LOG?.trim() || join(homedir(), '.omniworker', 'perf.log')
+const LOG_PATH = process.env.OMNIWORKER_DEV_PERF_LOG?.trim() || join(homedir(), '.flux-agent', 'perf.log')
 
 let logReady = false
 

@@ -1,5 +1,5 @@
 """
-browser_dom_tool.py — Text-DOM browser session for OmniWorker
+browser_dom_tool.py — Text-DOM browser session for Flux Agent
 
 Provides a screenshot-free browser interaction layer inspired by:
   - alibaba/page-agent  (text-DOM, numbered interactive elements)

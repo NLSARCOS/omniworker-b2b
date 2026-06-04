@@ -1,12 +1,12 @@
 import { execFile, ExecFileOptions } from "child_process";
 import { join } from "path";
 import {
-  OMNIWORKER_HOME,
-  OMNIWORKER_PYTHON,
-  omniworkerCliArgs,
+  FLUX AGENT_HOME,
+  FLUX AGENT_PYTHON,
+  flux-agentCliArgs,
   getEnhancedPath,
 } from "./installer";
-import { isRemoteMode } from "./omniworker";
+import { isRemoteMode } from "./flux-agent";
 
 export interface KanbanTask {
   id: string;
@@ -99,25 +99,25 @@ function runKanban(
   args: string[],
   opts: RunOpts = {},
 ): Promise<KanbanResult<unknown>> {
-  const cliArgs = omniworkerCliArgs();
+  const cliArgs = flux-agentCliArgs();
   if (opts.profile && opts.profile !== "default") {
     cliArgs.push("-p", opts.profile);
   }
   cliArgs.push("kanban", ...args);
 
   const execOpts: ExecFileOptions = {
-    cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
+    cwd: join(FLUX AGENT_HOME, "flux-agent-agent"),
     timeout: opts.timeoutMs ?? KANBAN_TIMEOUT_MS,
     env: {
       ...process.env,
       PATH: getEnhancedPath(),
-      OMNIWORKER_HOME: OMNIWORKER_HOME,
+      FLUX AGENT_HOME: FLUX AGENT_HOME,
     },
     maxBuffer: 16 * 1024 * 1024,
   };
 
   return new Promise((resolve) => {
-    execFile(OMNIWORKER_PYTHON, cliArgs, execOpts, (err, stdout, stderr) => {
+    execFile(FLUX AGENT_PYTHON, cliArgs, execOpts, (err, stdout, stderr) => {
       const out = (stdout || "").toString();
       if (err) {
         resolve({
@@ -133,7 +133,7 @@ function runKanban(
         } catch (parseErr) {
           resolve({
             success: false,
-            error: `Failed to parse JSON from 'omniworker kanban': ${(parseErr as Error).message}`,
+            error: `Failed to parse JSON from 'flux-agent kanban': ${(parseErr as Error).message}`,
             stdout: out,
           });
         }
@@ -148,7 +148,7 @@ function unsupportedInRemote<T>(): KanbanResult<T> {
   return {
     success: false,
     error:
-      "Kanban is not available in remote/SSH mode yet. Switch to a local OmniWorker install to use the board.",
+      "Kanban is not available in remote/SSH mode yet. Switch to a local Flux Agent install to use the board.",
   };
 }
 

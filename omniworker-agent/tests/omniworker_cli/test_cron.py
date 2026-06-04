@@ -1,11 +1,11 @@
-"""Tests for omniworker_cli.cron command handling."""
+"""Tests for flux-agent_cli.cron command handling."""
 
 from argparse import Namespace
 
 import pytest
 
 from cron.jobs import create_job, get_job, list_jobs
-from omniworker_cli.cron import cron_command
+from flux-agent_cli.cron import cron_command
 
 
 @pytest.fixture()

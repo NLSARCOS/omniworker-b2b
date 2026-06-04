@@ -73,21 +73,21 @@ class TestFirecrawlClientConfig:
 
     def test_tool_gateway_domain_builds_firecrawl_gateway_origin(self):
         """Shared gateway domain should derive the Firecrawl vendor hostname."""
-        with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "omniworker.com"}):
+        with patch.dict(os.environ, {"TOOL_GATEWAY_DOMAIN": "flux-agent.com"}):
             with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
                 with patch("tools.web_tools.Firecrawl") as mock_fc:
                     from tools.web_tools import _get_firecrawl_client
                     result = _get_firecrawl_client()
                     mock_fc.assert_called_once_with(
                         api_key="nous-token",
-                        api_url="https://firecrawl-gateway.omniworker.com",
+                        api_url="https://firecrawl-gateway.flux-agent.com",
                     )
                     assert result is mock_fc.return_value
 
     def test_tool_gateway_scheme_can_switch_derived_gateway_origin_to_http(self):
         """Shared gateway scheme should allow local plain-http vendor hosts."""
         with patch.dict(os.environ, {
-            "TOOL_GATEWAY_DOMAIN": "omniworker.com",
+            "TOOL_GATEWAY_DOMAIN": "flux-agent.com",
             "TOOL_GATEWAY_SCHEME": "http",
         }):
             with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
@@ -96,14 +96,14 @@ class TestFirecrawlClientConfig:
                     result = _get_firecrawl_client()
                     mock_fc.assert_called_once_with(
                         api_key="nous-token",
-                        api_url="http://firecrawl-gateway.omniworker.com",
+                        api_url="http://firecrawl-gateway.flux-agent.com",
                     )
                     assert result is mock_fc.return_value
 
     def test_invalid_tool_gateway_scheme_raises(self):
         """Unexpected shared gateway schemes should fail fast."""
         with patch.dict(os.environ, {
-            "TOOL_GATEWAY_DOMAIN": "omniworker.com",
+            "TOOL_GATEWAY_DOMAIN": "flux-agent.com",
             "TOOL_GATEWAY_SCHEME": "ftp",
         }):
             with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
@@ -115,7 +115,7 @@ class TestFirecrawlClientConfig:
         """An explicit Firecrawl gateway origin should override the shared domain."""
         with patch.dict(os.environ, {
             "FIRECRAWL_GATEWAY_URL": "https://firecrawl-gateway.localhost:3009/",
-            "TOOL_GATEWAY_DOMAIN": "omniworker.com",
+            "TOOL_GATEWAY_DOMAIN": "flux-agent.com",
         }):
             with patch("tools.web_tools._read_nous_access_token", return_value="nous-token"):
                 with patch("tools.web_tools.Firecrawl") as mock_fc:
@@ -134,17 +134,17 @@ class TestFirecrawlClientConfig:
                 _get_firecrawl_client()
                 mock_fc.assert_called_once_with(
                     api_key="nous-token",
-                    api_url="https://firecrawl-gateway.omniworker.com",
+                    api_url="https://firecrawl-gateway.flux-agent.com",
                 )
 
-    def test_nous_auth_token_respects_omniworker_home_override(self, tmp_path):
-        """Auth lookup should read from OMNIWORKER_HOME/auth.json, not ~/.omniworker/auth.json."""
+    def test_nous_auth_token_respects_flux-agent_home_override(self, tmp_path):
+        """Auth lookup should read from OMNIWORKER_HOME/auth.json, not ~/.flux-agent/auth.json."""
         real_home = tmp_path / "real-home"
-        (real_home / ".omniworker").mkdir(parents=True)
+        (real_home / ".flux-agent").mkdir(parents=True)
 
-        omniworker_home = tmp_path / "omniworker-home"
-        omniworker_home.mkdir()
-        (omniworker_home / "auth.json").write_text(json.dumps({
+        flux-agent_home = tmp_path / "flux-agent-home"
+        flux-agent_home.mkdir()
+        (flux-agent_home / "auth.json").write_text(json.dumps({
             "providers": {
                 "nous": {
                     "access_token": "nous-token",
@@ -154,7 +154,7 @@ class TestFirecrawlClientConfig:
 
         with patch.dict(os.environ, {
             "HOME": str(real_home),
-            "OMNIWORKER_HOME": str(omniworker_home),
+            "OMNIWORKER_HOME": str(flux-agent_home),
         }, clear=False):
             import tools.web_tools
             importlib.reload(tools.web_tools)
@@ -245,7 +245,7 @@ class TestBackendSelection:
     """Test suite for _get_backend() backend selection logic.
 
     The backend is configured via config.yaml (web.backend), set by
-    ``omniworker tools``.  Falls back to key-based detection for legacy/manual
+    ``flux-agent tools``.  Falls back to key-based detection for legacy/manual
     setups.
     """
 

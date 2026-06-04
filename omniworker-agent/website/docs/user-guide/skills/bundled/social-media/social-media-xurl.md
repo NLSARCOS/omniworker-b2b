@@ -17,7 +17,7 @@ X/Twitter via xurl CLI: post, search, DM, media, v2 API.
 | Source | Bundled (installed by default) |
 | Path | `skills/social-media/xurl` |
 | Version | `1.1.1` |
-| Author | xdevplatform + omniworker + OmniWorker Agent |
+| Author | xdevplatform + flux-agent + Flux Agent Agent |
 | License | MIT |
 | Platforms | linux, macos |
 | Tags | `twitter`, `x`, `social-media`, `xurl`, `official-api` |
@@ -25,7 +25,7 @@ X/Twitter via xurl CLI: post, search, DM, media, v2 API.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # xurl — X (Twitter) API via the Official CLI
@@ -424,5 +424,5 @@ xurl --app staging /2/users/me             # one-off against staging
 ## Attribution
 
 - Upstream CLI: https://github.com/xdevplatform/xurl (X developer platform team, Chris Park et al.)
-- Upstream agent skill: https://github.com/omniworker/omniworker/blob/main/skills/xurl/SKILL.md
-- OmniWorker adaptation: reformatted for OmniWorker skill conventions; safety guardrails preserved verbatim.
+- Upstream agent skill: https://github.com/flux-agent/flux-agent/blob/main/skills/xurl/SKILL.md
+- Flux Agent adaptation: reformatted for Flux Agent skill conventions; safety guardrails preserved verbatim.

@@ -1,4 +1,4 @@
-"""OmniWorker CLI skin/theme engine.
+"""Flux Agent CLI skin/theme engine.
 
 A data-driven skin system that lets users customize the CLI's visual appearance.
 Skins are defined as YAML files in ~/.hermes/skins/ or as built-in presets.
@@ -65,10 +65,10 @@ All fields are optional. Missing values inherit from the ``default`` skin.
 
     # Branding: text strings used throughout the CLI
     branding:
-      agent_name: "OmniWorker Agent"          # Banner title, status display
+      agent_name: "Flux Agent Agent"          # Banner title, status display
       welcome: "Welcome message"          # Shown at CLI startup
       goodbye: "Goodbye! ⚕"              # Shown on exit
-      response_label: " ⚕ OmniWorker "       # Response box header label
+      response_label: " ⚕ Flux Agent "       # Response box header label
       prompt_symbol: "❯"                 # Input prompt symbol (bare token; renderers add trailing space)
       help_header: "(^_^)? Commands"      # /help header text
 
@@ -86,11 +86,11 @@ USAGE
 
 .. code-block:: python
 
-    from omniworker_cli.skin_engine import get_active_skin, list_skins, set_active_skin
+    from flux-agent_cli.skin_engine import get_active_skin, list_skins, set_active_skin
 
     skin = get_active_skin()
     print(skin.colors["banner_title"])    # "#FFD700"
-    print(skin.get_branding("agent_name"))  # "OmniWorker Agent"
+    print(skin.get_branding("agent_name"))  # "Flux Agent Agent"
 
     set_active_skin("ares")               # Switch to built-in ares skin
     set_active_skin("mytheme")            # Switch to user skin from ~/.hermes/skins/
@@ -98,7 +98,7 @@ USAGE
 BUILT-IN SKINS
 ==============
 
-- ``default`` — Classic OmniWorker gold/kawaii (the current look)
+- ``default`` — Classic Flux Agent gold/kawaii (the current look)
 - ``ares``    — Crimson/bronze war-god theme with custom spinner wings
 - ``mono``    — Clean grayscale monochrome
 - ``slate``   — Cool blue developer-focused theme
@@ -117,7 +117,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 
 logger = logging.getLogger(__name__)
 
@@ -136,8 +136,8 @@ class SkinConfig:
     branding: Dict[str, str] = field(default_factory=dict)
     tool_prefix: str = "┊"
     tool_emojis: Dict[str, str] = field(default_factory=dict)  # per-tool emoji overrides
-    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces OMNIWORKER_AGENT_LOGO)
-    banner_hero: str = ""    # Rich-markup hero art (replaces OMNIWORKER_CADUCEUS)
+    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces FLUX AGENT_AGENT_LOGO)
+    banner_hero: str = ""    # Rich-markup hero art (replaces FLUX AGENT_CADUCEUS)
 
     def get_color(self, key: str, fallback: str = "") -> str:
         """Get a color value with fallback."""
@@ -164,7 +164,7 @@ class SkinConfig:
 _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
     "default": {
         "name": "default",
-        "description": "Classic OmniWorker — gold and kawaii",
+        "description": "Classic Flux Agent — gold and kawaii",
         "colors": {
             "banner_border": "#CD7F32",
             "banner_title": "#FFD700",
@@ -187,10 +187,10 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
             # Empty = use hardcoded defaults in display.py
         },
         "branding": {
-            "agent_name": "OmniWorker Agent",
-            "welcome": "Welcome to OmniWorker Agent! Type your message or /help for commands.",
+            "agent_name": "Flux Agent Agent",
+            "welcome": "Welcome to Flux Agent Agent! Type your message or /help for commands.",
             "goodbye": "Goodbye! ⚕",
-            "response_label": " ⚕ OmniWorker ",
+            "response_label": " ⚕ Flux Agent ",
             "prompt_symbol": "❯",
             "help_header": "(^_^)? Available Commands",
         },
@@ -298,10 +298,10 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         },
         "spinner": {},
         "branding": {
-            "agent_name": "OmniWorker Agent",
-            "welcome": "Welcome to OmniWorker Agent! Type your message or /help for commands.",
+            "agent_name": "Flux Agent Agent",
+            "welcome": "Welcome to Flux Agent Agent! Type your message or /help for commands.",
             "goodbye": "Goodbye! ⚕",
-            "response_label": " ⚕ OmniWorker ",
+            "response_label": " ⚕ Flux Agent ",
             "prompt_symbol": "❯",
             "help_header": "[?] Available Commands",
         },
@@ -337,10 +337,10 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         },
         "spinner": {},
         "branding": {
-            "agent_name": "OmniWorker Agent",
-            "welcome": "Welcome to OmniWorker Agent! Type your message or /help for commands.",
+            "agent_name": "Flux Agent Agent",
+            "welcome": "Welcome to Flux Agent Agent! Type your message or /help for commands.",
             "goodbye": "Goodbye! ⚕",
-            "response_label": " ⚕ OmniWorker ",
+            "response_label": " ⚕ Flux Agent ",
             "prompt_symbol": "❯",
             "help_header": "(^_^)? Available Commands",
         },
@@ -374,10 +374,10 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         },
         "spinner": {},
         "branding": {
-            "agent_name": "OmniWorker Agent",
-            "welcome": "Welcome to OmniWorker Agent! Type your message or /help for commands.",
+            "agent_name": "Flux Agent Agent",
+            "welcome": "Welcome to Flux Agent Agent! Type your message or /help for commands.",
             "goodbye": "Goodbye! ⚕",
-            "response_label": " ⚕ OmniWorker ",
+            "response_label": " ⚕ Flux Agent ",
             "prompt_symbol": "❯",
             "help_header": "[?] Available Commands",
         },
@@ -411,10 +411,10 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
         },
         "spinner": {},
         "branding": {
-            "agent_name": "OmniWorker Agent",
-            "welcome": "Welcome to OmniWorker Agent! Type your message or /help for commands.",
+            "agent_name": "Flux Agent Agent",
+            "welcome": "Welcome to Flux Agent Agent! Type your message or /help for commands.",
             "goodbye": "Goodbye! \u2695",
-            "response_label": " \u2695 OmniWorker ",
+            "response_label": " \u2695 Flux Agent ",
             "prompt_symbol": "\u276f",
             "help_header": "(^_^)? Available Commands",
         },
@@ -655,7 +655,7 @@ _active_skin_name: str = "default"
 
 def _skins_dir() -> Path:
     """User skins directory."""
-    return get_omniworker_home() / "skins"
+    return get_flux-agent_home() / "skins"
 
 
 def _load_skin_from_yaml(path: Path) -> Optional[Dict[str, Any]]:

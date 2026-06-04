@@ -7,11 +7,11 @@ token. See :class:`UpstreamAdapter` for the contract.
 
 from typing import Dict, Type
 
-from omniworker_cli.proxy.adapters.base import UpstreamAdapter
-from omniworker_cli.proxy.adapters.nous_portal import NousPortalAdapter
+from flux-agent_cli.proxy.adapters.base import UpstreamAdapter
+from flux-agent_cli.proxy.adapters.nous_portal import NousPortalAdapter
 
 # Registry of available adapter classes keyed by provider name as used on
-# the ``omniworker proxy start --provider <name>`` CLI flag.
+# the ``flux-agent proxy start --provider <name>`` CLI flag.
 ADAPTERS: Dict[str, Type[UpstreamAdapter]] = {
     "nous": NousPortalAdapter,
 }

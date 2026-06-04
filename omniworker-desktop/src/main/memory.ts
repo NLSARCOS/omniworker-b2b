@@ -352,7 +352,7 @@ export async function writeUserProfile(
 export async function searchObservations(
   _query: string,
   _limit = 20,
-  _project = "omniworker",
+  _project = "flux-agent",
   _scope = "personal",
 ): Promise<any[]> {
   return [];
@@ -367,7 +367,7 @@ export async function getTimeline(
 }
 
 export async function getConflicts(
-  _project = "omniworker",
+  _project = "flux-agent",
   _status = "pending",
   _limit = 50,
 ): Promise<any> {
@@ -383,11 +383,11 @@ export async function judgeConflict(
   return { success: true };
 }
 
-export async function getSyncStatus(_project = "omniworker"): Promise<any> {
+export async function getSyncStatus(_project = "flux-agent"): Promise<any> {
   return { enabled: false };
 }
 
-export async function triggerSync(_project = "omniworker"): Promise<any> {
+export async function triggerSync(_project = "flux-agent"): Promise<any> {
   return { success: true };
 }
 

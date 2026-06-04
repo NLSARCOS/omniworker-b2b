@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: "Telegram"
-description: "Set up OmniWorker Agent as a Telegram bot"
+description: "Set up Flux Agent Agent as a Telegram bot"
 ---
 
 # Telegram Setup
 
-OmniWorker Agent integrates with Telegram as a full-featured conversational bot. Once connected, you can chat with your agent from any device, send voice memos that get auto-transcribed, receive scheduled task results, and use the agent in group chats. The integration is built on [python-telegram-bot](https://python-telegram-bot.org/) and supports text, voice, images, and file attachments.
+Flux Agent Agent integrates with Telegram as a full-featured conversational bot. Once connected, you can chat with your agent from any device, send voice memos that get auto-transcribed, receive scheduled task results, and use the agent in group chats. The integration is built on [python-telegram-bot](https://python-telegram-bot.org/) and supports text, voice, images, and file attachments.
 
 ## Step 1: Create a Bot via BotFather
 
@@ -14,8 +14,8 @@ Every Telegram bot requires an API token issued by [@BotFather](https://t.me/Bot
 
 1. Open Telegram and search for **@BotFather**, or visit [t.me/BotFather](https://t.me/BotFather)
 2. Send `/newbot`
-3. Choose a **display name** (e.g., "OmniWorker Agent") — this can be anything
-4. Choose a **username** — this must be unique and end in `bot` (e.g., `my_omniworker_bot`)
+3. Choose a **display name** (e.g., "Flux Agent Agent") — this can be anything
+4. Choose a **username** — this must be unique and end in `bot` (e.g., `my_flux-agent_bot`)
 5. BotFather replies with your **API token**. It looks like this:
 
 ```
@@ -77,7 +77,7 @@ An alternative to disabling privacy mode: promote the bot to **group admin**. Ad
 
 ## Step 4: Find Your User ID
 
-OmniWorker Agent uses numeric Telegram user IDs to control access. Your user ID is **not** your username — it's a number like `123456789`.
+Flux Agent Agent uses numeric Telegram user IDs to control access. Your user ID is **not** your username — it's a number like `123456789`.
 
 **Method 1 (recommended):** Message [@userinfobot](https://t.me/userinfobot) — it instantly replies with your user ID.
 
@@ -85,19 +85,19 @@ OmniWorker Agent uses numeric Telegram user IDs to control access. Your user ID 
 
 Save this number; you'll need it for the next step.
 
-## Step 5: Configure OmniWorker
+## Step 5: Configure Flux Agent
 
 ### Option A: Interactive Setup (Recommended)
 
 ```bash
-omniworker gateway setup
+flux-agent gateway setup
 ```
 
 Select **Telegram** when prompted. The wizard asks for your bot token and allowed user IDs, then writes the configuration for you.
 
 ### Option B: Manual Configuration
 
-Add the following to `~/.omniworker/.env`:
+Add the following to `~/.flux-agent/.env`:
 
 ```bash
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
@@ -107,7 +107,7 @@ TELEGRAM_ALLOWED_USERS=123456789    # Comma-separated for multiple users
 ### Start the Gateway
 
 ```bash
-omniworker gateway
+flux-agent gateway
 ```
 
 The bot should come online within seconds. Send it a message on Telegram to verify.
@@ -132,14 +132,14 @@ Recommended pattern:
 terminal:
   backend: docker
   docker_volumes:
-    - "/home/user/.omniworker/cache/documents:/output"
+    - "/home/user/.flux-agent/cache/documents:/output"
 ```
 
 Then:
 
 - write files inside Docker to `/output/...`
 - emit the **host-visible** path in `MEDIA:`, for example:
-  `MEDIA:/home/user/.omniworker/cache/documents/report.txt`
+  `MEDIA:/home/user/.flux-agent/cache/documents/report.txt`
 
 If you already have a `docker_volumes:` section, add the new mount to the same
 list. YAML duplicate keys silently override earlier ones.
@@ -162,7 +162,7 @@ Anything on this list delivered as a native attachment on platforms that support
 
 ## Webhook Mode
 
-By default, OmniWorker connects to Telegram using **long polling** — the gateway makes outbound requests to Telegram's servers to fetch new updates. This works well for local and always-on deployments.
+By default, Flux Agent connects to Telegram using **long polling** — the gateway makes outbound requests to Telegram's servers to fetch new updates. This works well for local and always-on deployments.
 
 For **cloud deployments** (Fly.io, Railway, Render, etc.), **webhook mode** is more cost-effective. These platforms can auto-wake suspended machines on inbound HTTP traffic, but not on outbound connections. Since polling is outbound, a polling bot can never sleep. Webhook mode flips the direction — Telegram pushes updates to your bot's HTTPS URL, enabling sleep-when-idle deployments.
 
@@ -175,7 +175,7 @@ For **cloud deployments** (Fly.io, Railway, Render, etc.), **webhook mode** is m
 
 ### Configuration
 
-Add the following to `~/.omniworker/.env`:
+Add the following to `~/.flux-agent/.env`:
 
 ```bash
 TELEGRAM_WEBHOOK_URL=https://my-app.fly.dev/telegram
@@ -186,7 +186,7 @@ TELEGRAM_WEBHOOK_SECRET="$(openssl rand -hex 32)"  # required
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `TELEGRAM_WEBHOOK_URL` | Yes | Public HTTPS URL where Telegram will send updates. The URL path is auto-extracted (e.g., `/telegram` from the example above). |
-| `TELEGRAM_WEBHOOK_SECRET` | **Yes** (when `TELEGRAM_WEBHOOK_URL` is set) | Secret token that Telegram echoes in every webhook request for verification. The gateway refuses to start without it — see [GHSA-3vpc-7q5r-276h](https://github.com/OmniWorker/omniworker-agent/security/advisories/GHSA-3vpc-7q5r-276h). Generate with `openssl rand -hex 32`. |
+| `TELEGRAM_WEBHOOK_SECRET` | **Yes** (when `TELEGRAM_WEBHOOK_URL` is set) | Secret token that Telegram echoes in every webhook request for verification. The gateway refuses to start without it — see [GHSA-3vpc-7q5r-276h](https://github.com/Flux Agent/flux-agent-agent/security/advisories/GHSA-3vpc-7q5r-276h). Generate with `openssl rand -hex 32`. |
 | `TELEGRAM_WEBHOOK_PORT` | No | Local port the webhook server listens on (default: `8443`). |
 
 When `TELEGRAM_WEBHOOK_URL` is set, the gateway starts an HTTP webhook server instead of polling. When unset, polling mode is used — no behavior change from previous versions.
@@ -245,7 +245,7 @@ The proxy applies to both the main Telegram connection and the fallback IP trans
 
 Use the `/sethome` command in any Telegram chat (DM or group) to designate it as the **home channel**. Scheduled tasks (cron jobs) deliver their results to this channel.
 
-You can also set it manually in `~/.omniworker/.env`:
+You can also set it manually in `~/.flux-agent/.env`:
 
 ```bash
 TELEGRAM_HOME_CHANNEL=-1001234567890
@@ -260,9 +260,9 @@ Group chat IDs are negative numbers (e.g., `-1001234567890`). Your personal DM c
 
 ### Incoming Voice (Speech-to-Text)
 
-Voice messages you send on Telegram are automatically transcribed by OmniWorker's configured STT provider and injected as text into the conversation.
+Voice messages you send on Telegram are automatically transcribed by Flux Agent's configured STT provider and injected as text into the conversation.
 
-- `local` uses `faster-whisper` on the machine running OmniWorker — no API key required
+- `local` uses `faster-whisper` on the machine running Flux Agent — no API key required
 - `groq` uses Groq Whisper and requires `GROQ_API_KEY`
 - `openai` uses OpenAI Whisper and requires `VOICE_TOOLS_OPENAI_KEY`
 
@@ -287,7 +287,7 @@ Configure the TTS provider in your `config.yaml` under the `tts.provider` key.
 
 ## Group Chat Usage
 
-OmniWorker Agent works in Telegram group chats with a few considerations:
+Flux Agent Agent works in Telegram group chats with a few considerations:
 
 - **Privacy mode** determines what messages the bot can see (see [Step 3](#step-3-privacy-mode-critical-for-groups))
 - `TELEGRAM_ALLOWED_USERS` still applies — only authorized users can trigger the bot, even in groups
@@ -297,8 +297,8 @@ OmniWorker Agent works in Telegram group chats with a few considerations:
   - `@botusername` mentions
   - `/command@botusername` (Telegram's bot-menu command form that includes the bot name)
   - matches for one of your configured regex wake words in `telegram.mention_patterns`
-- Use `telegram.ignored_threads` to keep OmniWorker silent in specific Telegram forum topics, even when the group would otherwise allow free responses or mention-triggered replies
-- If `telegram.require_mention` is left unset or false, OmniWorker keeps the previous open-group behavior and responds to normal group messages it can see
+- Use `telegram.ignored_threads` to keep Flux Agent silent in specific Telegram forum topics, even when the group would otherwise allow free responses or mention-triggered replies
+- If `telegram.require_mention` is left unset or false, Flux Agent keeps the previous open-group behavior and responds to normal group messages it can see
 
 ### Troubleshooting: works in DMs but not groups
 
@@ -306,12 +306,12 @@ If the bot responds in a private chat but stays silent in a group, check these
 gates in order:
 
 1. **Telegram delivery:** turn off BotFather privacy mode, promote the bot to
-   admin, or mention the bot directly. OmniWorker cannot respond to group messages
+   admin, or mention the bot directly. Flux Agent cannot respond to group messages
    that Telegram never delivers to the bot.
 2. **Rejoin after changing privacy:** remove the bot from the group and add it
    again after changing BotFather privacy settings. Telegram may keep the old
    delivery behavior for existing memberships.
-3. **OmniWorker authorization:** make sure the sender is listed in
+3. **Flux Agent authorization:** make sure the sender is listed in
    `TELEGRAM_ALLOWED_USERS` or `TELEGRAM_GROUP_ALLOWED_USERS`, or allow the
    group chat with `TELEGRAM_GROUP_ALLOWED_CHATS`.
 4. **Mention filters:** if `telegram.require_mention: true` is set, normal
@@ -324,7 +324,7 @@ the sender-user allowlist.
 
 ### Example group trigger configuration
 
-Add this to `~/.omniworker/config.yaml`:
+Add this to `~/.flux-agent/config.yaml`:
 
 ```yaml
 telegram:
@@ -349,7 +349,7 @@ Messages in Telegram topics `31` and `42` are always ignored before the mention 
 
 ## Private Chat Topics (Bot API 9.4)
 
-Telegram Bot API 9.4 (February 2026) introduced **Private Chat Topics** — bots can create forum-style topic threads directly in 1-on-1 DM chats, no supergroup needed. This lets you run multiple isolated workspaces within your existing DM with OmniWorker.
+Telegram Bot API 9.4 (February 2026) introduced **Private Chat Topics** — bots can create forum-style topic threads directly in 1-on-1 DM chats, no supergroup needed. This lets you run multiple isolated workspaces within your existing DM with Flux Agent.
 
 ### Use case
 
@@ -366,14 +366,14 @@ Each topic gets its own conversation session, history, and context — completel
 :::caution Prerequisites
 Before adding topics to your config, the user must **enable Topics mode** in the DM chat with the bot:
 
-1. Open your private chat with the OmniWorker bot in Telegram
+1. Open your private chat with the Flux Agent bot in Telegram
 2. Tap the bot's name at the top to open chat info
 3. Enable **Topics** (the toggle to turn the chat into a forum)
 
-Without this, OmniWorker will log `The chat is not a forum` on startup and skip topic creation. This is a Telegram client-side setting — the bot cannot enable it programmatically.
+Without this, Flux Agent will log `The chat is not a forum` on startup and skip topic creation. This is a Telegram client-side setting — the bot cannot enable it programmatically.
 :::
 
-Add topics under `platforms.telegram.extra.dm_topics` in `~/.omniworker/config.yaml`:
+Add topics under `platforms.telegram.extra.dm_topics` in `~/.flux-agent/config.yaml`:
 
 ```yaml
 platforms:
@@ -403,7 +403,7 @@ platforms:
 
 ### How it works
 
-1. On gateway startup, OmniWorker calls `createForumTopic` for each topic that doesn't have a `thread_id` yet
+1. On gateway startup, Flux Agent calls `createForumTopic` for each topic that doesn't have a `thread_id` yet
 2. The `thread_id` is saved back to `config.yaml` automatically — subsequent restarts skip the API call
 3. Each topic maps to an isolated session key: `agent:main:telegram:dm:{chat_id}:{thread_id}`
 4. Messages in each topic have their own conversation history, memory flush, and context window
@@ -420,7 +420,7 @@ Topics created outside of the config (e.g., by manually calling the Telegram API
 
 ## Multi-session DM mode (`/topic`)
 
-A ChatGPT-style multi-session DM — one bot, many parallel conversations. Unlike the operator-curated `extra.dm_topics` above, this mode is **user-driven**: no config, no pre-declared topic names. The end user flips it on with `/topic`, then taps the Telegram **+** button to create as many topics as they want, each one a fully independent OmniWorker session.
+A ChatGPT-style multi-session DM — one bot, many parallel conversations. Unlike the operator-curated `extra.dm_topics` above, this mode is **user-driven**: no config, no pre-declared topic names. The end user flips it on with `/topic`, then taps the Telegram **+** button to create as many topics as they want, each one a fully independent Flux Agent session.
 
 ### `/topic` subcommands
 
@@ -441,7 +441,7 @@ Only authorized users (allowlist via `TELEGRAM_ALLOWED_USERS` / platform auth co
 |---|---|---|
 | Who activates it | Operator, in `config.yaml` | End user, by sending `/topic` |
 | Topic list | Fixed set declared in config | User creates/deletes topics freely |
-| Topic names | Chosen by operator | Chosen by user; auto-renamed to match OmniWorker session title |
+| Topic names | Chosen by operator | Chosen by user; auto-renamed to match Flux Agent session title |
 | Root DM behavior | Unchanged — normal chat | Becomes a system lobby (non-command messages are rejected) |
 | Primary use case | Permanent workspaces with optional skill binding | Ad-hoc parallel sessions |
 | Persistence | `extra.dm_topics` in config | `telegram_dm_topic_mode` + `telegram_dm_topic_bindings` SQLite tables |
@@ -455,7 +455,7 @@ In **@BotFather**, open your bot → **Bot Settings → Threads Settings**:
 1. Turn on **Threaded Mode** (enables `has_topics_enabled`)
 2. Do **not** disable users creating topics (keeps `allows_users_to_create_topics` on)
 
-When the user first runs `/topic`, OmniWorker calls `getMe` to verify both flags. If either is off, OmniWorker sends a screenshot of the BotFather Threads Settings page and explains what to toggle — no activation happens until prerequisites are met.
+When the user first runs `/topic`, Flux Agent calls `getMe` to verify both flags. If either is off, Flux Agent sends a screenshot of the BotFather Threads Settings page and explains what to toggle — no activation happens until prerequisites are met.
 
 ### Activation flow
 
@@ -465,7 +465,7 @@ From the root DM, send:
 /topic
 ```
 
-OmniWorker will:
+Flux Agent will:
 
 1. Check `getMe().has_topics_enabled` and `allows_users_to_create_topics`
 2. If both are true, enable multi-session topic mode for this DM
@@ -479,17 +479,17 @@ After activation, the **root DM is a lobby**: normal prompts are rejected with g
 1. Open the bot DM in Telegram
 2. Tap **All Messages** at the top of the bot interface, then send any message
 3. Telegram creates a new topic for that message
-4. OmniWorker responds inside that topic — the topic is now a standalone session
+4. Flux Agent responds inside that topic — the topic is now a standalone session
 
 Every topic gets its own conversation history, model state, tool execution, and session ID. The isolation key is `agent:main:telegram:dm:{chat_id}:{thread_id}` — identical to the config-driven DM topics isolation.
 
 ### Auto-renamed topics
 
-When OmniWorker generates a session title for a topic (via the auto-title pipeline, after the first exchange), the Telegram topic itself is renamed to match — e.g. "New Topic" becomes "Database migration plan". The rename is best-effort: failures are logged but don't break the session.
+When Flux Agent generates a session title for a topic (via the auto-title pipeline, after the first exchange), the Telegram topic itself is renamed to match — e.g. "New Topic" becomes "Database migration plan". The rename is best-effort: failures are logged but don't break the session.
 
 ### `/new` inside a topic
 
-Resets the current topic's session (new session ID, fresh history) without touching other topics. OmniWorker replies with a reminder that for parallel work, creating another topic (via **All Messages**) is usually what you want.
+Resets the current topic's session (new session ID, fresh history) without touching other topics. Flux Agent replies with a reminder that for parallel work, creating another topic (via **All Messages**) is usually what you want.
 
 ### Restoring a previous session
 
@@ -499,14 +499,14 @@ Inside a topic, send:
 /topic <session-id>
 ```
 
-This binds the current topic to an existing OmniWorker session instead of starting fresh. Useful for continuing a conversation that started before topic mode was enabled. Restrictions:
+This binds the current topic to an existing Flux Agent session instead of starting fresh. Useful for continuing a conversation that started before topic mode was enabled. Restrictions:
 
 - The target session must belong to the same Telegram user
 - The target session must not already be bound to another topic
 
-OmniWorker confirms with the session title and replays the last assistant message for context.
+Flux Agent confirms with the session title and replays the last assistant message for context.
 
-To discover session IDs, send `/topic` (no argument) in the root DM — OmniWorker lists the user's unlinked Telegram sessions.
+To discover session IDs, send `/topic` (no argument) in the root DM — Flux Agent lists the user's unlinked Telegram sessions.
 
 ### `/topic` inside a topic (no argument)
 
@@ -528,19 +528,19 @@ Shows the current topic's binding: session title, session ID, and hints for `/ne
 
 ### Disabling multi-session mode
 
-Send `/topic off` in the root DM. OmniWorker flips the row off, clears the chat's `(thread_id → session_id)` bindings, and the root DM reverts to a normal OmniWorker chat. Existing topics in Telegram aren't deleted — they just stop being gated as independent sessions. Re-run `/topic` later to turn it back on.
+Send `/topic off` in the root DM. Flux Agent flips the row off, clears the chat's `(thread_id → session_id)` bindings, and the root DM reverts to a normal Flux Agent chat. Existing topics in Telegram aren't deleted — they just stop being gated as independent sessions. Re-run `/topic` later to turn it back on.
 
 If you need to clean up by hand (e.g. a bulk reset across many chats), remove the rows directly:
 
 ```bash
-sqlite3 ~/.omniworker/state.db \
+sqlite3 ~/.flux-agent/state.db \
   "UPDATE telegram_dm_topic_mode SET enabled = 0 WHERE chat_id = '<your_chat_id>'; \
    DELETE FROM telegram_dm_topic_bindings WHERE chat_id = '<your_chat_id>';"
 ```
 
-### Downgrading OmniWorker
+### Downgrading Flux Agent
 
-If you downgrade to a OmniWorker version that predates `/topic`, the feature simply stops working — the `telegram_dm_topic_mode` and `telegram_dm_topic_bindings` tables remain in `state.db` but are ignored by older code. DMs revert to the native per-thread isolation (each `message_thread_id` still gets its own session via `build_session_key`), so your existing Telegram topics keep working as parallel sessions. The root DM is no longer a lobby — messages there go into the agent like they used to. Re-upgrading reactivates multi-session mode exactly where it was.
+If you downgrade to a Flux Agent version that predates `/topic`, the feature simply stops working — the `telegram_dm_topic_mode` and `telegram_dm_topic_bindings` tables remain in `state.db` but are ignored by older code. DMs revert to the native per-thread isolation (each `message_thread_id` still gets its own session via `build_session_key`), so your existing Telegram topics keep working as parallel sessions. The root DM is no longer a lobby — messages there go into the agent like they used to. Re-upgrading reactivates multi-session mode exactly where it was.
 
 ## Group Forum Topic Skill Binding
 
@@ -556,7 +556,7 @@ A team supergroup with forum topics for different workstreams:
 
 ### Configuration
 
-Add topic bindings under `platforms.telegram.extra.group_topics` in `~/.omniworker/config.yaml`:
+Add topic bindings under `platforms.telegram.extra.group_topics` in `~/.flux-agent/config.yaml`:
 
 ```yaml
 platforms:
@@ -587,7 +587,7 @@ platforms:
 
 ### How it works
 
-1. When a message arrives in a mapped group topic, OmniWorker looks up the `chat_id` and `thread_id` in `group_topics` config
+1. When a message arrives in a mapped group topic, Flux Agent looks up the `chat_id` and `thread_id` in `group_topics` config
 2. If a matching entry has a `skill` field, that skill is auto-loaded for the session — identical to DM topic skill binding
 3. Topics without a `skill` key get session isolation only (existing behavior, unchanged)
 4. Unmapped `thread_id` values or `chat_id` values fall through silently — no error, no skill
@@ -597,7 +597,7 @@ platforms:
 | | DM Topics | Group Topics |
 |---|---|---|
 | Config key | `extra.dm_topics` | `extra.group_topics` |
-| Topic creation | OmniWorker creates topics via API if `thread_id` is missing | Admin creates topics in Telegram UI |
+| Topic creation | Flux Agent creates topics via API if `thread_id` is missing | Admin creates topics in Telegram UI |
 | `thread_id` | Auto-populated after creation | Must be set manually |
 | `icon_color` / `icon_custom_emoji_id` | Supported | Not applicable (admin controls appearance) |
 | Skill binding | ✓ | ✓ |
@@ -609,13 +609,13 @@ To find a topic's `thread_id`, open the topic in Telegram Web or Desktop and loo
 
 ## Recent Bot API Features
 
-- **Bot API 9.4 (Feb 2026):** Private Chat Topics — bots can create forum topics in 1-on-1 DM chats via `createForumTopic`. OmniWorker uses this for two distinct features: operator-curated [Private Chat Topics](#private-chat-topics-bot-api-94) (config-driven, fixed topic list) and user-driven [Multi-session DM mode](#multi-session-dm-mode-topic) (activated by `/topic`, unlimited user-created topics).
+- **Bot API 9.4 (Feb 2026):** Private Chat Topics — bots can create forum topics in 1-on-1 DM chats via `createForumTopic`. Flux Agent uses this for two distinct features: operator-curated [Private Chat Topics](#private-chat-topics-bot-api-94) (config-driven, fixed topic list) and user-driven [Multi-session DM mode](#multi-session-dm-mode-topic) (activated by `/topic`, unlimited user-created topics).
 - **Privacy policy:** Telegram now requires bots to have a privacy policy. Set one via BotFather with `/setprivacy_policy`, or Telegram may auto-generate a placeholder. This is particularly important if your bot is public-facing.
-- **Bot API 9.5 (Mar 2026): Native streaming via `sendMessageDraft`.** OmniWorker uses Telegram's native streaming-draft API to render an animated preview of the agent's reply as tokens arrive in private chats. Drops the per-edit jitter you used to see with the legacy `editMessageText` polling path on slow models.
+- **Bot API 9.5 (Mar 2026): Native streaming via `sendMessageDraft`.** Flux Agent uses Telegram's native streaming-draft API to render an animated preview of the agent's reply as tokens arrive in private chats. Drops the per-edit jitter you used to see with the legacy `editMessageText` polling path on slow models.
 
 ### Streaming transport (`gateway.streaming.transport`)
 
-When streaming is enabled (`gateway.streaming.enabled: true`), OmniWorker picks one of four transports:
+When streaming is enabled (`gateway.streaming.enabled: true`), Flux Agent picks one of four transports:
 
 | Value | Behaviour |
 |---|---|
@@ -624,7 +624,7 @@ When streaming is enabled (`gateway.streaming.enabled: true`), OmniWorker picks 
 | `edit` | Legacy progressive `editMessageText` polling for every chat type. |
 | `off` | Disable streaming entirely (final reply only, no progressive updates). |
 
-In `~/.omniworker/config.yaml`:
+In `~/.flux-agent/config.yaml`:
 
 ```yaml
 gateway:
@@ -641,7 +641,7 @@ gateway:
 
 ## Rendering: Tables and Link Previews
 
-Telegram's MarkdownV2 has no native table syntax — pipe tables render as backslash-escaped noise if passed through raw. OmniWorker normalizes markdown tables automatically:
+Telegram's MarkdownV2 has no native table syntax — pipe tables render as backslash-escaped noise if passed through raw. Flux Agent normalizes markdown tables automatically:
 
 - **Small tables** are flattened into **row-group bullets** — each row becomes a readable bulleted list under the column headings. Good for 2–4 columns and short cells.
 - **Larger or wider tables** fall back to a **fenced code block** with aligned columns so nothing collapses. A one-line prompt hint is added so the agent knows to prefer prose follow-ups over more tables on Telegram.
@@ -658,7 +658,7 @@ gateway:
         disable_link_previews: true
 ```
 
-When enabled, OmniWorker attaches Telegram's `LinkPreviewOptions(is_disabled=True)` to every outgoing message and falls back to the legacy `disable_web_page_preview` parameter on older `python-telegram-bot` versions.
+When enabled, Flux Agent attaches Telegram's `LinkPreviewOptions(is_disabled=True)` to every outgoing message and falls back to the legacy `disable_web_page_preview` parameter on older `python-telegram-bot` versions.
 
 ## Group Allowlisting
 
@@ -757,7 +757,7 @@ Use `/whoami` to see the active scope, your tier (admin / user / unrestricted), 
 
 ## Interactive Model Picker
 
-When you send `/model` with no arguments in a Telegram chat, OmniWorker shows an interactive inline keyboard for switching models:
+When you send `/model` with no arguments in a Telegram chat, Flux Agent shows an interactive inline keyboard for switching models:
 
 1. **Provider selection** — buttons showing each available provider with model counts (e.g., "OpenAI (15)", "✓ Anthropic (12)" for the current provider).
 2. **Model selection** — paginated model list with **Prev**/**Next** navigation, a **Back** button to return to providers, and **Cancel**.
@@ -787,7 +787,7 @@ In some restricted networks, `api.telegram.org` may resolve to an IP that is unr
 TELEGRAM_FALLBACK_IPS=149.154.167.220,149.154.167.221
 ```
 
-Or in `~/.omniworker/config.yaml`:
+Or in `~/.flux-agent/config.yaml`:
 
 ```yaml
 platforms:
@@ -820,19 +820,19 @@ Set the proxy in your environment before starting the gateway:
 
 ```bash
 export HTTPS_PROXY=http://proxy.example.com:8080
-omniworker gateway
+flux-agent gateway
 ```
 
-Or add it to `~/.omniworker/.env`:
+Or add it to `~/.flux-agent/.env`:
 
 ```bash
 HTTPS_PROXY=http://proxy.example.com:8080
 ```
 
-The proxy applies to both the primary transport and all fallback IP transports. No additional OmniWorker configuration is needed — if the environment variable is set, it's used automatically.
+The proxy applies to both the primary transport and all fallback IP transports. No additional Flux Agent configuration is needed — if the environment variable is set, it's used automatically.
 
 :::note
-This covers the custom fallback transport layer that OmniWorker uses for Telegram connections. The standard `httpx` client used elsewhere already respects proxy env vars natively.
+This covers the custom fallback transport layer that Flux Agent uses for Telegram connections. The standard `httpx` client used elsewhere already respects proxy env vars natively.
 :::
 
 ## Message Reactions
@@ -891,10 +891,10 @@ Numeric YAML keys are automatically normalized to strings.
 
 | Problem | Solution |
 |---------|----------|
-| Bot not responding at all | Verify `TELEGRAM_BOT_TOKEN` is correct. Check `omniworker gateway` logs for errors. |
+| Bot not responding at all | Verify `TELEGRAM_BOT_TOKEN` is correct. Check `flux-agent gateway` logs for errors. |
 | Bot responds with "unauthorized" | Your user ID is not in `TELEGRAM_ALLOWED_USERS`. Double-check with @userinfobot. |
 | Bot ignores group messages | Privacy mode is likely on. Disable it (Step 3) or make the bot a group admin. **Remember to remove and re-add the bot after changing privacy.** |
-| Voice messages not transcribed | Verify STT is available: install `faster-whisper` for local transcription, or set `GROQ_API_KEY` / `VOICE_TOOLS_OPENAI_KEY` in `~/.omniworker/.env`. |
+| Voice messages not transcribed | Verify STT is available: install `faster-whisper` for local transcription, or set `GROQ_API_KEY` / `VOICE_TOOLS_OPENAI_KEY` in `~/.flux-agent/.env`. |
 | Voice replies are files, not bubbles | Install `ffmpeg` (needed for Edge TTS Opus conversion). |
 | Bot token revoked/invalid | Generate a new token via `/revoke` then `/newbot` or `/token` in BotFather. Update your `.env` file. |
 | Webhook not receiving updates | Verify `TELEGRAM_WEBHOOK_URL` is publicly reachable (test with `curl`). Ensure your platform/reverse proxy routes inbound HTTPS traffic from the URL's port to the local listen port configured by `TELEGRAM_WEBHOOK_PORT` (they do not need to be the same number). Ensure SSL/TLS is active — Telegram only sends to HTTPS URLs. Check firewall rules. |
@@ -918,7 +918,7 @@ When the agent calls the `clarify` tool — to ask which approach you prefer, ge
 
 Tap a button to answer, or tap **Other** to type a free-form response (the next message you send becomes the answer). Open-ended `clarify` calls (no preset choices) skip the buttons and just capture your next message.
 
-Configure the response timeout via `agent.clarify_timeout` in `~/.omniworker/config.yaml` (default `600` seconds). If you don't respond within the timeout, the agent unblocks with a sentinel message and adapts rather than hanging.
+Configure the response timeout via `agent.clarify_timeout` in `~/.flux-agent/config.yaml` (default `600` seconds). If you don't respond within the timeout, the agent unblocks with a sentinel message and adapts rather than hanging.
 
 ## Security
 

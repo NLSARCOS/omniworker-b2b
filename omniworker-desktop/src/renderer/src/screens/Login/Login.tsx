@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import gsap from "gsap";
-import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
+import Flux AgentLogo from "../../components/common/Flux AgentLogo";
 
 interface LoginProps {
   onLoginSuccess: (userData: any, authData: any) => void;
@@ -98,8 +98,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       let fingerprint: string | undefined;
       let deviceName: string | undefined;
       try {
-        fingerprint = await window.omniworkerAPI.getDeviceFingerprint();
-        deviceName = await window.omniworkerAPI.getDeviceName();
+        fingerprint = await window.flux-agentAPI.getDeviceFingerprint();
+        deviceName = await window.flux-agentAPI.getDeviceName();
       } catch (fpErr) {
         console.error("[Login] Failed to retrieve device fingerprint/name:", fpErr);
       }
@@ -182,7 +182,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         {/* Logo / Brand */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ marginBottom: "20px", display: "flex", justifyContent: "center" }}>
-            <OmniWorkerLogo size={44} />
+            <Flux AgentLogo size={44} />
           </div>
 
           <h1
@@ -195,7 +195,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               letterSpacing: "-0.5px",
             }}
           >
-            OmniWorker
+            Flux Agent
           </h1>
           <p
             style={{

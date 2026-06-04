@@ -44,7 +44,7 @@ IGNORED_PATTERNS = [
     re.compile(r"^GitHub\s*Actions?$", re.IGNORECASE),
     re.compile(r"^dependabot", re.IGNORECASE),
     re.compile(r"^renovate", re.IGNORECASE),
-    re.compile(r"^OmniWorker\s+(Agent|Audit)$", re.IGNORECASE),
+    re.compile(r"^Flux Agent\s+(Agent|Audit)$", re.IGNORECASE),
     re.compile(r"^Ubuntu$", re.IGNORECASE),
 ]
 
@@ -52,9 +52,9 @@ IGNORED_EMAILS = {
     "noreply@anthropic.com",
     "noreply@github.com",
     "cursoragent@cursor.com",
-    "omniworker@omniworker.com",
-    "omniworker-audit@example.com",
-    "omniworker@habibilabs.dev",
+    "flux-agent@flux-agent.com",
+    "flux-agent-audit@example.com",
+    "flux-agent@habibilabs.dev",
 }
 
 
@@ -96,7 +96,7 @@ def gh_pr_list():
         result = subprocess.run(
             [
                 "gh", "pr", "list",
-                "--repo", "OmniWorker/omniworker-agent",
+                "--repo", "Flux Agent/flux-agent-agent",
                 "--state", "merged",
                 "--json", "number,title,body,author,mergedAt",
                 "--limit", "300",

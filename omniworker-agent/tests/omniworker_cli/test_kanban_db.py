@@ -1,4 +1,4 @@
-"""Tests for the Kanban DB layer (omniworker_cli.kanban_db)."""
+"""Tests for the Kanban DB layer (flux-agent_cli.kanban_db)."""
 
 from __future__ import annotations
 
@@ -9,15 +9,15 @@ from pathlib import Path
 
 import pytest
 
-from omniworker_cli import kanban_db as kb
+from flux-agent_cli import kanban_db as kb
 
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated OMNIWORKER_HOME with an empty kanban DB."""
-    home = tmp_path / ".omniworker"
+    """Isolated FLUX AGENT_HOME with an empty kanban DB."""
+    home = tmp_path / ".flux-agent"
     home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(home))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -170,7 +170,7 @@ def test_claim_fails_on_non_ready(kanban_home):
 
 def test_stale_claim_reclaimed(kanban_home, monkeypatch):
     import signal
-    import omniworker_cli.kanban_db as _kb
+    import flux-agent_cli.kanban_db as _kb
 
     with kb.connect() as conn:
         t = kb.create_task(conn, title="x", assignee="a")
@@ -204,7 +204,7 @@ def test_stale_claim_with_live_pid_extends_instead_of_reclaiming(
     ``DEFAULT_CLAIM_TTL_SECONDS`` inside a single tool-free LLM call;
     killing those healthy workers produces a respawn loop with zero
     progress."""
-    import omniworker_cli.kanban_db as _kb
+    import flux-agent_cli.kanban_db as _kb
 
     with kb.connect() as conn:
         t = kb.create_task(conn, title="x", assignee="a")
@@ -247,7 +247,7 @@ def test_stale_claim_reclaim_event_records_diagnostic_payload(
     (#23025: previous payload only had ``stale_lock`` which gives no
     timing context)."""
     import json
-    import omniworker_cli.kanban_db as _kb
+    import flux-agent_cli.kanban_db as _kb
 
     with kb.connect() as conn:
         t = kb.create_task(conn, title="x", assignee="a")
@@ -610,7 +610,7 @@ def test_dispatch_skips_nonspawnable_into_separate_bucket(kanban_home, monkeypat
     ``skipped_unassigned`` (which is operator-actionable) — they go in
     the dedicated ``skipped_nonspawnable`` bucket so health telemetry
     can suppress false-positive "stuck" warnings."""
-    from omniworker_cli import profiles
+    from flux-agent_cli import profiles
     monkeypatch.setattr(profiles, "profile_exists", lambda name: False)
     with kb.connect() as conn:
         t = kb.create_task(conn, title="for-terminal", assignee="orion-cc")
@@ -624,7 +624,7 @@ def test_has_spawnable_ready_false_when_only_terminal_lanes(kanban_home, monkeyp
     """``has_spawnable_ready`` returns False when every ready task is
     assigned to a control-plane lane — used by gateway/CLI dispatchers
     to silence the stuck-warn while terminals still have queued work."""
-    from omniworker_cli import profiles
+    from flux-agent_cli import profiles
     monkeypatch.setattr(profiles, "profile_exists", lambda name: False)
     with kb.connect() as conn:
         kb.create_task(conn, title="t1", assignee="orion-cc")
@@ -634,15 +634,15 @@ def test_has_spawnable_ready_false_when_only_terminal_lanes(kanban_home, monkeyp
 
 def test_has_spawnable_ready_true_when_real_profile_present(kanban_home, monkeypatch):
     """``has_spawnable_ready`` returns True as soon as ANY ready task
-    has an assignee that maps to a real OmniWorker profile — preserves the
+    has an assignee that maps to a real Flux Agent profile — preserves the
     real "stuck" signal when a daily/agent task is queued."""
-    from omniworker_cli import profiles
+    from flux-agent_cli import profiles
     monkeypatch.setattr(
         profiles, "profile_exists", lambda name: name == "daily"
     )
     with kb.connect() as conn:
         kb.create_task(conn, title="terminal-task", assignee="orion-cc")
-        kb.create_task(conn, title="omniworker-task", assignee="daily")
+        kb.create_task(conn, title="flux-agent-task", assignee="daily")
         assert kb.has_spawnable_ready(conn) is True
 
 
@@ -752,7 +752,7 @@ def test_dispatch_reclaims_stale_before_spawning(kanban_home):
 # Workspace resolution
 # ---------------------------------------------------------------------------
 
-def test_scratch_workspace_created_under_omniworker_home(kanban_home):
+def test_scratch_workspace_created_under_flux-agent_home(kanban_home):
     with kb.connect() as conn:
         t = kb.create_task(conn, title="x")
         task = kb.get_task(conn, t)
@@ -814,26 +814,26 @@ def test_tenant_propagates_to_events(kanban_home):
 # Shared-board path resolution (issue #19348)
 #
 # The kanban board is a cross-profile coordination primitive: a worker
-# spawned with `omniworker -p <profile>` must read/write the same kanban.db
+# spawned with `flux-agent -p <profile>` must read/write the same kanban.db
 # as the dispatcher that claimed the task. These tests exercise the
 # path-resolution layer directly and would have caught the regression
-# where `kanban_db_path()` resolved to the active profile's OMNIWORKER_HOME.
+# where `kanban_db_path()` resolved to the active profile's FLUX AGENT_HOME.
 # ---------------------------------------------------------------------------
 
 class TestSharedBoardPaths:
     """`kanban_home`/`kanban_db_path`/`workspaces_root`/`worker_log_path`
-    must anchor at the **shared root**, not the active profile's OMNIWORKER_HOME."""
+    must anchor at the **shared root**, not the active profile's FLUX AGENT_HOME."""
 
-    def _set_home(self, monkeypatch, tmp_path, omniworker_home):
+    def _set_home(self, monkeypatch, tmp_path, flux-agent_home):
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
-        monkeypatch.delenv("OMNIWORKER_KANBAN_HOME", raising=False)
+        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.delenv("FLUX AGENT_KANBAN_HOME", raising=False)
 
-    def test_default_install_anchors_at_home_dot_omniworker(
+    def test_default_install_anchors_at_home_dot_flux-agent(
         self, tmp_path, monkeypatch
     ):
-        # Standard install: OMNIWORKER_HOME == ~/.omniworker, no profile active.
-        default_home = tmp_path / ".omniworker"
+        # Standard install: FLUX AGENT_HOME == ~/.flux-agent, no profile active.
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         self._set_home(monkeypatch, tmp_path, default_home)
 
@@ -848,18 +848,18 @@ class TestSharedBoardPaths:
     def test_profile_worker_resolves_to_shared_root(
         self, tmp_path, monkeypatch
     ):
-        # Reproduces the bug: dispatcher uses ~/.omniworker/kanban.db,
+        # Reproduces the bug: dispatcher uses ~/.flux-agent/kanban.db,
         # worker spawned with -p <profile> previously resolved to
-        # ~/.omniworker/profiles/<profile>/kanban.db. After the fix both
-        # converge on ~/.omniworker/kanban.db.
-        default_home = tmp_path / ".omniworker"
+        # ~/.flux-agent/profiles/<profile>/kanban.db. After the fix both
+        # converge on ~/.flux-agent/kanban.db.
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         profile_home = default_home / "profiles" / "nehemiahkanban"
         profile_home.mkdir(parents=True)
         self._set_home(monkeypatch, tmp_path, profile_home)
 
         # All four resolvers must anchor at the shared root, not the
-        # profile-local OMNIWORKER_HOME.
+        # profile-local FLUX AGENT_HOME.
         assert kb.kanban_home() == default_home
         assert kb.kanban_db_path() == default_home / "kanban.db"
         assert kb.workspaces_root() == default_home / "kanban" / "workspaces"
@@ -876,9 +876,9 @@ class TestSharedBoardPaths:
         self, tmp_path, monkeypatch
     ):
         # End-to-end convergence: resolve the path under each side's
-        # OMNIWORKER_HOME and confirm equality. This is the property the
+        # FLUX AGENT_HOME and confirm equality. This is the property the
         # dispatcher/worker handoff actually depends on.
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         profile_home = default_home / "profiles" / "coder"
         profile_home.mkdir(parents=True)
@@ -889,8 +889,8 @@ class TestSharedBoardPaths:
         dispatcher_ws = kb.workspaces_root()
         dispatcher_log = kb.worker_log_path("t_handoff")
 
-        # Worker's perspective (profile activated by `omniworker -p coder`).
-        monkeypatch.setenv("OMNIWORKER_HOME", str(profile_home))
+        # Worker's perspective (profile activated by `flux-agent -p coder`).
+        monkeypatch.setenv("FLUX AGENT_HOME", str(profile_home))
         worker_db = kb.kanban_db_path()
         worker_ws = kb.workspaces_root()
         worker_log = kb.worker_log_path("t_handoff")
@@ -899,14 +899,14 @@ class TestSharedBoardPaths:
         assert dispatcher_ws == worker_ws
         assert dispatcher_log == worker_log
 
-    def test_docker_custom_omniworker_home_uses_env_path_directly(
+    def test_docker_custom_flux-agent_home_uses_env_path_directly(
         self, tmp_path, monkeypatch
     ):
-        # Docker / custom deployment: OMNIWORKER_HOME points outside ~/.omniworker.
-        # `get_default_omniworker_root()` returns env_home directly when it
+        # Docker / custom deployment: FLUX AGENT_HOME points outside ~/.flux-agent.
+        # `get_default_flux-agent_root()` returns env_home directly when it
         # is not a `<root>/profiles/<name>` shape and not under
-        # `Path.home() / ".omniworker"`.
-        custom_root = tmp_path / "opt" / "omniworker"
+        # `Path.home() / ".flux-agent"`.
+        custom_root = tmp_path / "opt" / "flux-agent"
         custom_root.mkdir(parents=True)
         self._set_home(monkeypatch, tmp_path, custom_root)
 
@@ -916,10 +916,10 @@ class TestSharedBoardPaths:
     def test_docker_profile_layout_uses_grandparent(
         self, tmp_path, monkeypatch
     ):
-        # Docker profile shape: OMNIWORKER_HOME=/opt/omniworker/profiles/coder;
-        # `get_default_omniworker_root()` walks up to /opt/omniworker because
+        # Docker profile shape: FLUX AGENT_HOME=/opt/flux-agent/profiles/coder;
+        # `get_default_flux-agent_root()` walks up to /opt/flux-agent because
         # the immediate parent dir is named "profiles".
-        custom_root = tmp_path / "opt" / "omniworker"
+        custom_root = tmp_path / "opt" / "flux-agent"
         profile = custom_root / "profiles" / "coder"
         profile.mkdir(parents=True)
         self._set_home(monkeypatch, tmp_path, profile)
@@ -927,20 +927,20 @@ class TestSharedBoardPaths:
         assert kb.kanban_home() == custom_root
         assert kb.kanban_db_path() == custom_root / "kanban.db"
 
-    def test_explicit_override_via_omniworker_kanban_home(
+    def test_explicit_override_via_flux-agent_kanban_home(
         self, tmp_path, monkeypatch
     ):
-        # Explicit override: OMNIWORKER_KANBAN_HOME beats every other
+        # Explicit override: FLUX AGENT_KANBAN_HOME beats every other
         # resolution rule.
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         profile_home = default_home / "profiles" / "any"
         profile_home.mkdir(parents=True)
         override = tmp_path / "shared-board"
         override.mkdir()
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(profile_home))
-        monkeypatch.setenv("OMNIWORKER_KANBAN_HOME", str(override))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(profile_home))
+        monkeypatch.setenv("FLUX AGENT_KANBAN_HOME", str(override))
 
         assert kb.kanban_home() == override
         assert kb.kanban_db_path() == override / "kanban.db"
@@ -948,11 +948,11 @@ class TestSharedBoardPaths:
 
     def test_empty_override_falls_through(self, tmp_path, monkeypatch):
         # Empty/whitespace override is treated as unset.
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(default_home))
-        monkeypatch.setenv("OMNIWORKER_KANBAN_HOME", "   ")
+        monkeypatch.setenv("FLUX AGENT_HOME", str(default_home))
+        monkeypatch.setenv("FLUX AGENT_KANBAN_HOME", "   ")
 
         assert kb.kanban_home() == default_home
 
@@ -960,9 +960,9 @@ class TestSharedBoardPaths:
         self, tmp_path, monkeypatch
     ):
         # Belt-and-suspenders: round-trip a task across the two
-        # OMNIWORKER_HOME perspectives via a real SQLite file. Without the
+        # FLUX AGENT_HOME perspectives via a real SQLite file. Without the
         # fix the worker would open a different file and see no rows.
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         profile_home = default_home / "profiles" / "nehemiahkanban"
         profile_home.mkdir(parents=True)
@@ -973,20 +973,20 @@ class TestSharedBoardPaths:
         with kb.connect() as conn:
             task_id = kb.create_task(conn, title="cross-profile")
 
-        # Worker switches to the profile OMNIWORKER_HOME and reads.
-        monkeypatch.setenv("OMNIWORKER_HOME", str(profile_home))
+        # Worker switches to the profile FLUX AGENT_HOME and reads.
+        monkeypatch.setenv("FLUX AGENT_HOME", str(profile_home))
         with kb.connect() as conn:
             task = kb.get_task(conn, task_id)
         assert task is not None
         assert task.title == "cross-profile"
 
-    def test_omniworker_kanban_db_pin_beats_kanban_home(
+    def test_flux-agent_kanban_db_pin_beats_kanban_home(
         self, tmp_path, monkeypatch
     ):
-        # OMNIWORKER_KANBAN_DB pins the file path directly and beats both
-        # OMNIWORKER_KANBAN_HOME and the `get_default_omniworker_root()` path.
+        # FLUX AGENT_KANBAN_DB pins the file path directly and beats both
+        # FLUX AGENT_KANBAN_HOME and the `get_default_flux-agent_root()` path.
         # This is the env the dispatcher injects into workers.
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         umbrella = tmp_path / "umbrella"
         umbrella.mkdir()
@@ -994,20 +994,20 @@ class TestSharedBoardPaths:
         pinned_db.parent.mkdir()
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(default_home))
-        monkeypatch.setenv("OMNIWORKER_KANBAN_HOME", str(umbrella))
-        monkeypatch.setenv("OMNIWORKER_KANBAN_DB", str(pinned_db))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(default_home))
+        monkeypatch.setenv("FLUX AGENT_KANBAN_HOME", str(umbrella))
+        monkeypatch.setenv("FLUX AGENT_KANBAN_DB", str(pinned_db))
 
         assert kb.kanban_db_path() == pinned_db
-        # workspaces_root still follows OMNIWORKER_KANBAN_HOME -- the pins
+        # workspaces_root still follows FLUX AGENT_KANBAN_HOME -- the pins
         # are independent.
         assert kb.workspaces_root() == umbrella / "kanban" / "workspaces"
 
-    def test_omniworker_kanban_workspaces_root_pin_beats_kanban_home(
+    def test_flux-agent_kanban_workspaces_root_pin_beats_kanban_home(
         self, tmp_path, monkeypatch
     ):
-        # OMNIWORKER_KANBAN_WORKSPACES_ROOT pins the workspaces root directly.
-        default_home = tmp_path / ".omniworker"
+        # FLUX AGENT_KANBAN_WORKSPACES_ROOT pins the workspaces root directly.
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         umbrella = tmp_path / "umbrella"
         umbrella.mkdir()
@@ -1015,25 +1015,25 @@ class TestSharedBoardPaths:
         pinned_ws.mkdir()
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(default_home))
-        monkeypatch.setenv("OMNIWORKER_KANBAN_HOME", str(umbrella))
-        monkeypatch.setenv("OMNIWORKER_KANBAN_WORKSPACES_ROOT", str(pinned_ws))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(default_home))
+        monkeypatch.setenv("FLUX AGENT_KANBAN_HOME", str(umbrella))
+        monkeypatch.setenv("FLUX AGENT_KANBAN_WORKSPACES_ROOT", str(pinned_ws))
 
         assert kb.workspaces_root() == pinned_ws
-        # kanban_db_path still follows OMNIWORKER_KANBAN_HOME.
+        # kanban_db_path still follows FLUX AGENT_KANBAN_HOME.
         assert kb.kanban_db_path() == umbrella / "kanban.db"
 
     def test_empty_per_path_overrides_fall_through(
         self, tmp_path, monkeypatch
     ):
         # Empty/whitespace pins are treated as unset, same as
-        # OMNIWORKER_KANBAN_HOME.
-        default_home = tmp_path / ".omniworker"
+        # FLUX AGENT_KANBAN_HOME.
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(default_home))
-        monkeypatch.setenv("OMNIWORKER_KANBAN_DB", "   ")
-        monkeypatch.setenv("OMNIWORKER_KANBAN_WORKSPACES_ROOT", "")
+        monkeypatch.setenv("FLUX AGENT_HOME", str(default_home))
+        monkeypatch.setenv("FLUX AGENT_KANBAN_DB", "   ")
+        monkeypatch.setenv("FLUX AGENT_KANBAN_WORKSPACES_ROOT", "")
 
         assert kb.kanban_db_path() == default_home / "kanban.db"
         assert kb.workspaces_root() == default_home / "kanban" / "workspaces"
@@ -1041,11 +1041,11 @@ class TestSharedBoardPaths:
     def test_dispatcher_spawn_injects_kanban_db_and_workspaces_root(
         self, tmp_path, monkeypatch
     ):
-        # The dispatcher's `_default_spawn` must inject OMNIWORKER_KANBAN_DB
-        # and OMNIWORKER_KANBAN_WORKSPACES_ROOT into the worker env so the
+        # The dispatcher's `_default_spawn` must inject FLUX AGENT_KANBAN_DB
+        # and FLUX AGENT_KANBAN_WORKSPACES_ROOT into the worker env so the
         # worker converges on the dispatcher's paths even when the
-        # `-p <profile>` flag rewrites OMNIWORKER_HOME.
-        default_home = tmp_path / ".omniworker"
+        # `-p <profile>` flag rewrites FLUX AGENT_HOME.
+        default_home = tmp_path / ".flux-agent"
         default_home.mkdir()
         self._set_home(monkeypatch, tmp_path, default_home)
 
@@ -1079,11 +1079,11 @@ class TestSharedBoardPaths:
         kb._default_spawn(task, str(tmp_path / "ws"))
 
         env = captured["env"]
-        assert env["OMNIWORKER_KANBAN_DB"] == str(default_home / "kanban.db")
-        assert env["OMNIWORKER_KANBAN_WORKSPACES_ROOT"] == str(
+        assert env["FLUX AGENT_KANBAN_DB"] == str(default_home / "kanban.db")
+        assert env["FLUX AGENT_KANBAN_WORKSPACES_ROOT"] == str(
             default_home / "kanban" / "workspaces"
         )
-        assert env["OMNIWORKER_KANBAN_TASK"] == "t_dispatch_env"
+        assert env["FLUX AGENT_KANBAN_TASK"] == "t_dispatch_env"
 
 
 # ---------------------------------------------------------------------------
@@ -1165,7 +1165,7 @@ def test_latest_summaries_batch_omits_tasks_without_summary(kanban_home):
 
 
 # ---------------------------------------------------------------------------
-# NFS / network-filesystem fallback (see omniworker_state.apply_wal_with_fallback)
+# NFS / network-filesystem fallback (see flux-agent_state.apply_wal_with_fallback)
 # ---------------------------------------------------------------------------
 
 def test_connect_falls_back_to_delete_on_locking_protocol(kanban_home, caplog):
@@ -1174,7 +1174,7 @@ def test_connect_falls_back_to_delete_on_locking_protocol(kanban_home, caplog):
     Without this fallback, the gateway's kanban dispatcher crashes every
     60s and the kanban migration (``consecutive_failures`` ADD COLUMN) is
     retried forever — which is what the real-world user report shows
-    (see omniworker-agent issue #22032).
+    (see flux-agent-agent issue #22032).
     """
     import sqlite3 as _sqlite3
     from unittest.mock import patch as _patch
@@ -1195,8 +1195,8 @@ def test_connect_falls_back_to_delete_on_locking_protocol(kanban_home, caplog):
             *args, factory=_WalBlockingConnection, **kwargs
         )
 
-    with _patch("omniworker_cli.kanban_db.sqlite3.connect", side_effect=wal_blocking_connect):
-        with caplog.at_level("WARNING", logger="omniworker_state"):
+    with _patch("flux-agent_cli.kanban_db.sqlite3.connect", side_effect=wal_blocking_connect):
+        with caplog.at_level("WARNING", logger="flux-agent_state"):
             conn = kb.connect()
 
     # One fallback warning, naming kanban.db
@@ -1223,7 +1223,7 @@ def test_unlink_tasks_triggers_recompute_ready(kanban_home):
     complete_task and unblock_task.
 
     Before the fix, child stayed 'todo' indefinitely after unlink; only the
-    next dispatcher tick or a manual 'omniworker kanban recompute' would promote it.
+    next dispatcher tick or a manual 'flux-agent kanban recompute' would promote it.
     """
     with kb.connect() as conn:
         # A is done.
@@ -1333,68 +1333,68 @@ def test_migrate_add_optional_columns_tolerates_concurrent_migration(kanban_home
 
 
 # ---------------------------------------------------------------------------
-# Dispatcher spawn invocation — _resolve_omniworker_argv()
+# Dispatcher spawn invocation — _resolve_flux-agent_argv()
 #
-# Workers spawned by the dispatcher must use a `omniworker` invocation that does
+# Workers spawned by the dispatcher must use a `flux-agent` invocation that does
 # not depend on PATH being set up correctly. cron jobs, systemd User= services,
 # launchd jobs, and other detached processes routinely run with a stripped
-# $PATH that doesn't include the venv's bin/, so a bare `["omniworker", ...]`
+# $PATH that doesn't include the venv's bin/, so a bare `["flux-agent", ...]`
 # spawn fails with FileNotFoundError and the task gets stuck. The resolver
 # prefers the PATH shim (familiar `ps` output) but falls back to the module
 # form so the spawn keeps working when PATH is missing the shim.
 # ---------------------------------------------------------------------------
 
 
-def test_resolve_omniworker_argv_prefers_path_shim(monkeypatch):
-    """When `omniworker` is on PATH, use the shim — preserves familiar ps output."""
+def test_resolve_flux-agent_argv_prefers_path_shim(monkeypatch):
+    """When `flux-agent` is on PATH, use the shim — preserves familiar ps output."""
     import shutil
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
 
-    monkeypatch.setattr(shutil, "which", lambda name: "/usr/local/bin/omniworker")
-    argv = kb._resolve_omniworker_argv()
-    assert argv == ["/usr/local/bin/omniworker"]
+    monkeypatch.setattr(shutil, "which", lambda name: "/usr/local/bin/flux-agent")
+    argv = kb._resolve_flux-agent_argv()
+    assert argv == ["/usr/local/bin/flux-agent"]
 
 
-def test_resolve_omniworker_argv_falls_back_to_module_form_when_no_path_shim(monkeypatch):
-    """When the shim is not on PATH, fall back to `python -m omniworker_cli.main`.
+def test_resolve_flux-agent_argv_falls_back_to_module_form_when_no_path_shim(monkeypatch):
+    """When the shim is not on PATH, fall back to `python -m flux-agent_cli.main`.
 
-    Pins the correct module name (NOT `omniworker` — there is no top-level
-    `omniworker` package). Regression for #23198: the original PR shipped
-    `python -m omniworker` which fails with `No module named omniworker` on every
+    Pins the correct module name (NOT `flux-agent` — there is no top-level
+    `flux-agent` package). Regression for #23198: the original PR shipped
+    `python -m flux-agent` which fails with `No module named flux-agent` on every
     invocation.
     """
     import shutil
     import sys
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
 
     monkeypatch.setattr(shutil, "which", lambda name: None)
-    argv = kb._resolve_omniworker_argv()
-    assert argv == [sys.executable, "-m", "omniworker_cli.main"]
+    argv = kb._resolve_flux-agent_argv()
+    assert argv == [sys.executable, "-m", "flux-agent_cli.main"]
 
 
-def test_resolve_omniworker_argv_module_actually_runs():
+def test_resolve_flux-agent_argv_module_actually_runs():
     """The fallback module name must be importable + runnable.
 
     A unit test that pins the literal string is necessary but not
-    sufficient — if `omniworker_cli.main` ever loses `if __name__ == "__main__"`
-    handling or its argparse setup, `python -m omniworker_cli.main --version`
+    sufficient — if `flux-agent_cli.main` ever loses `if __name__ == "__main__"`
+    handling or its argparse setup, `python -m flux-agent_cli.main --version`
     would fail and so would every dispatcher spawn that hits the fallback.
     Run it as a real subprocess to catch that regression.
     """
     import subprocess
     import sys
-    import omniworker_cli.kanban_db as kb
+    import flux-agent_cli.kanban_db as kb
     import shutil
     import unittest.mock as mock
 
     with mock.patch.object(shutil, "which", return_value=None):
-        argv = kb._resolve_omniworker_argv()
+        argv = kb._resolve_flux-agent_argv()
     r = subprocess.run(argv + ["--version"], capture_output=True, text=True, timeout=30)
     assert r.returncode == 0, (
         f"`{' '.join(argv)} --version` failed (rc={r.returncode}); "
         f"stderr={r.stderr[:200]!r}"
     )
-    assert "OmniWorker Agent" in r.stdout, f"unexpected output: {r.stdout[:200]!r}"
+    assert "Flux Agent Agent" in r.stdout, f"unexpected output: {r.stdout[:200]!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -1502,9 +1502,9 @@ def test_task_dict_survives_corrupt_created_at(tmp_path, monkeypatch):
     corrupt row doesn't turn the whole board response into an error.
     """
     # Set up an isolated kanban home so we can write a corrupt created_at.
-    home = tmp_path / ".omniworker"
+    home = tmp_path / ".flux-agent"
     home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(home))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(home))
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
     kb._INITIALIZED_PATHS.clear()
     kb.init_db()

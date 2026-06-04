@@ -88,7 +88,7 @@ _CODEX_INSTRUCTIONS = (
 def _load_image_gen_config() -> Dict[str, Any]:
     """Read ``image_gen`` from config.yaml (returns {} on any failure)."""
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None
@@ -261,7 +261,7 @@ class OpenAICodexImageGenProvider(ImageGenProvider):
             "tag": "gpt-image-2 via ChatGPT/Codex OAuth — no API key required",
             "env_vars": [],
             "post_setup_hint": (
-                "Sign in with `omniworker auth codex` (or `omniworker setup` → Codex) "
+                "Sign in with `flux-agent auth codex` (or `flux-agent setup` → Codex) "
                 "if you haven't already. No API key needed."
             ),
         }
@@ -287,7 +287,7 @@ class OpenAICodexImageGenProvider(ImageGenProvider):
             return error_response(
                 error=(
                     "No Codex/ChatGPT OAuth credentials available. Run "
-                    "`omniworker auth codex` (or `omniworker setup` → Codex) to sign in."
+                    "`flux-agent auth codex` (or `flux-agent setup` → Codex) to sign in."
                 ),
                 error_type="auth_required",
                 provider="openai-codex",

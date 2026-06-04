@@ -14,10 +14,10 @@ Free meta-search via SearXNG — aggregates results from 70+ search engines. Sel
 
 | | |
 |---|---|
-| Source | Optional — install with `omniworker skills install official/research/searxng-search` |
+| Source | Optional — install with `flux-agent skills install official/research/searxng-search` |
 | Path | `optional-skills/research/searxng-search` |
 | Version | `1.0.0` |
-| Author | omniworker-agent |
+| Author | flux-agent-agent |
 | License | MIT |
 | Platforms | linux, macos |
 | Tags | `search`, `searxng`, `meta-search`, `self-hosted`, `free`, `fallback` |
@@ -26,7 +26,7 @@ Free meta-search via SearXNG — aggregates results from 70+ search engines. Sel
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # SearXNG Search

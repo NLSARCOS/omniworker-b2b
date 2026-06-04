@@ -401,7 +401,7 @@ class HomeAssistantAdapter(BasePlatformAdapter):
             "Content-Type": "application/json",
         }
         payload = {
-            "title": "OmniWorker Agent",
+            "title": "Flux Agent Agent",
             "message": content[:self.MAX_MESSAGE_LENGTH],
         }
 

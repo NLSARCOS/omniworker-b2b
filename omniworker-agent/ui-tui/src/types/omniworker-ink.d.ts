@@ -1,6 +1,6 @@
 import type * as React from 'react'
 
-declare module '@omniworker/ink' {
+declare module '@flux-agent/ink' {
   export type Key = {
     readonly ctrl: boolean
     readonly meta: boolean

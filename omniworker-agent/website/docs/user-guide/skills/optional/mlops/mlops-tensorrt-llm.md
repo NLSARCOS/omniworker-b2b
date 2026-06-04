@@ -14,7 +14,7 @@ Optimizes LLM inference with NVIDIA TensorRT for maximum throughput and lowest l
 
 | | |
 |---|---|
-| Source | Optional — install with `omniworker skills install official/mlops/tensorrt-llm` |
+| Source | Optional — install with `flux-agent skills install official/mlops/tensorrt-llm` |
 | Path | `optional-skills/mlops/tensorrt-llm` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |
@@ -26,7 +26,7 @@ Optimizes LLM inference with NVIDIA TensorRT for maximum throughput and lowest l
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # TensorRT-LLM
@@ -195,9 +195,9 @@ outputs = llm.generate(
 
 ## References
 
-- **[Optimization Guide](https://github.com/OmniWorker/omniworker-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/optimization.md)** - Quantization, batching, KV cache tuning
-- **[Multi-GPU Setup](https://github.com/OmniWorker/omniworker-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/multi-gpu.md)** - Tensor/pipeline parallelism, multi-node
-- **[Serving Guide](https://github.com/OmniWorker/omniworker-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/serving.md)** - Production deployment, monitoring, autoscaling
+- **[Optimization Guide](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/optimization.md)** - Quantization, batching, KV cache tuning
+- **[Multi-GPU Setup](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/multi-gpu.md)** - Tensor/pipeline parallelism, multi-node
+- **[Serving Guide](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/serving.md)** - Production deployment, monitoring, autoscaling
 
 ## Resources
 

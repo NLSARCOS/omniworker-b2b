@@ -1,5 +1,5 @@
 /**
- * OmniWorker Desktop — Full backup/restore module.
+ * Flux Agent Desktop — Full backup/restore module.
  *
  * Creates/reads `.tar.gz` archives containing ALL user data:
  * config, env, persona (SOUL.md), memory, skills, sessions,
@@ -21,7 +21,7 @@ import {
 import archiver from "archiver";
 import { extract } from "tar";
 import { profileHome } from "./utils";
-import { OMNIWORKER_HOME } from "./installer";
+import { FLUX AGENT_HOME } from "./installer";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -274,7 +274,7 @@ export async function createBackup(
   }
 
   // active_profile
-  const activeProfileFile = join(OMNIWORKER_HOME, "active_profile");
+  const activeProfileFile = join(FLUX AGENT_HOME, "active_profile");
   if (existsSync(activeProfileFile)) {
     toArchive.push({ src: activeProfileFile, dest: "active_profile" });
   }
@@ -282,7 +282,7 @@ export async function createBackup(
   // Build manifest
   const manifest: BackupManifest = {
     version: 1,
-    appVersion: (global as any).__omniworker_app_version || "0.0.0",
+    appVersion: (global as any).__flux-agent_app_version || "0.0.0",
     createdAt: new Date().toISOString(),
     profileName: name,
     includesSessions: !!options?.includeSessions,
@@ -359,7 +359,7 @@ export async function readBackupManifest(
 
   try {
     // Extract only manifest.json to a temp buffer using tar
-    const tmpDir = join(OMNIWORKER_HOME, ".tmp", `manifest-${Date.now()}`);
+    const tmpDir = join(FLUX AGENT_HOME, ".tmp", `manifest-${Date.now()}`);
     mkdirSync(tmpDir, { recursive: true });
 
     await extract({ cwd: tmpDir, file: archivePath, gzip: true });
@@ -403,7 +403,7 @@ export async function restoreBackup(
   onProgress?: (p: BackupProgress) => void,
 ): Promise<{ success: boolean; error?: string; restoredItems: string[] }> {
   const home = profileHome(profile);
-  const tmpDir = join(OMNIWORKER_HOME, ".tmp", `restore-${Date.now()}`);
+  const tmpDir = join(FLUX AGENT_HOME, ".tmp", `restore-${Date.now()}`);
 
   try {
     // Extract full archive to temp
@@ -476,7 +476,7 @@ export async function restoreBackup(
     // Restore active_profile
     const activeProfileSrc = join(extractRoot, "active_profile");
     if (existsSync(activeProfileSrc)) {
-      copyFileSync(activeProfileSrc, join(OMNIWORKER_HOME, "active_profile"));
+      copyFileSync(activeProfileSrc, join(FLUX AGENT_HOME, "active_profile"));
     }
 
     // Cleanup

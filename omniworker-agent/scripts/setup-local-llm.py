@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Setup local LLM server for OmniWorker.
+"""Setup local LLM server for Flux Agent.
 
 Downloads a pre-compiled llama.cpp server binary and a small GGUF model
-to ~/.omniworker/local-llm/. The server runs on localhost:11435 and serves
+to ~/.flux-agent/local-llm/. The server runs on localhost:11435 and serves
 both chat completions and embeddings.
 
 Usage:
@@ -24,7 +24,7 @@ LLAMA_RELEASE_TAG = "b4518"
 # Pesa ~1GB y corre bien en computadoras viejas de oficina con 2-4GB de RAM libre
 MODEL_DEFAULT_URL = "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
 MODEL_NAME = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
-LOCAL_LLM_DIR = Path.home() / ".omniworker" / "local-llm"
+LOCAL_LLM_DIR = Path.home() / ".flux-agent" / "local-llm"
 
 
 def get_llama_binary_url() -> str:
@@ -139,11 +139,11 @@ echo "[local-llm] Starting local LLM server on port $LLAMA_PORT..."
     return script_path
 
 
-def patch_config_yaml(omniworker_home: str) -> None:
+def patch_config_yaml(flux-agent_home: str) -> None:
     """Merge local-llm settings into the active config.yaml."""
     import ruamel.yaml
 
-    config_path = Path(omniworker_home) / "config.yaml"
+    config_path = Path(flux-agent_home) / "config.yaml"
     if not config_path.exists():
         print(f"[local-llm] config.yaml not found at {config_path}, skipping config patch")
         return
@@ -215,13 +215,13 @@ memory:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Setup local LLM for OmniWorker")
+    parser = argparse.ArgumentParser(description="Setup local LLM for Flux Agent")
     parser.add_argument("--model", default=MODEL_DEFAULT_URL, help="GGUF model URL")
     parser.add_argument("--force", action="store_true", help="Re-download even if exists")
     args = parser.parse_args()
 
     print("=" * 60)
-    print("OmniWorker Local LLM Setup")
+    print("Flux Agent Local LLM Setup")
     print("=" * 60)
 
     binary_path = setup_llama_binary(force=args.force)
@@ -230,8 +230,8 @@ def main() -> None:
     create_config_snippet()
 
     # Patch active config.yaml
-    omniworker_home = os.getenv("OMNIWORKER_HOME", str(Path.home() / ".omniworker"))
-    patch_config_yaml(omniworker_home)
+    flux-agent_home = os.getenv("FLUX AGENT_HOME", str(Path.home() / ".flux-agent"))
+    patch_config_yaml(flux-agent_home)
 
     print()
     print("[local-llm] Setup complete!")

@@ -213,7 +213,7 @@ export const THEME_OPTIONS = [
   { value: "dark" as const, label: "constants.themeDark" },
 ];
 
-export const THEME_STORAGE_KEY = "omniworker-theme";
+export const THEME_STORAGE_KEY = "flux-agent-theme";
 
 // ── Settings API Key Sections ───────────────────────────
 
@@ -817,10 +817,10 @@ export const GATEWAY_PLATFORMS: PlatformDef[] = [
 // ── Install ─────────────────────────────────────────────
 
 export const UNIX_INSTALL_CMD =
-  "curl -fsSL https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scripts/install.sh | bash";
+  "curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash";
 export const INSTALL_CMD_UNIX = UNIX_INSTALL_CMD;
 export const WINDOWS_INSTALL_CMD =
-  "powershell -NoProfile -ExecutionPolicy Bypass -c \"$omniworkerHome = Join-Path $env:USERPROFILE '.omniworker'; $installDir = Join-Path $omniworkerHome 'omniworker-agent'; $installer = [ScriptBlock]::Create((irm https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scripts/install.ps1 -UseBasicParsing)); & $installer -SkipSetup -OmniWorkerHome $omniworkerHome -InstallDir $installDir\"";
+  "powershell -NoProfile -ExecutionPolicy Bypass -c \"$flux-agentHome = Join-Path $env:USERPROFILE '.flux-agent'; $installDir = Join-Path $flux-agentHome 'flux-agent-agent'; $installer = [ScriptBlock]::Create((irm https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.ps1 -UseBasicParsing)); & $installer -SkipSetup -Flux AgentHome $flux-agentHome -InstallDir $installDir\"";
 export const INSTALL_CMD =
   typeof window !== "undefined" &&
   window.electron?.process?.platform === "win32"

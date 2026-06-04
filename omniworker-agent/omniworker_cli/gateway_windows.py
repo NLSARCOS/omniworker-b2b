@@ -13,7 +13,7 @@ Design notes
   ``schtasks /Run`` immediately after install so the gateway starts right
   away without waiting for the next logon.
 * We write two files: a shared ``gateway.cmd`` wrapper script (cwd + env + the
-  actual ``python -m omniworker_cli.main gateway run --replace`` invocation) and
+  actual ``python -m flux-agent_cli.main gateway run --replace`` invocation) and
   EITHER a schtasks entry pointing at it OR a Startup-folder ``.cmd`` that
   spawns it detached.
 * Status = merge of "is the schtasks entry registered?" + "is the startup
@@ -46,8 +46,8 @@ _FALLBACK_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 
-_TASK_NAME_DEFAULT = "OmniWorker_Gateway"
-_TASK_DESCRIPTION = "OmniWorker Agent Gateway - Messaging Platform Integration"
+_TASK_NAME_DEFAULT = "Flux Agent_Gateway"
+_TASK_DESCRIPTION = "Flux Agent Agent Gateway - Messaging Platform Integration"
 
 
 # ---------------------------------------------------------------------------
@@ -134,12 +134,12 @@ def _should_fall_back(code: int, detail: str) -> bool:
 def get_task_name() -> str:
     """Scheduled Task name, scoped per profile.
 
-    Default profile: ``OmniWorker_Gateway``
-    Named profile X: ``OmniWorker_Gateway_<X>``
+    Default profile: ``Flux Agent_Gateway``
+    Named profile X: ``Flux Agent_Gateway_<X>``
     """
     _assert_windows()
-    # Local import to avoid circular module initialization during omniworker_cli boot.
-    from omniworker_cli.gateway import _profile_suffix
+    # Local import to avoid circular module initialization during flux-agent_cli boot.
+    from flux-agent_cli.gateway import _profile_suffix
 
     suffix = _profile_suffix()
     if not suffix:
@@ -156,13 +156,13 @@ def get_task_script_path() -> Path:
     """The generated ``gateway.cmd`` wrapper that the schtasks entry invokes.
 
     Lives under ``%LOCALAPPDATA%\\hermes\\gateway-service\\<task_name>.cmd``
-    (or ``<OMNIWORKER_HOME>/gateway-service/<task_name>.cmd`` so per-profile
-    OmniWorker installs stay self-contained).
+    (or ``<FLUX AGENT_HOME>/gateway-service/<task_name>.cmd`` so per-profile
+    Flux Agent installs stay self-contained).
     """
     _assert_windows()
-    from omniworker_cli.config import get_omniworker_home
+    from flux-agent_cli.config import get_flux-agent_home
 
-    script_dir = Path(get_omniworker_home()) / "gateway-service"
+    script_dir = Path(get_flux-agent_home()) / "gateway-service"
     script_dir.mkdir(parents=True, exist_ok=True)
     return script_dir / f"{_sanitize_filename(get_task_name())}.cmd"
 
@@ -198,15 +198,15 @@ def get_startup_entry_path() -> Path:
 def _build_gateway_cmd_script(
     python_path: str,
     working_dir: str,
-    omniworker_home: str,
+    flux-agent_home: str,
     profile_arg: str,
 ) -> str:
     """Build the ``gateway.cmd`` wrapper content (CRLF-terminated).
 
     The script:
       - cd's into the project directory
-      - exports OMNIWORKER_HOME, PYTHONIOENCODING, VIRTUAL_ENV
-      - invokes ``python -m omniworker_cli.main [--profile X] gateway run --replace``
+      - exports FLUX AGENT_HOME, PYTHONIOENCODING, VIRTUAL_ENV
+      - invokes ``python -m flux-agent_cli.main [--profile X] gateway run --replace``
 
     We intentionally do NOT inline PATH overrides here — cmd.exe inherits
     the per-user PATH the Scheduled Task was created with, and forcibly
@@ -214,15 +214,15 @@ def _build_gateway_cmd_script(
     """
     lines = ["@echo off", f"rem {_TASK_DESCRIPTION}"]
     lines.append(f"cd /d {_quote_cmd_script_arg(working_dir)}")
-    lines.append(f'set "OMNIWORKER_HOME={omniworker_home}"')
+    lines.append(f'set "FLUX AGENT_HOME={flux-agent_home}"')
     lines.append('set "PYTHONIOENCODING=utf-8"')
-    lines.append('set "OMNIWORKER_GATEWAY_DETACHED=1"')
+    lines.append('set "FLUX AGENT_GATEWAY_DETACHED=1"')
     # VIRTUAL_ENV lets the gateway's own python detection find the venv
-    # if someone imports omniworker_constants-based logic during startup.
+    # if someone imports flux-agent_constants-based logic during startup.
     venv_dir = str(Path(python_path).resolve().parent.parent)
     lines.append(f'set "VIRTUAL_ENV={venv_dir}"')
 
-    prog_args = [python_path, "-m", "omniworker_cli.main"]
+    prog_args = [python_path, "-m", "flux-agent_cli.main"]
     if profile_arg:
         prog_args.extend(profile_arg.split())
     prog_args.extend(["gateway", "run", "--replace"])
@@ -246,8 +246,8 @@ def _write_task_script() -> Path:
     """Generate and write the gateway.cmd wrapper. Return its absolute path."""
     _assert_windows()
     # Local imports to avoid circular-init at module load time.
-    from omniworker_cli.config import get_omniworker_home
-    from omniworker_cli.gateway import (
+    from flux-agent_cli.config import get_flux-agent_home
+    from flux-agent_cli.gateway import (
         PROJECT_ROOT,
         _profile_arg,
         get_python_path,
@@ -255,10 +255,10 @@ def _write_task_script() -> Path:
 
     python_path = get_python_path()
     working_dir = str(PROJECT_ROOT)
-    omniworker_home = str(Path(get_omniworker_home()).resolve())
-    profile_arg = _profile_arg(omniworker_home)
+    flux-agent_home = str(Path(get_flux-agent_home()).resolve())
+    profile_arg = _profile_arg(flux-agent_home)
 
-    content = _build_gateway_cmd_script(python_path, working_dir, omniworker_home, profile_arg)
+    content = _build_gateway_cmd_script(python_path, working_dir, flux-agent_home, profile_arg)
     script_path = get_task_script_path()
     script_path.write_text(content, encoding="utf-8", newline="")
     return script_path
@@ -352,8 +352,8 @@ def _build_gateway_argv() -> tuple[list[str], str, dict[str, str]]:
     layer in between.
     """
     _assert_windows()
-    from omniworker_cli.config import get_omniworker_home
-    from omniworker_cli.gateway import (
+    from flux-agent_cli.config import get_flux-agent_home
+    from flux-agent_cli.gateway import (
         PROJECT_ROOT,
         _profile_arg,
         get_python_path,
@@ -361,18 +361,18 @@ def _build_gateway_argv() -> tuple[list[str], str, dict[str, str]]:
 
     python_exe = _derive_venv_pythonw(get_python_path())
     working_dir = str(PROJECT_ROOT)
-    omniworker_home = str(Path(get_omniworker_home()).resolve())
-    profile_arg = _profile_arg(omniworker_home)
+    flux-agent_home = str(Path(get_flux-agent_home()).resolve())
+    profile_arg = _profile_arg(flux-agent_home)
 
-    argv = [python_exe, "-m", "omniworker_cli.main"]
+    argv = [python_exe, "-m", "flux-agent_cli.main"]
     if profile_arg:
         argv.extend(profile_arg.split())
     argv.extend(["gateway", "run", "--replace"])
 
     env_overlay = {
-        "OMNIWORKER_HOME": omniworker_home,
+        "FLUX AGENT_HOME": flux-agent_home,
         "PYTHONIOENCODING": "utf-8",
-        "OMNIWORKER_GATEWAY_DETACHED": "1",
+        "FLUX AGENT_GATEWAY_DETACHED": "1",
         "VIRTUAL_ENV": str(Path(python_exe).resolve().parent.parent),
     }
     return argv, working_dir, env_overlay
@@ -381,7 +381,7 @@ def _build_gateway_argv() -> tuple[list[str], str, dict[str, str]]:
 def _spawn_detached(script_path: Path | None = None) -> int:
     """Launch the gateway as a fully detached background process.
 
-    We spawn ``pythonw.exe -m omniworker_cli.main gateway run --replace``
+    We spawn ``pythonw.exe -m flux-agent_cli.main gateway run --replace``
     directly — NOT through a cmd.exe shim — because on Windows a cmd.exe
     child inherits the parent session's console handle and tends to get
     reaped when the spawning shell exits. pythonw.exe has no console, and
@@ -416,9 +416,9 @@ def _spawn_detached(script_path: Path | None = None) -> int:
     # logging module writes to gateway.log through a FileHandler, so the
     # real gateway logs still land there — this just captures anything
     # that goes to print() or native stderr.
-    from omniworker_cli.config import get_omniworker_home
+    from flux-agent_cli.config import get_flux-agent_home
 
-    log_dir = Path(get_omniworker_home()) / "logs"
+    log_dir = Path(get_flux-agent_home()) / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     stray_log = log_dir / "gateway-stdio.log"
 
@@ -504,7 +504,7 @@ def _wait_for_gateway_ready(timeout_s: float = 6.0, interval_s: float = 0.4) -> 
     Returns the list of PIDs found. Empty list means nothing came up in
     time — the caller should surface that to the user as a failed start.
     """
-    from omniworker_cli.gateway import find_gateway_pids
+    from flux-agent_cli.gateway import find_gateway_pids
 
     deadline = time.time() + timeout_s
     while time.time() < deadline:
@@ -522,19 +522,19 @@ def _report_gateway_start(via: str) -> None:
     else:
         print(f"⚠ Launched gateway via {via}, but no process detected after 6s.")
         print("  Check the log for startup errors:")
-        from omniworker_cli.config import get_omniworker_home
-        print(f"    type {Path(get_omniworker_home()).resolve()}\\logs\\gateway.log")
-        print(f"    type {Path(get_omniworker_home()).resolve()}\\logs\\gateway-stdio.log")
+        from flux-agent_cli.config import get_flux-agent_home
+        print(f"    type {Path(get_flux-agent_home()).resolve()}\\logs\\gateway.log")
+        print(f"    type {Path(get_flux-agent_home()).resolve()}\\logs\\gateway-stdio.log")
 
 
 def _print_next_steps() -> None:
-    from omniworker_cli.config import get_omniworker_home
+    from flux-agent_cli.config import get_flux-agent_home
 
-    omniworker_home = Path(get_omniworker_home()).resolve()
+    flux-agent_home = Path(get_flux-agent_home()).resolve()
     print()
     print("Next steps:")
     print("  hermes gateway status                      # Check status")
-    print(f"  type {omniworker_home}\\logs\\gateway.log       # View logs")
+    print(f"  type {flux-agent_home}\\logs\\gateway.log       # View logs")
 
 
 def uninstall() -> None:
@@ -601,7 +601,7 @@ def query_task_status() -> dict[str, str]:
 
 def _gateway_pids() -> list[int]:
     """Reuse the cross-platform PID scanner in gateway.py."""
-    from omniworker_cli.gateway import find_gateway_pids
+    from flux-agent_cli.gateway import find_gateway_pids
 
     return list(find_gateway_pids())
 
@@ -661,7 +661,7 @@ def start() -> None:
 def stop() -> None:
     """Stop the gateway. Tries /End on the scheduled task, then kills any stragglers."""
     _assert_windows()
-    from omniworker_cli.gateway import kill_gateway_processes
+    from flux-agent_cli.gateway import kill_gateway_processes
 
     stopped_any = False
     if is_task_registered():

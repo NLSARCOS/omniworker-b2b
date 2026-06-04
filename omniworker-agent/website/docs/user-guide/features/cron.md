@@ -6,7 +6,7 @@ description: "Schedule automated tasks with natural language, manage them with o
 
 # Scheduled Tasks (Cron)
 
-Schedule tasks to run automatically with natural language or cron expressions. OmniWorker exposes cron management through a single `cronjob` tool with action-style operations instead of separate schedule/list/remove tools.
+Schedule tasks to run automatically with natural language or cron expressions. Flux Agent exposes cron management through a single `cronjob` tool with action-style operations instead of separate schedule/list/remove tools.
 
 ## What cron can do now
 
@@ -19,10 +19,10 @@ Cron jobs can:
 - run in fresh agent sessions with the normal static tool list
 - run in **no-agent mode** — a script on a schedule, its stdout delivered verbatim, zero LLM involvement (see the [no-agent mode](#no-agent-mode-script-only-jobs) section below)
 
-All of this is available to OmniWorker itself through the `cronjob` tool, so you can create, pause, edit, and remove jobs by asking in plain language — no CLI required.
+All of this is available to Flux Agent itself through the `cronjob` tool, so you can create, pause, edit, and remove jobs by asking in plain language — no CLI required.
 
 :::warning
-Cron-run sessions cannot recursively create more cron jobs. OmniWorker disables cron management tools inside cron executions to prevent runaway scheduling loops.
+Cron-run sessions cannot recursively create more cron jobs. Flux Agent disables cron management tools inside cron executions to prevent runaway scheduling loops.
 :::
 
 ## Creating scheduled tasks
@@ -39,9 +39,9 @@ Cron-run sessions cannot recursively create more cron jobs. OmniWorker disables 
 ### From the standalone CLI
 
 ```bash
-omniworker cron create "every 2h" "Check server status"
-omniworker cron create "every 1h" "Summarize new feed items" --skill blogwatcher
-omniworker cron create "every 1h" "Use both skills and combine the result" \
+flux-agent cron create "every 2h" "Check server status"
+flux-agent cron create "every 1h" "Summarize new feed items" --skill blogwatcher
+flux-agent cron create "every 1h" "Use both skills and combine the result" \
   --skill blogwatcher \
   --skill maps \
   --name "Skill combo"
@@ -49,13 +49,13 @@ omniworker cron create "every 1h" "Use both skills and combine the result" \
 
 ### Through natural conversation
 
-Ask OmniWorker normally:
+Ask Flux Agent normally:
 
 ```text
 Every morning at 9am, check Hacker News for AI news and send me a summary on Telegram.
 ```
 
-OmniWorker will use the unified `cronjob` tool internally.
+Flux Agent will use the unified `cronjob` tool internally.
 
 ## Skill-backed cron jobs
 
@@ -95,7 +95,7 @@ Cron jobs default to running detached from any repo — no `AGENTS.md`, `CLAUDE.
 
 ```bash
 # Standalone CLI (schedule and prompt are positional)
-omniworker cron create "every 1d at 09:00" \
+flux-agent cron create "every 1d at 09:00" \
   "Audit open PRs, summarize CI health, and post to #eng" \
   --workdir /home/me/projects/acme
 ```
@@ -138,12 +138,12 @@ You do not need to delete and recreate jobs just to change them.
 ### Standalone CLI
 
 ```bash
-omniworker cron edit <job_id> --schedule "every 4h"
-omniworker cron edit <job_id> --prompt "Use the revised task"
-omniworker cron edit <job_id> --skill blogwatcher --skill maps
-omniworker cron edit <job_id> --add-skill maps
-omniworker cron edit <job_id> --remove-skill blogwatcher
-omniworker cron edit <job_id> --clear-skills
+flux-agent cron edit <job_id> --schedule "every 4h"
+flux-agent cron edit <job_id> --prompt "Use the revised task"
+flux-agent cron edit <job_id> --skill blogwatcher --skill maps
+flux-agent cron edit <job_id> --add-skill maps
+flux-agent cron edit <job_id> --remove-skill blogwatcher
+flux-agent cron edit <job_id> --clear-skills
 ```
 
 Notes:
@@ -170,13 +170,13 @@ Cron jobs now have a fuller lifecycle than just create/remove.
 ### Standalone CLI
 
 ```bash
-omniworker cron list
-omniworker cron pause <job_id>
-omniworker cron resume <job_id>
-omniworker cron run <job_id>
-omniworker cron remove <job_id>
-omniworker cron status
-omniworker cron tick
+flux-agent cron list
+flux-agent cron pause <job_id>
+flux-agent cron resume <job_id>
+flux-agent cron run <job_id>
+flux-agent cron remove <job_id>
+flux-agent cron status
+flux-agent cron tick
 ```
 
 What they do:
@@ -191,19 +191,19 @@ What they do:
 **Cron execution is handled by the gateway daemon.** The gateway ticks the scheduler every 60 seconds, running any due jobs in isolated agent sessions.
 
 ```bash
-omniworker gateway install     # Install as a user service
-sudo omniworker gateway install --system   # Linux: boot-time system service for servers
-omniworker gateway             # Or run in foreground
+flux-agent gateway install     # Install as a user service
+sudo flux-agent gateway install --system   # Linux: boot-time system service for servers
+flux-agent gateway             # Or run in foreground
 
-omniworker cron list
-omniworker cron status
+flux-agent cron list
+flux-agent cron status
 ```
 
 ### Gateway scheduler behavior
 
-On each tick OmniWorker:
+On each tick Flux Agent:
 
-1. loads jobs from `~/.omniworker/cron/jobs.json`
+1. loads jobs from `~/.flux-agent/cron/jobs.json`
 2. checks `next_run_at` against the current time
 3. starts a fresh `AIAgent` session for each due job
 4. optionally injects one or more attached skills into that fresh session
@@ -211,7 +211,7 @@ On each tick OmniWorker:
 6. delivers the final response
 7. updates run metadata and the next scheduled time
 
-A file lock at `~/.omniworker/cron/.tick.lock` prevents overlapping scheduler ticks from double-running the same job batch.
+A file lock at `~/.flux-agent/cron/.tick.lock` prevents overlapping scheduler ticks from double-running the same job batch.
 
 ## Delivery options
 
@@ -220,7 +220,7 @@ When scheduling jobs, you specify where the output goes:
 | Option | Description | Example |
 |--------|-------------|---------|
 | `"origin"` | Back to where the job was created | Default on messaging platforms |
-| `"local"` | Save to local files only (`~/.omniworker/cron/output/`) | Default on CLI |
+| `"local"` | Save to local files only (`~/.flux-agent/cron/output/`) | Default on CLI |
 | `"telegram"` | Telegram home channel | Uses `TELEGRAM_HOME_CHANNEL` |
 | `"telegram:123456"` | Specific Telegram chat by ID | Direct delivery |
 | `"telegram:-100123:17585"` | Specific Telegram topic | `chat_id:thread_id` format |
@@ -270,14 +270,14 @@ Note: The agent cannot see this message, and therefore cannot respond to it.
 To deliver the raw agent output without the wrapper, set `cron.wrap_response` to `false`:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 cron:
   wrap_response: false
 ```
 
 ### Silent suppression
 
-If the agent's final response starts with `[SILENT]`, delivery is suppressed entirely. The output is still saved locally for audit (in `~/.omniworker/cron/output/`), but no message is sent to the delivery target.
+If the agent's final response starts with `[SILENT]`, delivery is suppressed entirely. The output is still saved locally for audit (in `~/.flux-agent/cron/output/`), but no message is sent to the delivery target.
 
 This is useful for monitoring jobs that should only report when something is wrong:
 
@@ -293,19 +293,19 @@ Failed jobs always deliver regardless of the `[SILENT]` marker — only successf
 Pre-run scripts (attached via the `script` parameter) have a default timeout of 120 seconds. If your scripts need longer — for example, to include randomized delays that avoid bot-like timing patterns — you can increase this:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 cron:
   script_timeout_seconds: 300   # 5 minutes
 ```
 
-Or set the `OMNIWORKER_CRON_SCRIPT_TIMEOUT` environment variable. The resolution order is: env var → config.yaml → 120s default.
+Or set the `FLUX AGENT_CRON_SCRIPT_TIMEOUT` environment variable. The resolution order is: env var → config.yaml → 120s default.
 
 ## No-agent mode (script-only jobs)
 
 For recurring jobs that don't need LLM reasoning — classic watchdogs, disk/memory alerts, heartbeats, CI pings — pass `no_agent=True` at creation time. The scheduler runs your script on schedule and delivers its stdout directly, skipping the agent entirely:
 
 ```bash
-omniworker cron create "every 5m" \
+flux-agent cron create "every 5m" \
   --no-agent \
   --script memory-watchdog.sh \
   --deliver telegram \
@@ -320,17 +320,17 @@ Semantics:
 - `{"wakeAgent": false}` on the last line → silent tick (same gate LLM jobs use).
 - No tokens, no model, no provider fallback — the job never touches the inference layer.
 
-`.sh` / `.bash` files run under `/bin/bash`; anything else under the current Python interpreter (`sys.executable`). Scripts must live in `~/.omniworker/scripts/` (same sandboxing rule as the pre-run script gate).
+`.sh` / `.bash` files run under `/bin/bash`; anything else under the current Python interpreter (`sys.executable`). Scripts must live in `~/.flux-agent/scripts/` (same sandboxing rule as the pre-run script gate).
 
 ### The agent sets these up for you
 
-The `cronjob` tool's schema exposes `no_agent` to OmniWorker directly, so you can describe a watchdog in chat and let the agent wire it up:
+The `cronjob` tool's schema exposes `no_agent` to Flux Agent directly, so you can describe a watchdog in chat and let the agent wire it up:
 
 ```text
 Ping me on Telegram if RAM is over 85%, every 5 minutes.
 ```
 
-OmniWorker will write the check script to `~/.omniworker/scripts/` via `write_file`, then call:
+Flux Agent will write the check script to `~/.flux-agent/scripts/` via `write_file`, then call:
 
 ```python
 cronjob(action="create", schedule="every 5m",
@@ -350,7 +350,7 @@ Cron jobs run in isolated sessions with no memory of previous runs. But sometime
 # Job 1: Collect raw data
 cronjob(
     action="create",
-    prompt="Fetch the top 10 AI/ML stories from Hacker News. Save them to ~/.omniworker/data/briefs/raw.md in markdown format with title, URL, and score.",
+    prompt="Fetch the top 10 AI/ML stories from Hacker News. Save them to ~/.flux-agent/data/briefs/raw.md in markdown format with title, URL, and score.",
     schedule="0 7 * * *",
     name="AI News Collector",
 )
@@ -359,7 +359,7 @@ cronjob(
 # Get Job 1's ID from: cronjob(action="list")
 cronjob(
     action="create",
-    prompt="Read ~/.omniworker/data/briefs/raw.md. Score each story 1–10 for engagement potential and novelty. Output the top 5 to ~/.omniworker/data/briefs/ranked.md.",
+    prompt="Read ~/.flux-agent/data/briefs/raw.md. Score each story 1–10 for engagement potential and novelty. Output the top 5 to ~/.flux-agent/data/briefs/ranked.md.",
     schedule="30 7 * * *",
     context_from="<job1_id>",
     name="AI News Triage",
@@ -368,7 +368,7 @@ cronjob(
 # Job 3: Ship — receives Job 2's output as context
 cronjob(
     action="create",
-    prompt="Read ~/.omniworker/data/briefs/ranked.md. Write 3 tweet drafts (hook + body + hashtags). Deliver to telegram:7976161601.",
+    prompt="Read ~/.flux-agent/data/briefs/ranked.md. Write 3 tweet drafts (hook + body + hashtags). Deliver to telegram:7976161601.",
     schedule="0 8 * * *",
     context_from="<job2_id>",
     name="AI News Brief",
@@ -377,7 +377,7 @@ cronjob(
 
 **How it works:**
 
-- When Job 2 fires, OmniWorker reads Job 1's most recent output from `~/.omniworker/cron/output/{job1_id}/*.md`
+- When Job 2 fires, Flux Agent reads Job 1's most recent output from `~/.flux-agent/cron/output/{job1_id}/*.md`
 - That output is prepended to Job 2's prompt automatically
 - Job 2 doesn't need to hardcode "read this file" — it receives the content as context
 - The chain can be any length: Job 1 → Job 2 → Job 3 → ...
@@ -408,7 +408,7 @@ This means cron jobs that run at high frequency or during peak hours are more re
 
 ## Schedule formats
 
-The agent's final response is automatically delivered — you do **not** need to include `send_message` in the cron prompt for that same destination. If a cron run calls `send_message` to the exact target the scheduler will already deliver to, OmniWorker skips that duplicate send and tells the model to put the user-facing content in the final response instead. Use `send_message` only for additional or different targets.
+The agent's final response is automatically delivered — you do **not** need to include `send_message` in the cron prompt for that same destination. If a cron run calls `send_message` to the exact target the scheduler will already deliver to, Flux Agent skips that duplicate send and tells the model to put the user-facing content in the final response instead. Use `send_message` only for additional or different targets.
 
 ### Relative delays (one-shot)
 
@@ -479,10 +479,10 @@ For `update`, pass `skills=[]` to remove all attached skills.
 
 ## Toolsets available to cron jobs
 
-Cron runs each job in a fresh agent session with no chat platform attached. By default the cron agent gets **the toolset you configured for the `cron` platform in `omniworker tools`** — not the CLI default, not everything under the sun.
+Cron runs each job in a fresh agent session with no chat platform attached. By default the cron agent gets **the toolset you configured for the `cron` platform in `flux-agent tools`** — not the CLI default, not everything under the sun.
 
 ```bash
-omniworker tools
+flux-agent tools
 # → pick the "cron" platform in the curses UI
 # → toggle toolsets on/off just like you would for Telegram/Discord/etc.
 ```
@@ -496,11 +496,11 @@ cronjob(action="create", name="weekly-news-summary",
         prompt="Summarize this week's AI news: ...")
 ```
 
-When `enabled_toolsets` is set on a job it wins; otherwise the `omniworker tools` cron-platform config wins; otherwise OmniWorker falls back to the built-in defaults. This matters for cost control: carrying `moa`, `browser`, `delegation` into every tiny "fetch news" job bloats the tool-schema prompt on every LLM call.
+When `enabled_toolsets` is set on a job it wins; otherwise the `flux-agent tools` cron-platform config wins; otherwise Flux Agent falls back to the built-in defaults. This matters for cost control: carrying `moa`, `browser`, `delegation` into every tiny "fetch news" job bloats the tool-schema prompt on every LLM call.
 
 ### Skipping the agent entirely: `wakeAgent`
 
-If your cron job attaches a pre-check script (via `script=`), the script can decide at runtime whether OmniWorker should even invoke the agent. Emit a final stdout line of the form:
+If your cron job attaches a pre-check script (via `script=`), the script can decide at runtime whether Flux Agent should even invoke the agent. Emit a final stdout line of the form:
 
 ```text
 {"wakeAgent": false}
@@ -530,9 +530,9 @@ The `wakeAgent` gate gives you a $0 way to decide whether a scheduled job should
 
 ```bash
 #!/bin/bash
-# ~/.omniworker/scripts/feed-changed.sh
+# ~/.flux-agent/scripts/feed-changed.sh
 FEED="$HOME/data/feed.json"
-STATE="$HOME/.omniworker/scripts/.feed-changed.last"
+STATE="$HOME/.flux-agent/scripts/.feed-changed.last"
 test -f "$FEED" || { echo '{"wakeAgent": false}'; exit 0; }
 mtime=$(stat -c %Y "$FEED")
 last=$(cat "$STATE" 2>/dev/null || echo 0)
@@ -555,7 +555,7 @@ cronjob(action="create", name="process-feed",
 
 ```bash
 #!/bin/bash
-# ~/.omniworker/scripts/flag-ready.sh
+# ~/.flux-agent/scripts/flag-ready.sh
 if test -f /tmp/new-data-ready; then
   rm -f /tmp/new-data-ready
   echo '{"wakeAgent": true}'
@@ -575,7 +575,7 @@ cronjob(action="create", name="nightly-analysis",
 
 ```python
 #!/usr/bin/env python
-# ~/.omniworker/scripts/new-rows.py
+# ~/.flux-agent/scripts/new-rows.py
 import json, sqlite3
 conn = sqlite3.connect("/home/me/data/app.db")
 n = conn.execute(
@@ -597,10 +597,10 @@ cronjob(action="create", name="summarize-new-msgs",
 The same pattern works for any data source you can query from a script — Postgres, an HTTP API, your own state store — without baking a SQL evaluator into the cron subsystem.
 
 :::tip
-OmniWorker's own `~/.omniworker/state.db` is an internal schema that changes between releases. Don't query it from a pre-run gate — point at your own database or feed instead.
+Flux Agent's own `~/.flux-agent/state.db` is an internal schema that changes between releases. Don't query it from a pre-run gate — point at your own database or feed instead.
 :::
 
-Credit: this recipe set was prompted by @iankar8's exploration in [#2654](https://github.com/OmniWorker/omniworker-agent/pull/2654), which proposed adding sql/file/command triggers as a parallel mechanism. The `script` + `wakeAgent` gate already covers all three cases at $0, so the work landed as documentation instead.
+Credit: this recipe set was prompted by @iankar8's exploration in [#2654](https://github.com/Flux Agent/flux-agent-agent/pull/2654), which proposed adding sql/file/command triggers as a parallel mechanism. The `script` + `wakeAgent` gate already covers all three cases at $0, so the work landed as documentation instead.
 
 ### Chaining jobs: `context_from`
 
@@ -617,9 +617,9 @@ The referenced jobs' most recent completed outputs are injected above the prompt
 
 ## Job storage
 
-Jobs are stored in `~/.omniworker/cron/jobs.json`. Output from job runs is saved to `~/.omniworker/cron/output/{job_id}/{timestamp}.md`.
+Jobs are stored in `~/.flux-agent/cron/jobs.json`. Output from job runs is saved to `~/.flux-agent/cron/output/{job_id}/{timestamp}.md`.
 
-Jobs may store `model` and `provider` as `null`. When those fields are omitted, OmniWorker resolves them at execution time from the global configuration. They only appear in the job record when a per-job override is set.
+Jobs may store `model` and `provider` as `null`. When those fields are omitted, Flux Agent resolves them at execution time from the global configuration. They only appear in the job record when a per-job override is set.
 
 The storage uses atomic file writes so interrupted writes do not leave a partially written job file behind.
 

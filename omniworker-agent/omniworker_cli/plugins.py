@@ -1,5 +1,5 @@
 """
-OmniWorker Plugin System
+Flux Agent Plugin System
 ====================
 
 Discovers, loads, and manages plugins from four sources:
@@ -9,7 +9,7 @@ Discovers, loads, and manages plugins from four sources:
    own discovery paths)
 2. **User plugins**   – ``~/.hermes/plugins/<name>/``
 3. **Project plugins** – ``./.hermes/plugins/<name>/`` (opt-in via
-   ``OMNIWORKER_ENABLE_PROJECT_PLUGINS``)
+   ``FLUX AGENT_ENABLE_PROJECT_PLUGINS``)
 4. **Pip plugins**     – packages that expose the ``hermes_agent.plugins``
    entry-point group.
 
@@ -47,19 +47,19 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Union
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 from utils import env_var_enabled
-from omniworker_cli.config import cfg_get
+from flux-agent_cli.config import cfg_get
 
 
 def get_bundled_plugins_dir() -> Path:
     """Locate the bundled ``plugins/`` directory.
 
-    Honours ``OMNIWORKER_BUNDLED_PLUGINS`` (set by the Nix wrapper / packaged
+    Honours ``FLUX AGENT_BUNDLED_PLUGINS`` (set by the Nix wrapper / packaged
     installs) so read-only store paths are consulted first.  Falls back to
     the in-repo path used during development.
     """
-    env_override = os.getenv("OMNIWORKER_BUNDLED_PLUGINS")
+    env_override = os.getenv("FLUX AGENT_BUNDLED_PLUGINS")
     if env_override:
         return Path(env_override)
     return Path(__file__).resolve().parent.parent / "plugins"
@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 # Plugin developer debug logging
 # ---------------------------------------------------------------------------
 #
-# Set ``OMNIWORKER_PLUGINS_DEBUG=1`` to surface verbose plugin-discovery logs to
+# Set ``FLUX AGENT_PLUGINS_DEBUG=1`` to surface verbose plugin-discovery logs to
 # stderr in addition to ~/.hermes/logs/agent.log. Aimed at plugin authors
 # trying to figure out why their plugin isn't showing up: which directories
 # were scanned, which manifests parsed, which plugins were skipped (and why),
@@ -86,21 +86,21 @@ logger = logging.getLogger(__name__)
 # The env var is read once at import time; tests that need to flip it
 # mid-process can call ``_install_plugin_debug_handler(force=True)``.
 
-_PLUGINS_DEBUG = os.getenv("OMNIWORKER_PLUGINS_DEBUG", "").strip().lower() in {
+_PLUGINS_DEBUG = os.getenv("FLUX AGENT_PLUGINS_DEBUG", "").strip().lower() in {
     "1", "true", "yes", "on",
 }
 _DEBUG_HANDLER_INSTALLED = False
 
 
 def _install_plugin_debug_handler(force: bool = False) -> None:
-    """When OMNIWORKER_PLUGINS_DEBUG is on, tee plugin logs to stderr at DEBUG.
+    """When FLUX AGENT_PLUGINS_DEBUG is on, tee plugin logs to stderr at DEBUG.
 
     Idempotent: only attaches the handler once per process unless ``force``
-    is passed. Does not touch the root logger or other OmniWorker loggers.
+    is passed. Does not touch the root logger or other Flux Agent loggers.
     """
     global _DEBUG_HANDLER_INSTALLED, _PLUGINS_DEBUG
     if force:
-        _PLUGINS_DEBUG = os.getenv("OMNIWORKER_PLUGINS_DEBUG", "").strip().lower() in {
+        _PLUGINS_DEBUG = os.getenv("FLUX AGENT_PLUGINS_DEBUG", "").strip().lower() in {
             "1", "true", "yes", "on",
         }
     if not _PLUGINS_DEBUG or _DEBUG_HANDLER_INSTALLED:
@@ -115,7 +115,7 @@ def _install_plugin_debug_handler(force: bool = False) -> None:
     logger.propagate = True
     _DEBUG_HANDLER_INSTALLED = True
     logger.debug(
-        "OMNIWORKER_PLUGINS_DEBUG=1 — verbose plugin discovery logging enabled"
+        "FLUX AGENT_PLUGINS_DEBUG=1 — verbose plugin discovery logging enabled"
     )
 
 
@@ -185,7 +185,7 @@ def _get_disabled_plugins() -> set:
     ``plugins.enabled``.
     """
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         config = load_config()
         disabled = cfg_get(config, "plugins", "disabled", default=[])
         return set(disabled) if isinstance(disabled, list) else set()
@@ -208,7 +208,7 @@ def _get_enabled_plugins() -> Optional[set]:
     * ``set(...)`` — the concrete allow-list.
     """
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         config = load_config()
         plugins_cfg = config.get("plugins")
         if not isinstance(plugins_cfg, dict):
@@ -444,7 +444,7 @@ class PluginContext:
 
         # Reject if it conflicts with a built-in command
         try:
-            from omniworker_cli.commands import resolve_command
+            from flux-agent_cli.commands import resolve_command
             if resolve_command(clean) is not None:
                 logger.warning(
                     "Plugin '%s' tried to register command '/%s' which conflicts "
@@ -810,7 +810,7 @@ class PluginManager:
 
         # 1. Bundled plugins (<repo>/plugins/<name>/)
         #
-        # Repo-shipped plugins live next to omniworker_cli/. Two layouts are
+        # Repo-shipped plugins live next to flux-agent_cli/. Two layouts are
         # supported (see ``_scan_directory`` for details):
         #
         #   - flat: ``plugins/disk-cleanup/plugin.yaml`` (standalone)
@@ -837,14 +837,14 @@ class PluginManager:
         manifests.extend(bundled_platforms)
 
         # 2. User plugins (~/.hermes/plugins/)
-        user_dir = get_omniworker_home() / "plugins"
+        user_dir = get_flux-agent_home() / "plugins"
         logger.debug("Scanning user plugins: %s", user_dir)
         user_manifests = self._scan_directory(user_dir, source="user")
         logger.debug("  user: %d manifest(s)", len(user_manifests))
         manifests.extend(user_manifests)
 
         # 3. Project plugins (./.hermes/plugins/)
-        if _env_enabled("OMNIWORKER_ENABLE_PROJECT_PLUGINS"):
+        if _env_enabled("FLUX AGENT_ENABLE_PROJECT_PLUGINS"):
             project_dir = Path.cwd() / ".hermes" / "plugins"
             logger.debug("Scanning project plugins: %s", project_dir)
             project_manifests = self._scan_directory(project_dir, source="project")
@@ -852,7 +852,7 @@ class PluginManager:
             manifests.extend(project_manifests)
         else:
             logger.debug(
-                "Project plugins disabled (set OMNIWORKER_ENABLE_PROJECT_PLUGINS=1 to enable)"
+                "Project plugins disabled (set FLUX AGENT_ENABLE_PROJECT_PLUGINS=1 to enable)"
             )
 
         # 4. Pip / entry-point plugins
@@ -920,7 +920,7 @@ class PluginManager:
             # enforced by the tool wrapper.
             #
             # Bundled platform plugins (gateway adapters like IRC) auto-load
-            # for the same reason: every platform OmniWorker ships must be
+            # for the same reason: every platform Flux Agent ships must be
             # available out of the box without the user having to opt in.
             if manifest.source == "bundled" and manifest.kind in {"backend", "platform"}:
                 self._load_plugin(manifest)

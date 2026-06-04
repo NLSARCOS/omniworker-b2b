@@ -1,5 +1,5 @@
-import type { InputEvent, Key } from '@omniworker/ink'
-import * as Ink from '@omniworker/ink'
+import type { InputEvent, Key } from '@flux-agent/ink'
+import * as Ink from '@flux-agent/ink'
 import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react'
 
 import { setInputSelection } from '../app/inputSelectionStore.js'

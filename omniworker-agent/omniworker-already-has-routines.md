@@ -1,4 +1,4 @@
-# OmniWorker Agent Has Had "Routines" Since March
+# Flux Agent Agent Has Had "Routines" Since March
 
 Anthropic just announced [Claude Code Routines](https://claude.com/blog/introducing-routines-in-claude-code) — scheduled tasks, GitHub event triggers, and API-triggered agent runs. Bundled prompt + repo + connectors, running on their infrastructure.
 
@@ -13,9 +13,9 @@ Claude Code Routines offers three ways to trigger an automation:
 **1. Scheduled (cron)**
 > "Every night at 2am: pull the top bug from Linear, attempt a fix, and open a draft PR."
 
-OmniWorker equivalent — works today:
+Flux Agent equivalent — works today:
 ```bash
-omniworker cron create "0 2 * * *" \
+flux-agent cron create "0 2 * * *" \
   "Pull the top bug from the issue tracker, attempt a fix, and open a draft PR." \
   --name "Nightly bug fix" \
   --deliver telegram
@@ -24,9 +24,9 @@ omniworker cron create "0 2 * * *" \
 **2. GitHub Events (webhook)**
 > "Flag PRs that touch the /auth-provider module and post to #auth-changes."
 
-OmniWorker equivalent — works today:
+Flux Agent equivalent — works today:
 ```bash
-omniworker webhook subscribe auth-watch \
+flux-agent webhook subscribe auth-watch \
   --events "pull_request" \
   --prompt "PR #{pull_request.number}: {pull_request.title} by {pull_request.user.login}. Check if it touches the auth-provider module. If yes, summarize the changes." \
   --deliver slack
@@ -35,20 +35,20 @@ omniworker webhook subscribe auth-watch \
 **3. API Triggers**
 > "Read the alert payload, find the owning service, post a triage summary to #oncall."
 
-OmniWorker equivalent — works today:
+Flux Agent equivalent — works today:
 ```bash
-omniworker webhook subscribe alert-triage \
+flux-agent webhook subscribe alert-triage \
   --prompt "Alert: {alert.name} — Severity: {alert.severity}. Find the owning service, investigate, and post a triage summary with proposed first steps." \
   --deliver slack
 ```
 
-Every use case in their blog post — backlog triage, docs drift, deploy verification, alert correlation, library porting, bespoke PR review — has a working OmniWorker implementation. No new features needed. It's been shipping since March 2026.
+Every use case in their blog post — backlog triage, docs drift, deploy verification, alert correlation, library porting, bespoke PR review — has a working Flux Agent implementation. No new features needed. It's been shipping since March 2026.
 
 ---
 
 ## What's Different
 
-| | Claude Code Routines | OmniWorker Agent |
+| | Claude Code Routines | Flux Agent Agent |
 |---|---|---|
 | **Scheduled tasks** | ✅ Schedule-based | ✅ Any cron expression + human-readable intervals |
 | **GitHub triggers** | ✅ PR, issue, push events | ✅ Any GitHub event via webhook subscriptions |
@@ -66,16 +66,16 @@ Every use case in their blog post — backlog triage, docs drift, deploy verific
 
 ---
 
-## Things OmniWorker Does That Routines Can't
+## Things Flux Agent Does That Routines Can't
 
 ### Script Injection
 
 Run a Python script *before* the agent. The script's stdout becomes context. The script handles mechanical work (fetching, diffing, computing); the agent handles reasoning.
 
 ```bash
-omniworker cron create "every 1h" \
+flux-agent cron create "every 1h" \
   "If CHANGE DETECTED, summarize what changed. If NO_CHANGE, respond with [SILENT]." \
-  --script ~/.omniworker/scripts/watch-site.py \
+  --script ~/.flux-agent/scripts/watch-site.py \
   --name "Pricing monitor" \
   --deliver telegram
 ```
@@ -87,7 +87,7 @@ The `[SILENT]` pattern means you only get notified when something actually happe
 Chain specialized skills together. Each skill teaches the agent a specific capability, and the prompt ties them together.
 
 ```bash
-omniworker cron create "0 8 * * *" \
+flux-agent cron create "0 8 * * *" \
   "Search arXiv for papers on language model reasoning. Save the top 3 as Obsidian notes." \
   --skills "arxiv,obsidian" \
   --name "Paper digest"
@@ -116,7 +116,7 @@ Your nightly triage can run on Claude. Your deploy verification can run on GPT. 
 
 Claude Code Routines: **5 routines per day** on Pro. **25 on Enterprise.** That's their ceiling.
 
-OmniWorker has no daily limit. Run 500 automations a day if you want. The only constraint is your API budget, and you choose which models to use for which tasks.
+Flux Agent has no daily limit. Run 500 automations a day if you want. The only constraint is your API budget, and you choose which models to use for which tasks.
 
 A nightly backlog triage on Sonnet costs roughly $0.02-0.05. A monitoring check on DeepSeek costs fractions of a cent. You control the economics.
 
@@ -124,16 +124,16 @@ A nightly backlog triage on Sonnet costs roughly $0.02-0.05. A monitoring check 
 
 ## Get Started
 
-OmniWorker Agent is open source and free. The automation infrastructure — cron scheduler, webhook platform, skill system, multi-platform delivery — is built in.
+Flux Agent Agent is open source and free. The automation infrastructure — cron scheduler, webhook platform, skill system, multi-platform delivery — is built in.
 
 ```bash
-pip install omniworker-agent
-omniworker setup
+pip install flux-agent-agent
+flux-agent setup
 ```
 
 Set up a scheduled task in 30 seconds:
 ```bash
-omniworker cron create "0 9 * * 1" \
+flux-agent cron create "0 9 * * 1" \
   "Generate a weekly AI news digest. Search the web for major announcements, trending repos, and notable papers. Keep it under 500 words with links." \
   --name "Weekly digest" \
   --deliver telegram
@@ -141,20 +141,20 @@ omniworker cron create "0 9 * * 1" \
 
 Set up a GitHub webhook in 60 seconds:
 ```bash
-omniworker gateway setup    # enable webhooks
-omniworker webhook subscribe pr-review \
+flux-agent gateway setup    # enable webhooks
+flux-agent webhook subscribe pr-review \
   --events "pull_request" \
   --prompt "Review PR #{pull_request.number}: {pull_request.title}" \
   --skills "github-code-review" \
   --deliver github_comment
 ```
 
-Full automation templates gallery: [omniworker-agent.omniworker.com/docs/guides/automation-templates](https://omniworker-agent.omniworker.com/docs/guides/automation-templates)
+Full automation templates gallery: [flux-agent-agent.flux-agent.com/docs/guides/automation-templates](https://flux-agent-agent.flux-agent.com/docs/guides/automation-templates)
 
-Documentation: [omniworker-agent.omniworker.com](https://omniworker-agent.omniworker.com)
+Documentation: [flux-agent-agent.flux-agent.com](https://flux-agent-agent.flux-agent.com)
 
-GitHub: [github.com/OmniWorker/omniworker-agent](https://github.com/OmniWorker/omniworker-agent)
+GitHub: [github.com/Flux Agent/flux-agent-agent](https://github.com/Flux Agent/flux-agent-agent)
 
 ---
 
-*OmniWorker Agent is built by [Nous Research](https://omniworker.com). Open source, model-agnostic, runs on your infrastructure.*
+*Flux Agent Agent is built by [Nous Research](https://flux-agent.com). Open source, model-agnostic, runs on your infrastructure.*

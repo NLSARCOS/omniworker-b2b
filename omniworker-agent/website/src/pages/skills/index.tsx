@@ -250,7 +250,7 @@ function SkillCard({
               </div>
             )}
             <div className={styles.installHint}>
-              <code>omniworker skills install {skill.name}</code>
+              <code>flux-agent skills install {skill.name}</code>
             </div>
             {skill.docsPath && (
               <a

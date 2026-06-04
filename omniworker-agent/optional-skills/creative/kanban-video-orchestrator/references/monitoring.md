@@ -8,26 +8,26 @@ the session) detect problems early and intervene effectively.
 
 ```bash
 # Live event stream — task spawns, status changes, heartbeats, completions
-omniworker kanban watch --tenant <project-slug>
+flux-agent kanban watch --tenant <project-slug>
 
 # Snapshot of the board
-omniworker kanban list --tenant <project-slug>
-omniworker kanban list --tenant <project-slug> --json     # machine-readable
+flux-agent kanban list --tenant <project-slug>
+flux-agent kanban list --tenant <project-slug> --json     # machine-readable
 
 # Per-status counts + oldest-ready age
-omniworker kanban stats --tenant <project-slug>
+flux-agent kanban stats --tenant <project-slug>
 
 # Visual dashboard (browser)
-omniworker dashboard
+flux-agent dashboard
 
 # Inspect a specific task (includes comments + events)
-omniworker kanban show <task-id>
+flux-agent kanban show <task-id>
 
 # Follow a single task's event stream
-omniworker kanban tail <task-id>
+flux-agent kanban tail <task-id>
 ```
 
-Verify available subcommands with `omniworker kanban --help` — the kanban CLI
+Verify available subcommands with `flux-agent kanban --help` — the kanban CLI
 ships with `init / create / list / show / assign / link / unlink / claim /
 comment / complete / block / unblock / archive / tail / dispatch / watch /
 stats / heartbeat / log / runs / context / gc`.
@@ -51,13 +51,13 @@ deadlocks).
 
 | Symptom | Likely cause | Action |
 |---------|--------------|--------|
-| Task RUNNING but no heartbeat in 2+ min | Worker stuck, infinite loop, blocked on input | `omniworker kanban show <id>` — read the worker's last events. The dispatcher SIGTERMs tasks that exceed their `max-runtime`; if you need to stop one earlier, `omniworker kanban block <id>` then `omniworker kanban archive <id>`, and create a re-run task. |
-| Same task retried 2+ times | Reproducible failure (missing key, bad spec, broken tool) | `omniworker kanban show <id>` to read failure events. Fix root cause before re-running. |
-| RUNNING longer than max_runtime | Task is slow but progressing OR genuinely stuck | Check heartbeats with `omniworker kanban tail <id>`. If progressing, the dispatcher will SIGTERM eventually anyway — raise `max-runtime` on a re-created task. |
+| Task RUNNING but no heartbeat in 2+ min | Worker stuck, infinite loop, blocked on input | `flux-agent kanban show <id>` — read the worker's last events. The dispatcher SIGTERMs tasks that exceed their `max-runtime`; if you need to stop one earlier, `flux-agent kanban block <id>` then `flux-agent kanban archive <id>`, and create a re-run task. |
+| Same task retried 2+ times | Reproducible failure (missing key, bad spec, broken tool) | `flux-agent kanban show <id>` to read failure events. Fix root cause before re-running. |
+| RUNNING longer than max_runtime | Task is slow but progressing OR genuinely stuck | Check heartbeats with `flux-agent kanban tail <id>`. If progressing, the dispatcher will SIGTERM eventually anyway — raise `max-runtime` on a re-created task. |
 | Child task READY but parents still RUNNING for >2× expected | Cascade slow, dependency miswired | Check the dependency graph. Inspect the parent: sometimes it completed but its handoff fields (summary, metadata) were empty so the child has nothing to consume. |
 | New tasks not appearing | Director is hung in decomposition | Inspect director task with `kanban show`. Often a malformed `kanban_create` call. |
 | Specialist tasks completing instantly | Decomposition created tasks without bodies | Director didn't pass enough context. Re-create with explicit body content. |
-| Tasks created but never picked up | Profile not running, or tenant mismatch, or dispatcher not running | Check `omniworker profile list` (profile exists?), `omniworker status` (gateway/dispatcher up?), and verify tenant. |
+| Tasks created but never picked up | Profile not running, or tenant mismatch, or dispatcher not running | Check `flux-agent profile list` (profile exists?), `flux-agent status` (gateway/dispatcher up?), and verify tenant. |
 | Specific renderer task fails → review note → renderer redoes → fails again | Brief is asking for the impossible | Pivot the brief, not the renderer. |
 
 ## Intervention recipes
@@ -68,11 +68,11 @@ When a renderer ships a clip that doesn't pass review:
 
 ```bash
 # 1. Comment on the renderer's task with specific feedback
-omniworker kanban comment <renderer-task-id> "Scene 3 looks too sparse \
+flux-agent kanban comment <renderer-task-id> "Scene 3 looks too sparse \
 — increase visual density. Tighten color palette to brand spec."
 
 # 2. Create a re-render task with the original as parent
-omniworker kanban create "Scene 3 — re-render with feedback" \
+flux-agent kanban create "Scene 3 — re-render with feedback" \
     --assignee renderer-ascii \
     --parent <renderer-task-id> \
     --workspace dir:"$HOME/projects/video-pipeline/<slug>" \
@@ -88,14 +88,14 @@ file):
 
 ```bash
 # 1. Create the new task and capture its id
-NEW_TASK_ID=$(omniworker kanban create "Generate SRT captions from voiceover" \
+NEW_TASK_ID=$(flux-agent kanban create "Generate SRT captions from voiceover" \
     --assignee captioner \
     --workspace dir:"$HOME/projects/video-pipeline/<slug>" \
     --tenant <slug> \
     --json | python3 -c "import json,sys;print(json.load(sys.stdin)['id'])")
 
 # 2. Wire it as a parent of the editor's task with `kanban link`
-omniworker kanban link "$NEW_TASK_ID" <editor-task-id>
+flux-agent kanban link "$NEW_TASK_ID" <editor-task-id>
 ```
 
 `kanban link` takes `parent_id child_id` (parent first). Use `kanban unlink`
@@ -108,13 +108,13 @@ The kanban dispatcher will SIGTERM (then SIGKILL) any task that exceeds its
 
 ```bash
 # Mark blocked so the dispatcher leaves it alone, then archive
-omniworker kanban block <task-id>
-omniworker kanban archive <task-id>
+flux-agent kanban block <task-id>
+flux-agent kanban archive <task-id>
 
 # Diagnose what happened
-omniworker kanban show <task-id>      # task body, comments, recent events
-omniworker kanban tail <task-id>      # follow the live event stream
-omniworker kanban log <task-id>       # worker process log
+flux-agent kanban show <task-id>      # task body, comments, recent events
+flux-agent kanban tail <task-id>      # follow the live event stream
+flux-agent kanban log <task-id>       # worker process log
 ```
 
 After stopping, decide: fix root cause + re-create the task, or skip and
@@ -126,7 +126,7 @@ If during execution the user wants something fundamentally different:
 
 1. Cancel the active director task and all RUNNING children
 2. Edit `brief.md` and `TEAM.md`
-3. Re-fire the initial `omniworker kanban create` for the director
+3. Re-fire the initial `flux-agent kanban create` for the director
 
 Don't try to "edit while running" — the kanban's audit trail makes a clean
 pivot more legible than mid-stream changes.
@@ -138,14 +138,14 @@ A simple polling pattern for hands-off monitoring:
 ```bash
 while true; do
     clear
-    omniworker kanban list --tenant <slug>
+    flux-agent kanban list --tenant <slug>
     echo "---"
-    omniworker kanban stats --tenant <slug>
+    flux-agent kanban stats --tenant <slug>
     sleep 30
 done
 ```
 
-For a live event feed, run `omniworker kanban watch --tenant <slug>` in a
+For a live event feed, run `flux-agent kanban watch --tenant <slug>` in a
 separate terminal — it streams task lifecycle events as they happen.
 
 For automated intervention (auto-restart stuck tasks, auto-create re-render on
@@ -170,7 +170,7 @@ scene without re-running the whole pipeline.
 - **Tenant mismatches.** A task created with the wrong tenant won't appear in
   monitoring. Always pass `--tenant <slug>` consistently.
 - **Profile process not running.** Tasks queue indefinitely in READY if no
-  worker for that profile is online. Check `omniworker profile list` and start
+  worker for that profile is online. Check `flux-agent profile list` and start
   any missing profiles.
 - **Workspace permissions.** All profiles need read+write to the workspace
   directory. `chmod -R u+rw <workspace>` if any worker reports permission

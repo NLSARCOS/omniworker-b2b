@@ -19,7 +19,7 @@ import Account from "../Account/Account";
 import Tokens from "../Tokens/Tokens";
 import RemoteNotice from "../../components/RemoteNotice";
 import VerifyWarningBanner from "../../components/VerifyWarningBanner";
-import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
+import Flux AgentLogo from "../../components/common/Flux AgentLogo";
 
 import {
   ChatBubble,
@@ -133,7 +133,7 @@ function Layout({
 
   const checkWhatsappBotEnabled = useCallback(async (profileName: string) => {
     try {
-      const toolsets = await window.omniworkerAPI.getToolsets(profileName);
+      const toolsets = await window.flux-agentAPI.getToolsets(profileName);
       const isEnabled = toolsets.some((t) => t.key === "whatsapp_bot" && t.enabled);
       setWhatsappBotEnabled(isEnabled);
     } catch (e) {
@@ -160,7 +160,7 @@ function Layout({
 
   // Re-check remote mode on tab switch (picks up Settings changes)
   useEffect(() => {
-    window.omniworkerAPI.isRemoteOnlyMode().then(setRemoteMode);
+    window.flux-agentAPI.isRemoteOnlyMode().then(setRemoteMode);
   }, [view]);
 
   // Auto-update state
@@ -175,7 +175,7 @@ function Layout({
   const [saasReleaseNotes, setSaasReleaseNotes] = useState<string | null>(null);
 
   useEffect(() => {
-    const cleanupAvailable = window.omniworkerAPI.onUpdateAvailable((info) => {
+    const cleanupAvailable = window.flux-agentAPI.onUpdateAvailable((info) => {
       setUpdateVersion(info.version);
       setUpdateState("available");
       setUpdateError(null);
@@ -184,17 +184,17 @@ function Layout({
       setSaasReleaseNotes(null);
       setShowUpdateModal(true);
     });
-    const cleanupProgress = window.omniworkerAPI.onUpdateDownloadProgress(
+    const cleanupProgress = window.flux-agentAPI.onUpdateDownloadProgress(
       (info) => {
         setDownloadPercent(info.percent);
       },
     );
-    const cleanupDownloaded = window.omniworkerAPI.onUpdateDownloaded(() => {
+    const cleanupDownloaded = window.flux-agentAPI.onUpdateDownloaded(() => {
       setUpdateState("ready");
       setUpdateError(null);
       setShowUpdateModal(true);
     });
-    const cleanupError = window.omniworkerAPI.onUpdateError((message) => {
+    const cleanupError = window.flux-agentAPI.onUpdateError((message) => {
       setUpdateState("error");
       setUpdateError(message);
       setDownloadPercent(0);
@@ -215,7 +215,7 @@ function Layout({
     licenseUsage?: { active: number; max: number };
   } | null>(null);
 
-  // OmniWorker B2B: Edge Agent Heartbeat
+  // Flux Agent B2B: Edge Agent Heartbeat
   useEffect(() => {
     let heartbeatTimer: any;
     let registeredAgentId: string | null = null;
@@ -223,7 +223,7 @@ function Layout({
 
     async function ensureHeartbeat() {
       try {
-        const envs = await window.omniworkerAPI.getEnv();
+        const envs = await window.flux-agentAPI.getEnv();
         const apiKey = envs?.CUSTOM_API_KEY;
         if (!apiKey) return;
 
@@ -233,7 +233,7 @@ function Layout({
         // Obtener la versión de la aplicación de escritorio
         let appVersion = "1.0.0";
         try {
-          appVersion = await window.omniworkerAPI.getAppVersion();
+          appVersion = await window.flux-agentAPI.getAppVersion();
         } catch (e) {
           console.error("Failed to get app version", e);
         }
@@ -314,7 +314,7 @@ function Layout({
   async function handleUpdate(): Promise<void> {
     if (saasDownloadUrl) {
       try {
-        await window.omniworkerAPI.openExternal(saasDownloadUrl);
+        await window.flux-agentAPI.openExternal(saasDownloadUrl);
         setShowUpdateModal(false);
       } catch (err) {
         setUpdateError("No se pudo abrir el enlace de descarga.");
@@ -328,20 +328,20 @@ function Layout({
       setDownloadPercent(0);
       setUpdateState("downloading");
       try {
-        const ok = await window.omniworkerAPI.downloadUpdate();
+        const ok = await window.flux-agentAPI.downloadUpdate();
         if (!ok) setUpdateState("error");
       } catch (err) {
         setUpdateError(err instanceof Error ? err.message : String(err));
         setUpdateState("error");
       }
     } else if (updateState === "ready") {
-      await window.omniworkerAPI.installUpdate();
+      await window.flux-agentAPI.installUpdate();
     }
   }
 
   const handleNewChat = useCallback(() => {
     // Abort any in-flight chat before clearing
-    window.omniworkerAPI.abortChat();
+    window.flux-agentAPI.abortChat();
     setMessages([]);
     setCurrentSessionId(null);
     goTo("chat");
@@ -349,7 +349,7 @@ function Layout({
 
   // Listen for app-state-changed (post-import refresh)
   useEffect(() => {
-    const cleanup = window.omniworkerAPI.onAppStateChanged(() => {
+    const cleanup = window.flux-agentAPI.onAppStateChanged(() => {
       // Force full app reload to pick up restored data
       window.location.reload();
     });
@@ -358,10 +358,10 @@ function Layout({
 
   // Listen for menu IPC events (Cmd+N, Cmd+K from app menu)
   useEffect(() => {
-    const cleanupNewChat = window.omniworkerAPI.onMenuNewChat(() => {
+    const cleanupNewChat = window.flux-agentAPI.onMenuNewChat(() => {
       handleNewChat();
     });
-    const cleanupSearch = window.omniworkerAPI.onMenuSearchSessions(() => {
+    const cleanupSearch = window.flux-agentAPI.onMenuSearchSessions(() => {
       goTo("sessions");
     });
     return () => {
@@ -379,7 +379,7 @@ function Layout({
   const handleResumeSession = useCallback(
     async (sessionId: string) => {
       const dbMessages =
-        await window.omniworkerAPI.getSessionMessages(sessionId);
+        await window.flux-agentAPI.getSessionMessages(sessionId);
       const chatMessages: ChatMessage[] = dbMessages.map((m) => ({
         id: `db-${m.id}`,
         role: m.role === "user" ? "user" : "agent",
@@ -396,7 +396,7 @@ function Layout({
 
   const handleOpenSaaS = useCallback(() => {
     const saasUrl = import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
-    window.omniworkerAPI.openExternal(`${saasUrl}/dashboard`);
+    window.flux-agentAPI.openExternal(`${saasUrl}/dashboard`);
   }, []);
 
   return (
@@ -422,7 +422,7 @@ function Layout({
       <div className="layout" style={{ height: "auto", flex: 1 }}>
         <aside ref={sidebarRef} className="sidebar">
         <div className="sidebar-brand" style={{ padding: "20px 16px", display: "flex", justifyContent: "center" }}>
-          <OmniWorkerLogo size={24} />
+          <Flux AgentLogo size={24} />
         </div>
 
         <nav className="sidebar-nav">

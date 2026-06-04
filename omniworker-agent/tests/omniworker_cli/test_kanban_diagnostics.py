@@ -1,4 +1,4 @@
-"""Tests for omniworker_cli.kanban_diagnostics — rule-engine that produces
+"""Tests for flux-agent_cli.kanban_diagnostics — rule-engine that produces
 structured distress signals (diagnostics) for kanban tasks.
 
 These tests exercise each rule in isolation using minimal in-memory
@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from omniworker_cli import kanban_db as kb
-from omniworker_cli import kanban_diagnostics as kd
+from flux-agent_cli import kanban_db as kb
+from flux-agent_cli import kanban_diagnostics as kd
 
 
 # ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ from omniworker_cli import kanban_diagnostics as kd
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    home = tmp_path / ".omniworker"
+    home = tmp_path / ".flux-agent"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)

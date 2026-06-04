@@ -1,7 +1,7 @@
 export default {
   title: "設定",
   sections: {
-    omniworkerAgent: "Flux Agent",
+    flux-agentAgent: "Flux Agent",
     appearance: "外観",
     credentialPool: "認証情報プール",
   },
@@ -69,7 +69,7 @@ export default {
     "<code>{{path}}</code> に Flux Agent が見つかりました。設定・API キー・セッション・スキルを Flux Agent に移行できます。",
   migrationDismiss: "再表示しない",
   migrating: "移行中...",
-  migrateToOmniWorker: "Flux Agent に移行",
+  migrateToFlux Agent: "Flux Agent に移行",
   skip: "スキップ",
   appearanceHint: "好みのインターフェース外観を選択",
   apiKeyPlaceholder: "API キー",
@@ -90,7 +90,7 @@ export default {
   save: "保存",
   serverConfigTitle: "サーバ設定",
   serverConfigHint:
-    "リモート Flux Agent サーバに接続中です。モデル選択、プロバイダ API キー、認証情報はサーバ側の <code>~/.omniworker/.env</code> と <code>config.yaml</code> で管理されます。ホスト側で編集（例：<code>docker exec -it Flux Agent vi /opt/data/.env</code>）してコンテナを再起動してください。",
+    "リモート Flux Agent サーバに接続中です。モデル選択、プロバイダ API キー、認証情報はサーバ側の <code>~/.flux-agent/.env</code> と <code>config.yaml</code> で管理されます。ホスト側で編集（例：<code>docker exec -it Flux Agent vi /opt/data/.env</code>）してコンテナを再起動してください。",
   connectionMode: "モード",
   switchedToLocal: "ローカルモードに切り替えました",
 } as const;

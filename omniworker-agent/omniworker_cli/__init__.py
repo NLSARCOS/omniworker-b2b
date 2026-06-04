@@ -1,5 +1,5 @@
 """
-OmniWorker CLI - Unified command-line interface for OmniWorker Agent.
+Flux Agent CLI - Unified command-line interface for Flux Agent Agent.
 
 Provides subcommands for:
 - hermes chat          - Interactive chat (same as ./hermes)

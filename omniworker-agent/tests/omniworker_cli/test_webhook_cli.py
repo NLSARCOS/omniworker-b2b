@@ -1,4 +1,4 @@
-"""Tests for omniworker_cli/webhook.py — webhook subscription CLI."""
+"""Tests for flux-agent_cli/webhook.py — webhook subscription CLI."""
 
 import json
 import os
@@ -6,7 +6,7 @@ import pytest
 from argparse import Namespace
 from pathlib import Path
 
-from omniworker_cli.webhook import (
+from flux-agent_cli.webhook import (
     webhook_command,
     _load_subscriptions,
     _save_subscriptions,
@@ -20,7 +20,7 @@ def _isolate(tmp_path, monkeypatch):
     monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
     # Default: webhooks enabled (most tests need this)
     monkeypatch.setattr(
-        "omniworker_cli.webhook._is_webhook_enabled", lambda: True
+        "flux-agent_cli.webhook._is_webhook_enabled", lambda: True
     )
 
 
@@ -148,15 +148,15 @@ class TestPersistence:
 
 class TestWebhookEnabledGate:
     def test_blocks_when_disabled(self, capsys, monkeypatch):
-        monkeypatch.setattr("omniworker_cli.webhook._is_webhook_enabled", lambda: False)
+        monkeypatch.setattr("flux-agent_cli.webhook._is_webhook_enabled", lambda: False)
         webhook_command(_make_args(webhook_action="subscribe", name="blocked"))
         out = capsys.readouterr().out
         assert "not enabled" in out.lower()
-        assert "omniworker gateway setup" in out
+        assert "flux-agent gateway setup" in out
         assert _load_subscriptions() == {}
 
     def test_blocks_list_when_disabled(self, capsys, monkeypatch):
-        monkeypatch.setattr("omniworker_cli.webhook._is_webhook_enabled", lambda: False)
+        monkeypatch.setattr("flux-agent_cli.webhook._is_webhook_enabled", lambda: False)
         webhook_command(_make_args(webhook_action="list"))
         out = capsys.readouterr().out
         assert "not enabled" in out.lower()
@@ -170,20 +170,20 @@ class TestWebhookEnabledGate:
 
     def test_real_check_disabled(self, monkeypatch):
         monkeypatch.setattr(
-            "omniworker_cli.webhook._get_webhook_config",
+            "flux-agent_cli.webhook._get_webhook_config",
             lambda: {},
         )
         monkeypatch.setattr(
-            "omniworker_cli.webhook._is_webhook_enabled",
+            "flux-agent_cli.webhook._is_webhook_enabled",
             lambda: bool({}.get("enabled")),
         )
-        import omniworker_cli.webhook as wh_mod
+        import flux-agent_cli.webhook as wh_mod
         assert wh_mod._is_webhook_enabled() is False
 
     def test_real_check_enabled(self, monkeypatch):
         monkeypatch.setattr(
-            "omniworker_cli.webhook._is_webhook_enabled",
+            "flux-agent_cli.webhook._is_webhook_enabled",
             lambda: True,
         )
-        import omniworker_cli.webhook as wh_mod
+        import flux-agent_cli.webhook as wh_mod
         assert wh_mod._is_webhook_enabled() is True

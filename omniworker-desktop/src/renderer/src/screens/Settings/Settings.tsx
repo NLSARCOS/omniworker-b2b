@@ -29,15 +29,15 @@ const LANGUAGE_NATIVE_NAMES: Record<AppLocale, string> = {
 
 function getCachedVersion(): string | null {
   try {
-    return localStorage.getItem("omniworker-version-cache");
+    return localStorage.getItem("flux-agent-version-cache");
   } catch {
     return null;
   }
 }
 
-function getCachedOmniWorker(): { found: boolean; path: string | null } | null {
+function getCachedFlux Agent(): { found: boolean; path: string | null } | null {
   try {
-    const raw = localStorage.getItem("omniworker-omniworker-cache");
+    const raw = localStorage.getItem("flux-agent-flux-agent-cache");
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -46,11 +46,11 @@ function getCachedOmniWorker(): { found: boolean; path: string | null } | null {
 
 function Settings({ profile }: { profile?: string }): React.JSX.Element {
   const { t, locale, setLocale } = useI18n();
-  const [omniworkerHome, setOmniWorkerHome] = useState("");
+  const [flux-agentHome, setFlux AgentHome] = useState("");
   const { theme, setTheme } = useTheme();
 
   // Engine state
-  const [omniworkerVersion, setOmniWorkerVersion] = useState<string | null>(getCachedVersion);
+  const [flux-agentVersion, setFlux AgentVersion] = useState<string | null>(getCachedVersion);
   const [appVersion, setAppVersion] = useState("");
   const [doctorOutput, setDoctorOutput] = useState<string | null>(null);
   const [doctorRunning, setDoctorRunning] = useState(false);
@@ -59,11 +59,11 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   const [updateResultType, setUpdateResultType] = useState<"success" | "error" | null>(null);
 
   // Migration state
-  const cachedClaw = getCachedOmniWorker();
-  const [omniworkerFound, setOpenclawFound] = useState(cachedClaw?.found ?? false);
-  const [omniworkerPath, setOpenclawPath] = useState<string | null>(cachedClaw?.path ?? null);
+  const cachedClaw = getCachedFlux Agent();
+  const [flux-agentFound, setOpenclawFound] = useState(cachedClaw?.found ?? false);
+  const [flux-agentPath, setOpenclawPath] = useState<string | null>(cachedClaw?.path ?? null);
   const [migrationDismissed, setMigrationDismissed] = useState(
-    () => localStorage.getItem("omniworker-omniworker-dismissed") === "true",
+    () => localStorage.getItem("flux-agent-flux-agent-dismissed") === "true",
   );
   const [migrating, setMigrating] = useState(false);
   const [migrationLog, setMigrationLog] = useState("");
@@ -109,39 +109,39 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
 
   const loadConfig = useCallback(async (): Promise<void> => {
     const [home, aVersion] = await Promise.all([
-      window.omniworkerAPI.getOmniWorkerHome(profile),
-      window.omniworkerAPI.getAppVersion(),
+      window.flux-agentAPI.getFlux AgentHome(profile),
+      window.flux-agentAPI.getAppVersion(),
     ]);
-    setOmniWorkerHome(home);
+    setFlux AgentHome(home);
     setAppVersion(aVersion);
 
-    window.omniworkerAPI.getConfig("network.force_ipv4", profile).then((v) => {
+    window.flux-agentAPI.getConfig("network.force_ipv4", profile).then((v) => {
       setForceIpv4(v === "true" || v === "True");
     });
-    window.omniworkerAPI.getConfig("network.proxy", profile).then((v) => {
+    window.flux-agentAPI.getConfig("network.proxy", profile).then((v) => {
       setHttpProxy(v || "");
     });
-    window.omniworkerAPI.getEnv(profile).then((env) => {
+    window.flux-agentAPI.getEnv(profile).then((env) => {
       if (env) {
         setDisableLocalSlm(env["DISABLE_LOCAL_SLM"] === "true" || env["DISABLE_LOCAL_SLM"] === "True");
       }
     });
 
-    window.omniworkerAPI.getOmniWorkerVersion().then((v) => {
-      setOmniWorkerVersion(v);
+    window.flux-agentAPI.getFlux AgentVersion().then((v) => {
+      setFlux AgentVersion(v);
       if (v) {
         try {
-          localStorage.setItem("omniworker-version-cache", v);
+          localStorage.setItem("flux-agent-version-cache", v);
         } catch {}
       }
     });
 
-    if (localStorage.getItem("omniworker-omniworker-dismissed") !== "true") {
-      window.omniworkerAPI.checkOmniWorker().then((claw) => {
+    if (localStorage.getItem("flux-agent-flux-agent-dismissed") !== "true") {
+      window.flux-agentAPI.checkFlux Agent().then((claw) => {
         setOpenclawFound(claw.found);
         setOpenclawPath(claw.path);
         try {
-          localStorage.setItem("omniworker-omniworker-cache", JSON.stringify(claw));
+          localStorage.setItem("flux-agent-flux-agent-cache", JSON.stringify(claw));
         } catch {}
       });
     }
@@ -175,12 +175,12 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
     setMigrationLog("");
     setMigrationResult(null);
 
-    const cleanup = window.omniworkerAPI.onInstallProgress((p) => {
+    const cleanup = window.flux-agentAPI.onInstallProgress((p) => {
       setMigrationLog(p.log);
     });
 
     try {
-      const result = await window.omniworkerAPI.runClawMigrate();
+      const result = await window.flux-agentAPI.runClawMigrate();
       cleanup();
       if (result.success) {
         setMigrationResult(t("settings.migrationComplete"));
@@ -199,13 +199,13 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   }
 
   function handleDismissMigration(): void {
-    localStorage.setItem("omniworker-omniworker-dismissed", "true");
+    localStorage.setItem("flux-agent-flux-agent-dismissed", "true");
     setMigrationDismissed(true);
   }
 
   async function handleBackup(): Promise<void> {
     if (!backupInventory) {
-      const inv = await window.omniworkerAPI.scanBackupData(profile, {
+      const inv = await window.flux-agentAPI.scanBackupData(profile, {
         includeSessions,
         includeKanban,
       });
@@ -217,11 +217,11 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
     setBackupResult(null);
     setBackupProgress({ phase: "compressing", percent: 0 });
 
-    const cleanup = window.omniworkerAPI.onBackupProgress((p: any) => {
+    const cleanup = window.flux-agentAPI.onBackupProgress((p: any) => {
       setBackupProgress({ phase: p.phase, percent: p.percent });
     });
 
-    const result = await window.omniworkerAPI.createBackup(profile, {
+    const result = await window.flux-agentAPI.createBackup(profile, {
       includeSessions,
       includeKanban,
     });
@@ -244,11 +244,11 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       setImportResult(null);
       setBackupProgress({ phase: "extracting", percent: 0 });
 
-      const cleanup = window.omniworkerAPI.onBackupProgress((p: any) => {
+      const cleanup = window.flux-agentAPI.onBackupProgress((p: any) => {
         setBackupProgress({ phase: p.phase, percent: p.percent });
       });
 
-      const result = await window.omniworkerAPI.restoreBackup(importArchivePath, profile, {
+      const result = await window.flux-agentAPI.restoreBackup(importArchivePath, profile, {
         includeSessions: true,
         includeKanban: true,
         overwrite: true,
@@ -269,7 +269,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       return;
     }
 
-    const result = await window.omniworkerAPI.readBackupManifest();
+    const result = await window.flux-agentAPI.readBackupManifest();
     if (result.error === "Cancelled") return;
     if (result.error) {
       setImportResult(result.error);
@@ -283,7 +283,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   }
 
   async function loadLogs(): Promise<void> {
-    const result = await window.omniworkerAPI.readLogs(logFile, 300);
+    const result = await window.flux-agentAPI.readLogs(logFile, 300);
     setLogContent(result.content);
     setLogPath(result.path);
   }
@@ -291,26 +291,26 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   async function handleDoctor(): Promise<void> {
     setDoctorRunning(true);
     setDoctorOutput(null);
-    const output = await window.omniworkerAPI.runOmniWorkerDoctor();
+    const output = await window.flux-agentAPI.runFlux AgentDoctor();
     setDoctorOutput(output);
     setDoctorRunning(false);
   }
 
   function refreshVersion(): void {
-    window.omniworkerAPI.refreshOmniWorkerVersion().then((v) => {
-      setOmniWorkerVersion(v);
+    window.flux-agentAPI.refreshFlux AgentVersion().then((v) => {
+      setFlux AgentVersion(v);
       if (v) {
         try {
-          localStorage.setItem("omniworker-version-cache", v);
+          localStorage.setItem("flux-agent-version-cache", v);
         } catch {}
       }
     });
   }
 
-  async function handleUpdateOmniWorker(): Promise<void> {
+  async function handleUpdateFlux Agent(): Promise<void> {
     setUpdating(true);
     setUpdateResult(null);
-    const result = await window.omniworkerAPI.runOmniWorkerUpdate();
+    const result = await window.flux-agentAPI.runFlux AgentUpdate();
     setUpdating(false);
     if (result.success) {
       setUpdateResult(t("settings.updateSuccess"));
@@ -323,8 +323,8 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   }
 
   const parsedVersion = (() => {
-    if (!omniworkerVersion) return null;
-    const v = omniworkerVersion;
+    if (!flux-agentVersion) return null;
+    const v = flux-agentVersion;
     const version = v.match(/v([\d.]+)/)?.[1] || "";
     const date = v.match(/\(([\d.]+)\)/)?.[1] || "";
     const python = v.match(/Python:\s*([\d.]+)/)?.[1] || "";
@@ -441,14 +441,14 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       </div>
 
       {/* Migration Banner (if found) */}
-      {omniworkerFound && !migrationDismissed && (
+      {flux-agentFound && !migrationDismissed && (
         <div className="p-4 bg-[var(--accent-subtle)] border border-[var(--accent)]/30 rounded-xl flex flex-col gap-3">
           <div className="flex items-start justify-between">
             <div className="flex gap-3">
               <AlertTriangle className="text-[var(--accent)] flex-shrink-0 mt-0.5" size={18} />
               <div>
                 <h4 className="text-sm font-bold text-[var(--accent-text)]">{t("settings.migrationDetected")}</h4>
-                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: t("settings.migrationDesc", { path: omniworkerPath || "" }) }} />
+                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: t("settings.migrationDesc", { path: flux-agentPath || "" }) }} />
               </div>
             </div>
             <button className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors text-lg" onClick={handleDismissMigration}>
@@ -467,7 +467,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           )}
           <div className="flex gap-2">
             <button className="px-3 py-1.5 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0e0e11] text-xs font-semibold transition-all" onClick={handleMigrate} disabled={migrating}>
-              {migrating ? t("settings.migrating") : t("settings.migrateToOmniWorker")}
+              {migrating ? t("settings.migrating") : t("settings.migrateToFlux Agent")}
             </button>
             <button className="px-3 py-1.5 rounded border border-[var(--border)] hover:bg-[rgba(255,255,255,0.02)] text-[var(--text-primary)] text-xs font-semibold transition-all" onClick={handleDismissMigration}>
               {t("settings.skip")}
@@ -484,13 +484,13 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           <div className="space-y-4">
             <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--border)]">
               <Cpu size={16} className="text-[var(--accent)]" />
-              <h3 className="text-xs font-black tracking-wider uppercase text-[var(--text-muted)]">{t("settings.sections.omniworkerAgent")}</h3>
+              <h3 className="text-xs font-black tracking-wider uppercase text-[var(--text-muted)]">{t("settings.sections.flux-agentAgent")}</h3>
             </div>
             
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div className="space-y-1">
                 <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block font-semibold">{t("common.engine")}</span>
-                {omniworkerVersion === null ? (
+                {flux-agentVersion === null ? (
                   <div className="h-4 bg-[var(--bg-hover)] animate-pulse rounded w-16" />
                 ) : (
                   <span className="text-xs font-bold font-mono text-[var(--text-primary)]">
@@ -500,7 +500,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block font-semibold">{t("common.released")}</span>
-                {omniworkerVersion === null ? (
+                {flux-agentVersion === null ? (
                   <div className="h-4 bg-[var(--bg-hover)] animate-pulse rounded w-20" />
                 ) : (
                   <span className="text-xs font-medium font-mono text-[var(--text-secondary)]">{parsedVersion?.date || "—"}</span>
@@ -516,7 +516,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block font-semibold">Python</span>
-                {omniworkerVersion === null ? (
+                {flux-agentVersion === null ? (
                   <div className="h-4 bg-[var(--bg-hover)] animate-pulse rounded w-16" />
                 ) : (
                   <span className="text-xs font-medium font-mono text-[var(--text-secondary)]">{parsedVersion?.python || "—"}</span>
@@ -526,10 +526,10 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
 
             <div className="space-y-1 pt-1 border-t border-[var(--border)]">
               <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block font-semibold">{t("common.home")}</span>
-              {!omniworkerHome ? (
+              {!flux-agentHome ? (
                 <div className="h-4 bg-[var(--bg-hover)] animate-pulse rounded w-full" />
               ) : (
-                <span className="text-[11px] font-mono text-[var(--text-muted)] break-all">{omniworkerHome}</span>
+                <span className="text-[11px] font-mono text-[var(--text-muted)] break-all">{flux-agentHome}</span>
               )}
             </div>
           </div>
@@ -543,7 +543,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
             
             <div className="flex flex-wrap gap-2">
               {parsedVersion?.updateInfo ? (
-                <button className="px-3 py-1.5 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0e0e11] text-xs font-semibold transition-all flex items-center gap-1.5" onClick={handleUpdateOmniWorker} disabled={updating}>
+                <button className="px-3 py-1.5 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0e0e11] text-xs font-semibold transition-all flex items-center gap-1.5" onClick={handleUpdateFlux Agent} disabled={updating}>
                   <RefreshCw size={12} className={updating ? "animate-spin" : ""} />
                   {updating ? t("settings.updating") : t("settings.updateEngine")}
                 </button>
@@ -558,7 +558,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
               <button className="px-3 py-1.5 rounded border border-[var(--border)] hover:bg-white/5 text-[var(--text-primary)] text-xs font-semibold transition-all" onClick={async () => {
                 setDumpRunning(true);
                 setDumpOutput(null);
-                const output = await window.omniworkerAPI.runOmniWorkerDump();
+                const output = await window.flux-agentAPI.runFlux AgentDump();
                 setDumpOutput(output);
                 setDumpRunning(false);
               }} disabled={dumpRunning}>
@@ -632,7 +632,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
                   onChange={async (e) => {
                     const val = e.target.checked;
                     setForceIpv4(val);
-                    await window.omniworkerAPI.setConfig("network.force_ipv4", val ? "true" : "false", profile);
+                    await window.flux-agentAPI.setConfig("network.force_ipv4", val ? "true" : "false", profile);
                     setNetworkSaved(true);
                     setTimeout(() => setNetworkSaved(false), 2000);
                   }}
@@ -654,7 +654,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
                   onChange={async (e) => {
                     const val = e.target.checked;
                     setDisableLocalSlm(val);
-                    await window.omniworkerAPI.setEnv("DISABLE_LOCAL_SLM", val ? "true" : "false", profile);
+                    await window.flux-agentAPI.setEnv("DISABLE_LOCAL_SLM", val ? "true" : "false", profile);
                     setNetworkSaved(true);
                     setTimeout(() => setNetworkSaved(false), 2000);
                   }}
@@ -671,7 +671,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
                 value={httpProxy}
                 onChange={(e) => setHttpProxy(e.target.value)}
                 onBlur={async () => {
-                  await window.omniworkerAPI.setConfig("network.proxy", httpProxy.trim(), profile);
+                  await window.flux-agentAPI.setConfig("network.proxy", httpProxy.trim(), profile);
                   setNetworkSaved(true);
                   setTimeout(() => setNetworkSaved(false), 2000);
                 }}
@@ -850,7 +850,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
                     className={`px-3 py-1 rounded text-xs font-mono transition-all ${logFile === f ? "bg-[var(--accent)] text-[#0e0e11] font-semibold shadow-[0_0_10px_rgba(212,255,0,0.15)]" : "bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] border border-white/5"}`}
                     onClick={() => {
                       setLogFile(f);
-                      window.omniworkerAPI.readLogs(f, 300).then((r) => {
+                      window.flux-agentAPI.readLogs(f, 300).then((r) => {
                         setLogContent(r.content);
                         setLogPath(r.path);
                       });

@@ -1,25 +1,25 @@
 ---
 sidebar_position: 6
-title: "Use MCP with OmniWorker"
-description: "A practical guide to connecting MCP servers to OmniWorker Agent, filtering their tools, and using them safely in real workflows"
+title: "Use MCP with Flux Agent"
+description: "A practical guide to connecting MCP servers to Flux Agent Agent, filtering their tools, and using them safely in real workflows"
 ---
 
-# Use MCP with OmniWorker
+# Use MCP with Flux Agent
 
-This guide shows how to actually use MCP with OmniWorker Agent in day-to-day workflows.
+This guide shows how to actually use MCP with Flux Agent Agent in day-to-day workflows.
 
 If the feature page explains what MCP is, this guide is about how to get value from it quickly and safely.
 
 ## When should you use MCP?
 
 Use MCP when:
-- a tool already exists in MCP form and you do not want to build a native OmniWorker tool
-- you want OmniWorker to operate against a local or remote system through a clean RPC layer
+- a tool already exists in MCP form and you do not want to build a native Flux Agent tool
+- you want Flux Agent to operate against a local or remote system through a clean RPC layer
 - you want fine-grained per-server exposure control
-- you want to connect OmniWorker to internal APIs, databases, or company systems without modifying OmniWorker core
+- you want to connect Flux Agent to internal APIs, databases, or company systems without modifying Flux Agent core
 
 Do not use MCP when:
-- a built-in OmniWorker tool already solves the job well
+- a built-in Flux Agent tool already solves the job well
 - the server exposes a huge dangerous tool surface and you are not prepared to filter it
 - you only need one very narrow integration and a native tool would be simpler and safer
 
@@ -27,9 +27,9 @@ Do not use MCP when:
 
 Think of MCP as an adapter layer:
 
-- OmniWorker remains the agent
+- Flux Agent remains the agent
 - MCP servers contribute tools
-- OmniWorker discovers those tools at startup or reload time
+- Flux Agent discovers those tools at startup or reload time
 - the model can use them like normal tools
 - you control how much of each server is visible
 
@@ -37,12 +37,12 @@ That last part matters. Good MCP usage is not just “connect everything.” It 
 
 ## Step 1: install MCP support
 
-If you installed OmniWorker with the standard install script, MCP support is already included (the installer runs `uv pip install -e ".[all]"`).
+If you installed Flux Agent with the standard install script, MCP support is already included (the installer runs `uv pip install -e ".[all]"`).
 
 If you installed without extras and need to add MCP separately:
 
 ```bash
-cd ~/.omniworker/omniworker-agent
+cd ~/.flux-agent/flux-agent-agent
 uv pip install -e ".[mcp]"
 ```
 
@@ -63,10 +63,10 @@ mcp_servers:
     args: ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/my-project"]
 ```
 
-Then start OmniWorker:
+Then start Flux Agent:
 
 ```bash
-omniworker chat
+flux-agent chat
 ```
 
 Now ask something concrete:
@@ -79,8 +79,8 @@ Inspect this project and summarize the repo layout.
 
 You can verify MCP in a few ways:
 
-- OmniWorker banner/status should show MCP integration when configured
-- ask OmniWorker what tools it has available
+- Flux Agent banner/status should show MCP integration when configured
+- ask Flux Agent what tools it has available
 - use `/reload-mcp` after config changes
 - check logs if the server failed to connect
 
@@ -109,32 +109,32 @@ mcp_servers:
 
 This is usually the best default for sensitive systems.
 
-## WSL2: bridge OmniWorker in WSL to Windows Chrome
+## WSL2: bridge Flux Agent in WSL to Windows Chrome
 
 This is the practical setup when:
 
-- OmniWorker runs inside WSL2
+- Flux Agent runs inside WSL2
 - the browser you want to control is your normal signed-in Chrome on Windows
 - `/browser connect` is awkward or unreliable from WSL
 
-In this setup, OmniWorker does **not** connect to Chrome directly. Instead:
+In this setup, Flux Agent does **not** connect to Chrome directly. Instead:
 
-- OmniWorker runs in WSL
-- OmniWorker starts a local stdio MCP server
+- Flux Agent runs in WSL
+- Flux Agent starts a local stdio MCP server
 - that MCP server is launched through Windows interop (`cmd.exe` or `powershell.exe`)
 - the MCP server attaches to your live Windows Chrome session
 
 Mental model:
 
 ```text
-OmniWorker (WSL) -> MCP stdio bridge -> Windows Chrome
+Flux Agent (WSL) -> MCP stdio bridge -> Windows Chrome
 ```
 
 ### Why this mode is useful
 
 - you keep your real Windows browser profile, cookies, and logins
-- OmniWorker stays in its supported Unix environment (WSL2)
-- browser control is exposed as MCP tools instead of relying on OmniWorker core browser transport
+- Flux Agent stays in its supported Unix environment (WSL2)
+- browser control is exposed as MCP tools instead of relying on Flux Agent core browser transport
 
 ### Recommended server
 
@@ -143,16 +143,16 @@ Use `chrome-devtools-mcp`.
 If your Windows Chrome already has live remote debugging enabled from `chrome://inspect/#remote-debugging`, add it like this from WSL:
 
 ```bash
-omniworker mcp add chrome-devtools-win --command cmd.exe --args /c npx -y chrome-devtools-mcp@latest --autoConnect --no-usage-statistics
+flux-agent mcp add chrome-devtools-win --command cmd.exe --args /c npx -y chrome-devtools-mcp@latest --autoConnect --no-usage-statistics
 ```
 
 After saving the server:
 
 ```bash
-omniworker mcp test chrome-devtools-win
+flux-agent mcp test chrome-devtools-win
 ```
 
-Then start a fresh OmniWorker session or run:
+Then start a fresh Flux Agent session or run:
 
 ```text
 /reload-mcp
@@ -160,7 +160,7 @@ Then start a fresh OmniWorker session or run:
 
 ### Typical prompt
 
-Once loaded, OmniWorker can use the MCP-prefixed browser tools directly. For example:
+Once loaded, Flux Agent can use the MCP-prefixed browser tools directly. For example:
 
 ```text
 调用 MCP 工具 mcp_chrome_devtools_win_list_pages，列出当前浏览器标签页。
@@ -168,7 +168,7 @@ Once loaded, OmniWorker can use the MCP-prefixed browser tools directly. For exa
 
 ### When `/browser connect` is the wrong tool
 
-If OmniWorker runs in WSL and Chrome runs on Windows, `/browser connect` may fail even though Chrome is open and debuggable.
+If Flux Agent runs in WSL and Chrome runs on Windows, `/browser connect` may fail even though Chrome is open and debuggable.
 
 Common reasons:
 
@@ -180,8 +180,8 @@ In those cases, keep `/browser connect` for same-environment setups and use MCP 
 
 ### Known pitfalls
 
-- Start OmniWorker from a Windows-mounted path like `/mnt/c/Users/<you>` or `/mnt/c/workspace/...` when using Windows stdio executables through MCP.
-- If you start OmniWorker from `/root` or `/home/...`, Windows may emit a `UNC` current-directory warning before the MCP server starts.
+- Start Flux Agent from a Windows-mounted path like `/mnt/c/Users/<you>` or `/mnt/c/workspace/...` when using Windows stdio executables through MCP.
+- If you start Flux Agent from `/root` or `/home/...`, Windows may emit a `UNC` current-directory warning before the MCP server starts.
 - If `chrome-devtools-mcp --autoConnect` times out while enumerating pages, reduce background/frozen tabs in Chrome and retry.
 
 ### Example: blacklist dangerous actions
@@ -209,14 +209,14 @@ mcp_servers:
 
 ## What does filtering actually affect?
 
-There are two categories of MCP-exposed functionality in OmniWorker:
+There are two categories of MCP-exposed functionality in Flux Agent:
 
 1. Server-native MCP tools
 - filtered with:
   - `tools.include`
   - `tools.exclude`
 
-2. OmniWorker-added utility wrappers
+2. Flux Agent-added utility wrappers
 - filtered with:
   - `tools.resources`
   - `tools.prompts`
@@ -235,13 +235,13 @@ These wrappers only appear if:
 - your config allows them, and
 - the MCP server session actually supports those capabilities
 
-So OmniWorker will not pretend a server has resources/prompts if it does not.
+So Flux Agent will not pretend a server has resources/prompts if it does not.
 
 ## Common patterns
 
 ### Pattern 1: local project assistant
 
-Use MCP for a repo-local filesystem or git server when you want OmniWorker to reason over a bounded workspace.
+Use MCP for a repo-local filesystem or git server when you want Flux Agent to reason over a bounded workspace.
 
 ```yaml
 mcp_servers:
@@ -353,7 +353,7 @@ mcp_servers:
       resources: false
 ```
 
-Start OmniWorker and ask:
+Start Flux Agent and ask:
 
 ```text
 Search the codebase for references to MCP and summarize the main integration points.
@@ -393,13 +393,13 @@ mcp_servers:
     args: ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/project"]
 ```
 
-Now OmniWorker can combine them:
+Now Flux Agent can combine them:
 
 ```text
 Inspect the local project files, then create a GitHub issue summarizing the bug you find.
 ```
 
-That is where MCP gets powerful: multi-system workflows without changing OmniWorker core.
+That is where MCP gets powerful: multi-system workflows without changing Flux Agent core.
 
 ## Safe usage recommendations
 
@@ -458,7 +458,7 @@ Check:
 
 ### "Why do I see fewer tools than the MCP server advertises?"
 
-Because OmniWorker now respects your per-server policy and capability-aware registration. That is expected, and usually desirable.
+Because Flux Agent now respects your per-server policy and capability-aware registration. That is expected, and usually desirable.
 
 ### "How do I remove an MCP server without deleting the config?"
 

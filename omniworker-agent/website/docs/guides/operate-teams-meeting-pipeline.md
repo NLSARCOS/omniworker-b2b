@@ -19,7 +19,7 @@ This page covers:
 ### Validate the config snapshot
 
 ```bash
-omniworker teams-pipeline validate
+flux-agent teams-pipeline validate
 ```
 
 Use this first after any config change.
@@ -27,8 +27,8 @@ Use this first after any config change.
 ### Inspect token health
 
 ```bash
-omniworker teams-pipeline token-health
-omniworker teams-pipeline token-health --force-refresh
+flux-agent teams-pipeline token-health
+flux-agent teams-pipeline token-health --force-refresh
 ```
 
 Use `--force-refresh` when you suspect stale auth state.
@@ -36,14 +36,14 @@ Use `--force-refresh` when you suspect stale auth state.
 ### Inspect subscriptions
 
 ```bash
-omniworker teams-pipeline subscriptions
+flux-agent teams-pipeline subscriptions
 ```
 
 ### Renew near-expiry subscriptions
 
 ```bash
-omniworker teams-pipeline maintain-subscriptions
-omniworker teams-pipeline maintain-subscriptions --dry-run
+flux-agent teams-pipeline maintain-subscriptions
+flux-agent teams-pipeline maintain-subscriptions --dry-run
 ```
 
 ### Automating subscription renewal (REQUIRED for production)
@@ -52,23 +52,23 @@ omniworker teams-pipeline maintain-subscriptions --dry-run
 
 You MUST run `maintain-subscriptions` on a schedule. Pick one of these three options:
 
-#### Option 1: OmniWorker cron (recommended if you already run the OmniWorker gateway)
+#### Option 1: Flux Agent cron (recommended if you already run the Flux Agent gateway)
 
-OmniWorker ships a built-in cron scheduler. The `--no-agent` mode runs a script as the job (rather than using an LLM), and `--script` must point at a file under `~/.omniworker/scripts/`. First create the script:
+Flux Agent ships a built-in cron scheduler. The `--no-agent` mode runs a script as the job (rather than using an LLM), and `--script` must point at a file under `~/.flux-agent/scripts/`. First create the script:
 
 ```bash
-mkdir -p ~/.omniworker/scripts
-cat > ~/.omniworker/scripts/maintain-teams-subscriptions.sh <<'EOF'
+mkdir -p ~/.flux-agent/scripts
+cat > ~/.flux-agent/scripts/maintain-teams-subscriptions.sh <<'EOF'
 #!/usr/bin/env bash
-exec omniworker teams-pipeline maintain-subscriptions
+exec flux-agent teams-pipeline maintain-subscriptions
 EOF
-chmod +x ~/.omniworker/scripts/maintain-teams-subscriptions.sh
+chmod +x ~/.flux-agent/scripts/maintain-teams-subscriptions.sh
 ```
 
 Then register a script-only cron job that runs every 12 hours (gives 6x headroom against the 72h expiry window):
 
 ```bash
-omniworker cron create "0 */12 * * *" \
+flux-agent cron create "0 */12 * * *" \
   --name "teams-pipeline-maintain-subscriptions" \
   --no-agent \
   --script maintain-teams-subscriptions.sh \
@@ -78,31 +78,31 @@ omniworker cron create "0 */12 * * *" \
 Verify it was registered and inspect the next run time:
 
 ```bash
-omniworker cron list
-omniworker cron status        # scheduler status
+flux-agent cron list
+flux-agent cron status        # scheduler status
 ```
 
 #### Option 2: systemd timer (recommended for Linux production deployments)
 
-Create `/etc/systemd/system/omniworker-teams-pipeline-maintain.service`:
+Create `/etc/systemd/system/flux-agent-teams-pipeline-maintain.service`:
 
 ```ini
 [Unit]
-Description=OmniWorker Teams pipeline subscription maintenance
+Description=Flux Agent Teams pipeline subscription maintenance
 After=network-online.target
 
 [Service]
 Type=oneshot
-User=omniworker
-EnvironmentFile=/etc/omniworker/env
-ExecStart=/usr/local/bin/omniworker teams-pipeline maintain-subscriptions
+User=flux-agent
+EnvironmentFile=/etc/flux-agent/env
+ExecStart=/usr/local/bin/flux-agent teams-pipeline maintain-subscriptions
 ```
 
-And `/etc/systemd/system/omniworker-teams-pipeline-maintain.timer`:
+And `/etc/systemd/system/flux-agent-teams-pipeline-maintain.timer`:
 
 ```ini
 [Unit]
-Description=Run OmniWorker Teams pipeline subscription maintenance every 12 hours
+Description=Run Flux Agent Teams pipeline subscription maintenance every 12 hours
 
 [Timer]
 OnBootSec=5min
@@ -117,25 +117,25 @@ Enable:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now omniworker-teams-pipeline-maintain.timer
-systemctl list-timers omniworker-teams-pipeline-maintain.timer
+sudo systemctl enable --now flux-agent-teams-pipeline-maintain.timer
+systemctl list-timers flux-agent-teams-pipeline-maintain.timer
 ```
 
 #### Option 3: Plain crontab
 
 ```cron
-0 */12 * * * /usr/local/bin/omniworker teams-pipeline maintain-subscriptions >> /var/log/omniworker/teams-pipeline-maintain.log 2>&1
+0 */12 * * * /usr/local/bin/flux-agent teams-pipeline maintain-subscriptions >> /var/log/flux-agent/teams-pipeline-maintain.log 2>&1
 ```
 
-Make sure the cron environment has the `MSGRAPH_*` credentials. Simplest fix: source `~/.omniworker/.env` at the top of a wrapper script that crontab calls.
+Make sure the cron environment has the `MSGRAPH_*` credentials. Simplest fix: source `~/.flux-agent/.env` at the top of a wrapper script that crontab calls.
 
 #### Verifying renewal is working
 
 After you've set up the schedule, check renewal activity after the first scheduled run:
 
 ```bash
-omniworker teams-pipeline subscriptions   # should show expirationDateTime advanced
-omniworker teams-pipeline maintain-subscriptions --dry-run   # should show "0 expiring soon" most of the time
+flux-agent teams-pipeline subscriptions   # should show expirationDateTime advanced
+flux-agent teams-pipeline maintain-subscriptions --dry-run   # should show "0 expiring soon" most of the time
 ```
 
 If you ever see your Graph webhook mysteriously "stop working" after exactly ~72 hours, this is the first thing to check: did the renewal job actually run?
@@ -143,22 +143,22 @@ If you ever see your Graph webhook mysteriously "stop working" after exactly ~72
 ### Inspect recent jobs
 
 ```bash
-omniworker teams-pipeline list
-omniworker teams-pipeline list --status failed
-omniworker teams-pipeline show <job-id>
+flux-agent teams-pipeline list
+flux-agent teams-pipeline list --status failed
+flux-agent teams-pipeline show <job-id>
 ```
 
 ### Replay a stored job
 
 ```bash
-omniworker teams-pipeline run <job-id>
+flux-agent teams-pipeline run <job-id>
 ```
 
 ### Dry-run meeting artifact fetches
 
 ```bash
-omniworker teams-pipeline fetch --meeting-id <meeting-id>
-omniworker teams-pipeline fetch --join-web-url "<join-url>"
+flux-agent teams-pipeline fetch --meeting-id <meeting-id>
+flux-agent teams-pipeline fetch --join-web-url "<join-url>"
 ```
 
 ## Routine Runbook
@@ -168,28 +168,28 @@ omniworker teams-pipeline fetch --join-web-url "<join-url>"
 Run these in order:
 
 ```bash
-omniworker teams-pipeline validate
-omniworker teams-pipeline token-health --force-refresh
-omniworker teams-pipeline subscriptions
+flux-agent teams-pipeline validate
+flux-agent teams-pipeline token-health --force-refresh
+flux-agent teams-pipeline subscriptions
 ```
 
 Then trigger or wait for a real meeting event and confirm:
 
 ```bash
-omniworker teams-pipeline list
-omniworker teams-pipeline show <job-id>
+flux-agent teams-pipeline list
+flux-agent teams-pipeline show <job-id>
 ```
 
 ### Daily or periodic checks
 
-- run `omniworker teams-pipeline maintain-subscriptions --dry-run`
-- inspect `omniworker teams-pipeline list --status failed`
+- run `flux-agent teams-pipeline maintain-subscriptions --dry-run`
+- inspect `flux-agent teams-pipeline list --status failed`
 - verify the Teams delivery target is still the correct chat or channel
 
 ### Before changing webhook URLs or delivery targets
 
 - update the public notification URL or Teams target config
-- run `omniworker teams-pipeline validate`
+- run `flux-agent teams-pipeline validate`
 - renew or recreate affected subscriptions
 - confirm new events land in the expected sink
 
@@ -223,7 +223,7 @@ Check:
 ### Duplicate or unexpected replays
 
 Check:
-- whether you manually replayed a job with `omniworker teams-pipeline run`
+- whether you manually replayed a job with `flux-agent teams-pipeline run`
 - whether the sink record already exists for that meeting
 - whether you intentionally enabled a resend path in your local config
 
@@ -237,9 +237,9 @@ Check:
 - [ ] `ffmpeg` is installed if recording fallback is enabled
 - [ ] Teams outbound delivery target is configured and verified
 - [ ] Notion and Linear sinks are configured only if actually needed
-- [ ] `omniworker teams-pipeline validate` returns an OK snapshot
-- [ ] `omniworker teams-pipeline token-health --force-refresh` succeeds
-- [ ] **`maintain-subscriptions` is scheduled** (OmniWorker cron, systemd timer, or crontab — see [Automating subscription renewal](#automating-subscription-renewal-required-for-production)). Without this, Graph subscriptions silently expire within 72 hours.
+- [ ] `flux-agent teams-pipeline validate` returns an OK snapshot
+- [ ] `flux-agent teams-pipeline token-health --force-refresh` succeeds
+- [ ] **`maintain-subscriptions` is scheduled** (Flux Agent cron, systemd timer, or crontab — see [Automating subscription renewal](#automating-subscription-renewal-required-for-production)). Without this, Graph subscriptions silently expire within 72 hours.
 - [ ] a real end-to-end meeting event has produced a stored job
 - [ ] at least one summary has reached the intended delivery sink
 

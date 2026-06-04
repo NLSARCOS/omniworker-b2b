@@ -1,6 +1,6 @@
 """Skill usage telemetry + provenance tracking for the Curator feature.
 
-Tracks per-skill usage metadata in a sidecar JSON file (~/.omniworker/skills/.usage.json)
+Tracks per-skill usage metadata in a sidecar JSON file (~/.flux-agent/skills/.usage.json)
 keyed by skill name. Counters are bumped by the existing skill tools (skill_view,
 skill_manage); the curator orchestrator reads the derived activity timestamp to
 decide lifecycle transitions.
@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ _VALID_STATES = {STATE_ACTIVE, STATE_STALE, STATE_ARCHIVED}
 
 
 def _skills_dir() -> Path:
-    return get_omniworker_home() / "skills"
+    return get_flux-agent_home() / "skills"
 
 
 def _usage_file() -> Path:
@@ -155,7 +155,7 @@ def activity_count(record: Dict[str, Any]) -> int:
 def _read_bundled_manifest_names() -> Set[str]:
     """Return the set of skill names that were seeded from the bundled repo.
 
-    Reads ~/.omniworker/skills/.bundled_manifest (format: "name:hash" per line).
+    Reads ~/.flux-agent/skills/.bundled_manifest (format: "name:hash" per line).
     Returns empty set if the file is missing or unreadable.
     """
     manifest = _skills_dir() / ".bundled_manifest"
@@ -178,7 +178,7 @@ def _read_bundled_manifest_names() -> Set[str]:
 def _read_hub_installed_names() -> Set[str]:
     """Return the set of skill names installed via the Skills Hub.
 
-    Reads ~/.omniworker/skills/.hub/lock.json (see tools/skills_hub.py :: HubLockFile).
+    Reads ~/.flux-agent/skills/.hub/lock.json (see tools/skills_hub.py :: HubLockFile).
     """
     lock_path = _skills_dir() / ".hub" / "lock.json"
     if not lock_path.exists():
@@ -251,11 +251,11 @@ def list_agent_created_skill_names() -> List[str]:
 
 
 def list_archived_skill_names() -> List[str]:
-    """Enumerate skills in ``~/.omniworker/skills/.archive/``.
+    """Enumerate skills in ``~/.flux-agent/skills/.archive/``.
 
     Archive layout is flat (``.archive/<skill>/``) as set by ``archive_skill``,
-    so the directory name is the skill name. Used by ``omniworker curator
-    list-archived`` to help users pass a name to ``omniworker curator restore``.
+    so the directory name is the skill name. Used by ``flux-agent curator
+    list-archived`` to help users pass a name to ``flux-agent curator restore``.
     """
     archive_root = _archive_dir()
     if not archive_root.exists():
@@ -477,7 +477,7 @@ def forget(skill_name: str) -> None:
 # ---------------------------------------------------------------------------
 
 def archive_skill(skill_name: str) -> Tuple[bool, str]:
-    """Move an agent-created skill directory to ~/.omniworker/skills/.archive/.
+    """Move an agent-created skill directory to ~/.flux-agent/skills/.archive/.
 
     Returns (ok, message). Never archives bundled or hub skills — callers are
     responsible for checking provenance, but we double-check here as a safety net.
@@ -516,7 +516,7 @@ def archive_skill(skill_name: str) -> Tuple[bool, str]:
 
 
 def restore_skill(skill_name: str) -> Tuple[bool, str]:
-    """Move an archived skill back to ~/.omniworker/skills/. Restores to the flat
+    """Move an archived skill back to ~/.flux-agent/skills/. Restores to the flat
     top-level layout; original category nesting is NOT reconstructed.
 
     Refuses to restore under a name that now collides with a bundled or
@@ -567,8 +567,8 @@ def restore_skill(skill_name: str) -> Tuple[bool, str]:
 def _find_skill_dir(skill_name: str) -> Optional[Path]:
     """Locate the directory for a skill by its frontmatter `name:` field.
 
-    Handles both flat (~/.omniworker/skills/<skill>/SKILL.md) and category-nested
-    (~/.omniworker/skills/<category>/<skill>/SKILL.md) layouts.
+    Handles both flat (~/.flux-agent/skills/<skill>/SKILL.md) and category-nested
+    (~/.flux-agent/skills/<category>/<skill>/SKILL.md) layouts.
     """
     base = _skills_dir()
     if not base.exists():

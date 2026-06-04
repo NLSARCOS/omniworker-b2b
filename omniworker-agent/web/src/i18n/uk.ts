@@ -266,7 +266,7 @@ export const uk: Translations = {
     enableRuntime: "Увімкнути",
     forceReinstall: "Примусово перевстановити (спершу видалити наявну теку)",
     headline:
-      "Знаходьте, встановлюйте, вмикайте та оновлюйте плагіни OmniWorker (паритет з `omniworker plugins`).",
+      "Знаходьте, встановлюйте, вмикайте та оновлюйте плагіни OmniWorker (паритет з `flux-agent plugins`).",
     identifierLabel: "Git URL або owner/repo",
     inactive: "неактивний",
     installBtn: "Встановити з Git",
@@ -283,8 +283,8 @@ export const uk: Translations = {
     providersHint:
       "Записує memory.provider (порожньо = вбудований) та context.engine у config.yaml. Набуває чинності в наступній сесії.",
     refreshDashboard: "Перескан розширень панелі",
-    removeConfirm: "Видалити цей плагін з ~/.omniworker/plugins/?",
-    removeHint: "Видаляти можна лише плагіни, встановлені користувачем у ~/.omniworker/plugins.",
+    removeConfirm: "Видалити цей плагін з ~/.flux-agent/plugins/?",
+    removeHint: "Видаляти можна лише плагіни, встановлені користувачем у ~/.flux-agent/plugins.",
     rescanHeading: "Реєстр SPA-плагінів",
     rescanHint: "Скануйте після додавання файлів на диск, щоб бічна панель підхопила нові маніфести.",
     runtimeHeading: "Час виконання шлюзу (YAML-плагіни)",
@@ -306,7 +306,7 @@ export const uk: Translations = {
     all: "Усі",
     categories: "Категорії",
     filters: "Фільтри",
-    noSkills: "Навичок не знайдено. Навички завантажуються з ~/.omniworker/skills/",
+    noSkills: "Навичок не знайдено. Навички завантажуються з ~/.flux-agent/skills/",
     noSkillsMatch: "Жодна навичка не відповідає вашому пошуку чи фільтру.",
     skillCount: "{count} навичок",
     resultCount: "{count} результатів",
@@ -320,7 +320,7 @@ export const uk: Translations = {
   },
 
   config: {
-    configPath: "~/.omniworker/config.yaml",
+    configPath: "~/.flux-agent/config.yaml",
     filters: "Фільтри",
     sections: "Розділи",
     exportConfig: "Експортувати конфігурацію як JSON",

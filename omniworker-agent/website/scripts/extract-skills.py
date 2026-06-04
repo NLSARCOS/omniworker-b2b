@@ -157,9 +157,9 @@ def extract_local_skills():
             tags = []
             metadata = fm.get("metadata")
             if isinstance(metadata, dict):
-                omniworker_meta = metadata.get("omniworker", {})
-                if isinstance(omniworker_meta, dict):
-                    tags = omniworker_meta.get("tags", [])
+                flux-agent_meta = metadata.get("flux-agent", {})
+                if isinstance(flux-agent_meta, dict):
+                    tags = flux-agent_meta.get("tags", [])
             if not tags:
                 tags = fm.get("tags", [])
             if isinstance(tags, str):

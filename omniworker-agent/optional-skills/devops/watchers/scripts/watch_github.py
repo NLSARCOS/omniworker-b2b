@@ -3,12 +3,12 @@
 
 Usage (via cron with --no-agent):
 
-    omniworker cron create omniworker-issues \\
+    flux-agent cron create flux-agent-issues \\
       --schedule "*/5 * * * *" --no-agent \\
-      --script "$OMNIWORKER_HOME/skills/devops/watchers/scripts/watch_github.py" \\
-      --script-args "--name omniworker-issues --repo OmniWorker/omniworker-agent --scope issues"
+      --script "$FLUX AGENT_HOME/skills/devops/watchers/scripts/watch_github.py" \\
+      --script-args "--name flux-agent-issues --repo Flux Agent/flux-agent-agent --scope issues"
 
-Set GITHUB_TOKEN (or GH_TOKEN) in ~/.omniworker/.env to avoid the 60 req/hr
+Set GITHUB_TOKEN (or GH_TOKEN) in ~/.flux-agent/.env to avoid the 60 req/hr
 anonymous rate limit.
 
 Scopes: issues | pulls | releases | commits.  Or pass --search QUERY to
@@ -112,7 +112,7 @@ def main() -> int:
 
     headers = {
         "Accept": "application/vnd.github+json",
-        "User-Agent": "OmniWorker-Watcher/1.0",
+        "User-Agent": "Flux Agent-Watcher/1.0",
     }
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if token:

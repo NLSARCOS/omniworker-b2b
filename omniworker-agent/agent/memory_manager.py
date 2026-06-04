@@ -391,8 +391,30 @@ class MemoryManager:
 
     # -- Sync ----------------------------------------------------------------
 
-    def sync_all(self, user_content: str, assistant_content: str, *, session_id: str = "") -> None:
-        """Sync a completed turn to all providers in parallel with timeout."""
+    @staticmethod
+    def _provider_accepts_tool_results(provider: MemoryProvider) -> bool:
+        """Return True if provider.sync_turn accepts a 'tool_results' keyword arg."""
+        try:
+            sig = inspect.signature(provider.sync_turn)
+            return "tool_results" in sig.parameters
+        except (TypeError, ValueError):
+            return False
+
+    def sync_all(
+        self,
+        user_content: str,
+        assistant_content: str,
+        *,
+        session_id: str = "",
+        tool_results: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
+        """Sync a completed turn to all providers in parallel with timeout.
+
+        If *tool_results* is provided, it is forwarded only to providers whose
+        ``sync_turn`` signature explicitly accepts a ``tool_results`` keyword
+        argument.  Existing providers that do not declare the parameter continue
+        to receive the original two-argument call for full backward compatibility.
+        """
         import os
         from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
@@ -402,14 +424,28 @@ class MemoryManager:
         except ValueError:
             timeout = 10.0
 
+        def _submit(provider: MemoryProvider) -> Any:
+            if tool_results is not None and self._provider_accepts_tool_results(provider):
+                return executor.submit(
+                    provider.sync_turn,
+                    user_content,
+                    assistant_content,
+                    session_id=session_id,
+                    tool_results=tool_results,
+                )
+            return executor.submit(
+                provider.sync_turn,
+                user_content,
+                assistant_content,
+                session_id=session_id,
+            )
+
         with ThreadPoolExecutor(max_workers=max(1, len(self._providers))) as executor:
             future_to_provider = {
-                executor.submit(
-                    provider.sync_turn, user_content, assistant_content, session_id=session_id
-                ): provider
+                _submit(provider): provider
                 for provider in self._providers
             }
-            
+
             for future in future_to_provider:
                 provider = future_to_provider[future]
                 try:
@@ -638,13 +674,13 @@ class MemoryManager:
     def initialize_all(self, session_id: str, **kwargs) -> None:
         """Initialize all providers.
 
-        Automatically injects ``omniworker_home`` into *kwargs* so that every
+        Automatically injects ``flux-agent_home`` into *kwargs* so that every
         provider can resolve profile-scoped storage paths without importing
-        ``get_omniworker_home()`` themselves.
+        ``get_flux-agent_home()`` themselves.
         """
-        if "omniworker_home" not in kwargs:
-            from omniworker_constants import get_omniworker_home
-            kwargs["omniworker_home"] = str(get_omniworker_home())
+        if "flux-agent_home" not in kwargs:
+            from flux-agent_constants import get_flux-agent_home
+            kwargs["flux-agent_home"] = str(get_flux-agent_home())
         for provider in self._providers:
             try:
                 provider.initialize(session_id=session_id, **kwargs)

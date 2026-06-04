@@ -27,7 +27,7 @@ from acp.schema import (
     ToolCallStart,
 )
 
-from acp_adapter.server import OmniWorkerACPAgent
+from acp_adapter.server import Flux AgentACPAgent
 from acp_adapter.session import SessionManager
 from acp_adapter.tools import build_tool_start
 
@@ -44,7 +44,7 @@ def mock_manager():
 
 @pytest.fixture()
 def acp_agent(mock_manager):
-    return OmniWorkerACPAgent(session_manager=mock_manager)
+    return Flux AgentACPAgent(session_manager=mock_manager)
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +57,7 @@ class TestMcpRegistrationE2E:
 
     @pytest.mark.asyncio
     async def test_session_with_mcp_servers_registers_tools(self, acp_agent, mock_manager):
-        """new_session with mcpServers converts them to OmniWorker config and registers."""
+        """new_session with mcpServers converts them to Flux Agent config and registers."""
         servers = [
             McpServerStdio(
                 name="test-fs",
@@ -306,7 +306,7 @@ class TestSessionLifecycleMcpE2E:
             return []
 
         state = mock_manager.get_session(sid)
-        state.agent.enabled_toolsets = ["omniworker-acp"]
+        state.agent.enabled_toolsets = ["flux-agent-acp"]
         state.agent.disabled_toolsets = None
         state.agent.tools = []
         state.agent.valid_tool_names = set()
@@ -333,7 +333,7 @@ class TestSessionLifecycleMcpE2E:
             return []
 
         state = mock_manager.get_session(sid)
-        state.agent.enabled_toolsets = ["omniworker-acp"]
+        state.agent.enabled_toolsets = ["flux-agent-acp"]
         state.agent.disabled_toolsets = None
         state.agent.tools = []
         state.agent.valid_tool_names = set()

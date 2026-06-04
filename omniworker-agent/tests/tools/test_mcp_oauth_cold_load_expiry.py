@@ -3,7 +3,7 @@
 PR #11383's consolidation fixed external-refresh reloading (mtime disk-watch)
 and 401 dedup, but left two underlying latent bugs in place:
 
-1. ``OmniWorkerTokenStorage.set_tokens`` persisted only relative ``expires_in``,
+1. ``Flux AgentTokenStorage.set_tokens`` persisted only relative ``expires_in``,
    which is meaningless after a process restart.
 2. The MCP SDK's ``OAuthContext._initialize`` loads ``current_tokens`` from
    storage but does NOT call ``update_token_expiry``, so
@@ -23,7 +23,7 @@ These tests pin the contract for Fix A:
 - ``set_tokens`` persists an absolute ``expires_at`` wall-clock timestamp.
 - ``get_tokens`` reconstructs ``expires_in`` from ``expires_at - now`` so
   the SDK's ``update_token_expiry`` computes the correct absolute expiry.
-- ``OmniWorkerMCPOAuthProvider._initialize`` seeds ``context.token_expiry_time``
+- ``Flux AgentMCPOAuthProvider._initialize`` seeds ``context.token_expiry_time``
   after loading, so ``is_token_valid()`` reports True only for tokens that
   are actually still valid, and the SDK's preemptive refresh fires for
   expired tokens with a live refresh_token.
@@ -44,19 +44,19 @@ pytest.importorskip("mcp.client.auth.oauth2", reason="MCP SDK 1.26.0+ required")
 
 
 # ---------------------------------------------------------------------------
-# OmniWorkerTokenStorage — absolute expiry persistence
+# Flux AgentTokenStorage — absolute expiry persistence
 # ---------------------------------------------------------------------------
 
 
 class TestSetTokensAbsoluteExpiry:
     def test_set_tokens_persists_absolute_expires_at(self, tmp_path, monkeypatch):
         """Tokens round-tripped through disk must encode absolute expiry."""
-        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
         from mcp.shared.auth import OAuthToken
 
-        from tools.mcp_oauth import OmniWorkerTokenStorage
+        from tools.mcp_oauth import Flux AgentTokenStorage
 
-        storage = OmniWorkerTokenStorage("srv")
+        storage = Flux AgentTokenStorage("srv")
         before = time.time()
         asyncio.run(
             storage.set_tokens(
@@ -84,12 +84,12 @@ class TestSetTokensAbsoluteExpiry:
         self, tmp_path, monkeypatch
     ):
         """Tokens without a TTL must not gain a fabricated expires_at."""
-        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
         from mcp.shared.auth import OAuthToken
 
-        from tools.mcp_oauth import OmniWorkerTokenStorage
+        from tools.mcp_oauth import Flux AgentTokenStorage
 
-        storage = OmniWorkerTokenStorage("srv")
+        storage = Flux AgentTokenStorage("srv")
         asyncio.run(
             storage.set_tokens(
                 OAuthToken(
@@ -111,12 +111,12 @@ class TestGetTokensReconstructsExpiresIn:
         self, tmp_path, monkeypatch
     ):
         """Round-trip: expires_in on read must reflect time remaining."""
-        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
         from mcp.shared.auth import OAuthToken
 
-        from tools.mcp_oauth import OmniWorkerTokenStorage
+        from tools.mcp_oauth import Flux AgentTokenStorage
 
-        storage = OmniWorkerTokenStorage("srv")
+        storage = Flux AgentTokenStorage("srv")
         asyncio.run(
             storage.set_tokens(
                 OAuthToken(
@@ -141,8 +141,8 @@ class TestGetTokensReconstructsExpiresIn:
         self, tmp_path, monkeypatch
     ):
         """An already-expired token reloaded from disk must report expires_in=0."""
-        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-        from tools.mcp_oauth import OmniWorkerTokenStorage, _get_token_dir
+        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
+        from tools.mcp_oauth import Flux AgentTokenStorage, _get_token_dir
 
         token_dir = _get_token_dir()
         token_dir.mkdir(parents=True, exist_ok=True)
@@ -159,7 +159,7 @@ class TestGetTokensReconstructsExpiresIn:
             )
         )
 
-        storage = OmniWorkerTokenStorage("srv")
+        storage = Flux AgentTokenStorage("srv")
         reloaded = asyncio.run(storage.get_tokens())
         assert reloaded is not None
         assert reloaded.expires_in == 0, (
@@ -178,8 +178,8 @@ class TestGetTokensReconstructsExpiresIn:
         expires_in to zero so the SDK refreshes on next request. A fresh
         legacy-format file (mtime = now) keeps most of its TTL.
         """
-        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-        from tools.mcp_oauth import OmniWorkerTokenStorage, _get_token_dir
+        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
+        from tools.mcp_oauth import Flux AgentTokenStorage, _get_token_dir
 
         token_dir = _get_token_dir()
         token_dir.mkdir(parents=True, exist_ok=True)
@@ -201,7 +201,7 @@ class TestGetTokensReconstructsExpiresIn:
 
         os.utime(legacy_path, (stale_time, stale_time))
 
-        storage = OmniWorkerTokenStorage("srv")
+        storage = Flux AgentTokenStorage("srv")
         reloaded = asyncio.run(storage.get_tokens())
         assert reloaded is not None
         assert reloaded.expires_in == 0, (
@@ -211,7 +211,7 @@ class TestGetTokensReconstructsExpiresIn:
 
 
 # ---------------------------------------------------------------------------
-# OmniWorkerMCPOAuthProvider._initialize — seed token_expiry_time
+# Flux AgentMCPOAuthProvider._initialize — seed token_expiry_time
 # ---------------------------------------------------------------------------
 
 
@@ -225,17 +225,17 @@ async def test_initialize_seeds_token_expiry_time_from_stored_tokens(
     token_expiry_time. Our subclass must do it so ``is_token_valid()``
     reports correctly and the preemptive-refresh path fires when needed.
     """
-    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
     from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import OmniWorkerTokenStorage
-    from tools.mcp_oauth_manager import _OMNIWORKER_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import Flux AgentTokenStorage
+    from tools.mcp_oauth_manager import _FLUX AGENT_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _OMNIWORKER_PROVIDER_CLS is not None
+    assert _FLUX AGENT_PROVIDER_CLS is not None
     reset_manager_for_tests()
 
-    storage = OmniWorkerTokenStorage("srv")
+    storage = Flux AgentTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="a",
@@ -258,9 +258,9 @@ async def test_initialize_seeds_token_expiry_time_from_stored_tokens(
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="OmniWorker Agent",
+        client_name="Flux Agent Agent",
     )
-    provider = _OMNIWORKER_PROVIDER_CLS(
+    provider = _FLUX AGENT_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,
@@ -290,14 +290,14 @@ async def test_initialize_flags_expired_token_as_invalid(tmp_path, monkeypatch):
     will take the ``can_refresh_token()`` branch on the next request and
     silently refresh instead of sending the stale Bearer.
     """
-    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
     from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import OmniWorkerTokenStorage, _get_token_dir
-    from tools.mcp_oauth_manager import _OMNIWORKER_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import Flux AgentTokenStorage, _get_token_dir
+    from tools.mcp_oauth_manager import _FLUX AGENT_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _OMNIWORKER_PROVIDER_CLS is not None
+    assert _FLUX AGENT_PROVIDER_CLS is not None
     reset_manager_for_tests()
 
     # Write an already-expired token directly so we control the wall-clock.
@@ -315,7 +315,7 @@ async def test_initialize_flags_expired_token_as_invalid(tmp_path, monkeypatch):
         )
     )
 
-    storage = OmniWorkerTokenStorage("srv")
+    storage = Flux AgentTokenStorage("srv")
     await storage.set_client_info(
         OAuthClientInformationFull(
             client_id="test-client",
@@ -328,9 +328,9 @@ async def test_initialize_flags_expired_token_as_invalid(tmp_path, monkeypatch):
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="OmniWorker Agent",
+        client_name="Flux Agent Agent",
     )
-    provider = _OMNIWORKER_PROVIDER_CLS(
+    provider = _FLUX AGENT_PROVIDER_CLS(
         server_name="srv",
         server_url="https://example.com/mcp",
         client_metadata=metadata,
@@ -380,7 +380,7 @@ async def test_initialize_prefetches_oauth_metadata_when_missing(
     and we drop into full browser re-auth — visible to the user as an
     unwanted OAuth browser prompt every time the process restarts.
     """
-    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
 
     import httpx
     from mcp.shared.auth import (
@@ -390,13 +390,13 @@ async def test_initialize_prefetches_oauth_metadata_when_missing(
     )
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth import OmniWorkerTokenStorage
-    from tools.mcp_oauth_manager import _OMNIWORKER_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import Flux AgentTokenStorage
+    from tools.mcp_oauth_manager import _FLUX AGENT_PROVIDER_CLS, reset_manager_for_tests
 
-    assert _OMNIWORKER_PROVIDER_CLS is not None
+    assert _FLUX AGENT_PROVIDER_CLS is not None
     reset_manager_for_tests()
 
-    storage = OmniWorkerTokenStorage("srv")
+    storage = Flux AgentTokenStorage("srv")
     await storage.set_tokens(
         OAuthToken(
             access_token="a",
@@ -464,9 +464,9 @@ async def test_initialize_prefetches_oauth_metadata_when_missing(
 
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="OmniWorker Agent",
+        client_name="Flux Agent Agent",
     )
-    provider = _OMNIWORKER_PROVIDER_CLS(
+    provider = _FLUX AGENT_PROVIDER_CLS(
         server_name="srv",
         server_url="https://mcp.example.com",
         client_metadata=metadata,
@@ -497,15 +497,15 @@ async def test_initialize_skips_prefetch_when_no_tokens(tmp_path, monkeypatch):
     extra network roundtrips that gain nothing (the SDK's 401-branch
     discovery will run on the first real request anyway).
     """
-    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
     import httpx
     from mcp.shared.auth import OAuthClientMetadata
     from pydantic import AnyUrl
 
-    from tools.mcp_oauth_manager import _OMNIWORKER_PROVIDER_CLS, reset_manager_for_tests
-    from tools.mcp_oauth import OmniWorkerTokenStorage
+    from tools.mcp_oauth_manager import _FLUX AGENT_PROVIDER_CLS, reset_manager_for_tests
+    from tools.mcp_oauth import Flux AgentTokenStorage
 
-    assert _OMNIWORKER_PROVIDER_CLS is not None
+    assert _FLUX AGENT_PROVIDER_CLS is not None
     reset_manager_for_tests()
 
     calls: list[str] = []
@@ -525,12 +525,12 @@ async def test_initialize_skips_prefetch_when_no_tokens(tmp_path, monkeypatch):
 
     monkeypatch.setattr(real_httpx, "AsyncClient", patched)
 
-    storage = OmniWorkerTokenStorage("srv")  # empty — no tokens on disk
+    storage = Flux AgentTokenStorage("srv")  # empty — no tokens on disk
     metadata = OAuthClientMetadata(
         redirect_uris=[AnyUrl("http://127.0.0.1:12345/callback")],
-        client_name="OmniWorker Agent",
+        client_name="Flux Agent Agent",
     )
-    provider = _OMNIWORKER_PROVIDER_CLS(
+    provider = _FLUX AGENT_PROVIDER_CLS(
         server_name="srv",
         server_url="https://mcp.example.com",
         client_metadata=metadata,

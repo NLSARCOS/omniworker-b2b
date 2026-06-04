@@ -1,6 +1,6 @@
 """Remote model catalog fetcher.
 
-The OmniWorker docs site hosts a JSON manifest of curated models for providers
+The Flux Agent docs site hosts a JSON manifest of curated models for providers
 we want to update without shipping a release (currently OpenRouter and
 Nous Portal). This module fetches, validates, and caches that manifest,
 falling back to the in-repo hardcoded lists when the network is unavailable.
@@ -52,7 +52,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from omniworker_cli import __version__ as _OMNIWORKER_VERSION
+from flux-agent_cli import __version__ as _FLUX AGENT_VERSION
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ DEFAULT_TTL_HOURS = 24
 DEFAULT_FETCH_TIMEOUT = 8.0
 SUPPORTED_SCHEMA_VERSION = 1
 
-_OMNIWORKER_USER_AGENT = f"hermes-cli/{_OMNIWORKER_VERSION}"
+_FLUX AGENT_USER_AGENT = f"hermes-cli/{_FLUX AGENT_VERSION}"
 
 # In-process cache to avoid repeated disk + parse work across multiple
 # calls within the same session. Invalidated by TTL against the disk file's
@@ -85,7 +85,7 @@ _catalog_cache_source_mtime: float = 0.0
 def _load_catalog_config() -> dict[str, Any]:
     """Load the ``model_catalog`` config block with defaults filled in."""
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config() or {}
     except Exception:
         cfg = {}
@@ -104,8 +104,8 @@ def _load_catalog_config() -> dict[str, Any]:
 
 def _cache_path() -> Path:
     """Return the disk cache path. Import lazily so tests can monkeypatch home."""
-    from omniworker_constants import get_omniworker_home
-    return get_omniworker_home() / "cache" / "model_catalog.json"
+    from flux-agent_constants import get_flux-agent_home
+    return get_flux-agent_home() / "cache" / "model_catalog.json"
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ def _fetch_manifest(url: str, timeout: float) -> dict[str, Any] | None:
             url,
             headers={
                 "Accept": "application/json",
-                "User-Agent": _OMNIWORKER_USER_AGENT,
+                "User-Agent": _FLUX AGENT_USER_AGENT,
             },
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:

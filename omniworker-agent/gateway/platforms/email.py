@@ -1,7 +1,7 @@
 """
-Email platform adapter for the OmniWorker gateway.
+Email platform adapter for the Flux Agent gateway.
 
-Allows users to interact with OmniWorker by sending emails.
+Allows users to interact with Flux Agent by sending emails.
 Uses IMAP to receive and SMTP to send messages.
 
 Environment variables:
@@ -75,14 +75,14 @@ def _send_imap_id(imap: "imaplib.IMAP4") -> None:
     """
     try:
         try:
-            from omniworker_cli import __version__ as _omniworker_version
+            from flux-agent_cli import __version__ as _flux-agent_version
         except Exception:  # noqa: BLE001 — keep ID best-effort if import fails
-            _omniworker_version = "0"
+            _flux-agent_version = "0"
         imap.xatom(
             "ID",
-            f'("name" "omniworker-agent" "version" "{_omniworker_version}" '
-            '"vendor" "OmniWorker" '
-            '"support-email" "noreply@omniworker.com")',
+            f'("name" "flux-agent-agent" "version" "{_flux-agent_version}" '
+            '"vendor" "Flux Agent" '
+            '"support-email" "noreply@flux-agent.com")',
         )
     except Exception as e:  # noqa: BLE001 — best-effort, never fatal
         logger.debug("[Email] IMAP ID command not accepted: %s", e)
@@ -531,7 +531,7 @@ class EmailAdapter(BasePlatformAdapter):
 
         # Thread context for reply
         ctx = self._thread_context.get(to_addr, {})
-        subject = ctx.get("subject", "OmniWorker Agent")
+        subject = ctx.get("subject", "Flux Agent Agent")
         if not subject.startswith("Re:"):
             subject = f"Re: {subject}"
         msg["Subject"] = subject
@@ -543,7 +543,7 @@ class EmailAdapter(BasePlatformAdapter):
             msg["References"] = original_msg_id
 
         msg["Date"] = formatdate(localtime=True)
-        msg_id = f"<omniworker-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
+        msg_id = f"<flux-agent-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
         msg["Message-ID"] = msg_id
 
         msg.attach(MIMEText(body, "plain", "utf-8"))
@@ -641,7 +641,7 @@ class EmailAdapter(BasePlatformAdapter):
         msg["To"] = to_addr
 
         ctx = self._thread_context.get(to_addr, {})
-        subject = ctx.get("subject", "OmniWorker Agent")
+        subject = ctx.get("subject", "Flux Agent Agent")
         if not subject.startswith("Re:"):
             subject = f"Re: {subject}"
         msg["Subject"] = subject
@@ -652,7 +652,7 @@ class EmailAdapter(BasePlatformAdapter):
             msg["References"] = original_msg_id
 
         msg["Date"] = formatdate(localtime=True)
-        msg_id = f"<omniworker-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
+        msg_id = f"<flux-agent-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
         msg["Message-ID"] = msg_id
 
         if body:
@@ -722,7 +722,7 @@ class EmailAdapter(BasePlatformAdapter):
         msg["To"] = to_addr
 
         ctx = self._thread_context.get(to_addr, {})
-        subject = ctx.get("subject", "OmniWorker Agent")
+        subject = ctx.get("subject", "Flux Agent Agent")
         if not subject.startswith("Re:"):
             subject = f"Re: {subject}"
         msg["Subject"] = subject
@@ -733,7 +733,7 @@ class EmailAdapter(BasePlatformAdapter):
             msg["References"] = original_msg_id
 
         msg["Date"] = formatdate(localtime=True)
-        msg_id = f"<omniworker-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
+        msg_id = f"<flux-agent-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
         msg["Message-ID"] = msg_id
 
         if body:

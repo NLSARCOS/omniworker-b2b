@@ -1,7 +1,7 @@
 """
 Dump command for hermes CLI.
 
-Outputs a compact, plain-text summary of the user's OmniWorker setup
+Outputs a compact, plain-text summary of the user's Flux Agent setup
 that can be copy-pasted into Discord/GitHub/Telegram for support context.
 No ANSI colors, no checkmarks — just data.
 """
@@ -13,9 +13,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from omniworker_cli.config import get_omniworker_home, get_env_path, get_project_root, load_config
-from omniworker_cli.env_loader import load_hermes_dotenv
-from omniworker_constants import display_omniworker_home
+from flux-agent_cli.config import get_flux-agent_home, get_env_path, get_project_root, load_config
+from flux-agent_cli.env_loader import load_hermes_dotenv
+from flux-agent_constants import display_flux-agent_home
 
 
 def _get_git_commit(project_root: Path) -> str:
@@ -47,7 +47,7 @@ def _redact(value: str) -> str:
 def _gateway_status() -> str:
     """Return a short gateway status string."""
     try:
-        from omniworker_cli.gateway import get_gateway_runtime_snapshot
+        from flux-agent_cli.gateway import get_gateway_runtime_snapshot
 
         snapshot = get_gateway_runtime_snapshot()
         if snapshot.running:
@@ -62,9 +62,9 @@ def _gateway_status() -> str:
         return "unknown" if sys.platform.startswith(("linux", "darwin")) else "N/A"
 
 
-def _count_skills(omniworker_home: Path) -> int:
+def _count_skills(flux-agent_home: Path) -> int:
     """Count installed skills."""
-    skills_dir = omniworker_home / "skills"
+    skills_dir = flux-agent_home / "skills"
     if not skills_dir.is_dir():
         return 0
     count = 0
@@ -80,9 +80,9 @@ def _count_mcp_servers(config: dict) -> int:
     return len(servers)
 
 
-def _cron_summary(omniworker_home: Path) -> str:
+def _cron_summary(flux-agent_home: Path) -> str:
     """Return cron jobs summary."""
-    jobs_file = omniworker_home / "cron" / "jobs.json"
+    jobs_file = flux-agent_home / "cron" / "jobs.json"
     if not jobs_file.exists():
         return "0"
     try:
@@ -145,7 +145,7 @@ def _config_overrides(config: dict) -> dict[str, str]:
     
     Returns a flat dict of dotpath -> value for interesting overrides.
     """
-    from omniworker_cli.config import DEFAULT_CONFIG
+    from flux-agent_cli.config import DEFAULT_CONFIG
 
     overrides = {}
 
@@ -198,15 +198,15 @@ def run_dump(args):
     # Load env from .env file so key checks work
     env_path = get_env_path()
     load_hermes_dotenv(
-        omniworker_home=env_path.parent,
+        flux-agent_home=env_path.parent,
         project_env=get_project_root() / ".env",
     )
 
     project_root = get_project_root()
-    omniworker_home = get_omniworker_home()
+    flux-agent_home = get_flux-agent_home()
 
     try:
-        from omniworker_cli import __version__, __release_date__
+        from flux-agent_cli import __version__, __release_date__
     except ImportError:
         __version__ = "(unknown)"
         __release_date__ = ""
@@ -222,7 +222,7 @@ def run_dump(args):
 
     # Profile
     try:
-        from omniworker_cli.profiles import get_active_profile_name
+        from flux-agent_cli.profiles import get_active_profile_name
         profile = get_active_profile_name() or "(default)"
     except Exception:
         profile = "(default)"
@@ -252,7 +252,7 @@ def run_dump(args):
     lines.append(f"python:           {sys.version.split()[0]}")
     lines.append(f"openai_sdk:       {openai_ver}")
     lines.append(f"profile:          {profile}")
-    lines.append(f"omniworker_home:      {display_omniworker_home()}")
+    lines.append(f"flux-agent_home:      {display_flux-agent_home()}")
     lines.append(f"model:            {model}")
     lines.append(f"provider:         {provider}")
     lines.append(f"terminal:         {backend}")
@@ -308,8 +308,8 @@ def run_dump(args):
 
     platforms = _configured_platforms()
     lines.append(f"  platforms:          {', '.join(platforms) if platforms else 'none'}")
-    lines.append(f"  cron_jobs:          {_cron_summary(omniworker_home)}")
-    lines.append(f"  skills:             {_count_skills(omniworker_home)}")
+    lines.append(f"  cron_jobs:          {_cron_summary(flux-agent_home)}")
+    lines.append(f"  skills:             {_count_skills(flux-agent_home)}")
 
     # Config overrides (non-default values)
     overrides = _config_overrides(config)

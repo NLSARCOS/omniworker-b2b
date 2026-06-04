@@ -227,8 +227,8 @@ class ThreadParticipationTracker:
         }
 
     def _state_path(self) -> Path:
-        from omniworker_constants import get_omniworker_home
-        return get_omniworker_home() / f"{self._platform}_threads.json"
+        from flux-agent_constants import get_flux-agent_home
+        return get_flux-agent_home() / f"{self._platform}_threads.json"
 
     def _load(self) -> list[str]:
         path = self._state_path()

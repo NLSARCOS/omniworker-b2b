@@ -1,4 +1,4 @@
-"""Tests for ``omniworker debug`` CLI command and debug utilities."""
+"""Tests for ``flux-agent debug`` CLI command and debug utilities."""
 
 import os
 import sys
@@ -13,9 +13,9 @@ import pytest
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-def omniworker_home(tmp_path, monkeypatch):
+def flux-agent_home(tmp_path, monkeypatch):
     """Set up an isolated OMNIWORKER_HOME with minimal logs."""
-    home = tmp_path / ".omniworker"
+    home = tmp_path / ".flux-agent"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
 
@@ -45,35 +45,35 @@ class TestUploadPasteRs:
     """Test paste.rs upload path."""
 
     def test_upload_paste_rs_success(self):
-        from omniworker_cli.debug import _upload_paste_rs
+        from flux-agent_cli.debug import _upload_paste_rs
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = b"https://paste.rs/abc123\n"
         mock_resp.__enter__ = lambda s: s
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("omniworker_cli.debug.urllib.request.urlopen", return_value=mock_resp):
+        with patch("flux-agent_cli.debug.urllib.request.urlopen", return_value=mock_resp):
             url = _upload_paste_rs("hello world")
 
         assert url == "https://paste.rs/abc123"
 
     def test_upload_paste_rs_bad_response(self):
-        from omniworker_cli.debug import _upload_paste_rs
+        from flux-agent_cli.debug import _upload_paste_rs
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = b"<html>error</html>"
         mock_resp.__enter__ = lambda s: s
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("omniworker_cli.debug.urllib.request.urlopen", return_value=mock_resp):
+        with patch("flux-agent_cli.debug.urllib.request.urlopen", return_value=mock_resp):
             with pytest.raises(ValueError, match="Unexpected response"):
                 _upload_paste_rs("test")
 
     def test_upload_paste_rs_network_error(self):
-        from omniworker_cli.debug import _upload_paste_rs
+        from flux-agent_cli.debug import _upload_paste_rs
 
         with patch(
-            "omniworker_cli.debug.urllib.request.urlopen",
+            "flux-agent_cli.debug.urllib.request.urlopen",
             side_effect=urllib.error.URLError("connection refused"),
         ):
             with pytest.raises(urllib.error.URLError):
@@ -84,14 +84,14 @@ class TestUploadDpasteCom:
     """Test dpaste.com fallback upload path."""
 
     def test_upload_dpaste_com_success(self):
-        from omniworker_cli.debug import _upload_dpaste_com
+        from flux-agent_cli.debug import _upload_dpaste_com
 
         mock_resp = MagicMock()
         mock_resp.read.return_value = b"https://dpaste.com/ABCDEFG\n"
         mock_resp.__enter__ = lambda s: s
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("omniworker_cli.debug.urllib.request.urlopen", return_value=mock_resp):
+        with patch("flux-agent_cli.debug.urllib.request.urlopen", return_value=mock_resp):
             url = _upload_dpaste_com("hello world", expiry_days=7)
 
         assert url == "https://dpaste.com/ABCDEFG"
@@ -101,9 +101,9 @@ class TestUploadToPastebin:
     """Test the combined upload with fallback."""
 
     def test_tries_paste_rs_first(self):
-        from omniworker_cli.debug import upload_to_pastebin
+        from flux-agent_cli.debug import upload_to_pastebin
 
-        with patch("omniworker_cli.debug._upload_paste_rs",
+        with patch("flux-agent_cli.debug._upload_paste_rs",
                     return_value="https://paste.rs/test") as prs:
             url = upload_to_pastebin("content")
 
@@ -111,11 +111,11 @@ class TestUploadToPastebin:
         prs.assert_called_once()
 
     def test_falls_back_to_dpaste_com(self):
-        from omniworker_cli.debug import upload_to_pastebin
+        from flux-agent_cli.debug import upload_to_pastebin
 
-        with patch("omniworker_cli.debug._upload_paste_rs",
+        with patch("flux-agent_cli.debug._upload_paste_rs",
                     side_effect=Exception("down")), \
-             patch("omniworker_cli.debug._upload_dpaste_com",
+             patch("flux-agent_cli.debug._upload_dpaste_com",
                     return_value="https://dpaste.com/TEST") as dp:
             url = upload_to_pastebin("content")
 
@@ -123,11 +123,11 @@ class TestUploadToPastebin:
         dp.assert_called_once()
 
     def test_raises_when_both_fail(self):
-        from omniworker_cli.debug import upload_to_pastebin
+        from flux-agent_cli.debug import upload_to_pastebin
 
-        with patch("omniworker_cli.debug._upload_paste_rs",
+        with patch("flux-agent_cli.debug._upload_paste_rs",
                     side_effect=Exception("err1")), \
-             patch("omniworker_cli.debug._upload_dpaste_com",
+             patch("flux-agent_cli.debug._upload_dpaste_com",
                     side_effect=Exception("err2")):
             with pytest.raises(RuntimeError, match="Failed to upload"):
                 upload_to_pastebin("content")
@@ -140,8 +140,8 @@ class TestUploadToPastebin:
 class TestCaptureLogSnapshot:
     """Test _capture_log_snapshot for log reading and truncation."""
 
-    def test_reads_small_file(self, omniworker_home):
-        from omniworker_cli.debug import _capture_log_snapshot
+    def test_reads_small_file(self, flux-agent_home):
+        from flux-agent_cli.debug import _capture_log_snapshot
 
         snap = _capture_log_snapshot("agent", tail_lines=10)
         assert snap.full_text is not None
@@ -149,28 +149,28 @@ class TestCaptureLogSnapshot:
         assert "session started" in snap.tail_text
 
     def test_returns_none_for_missing(self, tmp_path, monkeypatch):
-        home = tmp_path / ".omniworker"
+        home = tmp_path / ".flux-agent"
         home.mkdir()
         monkeypatch.setenv("OMNIWORKER_HOME", str(home))
 
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
         snap = _capture_log_snapshot("agent", tail_lines=10)
         assert snap.full_text is None
         assert snap.tail_text == "(file not found)"
 
-    def test_empty_primary_reports_file_empty(self, omniworker_home):
+    def test_empty_primary_reports_file_empty(self, flux-agent_home):
         """Empty primary (no .1 fallback) surfaces as '(file empty)', not missing."""
-        (omniworker_home / "logs" / "agent.log").write_text("")
+        (flux-agent_home / "logs" / "agent.log").write_text("")
 
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
         snap = _capture_log_snapshot("agent", tail_lines=10)
         assert snap.full_text is None
         assert snap.tail_text == "(file empty)"
 
-    def test_race_truncate_after_resolve_reports_empty(self, omniworker_home, monkeypatch):
+    def test_race_truncate_after_resolve_reports_empty(self, flux-agent_home, monkeypatch):
         """If the log is truncated between resolve and stat, say 'empty', not 'missing'."""
-        log_path = omniworker_home / "logs" / "agent.log"
-        from omniworker_cli import debug
+        log_path = flux-agent_home / "logs" / "agent.log"
+        from flux-agent_cli import debug
 
         monkeypatch.setattr(debug, "_resolve_log_path", lambda _name: log_path)
         log_path.write_text("")
@@ -180,27 +180,27 @@ class TestCaptureLogSnapshot:
         assert snap.full_text is None
         assert snap.tail_text == "(file empty)"
 
-    def test_truncates_large_file(self, omniworker_home):
+    def test_truncates_large_file(self, flux-agent_home):
         """Files larger than max_bytes get tail-truncated."""
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
 
         # Write a file larger than 1KB
         big_content = "x" * 100 + "\n"
-        (omniworker_home / "logs" / "agent.log").write_text(big_content * 200)
+        (flux-agent_home / "logs" / "agent.log").write_text(big_content * 200)
 
         snap = _capture_log_snapshot("agent", tail_lines=10, max_bytes=1024)
         assert snap.full_text is not None
         assert "truncated" in snap.full_text
 
-    def test_keeps_first_line_when_truncation_on_boundary(self, omniworker_home):
+    def test_keeps_first_line_when_truncation_on_boundary(self, flux-agent_home):
         """When truncation lands on a line boundary, keep the first full line."""
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
 
         # File must exceed the initial chunk_size (8192) used by the
         # backward-reading loop so the truncation path actually fires.
         line = "A" * 99 + "\n"  # 100 bytes per line
         num_lines = 200  # 20000 bytes
-        (omniworker_home / "logs" / "agent.log").write_text(line * num_lines)
+        (flux-agent_home / "logs" / "agent.log").write_text(line * num_lines)
 
         # max_bytes = 1000 = 100 * 10 → cut at byte 20000 - 1000 = 19000,
         # and byte 19000 - 1 is '\n'.  Boundary hit → keep all 10 lines.
@@ -211,13 +211,13 @@ class TestCaptureLogSnapshot:
         kept = [l for l in raw.strip().splitlines() if l.startswith("A")]
         assert len(kept) == 10
 
-    def test_drops_partial_when_truncation_mid_line(self, omniworker_home):
+    def test_drops_partial_when_truncation_mid_line(self, flux-agent_home):
         """When truncation lands mid-line, drop the partial fragment."""
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
 
         line = "A" * 99 + "\n"  # 100 bytes per line
         num_lines = 200  # 20000 bytes
-        (omniworker_home / "logs" / "agent.log").write_text(line * num_lines)
+        (flux-agent_home / "logs" / "agent.log").write_text(line * num_lines)
 
         # max_bytes = 950 doesn't divide evenly into 100 → mid-line cut.
         snap = _capture_log_snapshot("agent", tail_lines=5, max_bytes=950)
@@ -228,16 +228,16 @@ class TestCaptureLogSnapshot:
         # 950 / 100 = 9.5 → 9 complete lines after dropping partial
         assert len(kept) == 9
 
-    def test_unknown_log_returns_none(self, omniworker_home):
-        from omniworker_cli.debug import _capture_log_snapshot
+    def test_unknown_log_returns_none(self, flux-agent_home):
+        from flux-agent_cli.debug import _capture_log_snapshot
         snap = _capture_log_snapshot("nonexistent", tail_lines=10)
         assert snap.full_text is None
 
-    def test_falls_back_to_rotated_file(self, omniworker_home):
+    def test_falls_back_to_rotated_file(self, flux-agent_home):
         """When gateway.log doesn't exist, falls back to gateway.log.1."""
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
 
-        logs_dir = omniworker_home / "logs"
+        logs_dir = flux-agent_home / "logs"
         # Remove the primary (if any) and create a .1 rotation
         (logs_dir / "gateway.log").unlink(missing_ok=True)
         (logs_dir / "gateway.log.1").write_text(
@@ -248,11 +248,11 @@ class TestCaptureLogSnapshot:
         assert snap.full_text is not None
         assert "rotated content" in snap.full_text
 
-    def test_prefers_primary_over_rotated(self, omniworker_home):
+    def test_prefers_primary_over_rotated(self, flux-agent_home):
         """Primary log is used when it exists, even if .1 also exists."""
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
 
-        logs_dir = omniworker_home / "logs"
+        logs_dir = flux-agent_home / "logs"
         (logs_dir / "gateway.log").write_text("primary content\n")
         (logs_dir / "gateway.log.1").write_text("rotated content\n")
 
@@ -260,11 +260,11 @@ class TestCaptureLogSnapshot:
         assert "primary content" in snap.full_text
         assert "rotated" not in snap.full_text
 
-    def test_falls_back_when_primary_empty(self, omniworker_home):
+    def test_falls_back_when_primary_empty(self, flux-agent_home):
         """Empty primary log falls back to .1 rotation."""
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
 
-        logs_dir = omniworker_home / "logs"
+        logs_dir = flux-agent_home / "logs"
         (logs_dir / "agent.log").write_text("")
         (logs_dir / "agent.log.1").write_text("rotated agent data\n")
 
@@ -286,9 +286,9 @@ class TestCaptureLogSnapshotRedaction:
     """Pin upload-time redaction at the _capture_log_snapshot boundary."""
 
     @pytest.fixture
-    def omniworker_home_with_secret(self, tmp_path, monkeypatch):
+    def flux-agent_home_with_secret(self, tmp_path, monkeypatch):
         """Isolated OMNIWORKER_HOME whose agent.log contains a vendor-prefixed token."""
-        home = tmp_path / ".omniworker"
+        home = tmp_path / ".flux-agent"
         home.mkdir()
         monkeypatch.setenv("OMNIWORKER_HOME", str(home))
         # Baseline fixture: no explicit env-var opinion. With the post-#17691
@@ -307,8 +307,8 @@ class TestCaptureLogSnapshotRedaction:
         (logs_dir / "gateway.log").write_text("")
         return home
 
-    def test_default_redacts_tail_and_full_text(self, omniworker_home_with_secret):
-        from omniworker_cli.debug import _capture_log_snapshot
+    def test_default_redacts_tail_and_full_text(self, flux-agent_home_with_secret):
+        from flux-agent_cli.debug import _capture_log_snapshot
 
         snap = _capture_log_snapshot("agent", tail_lines=10)
 
@@ -317,8 +317,8 @@ class TestCaptureLogSnapshotRedaction:
         assert snap.full_text is not None
         assert _REDACT_FIXTURE_TOKEN not in snap.full_text
 
-    def test_redact_false_passes_through(self, omniworker_home_with_secret):
-        from omniworker_cli.debug import _capture_log_snapshot
+    def test_redact_false_passes_through(self, flux-agent_home_with_secret):
+        from flux-agent_cli.debug import _capture_log_snapshot
 
         snap = _capture_log_snapshot("agent", tail_lines=10, redact=False)
 
@@ -327,7 +327,7 @@ class TestCaptureLogSnapshotRedaction:
         assert _REDACT_FIXTURE_TOKEN in (snap.full_text or "")
 
     def test_force_true_works_when_redaction_disabled(
-        self, omniworker_home_with_secret, monkeypatch
+        self, flux-agent_home_with_secret, monkeypatch
     ):
         """Regression test: redact_sensitive_text short-circuits without force=True.
 
@@ -343,7 +343,7 @@ class TestCaptureLogSnapshotRedaction:
         # not the default-on path.
         monkeypatch.setenv("OMNIWORKER_REDACT_SECRETS", "false")
 
-        from omniworker_cli.debug import _capture_log_snapshot
+        from flux-agent_cli.debug import _capture_log_snapshot
 
         assert os.environ.get("OMNIWORKER_REDACT_SECRETS", "") == "false"
 
@@ -354,9 +354,9 @@ class TestCaptureLogSnapshotRedaction:
         assert _REDACT_FIXTURE_TOKEN not in snap.full_text
 
     def test_capture_default_log_snapshots_threads_redact(
-        self, omniworker_home_with_secret
+        self, flux-agent_home_with_secret
     ):
-        from omniworker_cli.debug import _capture_default_log_snapshots
+        from flux-agent_cli.debug import _capture_default_log_snapshots
 
         snaps = _capture_default_log_snapshots(50)
 
@@ -365,9 +365,9 @@ class TestCaptureLogSnapshotRedaction:
         assert _REDACT_FIXTURE_TOKEN not in (snaps["agent"].full_text or "")
 
     def test_capture_default_log_snapshots_no_redact_passes_through(
-        self, omniworker_home_with_secret
+        self, flux-agent_home_with_secret
     ):
-        from omniworker_cli.debug import _capture_default_log_snapshots
+        from flux-agent_cli.debug import _capture_default_log_snapshots
 
         snaps = _capture_default_log_snapshots(50, redact=False)
 
@@ -382,52 +382,52 @@ class TestCaptureLogSnapshotRedaction:
 class TestCollectDebugReport:
     """Test the debug report builder."""
 
-    def test_report_includes_dump_output(self, omniworker_home):
-        from omniworker_cli.debug import collect_debug_report
+    def test_report_includes_dump_output(self, flux-agent_home):
+        from flux-agent_cli.debug import collect_debug_report
 
-        with patch("omniworker_cli.dump.run_dump") as mock_dump:
+        with patch("flux-agent_cli.dump.run_dump") as mock_dump:
             mock_dump.side_effect = lambda args: print(
-                "--- omniworker dump ---\nversion: 0.8.0\n--- end dump ---"
+                "--- flux-agent dump ---\nversion: 0.8.0\n--- end dump ---"
             )
             report = collect_debug_report(log_lines=50)
 
-        assert "--- omniworker dump ---" in report
+        assert "--- flux-agent dump ---" in report
         assert "version: 0.8.0" in report
 
-    def test_report_includes_agent_log(self, omniworker_home):
-        from omniworker_cli.debug import collect_debug_report
+    def test_report_includes_agent_log(self, flux-agent_home):
+        from flux-agent_cli.debug import collect_debug_report
 
-        with patch("omniworker_cli.dump.run_dump"):
+        with patch("flux-agent_cli.dump.run_dump"):
             report = collect_debug_report(log_lines=50)
 
         assert "--- agent.log" in report
         assert "session started" in report
 
-    def test_report_includes_errors_log(self, omniworker_home):
-        from omniworker_cli.debug import collect_debug_report
+    def test_report_includes_errors_log(self, flux-agent_home):
+        from flux-agent_cli.debug import collect_debug_report
 
-        with patch("omniworker_cli.dump.run_dump"):
+        with patch("flux-agent_cli.dump.run_dump"):
             report = collect_debug_report(log_lines=50)
 
         assert "--- errors.log" in report
         assert "connection lost" in report
 
-    def test_report_includes_gateway_log(self, omniworker_home):
-        from omniworker_cli.debug import collect_debug_report
+    def test_report_includes_gateway_log(self, flux-agent_home):
+        from flux-agent_cli.debug import collect_debug_report
 
-        with patch("omniworker_cli.dump.run_dump"):
+        with patch("flux-agent_cli.dump.run_dump"):
             report = collect_debug_report(log_lines=50)
 
         assert "--- gateway.log" in report
 
     def test_missing_logs_handled(self, tmp_path, monkeypatch):
-        home = tmp_path / ".omniworker"
+        home = tmp_path / ".flux-agent"
         home.mkdir()
         monkeypatch.setenv("OMNIWORKER_HOME", str(home))
 
-        from omniworker_cli.debug import collect_debug_report
+        from flux-agent_cli.debug import collect_debug_report
 
-        with patch("omniworker_cli.dump.run_dump"):
+        with patch("flux-agent_cli.dump.run_dump"):
             report = collect_debug_report(log_lines=50)
 
         assert "(file not found)" in report
@@ -440,54 +440,54 @@ class TestCollectDebugReport:
 class TestRunDebugShare:
     """Test the run_debug_share CLI handler."""
 
-    def test_share_sweeps_expired_pastes(self, omniworker_home, capsys):
+    def test_share_sweeps_expired_pastes(self, flux-agent_home, capsys):
         """Slash-command path should sweep old pending deletes before uploading."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
         args.expire = 7
         args.local = False
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug._sweep_expired_pastes", return_value=(0, 0)) as mock_sweep, \
-             patch("omniworker_cli.debug.upload_to_pastebin",
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug._sweep_expired_pastes", return_value=(0, 0)) as mock_sweep, \
+             patch("flux-agent_cli.debug.upload_to_pastebin",
                     return_value="https://paste.rs/test"):
             run_debug_share(args)
 
         mock_sweep.assert_called_once()
         assert "Debug report uploaded" in capsys.readouterr().out
 
-    def test_share_survives_sweep_failure(self, omniworker_home, capsys):
+    def test_share_survives_sweep_failure(self, flux-agent_home, capsys):
         """Expired-paste cleanup is best-effort and must not block sharing."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
         args.expire = 7
         args.local = False
 
-        with patch("omniworker_cli.dump.run_dump"), \
+        with patch("flux-agent_cli.dump.run_dump"), \
              patch(
-                 "omniworker_cli.debug._sweep_expired_pastes",
+                 "flux-agent_cli.debug._sweep_expired_pastes",
                  side_effect=RuntimeError("offline"),
              ), \
-             patch("omniworker_cli.debug.upload_to_pastebin",
+             patch("flux-agent_cli.debug.upload_to_pastebin",
                     return_value="https://paste.rs/test"):
             run_debug_share(args)
 
         assert "https://paste.rs/test" in capsys.readouterr().out
 
-    def test_local_flag_prints_full_logs(self, omniworker_home, capsys):
+    def test_local_flag_prints_full_logs(self, flux-agent_home, capsys):
         """--local prints the report plus full log contents."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
         args.expire = 7
         args.local = True
 
-        with patch("omniworker_cli.dump.run_dump"):
+        with patch("flux-agent_cli.dump.run_dump"):
             run_debug_share(args)
 
         out = capsys.readouterr().out
@@ -495,9 +495,9 @@ class TestRunDebugShare:
         assert "FULL agent.log" in out
         assert "FULL gateway.log" in out
 
-    def test_share_uploads_three_pastes(self, omniworker_home, capsys):
+    def test_share_uploads_three_pastes(self, flux-agent_home, capsys):
         """Successful share uploads report + agent.log + gateway.log."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
@@ -511,10 +511,10 @@ class TestRunDebugShare:
             uploaded_content.append(content)
             return f"https://paste.rs/paste{call_count[0]}"
 
-        with patch("omniworker_cli.dump.run_dump") as mock_dump, \
-             patch("omniworker_cli.debug.upload_to_pastebin",
+        with patch("flux-agent_cli.dump.run_dump") as mock_dump, \
+             patch("flux-agent_cli.debug.upload_to_pastebin",
                     side_effect=_mock_upload):
-            mock_dump.side_effect = lambda a: print("--- omniworker dump ---\nversion: test\n--- end dump ---")
+            mock_dump.side_effect = lambda a: print("--- flux-agent dump ---\nversion: test\n--- end dump ---")
             run_debug_share(args)
 
         out = capsys.readouterr().out
@@ -529,17 +529,17 @@ class TestRunDebugShare:
 
         # Each log paste should start with the dump header
         agent_paste = uploaded_content[1]
-        assert "--- omniworker dump ---" in agent_paste
+        assert "--- flux-agent dump ---" in agent_paste
         assert "--- full agent.log ---" in agent_paste
         gateway_paste = uploaded_content[2]
-        assert "--- omniworker dump ---" in gateway_paste
+        assert "--- flux-agent dump ---" in gateway_paste
         assert "--- full gateway.log ---" in gateway_paste
 
-    def test_share_keeps_report_and_full_log_on_same_snapshot(self, omniworker_home, capsys):
+    def test_share_keeps_report_and_full_log_on_same_snapshot(self, flux-agent_home, capsys):
         """A mid-run rotation must not make full agent.log older than the report."""
-        from omniworker_cli.debug import run_debug_share, collect_debug_report as real_collect_debug_report
+        from flux-agent_cli.debug import run_debug_share, collect_debug_report as real_collect_debug_report
 
-        logs_dir = omniworker_home / "logs"
+        logs_dir = flux-agent_home / "logs"
         (logs_dir / "agent.log").write_text(
             "2026-04-22 12:00:00 INFO agent: newest line\n"
         )
@@ -573,9 +573,9 @@ class TestRunDebugShare:
             )
             return report
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug.collect_debug_report", side_effect=_wrapped_collect_debug_report), \
-             patch("omniworker_cli.debug.upload_to_pastebin", side_effect=_mock_upload):
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug.collect_debug_report", side_effect=_wrapped_collect_debug_report), \
+             patch("flux-agent_cli.debug.upload_to_pastebin", side_effect=_mock_upload):
             run_debug_share(args)
 
         report_paste = uploaded_content[0]
@@ -586,11 +586,11 @@ class TestRunDebugShare:
 
     def test_share_skips_missing_logs(self, tmp_path, monkeypatch, capsys):
         """Only uploads logs that exist."""
-        home = tmp_path / ".omniworker"
+        home = tmp_path / ".flux-agent"
         home.mkdir()
         monkeypatch.setenv("OMNIWORKER_HOME", str(home))
 
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
@@ -602,8 +602,8 @@ class TestRunDebugShare:
             call_count[0] += 1
             return f"https://paste.rs/paste{call_count[0]}"
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug.upload_to_pastebin",
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug.upload_to_pastebin",
                     side_effect=_mock_upload):
             run_debug_share(args)
 
@@ -612,9 +612,9 @@ class TestRunDebugShare:
         assert call_count[0] == 1
         assert "Report" in out
 
-    def test_share_continues_on_log_upload_failure(self, omniworker_home, capsys):
+    def test_share_continues_on_log_upload_failure(self, flux-agent_home, capsys):
         """Log upload failure doesn't stop the report from being shared."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
@@ -628,8 +628,8 @@ class TestRunDebugShare:
                 raise RuntimeError("upload failed")
             return "https://paste.rs/report"
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug.upload_to_pastebin",
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug.upload_to_pastebin",
                     side_effect=_mock_upload):
             run_debug_share(args)
 
@@ -638,17 +638,17 @@ class TestRunDebugShare:
         assert "paste.rs/report" in out
         assert "failed to upload" in out
 
-    def test_share_exits_on_report_upload_failure(self, omniworker_home, capsys):
+    def test_share_exits_on_report_upload_failure(self, flux-agent_home, capsys):
         """If the main report fails to upload, exit with code 1."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
         args.expire = 7
         args.local = False
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug.upload_to_pastebin",
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug.upload_to_pastebin",
                     side_effect=RuntimeError("all failed")):
             with pytest.raises(SystemExit) as exc_info:
                 run_debug_share(args)
@@ -666,9 +666,9 @@ class TestRunDebugShareRedaction:
     """End-to-end: --no-redact flag, banner injection, default behavior."""
 
     @pytest.fixture
-    def omniworker_home_with_secret(self, tmp_path, monkeypatch):
+    def flux-agent_home_with_secret(self, tmp_path, monkeypatch):
         """Isolated OMNIWORKER_HOME whose agent.log contains a vendor-prefixed token."""
-        home = tmp_path / ".omniworker"
+        home = tmp_path / ".flux-agent"
         home.mkdir()
         monkeypatch.setenv("OMNIWORKER_HOME", str(home))
         monkeypatch.delenv("OMNIWORKER_REDACT_SECRETS", raising=False)
@@ -685,10 +685,10 @@ class TestRunDebugShareRedaction:
         return home
 
     def test_default_share_redacts_uploaded_content(
-        self, omniworker_home_with_secret, capsys
+        self, flux-agent_home_with_secret, capsys
     ):
         """The uploaded report and full-log pastes do not contain the raw token."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
@@ -702,9 +702,9 @@ class TestRunDebugShareRedaction:
             captured.append(content)
             return f"https://paste.rs/{len(captured)}"
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug._sweep_expired_pastes", return_value=(0, 0)), \
-             patch("omniworker_cli.debug.upload_to_pastebin", side_effect=fake_upload):
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug._sweep_expired_pastes", return_value=(0, 0)), \
+             patch("flux-agent_cli.debug.upload_to_pastebin", side_effect=fake_upload):
             run_debug_share(args)
 
         # At least the report plus one full log paste reached the upload path.
@@ -715,10 +715,10 @@ class TestRunDebugShareRedaction:
             )
 
     def test_default_share_includes_redaction_banner(
-        self, omniworker_home_with_secret, capsys
+        self, flux-agent_home_with_secret, capsys
     ):
         """Each upload-bound paste carries the visible redaction banner."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
@@ -732,9 +732,9 @@ class TestRunDebugShareRedaction:
             captured.append(content)
             return f"https://paste.rs/{len(captured)}"
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug._sweep_expired_pastes", return_value=(0, 0)), \
-             patch("omniworker_cli.debug.upload_to_pastebin", side_effect=fake_upload):
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug._sweep_expired_pastes", return_value=(0, 0)), \
+             patch("flux-agent_cli.debug.upload_to_pastebin", side_effect=fake_upload):
             run_debug_share(args)
 
         for content in captured:
@@ -743,10 +743,10 @@ class TestRunDebugShareRedaction:
             )
 
     def test_no_redact_flag_disables_redaction_and_banner(
-        self, omniworker_home_with_secret, capsys
+        self, flux-agent_home_with_secret, capsys
     ):
         """--no-redact preserves original log content and omits the banner."""
-        from omniworker_cli.debug import run_debug_share
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
@@ -760,9 +760,9 @@ class TestRunDebugShareRedaction:
             captured.append(content)
             return f"https://paste.rs/{len(captured)}"
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug._sweep_expired_pastes", return_value=(0, 0)), \
-             patch("omniworker_cli.debug.upload_to_pastebin", side_effect=fake_upload):
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug._sweep_expired_pastes", return_value=(0, 0)), \
+             patch("flux-agent_cli.debug.upload_to_pastebin", side_effect=fake_upload):
             run_debug_share(args)
 
         # The agent.log paste should now contain the raw token.
@@ -782,7 +782,7 @@ class TestRunDebugShareRedaction:
 
 class TestRunDebug:
     def test_no_subcommand_shows_usage(self, capsys):
-        from omniworker_cli.debug import run_debug
+        from flux-agent_cli.debug import run_debug
 
         args = MagicMock()
         args.debug_command = None
@@ -790,12 +790,12 @@ class TestRunDebug:
         run_debug(args)
 
         out = capsys.readouterr().out
-        assert "omniworker debug" in out
+        assert "flux-agent debug" in out
         assert "share" in out
         assert "delete" in out
 
-    def test_share_subcommand_routes(self, omniworker_home):
-        from omniworker_cli.debug import run_debug
+    def test_share_subcommand_routes(self, flux-agent_home):
+        from flux-agent_cli.debug import run_debug
 
         args = MagicMock()
         args.debug_command = "share"
@@ -803,7 +803,7 @@ class TestRunDebug:
         args.expire = 7
         args.local = True
 
-        with patch("omniworker_cli.dump.run_dump"):
+        with patch("flux-agent_cli.dump.run_dump"):
             run_debug(args)
 
 
@@ -817,36 +817,36 @@ class TestRunDebug:
 
 class TestExtractPasteId:
     def test_paste_rs_url(self):
-        from omniworker_cli.debug import _extract_paste_id
+        from flux-agent_cli.debug import _extract_paste_id
         assert _extract_paste_id("https://paste.rs/abc123") == "abc123"
 
     def test_paste_rs_trailing_slash(self):
-        from omniworker_cli.debug import _extract_paste_id
+        from flux-agent_cli.debug import _extract_paste_id
         assert _extract_paste_id("https://paste.rs/abc123/") == "abc123"
 
     def test_http_variant(self):
-        from omniworker_cli.debug import _extract_paste_id
+        from flux-agent_cli.debug import _extract_paste_id
         assert _extract_paste_id("http://paste.rs/xyz") == "xyz"
 
     def test_non_paste_rs_returns_none(self):
-        from omniworker_cli.debug import _extract_paste_id
+        from flux-agent_cli.debug import _extract_paste_id
         assert _extract_paste_id("https://dpaste.com/ABCDEF") is None
 
     def test_empty_returns_none(self):
-        from omniworker_cli.debug import _extract_paste_id
+        from flux-agent_cli.debug import _extract_paste_id
         assert _extract_paste_id("") is None
 
 
 class TestDeletePaste:
     def test_delete_sends_delete_request(self):
-        from omniworker_cli.debug import delete_paste
+        from flux-agent_cli.debug import delete_paste
 
         mock_resp = MagicMock()
         mock_resp.status = 200
         mock_resp.__enter__ = lambda s: s
         mock_resp.__exit__ = MagicMock(return_value=False)
 
-        with patch("omniworker_cli.debug.urllib.request.urlopen",
+        with patch("flux-agent_cli.debug.urllib.request.urlopen",
                     return_value=mock_resp) as mock_open:
             result = delete_paste("https://paste.rs/abc123")
 
@@ -856,7 +856,7 @@ class TestDeletePaste:
         assert "paste.rs/abc123" in req.full_url
 
     def test_delete_rejects_non_paste_rs(self):
-        from omniworker_cli.debug import delete_paste
+        from flux-agent_cli.debug import delete_paste
 
         with pytest.raises(ValueError, match="only paste.rs"):
             delete_paste("https://dpaste.com/something")
@@ -869,12 +869,12 @@ class TestScheduleAutoDelete:
     were observed in production.
 
     The new implementation is stateless: it records pending deletions to
-    ``~/.omniworker/pastes/pending.json`` and lets ``_sweep_expired_pastes``
-    handle the DELETE requests synchronously on the next ``omniworker debug``
+    ``~/.flux-agent/pastes/pending.json`` and lets ``_sweep_expired_pastes``
+    handle the DELETE requests synchronously on the next ``flux-agent debug``
     invocation.
     """
 
-    def test_does_not_spawn_subprocess(self, omniworker_home):
+    def test_does_not_spawn_subprocess(self, flux-agent_home):
         """Regression guard: _schedule_auto_delete must NEVER spawn subprocesses.
 
         We assert this structurally rather than by mocking Popen: the new
@@ -883,7 +883,7 @@ class TestScheduleAutoDelete:
         """
         import ast
         import inspect
-        from omniworker_cli.debug import _schedule_auto_delete
+        from flux-agent_cli.debug import _schedule_auto_delete
 
         # Strip the docstring before scanning so the regression-rationale
         # prose inside it doesn't trigger our banned-word checks.
@@ -936,9 +936,9 @@ class TestScheduleAutoDelete:
                 except OSError:
                     pass  # process exited already
 
-    def test_records_pending_to_json(self, omniworker_home):
+    def test_records_pending_to_json(self, flux-agent_home):
         """Scheduled URLs are persisted to pending.json with expiration."""
-        from omniworker_cli.debug import _schedule_auto_delete, _pending_file
+        from flux-agent_cli.debug import _schedule_auto_delete, _pending_file
         import json
 
         _schedule_auto_delete(
@@ -960,18 +960,18 @@ class TestScheduleAutoDelete:
             assert e["expire_at"] > time.time()
             assert e["expire_at"] <= time.time() + 15
 
-    def test_skips_non_paste_rs_urls(self, omniworker_home):
+    def test_skips_non_paste_rs_urls(self, flux-agent_home):
         """dpaste.com URLs auto-expire — don't track them."""
-        from omniworker_cli.debug import _schedule_auto_delete, _pending_file
+        from flux-agent_cli.debug import _schedule_auto_delete, _pending_file
 
         _schedule_auto_delete(["https://dpaste.com/something"])
 
         # pending.json should not be created for non-paste.rs URLs
         assert not _pending_file().exists()
 
-    def test_merges_with_existing_pending(self, omniworker_home):
+    def test_merges_with_existing_pending(self, flux-agent_home):
         """Subsequent calls merge into existing pending.json."""
-        from omniworker_cli.debug import _schedule_auto_delete, _load_pending
+        from flux-agent_cli.debug import _schedule_auto_delete, _load_pending
 
         _schedule_auto_delete(["https://paste.rs/first"], delay_seconds=10)
         _schedule_auto_delete(["https://paste.rs/second"], delay_seconds=10)
@@ -980,9 +980,9 @@ class TestScheduleAutoDelete:
         urls = {e["url"] for e in entries}
         assert urls == {"https://paste.rs/first", "https://paste.rs/second"}
 
-    def test_dedupes_same_url(self, omniworker_home):
+    def test_dedupes_same_url(self, flux-agent_home):
         """Same URL recorded twice → one entry with the later expire_at."""
-        from omniworker_cli.debug import _schedule_auto_delete, _load_pending
+        from flux-agent_cli.debug import _schedule_auto_delete, _load_pending
 
         _schedule_auto_delete(["https://paste.rs/dup"], delay_seconds=10)
         _schedule_auto_delete(["https://paste.rs/dup"], delay_seconds=100)
@@ -995,15 +995,15 @@ class TestScheduleAutoDelete:
 class TestSweepExpiredPastes:
     """Test the opportunistic sweep that replaces the sleeping subprocess."""
 
-    def test_sweep_empty_is_noop(self, omniworker_home):
-        from omniworker_cli.debug import _sweep_expired_pastes
+    def test_sweep_empty_is_noop(self, flux-agent_home):
+        from flux-agent_cli.debug import _sweep_expired_pastes
 
         deleted, remaining = _sweep_expired_pastes()
         assert deleted == 0
         assert remaining == 0
 
-    def test_sweep_deletes_expired_entries(self, omniworker_home):
-        from omniworker_cli.debug import (
+    def test_sweep_deletes_expired_entries(self, flux-agent_home):
+        from flux-agent_cli.debug import (
             _sweep_expired_pastes,
             _save_pending,
             _load_pending,
@@ -1022,7 +1022,7 @@ class TestSweepExpiredPastes:
             delete_calls.append(url)
             return True
 
-        with patch("omniworker_cli.debug.delete_paste", side_effect=fake_delete):
+        with patch("flux-agent_cli.debug.delete_paste", side_effect=fake_delete):
             deleted, remaining = _sweep_expired_pastes()
 
         assert delete_calls == ["https://paste.rs/expired"]
@@ -1033,8 +1033,8 @@ class TestSweepExpiredPastes:
         urls = {e["url"] for e in entries}
         assert urls == {"https://paste.rs/future"}
 
-    def test_sweep_leaves_future_entries_alone(self, omniworker_home):
-        from omniworker_cli.debug import _sweep_expired_pastes, _save_pending
+    def test_sweep_leaves_future_entries_alone(self, flux-agent_home):
+        from flux-agent_cli.debug import _sweep_expired_pastes, _save_pending
         import time
 
         _save_pending([
@@ -1042,16 +1042,16 @@ class TestSweepExpiredPastes:
             {"url": "https://paste.rs/future2", "expire_at": time.time() + 7200},
         ])
 
-        with patch("omniworker_cli.debug.delete_paste") as mock_delete:
+        with patch("flux-agent_cli.debug.delete_paste") as mock_delete:
             deleted, remaining = _sweep_expired_pastes()
 
         mock_delete.assert_not_called()
         assert deleted == 0
         assert remaining == 2
 
-    def test_sweep_survives_network_failure(self, omniworker_home):
+    def test_sweep_survives_network_failure(self, flux-agent_home):
         """Failed DELETEs stay in pending.json until the 24h grace window."""
-        from omniworker_cli.debug import (
+        from flux-agent_cli.debug import (
             _sweep_expired_pastes,
             _save_pending,
             _load_pending,
@@ -1063,7 +1063,7 @@ class TestSweepExpiredPastes:
         ])
 
         with patch(
-            "omniworker_cli.debug.delete_paste",
+            "flux-agent_cli.debug.delete_paste",
             side_effect=Exception("network down"),
         ):
             deleted, remaining = _sweep_expired_pastes()
@@ -1073,9 +1073,9 @@ class TestSweepExpiredPastes:
         assert remaining == 1
         assert len(_load_pending()) == 1
 
-    def test_sweep_drops_entries_past_grace_window(self, omniworker_home):
+    def test_sweep_drops_entries_past_grace_window(self, flux-agent_home):
         """After 24h past expiration, give up even on network failures."""
-        from omniworker_cli.debug import (
+        from flux-agent_cli.debug import (
             _sweep_expired_pastes,
             _save_pending,
             _load_pending,
@@ -1089,7 +1089,7 @@ class TestSweepExpiredPastes:
         ])
 
         with patch(
-            "omniworker_cli.debug.delete_paste",
+            "flux-agent_cli.debug.delete_paste",
             side_effect=Exception("network down"),
         ):
             deleted, remaining = _sweep_expired_pastes()
@@ -1102,43 +1102,43 @@ class TestSweepExpiredPastes:
 class TestRunDebugSweepsOnInvocation:
     """``run_debug`` must sweep expired pastes on every invocation."""
 
-    def test_run_debug_calls_sweep(self, omniworker_home):
-        from omniworker_cli.debug import run_debug
+    def test_run_debug_calls_sweep(self, flux-agent_home):
+        from flux-agent_cli.debug import run_debug
 
         args = MagicMock()
         args.debug_command = None  # default → prints help
 
-        with patch("omniworker_cli.debug._sweep_expired_pastes") as mock_sweep:
+        with patch("flux-agent_cli.debug._sweep_expired_pastes") as mock_sweep:
             run_debug(args)
 
         mock_sweep.assert_called_once()
 
-    def test_run_debug_survives_sweep_failure(self, omniworker_home, capsys):
+    def test_run_debug_survives_sweep_failure(self, flux-agent_home, capsys):
         """If the sweep throws, the subcommand still runs."""
-        from omniworker_cli.debug import run_debug
+        from flux-agent_cli.debug import run_debug
 
         args = MagicMock()
         args.debug_command = None
 
         with patch(
-            "omniworker_cli.debug._sweep_expired_pastes",
+            "flux-agent_cli.debug._sweep_expired_pastes",
             side_effect=RuntimeError("boom"),
         ):
             run_debug(args)  # must not raise
 
         # Default subcommand still printed help
         out = capsys.readouterr().out
-        assert "Usage: omniworker debug" in out
+        assert "Usage: flux-agent debug" in out
 
 
 class TestRunDebugDelete:
     def test_deletes_valid_url(self, capsys):
-        from omniworker_cli.debug import run_debug_delete
+        from flux-agent_cli.debug import run_debug_delete
 
         args = MagicMock()
         args.urls = ["https://paste.rs/abc"]
 
-        with patch("omniworker_cli.debug.delete_paste", return_value=True):
+        with patch("flux-agent_cli.debug.delete_paste", return_value=True):
             run_debug_delete(args)
 
         out = capsys.readouterr().out
@@ -1146,12 +1146,12 @@ class TestRunDebugDelete:
         assert "paste.rs/abc" in out
 
     def test_handles_delete_failure(self, capsys):
-        from omniworker_cli.debug import run_debug_delete
+        from flux-agent_cli.debug import run_debug_delete
 
         args = MagicMock()
         args.urls = ["https://paste.rs/abc"]
 
-        with patch("omniworker_cli.debug.delete_paste",
+        with patch("flux-agent_cli.debug.delete_paste",
                     side_effect=Exception("network error")):
             run_debug_delete(args)
 
@@ -1159,7 +1159,7 @@ class TestRunDebugDelete:
         assert "Could not delete" in out
 
     def test_no_urls_shows_usage(self, capsys):
-        from omniworker_cli.debug import run_debug_delete
+        from flux-agent_cli.debug import run_debug_delete
 
         args = MagicMock()
         args.urls = []
@@ -1173,18 +1173,18 @@ class TestRunDebugDelete:
 class TestShareIncludesAutoDelete:
     """Verify that run_debug_share schedules auto-deletion and prints TTL."""
 
-    def test_share_schedules_auto_delete(self, omniworker_home, capsys):
-        from omniworker_cli.debug import run_debug_share
+    def test_share_schedules_auto_delete(self, flux-agent_home, capsys):
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
         args.expire = 7
         args.local = False
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug.upload_to_pastebin",
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug.upload_to_pastebin",
                     return_value="https://paste.rs/test1"), \
-             patch("omniworker_cli.debug._schedule_auto_delete") as mock_sched:
+             patch("flux-agent_cli.debug._schedule_auto_delete") as mock_sched:
             run_debug_share(args)
 
         # auto-delete was scheduled with the uploaded URLs
@@ -1195,32 +1195,32 @@ class TestShareIncludesAutoDelete:
         out = capsys.readouterr().out
         assert "auto-delete" in out
 
-    def test_share_shows_privacy_notice(self, omniworker_home, capsys):
-        from omniworker_cli.debug import run_debug_share
+    def test_share_shows_privacy_notice(self, flux-agent_home, capsys):
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
         args.expire = 7
         args.local = False
 
-        with patch("omniworker_cli.dump.run_dump"), \
-             patch("omniworker_cli.debug.upload_to_pastebin",
+        with patch("flux-agent_cli.dump.run_dump"), \
+             patch("flux-agent_cli.debug.upload_to_pastebin",
                     return_value="https://paste.rs/test"), \
-             patch("omniworker_cli.debug._schedule_auto_delete"):
+             patch("flux-agent_cli.debug._schedule_auto_delete"):
             run_debug_share(args)
 
         out = capsys.readouterr().out
         assert "public paste service" in out
 
-    def test_local_no_privacy_notice(self, omniworker_home, capsys):
-        from omniworker_cli.debug import run_debug_share
+    def test_local_no_privacy_notice(self, flux-agent_home, capsys):
+        from flux-agent_cli.debug import run_debug_share
 
         args = MagicMock()
         args.lines = 50
         args.expire = 7
         args.local = True
 
-        with patch("omniworker_cli.dump.run_dump"):
+        with patch("flux-agent_cli.dump.run_dump"):
             run_debug_share(args)
 
         out = capsys.readouterr().out

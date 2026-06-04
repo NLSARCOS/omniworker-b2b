@@ -75,11 +75,11 @@ def _xai_headers() -> Dict[str, str]:
     if not api_key:
         raise ValueError("XAI_API_KEY not set. Get one at https://console.x.ai/")
     try:
-        from tools.xai_http import omniworker_xai_user_agent
+        from tools.xai_http import flux-agent_xai_user_agent
 
-        ua = omniworker_xai_user_agent()
+        ua = flux-agent_xai_user_agent()
     except Exception:
-        ua = "omniworker-agent/video_gen"
+        ua = "flux-agent-agent/video_gen"
     return {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",

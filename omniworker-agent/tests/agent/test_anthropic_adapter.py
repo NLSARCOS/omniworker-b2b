@@ -1808,7 +1808,7 @@ class TestToolChoice:
 
 
 # ---------------------------------------------------------------------------
-# max_tokens resolver — omniworker/omniworker#66664 port
+# max_tokens resolver — flux-agent/flux-agent#66664 port
 # ---------------------------------------------------------------------------
 
 from agent.anthropic_adapter import (
@@ -1903,7 +1903,7 @@ class TestConvertToolsToAnthropicDedup:
 
     Anthropic rejects requests with duplicate tool names.  This guard converts
     a hard failure into a warning log.  See:
-    https://github.com/OmniWorker/omniworker-agent/issues/18478
+    https://github.com/Flux Agent/flux-agent-agent/issues/18478
     """
 
     def _make_openai_tool(self, name: str) -> dict:

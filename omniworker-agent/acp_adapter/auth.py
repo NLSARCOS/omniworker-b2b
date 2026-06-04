@@ -1,17 +1,17 @@
-"""ACP auth helpers — detect and advertise OmniWorker authentication methods."""
+"""ACP auth helpers — detect and advertise Flux Agent authentication methods."""
 
 from __future__ import annotations
 
 from typing import Any, Optional
 
 
-TERMINAL_SETUP_AUTH_METHOD_ID = "omniworker-setup"
+TERMINAL_SETUP_AUTH_METHOD_ID = "flux-agent-setup"
 
 
 def detect_provider() -> Optional[str]:
-    """Resolve the active OmniWorker runtime provider, or None if unavailable."""
+    """Resolve the active Flux Agent runtime provider, or None if unavailable."""
     try:
-        from omniworker_cli.runtime_provider import resolve_runtime_provider
+        from flux-agent_cli.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider()
         api_key = runtime.get("api_key")
         provider = runtime.get("provider")
@@ -23,16 +23,16 @@ def detect_provider() -> Optional[str]:
 
 
 def has_provider() -> bool:
-    """Return True if OmniWorker can resolve any runtime provider credentials."""
+    """Return True if Flux Agent can resolve any runtime provider credentials."""
     return detect_provider() is not None
 
 
 def build_auth_methods() -> list[Any]:
-    """Return registry-compatible ACP auth methods for OmniWorker.
+    """Return registry-compatible ACP auth methods for Flux Agent.
 
     The official ACP registry validates that agents advertise at least one
     usable auth method during the initial handshake. A fresh Zed install may
-    not have OmniWorker provider credentials configured yet, so OmniWorker always
+    not have Flux Agent provider credentials configured yet, so Flux Agent always
     advertises a terminal setup method. When credentials are already present,
     it also advertises the resolved provider as the default agent-managed
     runtime credential method.
@@ -47,7 +47,7 @@ def build_auth_methods() -> list[Any]:
                 id=provider,
                 name=f"{provider} runtime credentials",
                 description=(
-                    "Authenticate OmniWorker using the currently configured "
+                    "Authenticate Flux Agent using the currently configured "
                     f"{provider} runtime credentials."
                 ),
             )
@@ -56,10 +56,10 @@ def build_auth_methods() -> list[Any]:
     methods.append(
         TerminalAuthMethod(
             id=TERMINAL_SETUP_AUTH_METHOD_ID,
-            name="Configure OmniWorker provider",
+            name="Configure Flux Agent provider",
             description=(
-                "Open OmniWorker' interactive model/provider setup in a terminal. "
-                "Use this when OmniWorker has not been configured on this machine yet."
+                "Open Flux Agent' interactive model/provider setup in a terminal. "
+                "Use this when Flux Agent has not been configured on this machine yet."
             ),
             type="terminal",
             args=["--setup"],

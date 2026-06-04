@@ -27,7 +27,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from omniworker_constants import get_hermes_dir
+from flux-agent_constants import get_hermes_dir
 from utils import atomic_replace
 
 

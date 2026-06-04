@@ -231,7 +231,7 @@ class TestGlobalAllowPrivateUrls:
     def test_default_is_false(self, monkeypatch):
         """Toggle defaults to False when no env var or config is set."""
         monkeypatch.delenv("OMNIWORKER_ALLOW_PRIVATE_URLS", raising=False)
-        with patch("omniworker_cli.config.read_raw_config", side_effect=Exception("no config")):
+        with patch("flux-agent_cli.config.read_raw_config", side_effect=Exception("no config")):
             assert _global_allow_private_urls() is False
 
     def test_env_var_true(self, monkeypatch):
@@ -258,42 +258,42 @@ class TestGlobalAllowPrivateUrls:
         """security.allow_private_urls in config enables the toggle."""
         monkeypatch.delenv("OMNIWORKER_ALLOW_PRIVATE_URLS", raising=False)
         cfg = {"security": {"allow_private_urls": True}}
-        with patch("omniworker_cli.config.read_raw_config", return_value=cfg):
+        with patch("flux-agent_cli.config.read_raw_config", return_value=cfg):
             assert _global_allow_private_urls() is True
 
     def test_config_browser_fallback(self, monkeypatch):
         """browser.allow_private_urls works as legacy fallback."""
         monkeypatch.delenv("OMNIWORKER_ALLOW_PRIVATE_URLS", raising=False)
         cfg = {"browser": {"allow_private_urls": True}}
-        with patch("omniworker_cli.config.read_raw_config", return_value=cfg):
+        with patch("flux-agent_cli.config.read_raw_config", return_value=cfg):
             assert _global_allow_private_urls() is True
 
     def test_config_security_string_false_stays_disabled(self, monkeypatch):
         """Quoted false must not opt out of SSRF protection."""
         monkeypatch.delenv("OMNIWORKER_ALLOW_PRIVATE_URLS", raising=False)
         cfg = {"security": {"allow_private_urls": "false"}}
-        with patch("omniworker_cli.config.read_raw_config", return_value=cfg):
+        with patch("flux-agent_cli.config.read_raw_config", return_value=cfg):
             assert _global_allow_private_urls() is False
 
     def test_config_browser_string_false_stays_disabled(self, monkeypatch):
         """Legacy browser.allow_private_urls also normalises quoted false."""
         monkeypatch.delenv("OMNIWORKER_ALLOW_PRIVATE_URLS", raising=False)
         cfg = {"browser": {"allow_private_urls": "false"}}
-        with patch("omniworker_cli.config.read_raw_config", return_value=cfg):
+        with patch("flux-agent_cli.config.read_raw_config", return_value=cfg):
             assert _global_allow_private_urls() is False
 
     def test_config_security_takes_precedence_over_browser(self, monkeypatch):
         """security section is checked before browser section."""
         monkeypatch.delenv("OMNIWORKER_ALLOW_PRIVATE_URLS", raising=False)
         cfg = {"security": {"allow_private_urls": True}, "browser": {"allow_private_urls": False}}
-        with patch("omniworker_cli.config.read_raw_config", return_value=cfg):
+        with patch("flux-agent_cli.config.read_raw_config", return_value=cfg):
             assert _global_allow_private_urls() is True
 
     def test_env_var_overrides_config(self, monkeypatch):
         """Env var takes priority over config."""
         monkeypatch.setenv("OMNIWORKER_ALLOW_PRIVATE_URLS", "false")
         cfg = {"security": {"allow_private_urls": True}}
-        with patch("omniworker_cli.config.read_raw_config", return_value=cfg):
+        with patch("flux-agent_cli.config.read_raw_config", return_value=cfg):
             assert _global_allow_private_urls() is False
 
     def test_result_is_cached(self, monkeypatch):
@@ -328,7 +328,7 @@ class TestAllowPrivateUrlsIntegration:
         with patch("socket.getaddrinfo", return_value=[
             (2, 1, 6, "", ("198.18.23.183", 0)),
         ]):
-            assert is_safe_url("https://omniworker.com") is True
+            assert is_safe_url("https://flux-agent.com") is True
 
     def test_cgnat_allowed_when_toggle_on(self, monkeypatch):
         """CGNAT range (100.64.0.0/10) passes when toggle is on."""

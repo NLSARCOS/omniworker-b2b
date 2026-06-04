@@ -1,5 +1,5 @@
 """
-Security advisory checker for OmniWorker Agent.
+Security advisory checker for Flux Agent Agent.
 
 Detects known-compromised Python packages installed in the active venv
 (supply-chain attacks like the Mini Shai-Hulud worm of May 2026 that
@@ -28,7 +28,7 @@ The check is invoked from three places:
    a one-line operator banner)
 
 This module is intentionally dependency-free beyond the stdlib so it can
-run in environments where the rest of OmniWorker failed to import.
+run in environments where the rest of Flux Agent failed to import.
 """
 
 from __future__ import annotations
@@ -149,7 +149,7 @@ def _installed_version(pkg_name: str) -> Optional[str]:
     """
     try:
         from importlib.metadata import PackageNotFoundError, version
-    except ImportError:  # py<3.8 — OmniWorker requires 3.10+ but defensive.
+    except ImportError:  # py<3.8 — Flux Agent requires 3.10+ but defensive.
         return None
     try:
         return version(pkg_name)
@@ -205,7 +205,7 @@ def get_acked_ids() -> set[str]:
     config is repaired, which is fine).
     """
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
     except Exception:
         logger.debug("Could not load config for advisory acks", exc_info=True)
@@ -226,7 +226,7 @@ def ack_advisory(advisory_id: str) -> bool:
     if not advisory_id:
         return False
     try:
-        from omniworker_cli.config import load_config, save_config
+        from flux-agent_cli.config import load_config, save_config
     except Exception:
         logger.warning("Could not import config module to persist ack")
         return False
@@ -324,8 +324,8 @@ _BANNER_REPEAT_HOURS = 24
 
 def _banner_cache_path() -> Optional[Path]:
     try:
-        from omniworker_constants import get_omniworker_home
-        cache_dir = Path(get_omniworker_home()) / "cache"
+        from flux-agent_constants import get_flux-agent_home
+        cache_dir = Path(get_flux-agent_home()) / "cache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         return cache_dir / _BANNER_CACHE_FILE
     except Exception:

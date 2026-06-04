@@ -8,7 +8,7 @@ export const PROFILE_NAME_ERROR =
 
 /**
  * Strip ANSI escape codes from terminal output.
- * Used by omniworker.ts, claw3d.ts, and installer.ts when processing
+ * Used by flux-agent.ts, claw3d.ts, and installer.ts when processing
  * child process output for display in the renderer.
  */
 // eslint-disable-next-line no-control-regex
@@ -40,8 +40,8 @@ export function normalizeProfileName(profile?: unknown): string | undefined {
 
 /**
  * Resolve the home directory for a given profile.
- * 'default' or undefined maps to ~/.omniworker; named profiles
- * live under ~/.omniworker/profiles/<name>.
+ * 'default' or undefined maps to ~/.flux-agent; named profiles
+ * live under ~/.flux-agent/profiles/<name>.
  */
 export function profileHome(profile?: unknown): string {
   const normalized = normalizeProfileName(profile);
@@ -77,7 +77,7 @@ export function escapeRegex(str: string): string {
 
 /**
  * Write a file, creating parent directories if they don't exist.
- * Prevents ENOENT crashes when ~/.omniworker has been deleted or doesn't exist yet.
+ * Prevents ENOENT crashes when ~/.flux-agent has been deleted or doesn't exist yet.
  * Hardens filesystem security by enforcing strict single-user permissions (0o600 for files, 0o700 for directories).
  */
 export function safeWriteFile(filePath: string, content: string): void {

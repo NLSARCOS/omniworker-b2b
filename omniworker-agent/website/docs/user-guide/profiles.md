@@ -4,30 +4,30 @@ sidebar_position: 2
 
 # Profiles: Running Multiple Agents
 
-Run multiple independent OmniWorker agents on the same machine — each with its own config, API keys, memory, sessions, skills, and gateway state.
+Run multiple independent Flux Agent agents on the same machine — each with its own config, API keys, memory, sessions, skills, and gateway state.
 
 ## What are profiles?
 
-A profile is a separate OmniWorker home directory. Each profile gets its own directory containing its own `config.yaml`, `.env`, `SOUL.md`, memories, sessions, skills, cron jobs, and state database. Profiles let you run separate agents for different purposes — a coding assistant, a personal bot, a research agent — without mixing up OmniWorker state.
+A profile is a separate Flux Agent home directory. Each profile gets its own directory containing its own `config.yaml`, `.env`, `SOUL.md`, memories, sessions, skills, cron jobs, and state database. Profiles let you run separate agents for different purposes — a coding assistant, a personal bot, a research agent — without mixing up Flux Agent state.
 
 When you create a profile, it automatically becomes its own command. Create a profile called `coder` and you immediately have `coder chat`, `coder setup`, `coder gateway start`, etc.
 
 ## Quick start
 
 ```bash
-omniworker profile create coder       # creates profile + "coder" command alias
+flux-agent profile create coder       # creates profile + "coder" command alias
 coder setup                       # configure API keys and model
 coder chat                        # start chatting
 ```
 
-That's it. `coder` is now its own OmniWorker profile with its own config, memory, and state.
+That's it. `coder` is now its own Flux Agent profile with its own config, memory, and state.
 
 ## Creating a profile
 
 ### Blank profile
 
 ```bash
-omniworker profile create mybot
+flux-agent profile create mybot
 ```
 
 Creates a fresh profile with bundled skills seeded. Run `mybot setup` to configure API keys, model, and gateway tokens.
@@ -35,15 +35,15 @@ Creates a fresh profile with bundled skills seeded. Run `mybot setup` to configu
 ### Clone config only (`--clone`)
 
 ```bash
-omniworker profile create work --clone
+flux-agent profile create work --clone
 ```
 
-Copies your current profile's `config.yaml`, `.env`, and `SOUL.md` into the new profile. Same API keys and model, but fresh sessions and memory. Edit `~/.omniworker/profiles/work/.env` for different API keys, or `~/.omniworker/profiles/work/SOUL.md` for a different personality.
+Copies your current profile's `config.yaml`, `.env`, and `SOUL.md` into the new profile. Same API keys and model, but fresh sessions and memory. Edit `~/.flux-agent/profiles/work/.env` for different API keys, or `~/.flux-agent/profiles/work/SOUL.md` for a different personality.
 
 ### Clone everything (`--clone-all`)
 
 ```bash
-omniworker profile create backup --clone-all
+flux-agent profile create backup --clone-all
 ```
 
 Copies **everything** — config, API keys, personality, all memories, full session history, skills, cron jobs, plugins. A complete snapshot. Useful for backups or forking an agent that already has context.
@@ -51,7 +51,7 @@ Copies **everything** — config, API keys, personality, all memories, full sess
 ### Clone from a specific profile
 
 ```bash
-omniworker profile create work --clone --clone-from coder
+flux-agent profile create work --clone --clone-from coder
 ```
 
 :::tip Honcho memory + profiles
@@ -73,28 +73,28 @@ coder skills list             # list coder's skills
 coder config set model.default anthropic/claude-sonnet-4
 ```
 
-The alias works with every omniworker subcommand — it's just `omniworker -p <name>` under the hood.
+The alias works with every flux-agent subcommand — it's just `flux-agent -p <name>` under the hood.
 
 ### The `-p` flag
 
 You can also target a profile explicitly with any command:
 
 ```bash
-omniworker -p coder chat
-omniworker --profile=coder doctor
-omniworker chat -p coder -q "hello"    # works in any position
+flux-agent -p coder chat
+flux-agent --profile=coder doctor
+flux-agent chat -p coder -q "hello"    # works in any position
 ```
 
-### Sticky default (`omniworker profile use`)
+### Sticky default (`flux-agent profile use`)
 
 ```bash
-omniworker profile use coder
-omniworker chat                   # now targets coder
-omniworker tools                  # configures coder's tools
-omniworker profile use default    # switch back
+flux-agent profile use coder
+flux-agent chat                   # now targets coder
+flux-agent tools                  # configures coder's tools
+flux-agent profile use default    # switch back
 ```
 
-Sets a default so plain `omniworker` commands target that profile. Like `kubectl config use-context`.
+Sets a default so plain `flux-agent` commands target that profile. Like `kubectl config use-context`.
 
 ### Knowing where you are
 
@@ -102,13 +102,13 @@ The CLI always shows which profile is active:
 
 - **Prompt**: `coder ❯` instead of `❯`
 - **Banner**: Shows `Profile: coder` on startup
-- **`omniworker profile`**: Shows current profile name, path, model, gateway status
+- **`flux-agent profile`**: Shows current profile name, path, model, gateway status
 
 ## Profiles vs workspaces vs sandboxing
 
 Profiles are often confused with workspaces or sandboxes, but they are different things:
 
-- A **profile** gives OmniWorker its own state directory: `config.yaml`, `.env`, `SOUL.md`, sessions, memory, logs, cron jobs, and gateway state.
+- A **profile** gives Flux Agent its own state directory: `config.yaml`, `.env`, `SOUL.md`, sessions, memory, logs, cron jobs, and gateway state.
 - A **workspace** or **working directory** is where terminal commands start. That is controlled separately by `terminal.cwd`.
 - A **sandbox** is what limits filesystem access. Profiles do **not** sandbox the agent.
 
@@ -122,7 +122,7 @@ terminal:
   cwd: /absolute/path/to/project
 ```
 
-Using `cwd: "."` on the local backend means "the directory OmniWorker was launched from", not "the profile directory".
+Using `cwd: "."` on the local backend means "the directory Flux Agent was launched from", not "the profile directory".
 
 Also note:
 
@@ -145,10 +145,10 @@ Each profile has its own `.env` file. Configure a different Telegram/Discord/Sla
 
 ```bash
 # Edit coder's tokens
-nano ~/.omniworker/profiles/coder/.env
+nano ~/.flux-agent/profiles/coder/.env
 
 # Edit assistant's tokens
-nano ~/.omniworker/profiles/assistant/.env
+nano ~/.flux-agent/profiles/assistant/.env
 ```
 
 ### Safety: token locks
@@ -158,8 +158,8 @@ If two profiles accidentally use the same bot token, the second gateway will be 
 ### Persistent services
 
 ```bash
-coder gateway install         # creates omniworker-gateway-coder systemd/launchd service
-assistant gateway install     # creates omniworker-gateway-assistant service
+coder gateway install         # creates flux-agent-gateway-coder systemd/launchd service
+assistant gateway install     # creates flux-agent-gateway-assistant service
 ```
 
 Each profile gets its own service name. They run independently.
@@ -174,7 +174,7 @@ Each profile has its own:
 
 ```bash
 coder config set model.default anthropic/claude-sonnet-4
-echo "You are a focused coding assistant." > ~/.omniworker/profiles/coder/SOUL.md
+echo "You are a focused coding assistant." > ~/.flux-agent/profiles/coder/SOUL.md
 ```
 
 If you want this profile to work in a specific project by default, also set its own `terminal.cwd`:
@@ -185,10 +185,10 @@ coder config set terminal.cwd /absolute/path/to/project
 
 ## Updating
 
-`omniworker update` pulls code once (shared) and syncs new bundled skills to **all** profiles automatically:
+`flux-agent update` pulls code once (shared) and syncs new bundled skills to **all** profiles automatically:
 
 ```bash
-omniworker update
+flux-agent update
 # → Code updated (12 commits)
 # → Skills synced: default (up to date), coder (+2 new), assistant (+2 new)
 ```
@@ -198,46 +198,46 @@ User-modified skills are never overwritten.
 ## Managing profiles
 
 ```bash
-omniworker profile list           # show all profiles with status
-omniworker profile show coder     # detailed info for one profile
-omniworker profile rename coder dev-bot   # rename (updates alias + service)
-omniworker profile export coder   # export to coder.tar.gz
-omniworker profile import coder.tar.gz   # import from archive
+flux-agent profile list           # show all profiles with status
+flux-agent profile show coder     # detailed info for one profile
+flux-agent profile rename coder dev-bot   # rename (updates alias + service)
+flux-agent profile export coder   # export to coder.tar.gz
+flux-agent profile import coder.tar.gz   # import from archive
 ```
 
 ## Deleting a profile
 
 ```bash
-omniworker profile delete coder
+flux-agent profile delete coder
 ```
 
 This stops the gateway, removes the systemd/launchd service, removes the command alias, and deletes all profile data. You'll be asked to type the profile name to confirm.
 
-Use `--yes` to skip confirmation: `omniworker profile delete coder --yes`
+Use `--yes` to skip confirmation: `flux-agent profile delete coder --yes`
 
 :::note
-You cannot delete the default profile (`~/.omniworker`). To remove everything, use `omniworker uninstall`.
+You cannot delete the default profile (`~/.flux-agent`). To remove everything, use `flux-agent uninstall`.
 :::
 
 ## Tab completion
 
 ```bash
 # Bash
-eval "$(omniworker completion bash)"
+eval "$(flux-agent completion bash)"
 
 # Zsh
-eval "$(omniworker completion zsh)"
+eval "$(flux-agent completion zsh)"
 ```
 
 Add the line to your `~/.bashrc` or `~/.zshrc` for persistent completion. Completes profile names after `-p`, profile subcommands, and top-level commands.
 
 ## How it works
 
-Profiles use the `OMNIWORKER_HOME` environment variable. When you run `coder chat`, the wrapper script sets `OMNIWORKER_HOME=~/.omniworker/profiles/coder` before launching omniworker. Since 119+ files in the codebase resolve paths via `get_omniworker_home()`, OmniWorker state automatically scopes to the profile's directory — config, sessions, memory, skills, state database, gateway PID, logs, and cron jobs.
+Profiles use the `FLUX AGENT_HOME` environment variable. When you run `coder chat`, the wrapper script sets `FLUX AGENT_HOME=~/.flux-agent/profiles/coder` before launching flux-agent. Since 119+ files in the codebase resolve paths via `get_flux-agent_home()`, Flux Agent state automatically scopes to the profile's directory — config, sessions, memory, skills, state database, gateway PID, logs, and cron jobs.
 
-This is separate from terminal working directory. Tool execution starts from `terminal.cwd` (or the launch directory when `cwd: "."` on the local backend), not automatically from `OMNIWORKER_HOME`.
+This is separate from terminal working directory. Tool execution starts from `terminal.cwd` (or the launch directory when `cwd: "."` on the local backend), not automatically from `FLUX AGENT_HOME`.
 
-The default profile is simply `~/.omniworker` itself. No migration needed — existing installs work identically.
+The default profile is simply `~/.flux-agent` itself. No migration needed — existing installs work identically.
 
 ## Sharing profiles as distributions
 
@@ -245,10 +245,10 @@ A profile you built on one machine can be packaged as a **git repository** and i
 
 ```bash
 # Install a whole agent from a git repo
-omniworker profile install github.com/you/research-bot --alias
+flux-agent profile install github.com/you/research-bot --alias
 
 # Update later when the author ships a new version (keeps your memories + .env)
-omniworker profile update research-bot
+flux-agent profile update research-bot
 ```
 
 See **[Profile Distributions: Share a Whole Agent](./profile-distributions.md)** for the full guide — authoring, publishing, update semantics, security model, and use cases.

@@ -60,7 +60,7 @@ export function useLocalCommands({
           return true;
 
         case "/model": {
-          const mc = await window.omniworkerAPI.getModelConfig(profile);
+          const mc = await window.flux-agentAPI.getModelConfig(profile);
           const display = mc.model || "Not set";
           const prov = mc.provider || "auto";
           addAgentMessage(
@@ -71,7 +71,7 @@ export function useLocalCommands({
         }
 
         case "/memory": {
-          const mem = await window.omniworkerAPI.readMemory(profile);
+          const mem = await window.flux-agentAPI.readMemory(profile);
           const lines: string[] = ["**Agent Memory**\n"];
           if (mem.memory.exists && mem.memory.content.trim()) {
             lines.push(mem.memory.content.trim());
@@ -86,7 +86,7 @@ export function useLocalCommands({
         }
 
         case "/tools": {
-          const tools = await window.omniworkerAPI.getToolsets(profile);
+          const tools = await window.flux-agentAPI.getToolsets(profile);
           if (!tools.length) {
             addAgentMessage(t("memory.noToolsetsFound"));
           } else {
@@ -103,7 +103,7 @@ export function useLocalCommands({
 
         case "/skills": {
           const skills =
-            await window.omniworkerAPI.listInstalledSkills(profile);
+            await window.flux-agentAPI.listInstalledSkills(profile);
           if (!skills.length) {
             addAgentMessage("No skills installed.");
           } else {
@@ -116,7 +116,7 @@ export function useLocalCommands({
         }
 
         case "/persona": {
-          const soul = await window.omniworkerAPI.readSoul(profile);
+          const soul = await window.flux-agentAPI.readSoul(profile);
           addAgentMessage(
             soul.trim()
               ? `**Current Persona**\n\n${soul.trim()}`
@@ -126,18 +126,18 @@ export function useLocalCommands({
         }
 
         case "/version": {
-          const [omniworkerVer, appVer] = await Promise.all([
-            window.omniworkerAPI.getOmniWorkerVersion(),
-            window.omniworkerAPI.getAppVersion(),
+          const [flux-agentVer, appVer] = await Promise.all([
+            window.flux-agentAPI.getFlux AgentVersion(),
+            window.flux-agentAPI.getAppVersion(),
           ]);
           addAgentMessage(
-            `**OmniWorker Agent:** ${omniworkerVer || "unknown"}\n**Desktop App:** v${appVer}`,
+            `**Flux Agent Agent:** ${flux-agentVer || "unknown"}\n**Desktop App:** v${appVer}`,
           );
           return true;
         }
 
         case "/fast": {
-          const current = await window.omniworkerAPI.getConfig(
+          const current = await window.flux-agentAPI.getConfig(
             "agent.service_tier",
             profile,
           );

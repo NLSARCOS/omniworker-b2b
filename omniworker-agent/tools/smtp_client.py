@@ -1,6 +1,6 @@
-"""SMTP/IMAP client toolset for the OmniWorker agent.
+"""SMTP/IMAP client toolset for the Flux Agent agent.
 
-Reads credentials from OMNIWORKER_HOME / smtp_settings.json.
+Reads credentials from FLUX AGENT_HOME / smtp_settings.json.
 Exposes LLM-callable tools:
   smtp_send_email       -- send an email via SMTP
   imap_receive_emails   -- fetch recent emails via IMAP
@@ -21,12 +21,12 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Helper to resolve OMNIWORKER_HOME and settings
+# Helper to resolve FLUX AGENT_HOME and settings
 # ---------------------------------------------------------------------------
 
 def _get_settings_path() -> Path:
-    from omniworker_constants import get_omniworker_home
-    return get_omniworker_home() / "smtp_settings.json"
+    from flux-agent_constants import get_flux-agent_home
+    return get_flux-agent_home() / "smtp_settings.json"
 
 
 def _load_smtp_settings() -> Dict[str, Any]:

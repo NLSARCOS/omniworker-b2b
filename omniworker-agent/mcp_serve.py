@@ -1,5 +1,5 @@
 """
-OmniWorker MCP Server — expose messaging conversations as MCP tools.
+Flux Agent MCP Server — expose messaging conversations as MCP tools.
 
 Starts a stdio MCP server that lets any MCP client (Claude Code, Cursor, Codex,
 etc.) list conversations, read message history, send messages, poll for live
@@ -10,7 +10,7 @@ Matches OpenClaw's 9-tool MCP channel bridge surface:
   events_poll, events_wait, messages_send, permissions_list_open,
   permissions_respond
 
-Plus: channels_list (OmniWorker-specific extra)
+Plus: channels_list (Flux Agent-specific extra)
 
 Usage:
     hermes mcp serve
@@ -60,18 +60,18 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 def _get_sessions_dir() -> Path:
-    """Return the sessions directory using OMNIWORKER_HOME."""
+    """Return the sessions directory using FLUX AGENT_HOME."""
     try:
-        from omniworker_constants import get_omniworker_home
-        return get_omniworker_home() / "sessions"
+        from flux-agent_constants import get_flux-agent_home
+        return get_flux-agent_home() / "sessions"
     except ImportError:
-        return Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")) / "sessions"
+        return Path(os.environ.get("FLUX AGENT_HOME", Path.home() / ".hermes")) / "sessions"
 
 
 def _get_session_db():
     """Get a SessionDB instance for reading message transcripts."""
     try:
-        from omniworker_state import SessionDB
+        from flux-agent_state import SessionDB
         return SessionDB()
     except Exception as e:
         logger.debug("SessionDB unavailable: %s", e)
@@ -98,11 +98,11 @@ def _load_sessions_index() -> dict:
 def _load_channel_directory() -> dict:
     """Load the cached channel directory for available targets."""
     try:
-        from omniworker_constants import get_omniworker_home
-        directory_file = get_omniworker_home() / "channel_directory.json"
+        from flux-agent_constants import get_flux-agent_home
+        directory_file = get_flux-agent_home() / "channel_directory.json"
     except ImportError:
         directory_file = Path(
-            os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")
+            os.environ.get("FLUX AGENT_HOME", Path.home() / ".hermes")
         ) / "channel_directory.json"
 
     if not directory_file.exists():
@@ -205,7 +205,7 @@ class EventBridge:
     """Background poller that watches SessionDB for new messages and
     maintains an in-memory event queue with waiter support.
 
-    This is the OmniWorker equivalent of OpenClaw's WebSocket gateway bridge.
+    This is the Flux Agent equivalent of OpenClaw's WebSocket gateway bridge.
     Instead of WebSocket events, we poll the SQLite database for changes.
     """
 
@@ -362,10 +362,10 @@ class EventBridge:
 
         # Check if state.db has changed
         try:
-            from omniworker_constants import get_omniworker_home
-            db_file = get_omniworker_home() / "state.db"
+            from flux-agent_constants import get_flux-agent_home
+            db_file = get_flux-agent_home() / "state.db"
         except ImportError:
-            db_file = Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")) / "state.db"
+            db_file = Path(os.environ.get("FLUX AGENT_HOME", Path.home() / ".hermes")) / "state.db"
 
         try:
             db_mtime = db_file.stat().st_mtime if db_file.exists() else 0.0
@@ -448,7 +448,7 @@ class EventBridge:
 # ---------------------------------------------------------------------------
 
 def create_mcp_server(event_bridge: Optional[EventBridge] = None) -> "FastMCP":
-    """Create and return the OmniWorker MCP server with all tools registered."""
+    """Create and return the Flux Agent MCP server with all tools registered."""
     if not _MCP_SERVER_AVAILABLE:
         raise ImportError(
             "MCP server requires the 'mcp' package. "
@@ -458,7 +458,7 @@ def create_mcp_server(event_bridge: Optional[EventBridge] = None) -> "FastMCP":
     mcp = FastMCP(
         "hermes",
         instructions=(
-            "OmniWorker Agent messaging bridge. Use these tools to interact with "
+            "Flux Agent Agent messaging bridge. Use these tools to interact with "
             "conversations across Telegram, Discord, Slack, WhatsApp, Signal, "
             "Matrix, and other connected platforms."
         ),
@@ -864,7 +864,7 @@ def create_mcp_server(event_bridge: Optional[EventBridge] = None) -> "FastMCP":
 # ---------------------------------------------------------------------------
 
 def run_mcp_server(verbose: bool = False) -> None:
-    """Start the OmniWorker MCP server on stdio."""
+    """Start the Flux Agent MCP server on stdio."""
     if not _MCP_SERVER_AVAILABLE:
         print(
             "Error: MCP server requires the 'mcp' package.\n"

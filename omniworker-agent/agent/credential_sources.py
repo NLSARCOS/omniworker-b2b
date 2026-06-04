@@ -1,6 +1,6 @@
-"""Unified removal contract for every credential source OmniWorker reads from.
+"""Unified removal contract for every credential source Flux Agent reads from.
 
-OmniWorker seeds its credential pool from many places:
+Flux Agent seeds its credential pool from many places:
 
     env:<VAR>     — os.environ / ~/.hermes/.env
     claude_code   — ~/.claude/.credentials.json
@@ -149,7 +149,7 @@ def _remove_env_source(provider: str, removed) -> RemovalResult:
          EnvironmentFile, launchd plist) → hint them where to unset it
       3. Var lives in both → clear from .env, hint about shell
     """
-    from omniworker_cli.config import get_env_path, remove_env_value
+    from flux-agent_cli.config import get_env_path, remove_env_value
 
     result = RemovalResult()
     env_var = removed.source[len("env:"):]
@@ -179,8 +179,8 @@ def _remove_env_source(provider: str, removed) -> RemovalResult:
             f"Note: {env_var} is still set in your shell environment "
             f"(not in ~/.hermes/.env).",
             "  Unset it there (shell profile, systemd EnvironmentFile, "
-            "launchd plist, etc.) or it will keep being visible to OmniWorker.",
-            f"  The pool entry is now suppressed — OmniWorker will ignore "
+            "launchd plist, etc.) or it will keep being visible to Flux Agent.",
+            f"  The pool entry is now suppressed — Flux Agent will ignore "
             f"{env_var} until you run `hermes auth add {provider}`.",
         ])
     else:
@@ -195,7 +195,7 @@ def _remove_claude_code(provider: str, removed) -> RemovalResult:
     """~/.claude/.credentials.json is owned by Claude Code itself.
 
     We don't delete it — the user's Claude Code install still needs to
-    work.  We just suppress it so OmniWorker stops reading it.
+    work.  We just suppress it so Flux Agent stops reading it.
     """
     return RemovalResult(hints=[
         "Suppressed claude_code credential — it will not be re-seeded.",
@@ -206,14 +206,14 @@ def _remove_claude_code(provider: str, removed) -> RemovalResult:
 
 def _remove_hermes_pkce(provider: str, removed) -> RemovalResult:
     """~/.hermes/.anthropic_oauth.json is ours — delete it outright."""
-    from omniworker_constants import get_omniworker_home
+    from flux-agent_constants import get_flux-agent_home
 
     result = RemovalResult()
-    oauth_file = get_omniworker_home() / ".anthropic_oauth.json"
+    oauth_file = get_flux-agent_home() / ".anthropic_oauth.json"
     if oauth_file.exists():
         try:
             oauth_file.unlink()
-            result.cleaned.append("Cleared OmniWorker Anthropic OAuth credentials")
+            result.cleaned.append("Cleared Flux Agent Anthropic OAuth credentials")
         except OSError as exc:
             result.hints.append(f"Could not delete {oauth_file}: {exc}")
     return result
@@ -221,7 +221,7 @@ def _remove_hermes_pkce(provider: str, removed) -> RemovalResult:
 
 def _clear_auth_store_provider(provider: str) -> bool:
     """Delete auth_store.providers[provider].  Returns True if deleted."""
-    from omniworker_cli.auth import (
+    from flux-agent_cli.auth import (
         _auth_store_lock,
         _load_auth_store,
         _save_auth_store,
@@ -294,7 +294,7 @@ def _remove_codex_device_code(provider: str, removed) -> RemovalResult:
     """Codex tokens live in TWO places: our auth store AND ~/.codex/auth.json.
 
     refresh_codex_oauth_pure() writes both every time, so clearing only
-    the OmniWorker auth store is not enough — _seed_from_singletons() would
+    the Flux Agent auth store is not enough — _seed_from_singletons() would
     re-import from ~/.codex/auth.json on the next load_pool() call and
     the removal would be instantly undone.  We suppress instead of
     deleting Codex CLI's file, so the Codex CLI itself keeps working.
@@ -307,7 +307,7 @@ def _remove_codex_device_code(provider: str, removed) -> RemovalResult:
     that canonical key here; the central dispatcher also suppresses
     ``removed.source`` which is fine — belt-and-suspenders, idempotent.
     """
-    from omniworker_cli.auth import suppress_credential_source
+    from flux-agent_cli.auth import suppress_credential_source
 
     result = RemovalResult()
     if _clear_auth_store_provider(provider):
@@ -348,13 +348,13 @@ def _remove_copilot_gh(provider: str, removed) -> RemovalResult:
     user clicked.
 
     We don't touch the user's gh CLI or shell state — just suppress so
-    OmniWorker stops picking the token up.
+    Flux Agent stops picking the token up.
     """
     # Suppress ALL copilot source variants up-front so no path resurrects
     # the pool entry.  The central dispatcher in auth_remove_command will
     # ALSO suppress removed.source, but it's idempotent so double-calling
     # is harmless.
-    from omniworker_cli.auth import suppress_credential_source
+    from flux-agent_cli.auth import suppress_credential_source
     suppress_credential_source(provider, "gh_cli")
     for env_var in ("COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"):
         suppress_credential_source(provider, f"env:{env_var}")

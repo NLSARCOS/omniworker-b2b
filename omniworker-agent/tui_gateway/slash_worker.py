@@ -1,4 +1,4 @@
-"""Persistent slash-command worker — one OmniWorkerCLI per TUI session.
+"""Persistent slash-command worker — one Flux AgentCLI per TUI session.
 
 Protocol: reads JSON lines from stdin {id, command}, writes {id, ok, output|error} to stdout.
 """
@@ -11,11 +11,11 @@ import os
 import sys
 
 import cli as cli_mod
-from cli import OmniWorkerCLI
+from cli import Flux AgentCLI
 from rich.console import Console
 
 
-def _run(cli: OmniWorkerCLI, command: str) -> str:
+def _run(cli: Flux AgentCLI, command: str) -> str:
     cmd = (command or "").strip()
     if not cmd:
         return ""
@@ -49,11 +49,11 @@ def main():
     p.add_argument("--model", default="")
     args = p.parse_args()
 
-    os.environ["OMNIWORKER_SESSION_KEY"] = args.session_key
-    os.environ["OMNIWORKER_INTERACTIVE"] = "1"
+    os.environ["FLUX AGENT_SESSION_KEY"] = args.session_key
+    os.environ["FLUX AGENT_INTERACTIVE"] = "1"
 
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        cli = OmniWorkerCLI(model=args.model or None, compact=True, resume=args.session_key, verbose=False)
+        cli = Flux AgentCLI(model=args.model or None, compact=True, resume=args.session_key, verbose=False)
 
     for raw in sys.stdin:
         line = raw.strip()

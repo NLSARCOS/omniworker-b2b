@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from omniworker_cli.plugins import VALID_HOOKS, PluginManager
+from flux-agent_cli.plugins import VALID_HOOKS, PluginManager
 import os
 import shutil
 import tempfile
-from cli import OmniWorkerCLI
+from cli import Flux AgentCLI
 
 
 def test_session_hooks_in_valid_hooks():
@@ -13,10 +13,10 @@ def test_session_hooks_in_valid_hooks():
     assert "on_session_reset" in VALID_HOOKS
 
 
-@patch("omniworker_cli.plugins.invoke_hook")
+@patch("flux-agent_cli.plugins.invoke_hook")
 def test_session_finalize_on_reset(mock_invoke_hook):
     """Verify on_session_finalize fires when /new or /reset is used."""
-    cli = OmniWorkerCLI()
+    cli = Flux AgentCLI()
     cli.agent = MagicMock()
     cli.agent.session_id = "test-session-id"
 
@@ -33,7 +33,7 @@ def test_session_finalize_on_reset(mock_invoke_hook):
     )
 
 
-@patch("omniworker_cli.plugins.invoke_hook")
+@patch("flux-agent_cli.plugins.invoke_hook")
 def test_session_finalize_on_cleanup(mock_invoke_hook):
     """Verify on_session_finalize fires during CLI exit cleanup."""
     import cli as cli_mod
@@ -50,7 +50,7 @@ def test_session_finalize_on_cleanup(mock_invoke_hook):
     )
 
 
-@patch("omniworker_cli.plugins.invoke_hook")
+@patch("flux-agent_cli.plugins.invoke_hook")
 def test_hook_errors_are_caught(mock_invoke_hook):
     """Verify hook exceptions are caught and don't crash the agent."""
     mgr = PluginManager()

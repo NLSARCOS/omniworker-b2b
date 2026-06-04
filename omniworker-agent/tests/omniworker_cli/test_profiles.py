@@ -1,4 +1,4 @@
-"""Comprehensive tests for omniworker_cli.profiles module.
+"""Comprehensive tests for flux-agent_cli.profiles module.
 
 Tests cover: validation, directory resolution, CRUD operations, active profile
 management, export/import, renaming, alias collision checks, profile isolation,
@@ -14,7 +14,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from omniworker_cli.profiles import (
+from flux-agent_cli.profiles import (
     normalize_profile_name,
     validate_profile_name,
     get_profile_dir,
@@ -30,7 +30,7 @@ from omniworker_cli.profiles import (
     export_profile,
     import_profile,
     _get_profiles_root,
-    _get_default_omniworker_home,
+    _get_default_flux-agent_home,
     seed_profile_skills,
     has_bundled_skills_opt_out,
     NO_BUNDLED_SKILLS_MARKER,
@@ -38,21 +38,21 @@ from omniworker_cli.profiles import (
 
 
 # ---------------------------------------------------------------------------
-# Shared fixture: redirect Path.home() and OMNIWORKER_HOME for profile tests
+# Shared fixture: redirect Path.home() and FLUX AGENT_HOME for profile tests
 # ---------------------------------------------------------------------------
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
     """Set up an isolated environment for profile tests.
 
-    * Path.home() -> tmp_path  (so _get_profiles_root() = tmp_path/.omniworker/profiles)
-    * OMNIWORKER_HOME  -> tmp_path/.omniworker  (so get_omniworker_home() agrees)
-    * Creates the bare-minimum ~/.omniworker directory.
+    * Path.home() -> tmp_path  (so _get_profiles_root() = tmp_path/.flux-agent/profiles)
+    * FLUX AGENT_HOME  -> tmp_path/.flux-agent  (so get_flux-agent_home() agrees)
+    * Creates the bare-minimum ~/.flux-agent directory.
     """
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    default_home = tmp_path / ".omniworker"
+    default_home = tmp_path / ".flux-agent"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("OMNIWORKER_HOME", str(default_home))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(default_home))
     return tmp_path
 
 
@@ -114,9 +114,9 @@ class TestValidateProfileName:
         with pytest.raises(ValueError):
             validate_profile_name("")
 
-    @pytest.mark.parametrize("name", ["omniworker", "test", "tmp", "root", "sudo"])
+    @pytest.mark.parametrize("name", ["flux-agent", "test", "tmp", "root", "sudo"])
     def test_reserved_names_rejected(self, name):
-        """Reserved names collide with the OmniWorker install itself or with
+        """Reserved names collide with the Flux Agent install itself or with
         common system binaries — reject them at validate time so
         create/install/rename all share one gate."""
         with pytest.raises(ValueError, match="reserved"):
@@ -130,19 +130,19 @@ class TestValidateProfileName:
 class TestGetProfileDir:
     """Tests for get_profile_dir()."""
 
-    def test_default_returns_omniworker_home(self, profile_env):
+    def test_default_returns_flux-agent_home(self, profile_env):
         tmp_path = profile_env
         result = get_profile_dir("default")
-        assert result == tmp_path / ".omniworker"
+        assert result == tmp_path / ".flux-agent"
 
     def test_named_profile_returns_profiles_subdir(self, profile_env):
         tmp_path = profile_env
         result = get_profile_dir("coder")
-        assert result == tmp_path / ".omniworker" / "profiles" / "coder"
+        assert result == tmp_path / ".flux-agent" / "profiles" / "coder"
 
     def test_named_profile_matching_is_case_insensitive(self, profile_env):
         tmp_path = profile_env
-        assert get_profile_dir("Coder") == tmp_path / ".omniworker" / "profiles" / "coder"
+        assert get_profile_dir("Coder") == tmp_path / ".flux-agent" / "profiles" / "coder"
 
 
 # ===================================================================
@@ -174,7 +174,7 @@ class TestCreateProfile:
 
     def test_clone_config_copies_files(self, profile_env):
         tmp_path = profile_env
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         # Create source config files in default profile
         (default_home / "config.yaml").write_text("model: test")
         (default_home / ".env").write_text("KEY=val")
@@ -188,7 +188,7 @@ class TestCreateProfile:
 
     def test_clone_config_copies_source_skills(self, profile_env):
         tmp_path = profile_env
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         skill_dir = default_home / "skills" / "custom" / "installed-skill"
         skill_dir.mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text("---\nname: installed-skill\n---\n")
@@ -205,7 +205,7 @@ class TestCreateProfile:
 
     def test_clone_all_copies_entire_tree(self, profile_env):
         tmp_path = profile_env
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         # Populate default with some content
         (default_home / "memories").mkdir(exist_ok=True)
         (default_home / "memories" / "note.md").write_text("remember this")
@@ -226,9 +226,9 @@ class TestCreateProfile:
         assert not (profile_dir / "processes.json").exists()
 
     def test_clone_all_excludes_sibling_profiles_tree(self, profile_env):
-        """--clone-all from default ~/.omniworker must not copy profiles/* (nested explosion)."""
+        """--clone-all from default ~/.flux-agent must not copy profiles/* (nested explosion)."""
         tmp_path = profile_env
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         profiles_root = default_home / "profiles"
         profiles_root.mkdir(exist_ok=True)
         (profiles_root / "other").mkdir(parents=True, exist_ok=True)
@@ -243,18 +243,18 @@ class TestCreateProfile:
         assert not (profile_dir / "profiles").exists()
 
     def test_clone_all_excludes_default_infrastructure(self, profile_env):
-        """--clone-all from default profile excludes omniworker-agent, .worktrees,
+        """--clone-all from default profile excludes flux-agent-agent, .worktrees,
         bin, node_modules at root, plus __pycache__/*.pyc/*.pyo/*.sock/*.tmp
         at any depth.  Profile data (config, env, skills, sessions, logs,
         state.db) must be preserved — clone-all means "complete snapshot
         minus infrastructure."
         """
         tmp_path = profile_env
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
         # Simulate infrastructure dirs that only the default profile has
-        (default_home / "omniworker-agent" / ".git").mkdir(parents=True)
-        (default_home / "omniworker-agent" / "venv" / "bin").mkdir(parents=True)
-        (default_home / "omniworker-agent" / "README.md").write_text("repo")
+        (default_home / "flux-agent-agent" / ".git").mkdir(parents=True)
+        (default_home / "flux-agent-agent" / "venv" / "bin").mkdir(parents=True)
+        (default_home / "flux-agent-agent" / "README.md").write_text("repo")
         (default_home / ".worktrees" / "some-tree").mkdir(parents=True)
         (default_home / "profiles" / "other").mkdir(parents=True)
         (default_home / "profiles" / "other" / "config.yaml").write_text("x")
@@ -281,7 +281,7 @@ class TestCreateProfile:
         profile_dir = create_profile("cloned", clone_all=True, no_alias=True)
 
         # Infrastructure must be excluded
-        assert not (profile_dir / "omniworker-agent").exists()
+        assert not (profile_dir / "flux-agent-agent").exists()
         assert not (profile_dir / ".worktrees").exists()
         assert not (profile_dir / "profiles").exists()
         assert not (profile_dir / "bin").exists()
@@ -315,7 +315,7 @@ class TestCreateProfile:
 # ===================================================================
 
 class TestNoSkillsOptOut:
-    """Tests for `omniworker profile create --no-skills` and the opt-out marker."""
+    """Tests for `flux-agent profile create --no-skills` and the opt-out marker."""
 
     def test_no_skills_writes_marker_and_skips_seeding(self, profile_env):
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
@@ -353,7 +353,7 @@ class TestNoSkillsOptOut:
 
     def test_seed_profile_skills_respects_marker(self, profile_env):
         """seed_profile_skills() must no-op on opted-out profiles even when
-        called directly (e.g. by `omniworker update`'s all-profile sync loop)."""
+        called directly (e.g. by `flux-agent update`'s all-profile sync loop)."""
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
 
         # Call seed_profile_skills() directly — it should NOT invoke subprocess,
@@ -431,7 +431,7 @@ class TestDeleteProfile:
         profile_dir = create_profile("coder", no_alias=True)
         assert profile_dir.is_dir()
         # Mock gateway import to avoid real systemd/launchd interaction
-        with patch("omniworker_cli.profiles._cleanup_gateway_service"):
+        with patch("flux-agent_cli.profiles._cleanup_gateway_service"):
             delete_profile("coder", yes=True)
         assert not profile_dir.is_dir()
 
@@ -496,7 +496,7 @@ class TestActiveProfile:
 
     def test_empty_file_returns_default(self, profile_env):
         tmp_path = profile_env
-        active_path = tmp_path / ".omniworker" / "active_profile"
+        active_path = tmp_path / ".flux-agent" / "active_profile"
         active_path.write_text("")
         assert get_active_profile() == "default"
 
@@ -504,7 +504,7 @@ class TestActiveProfile:
         tmp_path = profile_env
         create_profile("coder", no_alias=True)
         set_active_profile("coder")
-        active_path = tmp_path / ".omniworker" / "active_profile"
+        active_path = tmp_path / ".flux-agent" / "active_profile"
         assert active_path.exists()
 
         set_active_profile("default")
@@ -522,24 +522,24 @@ class TestActiveProfile:
 class TestGetActiveProfileName:
     """Tests for get_active_profile_name()."""
 
-    def test_default_omniworker_home_returns_default(self, profile_env):
-        # OMNIWORKER_HOME points to tmp_path/.omniworker which is the default
+    def test_default_flux-agent_home_returns_default(self, profile_env):
+        # FLUX AGENT_HOME points to tmp_path/.flux-agent which is the default
         assert get_active_profile_name() == "default"
 
     def test_profile_path_returns_profile_name(self, profile_env, monkeypatch):
         tmp_path = profile_env
         create_profile("coder", no_alias=True)
-        profile_dir = tmp_path / ".omniworker" / "profiles" / "coder"
-        monkeypatch.setenv("OMNIWORKER_HOME", str(profile_dir))
+        profile_dir = tmp_path / ".flux-agent" / "profiles" / "coder"
+        monkeypatch.setenv("FLUX AGENT_HOME", str(profile_dir))
         assert get_active_profile_name() == "coder"
 
     def test_custom_path_returns_default(self, profile_env, monkeypatch):
-        """A custom OMNIWORKER_HOME (Docker, etc.) IS the default root."""
+        """A custom FLUX AGENT_HOME (Docker, etc.) IS the default root."""
         tmp_path = profile_env
         custom = tmp_path / "some" / "other" / "path"
         custom.mkdir(parents=True)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(custom))
-        # With Docker-aware roots, a custom OMNIWORKER_HOME is the default —
+        monkeypatch.setenv("FLUX AGENT_HOME", str(custom))
+        # With Docker-aware roots, a custom FLUX AGENT_HOME is the default —
         # not "custom".  The user is on the default profile of their
         # custom deployment.
         assert get_active_profile_name() == "default"
@@ -556,12 +556,12 @@ class TestResolveProfileEnv:
         tmp_path = profile_env
         create_profile("coder", no_alias=True)
         result = resolve_profile_env("coder")
-        assert result == str(tmp_path / ".omniworker" / "profiles" / "coder")
+        assert result == str(tmp_path / ".flux-agent" / "profiles" / "coder")
 
     def test_default_returns_default_home(self, profile_env):
         tmp_path = profile_env
         result = resolve_profile_env("default")
-        assert result == str(tmp_path / ".omniworker")
+        assert result == str(tmp_path / ".flux-agent")
 
     def test_nonexistent_raises_file_not_found(self, profile_env):
         with pytest.raises(FileNotFoundError):
@@ -587,7 +587,7 @@ class TestAliasCollision:
         assert result is None
 
     def test_reserved_name_returns_message(self, profile_env):
-        result = check_alias_collision("omniworker")
+        result = check_alias_collision("flux-agent")
         assert result is not None
         assert "reserved" in result.lower()
 
@@ -612,79 +612,79 @@ class TestRenameProfile:
     def test_renames_directory(self, profile_env):
         tmp_path = profile_env
         create_profile("oldname", no_alias=True)
-        old_dir = tmp_path / ".omniworker" / "profiles" / "oldname"
+        old_dir = tmp_path / ".flux-agent" / "profiles" / "oldname"
         assert old_dir.is_dir()
 
         # Mock alias collision to avoid subprocess calls
-        with patch("omniworker_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("flux-agent_cli.profiles.check_alias_collision", return_value="skip"):
             new_dir = rename_profile("oldname", "newname")
 
         assert not old_dir.is_dir()
         assert new_dir.is_dir()
-        assert new_dir == tmp_path / ".omniworker" / "profiles" / "newname"
+        assert new_dir == tmp_path / ".flux-agent" / "profiles" / "newname"
 
     def test_renames_root_honcho_host_without_changing_ai_peer(self, profile_env):
         tmp_path = profile_env
         create_profile("ssi_health", no_alias=True)
-        honcho_path = tmp_path / ".omniworker" / "honcho.json"
+        honcho_path = tmp_path / ".flux-agent" / "honcho.json"
         honcho_path.write_text(json.dumps({
             "hosts": {
-                "omniworker.ssi_health": {
+                "flux-agent.ssi_health": {
                     "recallMode": "hybrid",
                     "writeFrequency": "async",
                     "sessionStrategy": "per-session",
                     "saveMessages": True,
                     "peerName": "user-peer",
                     "aiPeer": "ssi_health",
-                    "workspace": "omniworker",
+                    "workspace": "flux-agent",
                     "enabled": True,
                 }
             }
         }))
 
-        with patch("omniworker_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("flux-agent_cli.profiles.check_alias_collision", return_value="skip"):
             rename_profile("ssi_health", "heimdall")
 
         cfg = json.loads(honcho_path.read_text())
-        assert "omniworker.ssi_health" not in cfg["hosts"]
-        assert cfg["hosts"]["omniworker.heimdall"]["aiPeer"] == "ssi_health"
-        assert cfg["hosts"]["omniworker.heimdall"]["peerName"] == "user-peer"
+        assert "flux-agent.ssi_health" not in cfg["hosts"]
+        assert cfg["hosts"]["flux-agent.heimdall"]["aiPeer"] == "ssi_health"
+        assert cfg["hosts"]["flux-agent.heimdall"]["peerName"] == "user-peer"
 
     def test_pins_ai_peer_when_absent_on_honcho_host_rename(self, profile_env):
         tmp_path = profile_env
         create_profile("ssi_health", no_alias=True)
-        honcho_path = tmp_path / ".omniworker" / "honcho.json"
+        honcho_path = tmp_path / ".flux-agent" / "honcho.json"
         honcho_path.write_text(json.dumps({
             "hosts": {
-                "omniworker.ssi_health": {"workspace": "omniworker", "enabled": True}
+                "flux-agent.ssi_health": {"workspace": "flux-agent", "enabled": True}
             }
         }))
 
-        with patch("omniworker_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("flux-agent_cli.profiles.check_alias_collision", return_value="skip"):
             rename_profile("ssi_health", "heimdall")
 
         cfg = json.loads(honcho_path.read_text())
-        assert "omniworker.ssi_health" not in cfg["hosts"]
-        assert cfg["hosts"]["omniworker.heimdall"]["aiPeer"] == "ssi_health"
-        assert cfg["hosts"]["omniworker.heimdall"]["workspace"] == "omniworker"
+        assert "flux-agent.ssi_health" not in cfg["hosts"]
+        assert cfg["hosts"]["flux-agent.heimdall"]["aiPeer"] == "ssi_health"
+        assert cfg["hosts"]["flux-agent.heimdall"]["workspace"] == "flux-agent"
 
     def test_does_not_overwrite_existing_honcho_host_on_rename(self, profile_env):
         tmp_path = profile_env
         create_profile("ssi_health", no_alias=True)
-        honcho_path = tmp_path / ".omniworker" / "honcho.json"
+        honcho_path = tmp_path / ".flux-agent" / "honcho.json"
         honcho_path.write_text(json.dumps({
             "hosts": {
-                "omniworker.ssi_health": {"aiPeer": "ssi_health"},
-                "omniworker.heimdall": {"aiPeer": "heimdall"},
+                "flux-agent.ssi_health": {"aiPeer": "ssi_health"},
+                "flux-agent.heimdall": {"aiPeer": "heimdall"},
             }
         }))
 
-        with patch("omniworker_cli.profiles.check_alias_collision", return_value="skip"):
+        with patch("flux-agent_cli.profiles.check_alias_collision", return_value="skip"):
             rename_profile("ssi_health", "heimdall")
 
         cfg = json.loads(honcho_path.read_text())
-        assert cfg["hosts"]["omniworker.ssi_health"]["aiPeer"] == "ssi_health"
-        assert cfg["hosts"]["omniworker.heimdall"]["aiPeer"] == "heimdall"
+        assert cfg["hosts"]["flux-agent.ssi_health"]["aiPeer"] == "ssi_health"
+        assert cfg["hosts"]["flux-agent.heimdall"]["aiPeer"] == "heimdall"
 
     def test_default_raises_value_error(self, profile_env):
         with pytest.raises(ValueError, match="default"):
@@ -880,14 +880,14 @@ class TestExportImport:
         (default_dir / "config.yaml").write_text("ok")
 
         # Create dirs/files that should be excluded
-        for d in ("omniworker-agent", ".worktrees", "profiles", "bin",
+        for d in ("flux-agent-agent", ".worktrees", "profiles", "bin",
                   "image_cache", "logs", "sandboxes", "checkpoints"):
             sub = default_dir / d
             sub.mkdir(exist_ok=True)
             (sub / "marker.txt").write_text("excluded")
 
         for f in ("state.db", "gateway.pid", "gateway_state.json",
-                  "processes.json", "errors.log", ".omniworker_history",
+                  "processes.json", "errors.log", ".flux-agent_history",
                   "active_profile", ".update_check", "auth.lock"):
             (default_dir / f).write_text("excluded")
 
@@ -903,7 +903,7 @@ class TestExportImport:
 
         # Infrastructure excluded
         excluded_prefixes = [
-            "default/omniworker-agent", "default/.worktrees", "default/profiles",
+            "default/flux-agent-agent", "default/.worktrees", "default/profiles",
             "default/bin", "default/image_cache", "default/logs",
             "default/sandboxes", "default/checkpoints",
         ]
@@ -914,7 +914,7 @@ class TestExportImport:
         excluded_files = [
             "default/state.db", "default/gateway.pid",
             "default/gateway_state.json", "default/processes.json",
-            "default/errors.log", "default/.omniworker_history",
+            "default/errors.log", "default/.flux-agent_history",
             "default/active_profile", "default/.update_check",
             "default/auth.lock",
         ]
@@ -1012,66 +1012,66 @@ class TestProfileIsolation:
 
 
 # ===================================================================
-# TestGetProfilesRoot / TestGetDefaultOmniWorkerHome (internal helpers)
+# TestGetProfilesRoot / TestGetDefaultFlux AgentHome (internal helpers)
 # ===================================================================
 
 class TestInternalHelpers:
-    """Tests for _get_profiles_root() and _get_default_omniworker_home()."""
+    """Tests for _get_profiles_root() and _get_default_flux-agent_home()."""
 
     def test_profiles_root_under_home(self, profile_env):
         tmp_path = profile_env
         root = _get_profiles_root()
-        assert root == tmp_path / ".omniworker" / "profiles"
+        assert root == tmp_path / ".flux-agent" / "profiles"
 
-    def test_default_omniworker_home(self, profile_env):
+    def test_default_flux-agent_home(self, profile_env):
         tmp_path = profile_env
-        home = _get_default_omniworker_home()
-        assert home == tmp_path / ".omniworker"
+        home = _get_default_flux-agent_home()
+        assert home == tmp_path / ".flux-agent"
 
     def test_profiles_root_docker_deployment(self, tmp_path, monkeypatch):
-        """In Docker (OMNIWORKER_HOME outside ~/.omniworker), profiles go under OMNIWORKER_HOME."""
+        """In Docker (FLUX AGENT_HOME outside ~/.flux-agent), profiles go under FLUX AGENT_HOME."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(docker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(docker_home))
         root = _get_profiles_root()
         assert root == docker_home / "profiles"
 
-    def test_default_omniworker_home_docker(self, tmp_path, monkeypatch):
-        """In Docker, _get_default_omniworker_home() returns OMNIWORKER_HOME itself."""
+    def test_default_flux-agent_home_docker(self, tmp_path, monkeypatch):
+        """In Docker, _get_default_flux-agent_home() returns FLUX AGENT_HOME itself."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(docker_home))
-        home = _get_default_omniworker_home()
+        monkeypatch.setenv("FLUX AGENT_HOME", str(docker_home))
+        home = _get_default_flux-agent_home()
         assert home == docker_home
 
     def test_profiles_root_profile_mode(self, tmp_path, monkeypatch):
-        """In profile mode (OMNIWORKER_HOME under ~/.omniworker), profiles root is still ~/.omniworker/profiles."""
-        native = tmp_path / ".omniworker"
+        """In profile mode (FLUX AGENT_HOME under ~/.flux-agent), profiles root is still ~/.flux-agent/profiles."""
+        native = tmp_path / ".flux-agent"
         profile_dir = native / "profiles" / "coder"
         profile_dir.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(profile_dir))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(profile_dir))
         root = _get_profiles_root()
         assert root == native / "profiles"
 
     def test_active_profile_path_docker(self, tmp_path, monkeypatch):
-        """In Docker, active_profile file lives under OMNIWORKER_HOME."""
-        from omniworker_cli.profiles import _get_active_profile_path
+        """In Docker, active_profile file lives under FLUX AGENT_HOME."""
+        from flux-agent_cli.profiles import _get_active_profile_path
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(docker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(docker_home))
         path = _get_active_profile_path()
         assert path == docker_home / "active_profile"
 
     def test_create_profile_docker(self, tmp_path, monkeypatch):
-        """Profile created in Docker lands under OMNIWORKER_HOME/profiles/."""
+        """Profile created in Docker lands under FLUX AGENT_HOME/profiles/."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(docker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(docker_home))
         result = create_profile("orchestrator", no_alias=True)
         expected = docker_home / "profiles" / "orchestrator"
         assert result == expected
@@ -1082,7 +1082,7 @@ class TestInternalHelpers:
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(docker_home))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(docker_home))
         assert get_active_profile_name() == "default"
 
     def test_active_profile_name_docker_profile(self, tmp_path, monkeypatch):
@@ -1091,7 +1091,7 @@ class TestInternalHelpers:
         profile = docker_home / "profiles" / "orchestrator"
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("OMNIWORKER_HOME", str(profile))
+        monkeypatch.setenv("FLUX AGENT_HOME", str(profile))
         assert get_active_profile_name() == "orchestrator"
 
 
@@ -1105,7 +1105,7 @@ class TestEdgeCases:
     def test_create_profile_returns_correct_path(self, profile_env):
         tmp_path = profile_env
         result = create_profile("mybot", no_alias=True)
-        expected = tmp_path / ".omniworker" / "profiles" / "mybot"
+        expected = tmp_path / ".flux-agent" / "profiles" / "mybot"
         assert result == expected
 
     def test_list_profiles_default_info_fields(self, profile_env):
@@ -1117,9 +1117,9 @@ class TestEdgeCases:
 
     def test_gateway_running_check_with_pid_file(self, profile_env):
         """Verify _check_gateway_running uses the shared gateway PID validator."""
-        from omniworker_cli.profiles import _check_gateway_running
+        from flux-agent_cli.profiles import _check_gateway_running
         tmp_path = profile_env
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
 
         with patch("gateway.status.get_running_pid", return_value=99999) as mock_get_running_pid:
             assert _check_gateway_running(default_home) is True
@@ -1130,9 +1130,9 @@ class TestEdgeCases:
 
     def test_gateway_running_check_plain_pid(self, profile_env):
         """Shared PID validator returning None means the profile is not running."""
-        from omniworker_cli.profiles import _check_gateway_running
+        from flux-agent_cli.profiles import _check_gateway_running
         tmp_path = profile_env
-        default_home = tmp_path / ".omniworker"
+        default_home = tmp_path / ".flux-agent"
 
         with patch("gateway.status.get_running_pid", return_value=None) as mock_get_running_pid:
             assert _check_gateway_running(default_home) is False
@@ -1177,7 +1177,7 @@ class TestEdgeCases:
         set_active_profile("coder")
         assert get_active_profile() == "coder"
 
-        with patch("omniworker_cli.profiles._cleanup_gateway_service"):
+        with patch("flux-agent_cli.profiles._cleanup_gateway_service"):
             delete_profile("coder", yes=True)
 
         assert get_active_profile() == "default"

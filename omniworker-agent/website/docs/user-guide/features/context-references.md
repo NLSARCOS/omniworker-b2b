@@ -7,7 +7,7 @@ description: "Inline @-syntax for attaching files, folders, git diffs, and URLs 
 
 # Context References
 
-Type `@` followed by a reference to inject content directly into your message. OmniWorker expands the reference inline and appends the content under an `--- Attached Context ---` section.
+Type `@` followed by a reference to inject content directly into your message. Flux Agent expands the reference inline and appends the content under an `--- Attached Context ---` section.
 
 ## Supported References
 
@@ -82,10 +82,10 @@ These paths are always blocked from `@file:` references to prevent credential ex
 - SSH keys and config: `~/.ssh/id_rsa`, `~/.ssh/id_ed25519`, `~/.ssh/authorized_keys`, `~/.ssh/config`
 - Shell profiles: `~/.bashrc`, `~/.zshrc`, `~/.profile`, `~/.bash_profile`, `~/.zprofile`
 - Credential files: `~/.netrc`, `~/.pgpass`, `~/.npmrc`, `~/.pypirc`
-- OmniWorker env: `$OMNIWORKER_HOME/.env`
+- Flux Agent env: `$FLUX AGENT_HOME/.env`
 
 These directories are fully blocked (any file inside):
-- `~/.ssh/`, `~/.aws/`, `~/.gnupg/`, `~/.kube/`, `$OMNIWORKER_HOME/skills/.hub/`
+- `~/.ssh/`, `~/.aws/`, `~/.gnupg/`, `~/.kube/`, `$FLUX AGENT_HOME/skills/.hub/`
 
 ### Path Traversal Protection
 

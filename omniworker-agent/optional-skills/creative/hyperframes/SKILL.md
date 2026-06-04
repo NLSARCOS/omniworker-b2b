@@ -8,7 +8,7 @@ platforms: [linux, macos, windows]
 prerequisites:
   commands: [node, ffmpeg, npx]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [creative, video, animation, html, gsap, motion-graphics]
     related_skills: [manim-video, meme-generation]
     category: creative
@@ -55,7 +55,7 @@ Full CLI reference: [references/cli.md](references/cli.md).
 ## Setup (one-time)
 
 ```bash
-bash "$(dirname "$(find ~/.omniworker/skills -path '*/hyperframes/SKILL.md' 2>/dev/null | head -1)")/scripts/setup.sh"
+bash "$(dirname "$(find ~/.flux-agent/skills -path '*/hyperframes/SKILL.md' 2>/dev/null | head -1)")/scripts/setup.sh"
 ```
 
 The script:
@@ -188,4 +188,4 @@ If `hyperframes render` fails, run `npx hyperframes doctor` and attach its outpu
 - [gsap.md](references/gsap.md) — GSAP core API for HyperFrames (tweens, eases, stagger, timelines, matchMedia)
 - [features.md](references/features.md) — captions, TTS, audio-reactive, marker highlighting, transitions (load on demand)
 - [website-to-video.md](references/website-to-video.md) — 7-step capture-to-video workflow
-- [troubleshooting.md](references/troubleshooting.md) — OmniWorker fix, env vars, common render errors
+- [troubleshooting.md](references/troubleshooting.md) — Flux Agent fix, env vars, common render errors

@@ -258,67 +258,67 @@ class TestExchangeAuthCode:
         assert not setup_module.PENDING_AUTH_PATH.exists()
 
 
-class TestOmniWorkerConstantsFallback:
-    """Tests for _omniworker_home.py fallback when omniworker_constants is unavailable."""
+class TestFlux AgentConstantsFallback:
+    """Tests for _flux-agent_home.py fallback when flux-agent_constants is unavailable."""
 
     HELPER_PATH = (
         Path(__file__).resolve().parents[2]
-        / "skills/productivity/google-workspace/scripts/_omniworker_home.py"
+        / "skills/productivity/google-workspace/scripts/_flux-agent_home.py"
     )
 
     def _load_helper(self, monkeypatch):
-        """Load _omniworker_home.py with omniworker_constants blocked."""
-        monkeypatch.setitem(sys.modules, "omniworker_constants", None)
-        spec = importlib.util.spec_from_file_location("_omniworker_home_test", self.HELPER_PATH)
+        """Load _flux-agent_home.py with flux-agent_constants blocked."""
+        monkeypatch.setitem(sys.modules, "flux-agent_constants", None)
+        spec = importlib.util.spec_from_file_location("_flux-agent_home_test", self.HELPER_PATH)
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
         return module
 
-    def test_fallback_uses_omniworker_home_env_var(self, monkeypatch, tmp_path):
-        """When omniworker_constants is missing, OMNIWORKER_HOME comes from env var."""
-        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / "custom-omniworker"))
+    def test_fallback_uses_flux-agent_home_env_var(self, monkeypatch, tmp_path):
+        """When flux-agent_constants is missing, FLUX AGENT_HOME comes from env var."""
+        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path / "custom-flux-agent"))
         module = self._load_helper(monkeypatch)
-        assert module.get_omniworker_home() == tmp_path / "custom-omniworker"
+        assert module.get_flux-agent_home() == tmp_path / "custom-flux-agent"
 
-    def test_fallback_defaults_to_dot_omniworker(self, monkeypatch):
-        """When omniworker_constants is missing and OMNIWORKER_HOME unset, default to ~/.omniworker."""
-        monkeypatch.delenv("OMNIWORKER_HOME", raising=False)
+    def test_fallback_defaults_to_dot_flux-agent(self, monkeypatch):
+        """When flux-agent_constants is missing and FLUX AGENT_HOME unset, default to ~/.flux-agent."""
+        monkeypatch.delenv("FLUX AGENT_HOME", raising=False)
         module = self._load_helper(monkeypatch)
-        assert module.get_omniworker_home() == Path.home() / ".omniworker"
+        assert module.get_flux-agent_home() == Path.home() / ".flux-agent"
 
-    def test_fallback_ignores_empty_omniworker_home(self, monkeypatch):
-        """Empty/whitespace OMNIWORKER_HOME is treated as unset."""
-        monkeypatch.setenv("OMNIWORKER_HOME", "  ")
+    def test_fallback_ignores_empty_flux-agent_home(self, monkeypatch):
+        """Empty/whitespace FLUX AGENT_HOME is treated as unset."""
+        monkeypatch.setenv("FLUX AGENT_HOME", "  ")
         module = self._load_helper(monkeypatch)
-        assert module.get_omniworker_home() == Path.home() / ".omniworker"
+        assert module.get_flux-agent_home() == Path.home() / ".flux-agent"
 
-    def test_fallback_display_omniworker_home_shortens_path(self, monkeypatch):
-        """Fallback display_omniworker_home() uses ~/ shorthand like the real one."""
-        monkeypatch.delenv("OMNIWORKER_HOME", raising=False)
+    def test_fallback_display_flux-agent_home_shortens_path(self, monkeypatch):
+        """Fallback display_flux-agent_home() uses ~/ shorthand like the real one."""
+        monkeypatch.delenv("FLUX AGENT_HOME", raising=False)
         module = self._load_helper(monkeypatch)
-        assert module.display_omniworker_home() == "~/.omniworker"
+        assert module.display_flux-agent_home() == "~/.flux-agent"
 
-    def test_fallback_display_omniworker_home_profile_path(self, monkeypatch):
-        """Fallback display_omniworker_home() handles profile paths under ~/."""
-        monkeypatch.setenv("OMNIWORKER_HOME", str(Path.home() / ".omniworker/profiles/coder"))
+    def test_fallback_display_flux-agent_home_profile_path(self, monkeypatch):
+        """Fallback display_flux-agent_home() handles profile paths under ~/."""
+        monkeypatch.setenv("FLUX AGENT_HOME", str(Path.home() / ".flux-agent/profiles/coder"))
         module = self._load_helper(monkeypatch)
-        assert module.display_omniworker_home() == "~/.omniworker/profiles/coder"
+        assert module.display_flux-agent_home() == "~/.flux-agent/profiles/coder"
 
-    def test_fallback_display_omniworker_home_custom_path(self, monkeypatch):
-        """Fallback display_omniworker_home() returns full path for non-home locations."""
-        monkeypatch.setenv("OMNIWORKER_HOME", "/opt/omniworker-custom")
+    def test_fallback_display_flux-agent_home_custom_path(self, monkeypatch):
+        """Fallback display_flux-agent_home() returns full path for non-home locations."""
+        monkeypatch.setenv("FLUX AGENT_HOME", "/opt/flux-agent-custom")
         module = self._load_helper(monkeypatch)
-        assert module.display_omniworker_home() == "/opt/omniworker-custom"
+        assert module.display_flux-agent_home() == "/opt/flux-agent-custom"
 
-    def test_delegates_to_omniworker_constants_when_available(self):
-        """When omniworker_constants IS importable, _omniworker_home delegates to it."""
+    def test_delegates_to_flux-agent_constants_when_available(self):
+        """When flux-agent_constants IS importable, _flux-agent_home delegates to it."""
         spec = importlib.util.spec_from_file_location(
-            "_omniworker_home_happy", self.HELPER_PATH
+            "_flux-agent_home_happy", self.HELPER_PATH
         )
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
-        import omniworker_constants
-        assert module.get_omniworker_home is omniworker_constants.get_omniworker_home
-        assert module.display_omniworker_home is omniworker_constants.display_omniworker_home
+        import flux-agent_constants
+        assert module.get_flux-agent_home is flux-agent_constants.get_flux-agent_home
+        assert module.display_flux-agent_home is flux-agent_constants.display_flux-agent_home

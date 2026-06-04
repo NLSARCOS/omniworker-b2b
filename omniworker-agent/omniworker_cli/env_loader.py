@@ -1,4 +1,4 @@
-"""Helpers for loading OmniWorker .env files consistently across entrypoints."""
+"""Helpers for loading Flux Agent .env files consistently across entrypoints."""
 
 from __future__ import annotations
 
@@ -102,14 +102,14 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
     This produces mangled values — e.g. a bot token duplicated 8×
     (see #8908).
 
-    We delegate to ``omniworker_cli.config._sanitize_env_lines`` which
-    already knows all valid OmniWorker env-var names and can split
+    We delegate to ``flux-agent_cli.config._sanitize_env_lines`` which
+    already knows all valid Flux Agent env-var names and can split
     concatenated lines correctly.
     """
     if not path.exists():
         return
     try:
-        from omniworker_cli.config import _sanitize_env_lines
+        from flux-agent_cli.config import _sanitize_env_lines
     except ImportError:
         return  # early bootstrap — config module not available yet
 
@@ -139,12 +139,12 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
         pass  # best-effort — don't block gateway startup
 
 
-def load_omniworker_dotenv(
+def load_flux-agent_dotenv(
     *,
-    omniworker_home: str | os.PathLike | None = None,
+    flux-agent_home: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,
 ) -> list[Path]:
-    """Load OmniWorker environment files with user config taking precedence.
+    """Load Flux Agent environment files with user config taking precedence.
 
     Behavior:
     - `~/.hermes/.env` overrides stale shell-exported values when present.
@@ -154,7 +154,7 @@ def load_omniworker_dotenv(
     """
     loaded: list[Path] = []
 
-    home_path = Path(omniworker_home or os.getenv("OMNIWORKER_HOME", Path.home() / ".hermes"))
+    home_path = Path(flux-agent_home or os.getenv("FLUX AGENT_HOME", Path.home() / ".hermes"))
     user_env = home_path / ".env"
     project_env_path = Path(project_env) if project_env else None
 
@@ -175,5 +175,5 @@ def load_omniworker_dotenv(
     return loaded
 
 
-# Backward-compatible alias while the Hermes -> OmniWorker rename is in flight.
-load_hermes_dotenv = load_omniworker_dotenv
+# Backward-compatible alias while the Hermes -> Flux Agent rename is in flight.
+load_hermes_dotenv = load_flux-agent_dotenv

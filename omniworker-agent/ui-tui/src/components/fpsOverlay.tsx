@@ -1,6 +1,6 @@
 // FPS counter overlay (OMNIWORKER_TUI_FPS=1). Zero-cost when disabled.
 
-import { Text } from '@omniworker/ink'
+import { Text } from '@flux-agent/ink'
 import { useStore } from '@nanostores/react'
 
 import { SHOW_FPS } from '../config/env.js'

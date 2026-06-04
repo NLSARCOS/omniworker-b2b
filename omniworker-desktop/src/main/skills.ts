@@ -6,7 +6,7 @@ import {
   OMNIWORKER_HOME,
   OMNIWORKER_PYTHON,
   OMNIWORKER_REPO,
-  omniworkerCliArgs,
+  flux-agentCliArgs,
   getEnhancedPath,
 } from "./installer";
 import { profileHome, getExecErrorMessage } from "./utils";
@@ -132,13 +132,13 @@ export function getSkillContent(skillPath: string): string {
 }
 
 /**
- * Search the skill registry via the omniworker CLI.
+ * Search the skill registry via the flux-agent CLI.
  */
 export function searchSkills(query: string): SkillSearchResult[] {
   try {
     const output = execFileSync(
       OMNIWORKER_PYTHON,
-      omniworkerCliArgs(["skills", "browse", "--query", query, "--json"]),
+      flux-agentCliArgs(["skills", "browse", "--query", query, "--json"]),
       {
         cwd: OMNIWORKER_REPO,
         env: {
@@ -180,7 +180,7 @@ export function searchSkills(query: string): SkillSearchResult[] {
 }
 
 /**
- * List bundled skills from the omniworker-agent repo.
+ * List bundled skills from the flux-agent-agent repo.
  */
 export function listBundledSkills(): SkillSearchResult[] {
   const bundledDir = join(OMNIWORKER_REPO, "skills");
@@ -240,7 +240,7 @@ export function installSkill(
   profile?: string,
 ): { success: boolean; error?: string } {
   try {
-    const args = omniworkerCliArgs(["skills", "install", identifier, "--yes"]);
+    const args = flux-agentCliArgs(["skills", "install", identifier, "--yes"]);
     if (profile && profile !== "default") {
       args.splice(process.platform === "win32" ? 2 : 1, 0, "-p", profile);
     }
@@ -269,7 +269,7 @@ export function uninstallSkill(
   profile?: string,
 ): { success: boolean; error?: string } {
   try {
-    const args = omniworkerCliArgs(["skills", "uninstall", name]);
+    const args = flux-agentCliArgs(["skills", "uninstall", name]);
     if (profile && profile !== "default") {
       args.splice(process.platform === "win32" ? 2 : 1, 0, "-p", profile);
     }

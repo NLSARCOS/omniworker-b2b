@@ -28,10 +28,10 @@ def _isolate_env(tmp_path, monkeypatch):
     but we want the plugin to work with a predictable subpath. We reset
     OMNIWORKER_HOME here for clarity.
     """
-    omniworker_home = tmp_path / ".omniworker"
-    omniworker_home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
-    yield omniworker_home
+    flux-agent_home = tmp_path / ".flux-agent"
+    flux-agent_home.mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    yield flux-agent_home
 
 
 def _load_lib():
@@ -52,20 +52,20 @@ def _load_plugin_init():
     plugin_dir = repo_root / "plugins" / "disk-cleanup"
     # Use the PluginManager's module naming convention so relative imports work.
     spec = importlib.util.spec_from_file_location(
-        "omniworker_plugins.disk_cleanup",
+        "flux-agent_plugins.disk_cleanup",
         plugin_dir / "__init__.py",
         submodule_search_locations=[str(plugin_dir)],
     )
     # Ensure parent namespace package exists for the relative `. import disk_cleanup`
     import types
-    if "omniworker_plugins" not in sys.modules:
-        ns = types.ModuleType("omniworker_plugins")
+    if "flux-agent_plugins" not in sys.modules:
+        ns = types.ModuleType("flux-agent_plugins")
         ns.__path__ = []
-        sys.modules["omniworker_plugins"] = ns
+        sys.modules["flux-agent_plugins"] = ns
     mod = importlib.util.module_from_spec(spec)
-    mod.__package__ = "omniworker_plugins.disk_cleanup"
+    mod.__package__ = "flux-agent_plugins.disk_cleanup"
     mod.__path__ = [str(plugin_dir)]
-    sys.modules["omniworker_plugins.disk_cleanup"] = mod
+    sys.modules["flux-agent_plugins.disk_cleanup"] = mod
     spec.loader.exec_module(mod)
     return mod
 
@@ -75,20 +75,20 @@ def _load_plugin_init():
 # ---------------------------------------------------------------------------
 
 class TestIsSafePath:
-    def test_accepts_path_under_omniworker_home(self, _isolate_env):
+    def test_accepts_path_under_flux-agent_home(self, _isolate_env):
         dg = _load_lib()
         p = _isolate_env / "subdir" / "file.txt"
         p.parent.mkdir()
         p.write_text("x")
         assert dg.is_safe_path(p) is True
 
-    def test_rejects_outside_omniworker_home(self, _isolate_env):
+    def test_rejects_outside_flux-agent_home(self, _isolate_env):
         dg = _load_lib()
         assert dg.is_safe_path(Path("/etc/passwd")) is False
 
-    def test_accepts_tmp_omniworker_prefix(self, _isolate_env, tmp_path):
+    def test_accepts_tmp_flux-agent_prefix(self, _isolate_env, tmp_path):
         dg = _load_lib()
-        assert dg.is_safe_path(Path("/tmp/omniworker-abc/x.log")) is True
+        assert dg.is_safe_path(Path("/tmp/flux-agent-abc/x.log")) is True
 
     def test_rejects_plain_tmp(self, _isolate_env):
         dg = _load_lib()
@@ -366,15 +366,15 @@ class TestSlashCommand:
 # ---------------------------------------------------------------------------
 
 class TestBundledDiscovery:
-    def _write_enabled_config(self, omniworker_home, names):
+    def _write_enabled_config(self, flux-agent_home, names):
         """Write plugins.enabled allow-list to config.yaml."""
         import yaml
-        cfg_path = omniworker_home / "config.yaml"
+        cfg_path = flux-agent_home / "config.yaml"
         cfg_path.write_text(yaml.safe_dump({"plugins": {"enabled": list(names)}}))
 
     def test_disk_cleanup_discovered_but_not_loaded_by_default(self, _isolate_env):
         """Bundled plugins are discovered but NOT loaded without opt-in."""
-        from omniworker_cli import plugins as pmod
+        from flux-agent_cli import plugins as pmod
         mgr = pmod.PluginManager()
         mgr.discover_and_load()
         # Discovered — appears in the registry
@@ -388,7 +388,7 @@ class TestBundledDiscovery:
     def test_disk_cleanup_loads_when_enabled(self, _isolate_env):
         """Adding to plugins.enabled activates the bundled plugin."""
         self._write_enabled_config(_isolate_env, ["disk-cleanup"])
-        from omniworker_cli import plugins as pmod
+        from flux-agent_cli import plugins as pmod
         mgr = pmod.PluginManager()
         mgr.discover_and_load()
         loaded = mgr._plugins["disk-cleanup"]
@@ -407,7 +407,7 @@ class TestBundledDiscovery:
                 "disabled": ["disk-cleanup"],
             }
         }))
-        from omniworker_cli import plugins as pmod
+        from flux-agent_cli import plugins as pmod
         mgr = pmod.PluginManager()
         mgr.discover_and_load()
         loaded = mgr._plugins["disk-cleanup"]
@@ -420,7 +420,7 @@ class TestBundledDiscovery:
         self._write_enabled_config(
             _isolate_env, ["memory", "context_engine", "disk-cleanup"]
         )
-        from omniworker_cli import plugins as pmod
+        from flux-agent_cli import plugins as pmod
         mgr = pmod.PluginManager()
         mgr.discover_and_load()
         assert "memory" not in mgr._plugins

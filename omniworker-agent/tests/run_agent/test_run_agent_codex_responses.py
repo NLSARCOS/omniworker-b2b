@@ -191,7 +191,7 @@ class _FakeCreateStream:
 def _codex_request_kwargs():
     return {
         "model": "gpt-5-codex",
-        "instructions": "You are OmniWorker.",
+        "instructions": "You are Flux Agent.",
         "input": [{"role": "user", "content": "Ping"}],
         "tools": None,
         "store": False,
@@ -289,13 +289,13 @@ def test_build_api_kwargs_codex(monkeypatch):
     agent = _build_agent(monkeypatch)
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are OmniWorker."},
+            {"role": "system", "content": "You are Flux Agent."},
             {"role": "user", "content": "Ping"},
         ]
     )
 
     assert kwargs["model"] == "gpt-5-codex"
-    assert kwargs["instructions"] == "You are OmniWorker."
+    assert kwargs["instructions"] == "You are Flux Agent."
     assert kwargs["store"] is False
     assert isinstance(kwargs["input"], list)
     assert kwargs["input"][0]["role"] == "user"
@@ -339,7 +339,7 @@ def test_build_api_kwargs_codex_clamps_minimal_effort(monkeypatch):
 
     kwargs = agent._build_api_kwargs(
         [
-            {"role": "system", "content": "You are OmniWorker."},
+            {"role": "system", "content": "You are Flux Agent."},
             {"role": "user", "content": "Ping"},
         ]
     )
@@ -625,7 +625,7 @@ def test_try_refresh_codex_client_credentials_rebuilds_client(monkeypatch):
         return _RebuiltClient()
 
     monkeypatch.setattr(
-        "omniworker_cli.auth.resolve_codex_runtime_credentials",
+        "flux-agent_cli.auth.resolve_codex_runtime_credentials",
         lambda force_refresh=True: {
             "api_key": "new-codex-token",
             "base_url": "https://chatgpt.com/backend-api/codex",
@@ -660,7 +660,7 @@ def test_try_refresh_copilot_client_credentials_rebuilds_client(monkeypatch):
         return _RebuiltClient()
 
     monkeypatch.setattr(
-        "omniworker_cli.copilot_auth.resolve_copilot_token",
+        "flux-agent_cli.copilot_auth.resolve_copilot_token",
         lambda: ("gho_new_token", "GH_TOKEN"),
     )
     monkeypatch.setattr(run_agent, "OpenAI", _fake_openai)
@@ -688,7 +688,7 @@ def test_try_refresh_copilot_client_credentials_rebuilds_even_if_token_unchanged
         return _RebuiltClient()
 
     monkeypatch.setattr(
-        "omniworker_cli.copilot_auth.resolve_copilot_token",
+        "flux-agent_cli.copilot_auth.resolve_copilot_token",
         lambda: ("gh-token", "gh auth token"),
     )
     monkeypatch.setattr(run_agent, "OpenAI", _fake_openai)
@@ -788,7 +788,7 @@ def test_preflight_codex_api_kwargs_strips_optional_function_call_id(monkeypatch
     preflight = _preflight_codex_api_kwargs(
         {
             "model": "gpt-5-codex",
-            "instructions": "You are OmniWorker.",
+            "instructions": "You are Flux Agent.",
             "input": [
                 {"role": "user", "content": "hi"},
                 {
@@ -817,7 +817,7 @@ def test_preflight_codex_api_kwargs_rejects_function_call_output_without_call_id
         _preflight_codex_api_kwargs(
             {
                 "model": "gpt-5-codex",
-                "instructions": "You are OmniWorker.",
+                "instructions": "You are Flux Agent.",
                 "input": [{"type": "function_call_output", "output": "{}"}],
                 "tools": [],
                 "store": False,
@@ -1288,7 +1288,7 @@ def test_run_conversation_codex_continues_after_ack_stop_message(monkeypatch):
     agent = _build_agent(monkeypatch)
     responses = [
         _codex_ack_message_response(
-            "Absolutely — I can do that. I'll inspect ~/omniworker-studio and report back with a walkthrough."
+            "Absolutely — I can do that. I'll inspect ~/flux-agent-studio and report back with a walkthrough."
         ),
         _codex_tool_call_response(),
         _codex_message_response("Architecture summary complete."),
@@ -1307,14 +1307,14 @@ def test_run_conversation_codex_continues_after_ack_stop_message(monkeypatch):
 
     monkeypatch.setattr(agent, "_execute_tool_calls", _fake_execute_tool_calls)
 
-    result = agent.run_conversation("look into ~/omniworker-studio and tell me how it works")
+    result = agent.run_conversation("look into ~/flux-agent-studio and tell me how it works")
 
     assert result["completed"] is True
     assert result["final_response"] == "Architecture summary complete."
     assert any(
         msg.get("role") == "assistant"
         and msg.get("finish_reason") == "incomplete"
-        and "inspect ~/omniworker-studio" in (msg.get("content") or "")
+        and "inspect ~/flux-agent-studio" in (msg.get("content") or "")
         for msg in result["messages"]
     )
     assert any(

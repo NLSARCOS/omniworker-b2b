@@ -1,12 +1,12 @@
 # Telegram DM User-Managed Multi-Session Topics Implementation Plan
 
-> **For OmniWorker:** Use test-driven-development for implementation. Use subagent-driven-development only after this plan is split into small reviewed tasks.
+> **For Flux Agent:** Use test-driven-development for implementation. Use subagent-driven-development only after this plan is split into small reviewed tasks.
 
-**Goal:** Add an opt-in Telegram DM multi-session mode where Telegram user-created private-chat topics become independent OmniWorker session lanes, while the root DM becomes a system lobby.
+**Goal:** Add an opt-in Telegram DM multi-session mode where Telegram user-created private-chat topics become independent Flux Agent session lanes, while the root DM becomes a system lobby.
 
-**Architecture:** Rely on Telegram's native private-chat topic UI. Users create new topics with the `+` button; OmniWorker maps each `message_thread_id` to a separate session lane. OmniWorker does not create topics for normal `/new` flow and does not try to manage topic lifecycle beyond activation/status, root-lobby behavior, and restoring legacy sessions into a user-created topic.
+**Architecture:** Rely on Telegram's native private-chat topic UI. Users create new topics with the `+` button; Flux Agent maps each `message_thread_id` to a separate session lane. Flux Agent does not create topics for normal `/new` flow and does not try to manage topic lifecycle beyond activation/status, root-lobby behavior, and restoring legacy sessions into a user-created topic.
 
-**Tech Stack:** OmniWorker gateway, Telegram Bot API 9.4+, python-telegram-bot adapter, SQLite SessionDB / side tables, pytest.
+**Tech Stack:** Flux Agent gateway, Telegram Bot API 9.4+, python-telegram-bot adapter, SQLite SessionDB / side tables, pytest.
 
 ---
 
@@ -46,7 +46,7 @@ User sends:
 /topic
 ```
 
-OmniWorker:
+Flux Agent:
 
 1. calls Telegram `getMe`;
 2. verifies `has_topics_enabled` and `allows_users_to_create_topics`;
@@ -60,7 +60,7 @@ Suggested onboarding text:
 ```text
 Multi-session mode is enabled.
 
-Create new OmniWorker chats with the + button in this bot interface. Each Telegram topic is an independent OmniWorker session, so you can work on different tasks in parallel.
+Create new Flux Agent chats with the + button in this bot interface. Each Telegram topic is an independent Flux Agent session, so you can work on different tasks in parallel.
 
 This main chat is reserved for system commands, status, and session management.
 
@@ -88,34 +88,34 @@ Normal user prompts in root DM do not enter the agent loop. Reply:
 ```text
 This main chat is reserved for system commands.
 
-To chat with OmniWorker, create a new topic using the + button in this bot interface. Each topic works as an independent OmniWorker session.
+To chat with Flux Agent, create a new topic using the + button in this bot interface. Each topic works as an independent Flux Agent session.
 ```
 
 `/new` in root DM does not create a session/topic. Reply:
 
 ```text
-To start a new parallel OmniWorker chat, create a new topic with the + button in this bot interface.
+To start a new parallel Flux Agent chat, create a new topic with the + button in this bot interface.
 
-Each topic is an independent OmniWorker session. Use /new inside a topic only if you want to replace that topic's current session.
+Each topic is an independent Flux Agent session. Use /new inside a topic only if you want to replace that topic's current session.
 ```
 
 ### 2.3 First message in a user-created topic
 
 When a user creates a Telegram topic and sends the first message there:
 
-1. OmniWorker receives a Telegram DM message with `message_thread_id`.
-2. OmniWorker derives the existing thread-aware `session_key` from `(platform=telegram, chat_type=dm, chat_id, thread_id)`.
-3. If no binding exists, OmniWorker creates a fresh OmniWorker session for this topic lane and persists the binding.
+1. Flux Agent receives a Telegram DM message with `message_thread_id`.
+2. Flux Agent derives the existing thread-aware `session_key` from `(platform=telegram, chat_type=dm, chat_id, thread_id)`.
+3. If no binding exists, Flux Agent creates a fresh Flux Agent session for this topic lane and persists the binding.
 4. The message runs through the normal agent loop for that lane.
 
 ### 2.4 `/new` inside a non-main topic
 
 `/new` remains supported but replaces the session attached to the current topic lane.
 
-OmniWorker should warn:
+Flux Agent should warn:
 
 ```text
-Started a new OmniWorker session in this topic.
+Started a new Flux Agent session in this topic.
 
 Tip: for parallel work, create a new topic with the + button instead of using /new here. /new replaces the session attached to the current topic.
 ```
@@ -135,7 +135,7 @@ Example:
 ```text
 Telegram multi-session topics are enabled.
 
-Create new OmniWorker chats with the + button in this bot interface.
+Create new Flux Agent chats with the + button in this bot interface.
 
 Unlinked previous sessions:
 1. 2026-05-01 Research notes — id: abc123
@@ -174,14 +174,14 @@ Behavior:
 5. upsert binding with `managed_mode = restored`;
 6. send two messages into the topic:
    - session restored confirmation;
-   - last OmniWorker assistant message if available.
+   - last Flux Agent assistant message if available.
 
 Example:
 
 ```text
 Session restored: Research notes
 
-Last OmniWorker message:
+Last Flux Agent message:
 ...
 ```
 
@@ -193,7 +193,7 @@ Use SQLite, but topic-mode schema changes are **explicit opt-in migrations**, no
 
 Important rollback-safety rule:
 
-- upgrading OmniWorker and starting the gateway must not create Telegram topic-mode tables or columns;
+- upgrading Flux Agent and starting the gateway must not create Telegram topic-mode tables or columns;
 - old/default Telegram behavior must keep working on the existing `state.db`;
 - the first `/topic` activation path calls an idempotent explicit migration, then enables topic mode for that chat;
 - if activation fails before the migration is needed, the database remains in the pre-topic-mode shape.
@@ -241,7 +241,7 @@ Suggested fields:
 
 ### 3.4 `telegram_dm_topic_bindings`
 
-Stores Telegram topic/thread to OmniWorker session binding. Created only by `apply_telegram_topic_migration()`.
+Stores Telegram topic/thread to Flux Agent session binding. Created only by `apply_telegram_topic_migration()`.
 
 Suggested fields:
 
@@ -337,7 +337,7 @@ Reply with system-lobby instruction. Do not enter agent loop.
 
 ### Normal text non-main topic
 
-Normal OmniWorker agent flow for that topic's session lane.
+Normal Flux Agent agent flow for that topic's session lane.
 
 ---
 
@@ -349,7 +349,7 @@ Normal OmniWorker agent flow for that topic's session lane.
 
 **Files likely touched:**
 
-- `omniworker_state.py`
+- `flux-agent_state.py`
 - tests under `tests/`
 
 **Tests first:**
@@ -408,7 +408,7 @@ Normal OmniWorker agent flow for that topic's session lane.
 2. topic `/topic <id>` switches current topic lane to target session;
 3. restore rejects sessions from other users/chats;
 4. restore rejects already-linked sessions;
-5. restore emits confirmation and last OmniWorker assistant message.
+5. restore emits confirmation and last Flux Agent assistant message.
 
 ### PR 7 — `/new` inside topic updates binding
 
@@ -447,7 +447,7 @@ Run targeted tests after each TDD cycle, then broader tests before completion.
 Suggested commands after inspection confirms test paths:
 
 ```bash
-python -m pytest tests/test_omniworker_state.py -q
+python -m pytest tests/test_flux-agent_state.py -q
 python -m pytest tests/gateway/ -q
 python -m pytest tests/ -o 'addopts=' -q
 ```
@@ -462,11 +462,11 @@ Do not ship without verifying disabled-feature backwards compatibility.
 - Root DM becomes a system lobby after activation.
 - Onboarding message tells users to create new chats with the Telegram `+` button.
 - Onboarding message can be pinned in private chat.
-- User-created topics automatically become independent OmniWorker session lanes.
+- User-created topics automatically become independent Flux Agent session lanes.
 - `/new` in root gives instructions, not a new agent run.
 - `/new` in a topic creates a new session in that topic and warns that `+` is preferred for parallel work.
 - `/topic` in root lists unlinked old sessions.
-- `/topic <session_id>` inside a topic restores that session and sends confirmation + last OmniWorker assistant message.
+- `/topic <session_id>` inside a topic restores that session and sends confirmation + last Flux Agent assistant message.
 - Ownership checks prevent restoring other users' sessions.
 - Already-linked sessions are not restored into a second topic in MVP.
 - Existing Telegram behavior is unchanged when the feature is disabled.

@@ -18,9 +18,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from omniworker_cli.config import get_omniworker_home, get_config_path, load_config, save_config
-from omniworker_constants import get_optional_skills_dir
-from omniworker_cli.setup import (
+from flux-agent_cli.config import get_flux-agent_home, get_config_path, load_config, save_config
+from flux-agent_constants import get_optional_skills_dir
+from flux-agent_cli.setup import (
     Colors,
     color,
     print_header,
@@ -44,7 +44,7 @@ _OPENCLAW_SCRIPT = (
 
 # Fallback: user may have installed the skill from the Hub
 _OPENCLAW_SCRIPT_INSTALLED = (
-    get_omniworker_home()
+    get_flux-agent_home()
     / "skills"
     / "migration"
     / "openclaw-migration"
@@ -134,7 +134,7 @@ def _warn_if_openclaw_running(auto_yes: bool) -> None:
     print_info(
         "Messaging platforms (Telegram, Discord, Slack) only allow one "
         "active session per bot token. If you continue, both OpenClaw and "
-        "OmniWorker may try to use the same token, causing disconnects."
+        "Flux Agent may try to use the same token, causing disconnects."
     )
     print_info("Recommendation: stop OpenClaw before migrating.")
     print()
@@ -149,7 +149,7 @@ def _warn_if_openclaw_running(auto_yes: bool) -> None:
 
 
 def _warn_if_gateway_running(auto_yes: bool) -> None:
-    """Check if a OmniWorker gateway is running with connected platforms.
+    """Check if a Flux Agent gateway is running with connected platforms.
 
     Migrating bot tokens while the gateway is polling will cause conflicts
     (e.g. Telegram 409 "terminated by other getUpdates request"). Warn the
@@ -169,7 +169,7 @@ def _warn_if_gateway_running(auto_yes: bool) -> None:
 
     print()
     print_error(
-        "OmniWorker gateway is running with active connections: "
+        "Flux Agent gateway is running with active connections: "
         + ", ".join(connected)
     )
     print_info(
@@ -304,14 +304,14 @@ def claw_command(args):
         print("Usage: hermes claw <command> [options]")
         print()
         print("Commands:")
-        print("  migrate          Migrate settings from OpenClaw to OmniWorker")
+        print("  migrate          Migrate settings from OpenClaw to Flux Agent")
         print("  cleanup          Archive leftover OpenClaw directories after migration")
         print()
         print("Run 'hermes claw <command> --help' for options.")
 
 
 def _cmd_migrate(args):
-    """Run the OpenClaw → OmniWorker migration."""
+    """Run the OpenClaw → Flux Agent migration."""
     # Check current and legacy OpenClaw directories
     explicit_source = getattr(args, "source", None)
     if explicit_source:
@@ -348,7 +348,7 @@ def _cmd_migrate(args):
     )
     print(
         color(
-            "│          ⚕ OmniWorker — OpenClaw Migration                 │",
+            "│          ⚕ Flux Agent — OpenClaw Migration                 │",
             Colors.MAGENTA,
         )
     )
@@ -379,12 +379,12 @@ def _cmd_migrate(args):
         return
 
     # Show what we're doing
-    omniworker_home = get_omniworker_home()
+    flux-agent_home = get_flux-agent_home()
     auto_yes = getattr(args, "yes", False)
     print()
     print_header("Migration Settings")
     print_info(f"Source:      {source_dir}")
-    print_info(f"Target:      {omniworker_home}")
+    print_info(f"Target:      {flux-agent_home}")
     print_info(f"Preset:      {preset}")
     print_info(f"Overwrite:   {'yes' if overwrite else 'no (skip conflicts)'}")
     print_info(f"Secrets:     {'yes (allowlisted only)' if migrate_secrets else 'no'}")
@@ -398,7 +398,7 @@ def _cmd_migrate(args):
     # active will cause conflicts (e.g. Telegram 409).
     _warn_if_openclaw_running(auto_yes)
 
-    # Check if a OmniWorker gateway is running with connected platforms.
+    # Check if a Flux Agent gateway is running with connected platforms.
     _warn_if_gateway_running(auto_yes)
 
     # Ensure config.yaml exists before migration tries to read it
@@ -425,7 +425,7 @@ def _cmd_migrate(args):
     try:
         preview = mod.Migrator(
             source_root=source_dir.resolve(),
-            target_root=omniworker_home.resolve(),
+            target_root=flux-agent_home.resolve(),
             execute=False,
             workspace_target=ws_target,
             overwrite=overwrite,
@@ -498,8 +498,8 @@ def _cmd_migrate(args):
             print_info("Migration cancelled.")
             return
 
-    # ── Phase 2b: Pre-apply backup of the OmniWorker home ─────────
-    # Delegates to omniworker_cli.backup.create_pre_migration_backup(), which
+    # ── Phase 2b: Pre-apply backup of the Flux Agent home ─────────
+    # Delegates to flux-agent_cli.backup.create_pre_migration_backup(), which
     # shares implementation with the pre-update backup (same exclusion
     # rules, same SQLite safe-copy, zip format) so the archive is
     # restorable with `hermes import`.  Mirrors OpenClaw's
@@ -508,8 +508,8 @@ def _cmd_migrate(args):
     backup_archive: Optional[Path] = None
     if not no_backup:
         try:
-            from omniworker_cli.backup import create_pre_migration_backup, _format_size
-            backup_archive = create_pre_migration_backup(omniworker_home=omniworker_home)
+            from flux-agent_cli.backup import create_pre_migration_backup, _format_size
+            backup_archive = create_pre_migration_backup(flux-agent_home=flux-agent_home)
             if backup_archive:
                 size_str = _format_size(backup_archive.stat().st_size)
                 print()
@@ -519,7 +519,7 @@ def _cmd_migrate(args):
             print()
             print_error(f"Could not create pre-migration backup: {e}")
             print_info(
-                "Re-run with --no-backup to skip, or free up disk space under the OmniWorker home."
+                "Re-run with --no-backup to skip, or free up disk space under the Flux Agent home."
             )
             logger.debug("Pre-migration backup error", exc_info=True)
             return
@@ -527,7 +527,7 @@ def _cmd_migrate(args):
     try:
         migrator = mod.Migrator(
             source_root=source_dir.resolve(),
-            target_root=omniworker_home.resolve(),
+            target_root=flux-agent_home.resolve(),
             execute=True,
             workspace_target=ws_target,
             overwrite=overwrite,
@@ -574,7 +574,7 @@ def _cmd_cleanup(args):
     )
     print(
         color(
-            "│          ⚕ OmniWorker — OpenClaw Cleanup                   │",
+            "│          ⚕ Flux Agent — OpenClaw Cleanup                   │",
             Colors.MAGENTA,
         )
     )

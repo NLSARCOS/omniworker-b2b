@@ -1,6 +1,6 @@
 """
 SQLite-backed fact store with entity resolution and trust scoring.
-Single-user OmniWorker memory store plugin.
+Single-user Flux Agent memory store plugin.
 """
 
 import re
@@ -105,8 +105,8 @@ class MemoryStore:
         hrr_dim: int = 1024,
     ) -> None:
         if db_path is None:
-            from omniworker_constants import get_omniworker_home
-            db_path = str(get_omniworker_home() / "memory_store.db")
+            from flux-agent_constants import get_flux-agent_home
+            db_path = str(get_flux-agent_home() / "memory_store.db")
         self.db_path = Path(db_path).expanduser()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.default_trust = _clamp_trust(default_trust)
@@ -128,9 +128,9 @@ class MemoryStore:
     def _init_db(self) -> None:
         """Create tables, indexes, and triggers if they do not exist. Enable WAL mode."""
         # Use the shared WAL-fallback helper so memory_store.db degrades
-        # gracefully on NFS/SMB/FUSE-mounted OMNIWORKER_HOME (same issue as
-        # state.db / kanban.db — see omniworker_state._WAL_INCOMPAT_MARKERS).
-        from omniworker_state import apply_wal_with_fallback
+        # gracefully on NFS/SMB/FUSE-mounted FLUX AGENT_HOME (same issue as
+        # state.db / kanban.db — see flux-agent_state._WAL_INCOMPAT_MARKERS).
+        from flux-agent_state import apply_wal_with_fallback
         apply_wal_with_fallback(self._conn, db_label="memory_store.db (holographic)")
         self._conn.executescript(_SCHEMA)
         # Migrate: add hrr_vector column if missing (safe for existing databases)

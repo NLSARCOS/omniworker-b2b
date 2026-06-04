@@ -1,5 +1,5 @@
 import { useState } from "react";
-import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
+import Flux AgentLogo from "../../components/common/Flux AgentLogo";
 import {
   ArrowRight,
   Refresh,
@@ -56,13 +56,13 @@ function Welcome({
     setRemoteTesting(true);
     setRemoteError(null);
     try {
-      const ok = await window.omniworkerAPI.testRemoteConnection(url, key);
+      const ok = await window.flux-agentAPI.testRemoteConnection(url, key);
       if (ok) {
-        await window.omniworkerAPI.setConnectionConfig("remote", url, key);
+        await window.flux-agentAPI.setConnectionConfig("remote", url, key);
         onRecheck();
       } else {
         setRemoteError(
-          "Could not reach OmniWorker at this URL. Check the URL and API key.\n\nLeave the key empty if the server accepts unauthenticated requests (e.g. via SSH tunnel to localhost).",
+          "Could not reach Flux Agent at this URL. Check the URL and API key.\n\nLeave the key empty if the server accepts unauthenticated requests (e.g. via SSH tunnel to localhost).",
         );
       }
     } catch {
@@ -84,7 +84,7 @@ function Welcome({
     setSshTesting(true);
     setSshError(null);
     try {
-      const ok = await window.omniworkerAPI.testSshConnection(
+      const ok = await window.flux-agentAPI.testSshConnection(
         host,
         port,
         user,
@@ -92,7 +92,7 @@ function Welcome({
         remotePort,
       );
       if (ok) {
-        await window.omniworkerAPI.setSshConfig(
+        await window.flux-agentAPI.setSshConfig(
           host,
           port,
           user,
@@ -103,7 +103,7 @@ function Welcome({
         onRecheck();
       } else {
         setSshError(
-          "Could not connect via SSH or reach OmniWorker on the remote. Make sure:\n• SSH key is correct (or default ~/.ssh/id_rsa works)\n• OmniWorker gateway is running on the remote\n• The remote port is correct (default 8642)",
+          "Could not connect via SSH or reach Flux Agent on the remote. Make sure:\n• SSH key is correct (or default ~/.ssh/id_rsa works)\n• Flux Agent gateway is running on the remote\n• The remote port is correct (default 8642)",
         );
       }
     } catch (e) {
@@ -116,7 +116,7 @@ function Welcome({
   if (panel === "remote") {
     return (
       <div className="screen welcome-screen">
-        <OmniWorkerLogo size={36} />
+        <Flux AgentLogo size={36} />
         <h1 className="welcome-title" style={{ fontSize: 22 }}>
           {t("welcome.connectRemoteTitle")}
         </h1>
@@ -196,12 +196,12 @@ function Welcome({
   if (panel === "ssh") {
     return (
       <div className="screen welcome-screen">
-        <OmniWorkerLogo size={36} />
+        <Flux AgentLogo size={36} />
         <h1 className="welcome-title" style={{ fontSize: 22 }}>
           Connect via SSH
         </h1>
         <p className="welcome-subtitle" style={{ marginBottom: 24 }}>
-          Tunnel to a remote OmniWorker over SSH — no exposed ports or API keys
+          Tunnel to a remote Flux Agent over SSH — no exposed ports or API keys
           needed.
         </p>
 
@@ -236,7 +236,7 @@ function Welcome({
           <input
             type="text"
             className="welcome-remote-input"
-            placeholder="omniworker"
+            placeholder="flux-agent"
             value={sshUser}
             onChange={(e) => setSshUser(e.target.value)}
           />
@@ -256,7 +256,7 @@ function Welcome({
           />
 
           <label className="welcome-remote-label" style={{ marginTop: 12 }}>
-            Remote OmniWorker Port{" "}
+            Remote Flux Agent Port{" "}
             <span style={{ fontWeight: 400, opacity: 0.6 }}>
               (default 8642)
             </span>
@@ -321,7 +321,7 @@ function Welcome({
 
   return (
     <div className="screen welcome-screen">
-      <OmniWorkerLogo size={40} />
+      <Flux AgentLogo size={40} />
 
       {error ? (
         <>
@@ -383,7 +383,7 @@ function Welcome({
               onClick={() => setPanel("remote")}
             >
               <Globe size={16} />
-              Connect to Remote OmniWorker
+              Connect to Remote Flux Agent
             </button>
           </div>
         </>

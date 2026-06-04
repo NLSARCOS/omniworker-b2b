@@ -6,7 +6,7 @@ import { tmpdir } from "os";
 // We test the extracted pure functions by importing them.
 // Some functions depend on OMNIWORKER_HOME — we mock the module-level constants.
 
-const TEST_DIR = join(tmpdir(), `omniworker-test-${Date.now()}`);
+const TEST_DIR = join(tmpdir(), `flux-agent-test-${Date.now()}`);
 
 beforeEach(() => {
   mkdirSync(TEST_DIR, { recursive: true });

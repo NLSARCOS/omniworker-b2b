@@ -121,7 +121,7 @@ export const opsCommands: SlashCommand[] = [
   },
 
   {
-    help: 're-read ~/.omniworker/.env into the running gateway (CLI parity)',
+    help: 're-read ~/.flux-agent/.env into the running gateway (CLI parity)',
     name: 'reload',
     run: (_arg, ctx) => {
       ctx.gateway

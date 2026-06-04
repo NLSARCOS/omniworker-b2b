@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 from contextvars import ContextVar
 from typing import Iterable
-from omniworker_cli.config import cfg_get
+from flux-agent_cli.config import cfg_get
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +46,8 @@ _config_passthrough: frozenset[str] | None = None
 
 
 def _is_hermes_provider_credential(name: str) -> bool:
-    """True if ``name`` is a OmniWorker-managed provider credential (API key,
-    token, or similar) per ``_OMNIWORKER_PROVIDER_ENV_BLOCKLIST``.
+    """True if ``name`` is a Flux Agent-managed provider credential (API key,
+    token, or similar) per ``_FLUX AGENT_PROVIDER_ENV_BLOCKLIST``.
 
     Skill-declared ``required_environment_variables`` frontmatter must
     not be able to override this list — that was the bypass in
@@ -56,15 +56,15 @@ def _is_hermes_provider_credential(name: str) -> bool:
     the credential in the ``execute_code`` child process, defeating the
     sandbox's scrubbing guarantee.
 
-    Non-OmniWorker API keys (TENOR_API_KEY, NOTION_TOKEN, etc.) are NOT
+    Non-Flux Agent API keys (TENOR_API_KEY, NOTION_TOKEN, etc.) are NOT
     in the blocklist and remain legitimately registerable — skills that
     wrap third-party APIs still work.
     """
     try:
-        from tools.environments.local import _OMNIWORKER_PROVIDER_ENV_BLOCKLIST
+        from tools.environments.local import _FLUX AGENT_PROVIDER_ENV_BLOCKLIST
     except Exception:
         return False
-    return name in _OMNIWORKER_PROVIDER_ENV_BLOCKLIST
+    return name in _FLUX AGENT_PROVIDER_ENV_BLOCKLIST
 
 
 def register_env_passthrough(var_names: Iterable[str]) -> None:
@@ -72,15 +72,15 @@ def register_env_passthrough(var_names: Iterable[str]) -> None:
 
     Typically called when a skill declares ``required_environment_variables``.
 
-    Variables that are OmniWorker-managed provider credentials (from
-    ``_OMNIWORKER_PROVIDER_ENV_BLOCKLIST``) are rejected here to preserve
+    Variables that are Flux Agent-managed provider credentials (from
+    ``_FLUX AGENT_PROVIDER_ENV_BLOCKLIST``) are rejected here to preserve
     the ``execute_code`` sandbox's credential-scrubbing guarantee per
-    GHSA-rhgp-j443-p4rf. A skill that needs to talk to a OmniWorker-managed
+    GHSA-rhgp-j443-p4rf. A skill that needs to talk to a Flux Agent-managed
     provider should do so via the agent's main-process tools (web_search,
     web_extract, etc.) where the credential remains safely in the main
     process.
 
-    Non-OmniWorker third-party API keys (TENOR_API_KEY, NOTION_TOKEN, etc.)
+    Non-Flux Agent third-party API keys (TENOR_API_KEY, NOTION_TOKEN, etc.)
     pass through normally — they were never in the sandbox scrub list.
     """
     for name in var_names:
@@ -89,8 +89,8 @@ def register_env_passthrough(var_names: Iterable[str]) -> None:
             continue
         if _is_hermes_provider_credential(name):
             logger.warning(
-                "env passthrough: refusing to register OmniWorker provider "
-                "credential %r (blocked by _OMNIWORKER_PROVIDER_ENV_BLOCKLIST). "
+                "env passthrough: refusing to register Flux Agent provider "
+                "credential %r (blocked by _FLUX AGENT_PROVIDER_ENV_BLOCKLIST). "
                 "Skills must not override the execute_code sandbox's "
                 "credential scrubbing; see GHSA-rhgp-j443-p4rf.",
                 name,
@@ -108,7 +108,7 @@ def _load_config_passthrough() -> frozenset[str]:
 
     result: set[str] = set()
     try:
-        from omniworker_cli.config import read_raw_config
+        from flux-agent_cli.config import read_raw_config
         cfg = read_raw_config()
         passthrough = cfg_get(cfg, "terminal", "env_passthrough")
         if isinstance(passthrough, list):

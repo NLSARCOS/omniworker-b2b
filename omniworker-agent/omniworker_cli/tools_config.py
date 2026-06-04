@@ -1,5 +1,5 @@
 """
-Unified tool configuration for OmniWorker Agent.
+Unified tool configuration for Flux Agent Agent.
 
 `hermes tools` and `hermes setup tools` both enter this module.
 Select a platform → toggle toolsets on/off → for newly enabled tools
@@ -19,12 +19,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 
-from omniworker_cli.config import (
+from flux-agent_cli.config import (
     cfg_get,
     load_config, save_config, get_env_value, save_env_value,
 )
-from omniworker_cli.colors import Colors, color
-from omniworker_cli.nous_subscription import (
+from flux-agent_cli.colors import Colors, color
+from flux-agent_cli.nous_subscription import (
     apply_nous_managed_defaults,
     get_nous_subscription_features,
 )
@@ -38,7 +38,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 # ─── UI Helpers (shared with setup.py) ────────────────────────────────────────
 
-from omniworker_cli.cli_output import (  # noqa: E402 — late import block
+from flux-agent_cli.cli_output import (  # noqa: E402 — late import block
     print_error as _print_error,
     print_info as _print_info,
     print_success as _print_success,
@@ -81,7 +81,7 @@ CONFIGURABLE_TOOLSETS = [
 ]
 
 # Toolsets that are OFF by default for new installs.
-# They're still in _OMNIWORKER_CORE_TOOLS (available at runtime if enabled),
+# They're still in _FLUX AGENT_CORE_TOOLS (available at runtime if enabled),
 # but the setup checklist won't pre-select them for first-time users.
 #
 # Video gen is off by default — it's a niche, paid, slow feature. Users
@@ -107,7 +107,7 @@ def _xai_credentials_present() -> bool:
     gates schema registration if creds later expire or get revoked.
     """
     try:
-        from omniworker_cli.auth import _read_xai_oauth_tokens
+        from flux-agent_cli.auth import _read_xai_oauth_tokens
 
         _read_xai_oauth_tokens()
         return True
@@ -158,7 +158,7 @@ def _get_effective_configurable_toolsets():
     result = list(CONFIGURABLE_TOOLSETS)
     seen = {ts_key for ts_key, _, _ in result}
     try:
-        from omniworker_cli.plugins import discover_plugins, get_plugin_toolsets
+        from flux-agent_cli.plugins import discover_plugins, get_plugin_toolsets
         discover_plugins()  # idempotent — ensures plugins are loaded
         for entry in get_plugin_toolsets():
             if entry[0] in seen:
@@ -173,7 +173,7 @@ def _get_effective_configurable_toolsets():
 def _get_plugin_toolset_keys() -> set:
     """Return the set of toolset keys provided by plugins."""
     try:
-        from omniworker_cli.plugins import discover_plugins, get_plugin_toolsets
+        from flux-agent_cli.plugins import discover_plugins, get_plugin_toolsets
         discover_plugins()  # idempotent — ensures plugins are loaded
         return {ts_key for ts_key, _, _ in get_plugin_toolsets()}
     except Exception:
@@ -182,7 +182,7 @@ def _get_plugin_toolset_keys() -> set:
 # Platform display config — derived from the canonical registry so every
 # module shares the same data.  Kept as dict-of-dicts for backward
 # compatibility with existing ``PLATFORMS[key]["label"]`` access patterns.
-from omniworker_cli.platforms import PLATFORMS as _PLATFORMS_REGISTRY
+from flux-agent_cli.platforms import PLATFORMS as _PLATFORMS_REGISTRY
 
 PLATFORMS = {
     k: {"label": info.label, "default_toolset": info.default_toolset}
@@ -346,7 +346,7 @@ TOOL_CATEGORIES = {
         "name": "X (Twitter) Search",
         "setup_title": "Select xAI Credential Source",
         "setup_note": (
-            "OmniWorker routes X searches through xAI's built-in x_search "
+            "Flux Agent routes X searches through xAI's built-in x_search "
             "Responses tool. Both credential sources hit the same "
             "https://api.x.ai/v1/responses endpoint — pick whichever you "
             "already have. SuperGrok OAuth is preferred when both are set "
@@ -462,7 +462,7 @@ TOOL_CATEGORIES = {
                 ),
                 "env_vars": [
                     # cua-driver reads HOME/TMPDIR from the process env, no
-                    # extra keys required. OMNIWORKER_CUA_DRIVER_VERSION is an
+                    # extra keys required. FLUX AGENT_CUA_DRIVER_VERSION is an
                     # optional pin for reproducibility across macOS updates.
                 ],
                 "post_setup": "cua_driver",
@@ -663,7 +663,7 @@ def _run_cua_driver_installer(label: str = "Installing", verbose: bool = True) -
                 _print_info("    IMPORTANT — grant macOS permissions now:")
                 _print_info("      System Settings > Privacy & Security > Accessibility")
                 _print_info("      System Settings > Privacy & Security > Screen Recording")
-                _print_info("    Both must allow the terminal / OmniWorker process.")
+                _print_info("    Both must allow the terminal / Flux Agent process.")
             return True
         _print_warning(f"    cua-driver {label.lower()} did not complete. Re-run manually:")
         _print_info(f"      {install_cmd}")
@@ -698,8 +698,8 @@ def _run_post_setup(post_setup_key: str):
             if result.returncode == 0:
                 _print_success("    Node.js dependencies installed")
             else:
-                from omniworker_constants import display_omniworker_home
-                _print_warning(f"    npm install failed - run manually: cd {display_omniworker_home()}/hermes-agent && npm install")
+                from flux-agent_constants import display_flux-agent_home
+                _print_warning(f"    npm install failed - run manually: cd {display_flux-agent_home()}/hermes-agent && npm install")
                 if result.stderr:
                     _print_info(f"      {result.stderr.strip()[:200]}")
         elif not node_modules.exists():
@@ -909,7 +909,7 @@ def _run_post_setup(post_setup_key: str):
         # already have an app, it skips the wizard and just does OAuth.
         from types import SimpleNamespace
         try:
-            from omniworker_cli.auth import login_spotify_command
+            from flux-agent_cli.auth import login_spotify_command
         except Exception as exc:
             _print_warning(f"    Could not load Spotify auth: {exc}")
             _print_info("    Run manually: hermes auth spotify")
@@ -938,7 +938,7 @@ def _run_post_setup(post_setup_key: str):
         # console.x.ai. The picker entries declare empty env_vars so we
         # drive the full auth UX here.
         try:
-            from omniworker_cli.auth import get_xai_oauth_auth_status
+            from flux-agent_cli.auth import get_xai_oauth_auth_status
             oauth_logged_in = bool(get_xai_oauth_auth_status().get("logged_in"))
         except Exception:
             oauth_logged_in = False
@@ -955,12 +955,12 @@ def _run_post_setup(post_setup_key: str):
 
         _print_info("    xAI needs credentials. Choose one:")
         try:
-            from omniworker_cli.setup import (
+            from flux-agent_cli.setup import (
                 _run_xai_oauth_login_from_setup,
                 prompt_choice,
                 prompt as _setup_prompt,
             )
-            from omniworker_cli.config import save_env_value
+            from flux-agent_cli.config import save_env_value
         except Exception as exc:
             _print_warning(f"    Could not load setup helpers: {exc}")
             _print_info("    Run later: hermes auth add xai-oauth   (or set XAI_API_KEY)")
@@ -1081,7 +1081,7 @@ def _get_platform_tools(
     # If the saved list contains any configurable keys directly, the user
     # has explicitly configured this platform — use direct membership.
     # This avoids the subset-inference bug where composite toolsets like
-    # "hermes-cli" (which include all _OMNIWORKER_CORE_TOOLS) cause disabled
+    # "hermes-cli" (which include all _FLUX AGENT_CORE_TOOLS) cause disabled
     # toolsets to re-appear as enabled.
     has_explicit_config = any(ts in configurable_keys for ts in toolset_names)
 
@@ -1379,7 +1379,7 @@ def _toolset_has_keys(ts_key: str, config: dict = None) -> bool:
 
 def _prompt_choice(question: str, choices: list, default: int = 0) -> int:
     """Single-select menu (arrow keys). Delegates to curses_radiolist."""
-    from omniworker_cli.curses_ui import curses_radiolist
+    from flux-agent_cli.curses_ui import curses_radiolist
     return curses_radiolist(question, choices, selected=default, cancel_returns=default)
 
 
@@ -1433,7 +1433,7 @@ def _estimate_tool_tokens() -> Dict[str, int]:
 
 def _prompt_toolset_checklist(platform_label: str, enabled: Set[str], platform: str = "cli") -> Set[str]:
     """Multi-select checklist of toolsets. Returns set of selected toolset keys."""
-    from omniworker_cli.curses_ui import curses_checklist
+    from flux-agent_cli.curses_ui import curses_checklist
     from toolsets import resolve_toolset
 
     # Pre-compute per-tool token counts (cached after first call).
@@ -1515,7 +1515,7 @@ def _plugin_image_gen_providers() -> list[dict]:
     """
     try:
         from agent.image_gen_registry import list_providers
-        from omniworker_cli.plugins import _ensure_plugins_discovered
+        from flux-agent_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = list_providers()
@@ -1556,7 +1556,7 @@ def _plugin_video_gen_providers() -> list[dict]:
     """
     try:
         from agent.video_gen_registry import list_providers
-        from omniworker_cli.plugins import _ensure_plugins_discovered
+        from flux-agent_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = list_providers()
@@ -1609,7 +1609,7 @@ def _plugin_web_search_providers() -> list[dict]:
     """
     try:
         from agent.web_search_registry import list_providers as _list_web_providers
-        from omniworker_cli.plugins import _ensure_plugins_discovered
+        from flux-agent_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = _list_web_providers()
@@ -1664,7 +1664,7 @@ def _plugin_browser_providers() -> list[dict]:
     """
     try:
         from agent.browser_registry import list_providers as _list_browser_providers
-        from omniworker_cli.plugins import _ensure_plugins_discovered
+        from flux-agent_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         providers = _list_browser_providers()
@@ -1799,7 +1799,7 @@ def _toolset_needs_configuration_prompt(ts_key: str, config: dict) -> bool:
             return False
         try:
             from agent.image_gen_registry import list_providers
-            from omniworker_cli.plugins import _ensure_plugins_discovered
+            from flux-agent_cli.plugins import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             for provider in list_providers():
@@ -1816,7 +1816,7 @@ def _toolset_needs_configuration_prompt(ts_key: str, config: dict) -> bool:
         # available — no in-tree fallback (every backend is a plugin).
         try:
             from agent.video_gen_registry import list_providers
-            from omniworker_cli.plugins import _ensure_plugins_discovered
+            from flux-agent_cli.plugins import _ensure_plugins_discovered
 
             _ensure_plugins_discovered()
             for provider in list_providers():
@@ -2083,7 +2083,7 @@ def _plugin_image_gen_catalog(plugin_name: str):
     """
     try:
         from agent.image_gen_registry import get_provider
-        from omniworker_cli.plugins import _ensure_plugins_discovered
+        from flux-agent_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         provider = get_provider(plugin_name)
@@ -2178,7 +2178,7 @@ def _plugin_video_gen_catalog(plugin_name: str):
     """
     try:
         from agent.video_gen_registry import get_provider
-        from omniworker_cli.plugins import _ensure_plugins_discovered
+        from flux-agent_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
         provider = get_provider(plugin_name)
@@ -2729,7 +2729,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                 print(color("    (none enabled)", Colors.DIM))
         print()
         return
-    print(color("⚕ OmniWorker Tool Configuration", Colors.CYAN, Colors.BOLD))
+    print(color("⚕ Flux Agent Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
     print(color("  Guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))
@@ -2924,8 +2924,8 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
         platform_choices[idx] = f"Configure {pinfo['label']}  ({new_count}/{total} enabled)"
 
     print()
-    from omniworker_constants import display_omniworker_home
-    print(color(f"  Tool configuration saved to {display_omniworker_home()}/config.yaml", Colors.DIM))
+    from flux-agent_constants import display_flux-agent_home
+    print(color(f"  Tool configuration saved to {display_flux-agent_home()}/config.yaml", Colors.DIM))
     print(color("  Changes take effect on next 'hermes' or gateway restart.", Colors.DIM))
     print()
 
@@ -2940,7 +2940,7 @@ def _configure_mcp_tools_interactive(config: dict):
     a per-server curses checklist.  Writes changes back as ``tools.exclude``
     entries in config.yaml.
     """
-    from omniworker_cli.curses_ui import curses_checklist
+    from flux-agent_cli.curses_ui import curses_checklist
 
     mcp_servers = config.get("mcp_servers") or {}
     if not mcp_servers:

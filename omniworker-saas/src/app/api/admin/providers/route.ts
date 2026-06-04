@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getHealthyModels, getAllHealthyModels } from "@/lib/provider-health";
 
 const PROVIDER_OPTIONS = [
   { id: "openai",      label: "OpenAI",        baseUrl: null },
@@ -85,6 +86,23 @@ export async function GET(request: Request) {
     orderBy: [{ provider: "asc" }, { priority: "asc" }],
   });
 
+  // Fetch model health status for all providers
+  let modelHealth: Record<string, { status: string; latencyMs: number | null; lastCheckedAt: string; lastError?: string }> = {};
+  try {
+    const healthyMap = await getAllHealthyModels(prisma);
+    const allHealthRecords = await prisma.providerModelHealth.findMany();
+    for (const record of allHealthRecords) {
+      modelHealth[`${record.providerId}:${record.modelId}`] = {
+        status: record.status,
+        latencyMs: record.latencyMs,
+        lastCheckedAt: record.lastCheckedAt.toISOString(),
+        ...(record.lastError ? { lastError: record.lastError } : {}),
+      };
+    }
+  } catch (healthErr) {
+    console.warn("[AdminProviders] Failed to fetch model health:", healthErr);
+  }
+
   return NextResponse.json({
     providers: providers.map((p) => ({
       ...p,
@@ -94,6 +112,7 @@ export async function GET(request: Request) {
     availableProviders: PROVIDER_OPTIONS,
     openCodeGoTiers: OPENCODE_GO_TIERS,
     stepfunModels: STEPFUN_MODELS,
+    modelHealth,
   });
 }
 

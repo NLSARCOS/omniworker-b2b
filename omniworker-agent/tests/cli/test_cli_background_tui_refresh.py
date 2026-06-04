@@ -10,12 +10,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from cli import OmniWorkerCLI
+from cli import Flux AgentCLI
 
 
 def _make_cli():
-    """Create a minimal OmniWorkerCLI instance for testing."""
-    cli_obj = OmniWorkerCLI.__new__(OmniWorkerCLI)
+    """Create a minimal Flux AgentCLI instance for testing."""
+    cli_obj = Flux AgentCLI.__new__(Flux AgentCLI)
     cli_obj.model = "test-model"
     cli_obj._background_tasks = {}
     cli_obj._background_task_counter = 0

@@ -18,10 +18,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    omniworker_home = tmp_path / ".omniworker"
-    omniworker_home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
-    yield omniworker_home
+    flux-agent_home = tmp_path / ".flux-agent"
+    flux-agent_home.mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    yield flux-agent_home
 
 
 # ---------------------------------------------------------------------------

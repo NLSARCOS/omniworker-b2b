@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from omniworker_cli.status import show_status
+from flux-agent_cli.status import show_status
 
 
 def test_show_status_includes_tavily_key(monkeypatch, capsys, tmp_path):
@@ -15,14 +15,14 @@ def test_show_status_includes_tavily_key(monkeypatch, capsys, tmp_path):
 
 
 def test_show_status_termux_gateway_section_skips_systemctl(monkeypatch, capsys, tmp_path):
-    from omniworker_cli import status as status_mod
-    import omniworker_cli.auth as auth_mod
-    import omniworker_cli.gateway as gateway_mod
+    from flux-agent_cli import status as status_mod
+    import flux-agent_cli.auth as auth_mod
+    import flux-agent_cli.gateway as gateway_mod
 
     monkeypatch.setenv("TERMUX_VERSION", "0.118.3")
     monkeypatch.setenv("PREFIX", "/data/data/com.termux/files/usr")
     monkeypatch.setattr(status_mod, "get_env_path", lambda: tmp_path / ".env", raising=False)
-    monkeypatch.setattr(status_mod, "get_omniworker_home", lambda: tmp_path, raising=False)
+    monkeypatch.setattr(status_mod, "get_flux-agent_home", lambda: tmp_path, raising=False)
     monkeypatch.setattr(status_mod, "load_config", lambda: {"model": "gpt-5.4"}, raising=False)
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "openai-codex", raising=False)
@@ -40,17 +40,17 @@ def test_show_status_termux_gateway_section_skips_systemctl(monkeypatch, capsys,
 
     output = capsys.readouterr().out
     assert "Manager:      Termux / manual process" in output
-    assert "Start with:   omniworker gateway" in output
+    assert "Start with:   flux-agent gateway" in output
     assert "systemd (user)" not in output
 
 
 def test_show_status_reports_nous_auth_error(monkeypatch, capsys, tmp_path):
-    from omniworker_cli import status as status_mod
-    import omniworker_cli.auth as auth_mod
-    import omniworker_cli.gateway as gateway_mod
+    from flux-agent_cli import status as status_mod
+    import flux-agent_cli.auth as auth_mod
+    import flux-agent_cli.gateway as gateway_mod
 
     monkeypatch.setattr(status_mod, "get_env_path", lambda: tmp_path / ".env", raising=False)
-    monkeypatch.setattr(status_mod, "get_omniworker_home", lambda: tmp_path, raising=False)
+    monkeypatch.setattr(status_mod, "get_flux-agent_home", lambda: tmp_path, raising=False)
     monkeypatch.setattr(status_mod, "load_config", lambda: {"model": "gpt-5.4"}, raising=False)
     monkeypatch.setattr(status_mod, "resolve_requested_provider", lambda requested=None: "openai-codex", raising=False)
     monkeypatch.setattr(status_mod, "resolve_provider", lambda requested=None, **kwargs: "openai-codex", raising=False)
@@ -60,7 +60,7 @@ def test_show_status_reports_nous_auth_error(monkeypatch, capsys, tmp_path):
         "get_nous_auth_status",
         lambda: {
             "logged_in": False,
-            "portal_base_url": "https://portal.omniworker.com",
+            "portal_base_url": "https://portal.flux-agent.com",
             "access_expires_at": "2026-04-20T01:00:51+00:00",
             "agent_key_expires_at": "2026-04-20T04:54:24+00:00",
             "has_refresh_token": True,
@@ -75,16 +75,16 @@ def test_show_status_reports_nous_auth_error(monkeypatch, capsys, tmp_path):
     status_mod.show_status(SimpleNamespace(all=False, deep=False))
 
     output = capsys.readouterr().out
-    assert "Nous Portal   ✗ not logged in (run: omniworker auth add nous --type oauth)" in output
+    assert "Nous Portal   ✗ not logged in (run: flux-agent auth add nous --type oauth)" in output
     assert "Error:      Refresh session has been revoked" in output
     assert "Access exp:" in output
     assert "Key exp:" in output
 
 
 def test_show_status_reports_vercel_backend_contract(monkeypatch, capsys, tmp_path):
-    from omniworker_cli import status as status_mod
-    import omniworker_cli.auth as auth_mod
-    import omniworker_cli.gateway as gateway_mod
+    from flux-agent_cli import status as status_mod
+    import flux-agent_cli.auth as auth_mod
+    import flux-agent_cli.gateway as gateway_mod
 
     monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
     monkeypatch.setenv("TERMINAL_ENV", "vercel_sandbox")

@@ -1,13 +1,13 @@
 """Regression tests for the /model picker's credential-discovery paths.
 
 Covers:
- - Normal path (tokens already in OmniWorker auth store)
+ - Normal path (tokens already in Flux Agent auth store)
  - Claude Code fallback (tokens only in ~/.claude/.credentials.json)
  - Negative case (no credentials anywhere)
 
-Note: auto-import from ~/.codex/auth.json was removed in #12360 — OmniWorker
+Note: auto-import from ~/.codex/auth.json was removed in #12360 — Flux Agent
 now owns its own openai-codex auth state, and users explicitly adopt
-existing Codex CLI tokens via `omniworker auth openai-codex`. The old
+existing Codex CLI tokens via `flux-agent auth openai-codex`. The old
 "Codex CLI shared file" discovery tests were removed with that change.
 """
 
@@ -32,16 +32,16 @@ def _make_fake_jwt(expiry_offset: int = 3600) -> str:
 
 
 @pytest.fixture()
-def omniworker_auth_only_env(tmp_path, monkeypatch):
-    """Tokens already in OmniWorker auth store (no Codex CLI needed)."""
-    omniworker_home = tmp_path / ".omniworker"
-    omniworker_home.mkdir()
+def flux-agent_auth_only_env(tmp_path, monkeypatch):
+    """Tokens already in Flux Agent auth store (no Codex CLI needed)."""
+    flux-agent_home = tmp_path / ".flux-agent"
+    flux-agent_home.mkdir()
 
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
     # Point CODEX_HOME to nonexistent dir to prove it's not needed
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "no_codex"))
 
-    (omniworker_home / "auth.json").write_text(json.dumps({
+    (flux-agent_home / "auth.json").write_text(json.dumps({
         "version": 2,
         "providers": {
             "openai-codex": {
@@ -60,12 +60,12 @@ def omniworker_auth_only_env(tmp_path, monkeypatch):
     ]:
         monkeypatch.delenv(var, raising=False)
 
-    return omniworker_home
+    return flux-agent_home
 
 
-def test_normal_path_still_works(omniworker_auth_only_env):
-    """openai-codex appears when tokens are already in OmniWorker auth store."""
-    from omniworker_cli.model_switch import list_authenticated_providers
+def test_normal_path_still_works(flux-agent_auth_only_env):
+    """openai-codex appears when tokens are already in Flux Agent auth store."""
+    from flux-agent_cli.model_switch import list_authenticated_providers
 
     providers = list_authenticated_providers(
         current_provider="openai-codex",
@@ -75,9 +75,9 @@ def test_normal_path_still_works(omniworker_auth_only_env):
     assert "openai-codex" in slugs
 
 
-def test_codex_picker_uses_live_codex_catalog(omniworker_auth_only_env, tmp_path, monkeypatch):
+def test_codex_picker_uses_live_codex_catalog(flux-agent_auth_only_env, tmp_path, monkeypatch):
     """The gateway /model picker should surface Codex CLI-only listed models."""
-    from omniworker_cli.model_switch import list_authenticated_providers
+    from flux-agent_cli.model_switch import list_authenticated_providers
 
     codex_home = tmp_path / "codex-home"
     codex_home.mkdir()
@@ -92,7 +92,7 @@ def test_codex_picker_uses_live_codex_catalog(omniworker_auth_only_env, tmp_path
     # 10s HTTP probe to chatgpt.com/backend-api/codex/models which is both
     # slow and non-deterministic in CI/sandboxed environments.
     monkeypatch.setattr(
-        "omniworker_cli.codex_models._fetch_models_from_api",
+        "flux-agent_cli.codex_models._fetch_models_from_api",
         lambda access_token: [],
     )
 
@@ -109,16 +109,16 @@ def test_codex_picker_uses_live_codex_catalog(omniworker_auth_only_env, tmp_path
 @pytest.fixture()
 def claude_code_only_env(tmp_path, monkeypatch):
     """Set up an environment where Anthropic credentials only exist in
-    ~/.claude/.credentials.json (Claude Code) — not in env vars or OmniWorker
+    ~/.claude/.credentials.json (Claude Code) — not in env vars or Flux Agent
     auth store."""
-    omniworker_home = tmp_path / ".omniworker"
-    omniworker_home.mkdir()
+    flux-agent_home = tmp_path / ".flux-agent"
+    flux-agent_home.mkdir()
 
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
     # No Codex CLI
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "no_codex"))
 
-    (omniworker_home / "auth.json").write_text(
+    (flux-agent_home / "auth.json").write_text(
         json.dumps({"version": 2, "providers": {}})
     )
 
@@ -143,12 +143,12 @@ def claude_code_only_env(tmp_path, monkeypatch):
     ]:
         monkeypatch.delenv(var, raising=False)
 
-    return omniworker_home
+    return flux-agent_home
 
 
 def test_claude_code_file_detected_by_model_picker(claude_code_only_env):
     """anthropic should appear when credentials only exist in ~/.claude/.credentials.json."""
-    from omniworker_cli.model_switch import list_authenticated_providers
+    from flux-agent_cli.model_switch import list_authenticated_providers
 
     providers = list_authenticated_providers(
         current_provider="anthropic",
@@ -166,13 +166,13 @@ def test_claude_code_file_detected_by_model_picker(claude_code_only_env):
 
 def test_no_codex_when_no_credentials(tmp_path, monkeypatch):
     """openai-codex should NOT appear when no credentials exist anywhere."""
-    omniworker_home = tmp_path / ".omniworker"
-    omniworker_home.mkdir()
+    flux-agent_home = tmp_path / ".flux-agent"
+    flux-agent_home.mkdir()
 
-    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "no_codex"))
 
-    (omniworker_home / "auth.json").write_text(
+    (flux-agent_home / "auth.json").write_text(
         json.dumps({"version": 2, "providers": {}})
     )
 
@@ -183,7 +183,7 @@ def test_no_codex_when_no_credentials(tmp_path, monkeypatch):
     ]:
         monkeypatch.delenv(var, raising=False)
 
-    from omniworker_cli.model_switch import list_authenticated_providers
+    from flux-agent_cli.model_switch import list_authenticated_providers
 
     providers = list_authenticated_providers(
         current_provider="openrouter",

@@ -27,9 +27,9 @@ from agent.credential_pool import (
     list_custom_pool_providers,
     load_pool,
 )
-import omniworker_cli.auth as auth_mod
-from omniworker_cli.auth import PROVIDER_REGISTRY
-from omniworker_constants import OPENROUTER_BASE_URL
+import flux-agent_cli.auth as auth_mod
+from flux-agent_cli.auth import PROVIDER_REGISTRY
+from flux-agent_constants import OPENROUTER_BASE_URL
 
 
 # Providers that support OAuth login in addition to API keys.
@@ -39,7 +39,7 @@ _OAUTH_CAPABLE_PROVIDERS = {"anthropic", "nous", "openai-codex", "xai-oauth", "q
 def _get_custom_provider_names() -> list:
     """Return list of (display_name, pool_key, provider_key) tuples."""
     try:
-        from omniworker_cli.config import get_compatible_custom_providers, load_config
+        from flux-agent_cli.config import get_compatible_custom_providers, load_config
 
         config = load_config()
     except Exception:
@@ -183,7 +183,7 @@ def auth_add_command(args) -> None:
     # Matches the Codex device_code re-link pattern that predates this.
     if not provider.startswith(CUSTOM_POOL_PREFIX):
         try:
-            from omniworker_cli.auth import (
+            from flux-agent_cli.auth import (
                 _load_auth_store,
                 unsuppress_credential_source,
             )
@@ -470,14 +470,14 @@ def auth_remove_command(args) -> None:
         raise SystemExit(f'No credential matching "{target}" for provider {provider}.')
     print(f"Removed {provider} credential #{index} ({removed.label})")
 
-    # Unified removal dispatch.  Every credential source OmniWorker reads from
+    # Unified removal dispatch.  Every credential source Flux Agent reads from
     # (env vars, external OAuth files, auth.json blocks, custom config)
     # has a RemovalStep registered in agent.credential_sources.  The step
     # handles its source-specific cleanup and we centralise suppression +
     # user-facing output here so every source behaves identically from
     # the user's perspective.
     from agent.credential_sources import find_removal_step
-    from omniworker_cli.auth import suppress_credential_source
+    from flux-agent_cli.auth import suppress_credential_source
 
     step = find_removal_step(provider, removed.source)
     if step is None:
@@ -570,7 +570,7 @@ def _interactive_auth() -> None:
 
     # Show Azure Foundry Entra ID status
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         _cfg = load_config()
         _model_cfg = _cfg.get("model") if isinstance(_cfg, dict) else None
         if isinstance(_model_cfg, dict):
@@ -759,7 +759,7 @@ def _interactive_strategy() -> None:
         print("Invalid choice.")
         return
 
-    from omniworker_cli.config import load_config, save_config
+    from flux-agent_cli.config import load_config, save_config
     cfg = load_config()
     pool_strategies = cfg.get("credential_pool_strategies") or {}
     if not isinstance(pool_strategies, dict):

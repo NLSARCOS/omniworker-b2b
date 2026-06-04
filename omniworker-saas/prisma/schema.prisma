@@ -161,6 +161,24 @@ model MasterProvider {
   @@index([provider, isActive])
 }
 
+model ProviderModelHealth {
+  id                String   @id @default(uuid())
+  providerId        String
+  modelId           String
+  status            String   @default("available") // available | degraded | unavailable
+  latencyMs         Int?
+  lastCheckedAt     DateTime  @default(now())
+  lastSuccessAt     DateTime?
+  lastError         String?
+  consecutiveFails  Int      @default(0)
+  consecutiveSuccess Int      @default(0)
+  totalChecks       Int      @default(0)
+  totalFails        Int      @default(0)
+
+  @@unique([providerId, modelId])
+  @@index([providerId, status])
+}
+
 // ─── ADMIN AUDIT LOG ───
 model AdminAuditLog {
   id        String   @id @default(uuid())

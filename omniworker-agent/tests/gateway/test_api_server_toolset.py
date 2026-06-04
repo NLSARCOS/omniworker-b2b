@@ -1,4 +1,4 @@
-"""Tests for omniworker-api-server toolset and API server tool availability."""
+"""Tests for flux-agent-api-server toolset and API server tool availability."""
 import os
 import json
 from unittest.mock import patch, MagicMock
@@ -8,23 +8,23 @@ import pytest
 from toolsets import resolve_toolset, get_toolset, validate_toolset
 
 
-class TestOmniWorkerApiServerToolset:
-    """Tests for the omniworker-api-server toolset definition."""
+class TestFlux AgentApiServerToolset:
+    """Tests for the flux-agent-api-server toolset definition."""
 
     def test_toolset_exists(self):
-        ts = get_toolset("omniworker-api-server")
+        ts = get_toolset("flux-agent-api-server")
         assert ts is not None
 
     def test_toolset_validates(self):
-        assert validate_toolset("omniworker-api-server")
+        assert validate_toolset("flux-agent-api-server")
 
     def test_toolset_includes_web_tools(self):
-        tools = resolve_toolset("omniworker-api-server")
+        tools = resolve_toolset("flux-agent-api-server")
         assert "web_search" in tools
         assert "web_extract" in tools
 
     def test_toolset_includes_core_tools(self):
-        tools = resolve_toolset("omniworker-api-server")
+        tools = resolve_toolset("flux-agent-api-server")
         expected = [
             "terminal", "process",
             "read_file", "write_file", "patch", "search_files",
@@ -36,35 +36,35 @@ class TestOmniWorkerApiServerToolset:
             assert tool in tools, f"Missing expected tool: {tool}"
 
     def test_toolset_includes_browser_tools(self):
-        tools = resolve_toolset("omniworker-api-server")
+        tools = resolve_toolset("flux-agent-api-server")
         for tool in ["browser_navigate", "browser_snapshot", "browser_click",
                       "browser_type", "browser_scroll", "browser_back",
                       "browser_press"]:
             assert tool in tools, f"Missing browser tool: {tool}"
 
     def test_toolset_includes_homeassistant_tools(self):
-        tools = resolve_toolset("omniworker-api-server")
+        tools = resolve_toolset("flux-agent-api-server")
         for tool in ["ha_list_entities", "ha_get_state", "ha_list_services", "ha_call_service"]:
             assert tool in tools, f"Missing HA tool: {tool}"
 
     def test_toolset_excludes_clarify(self):
-        tools = resolve_toolset("omniworker-api-server")
+        tools = resolve_toolset("flux-agent-api-server")
         assert "clarify" not in tools
 
     def test_toolset_excludes_send_message(self):
-        tools = resolve_toolset("omniworker-api-server")
+        tools = resolve_toolset("flux-agent-api-server")
         assert "send_message" not in tools
 
     def test_toolset_excludes_text_to_speech(self):
-        tools = resolve_toolset("omniworker-api-server")
+        tools = resolve_toolset("flux-agent-api-server")
         assert "text_to_speech" not in tools
 
 
 class TestApiServerPlatformConfig:
     def test_platforms_dict_includes_api_server(self):
-        from omniworker_cli.tools_config import PLATFORMS
+        from flux-agent_cli.tools_config import PLATFORMS
         assert "api_server" in PLATFORMS
-        assert PLATFORMS["api_server"]["default_toolset"] == "omniworker-api-server"
+        assert PLATFORMS["api_server"]["default_toolset"] == "flux-agent-api-server"
 
 
 class TestApiServerAdapterToolset:
@@ -85,7 +85,7 @@ class TestApiServerAdapterToolset:
                                         "provider": None, "api_mode": None,
                                         "command": None, "args": []}
             mock_model.return_value = "test/model"
-            # No platform_toolsets override — should fall back to omniworker-api-server default
+            # No platform_toolsets override — should fall back to flux-agent-api-server default
             mock_config.return_value = {}
             mock_agent_cls.return_value = MagicMock()
 

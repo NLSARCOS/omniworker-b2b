@@ -1,7 +1,7 @@
 export default {
   title: "Configuración",
   sections: {
-    omniworkerAgent: "Flux Agent",
+    flux-agentAgent: "Flux Agent",
     appearance: "Apariencia",
     credentialPool: "Grupo de credenciales",
   },
@@ -74,7 +74,7 @@ export default {
     "Se encontró Flux Agent en <code>{{path}}</code>. Puedes migrar tu configuración, API keys, sesiones y habilidades a Flux Agent.",
   migrationDismiss: "No volver a mostrar",
   migrating: "Migrando...",
-  migrateToOmniWorker: "Migrar a Flux Agent",
+  migrateToFlux Agent: "Migrar a Flux Agent",
   skip: "Omitir",
   appearanceHint: "Elige la apariencia de interfaz que prefieras",
   apiKeyPlaceholder: "API key",
@@ -96,7 +96,7 @@ export default {
   save: "Guardar",
   serverConfigTitle: "Configuración del servidor",
   serverConfigHint:
-    "Estás conectado a un servidor remoto de Flux Agent. La selección de modelos, las API keys de proveedores y las credenciales se administran en <code>~/.omniworker/.env</code> y <code>config.yaml</code> del servidor. Edítalos en el host (por ejemplo, <code>docker exec -it Flux Agent vi /opt/data/.env</code>) y reinicia el contenedor.",
+    "Estás conectado a un servidor remoto de Flux Agent. La selección de modelos, las API keys de proveedores y las credenciales se administran en <code>~/.flux-agent/.env</code> y <code>config.yaml</code> del servidor. Edítalos en el host (por ejemplo, <code>docker exec -it Flux Agent vi /opt/data/.env</code>) y reinicia el contenedor.",
   connectionMode: "Modo",
   switchedToLocal: "Se cambió al modo local",
 } as const;

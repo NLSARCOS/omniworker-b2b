@@ -1,12 +1,12 @@
 ---
 sidebar_position: 14
 title: "WeCom (Enterprise WeChat)"
-description: "Connect OmniWorker Agent to WeCom via the AI Bot WebSocket gateway"
+description: "Connect Flux Agent Agent to WeCom via the AI Bot WebSocket gateway"
 ---
 
 # WeCom (Enterprise WeChat)
 
-Connect OmniWorker to [WeCom](https://work.weixin.qq.com/) (企业微信), Tencent's enterprise messaging platform. The adapter uses WeCom's AI Bot WebSocket gateway for real-time bidirectional communication — no public endpoint or webhook needed.
+Connect Flux Agent to [WeCom](https://work.weixin.qq.com/) (企业微信), Tencent's enterprise messaging platform. The adapter uses WeCom's AI Bot WebSocket gateway for real-time bidirectional communication — no public endpoint or webhook needed.
 
 ## Prerequisites
 
@@ -22,10 +22,10 @@ Connect OmniWorker to [WeCom](https://work.weixin.qq.com/) (企业微信), Tence
 #### Recommended: Scan-to-Create (one command)
 
 ```bash
-omniworker gateway setup
+flux-agent gateway setup
 ```
 
-Select **WeCom** and scan the QR code with your WeCom mobile app. OmniWorker will automatically create a bot application with the correct permissions and save the credentials.
+Select **WeCom** and scan the QR code with your WeCom mobile app. Flux Agent will automatically create a bot application with the correct permissions and save the credentials.
 
 The setup wizard will:
 1. Display a QR code in your terminal
@@ -41,18 +41,18 @@ If scan-to-create is not available, the wizard falls back to manual input:
 2. Navigate to **Applications** → **Create Application** → **AI Bot**
 3. Configure the bot name and description
 4. Copy the **Bot ID** and **Secret** from the credentials page
-5. Run `omniworker gateway setup`, select **WeCom**, and enter the credentials when prompted
+5. Run `flux-agent gateway setup`, select **WeCom**, and enter the credentials when prompted
 
 :::warning
 Keep the Bot Secret private. Anyone with it can impersonate your bot.
 :::
 
-### Step 2: Configure OmniWorker
+### Step 2: Configure Flux Agent
 
 #### Option A: Interactive Setup (Recommended)
 
 ```bash
-omniworker gateway setup
+flux-agent gateway setup
 ```
 
 Select **WeCom** and follow the prompts. The wizard will guide you through:
@@ -62,7 +62,7 @@ Select **WeCom** and follow the prompts. The wizard will guide you through:
 
 #### Option B: Manual Configuration
 
-Add the following to `~/.omniworker/.env`:
+Add the following to `~/.flux-agent/.env`:
 
 ```bash
 WECOM_BOT_ID=your-bot-id
@@ -78,7 +78,7 @@ WECOM_HOME_CHANNEL=chat_id
 ### Step 3: Start the gateway
 
 ```bash
-omniworker gateway
+flux-agent gateway
 ```
 
 ## Features

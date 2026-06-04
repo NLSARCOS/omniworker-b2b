@@ -135,10 +135,10 @@ class ProviderInfo:
 
 
 # ---------------------------------------------------------------------------
-# Provider ID mapping: OmniWorker ↔ models.dev
+# Provider ID mapping: Flux Agent ↔ models.dev
 # ---------------------------------------------------------------------------
 
-# OmniWorker provider names → models.dev provider IDs
+# Flux Agent provider names → models.dev provider IDs
 PROVIDER_TO_MODELS_DEV: Dict[str, str] = {
     "openrouter": "openrouter",
     "novita": "novita-ai",
@@ -177,15 +177,15 @@ PROVIDER_TO_MODELS_DEV: Dict[str, str] = {
     "ollama-cloud": "ollama-cloud",
 }
 
-# Reverse mapping: models.dev → OmniWorker (built lazily)
+# Reverse mapping: models.dev → Flux Agent (built lazily)
 _MODELS_DEV_TO_PROVIDER: Optional[Dict[str, str]] = None
 
 
 
 def _get_cache_path() -> Path:
     """Return path to disk cache file."""
-    from omniworker_constants import get_omniworker_home
-    return get_omniworker_home() / "models_dev_cache.json"
+    from flux-agent_constants import get_flux-agent_home
+    return get_flux-agent_home() / "models_dev_cache.json"
 
 
 def _load_disk_cache() -> Dict[str, Any]:
@@ -409,7 +409,7 @@ class ModelCapabilities:
 
 
 def _get_provider_models(provider: str) -> Optional[Dict[str, Any]]:
-    """Resolve a OmniWorker provider ID to its models dict from models.dev.
+    """Resolve a Flux Agent provider ID to its models dict from models.dev.
 
     Returns the models dict or None if the provider is unknown or has no data.
     """
@@ -511,7 +511,7 @@ def list_provider_models(provider: str) -> List[str]:
 
     Returns an empty list if the provider is unknown or has no data.
     """
-    from omniworker_cli.models import normalize_provider
+    from flux-agent_cli.models import normalize_provider
     provider = normalize_provider(provider) or provider
     
     models = _get_provider_models(provider)
@@ -533,7 +533,7 @@ _NOISE_PATTERNS: re.Pattern = re.compile(
 )
 
 # Google's live Gemini catalogs currently include a mix of stale slugs and
-# Gemma models whose TPM quotas are too small for normal OmniWorker agent traffic.
+# Gemma models whose TPM quotas are too small for normal Flux Agent agent traffic.
 # Keep capability metadata available for direct/manual use, but hide these from
 # the Gemini model catalogs we surface in setup and model selection.
 _GOOGLE_HIDDEN_MODELS = frozenset({
@@ -672,10 +672,10 @@ def _parse_provider_info(provider_id: str, raw: Dict[str, Any]) -> ProviderInfo:
 def get_provider_info(provider_id: str) -> Optional[ProviderInfo]:
     """Get full provider metadata from models.dev.
 
-    Accepts either a OmniWorker provider ID (e.g. "kilocode") or a models.dev
+    Accepts either a Flux Agent provider ID (e.g. "kilocode") or a models.dev
     ID (e.g. "kilo").  Returns None if the provider is not in the catalog.
     """
-    # Resolve OmniWorker ID → models.dev ID
+    # Resolve Flux Agent ID → models.dev ID
     mdev_id = PROVIDER_TO_MODELS_DEV.get(provider_id, provider_id)
 
     data = fetch_models_dev()
@@ -695,7 +695,7 @@ def get_model_info(
 ) -> Optional[ModelInfo]:
     """Get full model metadata from models.dev.
 
-    Accepts OmniWorker or models.dev provider ID.  Tries exact match then
+    Accepts Flux Agent or models.dev provider ID.  Tries exact match then
     case-insensitive fallback.  Returns None if not found.
     """
     mdev_id = PROVIDER_TO_MODELS_DEV.get(provider_id, provider_id)

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 _LOCAL_SLM_BASE_URL = os.getenv("OMNIWORKER_LOCAL_SLM_URL", "http://127.0.0.1:8080/v1")
 _LOCAL_SLM_MODEL    = os.getenv("OMNIWORKER_LOCAL_SLM_MODEL", "slm")   # matches llama-server --alias
 
-# SaaS cloud gateway (injected by the desktop via ~/.omniworker/.env)
+# SaaS cloud gateway (injected by the desktop via ~/.flux-agent/.env)
 _CLOUD_API_URL = os.getenv("CLOUD_API_URL")
 if _CLOUD_API_URL:
     if _CLOUD_API_URL.endswith("/api"):
@@ -29,7 +29,7 @@ _SAAS_API_KEY  = (
     or os.getenv("CUSTOM_API_KEY")
     or ""
 )
-_SAAS_MODEL    = os.getenv("OMNIWORKER_SAAS_MODEL", "omniworker-b2b")
+_SAAS_MODEL    = os.getenv("OMNIWORKER_SAAS_MODEL", "flux-agent-b2b")
 
 
 def _is_slm_alive() -> bool:

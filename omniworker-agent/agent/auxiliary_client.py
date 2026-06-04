@@ -100,8 +100,8 @@ class _OpenAIProxy:
 OpenAI = _OpenAIProxy()  # module-level name, resolves lazily on call/isinstance
 
 from agent.credential_pool import load_pool
-from omniworker_cli.config import get_omniworker_home
-from omniworker_constants import OPENROUTER_BASE_URL
+from flux-agent_cli.config import get_flux-agent_home
+from flux-agent_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname, normalize_proxy_env_vars
 
 logger = logging.getLogger(__name__)
@@ -228,7 +228,7 @@ def _compression_threshold_for_model(model: Optional[str]) -> Optional[float]:
     """Return a context-compression threshold override for specific models.
 
     The threshold is the fraction of the model's context window that must be
-    consumed before OmniWorker triggers summarization.  Higher values delay
+    consumed before Flux Agent triggers summarization.  Higher values delay
     compression and preserve more raw context.
 
     Returns a float in (0, 1] to override the global ``compression.threshold``
@@ -310,7 +310,7 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({
 # reads; the previous `X-OpenRouter-Title` label was not recognized there.
 _OR_HEADERS_BASE = {
     "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "OmniWorker Agent",
+    "X-Title": "Flux Agent Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
 
@@ -324,10 +324,10 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     Precedence for response cache: env var > config.yaml > default (enabled).
 
     Environment variables:
-        ``OMNIWORKER_OPENROUTER_CACHE`` — truthy (``1``/``true``/``yes``/``on``)
+        ``FLUX AGENT_OPENROUTER_CACHE`` — truthy (``1``/``true``/``yes``/``on``)
             enables caching; ``0``/``false``/``no``/``off`` disables.
             Overrides ``openrouter.response_cache`` in config.yaml.
-        ``OMNIWORKER_OPENROUTER_CACHE_TTL`` — integer seconds (1-86400).
+        ``FLUX AGENT_OPENROUTER_CACHE_TTL`` — integer seconds (1-86400).
             Overrides ``openrouter.response_cache_ttl`` in config.yaml.
 
     *or_config* is the ``openrouter`` section from config.yaml.  When *None*,
@@ -338,13 +338,13 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     # Resolve config from disk if not provided.
     if or_config is None:
         try:
-            from omniworker_cli.config import load_config
+            from flux-agent_cli.config import load_config
             or_config = load_config().get("openrouter", {})
         except Exception:
             or_config = {}
 
     # Determine cache enabled: env var overrides config.
-    env_cache = os.environ.get("OMNIWORKER_OPENROUTER_CACHE", "").strip().lower()
+    env_cache = os.environ.get("FLUX AGENT_OPENROUTER_CACHE", "").strip().lower()
     if env_cache:
         cache_enabled = env_cache in _TRUTHY_ENV_VALUES
     else:
@@ -356,7 +356,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
     headers["X-OpenRouter-Cache"] = "true"
 
     # Determine TTL: env var overrides config.
-    env_ttl = os.environ.get("OMNIWORKER_OPENROUTER_CACHE_TTL", "").strip()
+    env_ttl = os.environ.get("FLUX AGENT_OPENROUTER_CACHE_TTL", "").strip()
     if env_ttl:
         if env_ttl.isdigit():
             ttl = int(env_ttl)
@@ -373,7 +373,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
 # NVIDIA NIM cloud billing attribution.  Keep this host-gated because the
 # nvidia provider also supports local/on-prem NIM endpoints via NVIDIA_BASE_URL.
 _NVIDIA_NIM_CLOUD_HEADERS = {
-    "X-BILLING-INVOKE-ORIGIN": "OmniWorkerAgent",
+    "X-BILLING-INVOKE-ORIGIN": "Flux AgentAgent",
 }
 
 
@@ -386,12 +386,12 @@ def build_nvidia_nim_headers(base_url: str | None) -> dict:
 
 # Vercel AI Gateway app attribution headers. HTTP-Referer maps to
 # referrerUrl and X-Title maps to appName in the gateway's analytics.
-from omniworker_cli import __version__ as _OMNIWORKER_VERSION
+from flux-agent_cli import __version__ as _FLUX AGENT_VERSION
 
 _AI_GATEWAY_HEADERS = {
     "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "OmniWorker Agent",
-    "User-Agent": f"OmniWorkerAgent/{_OMNIWORKER_VERSION}",
+    "X-Title": "Flux Agent Agent",
+    "User-Agent": f"Flux AgentAgent/{_FLUX AGENT_VERSION}",
 }
 
 # Nous Portal extra_body for product attribution.
@@ -399,7 +399,7 @@ _AI_GATEWAY_HEADERS = {
 # when the auxiliary client is backed by Nous Portal.
 #
 # The tags are computed from agent.portal_tags so the client= marker stays
-# in lockstep with omniworker_cli.__version__ across every Portal call site
+# in lockstep with flux-agent_cli.__version__ across every Portal call site
 # (main loop, aux, compression, web_extract). Do not inline a literal here;
 # see agent/portal_tags.py for the rationale.
 from agent.portal_tags import nous_portal_tags as _nous_portal_tags
@@ -408,7 +408,7 @@ from agent.portal_tags import nous_portal_tags as _nous_portal_tags
 def _nous_extra_body() -> dict:
     """Return a fresh Nous Portal ``extra_body`` dict.
 
-    Computed at call time so a hot-reloaded ``omniworker_cli.__version__`` is
+    Computed at call time so a hot-reloaded ``flux-agent_cli.__version__`` is
     reflected without restarting long-running processes.
     """
     return {"tags": _nous_portal_tags()}
@@ -428,7 +428,7 @@ _OPENROUTER_MODEL = "google/gemini-3-flash-preview"
 _NOUS_MODEL = "google/gemini-3-flash-preview"
 _NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
-_AUTH_JSON_PATH = get_omniworker_home() / "auth.json"
+_AUTH_JSON_PATH = get_flux-agent_home() / "auth.json"
 
 # Codex OAuth endpoint used when a caller explicitly requests
 # provider="openai-codex".  There is deliberately no hardcoded default
@@ -460,7 +460,7 @@ def _codex_cloudflare_headers(access_token: str) -> Dict[str, str]:
     crash at client construction.
     """
     headers = {
-        "User-Agent": "codex_cli_rs/0.0.0 (OmniWorker Agent)",
+        "User-Agent": "codex_cli_rs/0.0.0 (Flux Agent Agent)",
         "originator": "codex_cli_rs",
     }
     if not isinstance(access_token, str) or not access_token.strip():
@@ -1104,7 +1104,7 @@ def _endpoint_speaks_anthropic_messages(base_url: str) -> bool:
     """True if the endpoint at ``base_url`` speaks the Anthropic Messages
     protocol instead of OpenAI chat.completions.
 
-    Mirrors ``omniworker_cli.runtime_provider._detect_api_mode_for_url`` so the
+    Mirrors ``flux-agent_cli.runtime_provider._detect_api_mode_for_url`` so the
     auxiliary client and the main agent stay in sync on transport selection.
     Covers:
 
@@ -1267,15 +1267,15 @@ def _resolve_nous_runtime_api(*, force_refresh: bool = False) -> Optional[tuple[
     or the credential pool.
     """
     try:
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             NOUS_INFERENCE_AUTH_MODE_AUTO,
             NOUS_INFERENCE_AUTH_MODE_LEGACY,
             resolve_nous_runtime_credentials,
         )
 
         creds = resolve_nous_runtime_credentials(
-            min_key_ttl_seconds=max(60, int(os.getenv("OMNIWORKER_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
-            timeout_seconds=float(os.getenv("OMNIWORKER_NOUS_TIMEOUT_SECONDS", "15")),
+            min_key_ttl_seconds=max(60, int(os.getenv("FLUX AGENT_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
+            timeout_seconds=float(os.getenv("FLUX AGENT_NOUS_TIMEOUT_SECONDS", "15")),
             inference_auth_mode=(
                 NOUS_INFERENCE_AUTH_MODE_LEGACY
                 if force_refresh
@@ -1302,12 +1302,12 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
     compression report "no provider configured" even though ``hermes auth
     status`` shows xAI OAuth as logged in.
 
-    Falls back to ``omniworker_cli.auth``'s singleton runtime resolver for older
+    Falls back to ``flux-agent_cli.auth``'s singleton runtime resolver for older
     auth-store-only logins. Returns ``None`` if the user is not authenticated
     with xAI Grok OAuth.
     """
     try:
-        from omniworker_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
+        from flux-agent_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
         pool = load_pool("xai-oauth")
         if pool and pool.has_credentials():
@@ -1319,7 +1319,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
                     or ""
                 ).strip()
                 base_url = str(
-                    os.getenv("OMNIWORKER_XAI_BASE_URL", "").strip().rstrip("/")
+                    os.getenv("FLUX AGENT_XAI_BASE_URL", "").strip().rstrip("/")
                     or os.getenv("XAI_BASE_URL", "").strip().rstrip("/")
                     or getattr(entry, "runtime_base_url", None)
                     or getattr(entry, "base_url", None)
@@ -1331,7 +1331,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
         logger.debug("Auxiliary xAI OAuth pool credential resolution failed: %s", exc)
 
     try:
-        from omniworker_cli.auth import resolve_xai_oauth_runtime_credentials
+        from flux-agent_cli.auth import resolve_xai_oauth_runtime_credentials
 
         creds = resolve_xai_oauth_runtime_credentials()
     except Exception as exc:
@@ -1346,7 +1346,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
 
 
 def _read_codex_access_token() -> Optional[str]:
-    """Read a valid, non-expired Codex OAuth access token from OmniWorker auth store.
+    """Read a valid, non-expired Codex OAuth access token from Flux Agent auth store.
 
     If a credential pool exists but currently has no selectable runtime entry
     (for example all pool slots are marked exhausted), fall back to the
@@ -1361,7 +1361,7 @@ def _read_codex_access_token() -> Optional[str]:
             return token
 
     try:
-        from omniworker_cli.auth import _read_codex_tokens
+        from flux-agent_cli.auth import _read_codex_tokens
         data = _read_codex_tokens()
         tokens = data.get("tokens", {})
         access_token = tokens.get("access_token")
@@ -1395,7 +1395,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
     credentials, or (None, None) if none are configured.
     """
     try:
-        from omniworker_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
+        from flux-agent_cli.auth import PROVIDER_REGISTRY, resolve_api_key_provider_credentials
     except ImportError:
         logger.debug("Could not import PROVIDER_REGISTRY for API-key fallback")
         return None, None
@@ -1408,7 +1408,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             # Without this gate, Claude Code credentials get silently used
             # as auxiliary fallback when the user's primary provider fails.
             try:
-                from omniworker_cli.auth import is_provider_explicitly_configured
+                from flux-agent_cli.auth import is_provider_explicitly_configured
                 if not is_provider_explicitly_configured("anthropic"):
                     continue
             except ImportError:
@@ -1436,7 +1436,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
             if base_url_host_matches(base_url, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(base_url, "api.githubcopilot.com"):
-                from omniworker_cli.models import copilot_default_headers
+                from flux-agent_cli.models import copilot_default_headers
 
                 extra["default_headers"] = copilot_default_headers()
             elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
@@ -1473,7 +1473,7 @@ def _resolve_api_key_provider() -> Tuple[Optional[OpenAI], Optional[str]]:
         if base_url_host_matches(base_url, "api.kimi.com"):
             extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
         elif base_url_host_matches(base_url, "api.githubcopilot.com"):
-            from omniworker_cli.models import copilot_default_headers
+            from flux-agent_cli.models import copilot_default_headers
 
             extra["default_headers"] = copilot_default_headers()
         elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
@@ -1578,7 +1578,7 @@ def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
     # or returns a null recommendation for this task type.
     model = _NOUS_MODEL
     try:
-        from omniworker_cli.models import get_nous_recommended_aux_model
+        from flux-agent_cli.models import get_nous_recommended_aux_model
         recommended = get_nous_recommended_aux_model(vision=vision)
         if recommended:
             model = recommended
@@ -1628,7 +1628,7 @@ def _read_main_model() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip()
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, str) and model_cfg.strip():
@@ -1655,7 +1655,7 @@ def _read_main_provider() -> str:
     if isinstance(override, str) and override.strip():
         return override.strip().lower()
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model", {})
         if isinstance(model_cfg, dict):
@@ -1703,13 +1703,13 @@ def _resolve_custom_runtime() -> Tuple[Optional[str], Optional[str], Optional[st
     # Re-read .env so that API keys refreshed by the desktop app are picked
     # up by long-running agent processes without a restart.
     try:
-        from omniworker_cli.env_loader import load_omniworker_dotenv
-        load_omniworker_dotenv()
+        from flux-agent_cli.env_loader import load_flux-agent_dotenv
+        load_flux-agent_dotenv()
     except Exception:
         pass  # best-effort
 
     try:
-        from omniworker_cli.runtime_provider import resolve_runtime_provider
+        from flux-agent_cli.runtime_provider import resolve_runtime_provider
 
         runtime = resolve_runtime_provider(requested="custom")
     except Exception as exc:
@@ -1924,7 +1924,7 @@ def _try_azure_foundry(
     """Resolve an Azure Foundry auxiliary client via the runtime resolver.
 
     Mirrors the ``_try_anthropic`` / ``_try_nous`` shape but delegates to
-    :func:`omniworker_cli.runtime_provider._resolve_azure_foundry_runtime` —
+    :func:`flux-agent_cli.runtime_provider._resolve_azure_foundry_runtime` —
     the same resolver the main agent uses — so:
 
     * ``auth_mode: api_key`` (default) gets the static
@@ -1944,9 +1944,9 @@ def _try_azure_foundry(
     Returns ``(client, model)`` or ``(None, None)`` on failure.
     """
     try:
-        from omniworker_cli.runtime_provider import _resolve_azure_foundry_runtime
-        from omniworker_cli.auth import AuthError
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.runtime_provider import _resolve_azure_foundry_runtime
+        from flux-agent_cli.auth import AuthError
+        from flux-agent_cli.config import load_config
     except ImportError:
         return None, None
 
@@ -2050,7 +2050,7 @@ def _try_anthropic(explicit_api_key: str = None) -> Tuple[Optional[Any], Optiona
     # base_url (e.g. Codex endpoint) would leak into Anthropic requests.
     base_url = _pool_runtime_base_url(entry, _ANTHROPIC_DEFAULT_BASE_URL) if pool_present else _ANTHROPIC_DEFAULT_BASE_URL
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
         model_cfg = cfg.get("model")
         if isinstance(model_cfg, dict):
@@ -2661,9 +2661,9 @@ async def _retry_same_provider_async(
 
 def _refresh_saas_credentials() -> bool:
     """Refresh the SaaS JWT access token using the refresh token."""
-    refresh_token = os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
-    base_url = os.getenv("OMNIWORKER_SAAS_BASE_URL")
-    fingerprint = os.getenv("OMNIWORKER_DEVICE_FINGERPRINT")
+    refresh_token = os.getenv("FLUX AGENT_SAAS_REFRESH_TOKEN")
+    base_url = os.getenv("FLUX AGENT_SAAS_BASE_URL")
+    fingerprint = os.getenv("FLUX AGENT_DEVICE_FINGERPRINT")
 
     if not refresh_token or not base_url:
         return False
@@ -2692,7 +2692,7 @@ def _refresh_saas_credentials() -> bool:
                 os.environ["OPENAI_API_KEY"] = new_access_token
                 os.environ["CUSTOM_API_KEY"] = new_access_token
                 if new_refresh_token:
-                    os.environ["OMNIWORKER_SAAS_REFRESH_TOKEN"] = new_refresh_token
+                    os.environ["FLUX AGENT_SAAS_REFRESH_TOKEN"] = new_refresh_token
                 logger.debug("SaaS JWT access token refreshed successfully in auxiliary client!")
                 return True
         else:
@@ -2715,7 +2715,7 @@ def _refresh_provider_credentials(provider: str) -> bool:
                 _evict_cached_clients(normalized)
                 return True
         if normalized == "openai-codex":
-            from omniworker_cli.auth import resolve_codex_runtime_credentials
+            from flux-agent_cli.auth import resolve_codex_runtime_credentials
 
             creds = resolve_codex_runtime_credentials(force_refresh=True)
             if not str(creds.get("api_key", "") or "").strip():
@@ -2723,14 +2723,14 @@ def _refresh_provider_credentials(provider: str) -> bool:
             _evict_cached_clients(normalized)
             return True
         if normalized == "nous":
-            from omniworker_cli.auth import (
+            from flux-agent_cli.auth import (
                 NOUS_INFERENCE_AUTH_MODE_LEGACY,
                 resolve_nous_runtime_credentials,
             )
 
             creds = resolve_nous_runtime_credentials(
-                min_key_ttl_seconds=max(60, int(os.getenv("OMNIWORKER_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
-                timeout_seconds=float(os.getenv("OMNIWORKER_NOUS_TIMEOUT_SECONDS", "15")),
+                min_key_ttl_seconds=max(60, int(os.getenv("FLUX AGENT_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
+                timeout_seconds=float(os.getenv("FLUX AGENT_NOUS_TIMEOUT_SECONDS", "15")),
                 inference_auth_mode=NOUS_INFERENCE_AUTH_MODE_LEGACY,
             )
             if not str(creds.get("api_key", "") or "").strip():
@@ -3083,7 +3083,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
     if base_url_host_matches(sync_base_url, "openrouter.ai"):
         async_kwargs["default_headers"] = build_or_headers()
     elif base_url_host_matches(sync_base_url, "api.githubcopilot.com"):
-        from omniworker_cli.copilot_auth import copilot_request_headers
+        from flux-agent_cli.copilot_auth import copilot_request_headers
 
         async_kwargs["default_headers"] = copilot_request_headers(
             is_agent_turn=True, is_vision=is_vision
@@ -3114,7 +3114,7 @@ def _normalize_resolved_model(model_name: Optional[str], provider: str) -> Optio
     if not model_name:
         return model_name
     try:
-        from omniworker_cli.model_normalize import normalize_model_for_provider
+        from flux-agent_cli.model_normalize import normalize_model_for_provider
 
         return normalize_model_for_provider(model_name, provider)
     except Exception:
@@ -3350,7 +3350,7 @@ def resolve_provider_client(
             if base_url_host_matches(custom_base, "api.kimi.com"):
                 extra["default_headers"] = {"User-Agent": "claude-code/0.1.0"}
             elif base_url_host_matches(custom_base, "api.githubcopilot.com"):
-                from omniworker_cli.copilot_auth import copilot_request_headers
+                from flux-agent_cli.copilot_auth import copilot_request_headers
                 extra["default_headers"] = copilot_request_headers(
                     is_agent_turn=True, is_vision=is_vision
                 )
@@ -3391,7 +3391,7 @@ def resolve_provider_client(
 
     # ── Named custom providers (config.yaml providers dict / custom_providers list) ───
     try:
-        from omniworker_cli.runtime_provider import _get_named_custom_provider
+        from flux-agent_cli.runtime_provider import _get_named_custom_provider
         # When the raw requested name is an alias (``kimi`` → ``kimi-coding``)
         # and the user defined a ``custom_providers`` entry under that alias
         # name, the custom entry is the intended target — the built-in alias
@@ -3529,13 +3529,13 @@ def resolve_provider_client(
 
     # ── API-key providers from PROVIDER_REGISTRY ─────────────────────
     try:
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             PROVIDER_REGISTRY,
             resolve_api_key_provider_credentials,
             resolve_external_process_provider_credentials,
         )
     except ImportError:
-        logger.debug("omniworker_cli.auth not available for provider %s", provider)
+        logger.debug("flux-agent_cli.auth not available for provider %s", provider)
         return None, None
 
     pconfig = PROVIDER_REGISTRY.get(provider)
@@ -3594,7 +3594,7 @@ def resolve_provider_client(
         if base_url_host_matches(base_url, "api.kimi.com"):
             headers["User-Agent"] = "claude-code/0.1.0"
         elif base_url_host_matches(base_url, "api.githubcopilot.com"):
-            from omniworker_cli.copilot_auth import copilot_request_headers
+            from flux-agent_cli.copilot_auth import copilot_request_headers
 
             headers.update(copilot_request_headers(
                 is_agent_turn=True, is_vision=is_vision
@@ -3622,7 +3622,7 @@ def resolve_provider_client(
         # routes through responses.stream().
         if provider == "copilot" and final_model and not raw_codex:
             try:
-                from omniworker_cli.models import _should_use_copilot_responses_api
+                from flux-agent_cli.models import _should_use_copilot_responses_api
                 if _should_use_copilot_responses_api(final_model):
                     logger.debug(
                         "resolve_provider_client: copilot model %s needs "
@@ -4405,7 +4405,7 @@ def _get_auxiliary_task_config(task: str) -> Dict[str, Any]:
     if not task:
         return {}
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         config = load_config()
     except ImportError:
         return {}

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from omniworker_cli.config import DEFAULT_CONFIG
+from flux-agent_cli.config import DEFAULT_CONFIG
 
 
 class TestMcpReloadConfirmDefault:
@@ -44,7 +44,7 @@ class TestUserConfigMerge:
         import yaml
 
         # Simulate a legacy user config without the new key.
-        home = tmp_path / ".omniworker"
+        home = tmp_path / ".flux-agent"
         home.mkdir()
         cfg_path = home / "config.yaml"
         legacy = {
@@ -55,7 +55,7 @@ class TestUserConfigMerge:
         monkeypatch.setenv("OMNIWORKER_HOME", str(home))
         # Force a fresh reimport of config.py so the OMNIWORKER_HOME is honored.
         import importlib
-        import omniworker_cli.config as cfg_mod
+        import flux-agent_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg = cfg_mod.load_config()
@@ -69,7 +69,7 @@ class TestUserConfigMerge:
         """
         import yaml
 
-        home = tmp_path / ".omniworker"
+        home = tmp_path / ".flux-agent"
         home.mkdir()
         cfg_path = home / "config.yaml"
         user_cfg = {
@@ -84,7 +84,7 @@ class TestUserConfigMerge:
 
         monkeypatch.setenv("OMNIWORKER_HOME", str(home))
         import importlib
-        import omniworker_cli.config as cfg_mod
+        import flux-agent_cli.config as cfg_mod
         importlib.reload(cfg_mod)
 
         cfg = cfg_mod.load_config()

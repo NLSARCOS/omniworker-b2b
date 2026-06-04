@@ -24,7 +24,7 @@ def sample_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init")
-    _git(repo, "config", "user.name", "OmniWorker Tests")
+    _git(repo, "config", "user.name", "Flux Agent Tests")
     _git(repo, "config", "user.email", "tests@example.com")
 
     (repo / "src").mkdir()
@@ -309,22 +309,22 @@ def test_defaults_allowed_root_to_cwd(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_blocks_sensitive_home_and_omniworker_paths(tmp_path: Path, monkeypatch):
+async def test_blocks_sensitive_home_and_flux-agent_paths(tmp_path: Path, monkeypatch):
     from agent.context_references import preprocess_context_references_async
 
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / ".omniworker"))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path / ".flux-agent"))
 
-    omniworker_env = tmp_path / ".omniworker" / ".env"
-    omniworker_env.parent.mkdir(parents=True)
-    omniworker_env.write_text("API_KEY=super-secret\n", encoding="utf-8")
+    flux-agent_env = tmp_path / ".flux-agent" / ".env"
+    flux-agent_env.parent.mkdir(parents=True)
+    flux-agent_env.write_text("API_KEY=super-secret\n", encoding="utf-8")
 
     ssh_key = tmp_path / ".ssh" / "id_rsa"
     ssh_key.parent.mkdir(parents=True)
     ssh_key.write_text("PRIVATE-KEY\n", encoding="utf-8")
 
     result = await preprocess_context_references_async(
-        "read @file:.omniworker/.env and @file:.ssh/id_rsa",
+        "read @file:.flux-agent/.env and @file:.ssh/id_rsa",
         cwd=tmp_path,
         allowed_root=tmp_path,
         context_length=100_000,

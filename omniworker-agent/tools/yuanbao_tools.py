@@ -1,14 +1,14 @@
 """
 yuanbao_tools.py - 元宝平台工具集
 
-提供以下工具函数，供 omniworker-agent 的 "omniworker-yuanbao" toolset 使用：
+提供以下工具函数，供 flux-agent-agent 的 "flux-agent-yuanbao" toolset 使用：
   - get_group_info        : 查询群基本信息（群名、群主、成员数）
   - query_group_members   : 查询群成员（按名搜索、列举 bot、列举全部）
   - search_sticker        : 按关键词搜索内置贴纸（返回候选列表，含 sticker_id/name/description）
   - send_sticker          : 向当前会话或指定 chat_id 发送贴纸（TIMFaceElem）
   - send_dm               : 发送私聊消息（按昵称查找用户并发送）
 
-对齐 chatbot-web/yuanbao-omniworker-plugin 的 sticker-search/sticker-send 行为：
+对齐 chatbot-web/yuanbao-flux-agent-plugin 的 sticker-search/sticker-send 行为：
 LLM 应先用 search_sticker 找到合适的 sticker_id（或直接传中文 name），再用 send_sticker
 发送。不要在文本中夹杂裸的 Unicode emoji 当作贴纸。
 
@@ -496,7 +496,7 @@ async def _handle_yb_send_sticker(args, **kw):
     ))
 
 
-_TOOLSET = "omniworker-yuanbao"
+_TOOLSET = "flux-agent-yuanbao"
 
 registry.register(
     name="yb_query_group_info",

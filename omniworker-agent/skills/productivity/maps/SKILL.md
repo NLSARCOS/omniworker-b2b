@@ -6,7 +6,7 @@ author: Mibayy
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [maps, geocoding, places, routing, distance, directions, nearby, location, openstreetmap, nominatim, overpass, osrm]
     category: productivity
     requires_toolsets: [terminal]
@@ -39,12 +39,12 @@ functionality is covered by the `nearby` command below, with the same
 
 Python 3.8+ (stdlib only — no pip installs needed).
 
-Script path: `~/.omniworker/skills/maps/scripts/maps_client.py`
+Script path: `~/.flux-agent/skills/maps/scripts/maps_client.py`
 
 ## Commands
 
 ```bash
-MAPS=~/.omniworker/skills/maps/scripts/maps_client.py
+MAPS=~/.flux-agent/skills/maps/scripts/maps_client.py
 ```
 
 ### search — Geocode a place name
@@ -187,9 +187,9 @@ current.
 ## Verification
 
 ```bash
-python3 ~/.omniworker/skills/maps/scripts/maps_client.py search "Statue of Liberty"
+python3 ~/.flux-agent/skills/maps/scripts/maps_client.py search "Statue of Liberty"
 # Should return lat ~40.689, lon ~-74.044
 
-python3 ~/.omniworker/skills/maps/scripts/maps_client.py nearby --near "Times Square" --category restaurant --limit 3
+python3 ~/.flux-agent/skills/maps/scripts/maps_client.py nearby --near "Times Square" --category restaurant --limit 3
 # Should return a list of restaurants within ~500m of Times Square
 ```

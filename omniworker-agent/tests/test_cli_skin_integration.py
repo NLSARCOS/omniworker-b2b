@@ -1,12 +1,12 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from cli import OmniWorkerCLI, _build_compact_banner, _rich_text_from_ansi
-from omniworker_cli.skin_engine import get_active_skin, set_active_skin
+from cli import Flux AgentCLI, _build_compact_banner, _rich_text_from_ansi
+from flux-agent_cli.skin_engine import get_active_skin, set_active_skin
 
 
 def _make_cli_stub():
-    cli = OmniWorkerCLI.__new__(OmniWorkerCLI)
+    cli = Flux AgentCLI.__new__(Flux AgentCLI)
     cli._sudo_state = None
     cli._secret_state = None
     cli._approval_state = None
@@ -53,7 +53,7 @@ class TestCliSkinPromptIntegration:
         cli = _make_cli_stub()
         cli._secret_state = {"response_queue": object()}
 
-        with patch("omniworker_cli.skin_engine.get_active_prompt_symbol", return_value="⚔ "):
+        with patch("flux-agent_cli.skin_engine.get_active_prompt_symbol", return_value="⚔ "):
             assert cli._get_tui_prompt_fragments() == [("class:sudo-prompt", "🔑 ⚔ ")]
 
     def test_build_tui_style_dict_uses_skin_overrides(self):
@@ -92,31 +92,31 @@ class TestCliSkinPromptIntegration:
 
 
 class TestCompactBannerSkinIntegration:
-    def test_default_compact_banner_keeps_legacy_nous_omniworker_branding(self):
+    def test_default_compact_banner_keeps_legacy_nous_flux-agent_branding(self):
         set_active_skin("default")
 
         with patch("cli.shutil.get_terminal_size", return_value=SimpleNamespace(columns=90)), \
-             patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "OmniWorker Agent v0.1.0 (test)"}):
+             patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "Flux Agent Agent v0.1.0 (test)"}):
             banner = _build_compact_banner()
 
-        assert "NOUS OMNIWORKER" in banner
+        assert "NOUS FLUX AGENT" in banner
 
-    def test_poseidon_compact_banner_uses_skin_branding_instead_of_nous_omniworker(self):
+    def test_poseidon_compact_banner_uses_skin_branding_instead_of_nous_flux-agent(self):
         set_active_skin("poseidon")
 
         with patch("cli.shutil.get_terminal_size", return_value=SimpleNamespace(columns=90)), \
-             patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "OmniWorker Agent v0.1.0 (test)"}):
+             patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "Flux Agent Agent v0.1.0 (test)"}):
             banner = _build_compact_banner()
 
         assert "Poseidon Agent" in banner
-        assert "NOUS OMNIWORKER" not in banner
+        assert "NOUS FLUX AGENT" not in banner
 
     def test_poseidon_compact_banner_uses_skin_colors(self):
         set_active_skin("poseidon")
         skin = get_active_skin()
 
         with patch("cli.shutil.get_terminal_size", return_value=SimpleNamespace(columns=90)), \
-             patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "OmniWorker Agent v0.1.0 (test)"}):
+             patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "Flux Agent Agent v0.1.0 (test)"}):
             banner = _build_compact_banner()
 
         assert skin.get_color("banner_border") in banner
@@ -127,7 +127,7 @@ class TestCompactBannerSkinIntegration:
         set_active_skin("default")
 
         with patch("cli.shutil.get_terminal_size", return_value=SimpleNamespace(columns=90)), \
-             patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "OmniWorker Agent v1.0 (test) · upstream abc12345"}):
+             patch.dict(_build_compact_banner.__globals__, {"format_banner_version_label": lambda: "Flux Agent Agent v1.0 (test) · upstream abc12345"}):
             banner = _build_compact_banner()
 
         assert "upstream abc12345" in banner

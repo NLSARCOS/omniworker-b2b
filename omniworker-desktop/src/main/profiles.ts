@@ -4,9 +4,9 @@ import { homedir } from "os";
 import { promises as fs } from "fs";
 import { existsSync, readFileSync } from "fs";
 import {
-  OMNIWORKER_HOME,
-  OMNIWORKER_PYTHON,
-  omniworkerCliArgs,
+  FLUX AGENT_HOME,
+  FLUX AGENT_PYTHON,
+  flux-agentCliArgs,
   getEnhancedPath,
 } from "./installer";
 import {
@@ -19,7 +19,7 @@ import {
 } from "./utils";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 
-const PROFILES_DIR = join(OMNIWORKER_HOME, "profiles");
+const PROFILES_DIR = join(FLUX AGENT_HOME, "profiles");
 
 export interface ProfileInfo {
   name: string;
@@ -117,11 +117,11 @@ async function readProfileConfig(profilePath: string): Promise<{
     const model = modelMatch ? modelMatch[1].trim() : "";
     const provider = providerMatch ? providerMatch[1].trim() : "";
     return {
-      model: model || "omniworker",
+      model: model || "flux-agent",
       provider: provider || "custom",
     };
   } catch {
-    return { model: "omniworker", provider: "custom" };
+    return { model: "flux-agent", provider: "custom" };
   }
 }
 
@@ -165,7 +165,7 @@ async function isGatewayRunning(profilePath: string): Promise<boolean> {
 }
 
 async function getActiveProfileName(): Promise<string> {
-  const activeFile = join(OMNIWORKER_HOME, "active_profile");
+  const activeFile = join(FLUX AGENT_HOME, "active_profile");
   try {
     const name = await fs.readFile(activeFile, "utf-8");
     return name.trim() || "default";
@@ -187,7 +187,7 @@ export async function listProfiles(): Promise<ProfileInfo[]> {
   const activeName = await getActiveProfileName();
   const profiles: ProfileInfo[] = [];
 
-  // Default profile is OMNIWORKER_HOME itself
+  // Default profile is FLUX AGENT_HOME itself
   const [
     defaultConfig,
     defaultHasEnv,
@@ -195,16 +195,16 @@ export async function listProfiles(): Promise<ProfileInfo[]> {
     defaultSkills,
     defaultGw,
   ] = await Promise.all([
-    readProfileConfig(OMNIWORKER_HOME),
-    fileExists(join(OMNIWORKER_HOME, ".env")),
-    fileExists(join(OMNIWORKER_HOME, "SOUL.md")),
-    countSkills(OMNIWORKER_HOME),
-    isGatewayRunning(OMNIWORKER_HOME),
+    readProfileConfig(FLUX AGENT_HOME),
+    fileExists(join(FLUX AGENT_HOME, ".env")),
+    fileExists(join(FLUX AGENT_HOME, "SOUL.md")),
+    countSkills(FLUX AGENT_HOME),
+    isGatewayRunning(FLUX AGENT_HOME),
   ]);
 
   profiles.push({
     name: "default",
-    path: OMNIWORKER_HOME,
+    path: FLUX AGENT_HOME,
     isDefault: true,
     isActive: activeName === "default",
     model: defaultConfig.model,
@@ -215,7 +215,7 @@ export async function listProfiles(): Promise<ProfileInfo[]> {
     gatewayRunning: defaultGw,
   });
 
-  // Named profiles under ~/.omniworker/profiles/
+  // Named profiles under ~/.flux-agent/profiles/
   if (existsSync(PROFILES_DIR)) {
     try {
       const dirs = await fs.readdir(PROFILES_DIR);
@@ -228,7 +228,7 @@ export async function listProfiles(): Promise<ProfileInfo[]> {
         const stat = await fs.stat(profilePath);
         if (!stat.isDirectory()) return null;
 
-        // Any subdirectory of ~/.omniworker/profiles/ is treated as a profile.
+        // Any subdirectory of ~/.flux-agent/profiles/ is treated as a profile.
         // We deliberately do NOT require config.yaml or .env to exist —
         // a freshly created profile may have neither yet, and filtering on
         // them silently hides it from the UI (issue #19).
@@ -296,7 +296,7 @@ function copyModelBlock(srcConfigPath: string, dstConfigPath: string): void {
     }
 
     if (!modelBlock) {
-      modelBlock = "model:\n  default: \"omniworker\"\n  provider: \"custom\"";
+      modelBlock = "model:\n  default: \"flux-agent\"\n  provider: \"custom\"";
     }
     
     let dstContent = "";
@@ -352,13 +352,13 @@ export function createProfile(
     const args = clone
       ? ["profile", "create", name, "--clone"]
       : ["profile", "create", name];
-    execFileSync(OMNIWORKER_PYTHON, omniworkerCliArgs(args), {
-      cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
+    execFileSync(FLUX AGENT_PYTHON, flux-agentCliArgs(args), {
+      cwd: join(FLUX AGENT_HOME, "flux-agent-agent"),
       env: {
         ...process.env,
         PATH: getEnhancedPath(),
         HOME: homedir(),
-        OMNIWORKER_HOME,
+        FLUX AGENT_HOME,
       },
       stdio: "pipe",
       timeout: 90000, // Safe generous timeout for skill seeding
@@ -367,7 +367,7 @@ export function createProfile(
 
     const pHome = profileHome(name);
     const configFile = join(pHome, "config.yaml");
-    const defaultConfigFile = join(OMNIWORKER_HOME, "config.yaml");
+    const defaultConfigFile = join(FLUX AGENT_HOME, "config.yaml");
     copyModelBlock(defaultConfigFile, configFile);
 
     if (options) {
@@ -407,15 +407,15 @@ export function deleteProfile(name: string): {
 
   try {
     execFileSync(
-      OMNIWORKER_PYTHON,
-      omniworkerCliArgs(["profile", "delete", name, "--yes"]),
+      FLUX AGENT_PYTHON,
+      flux-agentCliArgs(["profile", "delete", name, "--yes"]),
       {
-        cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
+        cwd: join(FLUX AGENT_HOME, "flux-agent-agent"),
         env: {
           ...process.env,
           PATH: getEnhancedPath(),
           HOME: homedir(),
-          OMNIWORKER_HOME,
+          FLUX AGENT_HOME,
         },
         stdio: "pipe",
         timeout: 30000, // Robust timeout for service cleanup
@@ -436,15 +436,15 @@ export function setActiveProfile(name: string): void {
 
   try {
     execFileSync(
-      OMNIWORKER_PYTHON,
-      omniworkerCliArgs(["profile", "use", name]),
+      FLUX AGENT_PYTHON,
+      flux-agentCliArgs(["profile", "use", name]),
       {
-        cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
+        cwd: join(FLUX AGENT_HOME, "flux-agent-agent"),
         env: {
           ...process.env,
           PATH: getEnhancedPath(),
           HOME: homedir(),
-          OMNIWORKER_HOME,
+          FLUX AGENT_HOME,
         },
         stdio: "pipe",
         timeout: 20000, // Robust timeout for switching active profiles
@@ -470,7 +470,7 @@ export interface OnboardingData {
 }
 
 function setOnboardingCompletedDirectly(completed: boolean): void {
-  const f = join(OMNIWORKER_HOME, "desktop.json");
+  const f = join(FLUX AGENT_HOME, "desktop.json");
   let data: Record<string, any> = {};
   try {
     if (existsSync(f)) {
@@ -528,7 +528,7 @@ export function saveOnboardingData(data: OnboardingData): { success: boolean; er
     const tasksText = data.agentTasks ? data.agentTasks.trim() : "";
     const customMissionText = data.customMission ? data.customMission.trim() : "";
 
-    const soulContent = `# OmniWorker Soul Configuration
+    const soulContent = `# Flux Agent Soul Configuration
 
 ## 👤 User Identity
 - **Owner Name:** ${data.userName}
@@ -559,10 +559,10 @@ export function saveOnboardingData(data: OnboardingData): { success: boolean; er
 3. **Locale:** All responses, formatting, and markdown texts must be outputted in ${data.language}, keeping variable names and strict code comments in English.
 `;
 
-    const defaultSoulPath = join(OMNIWORKER_HOME, "SOUL.md");
+    const defaultSoulPath = join(FLUX AGENT_HOME, "SOUL.md");
     safeWriteFile(defaultSoulPath, soulContent);
 
-    const defaultConfigPath = join(OMNIWORKER_HOME, "config.yaml");
+    const defaultConfigPath = join(FLUX AGENT_HOME, "config.yaml");
     if (existsSync(defaultConfigPath)) {
       let configContent = readFileSync(defaultConfigPath, "utf-8");
 

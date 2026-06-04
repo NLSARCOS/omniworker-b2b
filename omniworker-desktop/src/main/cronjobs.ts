@@ -3,12 +3,12 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { execFile } from "child_process";
 import {
-  OMNIWORKER_HOME,
-  OMNIWORKER_PYTHON,
-  omniworkerCliArgs,
+  FLUX AGENT_HOME,
+  FLUX AGENT_PYTHON,
+  flux-agentCliArgs,
 } from "./installer";
 import { profileHome } from "./utils";
-import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./omniworker";
+import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./flux-agent";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { PowerManager } from "./power";
 
@@ -88,7 +88,7 @@ async function remoteJsonError(res: Response): Promise<string> {
 
 /**
  * Read cron jobs from the jobs.json file (async to avoid blocking the main process).
- * In remote mode, fetches from the OmniWorker API server's /api/jobs endpoint instead.
+ * In remote mode, fetches from the Flux Agent API server's /api/jobs endpoint instead.
  */
 export async function listCronJobs(
   includeDisabled = true,
@@ -142,13 +142,13 @@ export async function listCronJobs(
 }
 
 /**
- * Run a omniworker cron CLI command and return the result.
+ * Run a flux-agent cron CLI command and return the result.
  */
 export function runCronCommand(
   args: string[],
   profile?: string,
 ): Promise<{ success: boolean; output: string; error?: string }> {
-  const cliArgs = omniworkerCliArgs();
+  const cliArgs = flux-agentCliArgs();
   if (profile && profile !== "default") {
     cliArgs.push("-p", profile);
   }
@@ -163,10 +163,10 @@ export function runCronCommand(
 
   return new Promise((resolve) => {
     execFile(
-      OMNIWORKER_PYTHON,
+      FLUX AGENT_PYTHON,
       cliArgs,
       {
-        cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
+        cwd: join(FLUX AGENT_HOME, "flux-agent-agent"),
         timeout: 15000,
         ...HIDDEN_SUBPROCESS_OPTIONS,
       },

@@ -14,7 +14,7 @@ OSINT username search across 400+ social networks. Hunt down social media accoun
 
 | | |
 |---|---|
-| Source | Optional — install with `omniworker skills install official/security/sherlock` |
+| Source | Optional — install with `flux-agent skills install official/security/sherlock` |
 | Path | `optional-skills/security/sherlock` |
 | Version | `1.0.0` |
 | Author | unmodeled-tyler |
@@ -25,7 +25,7 @@ OSINT username search across 400+ social networks. Hunt down social media accoun
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # Sherlock OSINT Username Search

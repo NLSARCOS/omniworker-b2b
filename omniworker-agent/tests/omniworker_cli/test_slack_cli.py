@@ -1,13 +1,13 @@
 """Tests for Slack CLI helpers."""
 
-from omniworker_cli.slack_cli import _build_full_manifest
+from flux-agent_cli.slack_cli import _build_full_manifest
 
 
 class TestSlackFullManifest:
-    """Generated full Slack app manifest used by `omniworker slack manifest`."""
+    """Generated full Slack app manifest used by `flux-agent slack manifest`."""
 
     def test_app_home_messages_are_writable(self):
-        manifest = _build_full_manifest("OmniWorker", "Your OmniWorker agent on Slack")
+        manifest = _build_full_manifest("Flux Agent", "Your Flux Agent agent on Slack")
 
         assert manifest["features"]["app_home"] == {
             "home_tab_enabled": False,
@@ -16,13 +16,13 @@ class TestSlackFullManifest:
         }
 
     def test_private_channel_directory_scope_is_included(self):
-        manifest = _build_full_manifest("OmniWorker", "Your OmniWorker agent on Slack")
+        manifest = _build_full_manifest("Flux Agent", "Your Flux Agent agent on Slack")
 
         bot_scopes = manifest["oauth_config"]["scopes"]["bot"]
         assert "groups:read" in bot_scopes
 
     def test_assistant_features_remain_enabled(self):
-        manifest = _build_full_manifest("OmniWorker", "Your OmniWorker agent on Slack")
+        manifest = _build_full_manifest("Flux Agent", "Your Flux Agent agent on Slack")
 
         assert "assistant_view" in manifest["features"]
         assert "assistant:write" in manifest["oauth_config"]["scopes"]["bot"]

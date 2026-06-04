@@ -30,7 +30,7 @@ Use this as the structure for PR review summary comments. Copy and fill in the s
 - [aspect that was done well]
 
 ---
-*Reviewed by OmniWorker Agent*
+*Reviewed by Flux Agent Agent*
 ```
 
 ## Severity Guide

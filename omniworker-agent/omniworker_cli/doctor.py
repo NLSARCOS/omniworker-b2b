@@ -1,7 +1,7 @@
 """
 Doctor command for hermes CLI.
 
-Diagnoses issues with OmniWorker Agent setup.
+Diagnoses issues with Flux Agent Agent setup.
 """
 
 import os
@@ -11,22 +11,22 @@ import shutil
 import importlib.util
 from pathlib import Path
 
-from omniworker_cli.config import get_project_root, get_omniworker_home, get_env_path
-from omniworker_cli.env_loader import load_hermes_dotenv
-from omniworker_constants import display_omniworker_home
+from flux-agent_cli.config import get_project_root, get_flux-agent_home, get_env_path
+from flux-agent_cli.env_loader import load_hermes_dotenv
+from flux-agent_constants import display_flux-agent_home
 
 PROJECT_ROOT = get_project_root()
-OMNIWORKER_HOME = get_omniworker_home()
-_DHH = display_omniworker_home()  # user-facing display path (e.g. ~/.hermes or ~/.hermes/profiles/coder)
+FLUX AGENT_HOME = get_flux-agent_home()
+_DHH = display_flux-agent_home()  # user-facing display path (e.g. ~/.hermes or ~/.hermes/profiles/coder)
 
 # Load environment variables from ~/.hermes/.env so API key checks work
 _env_path = get_env_path()
-load_hermes_dotenv(omniworker_home=_env_path.parent, project_env=PROJECT_ROOT / ".env")
+load_hermes_dotenv(flux-agent_home=_env_path.parent, project_env=PROJECT_ROOT / ".env")
 
-from omniworker_cli.colors import Colors, color
-from omniworker_cli.models import _OMNIWORKER_USER_AGENT
-from omniworker_cli.vercel_auth import describe_vercel_auth
-from omniworker_constants import OPENROUTER_MODELS_URL
+from flux-agent_cli.colors import Colors, color
+from flux-agent_cli.models import _FLUX AGENT_USER_AGENT
+from flux-agent_cli.vercel_auth import describe_vercel_auth
+from flux-agent_constants import OPENROUTER_MODELS_URL
 from utils import base_url_host_matches
 
 
@@ -57,7 +57,7 @@ _PROVIDER_ENV_HINTS = (
 )
 
 
-from omniworker_constants import is_termux as _is_termux
+from flux-agent_constants import is_termux as _is_termux
 
 
 def _python_install_cmd() -> str:
@@ -120,7 +120,7 @@ def _is_kanban_worker_env_gate(item: dict) -> bool:
     """Return True when Kanban is unavailable only because this is not a worker process."""
     if item.get("name") != "kanban":
         return False
-    if os.environ.get("OMNIWORKER_KANBAN_TASK"):
+    if os.environ.get("FLUX AGENT_KANBAN_TASK"):
         return False
 
     tools = item.get("tools") or []
@@ -129,7 +129,7 @@ def _is_kanban_worker_env_gate(item: dict) -> bool:
 
 def _doctor_tool_availability_detail(toolset: str) -> str:
     """Optional explanatory suffix for toolsets whose doctor status needs context."""
-    if toolset == "kanban" and not os.environ.get("OMNIWORKER_KANBAN_TASK"):
+    if toolset == "kanban" and not os.environ.get("FLUX AGENT_KANBAN_TASK"):
         return "(runtime-gated; loaded only for dispatcher-spawned workers)"
     return ""
 
@@ -163,19 +163,19 @@ def _has_healthy_oauth_fallback_for_apikey_provider(provider_label: str) -> bool
     normalized = (provider_label or "").strip().lower()
     if normalized in {"google / gemini", "gemini"}:
         try:
-            from omniworker_cli.auth import get_gemini_oauth_auth_status
+            from flux-agent_cli.auth import get_gemini_oauth_auth_status
             return bool((get_gemini_oauth_auth_status() or {}).get("logged_in"))
         except Exception:
             return False
     if normalized == "minimax":
         try:
-            from omniworker_cli.auth import get_minimax_oauth_auth_status
+            from flux-agent_cli.auth import get_minimax_oauth_auth_status
             return bool((get_minimax_oauth_auth_status() or {}).get("logged_in"))
         except Exception:
             return False
     if normalized == "xai":
         try:
-            from omniworker_cli.auth import get_xai_oauth_auth_status
+            from flux-agent_cli.auth import get_xai_oauth_auth_status
             return bool((get_xai_oauth_auth_status() or {}).get("logged_in"))
         except Exception:
             return False
@@ -210,7 +210,7 @@ def _fail_and_issue(text: str, detail: str, fix: str, issues: list[str]) -> None
 def _check_gateway_service_linger(issues: list[str]) -> None:
     """Warn when a systemd user gateway service will stop after logout."""
     try:
-        from omniworker_cli.gateway import (
+        from flux-agent_cli.gateway import (
             get_systemd_linger_status,
             get_systemd_unit_path,
             is_linux,
@@ -295,7 +295,7 @@ def _build_apikey_providers_list() -> list:
         from providers import list_providers
         from providers.base import ProviderProfile as _PP
         try:
-            from omniworker_cli.providers import normalize_provider as _normalize_provider
+            from flux-agent_cli.providers import normalize_provider as _normalize_provider
         except Exception:  # pragma: no cover - normalization is best-effort
             def _normalize_provider(_name: str) -> str:
                 return (_name or "").strip().lower()
@@ -341,13 +341,13 @@ def run_doctor(args):
 
     # Doctor runs from the interactive CLI, so CLI-gated tool availability
     # checks (like cronjob management) should see the same context as `hermes`.
-    os.environ.setdefault("OMNIWORKER_INTERACTIVE", "1")
+    os.environ.setdefault("FLUX AGENT_INTERACTIVE", "1")
 
     # Handle `hermes doctor --ack <id>` as a fast path. Persist the ack and
     # return without running the rest of the diagnostics — the user has
     # already seen the advisory and just wants to silence it.
     if ack_target:
-        from omniworker_cli.security_advisories import (
+        from flux-agent_cli.security_advisories import (
             ADVISORIES,
             ack_advisory,
         )
@@ -380,12 +380,12 @@ def run_doctor(args):
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│                 🩺 OmniWorker Doctor                        │", Colors.CYAN))
+    print(color("│                 🩺 Flux Agent Doctor                        │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
 
     _section("Security Advisories")
     try:
-        from omniworker_cli.security_advisories import (
+        from flux-agent_cli.security_advisories import (
             detect_compromised,
             filter_unacked,
             full_remediation_text,
@@ -484,7 +484,7 @@ def run_doctor(args):
     
     _section("Configuration Files")
     # Check ~/.hermes/.env (primary location for user config)
-    env_path = OMNIWORKER_HOME / '.env'
+    env_path = FLUX AGENT_HOME / '.env'
     if env_path.exists():
         check_ok(f"{_DHH}/.env file exists")
         
@@ -516,7 +516,7 @@ def run_doctor(args):
                 issues.append("Run 'hermes setup' to create .env")
     
     # Check ~/.hermes/config.yaml (primary) or project cli-config.yaml (fallback)
-    config_path = OMNIWORKER_HOME / 'config.yaml'
+    config_path = FLUX AGENT_HOME / 'config.yaml'
     if config_path.exists():
         check_ok(f"{_DHH}/config.yaml exists")
 
@@ -531,7 +531,7 @@ def run_doctor(args):
 
             known_providers: set = set()
             try:
-                from omniworker_cli.auth import (
+                from flux-agent_cli.auth import (
                     PROVIDER_REGISTRY,
                     resolve_provider as _resolve_auth_provider,
                 )
@@ -540,8 +540,8 @@ def run_doctor(args):
                 _resolve_auth_provider = None
                 pass
             try:
-                from omniworker_cli.config import get_compatible_custom_providers as _compatible_custom_providers
-                from omniworker_cli.providers import (
+                from flux-agent_cli.config import get_compatible_custom_providers as _compatible_custom_providers
+                from flux-agent_cli.providers import (
                     normalize_provider as _normalize_catalog_provider,
                     resolve_provider_full as _resolve_provider_full,
                 )
@@ -653,14 +653,14 @@ def run_doctor(args):
             if runtime_provider and runtime_provider not in ("auto", "custom"):
                 try:
                     if runtime_provider == "openrouter":
-                        from omniworker_cli.config import get_env_value
+                        from flux-agent_cli.config import get_env_value
 
                         configured = bool(
                             str(get_env_value("OPENROUTER_API_KEY") or "").strip()
                             or str(get_env_value("OPENAI_API_KEY") or "").strip()
                         )
                     else:
-                        from omniworker_cli.auth import PROVIDER_REGISTRY, get_auth_status
+                        from flux-agent_cli.auth import PROVIDER_REGISTRY, get_auth_status
 
                         pconfig = PROVIDER_REGISTRY.get(runtime_provider)
                         configured = True
@@ -699,7 +699,7 @@ def run_doctor(args):
                     shutil.copy2(str(example_config), str(config_path))
                     check_ok(f"Created {_DHH}/config.yaml from cli-config.yaml.example")
                 else:
-                    from omniworker_cli.config import DEFAULT_CONFIG, save_config
+                    from flux-agent_cli.config import DEFAULT_CONFIG, save_config
                     save_config(DEFAULT_CONFIG)
                     check_ok(f"Created {_DHH}/config.yaml from defaults")
                 fixed_count += 1
@@ -707,10 +707,10 @@ def run_doctor(args):
                 check_warn("config.yaml not found", "(using defaults)")
 
     # Check config version and stale keys
-    config_path = OMNIWORKER_HOME / 'config.yaml'
+    config_path = FLUX AGENT_HOME / 'config.yaml'
     if config_path.exists():
         try:
-            from omniworker_cli.config import check_config_version, migrate_config
+            from flux-agent_cli.config import check_config_version, migrate_config
             current_ver, latest_ver = check_config_version()
             if current_ver < latest_ver:
                 check_warn(
@@ -761,7 +761,7 @@ def run_doctor(args):
 
         # Validate config structure (catches malformed custom_providers, etc.)
         try:
-            from omniworker_cli.config import validate_config_structure
+            from flux-agent_cli.config import validate_config_structure
             config_issues = validate_config_structure()
             if config_issues:
                 _section("Config Structure")
@@ -779,7 +779,7 @@ def run_doctor(args):
 
     _section("Auth Providers")
     try:
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             get_nous_auth_status,
             get_codex_auth_status,
             get_gemini_oauth_auth_status,
@@ -826,7 +826,7 @@ def run_doctor(args):
     # xAI OAuth — separate try/except so an import failure here cannot
     # disrupt the already-printed Nous/Codex/Gemini/MiniMax rows above.
     try:
-        from omniworker_cli.auth import get_xai_oauth_auth_status
+        from flux-agent_cli.auth import get_xai_oauth_auth_status
         xai_oauth_status = get_xai_oauth_auth_status() or {}
         if xai_oauth_status.get("logged_in"):
             check_ok("xAI OAuth", "(logged in)")
@@ -840,7 +840,7 @@ def run_doctor(args):
     if _safe_which("codex"):
         check_ok("codex CLI")
     else:
-        # Native OAuth uses OmniWorker' own device-code flow — the Codex CLI is
+        # Native OAuth uses Flux Agent' own device-code flow — the Codex CLI is
         # only needed if you want to import existing tokens from
         # ~/.codex/auth.json.  Downgrade to info so users running
         # `hermes auth openai-codex` aren't told they're missing something.
@@ -850,11 +850,11 @@ def run_doctor(args):
         )
 
     _section("Directory Structure")
-    omniworker_home = OMNIWORKER_HOME
-    if omniworker_home.exists():
+    flux-agent_home = FLUX AGENT_HOME
+    if flux-agent_home.exists():
         check_ok(f"{_DHH} directory exists")
     elif should_fix:
-        omniworker_home.mkdir(parents=True, exist_ok=True)
+        flux-agent_home.mkdir(parents=True, exist_ok=True)
         check_ok(f"Created {_DHH} directory")
         fixed_count += 1
     else:
@@ -863,7 +863,7 @@ def run_doctor(args):
     # Check expected subdirectories
     expected_subdirs = ["cron", "sessions", "logs", "skills", "memories"]
     for subdir_name in expected_subdirs:
-        subdir_path = omniworker_home / subdir_name
+        subdir_path = flux-agent_home / subdir_name
         if subdir_path.exists():
             check_ok(f"{_DHH}/{subdir_name}/ exists")
         elif should_fix:
@@ -874,7 +874,7 @@ def run_doctor(args):
             check_warn(f"{_DHH}/{subdir_name}/ not found", "(will be created on first use)")
     
     # Check for SOUL.md persona file
-    soul_path = omniworker_home / "SOUL.md"
+    soul_path = flux-agent_home / "SOUL.md"
     if soul_path.exists():
         content = soul_path.read_text(encoding="utf-8").strip()
         # Check if it's just the template comments (no real content)
@@ -884,20 +884,20 @@ def run_doctor(args):
         else:
             check_info(f"{_DHH}/SOUL.md exists but is empty — edit it to customize personality")
     else:
-        check_warn(f"{_DHH}/SOUL.md not found", "(create it to give OmniWorker a custom personality)")
+        check_warn(f"{_DHH}/SOUL.md not found", "(create it to give Flux Agent a custom personality)")
         if should_fix:
             soul_path.parent.mkdir(parents=True, exist_ok=True)
             soul_path.write_text(
-                "# OmniWorker Agent Persona\n\n"
-                "<!-- Edit this file to customize how OmniWorker communicates. -->\n\n"
-                "You are OmniWorker, a helpful AI assistant.\n",
+                "# Flux Agent Agent Persona\n\n"
+                "<!-- Edit this file to customize how Flux Agent communicates. -->\n\n"
+                "You are Flux Agent, a helpful AI assistant.\n",
                 encoding="utf-8",
             )
             check_ok(f"Created {_DHH}/SOUL.md with basic template")
             fixed_count += 1
     
     # Check memory directory
-    memories_dir = omniworker_home / "memories"
+    memories_dir = flux-agent_home / "memories"
     if memories_dir.exists():
         check_ok(f"{_DHH}/memories/ directory exists")
         memory_file = memories_dir / "MEMORY.md"
@@ -920,7 +920,7 @@ def run_doctor(args):
             fixed_count += 1
     
     # Check SQLite session store
-    state_db_path = omniworker_home / "state.db"
+    state_db_path = flux-agent_home / "state.db"
     if state_db_path.exists():
         try:
             import sqlite3
@@ -935,7 +935,7 @@ def run_doctor(args):
         check_info(f"{_DHH}/state.db not created yet (will be created on first session)")
 
     # Check WAL file size (unbounded growth indicates missed checkpoints)
-    wal_path = omniworker_home / "state.db-wal"
+    wal_path = flux-agent_home / "state.db-wal"
     if wal_path.exists():
         try:
             wal_size = wal_path.stat().st_size
@@ -1409,7 +1409,7 @@ def run_doctor(args):
             )
 
     def _probe_anthropic() -> _ConnectivityResult:
-        from omniworker_cli.auth import get_anthropic_key
+        from flux-agent_cli.auth import get_anthropic_key
         key = get_anthropic_key()
         if not key:
             return _ConnectivityResult("Anthropic API", [], [])
@@ -1512,7 +1512,7 @@ def run_doctor(args):
             url = (base.rstrip("/") + "/models") if base else default_url
             headers = {
                 "Authorization": f"Bearer {key}",
-                "User-Agent": _OMNIWORKER_USER_AGENT,
+                "User-Agent": _FLUX AGENT_USER_AGENT,
             }
             if base_url_host_matches(base, "api.kimi.com"):
                 headers["User-Agent"] = "claude-code/0.1.0"
@@ -1626,7 +1626,7 @@ def run_doctor(args):
         """
         label = "Azure Foundry (Entra ID)".ljust(28)
         try:
-            from omniworker_cli.config import load_config
+            from flux-agent_cli.config import load_config
             cfg = load_config()
             model_cfg = cfg.get("model") if isinstance(cfg, dict) else {}
             if not isinstance(model_cfg, dict):
@@ -1786,7 +1786,7 @@ def run_doctor(args):
         check_warn("Could not check tool availability", f"({e})")
     
     _section("Skills Hub")
-    hub_dir = OMNIWORKER_HOME / "skills" / ".hub"
+    hub_dir = FLUX AGENT_HOME / "skills" / ".hub"
     if hub_dir.exists():
         check_ok("Skills Hub directory exists")
         lock_file = hub_dir / "lock.json"
@@ -1805,7 +1805,7 @@ def run_doctor(args):
     else:
         check_warn("Skills Hub directory not initialized", "(run: hermes skills list)")
 
-    from omniworker_cli.config import get_env_value
+    from flux-agent_cli.config import get_env_value
 
     def _gh_authenticated() -> bool:
         """Check if gh CLI is authenticated via token file or device flow."""
@@ -1830,7 +1830,7 @@ def run_doctor(args):
     _active_memory_provider = ""
     try:
         import yaml as _yaml
-        _mem_cfg_path = OMNIWORKER_HOME / "config.yaml"
+        _mem_cfg_path = FLUX AGENT_HOME / "config.yaml"
         if _mem_cfg_path.exists():
             with open(_mem_cfg_path, encoding="utf-8") as _f:
                 _raw_cfg = _yaml.safe_load(_f) or {}
@@ -1916,7 +1916,7 @@ def run_doctor(args):
             check_warn(f"{_active_memory_provider} check failed", str(_e))
 
     try:
-        from omniworker_cli.profiles import list_profiles, _get_wrapper_dir, profile_exists
+        from flux-agent_cli.profiles import list_profiles, _get_wrapper_dir, profile_exists
         import re as _re
 
         named_profiles = [p for p in list_profiles() if not p.is_default]

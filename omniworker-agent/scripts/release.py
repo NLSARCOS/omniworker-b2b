@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OmniWorker Agent Release Script
+"""Flux Agent Agent Release Script
 
 Generates changelogs and creates GitHub releases with CalVer tags.
 
@@ -31,7 +31,7 @@ from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-VERSION_FILE = REPO_ROOT / "omniworker_cli" / "__init__.py"
+VERSION_FILE = REPO_ROOT / "flux-agent_cli" / "__init__.py"
 PYPROJECT_FILE = REPO_ROOT / "pyproject.toml"
 
 # ACP Registry manifest must stay version-locked with pyproject.toml.
@@ -52,7 +52,7 @@ AUTHOR_MAP = {
     "anadi.jaggia@gmail.com": "Jaggia",
     "32201324+simpolism@users.noreply.github.com": "simpolism",
     "simpolism@gmail.com": "simpolism",
-    "jake@omniworker.com": "simpolism",
+    "jake@flux-agent.com": "simpolism",
     "mgongzai@gmail.com": "vKongv",
     "0x.badfriend@gmail.com": "discodirector",
     "altriatree@gmail.com": "TruaShamu",
@@ -69,7 +69,7 @@ AUTHOR_MAP = {
     "buraysandro9@gmail.com": "ygd58",
     "108427749+buntingszn@users.noreply.github.com": "buntingszn",
     "yanglongwei06@gmail.com": "Alex-yang00",
-    "teknium@omniworker.com": "teknium1",
+    "teknium@flux-agent.com": "teknium1",
     "piyushvp1@gmail.com": "thelumiereguy",
     "421774554@qq.com": "wuli666",
     "harish.kukreja@gmail.com": "counterposition",
@@ -215,7 +215,7 @@ AUTHOR_MAP = {
     "jani@0xhoneyjar.xyz": "deep-name",
     # LINE messaging plugin (synthesis PR)
     "32443648+leepoweii@users.noreply.github.com": "leepoweii",
-    "omniworker@liyangchen.me": "liyoungc",
+    "flux-agent@liyangchen.me": "liyoungc",
     "charles@perng.com": "perng",
     "soichiro0111.dev@gmail.com": "soichiyo",
     "0xde@pieverse.io": "David-0x221Eight",
@@ -249,7 +249,7 @@ AUTHOR_MAP = {
     # Temporary tool-progress cleanup salvage (May 2026)
     "Mrcharlesiv@gmail.com": "mrcharlesiv",
     "nbot@liizfq.top": "liizfq",
-    "274096618+omniworker-agent-dhabibi@users.noreply.github.com": "dhabibi",
+    "274096618+flux-agent-agent-dhabibi@users.noreply.github.com": "dhabibi",
     "dejie.guo@gmail.com": "JayGwod",
     "133716830+0xKingBack@users.noreply.github.com": "0xKingBack",
     "daixin1204@gmail.com": "SimbaKingjoe",
@@ -447,7 +447,7 @@ AUTHOR_MAP = {
     "samherring99@gmail.com": "samherring99",
     "desaiaum08@gmail.com": "Aum08Desai",
     "shannon.sands.1979@gmail.com": "shannonsands",
-    "shannon@omniworker.com": "shannonsands",
+    "shannon@flux-agent.com": "shannonsands",
     "abdi.moya@gmail.com": "AxDSan",
     "eri@plasticlabs.ai": "Erosika",
     "hjcpuro@gmail.com": "hjc-puro",
@@ -552,16 +552,16 @@ AUTHOR_MAP = {
     "shokatalishaikh95@gmail.com": "areu01or00",
     "bryan@intertwinesys.com": "bryanyoung",
     "christo.mitov@gmail.com": "christomitov",
-    "omniworker@omniworker.com": "OmniWorker",
+    "flux-agent@flux-agent.com": "Flux Agent",
     "reginaldasr@gmail.com": "ReginaldasR",
     "ntconguit@gmail.com": "0xharryriddle",
     "agent@wildcat.local": "ericnicolaides",
     "georgex8001@gmail.com": "georgex8001",
     "stefan@dimagents.ai": "dimitrovi",
-    "omniworker@noushq.ai": "benbarclay",
+    "flux-agent@noushq.ai": "benbarclay",
     "chinmingcock@gmail.com": "ChimingLiu",
     "allard.quek@singtel.com": "AllardQuek",
-    "omniworker@sparklab.ai": "omniworker",
+    "flux-agent@sparklab.ai": "flux-agent",
     "semihcvlk53@gmail.com": "Himess",
     "erenkar950@gmail.com": "erenkarakus",
     "adavyasharma@gmail.com": "adavyas",
@@ -606,7 +606,7 @@ AUTHOR_MAP = {
     "angelos@oikos.lan.home.malaiwah.com": "angelos",
     "aptx4561@gmail.com": "cokemine",
     "arilotter@gmail.com": "ethernet8023",
-    "ben@omniworker.com": "benbarclay",
+    "ben@flux-agent.com": "benbarclay",
     "birdiegyal@gmail.com": "yyovil",
     "boschi1997@gmail.com": "nicoloboschi",
     "chef.ya@gmail.com": "cherifya",
@@ -623,7 +623,7 @@ AUTHOR_MAP = {
     "dylan.socolobsky@lambdaclass.com": "dsocolobsky",
     "ignacio.avecilla@lambdaclass.com": "IAvecilla",
     "duerzy@gmail.com": "duerzy",
-    "emozilla@omniworker.com": "emozilla",
+    "emozilla@flux-agent.com": "emozilla",
     "fancydirty@gmail.com": "fancydirty",
     "farion1231@gmail.com": "farion1231",
     "floptopbot33@gmail.com": "flobo3",
@@ -638,8 +638,8 @@ AUTHOR_MAP = {
     "hmbown@gmail.com": "Hmbown",
     "iacobs@m0n5t3r.info": "m0n5t3r",
     "jiayuw794@gmail.com": "JiayuuWang",
-    "jonny@omniworker.com": "jquesnelle",
-    "jake@omniworker.com": "simpolism",
+    "jonny@flux-agent.com": "jquesnelle",
+    "jake@flux-agent.com": "simpolism",
     "juan.ovalle@mistral.ai": "jjovalle99",
     "julien.talbot@ergonomia.re": "Julientalbot",
     "kagura.chen28@gmail.com": "kagura-agent",
@@ -727,7 +727,7 @@ AUTHOR_MAP = {
     "7093928+0xyg3n@users.noreply.github.com": "0xyg3n",
     "nftpoetrist@gmail.com": "nftpoetrist",  # PR #18982
     "millerc79@users.noreply.github.com": "millerc79",  # PR #19033
-    "omniworker@example.com": "shellybotmoyer",  # PR #18915 (bot-committed)
+    "flux-agent@example.com": "shellybotmoyer",  # PR #18915 (bot-committed)
     "exx@example.com": "exxmen",  # PR #19555
     "hypnosis.mda@gmail.com": "Hypn0sis",
     "ywt000818@gmail.com": "OwenYWT",
@@ -876,7 +876,7 @@ AUTHOR_MAP = {
     "aleksandr.pasevin@openzeppelin.com": "pasevin",
     "ubuntu@localhost.localdomain": "holynn-q",
     "holynn@placeholder.local": "holynn-q",
-    "agent@omniworker.local": "jacdevos",
+    "agent@flux-agent.local": "jacdevos",
     "sunsky.lau@gmail.com": "liuhao1024",
     "qiuqfang98@qq.com": "keepcalmqqf",
     "261867348+ai-ag2026@users.noreply.github.com": "ai-ag2026",
@@ -932,7 +932,7 @@ AUTHOR_MAP = {
     "raipratik0101@gmail.com": "PratikRai0101",
     "code@sasha.id": "sasha-id",
     "chen.yunbo@xydigit.com": "chenyunbo411",
-    "omniworker@local": "Asce66",
+    "flux-agent@local": "Asce66",
     "59465365+0xsir0000@users.noreply.github.com": "0xsir0000",
     "lisanhu2014@hotmail.com": "lisanhu",
     "0668001438@zte.com.cn": "chenyunbo411",
@@ -1006,7 +1006,7 @@ AUTHOR_MAP = {
     "me+github7604@versun.org": "Versun",  # co-author only
     "my.vesper.nine@gmail.com": "kevin-ho",  # salvage: PR #15488 author @kevin-ho
     "noreply@paperclip.ing": "Paperclip",  # co-author only
-    "teknium@omniworker-agent": "teknium1",
+    "teknium@flux-agent-agent": "teknium1",
     "web3blind@gmail.com": "web3blind",
     "ztzheng@163.com": "chengoak",  # PR #17467
     "24110240104@m.fudan.edu.cn": "YuShu",  # co-author only
@@ -1036,7 +1036,7 @@ AUTHOR_MAP = {
     "miniding@miniding.home": "Foolafroos",  # PR #20329 French locale
     "montbra@gmail.com": "Montbra",  # PR #20897 salvage of #16189 (TUI voice PTT)
     "promptsiren@gmail.com": "firefly",  # PR #18123 salvage of #16660 (ContextVars)
-    "wtyomniworker@gmail.com": "WuTianyi123",  # PR #20275 salvage of #13723 (feishu markdown)
+    "wtyflux-agent@gmail.com": "WuTianyi123",  # PR #20275 salvage of #13723 (feishu markdown)
     "zhicheng.han@mathematik.uni-goettingen.de": "hanzckernel",  # PR #20311 (api-server approval events)
     "agentsmithlaor@gmail.com": "oferlaor",  # PR #22356 salvage (cron origin sender identity)
     "jhin.lee@unity3d.com": "leehack",  # PR #22053 salvage (telegram DM topic reply fallback)
@@ -1044,11 +1044,11 @@ AUTHOR_MAP = {
     "ayman.a.kamal@hotmail.com": "A-kamal",  # PR #18678 (xAI image resolution fix)
     # Kanban bug-fix batch salvage (May 2026)
     "frowte3k@gmail.com": "Frowtek",  # salvage of #23206 (gateway --board auto-subscribe)
-    "sylw3st3rr@gmail.com": "Sylw3ster",  # salvage of #23252 (OMNIWORKER_KANBAN_BOARD restore)
+    "sylw3st3rr@gmail.com": "Sylw3ster",  # salvage of #23252 (FLUX AGENT_KANBAN_BOARD restore)
     "hello@dominikh.com": "dmnkhorvath",  # salvage of #23358 (kanban worker send_message)
     "413011+smwbev@users.noreply.github.com": "smwbev",  # salvage of #23659 (aria-label colLabel)
-    "58116817+TurgutKural@users.noreply.github.com": "TurgutKural",  # salvage of #23356 (OMNIWORKER_HOME inject)
-    "omniworker@agent.local": "29206394",  # PR #22194 salvage (sudo -S brute-force guard, #9590)
+    "58116817+TurgutKural@users.noreply.github.com": "TurgutKural",  # salvage of #23356 (FLUX AGENT_HOME inject)
+    "flux-agent@agent.local": "29206394",  # PR #22194 salvage (sudo -S brute-force guard, #9590)
     "freedemon@gmail.com": "fr33d3m0n",  # PR #21128 salvage (sudo stdin/askpass DANGEROUS, #17873 cat 4)
     "zhaowh3613@outlook.com": "VinceZcrikl",  # PR #23647 salvage (npm UTF-8 decode on GBK Windows)
     "anton.kuenzi@gmail.com": "ZeterMordio",  # PR #11754 salvage (zsh completion compdef + _arguments syntax)
@@ -1192,7 +1192,7 @@ def _update_acp_registry_versions(semver: str) -> None:
         manifest["version"] = semver
         uvx = manifest.get("distribution", {}).get("uvx", {})
         if "package" in uvx:
-            uvx["package"] = f"omniworker-agent[acp]=={semver}"
+            uvx["package"] = f"flux-agent-agent[acp]=={semver}"
         # Preserve trailing newline + 2-space indent the file already uses.
         ACP_REGISTRY_MANIFEST.write_text(
             json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
@@ -1317,7 +1317,7 @@ def parse_coauthors(body: str) -> list:
         return []
     # AI/bot emails to ignore in co-author trailers
     _ignored_emails = {"noreply@anthropic.com", "noreply@github.com",
-                       "cursoragent@cursor.com", "omniworker@omniworker.com"}
+                       "cursoragent@cursor.com", "flux-agent@flux-agent.com"}
     _ignored_names = re.compile(r"^(Claude|Copilot|Cursor Agent|GitHub Actions?|dependabot|renovate)", re.IGNORECASE)
     pattern = re.compile(r"Co-authored-by:\s*(.+?)\s*<([^>]+)>", re.IGNORECASE)
     results = []
@@ -1389,7 +1389,7 @@ def get_pr_number(subject: str) -> str | None:
     return None
 
 
-def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/OmniWorker/omniworker-agent",
+def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/Flux Agent/flux-agent-agent",
                        prev_tag=None, first_release=False):
     """Generate markdown changelog from categorized commits."""
     lines = []
@@ -1397,14 +1397,14 @@ def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/O
     # Header
     now = datetime.now()
     date_str = now.strftime("%B %d, %Y")
-    lines.append(f"# OmniWorker Agent v{semver} ({tag_name})")
+    lines.append(f"# Flux Agent Agent v{semver} ({tag_name})")
     lines.append("")
     lines.append(f"**Release Date:** {date_str}")
     lines.append("")
 
     if first_release:
         lines.append("> 🎉 **First official release!** This marks the beginning of regular weekly releases")
-        lines.append("> for OmniWorker Agent. See below for everything included in this initial release.")
+        lines.append("> for Flux Agent Agent. See below for everything included in this initial release.")
         lines.append("")
 
     # Group commits by category
@@ -1494,7 +1494,7 @@ def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/O
 
 
 def main():
-    parser = argparse.ArgumentParser(description="OmniWorker Agent Release Tool")
+    parser = argparse.ArgumentParser(description="Flux Agent Agent Release Tool")
     parser.add_argument("--bump", choices=["major", "minor", "patch"],
                         help="Which semver component to bump")
     parser.add_argument("--publish", action="store_true",
@@ -1542,7 +1542,7 @@ def main():
             return
 
     print(f"{'='*60}")
-    print(f"  OmniWorker Agent Release Preview")
+    print(f"  Flux Agent Agent Release Preview")
     print(f"{'='*60}")
     print(f"  CalVer tag:      {tag_name}")
     print(f"  SemVer:          v{current_version} → v{new_version}")
@@ -1596,7 +1596,7 @@ def main():
         # Create annotated tag
         tag_result = git_result(
             "tag", "-a", tag_name, "-m",
-            f"OmniWorker Agent v{new_version} ({calver_date})\n\nWeekly release"
+            f"Flux Agent Agent v{new_version} ({calver_date})\n\nWeekly release"
         )
         if tag_result.returncode != 0:
             print(f"  ✗ Failed to create tag {tag_name}: {tag_result.stderr.strip()}")
@@ -1626,7 +1626,7 @@ def main():
 
         gh_cmd = [
             "gh", "release", "create", tag_name,
-            "--title", f"OmniWorker Agent v{new_version} ({calver_date})",
+            "--title", f"Flux Agent Agent v{new_version} ({calver_date})",
             "--notes-file", str(changelog_file),
         ]
         gh_cmd.extend(str(path) for path in artifacts)
@@ -1653,7 +1653,7 @@ def main():
             print(f"    Release notes kept at: {changelog_file}")
             print(f"    Tag was created locally. Create the release manually:")
             print(
-                f"    gh release create {tag_name} --title 'OmniWorker Agent v{new_version} ({calver_date})' "
+                f"    gh release create {tag_name} --title 'Flux Agent Agent v{new_version} ({calver_date})' "
                 f"--notes-file .release_notes.md {' '.join(str(path) for path in artifacts)}"
             )
             print(f"\n  ✓ Release artifacts prepared for manual publish: v{new_version} ({tag_name})")

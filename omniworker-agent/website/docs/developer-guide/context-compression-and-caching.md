@@ -1,6 +1,6 @@
 # Context Compression and Caching
 
-OmniWorker Agent uses a dual compression system and Anthropic prompt caching to
+Flux Agent Agent uses a dual compression system and Anthropic prompt caching to
 manage context window usage efficiently across long conversations.
 
 Source files: `agent/context_engine.py` (ABC), `agent/context_compressor.py` (default engine),
@@ -30,13 +30,13 @@ Selection is config-driven via `context.engine` in `config.yaml`. The resolution
 
 Plugin engines are **never auto-activated** — the user must explicitly set `context.engine` to the plugin's name. The default `"compressor"` always uses the built-in.
 
-Configure via `omniworker plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
+Configure via `flux-agent plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
 
 For building a context engine plugin, see [Context Engine Plugins](/docs/developer-guide/context-engine-plugin).
 
 ## Dual Compression System
 
-OmniWorker has two separate compression layers that operate independently:
+Flux Agent has two separate compression layers that operate independently:
 
 ```
                      ┌──────────────────────────┐
@@ -278,7 +278,7 @@ conversation prefix. Uses Anthropic's `cache_control` breakpoints.
 
 ### Strategy: system_and_3
 
-Anthropic allows a maximum of 4 `cache_control` breakpoints per request. OmniWorker
+Anthropic allows a maximum of 4 `cache_control` breakpoints per request. Flux Agent
 uses the "system_and_3" strategy:
 
 ```

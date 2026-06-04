@@ -26,7 +26,7 @@ DATAFORSEO_AUTH = "bmVsc29uLnNhcmNvc0BzaW1wbGV4LmxhdDpkNzFkNTVmNzEwNGUyYTA0"
 SERP_ENDPOINT = "https://api.dataforseo.com/v3/serp/google/organic/live/advanced"
 KEYWORDS_ENDPOINT = "https://api.dataforseo.com/v3/keywords_data/google/search_volume/live"
 
-REPO_ROOT = Path("/Users/nelsonmini/.omniworker/omniworker-agent/omniworker-b2b/omniworker-saas")
+REPO_ROOT = Path("/Users/nelsonmini/.flux-agent/flux-agent-agent/flux-agent-b2b/flux-agent-saas")
 CONTENT_DIR = REPO_ROOT / "content" / "blog"
 APP_DIR = REPO_ROOT / "src" / "app"
 SITE_URL = "https://flux.simplex.lat"

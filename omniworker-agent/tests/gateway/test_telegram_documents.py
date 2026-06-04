@@ -139,7 +139,7 @@ def adapter():
 
 @pytest.fixture(autouse=True)
 def _redirect_cache(tmp_path, monkeypatch):
-    """Point document/video cache to tmp_path so tests don't touch ~/.omniworker."""
+    """Point document/video cache to tmp_path so tests don't touch ~/.flux-agent."""
     monkeypatch.setattr(
         "gateway.platforms.base.DOCUMENT_CACHE_DIR", tmp_path / "doc_cache"
     )

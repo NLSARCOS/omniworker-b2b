@@ -48,7 +48,7 @@ def work_dir(tmp_path):
 
 @pytest.fixture()
 def checkpoint_base(tmp_path):
-    """Isolated checkpoint base — never writes to ~/.omniworker/."""
+    """Isolated checkpoint base — never writes to ~/.flux-agent/."""
     return tmp_path / "checkpoints"
 
 

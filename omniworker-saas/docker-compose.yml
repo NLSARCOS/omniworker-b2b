@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  omniworker-saas:
+  flux-agent-saas:
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,7 +9,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - /opt/omniworker-downloads:/opt/omniworker-downloads
+      - /opt/flux-agent-downloads:/opt/flux-agent-downloads
     env_file:
       - .env
     depends_on:
@@ -29,12 +29,12 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password123}
-      - POSTGRES_DB=omniworker
+      - POSTGRES_DB=flux-agent
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d omniworker"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flux-agent"]
       interval: 10s
       timeout: 5s
       retries: 5

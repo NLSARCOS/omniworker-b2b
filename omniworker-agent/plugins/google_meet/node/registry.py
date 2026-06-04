@@ -24,11 +24,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 
 
 def _default_path() -> Path:
-    return Path(get_omniworker_home()) / "workspace" / "meetings" / "nodes.json"
+    return Path(get_flux-agent_home()) / "workspace" / "meetings" / "nodes.json"
 
 
 class NodeRegistry:

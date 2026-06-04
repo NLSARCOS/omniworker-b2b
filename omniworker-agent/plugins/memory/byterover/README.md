@@ -14,14 +14,14 @@ npm install -g byterover-cli
 ## Setup
 
 ```bash
-omniworker memory setup    # select "byterover"
+flux-agent memory setup    # select "byterover"
 ```
 
 Or manually:
 ```bash
-omniworker config set memory.provider byterover
+flux-agent config set memory.provider byterover
 # Optional cloud sync:
-echo "BRV_API_KEY=your-key" >> ~/.omniworker/.env
+echo "BRV_API_KEY=your-key" >> ~/.flux-agent/.env
 ```
 
 ## Config

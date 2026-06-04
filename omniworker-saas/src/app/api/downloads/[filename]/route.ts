@@ -4,7 +4,7 @@ import path from "path";
 
 export const dynamic = "force-dynamic";
 
-const DOWNLOADS_DIR = process.env.DOWNLOADS_DIR || "/opt/omniworker-downloads";
+const DOWNLOADS_DIR = process.env.DOWNLOADS_DIR || "/opt/flux-agent-downloads";
 
 export async function GET(
   _req: NextRequest,

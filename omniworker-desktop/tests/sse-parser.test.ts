@@ -14,10 +14,10 @@ describe("parseSseBlock", () => {
   });
 
   it("parses an SSE block with event + data", () => {
-    const block = 'event: omniworker.tool.progress\ndata: {"tool":"search"}';
+    const block = 'event: flux-agent.tool.progress\ndata: {"tool":"search"}';
     const result = parseSseBlock(block);
     expect(result).toEqual({
-      eventType: "omniworker.tool.progress",
+      eventType: "flux-agent.tool.progress",
       data: '{"tool":"search"}',
     });
   });
@@ -34,9 +34,9 @@ describe("parseSseBlock", () => {
   });
 
   it("handles extra whitespace in event type", () => {
-    const result = parseSseBlock("event:  omniworker.tool.progress \ndata: {}");
+    const result = parseSseBlock("event:  flux-agent.tool.progress \ndata: {}");
     expect(result).toEqual({
-      eventType: "omniworker.tool.progress",
+      eventType: "flux-agent.tool.progress",
       data: "{}",
     });
   });
@@ -45,10 +45,10 @@ describe("parseSseBlock", () => {
 // ─── processCustomEvent ─────────────────────────────────
 
 describe("processCustomEvent", () => {
-  it("handles omniworker.tool.progress with emoji and label", () => {
+  it("handles flux-agent.tool.progress with emoji and label", () => {
     const onToolProgress = vi.fn();
     const handled = processCustomEvent(
-      "omniworker.tool.progress",
+      "flux-agent.tool.progress",
       JSON.stringify({ tool: "search_web", emoji: "🔍", label: "Searching" }),
       { onToolProgress },
     );
@@ -59,7 +59,7 @@ describe("processCustomEvent", () => {
   it("uses tool name as fallback when label is missing", () => {
     const onToolProgress = vi.fn();
     processCustomEvent(
-      "omniworker.tool.progress",
+      "flux-agent.tool.progress",
       JSON.stringify({ tool: "read_file", emoji: "📄" }),
       { onToolProgress },
     );
@@ -69,7 +69,7 @@ describe("processCustomEvent", () => {
   it("handles missing emoji gracefully", () => {
     const onToolProgress = vi.fn();
     processCustomEvent(
-      "omniworker.tool.progress",
+      "flux-agent.tool.progress",
       JSON.stringify({ tool: "terminal", label: "Running command" }),
       { onToolProgress },
     );
@@ -87,7 +87,7 @@ describe("processCustomEvent", () => {
 
   it("ignores malformed JSON data", () => {
     const onToolProgress = vi.fn();
-    const handled = processCustomEvent("omniworker.tool.progress", "not-json", {
+    const handled = processCustomEvent("flux-agent.tool.progress", "not-json", {
       onToolProgress,
     });
     expect(handled).toBe(false);
@@ -96,7 +96,7 @@ describe("processCustomEvent", () => {
 
   it("does nothing when onToolProgress callback is absent", () => {
     const handled = processCustomEvent(
-      "omniworker.tool.progress",
+      "flux-agent.tool.progress",
       JSON.stringify({ tool: "x" }),
       {},
     );

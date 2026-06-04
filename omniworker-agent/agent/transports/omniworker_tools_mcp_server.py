@@ -1,25 +1,25 @@
-"""OmniWorker-tools-as-MCP server for the codex_app_server runtime.
+"""Flux Agent-tools-as-MCP server for the codex_app_server runtime.
 
 When the user runs `openai/*` turns through the codex app-server, codex
 owns the loop and builds its own tool list. By default, that means
-OmniWorker' richer tool surface — web search, browser automation,
+Flux Agent' richer tool surface — web search, browser automation,
 delegate_task subagents, vision analysis, persistent memory, skills,
 cross-session search, image generation, TTS — is unreachable.
 
-This module exposes a curated subset of those OmniWorker tools to the
+This module exposes a curated subset of those Flux Agent tools to the
 spawned codex subprocess via stdio MCP. Codex registers it as a normal
-MCP server (per `~/.codex/config.toml [mcp_servers.omniworker-tools]`) and
-the user gets full OmniWorker capability inside a Codex turn.
+MCP server (per `~/.codex/config.toml [mcp_servers.flux-agent-tools]`) and
+the user gets full Flux Agent capability inside a Codex turn.
 
 Scope (what we expose):
   - web_search, web_extract              — Firecrawl, no codex equivalent
   - browser_navigate / _click / _type /  — Camofox/Browserbase automation
     _snapshot / _screenshot / _scroll / _back / _press / _vision
-  - delegate_task                        — OmniWorker subagents
+  - delegate_task                        — Flux Agent subagents
   - vision_analyze                       — image inspection by vision model
   - image_generate                       — image generation
-  - memory                               — OmniWorker' persistent memory store
-  - skill_view, skills_list              — OmniWorker' skill library
+  - memory                               — Flux Agent' persistent memory store
+  - skill_view, skills_list              — Flux Agent' skill library
   - session_search                       — cross-session search
   - text_to_speech                       — TTS
 
@@ -29,7 +29,7 @@ What we DO NOT expose (codex has equivalents):
   - search_files / process               — codex's shell
   - clarify, todo                        — codex's own UX
 
-Run with: python -m agent.transports.omniworker_tools_mcp_server
+Run with: python -m agent.transports.flux-agent_tools_mcp_server
 Spawned by: CodexAppServerSession.ensure_started() when the runtime is
             active and config opts in.
 """
@@ -45,7 +45,7 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
-# Tools we expose. Each name MUST match a registered OmniWorker tool that
+# Tools we expose. Each name MUST match a registered Flux Agent tool that
 # `model_tools.handle_function_call()` can dispatch.
 #
 # What we deliberately DO NOT expose:
@@ -53,9 +53,9 @@ logger = logging.getLogger(__name__)
 #     process — codex's built-ins cover these and approval routes through
 #     codex's own UI.
 #   - delegate_task / memory / session_search / todo — these are
-#     `_AGENT_LOOP_TOOLS` in OmniWorker (model_tools.py:493). They require
+#     `_AGENT_LOOP_TOOLS` in Flux Agent (model_tools.py:493). They require
 #     the running AIAgent context to dispatch (mid-loop state), so a
-#     stateless MCP callback can't drive them. OmniWorker' default runtime
+#     stateless MCP callback can't drive them. Flux Agent' default runtime
 #     keeps these working; the codex_app_server runtime cannot.
 EXPOSED_TOOLS: tuple[str, ...] = (
     "web_search",
@@ -75,12 +75,12 @@ EXPOSED_TOOLS: tuple[str, ...] = (
     "skill_view",
     "skills_list",
     "text_to_speech",
-    # Kanban worker handoff tools — gated on OMNIWORKER_KANBAN_TASK env var
+    # Kanban worker handoff tools — gated on FLUX AGENT_KANBAN_TASK env var
     # (set by the kanban dispatcher when spawning a worker). Without these
     # in the callback, a worker spawned with openai_runtime=codex_app_server
     # could do the work but couldn't report completion back to the kernel,
     # making it hang until timeout. Stateless dispatch — they just read
-    # the env var and write to ~/.omniworker/kanban.db.
+    # the env var and write to ~/.flux-agent/kanban.db.
     "kanban_complete",
     "kanban_block",
     "kanban_comment",
@@ -88,7 +88,7 @@ EXPOSED_TOOLS: tuple[str, ...] = (
     "kanban_show",
     "kanban_list",
     # NOTE: kanban_create / kanban_unblock / kanban_link are orchestrator-
-    # only — the kanban tool gates them on OMNIWORKER_KANBAN_TASK being unset.
+    # only — the kanban tool gates them on FLUX AGENT_KANBAN_TASK being unset.
     # They're exposed here for orchestrator agents running on the codex
     # runtime that need to dispatch new tasks.
     "kanban_create",
@@ -98,26 +98,26 @@ EXPOSED_TOOLS: tuple[str, ...] = (
 
 
 def _build_server() -> Any:
-    """Create the FastMCP server with OmniWorker tools attached. Lazy imports
+    """Create the FastMCP server with Flux Agent tools attached. Lazy imports
     so the module can be imported without the mcp package installed
     (we degrade to a clear error only when actually run)."""
     try:
         from mcp.server.fastmcp import FastMCP
     except ImportError as exc:  # pragma: no cover - install hint
         raise ImportError(
-            f"omniworker-tools MCP server requires the 'mcp' package: {exc}"
+            f"flux-agent-tools MCP server requires the 'mcp' package: {exc}"
         ) from exc
 
-    # Discover OmniWorker tools so dispatch works.
+    # Discover Flux Agent tools so dispatch works.
     from model_tools import (
         get_tool_definitions,
         handle_function_call,
     )
 
     mcp = FastMCP(
-        "omniworker-tools",
+        "flux-agent-tools",
         instructions=(
-            "OmniWorker Agent's tool surface, exposed for use inside a Codex "
+            "Flux Agent Agent's tool surface, exposed for use inside a Codex "
             "session. Use these for capabilities Codex's built-in toolset "
             "doesn't cover: web search/extract, browser automation, "
             "subagent delegation, vision, image generation, persistent "
@@ -125,8 +125,8 @@ def _build_server() -> Any:
         ),
     )
 
-    # Pull authoritative OmniWorker tool schemas for the ones we expose, so
-    # MCP clients see the same parameter docs OmniWorker gives the model.
+    # Pull authoritative Flux Agent tool schemas for the ones we expose, so
+    # MCP clients see the same parameter docs Flux Agent gives the model.
     all_defs = {
         td["function"]["name"]: td["function"]
         for td in (get_tool_definitions(quiet_mode=True) or [])
@@ -139,11 +139,11 @@ def _build_server() -> Any:
         spec = all_defs.get(name)
         if spec is None:
             logger.debug(
-                "skipping %s — not registered in this OmniWorker process", name
+                "skipping %s — not registered in this Flux Agent process", name
             )
             continue
 
-        description = spec.get("description") or f"OmniWorker {name} tool"
+        description = spec.get("description") or f"Flux Agent {name} tool"
         params_schema = spec.get("parameters") or {"type": "object", "properties": {}}
 
         # FastMCP wants a Python callable. Build a closure that takes the
@@ -179,7 +179,7 @@ def _build_server() -> Any:
         exposed_count += 1
 
     logger.info(
-        "omniworker-tools MCP server registered %d/%d tools",
+        "flux-agent-tools MCP server registered %d/%d tools",
         exposed_count,
         len(EXPOSED_TOOLS),
     )
@@ -187,7 +187,7 @@ def _build_server() -> Any:
 
 
 def main(argv: Optional[list[str]] = None) -> int:
-    """Entry point for `python -m agent.transports.omniworker_tools_mcp_server`."""
+    """Entry point for `python -m agent.transports.flux-agent_tools_mcp_server`."""
     argv = argv or sys.argv[1:]
     verbose = "--verbose" in argv or "-v" in argv
 
@@ -198,14 +198,14 @@ def main(argv: Optional[list[str]] = None) -> int:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
-    # Quiet mode: keep OmniWorker' own banners off stdout (which is the MCP wire).
-    os.environ.setdefault("OMNIWORKER_QUIET", "1")
-    os.environ.setdefault("OMNIWORKER_REDACT_SECRETS", "true")
+    # Quiet mode: keep Flux Agent' own banners off stdout (which is the MCP wire).
+    os.environ.setdefault("FLUX AGENT_QUIET", "1")
+    os.environ.setdefault("FLUX AGENT_REDACT_SECRETS", "true")
 
     try:
         server = _build_server()
     except ImportError as exc:
-        sys.stderr.write(f"omniworker-tools MCP server cannot start: {exc}\n")
+        sys.stderr.write(f"flux-agent-tools MCP server cannot start: {exc}\n")
         return 2
 
     # FastMCP runs with stdio transport by default when launched as a
@@ -215,8 +215,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     except KeyboardInterrupt:
         return 0
     except Exception as exc:
-        logger.exception("omniworker-tools MCP server crashed")
-        sys.stderr.write(f"omniworker-tools MCP server error: {exc}\n")
+        logger.exception("flux-agent-tools MCP server crashed")
+        sys.stderr.write(f"flux-agent-tools MCP server error: {exc}\n")
         return 1
     return 0
 

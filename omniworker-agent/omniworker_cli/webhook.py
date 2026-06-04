@@ -17,21 +17,21 @@ import time
 from pathlib import Path
 from typing import Dict
 
-from omniworker_constants import display_omniworker_home
+from flux-agent_constants import display_flux-agent_home
 from utils import atomic_replace
-from omniworker_cli.config import cfg_get
+from flux-agent_cli.config import cfg_get
 
 
 _SUBSCRIPTIONS_FILENAME = "webhook_subscriptions.json"
 
 
-def _omniworker_home() -> Path:
-    from omniworker_constants import get_omniworker_home
-    return get_omniworker_home()
+def _flux-agent_home() -> Path:
+    from flux-agent_constants import get_flux-agent_home
+    return get_flux-agent_home()
 
 
 def _subscriptions_path() -> Path:
-    return _omniworker_home() / _SUBSCRIPTIONS_FILENAME
+    return _flux-agent_home() / _SUBSCRIPTIONS_FILENAME
 
 
 def _load_subscriptions() -> Dict[str, dict]:
@@ -59,7 +59,7 @@ def _save_subscriptions(subs: Dict[str, dict]) -> None:
 def _get_webhook_config() -> dict:
     """Load webhook platform config. Returns {} if not configured."""
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
         return cfg_get(cfg, "platforms", "webhook", default={})
     except Exception:
@@ -79,7 +79,7 @@ def _get_webhook_base_url() -> str:
 
 
 def _setup_hint() -> str:
-    _dhh = display_omniworker_home()
+    _dhh = display_flux-agent_home()
     return f"""
   Webhook platform is not enabled. To set it up:
 

@@ -10,8 +10,8 @@ share the same core pipeline:
 This module ties together the foundation layers:
 
 - ``agent.models_dev``            -- models.dev catalog, ModelInfo, ProviderInfo
-- ``omniworker_cli.providers``        -- canonical provider identity + overlays
-- ``omniworker_cli.model_normalize``  -- per-provider name formatting
+- ``flux-agent_cli.providers``        -- canonical provider identity + overlays
+- ``flux-agent_cli.model_normalize``  -- per-provider name formatting
 
 Provider switching uses the ``--provider`` flag exclusively.
 No colon-based ``provider:model`` syntax — colons are reserved for
@@ -25,14 +25,14 @@ import re
 from dataclasses import dataclass
 from typing import List, NamedTuple, Optional
 
-from omniworker_cli.providers import (
+from flux-agent_cli.providers import (
     custom_provider_slug,
     determine_api_mode,
     get_label,
     is_aggregator,
     resolve_provider_full,
 )
-from omniworker_cli.model_normalize import (
+from flux-agent_cli.model_normalize import (
     normalize_model_for_provider,
 )
 from agent.models_dev import (
@@ -50,30 +50,30 @@ logger = logging.getLogger(__name__)
 # Non-agentic model warning
 # ---------------------------------------------------------------------------
 
-_OMNIWORKER_MODEL_WARNING = (
-    "Nous Research OmniWorker 3 & 4 models are NOT agentic and are not designed "
-    "for use with OmniWorker Agent. They lack the tool-calling capabilities "
+_FLUX AGENT_MODEL_WARNING = (
+    "Nous Research Flux Agent 3 & 4 models are NOT agentic and are not designed "
+    "for use with Flux Agent Agent. They lack the tool-calling capabilities "
     "required for agent workflows. Consider using an agentic model instead "
     "(Claude, GPT, Gemini, DeepSeek, etc.)."
 )
 
-# Match only the real Nous Research OmniWorker 3 / OmniWorker 4 chat families.
+# Match only the real Nous Research Flux Agent 3 / Flux Agent 4 chat families.
 # The previous substring check (`"hermes" in name.lower()`) false-positived on
 # unrelated local Modelfiles like ``hermes-brain:qwen3-14b-ctx16k`` that just
 # happen to carry "hermes" in their tag but are fully tool-capable.
 #
 # Positive examples the regex must match:
-#   NousResearch/OmniWorker-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
+#   NousResearch/Flux Agent-3-Llama-3.1-70B, hermes-4-405b, openrouter/hermes3:70b
 # Negative examples it must NOT match:
 #   hermes-brain:qwen3-14b-ctx16k, qwen3:14b, claude-opus-4-6
-_NOUS_OMNIWORKER_NON_AGENTIC_RE = re.compile(
+_NOUS_FLUX AGENT_NON_AGENTIC_RE = re.compile(
     r"(?:^|[/:])hermes[-_ ]?[34](?:[-_.:]|$)",
     re.IGNORECASE,
 )
 
 
 def is_nous_hermes_non_agentic(model_name: str) -> bool:
-    """Return True if *model_name* is a real Nous OmniWorker 3/4 chat model.
+    """Return True if *model_name* is a real Nous Flux Agent 3/4 chat model.
 
     Used to decide whether to surface the non-agentic warning at startup.
     Callers in :mod:`cli.py` and here should go through this single helper
@@ -81,13 +81,13 @@ def is_nous_hermes_non_agentic(model_name: str) -> bool:
     """
     if not model_name:
         return False
-    return bool(_NOUS_OMNIWORKER_NON_AGENTIC_RE.search(model_name))
+    return bool(_NOUS_FLUX AGENT_NON_AGENTIC_RE.search(model_name))
 
 
 def _check_hermes_model_warning(model_name: str) -> str:
-    """Return a warning string if *model_name* is a Nous OmniWorker 3/4 chat model."""
+    """Return a warning string if *model_name* is a Nous Flux Agent 3/4 chat model."""
     if is_nous_hermes_non_agentic(model_name):
-        return _OMNIWORKER_MODEL_WARNING
+        return _FLUX AGENT_MODEL_WARNING
     return ""
 
 
@@ -198,7 +198,7 @@ def _load_direct_aliases() -> dict[str, DirectAlias]:
     """
     merged = dict(_BUILTIN_DIRECT_ALIASES)
     try:
-        from omniworker_cli.config import load_config
+        from flux-agent_cli.config import load_config
         cfg = load_config()
 
         # --- model_aliases (dict-based format) ---
@@ -247,7 +247,7 @@ def _ensure_direct_aliases() -> None:
     """Lazy-load direct aliases on first use.
 
     Mutates the existing DIRECT_ALIASES dict in place rather than rebinding
-    the module attribute. This keeps `from omniworker_cli.model_switch import
+    the module attribute. This keeps `from flux-agent_cli.model_switch import
     DIRECT_ALIASES` references valid in callers — rebinding would leave them
     pointing at a stale empty dict.
     """
@@ -489,7 +489,7 @@ def resolve_alias(
     # yet synced to the registry).
     catalog = list_provider_models(current_provider)
     try:
-        from omniworker_cli.models import _PROVIDER_MODELS
+        from flux-agent_cli.models import _PROVIDER_MODELS
         static = _PROVIDER_MODELS.get(current_provider, [])
         if static:
             seen = {m.lower() for m in catalog}
@@ -660,13 +660,13 @@ def switch_model(
     Returns:
         ModelSwitchResult with all information the caller needs.
     """
-    from omniworker_cli.models import (
+    from flux-agent_cli.models import (
         copilot_model_api_mode,
         detect_provider_for_model,
         validate_requested_model,
         opencode_model_api_mode,
     )
-    from omniworker_cli.runtime_provider import resolve_runtime_provider
+    from flux-agent_cli.runtime_provider import resolve_runtime_provider
 
     resolved_alias = ""
     new_model = raw_input.strip()
@@ -690,7 +690,7 @@ def switch_model(
             )
             # Check for common config issues that cause provider resolution failures
             try:
-                from omniworker_cli.config import validate_config_structure
+                from flux-agent_cli.config import validate_config_structure
                 _cfg_issues = validate_config_structure()
                 if _cfg_issues:
                     _switch_err += "\n\nRun 'hermes doctor' — config issues detected:"
@@ -709,7 +709,7 @@ def switch_model(
         # If no model specified, try auto-detect from endpoint
         if not new_model:
             if pdef.base_url:
-                from omniworker_cli.runtime_provider import _auto_detect_local_model
+                from flux-agent_cli.runtime_provider import _auto_detect_local_model
                 detected = _auto_detect_local_model(pdef.base_url)
                 if detected:
                     new_model = detected
@@ -996,7 +996,7 @@ def switch_model(
     # Anthropic SDK prepends its own /v1/messages to the base_url.  Strip the
     # trailing /v1 so the SDK constructs the correct path (e.g.
     # https://opencode.ai/zen/go/v1/messages instead of .../v1/v1/messages).
-    # Mirrors the same logic in omniworker_cli.runtime_provider.resolve_runtime_provider;
+    # Mirrors the same logic in flux-agent_cli.runtime_provider.resolve_runtime_provider;
     # without it, /model switches into an anthropic_messages-routed OpenCode
     # model (e.g. `/model minimax-m2.7` on opencode-go, `/model claude-sonnet-4-6`
     # on opencode-zen) hit a double /v1 and returned OpenCode's website 404 page.
@@ -1054,7 +1054,7 @@ def list_authenticated_providers(
 ) -> List[dict]:
     """Detect which providers have credentials and list their curated models.
 
-    Uses the curated model lists from omniworker_cli/models.py (OPENROUTER_MODELS,
+    Uses the curated model lists from flux-agent_cli/models.py (OPENROUTER_MODELS,
     _PROVIDER_MODELS) — NOT the full models.dev catalog.  These are hand-picked
     agentic models that work well as agent backends.
 
@@ -1075,8 +1075,8 @@ def list_authenticated_providers(
         fetch_models_dev,
         get_provider_info as _mdev_pinfo,
     )
-    from omniworker_cli.auth import PROVIDER_REGISTRY
-    from omniworker_cli.models import (
+    from flux-agent_cli.auth import PROVIDER_REGISTRY
+    from flux-agent_cli.models import (
         OPENROUTER_MODELS, _PROVIDER_MODELS,
         _MODELS_DEV_PREFERRED, _merge_with_models_dev, provider_model_ids,
         get_curated_nous_model_ids,
@@ -1102,7 +1102,7 @@ def list_authenticated_providers(
         static inference_base_url so the dedup matches what a user typing
         that URL into custom_providers would actually hit."""
         try:
-            from omniworker_cli.auth import PROVIDER_REGISTRY as _reg
+            from flux-agent_cli.auth import PROVIDER_REGISTRY as _reg
         except Exception:
             return
         pcfg = _reg.get(slug)
@@ -1164,12 +1164,12 @@ def list_authenticated_providers(
     # "nous" pulls from the remote model-catalog manifest published at
     # https://hermes-agent.nousresearch.com/docs/api/model-catalog.json so
     # newly added Portal models surface in the /model picker without
-    # requiring a OmniWorker release. Falls back to the in-repo
+    # requiring a Flux Agent release. Falls back to the in-repo
     # _PROVIDER_MODELS["nous"] snapshot when the manifest is unreachable.
     curated["nous"] = get_curated_nous_model_ids()
     # Ollama Cloud uses dynamic discovery (no static curated list)
     if "ollama-cloud" not in curated:
-        from omniworker_cli.models import fetch_ollama_cloud_models
+        from flux-agent_cli.models import fetch_ollama_cloud_models
         curated["ollama-cloud"] = fetch_ollama_cloud_models()
     # LM Studio has no static catalog — probe its native /api/v1/models
     # endpoint live so the picker reflects whatever the user has loaded.
@@ -1180,8 +1180,8 @@ def list_authenticated_providers(
     if "lmstudio" not in curated and (
         os.environ.get("LM_API_KEY") or os.environ.get("LM_BASE_URL") or current_provider.strip().lower() == "lmstudio"
     ):
-        from omniworker_cli.models import fetch_lmstudio_models
-        from omniworker_cli.auth import AuthError
+        from flux-agent_cli.models import fetch_lmstudio_models
+        from flux-agent_cli.auth import AuthError
         is_current_lmstudio = current_provider.strip().lower() == "lmstudio"
         lm_base = (
             os.environ.get("LM_BASE_URL")
@@ -1200,7 +1200,7 @@ def list_authenticated_providers(
             live = [current_model]
         curated["lmstudio"] = live
 
-    # --- 1. Check OmniWorker-mapped providers ---
+    # --- 1. Check Flux Agent-mapped providers ---
     for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
         # Skip aliases that map to the same models.dev provider (e.g.
         # kimi-coding and kimi-coding-cn both → kimi-for-coding).
@@ -1216,7 +1216,7 @@ def list_authenticated_providers(
         # minimax-cn → MINIMAX_API_KEY instead of MINIMAX_CN_API_KEY).
         pconfig = PROVIDER_REGISTRY.get(hermes_id)
         # Skip non-API-key auth providers here — they are handled in
-        # section 2 (OMNIWORKER_OVERLAYS) with proper auth store checking.
+        # section 2 (FLUX AGENT_OVERLAYS) with proper auth store checking.
         if pconfig and pconfig.auth_type != "api_key":
             continue
         if pconfig and pconfig.api_key_env_vars:
@@ -1230,7 +1230,7 @@ def list_authenticated_providers(
         has_creds = any(os.environ.get(ev) for ev in env_vars)
         if not has_creds:
             try:
-                from omniworker_cli.auth import _load_auth_store
+                from flux-agent_cli.auth import _load_auth_store
                 store = _load_auth_store()
                 if store and store.get("credential_pool", {}).get(hermes_id):
                     has_creds = True
@@ -1242,7 +1242,7 @@ def list_authenticated_providers(
         # Use curated list, falling back to models.dev if no curated list.
         # For preferred providers, merge models.dev entries into the curated
         # catalog so newly released models (e.g. mimo-v2.5-pro on opencode-go)
-        # show up in the picker without requiring a OmniWorker release.
+        # show up in the picker without requiring a Flux Agent release.
         model_ids = curated.get(hermes_id, [])
         if hermes_id in _MODELS_DEV_PREFERRED:
             model_ids = _merge_with_models_dev(hermes_id, model_ids)
@@ -1266,20 +1266,20 @@ def list_authenticated_providers(
         seen_mdev_ids.add(mdev_id)
         _record_builtin_endpoint(slug)
 
-    # --- 2. Check OmniWorker-only providers (nous, openai-codex, copilot, opencode-go) ---
-    from omniworker_cli.providers import OMNIWORKER_OVERLAYS
-    from omniworker_cli.auth import PROVIDER_REGISTRY as _auth_registry
+    # --- 2. Check Flux Agent-only providers (nous, openai-codex, copilot, opencode-go) ---
+    from flux-agent_cli.providers import FLUX AGENT_OVERLAYS
+    from flux-agent_cli.auth import PROVIDER_REGISTRY as _auth_registry
 
-    # Build reverse mapping: models.dev ID → OmniWorker provider ID.
-    # OMNIWORKER_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot")
-    # while _PROVIDER_MODELS and config.yaml use OmniWorker IDs ("copilot").
+    # Build reverse mapping: models.dev ID → Flux Agent provider ID.
+    # FLUX AGENT_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot")
+    # while _PROVIDER_MODELS and config.yaml use Flux Agent IDs ("copilot").
     _mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
 
-    for pid, overlay in OMNIWORKER_OVERLAYS.items():
+    for pid, overlay in FLUX AGENT_OVERLAYS.items():
         if pid.lower() in seen_slugs:
             continue
 
-        # Resolve OmniWorker slug — e.g. "github-copilot" → "copilot"
+        # Resolve Flux Agent slug — e.g. "github-copilot" → "copilot"
         hermes_slug = _mdev_to_hermes.get(pid, pid)
         if hermes_slug.lower() in seen_slugs:
             continue
@@ -1304,7 +1304,7 @@ def list_authenticated_providers(
         # OAuth via external credential files).
         if not has_creds:
             try:
-                from omniworker_cli.auth import _load_auth_store
+                from flux-agent_cli.auth import _load_auth_store
                 store = _load_auth_store()
                 providers_store = store.get("providers", {})
                 if store and (pid in providers_store or hermes_slug in providers_store):
@@ -1365,7 +1365,7 @@ def list_authenticated_providers(
             except Exception:
                 model_ids = curated.get(hermes_slug, []) or curated.get(pid, [])
         else:
-            # Use curated list — look up by OmniWorker slug, fall back to overlay key
+            # Use curated list — look up by Flux Agent slug, fall back to overlay key
             model_ids = curated.get(hermes_slug, []) or curated.get(pid, [])
             # Merge with models.dev for preferred providers (same rationale as above).
             if hermes_slug in _MODELS_DEV_PREFERRED:
@@ -1388,10 +1388,10 @@ def list_authenticated_providers(
 
     # --- 2b. Cross-check canonical provider list ---
     # Catches providers that are in CANONICAL_PROVIDERS but weren't found
-    # in PROVIDER_TO_MODELS_DEV or OMNIWORKER_OVERLAYS (keeps /model in sync
+    # in PROVIDER_TO_MODELS_DEV or FLUX AGENT_OVERLAYS (keeps /model in sync
     # with `hermes model`).
     try:
-        from omniworker_cli.models import CANONICAL_PROVIDERS as _canon_provs
+        from flux-agent_cli.models import CANONICAL_PROVIDERS as _canon_provs
     except ImportError:
         _canon_provs = []
 
@@ -1407,7 +1407,7 @@ def list_authenticated_providers(
         # Also check auth store and credential pool
         if not _cp_has_creds:
             try:
-                from omniworker_cli.auth import _load_auth_store
+                from flux-agent_cli.auth import _load_auth_store
                 _cp_store = _load_auth_store()
                 _cp_providers_store = _cp_store.get("providers", {})
                 if _cp_store and _cp.slug in _cp_providers_store:
@@ -1475,7 +1475,7 @@ def list_authenticated_providers(
             if ep_name.lower() in seen_slugs:
                 continue
             display_name = ep_cfg.get("name", "") or ep_name
-            # ``base_url`` is OmniWorker's canonical write key (matches
+            # ``base_url`` is Flux Agent's canonical write key (matches
             # custom_providers and _save_custom_provider); ``api`` / ``url``
             # remain as fallbacks for hand-edited / legacy configs.
             api_url = (
@@ -1493,8 +1493,8 @@ def list_authenticated_providers(
             if default_model:
                 models_list.append(default_model)
             # Also include the full models list from config.
-            # OmniWorker writes ``models:`` as a dict keyed by model id
-            # (see omniworker_cli/main.py::_save_custom_provider); older
+            # Flux Agent writes ``models:`` as a dict keyed by model id
+            # (see flux-agent_cli/main.py::_save_custom_provider); older
             # configs or hand-edited files may still use a list.
             cfg_models = ep_cfg.get("models", [])
             if isinstance(cfg_models, dict):
@@ -1528,7 +1528,7 @@ def list_authenticated_providers(
                 discover = discover.lower() not in {"false", "no", "0"}
             if api_url and api_key and discover:
                 try:
-                    from omniworker_cli.models import fetch_api_models
+                    from flux-agent_cli.models import fetch_api_models
                     live_models = fetch_api_models(api_key, api_url)
                     if live_models:
                         models_list = live_models
@@ -1594,7 +1594,7 @@ def list_authenticated_providers(
             if group_key not in groups:
                 # Strip per-model suffix so "Ollama — GLM 5.1" becomes
                 # "Ollama" for the grouped row. Em dash is the convention
-                # OmniWorker's own writer uses; a hyphen variant is accepted
+                # Flux Agent's own writer uses; a hyphen variant is accepted
                 # for hand-edited configs.
                 display_name = raw_name
                 for sep in ("—", " - "):
@@ -1628,10 +1628,10 @@ def list_authenticated_providers(
                 }
 
             # The singular ``model:`` field only holds the currently
-            # active model. OmniWorker's own writer (main.py::_save_custom_provider)
+            # active model. Flux Agent's own writer (main.py::_save_custom_provider)
             # stores every configured model as a dict under ``models:``;
             # downstream readers (agent/models_dev.py, gateway/run.py,
-            # run_agent.py, omniworker_cli/config.py) already consume that dict.
+            # run_agent.py, flux-agent_cli/config.py) already consume that dict.
             default_model = (entry.get("model") or "").strip()
             if default_model and default_model not in groups[group_key]["models"]:
                 groups[group_key]["models"].append(default_model)
@@ -1709,7 +1709,7 @@ def list_authenticated_providers(
             should_probe = bool(api_url) and (bool(api_key) or not grp["models"])
             if should_probe:
                 try:
-                    from omniworker_cli.models import fetch_api_models
+                    from flux-agent_cli.models import fetch_api_models
 
                     live_models = fetch_api_models(api_key, api_url)
                     if live_models:
@@ -1751,7 +1751,7 @@ def list_picker_providers(
     current install:
 
     - OpenRouter's model list is replaced with the output of
-      :func:`omniworker_cli.models.fetch_openrouter_models`, which filters the
+      :func:`flux-agent_cli.models.fetch_openrouter_models`, which filters the
       curated ``OPENROUTER_MODELS`` snapshot against the live OpenRouter
       catalog.  IDs the live catalog no longer carries drop out, so the
       picker never offers a model the user can't call.
@@ -1763,7 +1763,7 @@ def list_picker_providers(
     The typed ``/model <name>`` path is unaffected -- only the interactive
     picker payload is narrowed.
     """
-    from omniworker_cli.models import fetch_openrouter_models
+    from flux-agent_cli.models import fetch_openrouter_models
 
     providers = list_authenticated_providers(
         current_provider=current_provider,

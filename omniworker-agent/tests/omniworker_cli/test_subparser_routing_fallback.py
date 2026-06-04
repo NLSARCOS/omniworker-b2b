@@ -1,11 +1,11 @@
 """Tests for the defensive subparser routing workaround (bpo-9338).
 
-The main() function in omniworker_cli/main.py sets subparsers.required=True
+The main() function in flux-agent_cli/main.py sets subparsers.required=True
 when argv contains a known subcommand name.  This forces deterministic
 routing on Python versions where argparse fails to match subcommand tokens
 when the parent parser has nargs='?' optional arguments (--continue).
 
-If the subcommand token is consumed as a flag value (e.g. `omniworker -c model`
+If the subcommand token is consumed as a flag value (e.g. `flux-agent -c model`
 to resume a session named 'model'), the required=True parse raises
 SystemExit and the code falls back to the default required=False behaviour.
 """
@@ -17,8 +17,8 @@ import pytest
 
 
 def _build_parser():
-    """Build a minimal replica of the omniworker top-level parser."""
-    parser = argparse.ArgumentParser(prog="omniworker")
+    """Build a minimal replica of the flux-agent top-level parser."""
+    parser = argparse.ArgumentParser(prog="flux-agent")
     parser.add_argument("--version", "-V", action="store_true")
     parser.add_argument("--resume", "-r", metavar="SESSION", default=None)
     parser.add_argument(

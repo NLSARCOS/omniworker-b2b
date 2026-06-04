@@ -21,11 +21,11 @@ def test_no_duplicate_skills_subparser():
     import sys
 
     # Remove cached module if present
-    if 'omniworker_cli.main' in sys.modules:
-        del sys.modules['omniworker_cli.main']
+    if 'flux-agent_cli.main' in sys.modules:
+        del sys.modules['flux-agent_cli.main']
 
     try:
-        import omniworker_cli.main  # noqa: F401
+        import flux-agent_cli.main  # noqa: F401
     except argparse.ArgumentError as e:
         if "conflicting subparser" in str(e):
             raise AssertionError(

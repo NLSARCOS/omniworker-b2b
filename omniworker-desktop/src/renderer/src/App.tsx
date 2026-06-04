@@ -33,19 +33,19 @@ function App(): React.JSX.Element {
     setAuthToken(null);
     localStorage.removeItem("ow_user");
     localStorage.removeItem("ow_auth");
-    window.omniworkerAPI.deleteTokens().catch(console.error);
+    window.flux-agentAPI.deleteTokens().catch(console.error);
 
     // Signal main process to stop the token refresh loop
-    window.omniworkerAPI.stopTokenRefreshLoop();
+    window.flux-agentAPI.stopTokenRefreshLoop();
 
     setScreen("login");
   }, []);
 
   const runPostLoginInstallCheck = useCallback(async () => {
     try {
-      const mode = await window.omniworkerAPI.isRemoteOnlyMode();
+      const mode = await window.flux-agentAPI.isRemoteOnlyMode();
       if (mode) {
-        const completed = await window.omniworkerAPI.getOnboardingStatus();
+        const completed = await window.flux-agentAPI.getOnboardingStatus();
         if (completed) {
           setScreen("main");
         } else {
@@ -54,14 +54,14 @@ function App(): React.JSX.Element {
         return;
       }
 
-      const installStatus = await window.omniworkerAPI.checkInstall();
+      const installStatus = await window.flux-agentAPI.checkInstall();
       let isVerified = false;
       if (installStatus.installed) {
-        isVerified = await window.omniworkerAPI.verifyInstall();
+        isVerified = await window.flux-agentAPI.verifyInstall();
       }
 
       if (installStatus.installed && isVerified) {
-        const completed = await window.omniworkerAPI.getOnboardingStatus();
+        const completed = await window.flux-agentAPI.getOnboardingStatus();
         if (completed) {
           setScreen("main");
         } else {
@@ -83,7 +83,7 @@ function App(): React.JSX.Element {
     // Sync B2B subscription plan state to Main process
     const isExpired = !!user?.isPlanExpired;
     try {
-      await window.omniworkerAPI.setPlanExpired(isExpired);
+      await window.flux-agentAPI.setPlanExpired(isExpired);
       console.error(`[APP] Enforced plan expiration in main process: ${isExpired}`);
     } catch (err: any) {
       console.error("[APP] Failed to sync plan expiration to main process:", err?.message);
@@ -96,7 +96,7 @@ function App(): React.JSX.Element {
       // Guardar en localStorage (solo datos de usuario no sensibles) y en safeStorage para tokens
       localStorage.setItem("ow_user", JSON.stringify(user));
       localStorage.removeItem("ow_auth"); // Ensure old plain text token is removed
-      await window.omniworkerAPI.saveTokens({
+      await window.flux-agentAPI.saveTokens({
         accessToken: auth.accessToken,
         refreshToken: auth.refreshToken,
       });
@@ -105,12 +105,12 @@ function App(): React.JSX.Element {
         import.meta.env.VITE_SAAS_URL || "https://flux.simplex.lat";
 
       // 1. Guardar CLOUD_API_URL y tokens en env para posibilitar el ruteo del agente y smart router
-      await window.omniworkerAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
-      await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", auth.accessToken);
-      await window.omniworkerAPI.setEnv("CLOUD_API_URL", `${saasUrl}/api`);
+      await window.flux-agentAPI.setEnv("OPENAI_API_KEY", auth.accessToken);
+      await window.flux-agentAPI.setEnv("CUSTOM_API_KEY", auth.accessToken);
+      await window.flux-agentAPI.setEnv("CLOUD_API_URL", `${saasUrl}/api`);
 
       // 2. Configurar conexión LOCAL para mantener la capacidad de ejecución local de herramientas
-      await window.omniworkerAPI.setConnectionConfig(
+      await window.flux-agentAPI.setConnectionConfig(
         "local",
         "",
         "",
@@ -118,9 +118,9 @@ function App(): React.JSX.Element {
 
       // 3. Configurar el backend custom del agente para conectar DIRECTO al SaaS
       const directSaasApi = `${saasUrl}/api/v1`;
-      await window.omniworkerAPI.setModelConfig(
+      await window.flux-agentAPI.setModelConfig(
         "custom",
-        "omniworker",
+        "flux-agent",
         directSaasApi,
         undefined,
         auth.accessToken,
@@ -131,7 +131,7 @@ function App(): React.JSX.Element {
       // 4. Signal main process to start the token refresh loop.
       //    The main process handles refreshing regardless of renderer state
       //    (window closed on macOS, app minimized, renderer throttled).
-      window.omniworkerAPI.startTokenRefreshLoop();
+      window.flux-agentAPI.startTokenRefreshLoop();
     }
 
     console.error("[APP] Running post login install check...");
@@ -148,18 +148,18 @@ function App(): React.JSX.Element {
     const savedAuth = localStorage.getItem("ow_auth");
 
     // ── MIGRATION ON FIRST LAUNCH ──
-    let secureTokens = await window.omniworkerAPI.getTokens();
+    let secureTokens = await window.flux-agentAPI.getTokens();
     if (savedAuth && (!secureTokens.accessToken || !secureTokens.refreshToken)) {
       console.error("[APP] Migrating existing plaintext tokens from localStorage to safeStorage...");
       try {
         const auth = JSON.parse(savedAuth);
         if (auth?.accessToken && auth?.refreshToken) {
-          await window.omniworkerAPI.saveTokens({
+          await window.flux-agentAPI.saveTokens({
             accessToken: auth.accessToken,
             refreshToken: auth.refreshToken,
           });
           // Retrieve newly migrated tokens
-          secureTokens = await window.omniworkerAPI.getTokens();
+          secureTokens = await window.flux-agentAPI.getTokens();
         }
       } catch (err) {
         console.error("[APP] Failed to migrate existing localStorage tokens:", err);
@@ -167,8 +167,8 @@ function App(): React.JSX.Element {
       // Delete old plain text storage and sync keys to env
       localStorage.removeItem("ow_auth");
       if (secureTokens.accessToken) {
-        await window.omniworkerAPI.setEnv("OPENAI_API_KEY", secureTokens.accessToken);
-        await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", secureTokens.accessToken);
+        await window.flux-agentAPI.setEnv("OPENAI_API_KEY", secureTokens.accessToken);
+        await window.flux-agentAPI.setEnv("CUSTOM_API_KEY", secureTokens.accessToken);
       }
     }
 
@@ -209,7 +209,7 @@ function App(): React.JSX.Element {
 
   // Listen for main-process token refresh events
   useEffect(() => {
-    const unsubRefresh = window.omniworkerAPI.onTokenRefreshed((data) => {
+    const unsubRefresh = window.flux-agentAPI.onTokenRefreshed((data) => {
       console.error("[APP] Received token-refreshed from main process");
       setAuthToken(data.accessToken);
       if (data.user) {
@@ -217,7 +217,7 @@ function App(): React.JSX.Element {
         localStorage.setItem("ow_user", JSON.stringify(data.user));
       }
     });
-    const unsubExpired = window.omniworkerAPI.onSessionExpired(() => {
+    const unsubExpired = window.flux-agentAPI.onSessionExpired(() => {
       console.error("[APP] Received session-expired from main process");
       handleLogout();
     });
@@ -236,13 +236,13 @@ function App(): React.JSX.Element {
     // B2B: The API Key is already configured during handleLoginSuccess, so we skip manual setup
     
     try {
-      await window.omniworkerAPI.startSmartRouter();
-      await window.omniworkerAPI.startGateway();
+      await window.flux-agentAPI.startSmartRouter();
+      await window.flux-agentAPI.startGateway();
     } catch (err) {
       console.error("Failed to start backend services after install:", err);
     }
     
-    const completed = await window.omniworkerAPI.getOnboardingStatus();
+    const completed = await window.flux-agentAPI.getOnboardingStatus();
     if (completed) {
       setScreen("main");
     } else {
@@ -267,7 +267,7 @@ function App(): React.JSX.Element {
   }
 
   async function handleSwitchToLocal(): Promise<void> {
-    await window.omniworkerAPI.setConnectionConfig("local", "", "");
+    await window.flux-agentAPI.setConnectionConfig("local", "", "");
     setConnectionMode("local");
     handleRecheck();
   }

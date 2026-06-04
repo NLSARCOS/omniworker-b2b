@@ -133,11 +133,11 @@ n.cook(force=True)
 actual = str(n.width) + 'x' + str(n.height)
 ```
 
-## 5. OmniWorker Configuration
+## 5. Flux Agent Configuration
 
 ### Config location
 
-`$OMNIWORKER_HOME/config.yaml` (defaults to `~/.omniworker/config.yaml` when `OMNIWORKER_HOME` is unset)
+`$FLUX AGENT_HOME/config.yaml` (defaults to `~/.flux-agent/config.yaml` when `FLUX AGENT_HOME` is unset)
 
 ### MCP entry format
 
@@ -150,7 +150,7 @@ mcpServers:
 
 ### After config changes
 
-Restart the OmniWorker session for changes to take effect. The MCP connection is
+Restart the Flux Agent session for changes to take effect. The MCP connection is
 established at session startup.
 
 ### Verifying MCP tools are available

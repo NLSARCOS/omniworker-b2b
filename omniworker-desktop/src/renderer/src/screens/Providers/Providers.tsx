@@ -35,9 +35,9 @@ function Providers({
 
   const loadConfig = useCallback(async (): Promise<void> => {
     const [envData, mc, pool] = await Promise.all([
-      window.omniworkerAPI.getEnv(profile),
-      window.omniworkerAPI.getModelConfig(profile),
-      window.omniworkerAPI.getCredentialPool(),
+      window.flux-agentAPI.getEnv(profile),
+      window.flux-agentAPI.getModelConfig(profile),
+      window.flux-agentAPI.getCredentialPool(),
     ]);
     setEnv(envData);
     setModelProvider(mc.provider);
@@ -59,7 +59,7 @@ function Providers({
   useEffect(() => {
     if (!visible) return;
     (async (): Promise<void> => {
-      const mc = await window.omniworkerAPI.getModelConfig(profile);
+      const mc = await window.flux-agentAPI.getModelConfig(profile);
       modelLoaded.current = false;
       setModelProvider(mc.provider);
       setModelName(mc.model);
@@ -73,7 +73,7 @@ function Providers({
   // Auto-save model config when values change (debounced)
   const saveModelConfig = useCallback(async () => {
     if (!modelLoaded.current) return;
-    await window.omniworkerAPI.setModelConfig(
+    await window.flux-agentAPI.setModelConfig(
       modelProvider,
       modelName,
       modelBaseUrl,
@@ -81,7 +81,7 @@ function Providers({
     );
     if (modelName.trim()) {
       const displayName = modelName.split("/").pop() || modelName;
-      await window.omniworkerAPI.addModel(
+      await window.flux-agentAPI.addModel(
         displayName,
         modelProvider,
         modelName,
@@ -105,7 +105,7 @@ function Providers({
 
   async function handleBlur(key: string): Promise<void> {
     const value = env[key] || "";
-    await window.omniworkerAPI.setEnv(key, value, profile);
+    await window.flux-agentAPI.setEnv(key, value, profile);
     setSavedKey(key);
     setTimeout(() => setSavedKey(null), 2000);
   }
@@ -124,7 +124,7 @@ function Providers({
         label: poolNewLabel.trim() || `Key ${existing.length + 1}`,
       },
     ];
-    await window.omniworkerAPI.setCredentialPool(poolProvider, entries);
+    await window.flux-agentAPI.setCredentialPool(poolProvider, entries);
     setCredPool((prev) => ({ ...prev, [poolProvider]: entries }));
     setPoolNewKey("");
     setPoolNewLabel("");
@@ -136,7 +136,7 @@ function Providers({
   ): Promise<void> {
     const entries = [...(credPool[provider] || [])];
     entries.splice(index, 1);
-    await window.omniworkerAPI.setCredentialPool(provider, entries);
+    await window.flux-agentAPI.setCredentialPool(provider, entries);
     setCredPool((prev) => ({ ...prev, [provider]: entries }));
   }
 

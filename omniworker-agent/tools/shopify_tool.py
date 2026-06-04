@@ -1,4 +1,4 @@
-"""Shopify integration tool for the OmniWorker agent.
+"""Shopify integration tool for the Flux Agent agent.
 
 Reads credentials from environment variables:
   SHOPIFY_STORE_DOMAIN  (e.g. my-store.myshopify.com)

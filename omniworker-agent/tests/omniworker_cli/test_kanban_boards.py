@@ -1,4 +1,4 @@
-"""Tests for the multi-board kanban layer (``omniworker kanban boards …``).
+"""Tests for the multi-board kanban layer (``flux-agent kanban boards …``).
 
 Covers the pieces added when boards became a first-class concept:
 
@@ -9,7 +9,7 @@ Covers the pieces added when boards became a first-class concept:
   ``OMNIWORKER_KANBAN_BOARD`` env var.
 * ``connect(board=)`` isolation — writes on one board don't leak.
 * ``create_board`` / ``list_boards`` / ``remove_board`` round trip.
-* CLI surface: ``omniworker kanban boards list/create/switch/rm``.
+* CLI surface: ``flux-agent kanban boards list/create/switch/rm``.
 * ``_default_spawn`` injects ``OMNIWORKER_KANBAN_BOARD`` into worker env.
 """
 
@@ -28,7 +28,7 @@ _WORKTREE = Path(__file__).resolve().parents[2]
 if str(_WORKTREE) not in sys.path:
     sys.path.insert(0, str(_WORKTREE))
 
-from omniworker_cli import kanban_db as kb
+from flux-agent_cli import kanban_db as kb
 
 
 # ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ def fresh_home(tmp_path, monkeypatch):
     fixture layers a per-test OMNIWORKER_HOME plus a path-init cache reset
     so each test sees a truly empty board set.
     """
-    home = tmp_path / "omniworker_home"
+    home = tmp_path / "flux-agent_home"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     for var in (
@@ -53,10 +53,10 @@ def fresh_home(tmp_path, monkeypatch):
         "OMNIWORKER_KANBAN_BOARD",
     ):
         monkeypatch.delenv(var, raising=False)
-    # Also reset omniworker_constants cache so get_default_omniworker_root() re-reads.
+    # Also reset flux-agent_constants cache so get_default_flux-agent_root() re-reads.
     try:
-        import omniworker_constants
-        omniworker_constants._cached_default_omniworker_root = None  # type: ignore[attr-defined]
+        import flux-agent_constants
+        flux-agent_constants._cached_default_flux-agent_root = None  # type: ignore[attr-defined]
     except Exception:
         pass
     # Kanban module-level init cache must not leak between tests.
@@ -70,7 +70,7 @@ def fresh_home(tmp_path, monkeypatch):
 
 class TestSlugValidation:
     @pytest.mark.parametrize("good", [
-        "default", "atm10-server", "omniworker-agent", "proj_1", "a",
+        "default", "atm10-server", "flux-agent-agent", "proj_1", "a",
         "very-long-but-still-ok-slug-with-hyphens-and-numbers-1234",
     ])
     def test_accepts_valid(self, good):
@@ -408,13 +408,13 @@ class TestWorkerSpawnEnv:
 # ---------------------------------------------------------------------------
 
 def _cli(args: list[str], env_extra: dict | None = None) -> subprocess.CompletedProcess:
-    """Run ``omniworker kanban …`` with PYTHONPATH pinned to the worktree."""
+    """Run ``flux-agent kanban …`` with PYTHONPATH pinned to the worktree."""
     env = dict(os.environ)
     env["PYTHONPATH"] = str(_WORKTREE)
     if env_extra:
         env.update(env_extra)
     return subprocess.run(
-        [sys.executable, "-m", "omniworker_cli.main", "kanban"] + args,
+        [sys.executable, "-m", "flux-agent_cli.main", "kanban"] + args,
         env=env,
         capture_output=True,
         text=True,

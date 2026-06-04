@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Google Workspace API CLI for OmniWorker Agent.
+"""Google Workspace API CLI for Flux Agent Agent.
 
 Uses the Google Workspace CLI (`gws`) when available, but preserves the
-existing OmniWorker-facing JSON contract and falls back to the Python client
+existing Flux Agent-facing JSON contract and falls back to the Python client
 libraries if `gws` is not installed.
 
 Usage:
@@ -31,16 +31,16 @@ from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
 
-# Ensure sibling modules (_omniworker_home) are importable when run standalone.
+# Ensure sibling modules (_flux-agent_home) are importable when run standalone.
 _SCRIPTS_DIR = str(Path(__file__).resolve().parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from _omniworker_home import get_omniworker_home
+from _flux-agent_home import get_flux-agent_home
 
-OMNIWORKER_HOME = get_omniworker_home()
-TOKEN_PATH = OMNIWORKER_HOME / "google_token.json"
-CLIENT_SECRET_PATH = OMNIWORKER_HOME / "google_client_secret.json"
+FLUX AGENT_HOME = get_flux-agent_home()
+TOKEN_PATH = FLUX AGENT_HOME / "google_token.json"
+CLIENT_SECRET_PATH = FLUX AGENT_HOME / "google_client_secret.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -80,7 +80,7 @@ def _stored_token_scopes() -> list[str]:
 
 
 def _gws_binary() -> str | None:
-    override = os.getenv("OMNIWORKER_GWS_BIN")
+    override = os.getenv("FLUX AGENT_GWS_BIN")
     if override:
         return override
     return shutil.which("gws")
@@ -1048,7 +1048,7 @@ def _docs_insert_text(doc_id: str, text: str, index: int) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google Workspace API for OmniWorker Agent")
+    parser = argparse.ArgumentParser(description="Google Workspace API for Flux Agent Agent")
     sub = parser.add_subparsers(dest="service", required=True)
 
     # --- Gmail ---

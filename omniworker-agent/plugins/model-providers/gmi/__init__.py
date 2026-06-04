@@ -1,6 +1,6 @@
 """GMI Cloud provider profile."""
 
-from omniworker_cli import __version__ as _OMNIWORKER_VERSION
+from flux-agent_cli import __version__ as _FLUX AGENT_VERSION
 from providers import register_provider
 from providers.base import ProviderProfile
 
@@ -13,10 +13,10 @@ gmi = ProviderProfile(
     env_vars=("GMI_API_KEY", "GMI_BASE_URL"),
     base_url="https://api.gmi-serving.com/v1",
     auth_type="api_key",
-    # Attribution so GMI can identify traffic from OmniWorker Agent.
+    # Attribution so GMI can identify traffic from Flux Agent Agent.
     # The generic profile.default_headers fallback in run_agent.py and
     # agent/auxiliary_client.py picks this up at client construction time.
-    default_headers={"User-Agent": f"OmniWorkerAgent/{_OMNIWORKER_VERSION}"},
+    default_headers={"User-Agent": f"Flux AgentAgent/{_FLUX AGENT_VERSION}"},
     default_aux_model="google/gemini-3.1-flash-lite-preview",
     fallback_models=(
         "zai-org/GLM-5.1-FP8",

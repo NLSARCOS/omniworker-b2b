@@ -9,28 +9,28 @@ import {
 import { join } from "path";
 import { homedir } from "os";
 import { createConnection } from "net";
-import { getEnhancedPath, OMNIWORKER_HOME } from "./installer";
+import { getEnhancedPath, FLUX AGENT_HOME } from "./installer";
 import { stripAnsi, safeWriteFile } from "./utils";
 
-const OMNIWORKER_OFFICE_DIR = join(OMNIWORKER_HOME, "omniworker-office");
+const FLUX AGENT_OFFICE_DIR = join(FLUX AGENT_HOME, "flux-agent-office");
 
 // Path to bundled Claw3D shipped with the desktop installer
 function getBundledOfficeDir(): string | null {
   // In production, extraResources are unpacked next to the executable
-  const bundled = join(process.resourcesPath, "omniworker-office");
+  const bundled = join(process.resourcesPath, "flux-agent-office");
   if (existsSync(join(bundled, "server.js"))) return bundled;
   // Development fallback: relative from out/main/
-  const devFallback = join(__dirname, "../../resources/omniworker-office");
+  const devFallback = join(__dirname, "../../resources/flux-agent-office");
   if (existsSync(join(devFallback, "server.js"))) return devFallback;
   return null;
 }
-const DEV_PID_FILE = join(OMNIWORKER_HOME, "claw3d-dev.pid");
-const ADAPTER_PID_FILE = join(OMNIWORKER_HOME, "claw3d-adapter.pid");
-const PORT_FILE = join(OMNIWORKER_HOME, "claw3d-port");
-const WS_URL_FILE = join(OMNIWORKER_HOME, "claw3d-ws-url");
+const DEV_PID_FILE = join(FLUX AGENT_HOME, "claw3d-dev.pid");
+const ADAPTER_PID_FILE = join(FLUX AGENT_HOME, "claw3d-adapter.pid");
+const PORT_FILE = join(FLUX AGENT_HOME, "claw3d-port");
+const WS_URL_FILE = join(FLUX AGENT_HOME, "claw3d-ws-url");
 const DEFAULT_PORT = 8765;
 const DEFAULT_WS_URL = "ws://localhost:18789";
-const CLAW3D_SETTINGS_DIR = join(homedir(), ".omniworker", "claw3d");
+const CLAW3D_SETTINGS_DIR = join(homedir(), ".flux-agent", "claw3d");
 
 let devServerProcess: ChildProcess | null = null;
 let adapterProcess: ChildProcess | null = null;
@@ -187,13 +187,13 @@ export function getClaw3dWsUrl(): string {
 }
 
 /**
- * Write Claw3D settings to ~/.omniworker/claw3d/settings.json
+ * Write Claw3D settings to ~/.flux-agent/claw3d/settings.json
  * and .env in the claw3d directory so onboarding is skipped.
  */
 function writeClaw3dSettings(wsUrl?: string): void {
   const url = wsUrl || getSavedWsUrl();
 
-  // Write ~/.omniworker/claw3d/settings.json
+  // Write ~/.flux-agent/claw3d/settings.json
   try {
     mkdirSync(CLAW3D_SETTINGS_DIR, { recursive: true });
     const settingsPath = join(CLAW3D_SETTINGS_DIR, "settings.json");
@@ -208,7 +208,7 @@ function writeClaw3dSettings(wsUrl?: string): void {
 
     const settings = {
       ...existing,
-      adapter: "omniworker",
+      adapter: "flux-agent",
       url,
       token: "",
     };
@@ -219,19 +219,19 @@ function writeClaw3dSettings(wsUrl?: string): void {
 
   // Write .env in claw3d directory
   try {
-    if (existsSync(OMNIWORKER_OFFICE_DIR)) {
-      const envPath = join(OMNIWORKER_OFFICE_DIR, ".env");
+    if (existsSync(FLUX AGENT_OFFICE_DIR)) {
+      const envPath = join(FLUX AGENT_OFFICE_DIR, ".env");
       const port = getSavedPort();
       const envContent = [
-        "# Auto-configured by OmniWorker Desktop",
+        "# Auto-configured by Flux Agent Desktop",
         `PORT=${port}`,
         `HOST=127.0.0.1`,
         `NEXT_PUBLIC_GATEWAY_URL=${url}`,
         `CLAW3D_GATEWAY_URL=${url}`,
         `CLAW3D_GATEWAY_TOKEN=`,
-        `OMNIWORKER_ADAPTER_PORT=18789`,
-        `OMNIWORKER_MODEL=omniworker`,
-        `OMNIWORKER_AGENT_NAME=OmniWorker`,
+        `FLUX AGENT_ADAPTER_PORT=18789`,
+        `FLUX AGENT_MODEL=flux-agent`,
+        `FLUX AGENT_AGENT_NAME=Flux Agent`,
         "",
       ].join("\n");
       safeWriteFile(envPath, envContent);
@@ -336,12 +336,12 @@ function isAdapterRunning(): boolean {
 
 export async function getClaw3dStatus(): Promise<Claw3dStatus> {
   const bundled = getBundledOfficeDir();
-  const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
+  const hasStandalone = existsSync(join(FLUX AGENT_OFFICE_DIR, "server.js"));
   const hasPackageJson = existsSync(
-    join(OMNIWORKER_OFFICE_DIR, "package.json"),
+    join(FLUX AGENT_OFFICE_DIR, "package.json"),
   );
   const hasNodeModules = existsSync(
-    join(OMNIWORKER_OFFICE_DIR, "node_modules"),
+    join(FLUX AGENT_OFFICE_DIR, "node_modules"),
   );
   const installed = hasStandalone || hasNodeModules;
   const port = getSavedPort();
@@ -478,22 +478,22 @@ export async function setupClaw3d(
     );
 
     const { cpSync, rmSync, renameSync } = require("fs");
-    if (existsSync(OMNIWORKER_OFFICE_DIR)) {
-      rmSync(OMNIWORKER_OFFICE_DIR, { recursive: true, force: true });
+    if (existsSync(FLUX AGENT_OFFICE_DIR)) {
+      rmSync(FLUX AGENT_OFFICE_DIR, { recursive: true, force: true });
     }
-    cpSync(bundledDir, OMNIWORKER_OFFICE_DIR, { recursive: true });
+    cpSync(bundledDir, FLUX AGENT_OFFICE_DIR, { recursive: true });
     
     // Restore node_modules if it was renamed to bypass electron-builder strips
-    const bundledNmPath = join(OMNIWORKER_OFFICE_DIR, "bundled_node_modules");
+    const bundledNmPath = join(FLUX AGENT_OFFICE_DIR, "bundled_node_modules");
     if (existsSync(bundledNmPath)) {
-      renameSync(bundledNmPath, join(OMNIWORKER_OFFICE_DIR, "node_modules"));
+      renameSync(bundledNmPath, join(FLUX AGENT_OFFICE_DIR, "node_modules"));
     }
     
     emit(1, "Claw3D copied", "Successfully copied from bundle.\n");
   } else {
     // Fallback: clone from GitHub (for development without bundle)
     const git = resolveCommand("git", env.PATH);
-    const cloned = existsSync(join(OMNIWORKER_OFFICE_DIR, "package.json"));
+    const cloned = existsSync(join(FLUX AGENT_OFFICE_DIR, "package.json"));
 
     if (!cloned) {
       emit(1, "Cloning Claw3D repository...", "Cloning from GitHub...\n");
@@ -501,7 +501,7 @@ export async function setupClaw3d(
         const gitClone = createCommandInvocation(git, [
           "clone",
           "https://github.com/iamlukethedev/Claw3D",
-          OMNIWORKER_OFFICE_DIR,
+          FLUX AGENT_OFFICE_DIR,
         ]);
         const proc = spawn(gitClone.command, gitClone.args, {
           cwd: homedir(),
@@ -535,7 +535,7 @@ export async function setupClaw3d(
       await new Promise<void>((resolve) => {
         const gitPull = createCommandInvocation(git, ["pull", "--ff-only"]);
         const proc = spawn(gitPull.command, gitPull.args, {
-          cwd: OMNIWORKER_OFFICE_DIR,
+          cwd: FLUX AGENT_OFFICE_DIR,
           env,
           stdio: ["ignore", "pipe", "pipe"],
           windowsHide: true,
@@ -558,13 +558,13 @@ export async function setupClaw3d(
   }
 
   // Step 2: npm install (run even for bundled if node_modules is missing)
-  if (!existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"))) {
+  if (!existsSync(join(FLUX AGENT_OFFICE_DIR, "node_modules"))) {
     emit(2, "Installing dependencies...", "Running npm install...\n");
     const npm = createCommandInvocation(findNpm(env.PATH), ["install"]);
 
     await new Promise<void>((resolve, reject) => {
       const proc = spawn(npm.command, npm.args, {
-        cwd: OMNIWORKER_OFFICE_DIR,
+        cwd: FLUX AGENT_OFFICE_DIR,
         env,
         stdio: ["ignore", "pipe", "pipe"],
         windowsHide: true,
@@ -648,9 +648,9 @@ export async function startDevServer(): Promise<boolean> {
   };
 
   // Check if we have a bundled standalone build
-  const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
+  const hasStandalone = existsSync(join(FLUX AGENT_OFFICE_DIR, "server.js"));
   const hasNodeModules = existsSync(
-    join(OMNIWORKER_OFFICE_DIR, "node_modules"),
+    join(FLUX AGENT_OFFICE_DIR, "node_modules"),
   );
 
   if (!hasStandalone && !hasNodeModules) return false;
@@ -662,7 +662,7 @@ export async function startDevServer(): Promise<boolean> {
     const nodeCmd = resolveCommand("node", env.PATH);
     const nodeExec = nodeCmd ? nodeCmd.command : "node";
     proc = spawn(nodeExec, ["server.js"], {
-      cwd: OMNIWORKER_OFFICE_DIR,
+      cwd: FLUX AGENT_OFFICE_DIR,
       env,
       stdio: ["ignore", "pipe", "pipe"],
       detached: true,
@@ -673,7 +673,7 @@ export async function startDevServer(): Promise<boolean> {
     // Fallback: use npm run dev (legacy clone path)
     const npm = createCommandInvocation(findNpm(env.PATH), ["run", "dev"]);
     proc = spawn(npm.command, npm.args, {
-      cwd: OMNIWORKER_OFFICE_DIR,
+      cwd: FLUX AGENT_OFFICE_DIR,
       env,
       stdio: ["ignore", "pipe", "pipe"],
       detached: true,
@@ -739,7 +739,7 @@ export function stopDevServer(): void {
 
 export function startAdapter(): boolean {
   if (isAdapterRunning()) return true;
-  if (!existsSync(join(OMNIWORKER_OFFICE_DIR, "node_modules"))) return false;
+  if (!existsSync(join(FLUX AGENT_OFFICE_DIR, "node_modules"))) return false;
 
   adapterError = "";
   adapterLogs = "";
@@ -751,10 +751,10 @@ export function startAdapter(): boolean {
   };
   const npm = createCommandInvocation(findNpm(env.PATH), [
     "run",
-    "omniworker-adapter",
+    "flux-agent-adapter",
   ]);
   const proc = spawn(npm.command, npm.args, {
-    cwd: OMNIWORKER_OFFICE_DIR,
+    cwd: FLUX AGENT_OFFICE_DIR,
     env,
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
@@ -784,7 +784,7 @@ export function startAdapter(): boolean {
 
   proc.on("close", (code) => {
     if (code && code !== 0 && !adapterError) {
-      adapterError = `OmniWorker adapter exited with code ${code}`;
+      adapterError = `Flux Agent adapter exited with code ${code}`;
     }
     adapterProcess = null;
     cleanupPid(ADAPTER_PID_FILE);
@@ -819,9 +819,9 @@ export async function startAll(): Promise<{
   success: boolean;
   error?: string;
 }> {
-  const hasStandalone = existsSync(join(OMNIWORKER_OFFICE_DIR, "server.js"));
+  const hasStandalone = existsSync(join(FLUX AGENT_OFFICE_DIR, "server.js"));
   const hasNodeModules = existsSync(
-    join(OMNIWORKER_OFFICE_DIR, "node_modules"),
+    join(FLUX AGENT_OFFICE_DIR, "node_modules"),
   );
 
   // If we have a bundled dir, and the user is missing standalone or node_modules, we should install it.
@@ -864,7 +864,7 @@ export async function startAll(): Promise<{
   if (hasNodeModules && !hasStandalone) {
     const adapterOk = startAdapter();
     if (!adapterOk) {
-      return { success: false, error: "Failed to start OmniWorker adapter" };
+      return { success: false, error: "Failed to start Flux Agent adapter" };
     }
   }
 

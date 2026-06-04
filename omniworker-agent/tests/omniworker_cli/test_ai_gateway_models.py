@@ -2,14 +2,14 @@
 
 Vercel AI Gateway exposes ``/v1/models`` with a richer shape than OpenAI's
 spec (type, tags, pricing). The pricing object uses ``input`` / ``output``
-where omniworker's shared picker expects ``prompt`` / ``completion``; these tests
+where flux-agent's shared picker expects ``prompt`` / ``completion``; these tests
 pin the translation and the curated-list filtering.
 """
 import json
 from unittest.mock import patch, MagicMock
 
-from omniworker_cli import models as models_module
-from omniworker_cli.models import (
+from flux-agent_cli import models as models_module
+from flux-agent_cli.models import (
     VERCEL_AI_GATEWAY_MODELS,
     _ai_gateway_model_is_free,
     fetch_ai_gateway_models,

@@ -19,7 +19,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-OMNIWORKER_HOME = Path(os.getenv("OMNIWORKER_HOME", Path.home() / ".omniworker"))
+OMNIWORKER_HOME = Path(os.getenv("OMNIWORKER_HOME", Path.home() / ".flux-agent"))
 ENV_FILE = OMNIWORKER_HOME / ".env"
 
 OK = "\033[92m\u2713\033[0m"
@@ -176,10 +176,10 @@ def check_env_vars():
 
     # Load .env
     try:
-        from omniworker_cli.env_loader import load_omniworker_dotenv
+        from flux-agent_cli.env_loader import load_flux-agent_dotenv
 
-        load_omniworker_dotenv(
-            omniworker_home=ENV_FILE.parent,
+        load_flux-agent_dotenv(
+            flux-agent_home=ENV_FILE.parent,
             project_env=PROJECT_ROOT / ".env",
         )
     except ImportError:
@@ -235,7 +235,7 @@ def check_env_vars():
 
 
 def check_config(groq_key, eleven_key):
-    """Check omniworker config.yaml."""
+    """Check flux-agent config.yaml."""
     section("Configuration")
 
     config_path = OMNIWORKER_HOME / "config.yaml"

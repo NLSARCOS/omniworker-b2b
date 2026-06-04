@@ -1,10 +1,10 @@
 """Tests for the setup wizard's returning-user behavior.
 
 On an existing install:
-- Bare `omniworker setup` drops straight into the full reconfigure wizard
+- Bare `flux-agent setup` drops straight into the full reconfigure wizard
   (every prompt shows the current value as its default).
-- `omniworker setup --quick` runs the narrower "fill in missing items" flow.
-- `omniworker setup --reconfigure` is a backwards-compat alias for the
+- `flux-agent setup --quick` runs the narrower "fill in missing items" flow.
+- `flux-agent setup --reconfigure` is a backwards-compat alias for the
   bare-setup default.
 
 On a fresh install, all three are no-ops — fall through to first-time setup.
@@ -30,7 +30,7 @@ def _make_setup_args(**overrides):
 @pytest.fixture
 def existing_install(tmp_path, monkeypatch):
     """Simulate a returning user with an existing configured install."""
-    home = tmp_path / ".omniworker"
+    home = tmp_path / ".flux-agent"
     home.mkdir()
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
@@ -40,7 +40,7 @@ def existing_install(tmp_path, monkeypatch):
 @pytest.fixture
 def fresh_install(tmp_path, monkeypatch):
     """Simulate a first-time user with no existing configuration."""
-    home = tmp_path / ".omniworker"
+    home = tmp_path / ".flux-agent"
     home.mkdir()
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
@@ -55,15 +55,15 @@ def _enter_existing_install_patches(stack, **extra):
     """
     # Unconditional mocks (no return values to assert against).
     for target, kwargs in [
-        ("omniworker_cli.setup.ensure_omniworker_home", {}),
-        ("omniworker_cli.setup.is_interactive_stdin", {"return_value": True}),
-        ("omniworker_cli.config.is_managed", {"return_value": False}),
-        ("omniworker_cli.setup.load_config", {"return_value": {}}),
-        ("omniworker_cli.setup.save_config", {}),
-        ("omniworker_cli.setup.get_env_value", {"return_value": None}),
-        ("omniworker_cli.auth.get_active_provider", {"return_value": "openrouter"}),
-        ("omniworker_cli.setup._print_setup_summary", {}),
-        ("omniworker_cli.setup._offer_omniworker_migration", {"return_value": False}),
+        ("flux-agent_cli.setup.ensure_flux-agent_home", {}),
+        ("flux-agent_cli.setup.is_interactive_stdin", {"return_value": True}),
+        ("flux-agent_cli.config.is_managed", {"return_value": False}),
+        ("flux-agent_cli.setup.load_config", {"return_value": {}}),
+        ("flux-agent_cli.setup.save_config", {}),
+        ("flux-agent_cli.setup.get_env_value", {"return_value": None}),
+        ("flux-agent_cli.auth.get_active_provider", {"return_value": "openrouter"}),
+        ("flux-agent_cli.setup._print_setup_summary", {}),
+        ("flux-agent_cli.setup._offer_flux-agent_migration", {"return_value": False}),
     ]:
         stack.enter_context(patch(target, **kwargs))
 
@@ -76,14 +76,14 @@ def _enter_existing_install_patches(stack, **extra):
 
 def _enter_fresh_install_patches(stack, **extra):
     for target, kwargs in [
-        ("omniworker_cli.setup.ensure_omniworker_home", {}),
-        ("omniworker_cli.setup.is_interactive_stdin", {"return_value": True}),
-        ("omniworker_cli.config.is_managed", {"return_value": False}),
-        ("omniworker_cli.setup.load_config", {"return_value": {}}),
-        ("omniworker_cli.setup.save_config", {}),
-        ("omniworker_cli.auth.get_active_provider", {"return_value": None}),
-        ("omniworker_cli.setup.get_env_value", {"return_value": None}),
-        ("omniworker_cli.setup._offer_omniworker_migration", {"return_value": False}),
+        ("flux-agent_cli.setup.ensure_flux-agent_home", {}),
+        ("flux-agent_cli.setup.is_interactive_stdin", {"return_value": True}),
+        ("flux-agent_cli.config.is_managed", {"return_value": False}),
+        ("flux-agent_cli.setup.load_config", {"return_value": {}}),
+        ("flux-agent_cli.setup.save_config", {}),
+        ("flux-agent_cli.auth.get_active_provider", {"return_value": None}),
+        ("flux-agent_cli.setup.get_env_value", {"return_value": None}),
+        ("flux-agent_cli.setup._offer_flux-agent_migration", {"return_value": False}),
     ]:
         stack.enter_context(patch(target, **kwargs))
 
@@ -98,7 +98,7 @@ def _enter_fresh_install_patches(stack, **extra):
 
 
 class TestExistingInstallDefault:
-    """Bare `omniworker setup` on an existing install = full reconfigure wizard."""
+    """Bare `flux-agent setup` on an existing install = full reconfigure wizard."""
 
     def test_bare_setup_runs_full_reconfigure_without_menu(self, existing_install):
         """No menu, no prompt_choice — just run every section in sequence."""
@@ -107,15 +107,15 @@ class TestExistingInstallDefault:
         with ExitStack() as stack:
             m = _enter_existing_install_patches(
                 stack,
-                prompt_choice="omniworker_cli.setup.prompt_choice",
-                quick="omniworker_cli.setup._run_quick_setup",
-                model="omniworker_cli.setup.setup_model_provider",
-                terminal="omniworker_cli.setup.setup_terminal_backend",
-                agent="omniworker_cli.setup.setup_agent_settings",
-                gateway="omniworker_cli.setup.setup_gateway",
-                tools="omniworker_cli.setup.setup_tools",
+                prompt_choice="flux-agent_cli.setup.prompt_choice",
+                quick="flux-agent_cli.setup._run_quick_setup",
+                model="flux-agent_cli.setup.setup_model_provider",
+                terminal="flux-agent_cli.setup.setup_terminal_backend",
+                agent="flux-agent_cli.setup.setup_agent_settings",
+                gateway="flux-agent_cli.setup.setup_gateway",
+                tools="flux-agent_cli.setup.setup_tools",
             )
-            from omniworker_cli.setup import run_setup_wizard
+            from flux-agent_cli.setup import run_setup_wizard
             run_setup_wizard(args)
 
         # No menu shown.
@@ -130,20 +130,20 @@ class TestExistingInstallDefault:
         m["tools"].assert_called_once()
 
     def test_reconfigure_flag_is_backwards_compat_noop(self, existing_install):
-        """`omniworker setup --reconfigure` behaves the same as bare `omniworker setup`."""
+        """`flux-agent setup --reconfigure` behaves the same as bare `flux-agent setup`."""
         args = _make_setup_args(reconfigure=True)
 
         with ExitStack() as stack:
             m = _enter_existing_install_patches(
                 stack,
-                prompt_choice="omniworker_cli.setup.prompt_choice",
-                model="omniworker_cli.setup.setup_model_provider",
-                terminal="omniworker_cli.setup.setup_terminal_backend",
-                agent="omniworker_cli.setup.setup_agent_settings",
-                gateway="omniworker_cli.setup.setup_gateway",
-                tools="omniworker_cli.setup.setup_tools",
+                prompt_choice="flux-agent_cli.setup.prompt_choice",
+                model="flux-agent_cli.setup.setup_model_provider",
+                terminal="flux-agent_cli.setup.setup_terminal_backend",
+                agent="flux-agent_cli.setup.setup_agent_settings",
+                gateway="flux-agent_cli.setup.setup_gateway",
+                tools="flux-agent_cli.setup.setup_tools",
             )
-            from omniworker_cli.setup import run_setup_wizard
+            from flux-agent_cli.setup import run_setup_wizard
             run_setup_wizard(args)
 
         m["prompt_choice"].assert_not_called()
@@ -163,14 +163,14 @@ class TestQuickFlag:
         with ExitStack() as stack:
             m = _enter_existing_install_patches(
                 stack,
-                quick="omniworker_cli.setup._run_quick_setup",
-                model="omniworker_cli.setup.setup_model_provider",
-                terminal="omniworker_cli.setup.setup_terminal_backend",
-                agent="omniworker_cli.setup.setup_agent_settings",
-                gateway="omniworker_cli.setup.setup_gateway",
-                tools="omniworker_cli.setup.setup_tools",
+                quick="flux-agent_cli.setup._run_quick_setup",
+                model="flux-agent_cli.setup.setup_model_provider",
+                terminal="flux-agent_cli.setup.setup_terminal_backend",
+                agent="flux-agent_cli.setup.setup_agent_settings",
+                gateway="flux-agent_cli.setup.setup_gateway",
+                tools="flux-agent_cli.setup.setup_tools",
             )
-            from omniworker_cli.setup import run_setup_wizard
+            from flux-agent_cli.setup import run_setup_wizard
             run_setup_wizard(args)
 
         m["quick"].assert_called_once()
@@ -191,10 +191,10 @@ class TestFreshInstall:
         with ExitStack() as stack:
             m = _enter_fresh_install_patches(
                 stack,
-                prompt=("omniworker_cli.setup.prompt_choice", {"return_value": 0}),
-                first="omniworker_cli.setup._run_first_time_quick_setup",
+                prompt=("flux-agent_cli.setup.prompt_choice", {"return_value": 0}),
+                first="flux-agent_cli.setup._run_first_time_quick_setup",
             )
-            from omniworker_cli.setup import run_setup_wizard
+            from flux-agent_cli.setup import run_setup_wizard
             run_setup_wizard(args)
 
         m["prompt"].assert_called_once()  # quick-vs-full prompt
@@ -206,10 +206,10 @@ class TestFreshInstall:
         with ExitStack() as stack:
             m = _enter_fresh_install_patches(
                 stack,
-                prompt=("omniworker_cli.setup.prompt_choice", {"return_value": 0}),
-                first="omniworker_cli.setup._run_first_time_quick_setup",
+                prompt=("flux-agent_cli.setup.prompt_choice", {"return_value": 0}),
+                first="flux-agent_cli.setup._run_first_time_quick_setup",
             )
-            from omniworker_cli.setup import run_setup_wizard
+            from flux-agent_cli.setup import run_setup_wizard
             run_setup_wizard(args)
 
         m["prompt"].assert_called_once()
@@ -221,10 +221,10 @@ class TestFreshInstall:
         with ExitStack() as stack:
             m = _enter_fresh_install_patches(
                 stack,
-                prompt=("omniworker_cli.setup.prompt_choice", {"return_value": 0}),
-                first="omniworker_cli.setup._run_first_time_quick_setup",
+                prompt=("flux-agent_cli.setup.prompt_choice", {"return_value": 0}),
+                first="flux-agent_cli.setup._run_first_time_quick_setup",
             )
-            from omniworker_cli.setup import run_setup_wizard
+            from flux-agent_cli.setup import run_setup_wizard
             run_setup_wizard(args)
 
         m["prompt"].assert_called_once()
@@ -236,14 +236,14 @@ class TestArgparse:
 
     def test_reconfigure_flag_reaches_cmd_setup(self, monkeypatch):
         import sys
-        from omniworker_cli.main import main
+        from flux-agent_cli.main import main
 
         captured = {}
         monkeypatch.setattr(
-            "omniworker_cli.setup.run_setup_wizard",
+            "flux-agent_cli.setup.run_setup_wizard",
             lambda args: captured.setdefault("args", args),
         )
-        monkeypatch.setattr(sys, "argv", ["omniworker", "setup", "--reconfigure"])
+        monkeypatch.setattr(sys, "argv", ["flux-agent", "setup", "--reconfigure"])
         try:
             main()
         except SystemExit:
@@ -253,14 +253,14 @@ class TestArgparse:
 
     def test_quick_flag_reaches_cmd_setup(self, monkeypatch):
         import sys
-        from omniworker_cli.main import main
+        from flux-agent_cli.main import main
 
         captured = {}
         monkeypatch.setattr(
-            "omniworker_cli.setup.run_setup_wizard",
+            "flux-agent_cli.setup.run_setup_wizard",
             lambda args: captured.setdefault("args", args),
         )
-        monkeypatch.setattr(sys, "argv", ["omniworker", "setup", "--quick"])
+        monkeypatch.setattr(sys, "argv", ["flux-agent", "setup", "--quick"])
         try:
             main()
         except SystemExit:
@@ -270,14 +270,14 @@ class TestArgparse:
 
     def test_bare_setup_has_both_flags_false(self, monkeypatch):
         import sys
-        from omniworker_cli.main import main
+        from flux-agent_cli.main import main
 
         captured = {}
         monkeypatch.setattr(
-            "omniworker_cli.setup.run_setup_wizard",
+            "flux-agent_cli.setup.run_setup_wizard",
             lambda args: captured.setdefault("args", args),
         )
-        monkeypatch.setattr(sys, "argv", ["omniworker", "setup"])
+        monkeypatch.setattr(sys, "argv", ["flux-agent", "setup"])
         try:
             main()
         except SystemExit:

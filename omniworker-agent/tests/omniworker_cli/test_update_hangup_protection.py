@@ -1,8 +1,8 @@
-"""Tests for SIGHUP protection and stdout mirroring in ``omniworker update``.
+"""Tests for SIGHUP protection and stdout mirroring in ``flux-agent update``.
 
 Covers ``_UpdateOutputStream``, ``_install_hangup_protection``, and
-``_finalize_update_output`` in ``omniworker_cli/main.py``.  These exist so
-that ``omniworker update`` survives a terminal disconnect mid-install
+``_finalize_update_output`` in ``flux-agent_cli/main.py``.  These exist so
+that ``flux-agent update`` survives a terminal disconnect mid-install
 (SSH drop, shell close) without leaving the venv half-installed.
 """
 
@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
-from omniworker_cli.main import (
+from flux-agent_cli.main import (
     _UpdateOutputStream,
     _finalize_update_output,
     _install_hangup_protection,
@@ -185,8 +185,8 @@ class TestInstallHangupProtection:
     def test_installs_sighup_ignore(self, tmp_path, monkeypatch):
         """SIGHUP should be set to SIG_IGN so SSH disconnect doesn't kill the update."""
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-        # Clear cached get_omniworker_home if present
-        import omniworker_cli.config as _cfg
+        # Clear cached get_flux-agent_home if present
+        import flux-agent_cli.config as _cfg
         if hasattr(_cfg, "_OMNIWORKER_HOME_CACHE"):
             _cfg._OMNIWORKER_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -203,7 +203,7 @@ class TestInstallHangupProtection:
     def test_wraps_stdout_and_stderr_with_mirror(self, tmp_path, monkeypatch):
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
         # Nuke any cached home path
-        import omniworker_cli.config as _cfg
+        import flux-agent_cli.config as _cfg
         if hasattr(_cfg, "_OMNIWORKER_HOME_CACHE"):
             _cfg._OMNIWORKER_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -224,7 +224,7 @@ class TestInstallHangupProtection:
             assert log_path.exists()
             contents = log_path.read_text(encoding="utf-8")
             assert "checking mirror" in contents
-            assert "omniworker update started" in contents
+            assert "flux-agent update started" in contents
         finally:
             _finalize_update_output(state)
             # Sanity-check restoration
@@ -233,7 +233,7 @@ class TestInstallHangupProtection:
 
     def test_logs_dir_created_if_missing(self, tmp_path, monkeypatch):
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-        import omniworker_cli.config as _cfg
+        import flux-agent_cli.config as _cfg
         if hasattr(_cfg, "_OMNIWORKER_HOME_CACHE"):
             _cfg._OMNIWORKER_HOME_CACHE = None  # type: ignore[attr-defined]
 
@@ -248,7 +248,7 @@ class TestInstallHangupProtection:
             _finalize_update_output(state)
 
     def test_non_fatal_if_log_setup_fails(self, monkeypatch):
-        """If get_omniworker_home() raises, stdio must be left untouched but SIGHUP still handled."""
+        """If get_flux-agent_home() raises, stdio must be left untouched but SIGHUP still handled."""
         prev_out, prev_err = sys.stdout, sys.stderr
 
         def _boom():
@@ -256,7 +256,7 @@ class TestInstallHangupProtection:
 
         # Patch the import inside _install_hangup_protection.
         monkeypatch.setattr(
-            "omniworker_cli.config.get_omniworker_home", _boom, raising=True
+            "flux-agent_cli.config.get_flux-agent_home", _boom, raising=True
         )
 
         original_handler = (
@@ -289,7 +289,7 @@ class TestFinalizeUpdateOutput:
 
     def test_restores_streams_and_closes_log(self, tmp_path, monkeypatch):
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
-        import omniworker_cli.config as _cfg
+        import flux-agent_cli.config as _cfg
         if hasattr(_cfg, "_OMNIWORKER_HOME_CACHE"):
             _cfg._OMNIWORKER_HOME_CACHE = None  # type: ignore[attr-defined]
 

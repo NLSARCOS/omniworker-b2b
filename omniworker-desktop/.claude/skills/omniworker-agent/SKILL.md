@@ -1,5 +1,5 @@
 ---
-name: omniworker-agent
+name: flux-agent-agent
 description: Expert in building self-improving AI agents with tool use, multi-platform messaging, and a closed learning loop. Proficient in LLM orchestration, tool integration, session management, and agent autonomy.
 ---
 
@@ -20,16 +20,16 @@ description: Expert in building self-improving AI agents with tool use, multi-pl
    - 5.2 [Tool Orchestration (model_tools.py)](#52-tool-orchestration-model_toolspy)
    - 5.3 [Toolset System (toolsets.py)](#53-toolset-system-toolsetspy)
    - 5.4 [Tool Registry (tools/registry.py)](#54-tool-registry-toolsregistrypy)
-   - 5.5 [Session Database (omniworker_state.py)](#55-session-database-omniworker_statepy)
-   - 5.6 [Constants & Home Directory (omniworker_constants.py)](#56-constants--home-directory-omniworker_constantspy)
+   - 5.5 [Session Database (flux-agent_state.py)](#55-session-database-flux-agent_statepy)
+   - 5.6 [Constants & Home Directory (flux-agent_constants.py)](#56-constants--home-directory-flux-agent_constantspy)
 6. [CLI System](#6-cli-system)
    - 6.1 [Interactive CLI (cli.py)](#61-interactive-cli-clipy)
-   - 6.2 [CLI Entry Point (omniworker_cli/main.py)](#62-cli-entry-point-omniworker_climainpy)
-   - 6.3 [Configuration System (omniworker_cli/config.py)](#63-configuration-system-omniworker_cliconfigpy)
-   - 6.4 [Slash Command Registry (omniworker_cli/commands.py)](#64-slash-command-registry-omniworker_clicommandspy)
-   - 6.5 [Setup Wizard (omniworker_cli/setup.py)](#65-setup-wizard-omniworker_clisetupy)
-   - 6.6 [Model Catalog (omniworker_cli/models.py)](#66-model-catalog-omniworker_climodelspy)
-   - 6.7 [Skin/Theme Engine (omniworker_cli/skin_engine.py)](#67-skintheme-engine-omniworker_cliskin_enginepy)
+   - 6.2 [CLI Entry Point (flux-agent_cli/main.py)](#62-cli-entry-point-flux-agent_climainpy)
+   - 6.3 [Configuration System (flux-agent_cli/config.py)](#63-configuration-system-flux-agent_cliconfigpy)
+   - 6.4 [Slash Command Registry (flux-agent_cli/commands.py)](#64-slash-command-registry-flux-agent_clicommandspy)
+   - 6.5 [Setup Wizard (flux-agent_cli/setup.py)](#65-setup-wizard-flux-agent_clisetupy)
+   - 6.6 [Model Catalog (flux-agent_cli/models.py)](#66-model-catalog-flux-agent_climodelspy)
+   - 6.7 [Skin/Theme Engine (flux-agent_cli/skin_engine.py)](#67-skintheme-engine-flux-agent_cliskin_enginepy)
 7. [Tool System](#7-tool-system)
    - 7.1 [Terminal Tool (tools/terminal_tool.py)](#71-terminal-tool-toolsterminal_toolpy)
    - 7.2 [File Tools (tools/file_tools.py)](#72-file-tools-toolsfile_toolspy)
@@ -72,7 +72,7 @@ description: Expert in building self-improving AI agents with tool use, multi-pl
 
 ## 1. Project Overview
 
-**OmniWorker Agent** is a self-improving AI agent built by [Nous Research](https://omniworker.com). It is an open-source (MIT licensed), Python-based project that provides:
+**OmniWorker Agent** is a self-improving AI agent built by [Nous Research](https://flux-agent.com). It is an open-source (MIT licensed), Python-based project that provides:
 
 - A **full interactive terminal UI** (CLI) for conversing with LLMs
 - A **messaging gateway** supporting 16+ platforms (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Email, etc.)
@@ -94,7 +94,7 @@ description: Expert in building self-improving AI agents with tool use, multi-pl
 - Anthropic SDK (native Anthropic support)
 - Rich + prompt_toolkit (CLI rendering)
 
-**Repository:** `github.com/OmniWorker/omniworker-agent`
+**Repository:** `github.com/OmniWorker/flux-agent-agent`
 **Version:** 0.7.0 (as of April 2026)
 **License:** MIT
 
@@ -126,27 +126,27 @@ description: Expert in building self-improving AI agents with tool use, multi-pl
 
 ```bash
 # One-line install (Linux, macOS, WSL2)
-curl -fsSL https://raw.githubusercontent.com/OmniWorker/omniworker-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/OmniWorker/flux-agent-agent/main/scripts/install.sh | bash
 
 # After install
 source ~/.bashrc    # or: source ~/.zshrc
-omniworker              # start chatting
+flux-agent              # start chatting
 
 # Key commands
-omniworker model        # Choose LLM provider and model
-omniworker tools        # Configure which tools are enabled
-omniworker config set   # Set individual config values
-omniworker gateway      # Start the messaging gateway
-omniworker setup        # Run the full setup wizard
-omniworker update       # Update to latest version
-omniworker doctor       # Diagnose any issues
+flux-agent model        # Choose LLM provider and model
+flux-agent tools        # Configure which tools are enabled
+flux-agent config set   # Set individual config values
+flux-agent gateway      # Start the messaging gateway
+flux-agent setup        # Run the full setup wizard
+flux-agent update       # Update to latest version
+flux-agent doctor       # Diagnose any issues
 ```
 
 **For development:**
 
 ```bash
-git clone https://github.com/OmniWorker/omniworker-agent.git
-cd omniworker-agent
+git clone https://github.com/OmniWorker/flux-agent-agent.git
+cd flux-agent-agent
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv venv venv --python 3.11
 source venv/bin/activate
@@ -159,15 +159,15 @@ python -m pytest tests/ -q    # ~3000 tests
 ## 4. Project Structure
 
 ```
-omniworker-agent/
+flux-agent-agent/
 ├── run_agent.py              # AIAgent class — core conversation loop
 ├── model_tools.py            # Tool orchestration, _discover_tools(), handle_function_call()
 ├── toolsets.py               # Toolset definitions, _OMNIWORKER_CORE_TOOLS list
 ├── toolset_distributions.py  # Toolset sampling distributions for RL
 ├── cli.py                    # OmniWorkerCLI class — interactive CLI orchestrator
-├── omniworker_state.py           # SessionDB — SQLite session store (FTS5 search)
-├── omniworker_constants.py       # Shared constants, get_omniworker_home()
-├── omniworker_time.py            # Timezone handling
+├── flux-agent_state.py           # SessionDB — SQLite session store (FTS5 search)
+├── flux-agent_constants.py       # Shared constants, get_flux-agent_home()
+├── flux-agent_time.py            # Timezone handling
 ├── utils.py                  # Shared utility functions
 ├── batch_runner.py           # Parallel batch processing
 ├── trajectory_compressor.py  # Trajectory compression for RL training
@@ -186,15 +186,15 @@ omniworker-agent/
 │   ├── skill_commands.py         # Skill slash commands (shared CLI/gateway)
 │   └── trajectory.py             # Trajectory saving helpers
 │
-├── omniworker_cli/               # CLI subcommands and setup
-│   ├── main.py               # Entry point — all `omniworker` subcommands
+├── flux-agent_cli/               # CLI subcommands and setup
+│   ├── main.py               # Entry point — all `flux-agent` subcommands
 │   ├── config.py             # DEFAULT_CONFIG, OPTIONAL_ENV_VARS, migration
 │   ├── commands.py           # Slash command definitions + SlashCommandCompleter
 │   ├── callbacks.py          # Terminal callbacks (clarify, sudo, approval)
 │   ├── setup.py              # Interactive setup wizard
 │   ├── skin_engine.py        # Skin/theme engine
-│   ├── skills_config.py      # `omniworker skills` — skill management
-│   ├── tools_config.py       # `omniworker tools` — tool management
+│   ├── skills_config.py      # `flux-agent skills` — skill management
+│   ├── tools_config.py       # `flux-agent tools` — tool management
 │   ├── skills_hub.py         # Skills Hub integration
 │   ├── models.py             # Model catalog, provider model lists
 │   ├── model_switch.py       # Shared /model switch pipeline
@@ -272,7 +272,7 @@ omniworker-agent/
 │       └── byterover/
 │
 ├── environments/             # RL training environments (Atropos)
-│   ├── omniworker_base_env.py    # Abstract base RL environment
+│   ├── flux-agent_base_env.py    # Abstract base RL environment
 │   ├── agent_loop.py         # OmniWorkerAgentLoop — rollout execution
 │   ├── tool_context.py       # ToolContext — sandbox for RL
 │   ├── web_research_env.py   # Web research tasks
@@ -294,10 +294,10 @@ omniworker-agent/
 └── cli-config.yaml.example   # Example config
 ```
 
-**User config directory:** `~/.omniworker/`
+**User config directory:** `~/.flux-agent/`
 
 ```
-~/.omniworker/
+~/.flux-agent/
 ├── config.yaml           # User settings
 ├── .env                  # API keys and secrets
 ├── MEMORY.md             # Persistent agent memory
@@ -461,9 +461,9 @@ Provides flexible tool grouping and composition.
 
 **Composite Toolsets:**
 
-- `omniworker-cli` — All core tools for CLI platform
-- `omniworker-telegram`, `omniworker-discord`, etc. — Platform-specific tool sets
-- `omniworker-gateway` — Union of all platform tools
+- `flux-agent-cli` — All core tools for CLI platform
+- `flux-agent-telegram`, `flux-agent-discord`, etc. — Platform-specific tool sets
+- `flux-agent-gateway` — Union of all platform tools
 - `debugging` — terminal + file + web
 - `safe` — Everything except terminal
 
@@ -510,7 +510,7 @@ registry.check_tool_availability()           # Returns (available, unavailable)
 
 ---
 
-### 5.5 Session Database (omniworker_state.py)
+### 5.5 Session Database (flux-agent_state.py)
 
 SQLite-based persistent session storage with FTS5 full-text search.
 
@@ -560,19 +560,19 @@ messages_fts (content)
 
 ---
 
-### 5.6 Constants & Home Directory (omniworker_constants.py)
+### 5.6 Constants & Home Directory (flux-agent_constants.py)
 
 Import-safe constants module with no circular dependencies.
 
 ```python
-get_omniworker_home() → Path          # OMNIWORKER_HOME env var or ~/.omniworker
-display_omniworker_home() → str       # User-friendly display: "~/.omniworker"
+get_flux-agent_home() → Path          # OMNIWORKER_HOME env var or ~/.flux-agent
+display_flux-agent_home() → str       # User-friendly display: "~/.flux-agent"
 get_optional_skills_dir() → Path  # OMNIWORKER_OPTIONAL_SKILLS env var
 parse_reasoning_effort(str) → Dict  # "high" → {"enabled": True, "effort": "high"}
 
 # Key constants
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-NOUS_API_BASE_URL = "https://inference-api.omniworker.com/v1"
+NOUS_API_BASE_URL = "https://inference-api.flux-agent.com/v1"
 AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
 VALID_REASONING_EFFORTS = ("xhigh", "high", "medium", "low", "minimal")
 ```
@@ -600,7 +600,7 @@ The `OmniWorkerCLI` class provides the interactive terminal interface.
 
 ```python
 load_cli_config() → dict
-# Loads from ~/.omniworker/config.yaml (or ./cli-config.yaml fallback)
+# Loads from ~/.flux-agent/config.yaml (or ./cli-config.yaml fallback)
 # Merges with hardcoded defaults
 # Expands ${ENV_VAR} references
 # Maps terminal config → env vars
@@ -608,26 +608,26 @@ load_cli_config() → dict
 
 ---
 
-### 6.2 CLI Entry Point (omniworker_cli/main.py)
+### 6.2 CLI Entry Point (flux-agent_cli/main.py)
 
-All `omniworker` subcommands are dispatched from here:
+All `flux-agent` subcommands are dispatched from here:
 
 ```
-omniworker                    # Default: interactive chat
-omniworker chat               # Explicit interactive mode
-omniworker gateway start|stop|status|install|uninstall
-omniworker setup              # Setup wizard
-omniworker model              # Select model/provider
-omniworker tools              # Configure tools
-omniworker skills             # Manage skills
-omniworker config set|get     # Direct config manipulation
-omniworker cron list|delete   # Cron job management
-omniworker doctor             # Diagnose issues
-omniworker sessions browse    # Session picker
-omniworker profile create|list|switch|delete|export|import
-omniworker mcp serve|add|remove  # MCP management
-omniworker acp                # Start ACP server
-omniworker update|uninstall|version
+flux-agent                    # Default: interactive chat
+flux-agent chat               # Explicit interactive mode
+flux-agent gateway start|stop|status|install|uninstall
+flux-agent setup              # Setup wizard
+flux-agent model              # Select model/provider
+flux-agent tools              # Configure tools
+flux-agent skills             # Manage skills
+flux-agent config set|get     # Direct config manipulation
+flux-agent cron list|delete   # Cron job management
+flux-agent doctor             # Diagnose issues
+flux-agent sessions browse    # Session picker
+flux-agent profile create|list|switch|delete|export|import
+flux-agent mcp serve|add|remove  # MCP management
+flux-agent acp                # Start ACP server
+flux-agent update|uninstall|version
 ```
 
 **Profile System:**
@@ -638,7 +638,7 @@ omniworker update|uninstall|version
 
 ---
 
-### 6.3 Configuration System (omniworker_cli/config.py)
+### 6.3 Configuration System (flux-agent_cli/config.py)
 
 **Key Configuration Sections:**
 
@@ -703,13 +703,13 @@ approvals:
 
 **Config Files:**
 
-- `~/.omniworker/config.yaml` — User settings (authoritative)
-- `~/.omniworker/.env` — API keys and secrets
+- `~/.flux-agent/config.yaml` — User settings (authoritative)
+- `~/.flux-agent/.env` — API keys and secrets
 - Config version migration system (currently v5)
 
 ---
 
-### 6.4 Slash Command Registry (omniworker_cli/commands.py)
+### 6.4 Slash Command Registry (flux-agent_cli/commands.py)
 
 All slash commands defined centrally in `COMMAND_REGISTRY`:
 
@@ -722,7 +722,7 @@ CommandDef(name, description, category, aliases, args_hint, cli_only, gateway_on
 - CLI `process_command()` — dispatch on canonical name
 - Gateway dispatch + help
 - Telegram BotCommand menu
-- Slack `/omniworker` subcommands
+- Slack `/flux-agent` subcommands
 - Autocomplete + help text
 
 **Key Commands:**
@@ -753,7 +753,7 @@ CommandDef(name, description, category, aliases, args_hint, cli_only, gateway_on
 
 ---
 
-### 6.5 Setup Wizard (omniworker_cli/setup.py)
+### 6.5 Setup Wizard (flux-agent_cli/setup.py)
 
 Modular interactive wizard with independent sections:
 
@@ -772,7 +772,7 @@ Features:
 
 ---
 
-### 6.6 Model Catalog (omniworker_cli/models.py)
+### 6.6 Model Catalog (flux-agent_cli/models.py)
 
 Provider-specific model lists:
 
@@ -801,7 +801,7 @@ Features:
 
 ---
 
-### 6.7 Skin/Theme Engine (omniworker_cli/skin_engine.py)
+### 6.7 Skin/Theme Engine (flux-agent_cli/skin_engine.py)
 
 Data-driven CLI visual customization — no code changes needed.
 
@@ -819,7 +819,7 @@ Data-driven CLI visual customization — no code changes needed.
 
 **Built-in Skins:** default, ares, mono, slate, poseidon, sisyphus, charizard
 
-**User Skins:** Drop `~/.omniworker/skins/<name>.yaml` and activate with `/skin <name>`
+**User Skins:** Drop `~/.flux-agent/skins/<name>.yaml` and activate with `/skin <name>`
 
 ---
 
@@ -1040,14 +1040,14 @@ Assembles the system prompt from multiple sources:
 | Session Search Guidance | How to recall past conversations                         |
 | Skills Guidance         | When to create/patch skills                              |
 | Tool Use Enforcement    | Must execute tools, not describe actions                 |
-| Skills Index            | `~/.omniworker/skills/.omniworker-skills.json`           |
+| Skills Index            | `~/.flux-agent/skills/.flux-agent-skills.json`           |
 | Platform Hints          | OS, Python version, shell, available tools               |
-| Context Files           | `.omniworker.md`, `AGENTS.md`, `.cursorrules`, `SOUL.md` |
+| Context Files           | `.flux-agent.md`, `AGENTS.md`, `.cursorrules`, `SOUL.md` |
 | Model/Provider Info     | Current model and provider identity                      |
 
 **Context File Discovery:**
 
-1. Check `cwd/.omniworker.md` or `OMNIWORKER.md`
+1. Check `cwd/.flux-agent.md` or `OMNIWORKER.md`
 2. Walk parent directories up to git root
 3. Validate against injection patterns before inclusion
 
@@ -1121,9 +1121,9 @@ Configured per-task via `auxiliary` section in config.yaml.
 
 Shared skill invocation for CLI and gateway:
 
-- Skills loaded from `~/.omniworker/skills/` and external directories
+- Skills loaded from `~/.flux-agent/skills/` and external directories
 - Injected as **user message** (not system prompt) to preserve prompt caching
-- `/plan` command generates implementation plans stored in `.omniworker/plans/`
+- `/plan` command generates implementation plans stored in `.flux-agent/plans/`
 - Skill content includes setup instructions, tool options, usage examples
 
 ---
@@ -1168,7 +1168,7 @@ Main controller managing all platform adapters and routing messages.
 **SessionStore** — Loads/saves conversation transcripts as JSON files
 
 ```
-~/.omniworker/sessions/{session_key}.json
+~/.flux-agent/sessions/{session_key}.json
 Format: [{role, content, timestamp}, ...]
 ```
 
@@ -1189,7 +1189,7 @@ Format: [{role, content, timestamp}, ...]
 | ------------------ | -------------------------------------------------------------------------------------------------------- |
 | **Telegram**       | Polling + webhook mode, media handling, inline keyboards, forum topic isolation, group mention gating    |
 | **Discord**        | Server channels, threads, reactions (processing/done/error), button-based approval, @mention requirement |
-| **Slack**          | Multi-workspace OAuth, thread handling, app_mention, `/omniworker` subcommands                           |
+| **Slack**          | Multi-workspace OAuth, thread handling, app_mention, `/flux-agent` subcommands                           |
 | **WhatsApp**       | Group & DM support, media captions, LID↔phone alias resolution                                           |
 | **Matrix**         | E2EE room encryption, threaded messages, trusted device flow, native voice messages                      |
 | **Signal**         | Encrypted DMs, group membership, SSE keepalive, phone URL encoding                                       |
@@ -1223,14 +1223,14 @@ Built-in job scheduler running in the gateway background thread.
 - `"0 9 * * *"` — Standard cron expression
 - `"2026-04-06T14:00"` — Absolute datetime
 
-**Job Storage:** `~/.omniworker/cron/jobs.json`
+**Job Storage:** `~/.flux-agent/cron/jobs.json`
 
 **Execution Flow:**
 
 1. `tick()` called every 60s from gateway background thread
 2. Fetch due jobs past `next_run_at`
-3. Spawn `omniworker` CLI subprocess with job prompt + skills
-4. Capture output → save to `~/.omniworker/cron/output/{job_id}/{timestamp}.md`
+3. Spawn `flux-agent` CLI subprocess with job prompt + skills
+4. Capture output → save to `~/.flux-agent/cron/output/{job_id}/{timestamp}.md`
 5. Deliver to target platform (or stay local)
 
 **Delivery Targets:**
@@ -1280,7 +1280,7 @@ description: Generate ASCII art using multiple tools
 version: 4.0.0
 dependencies: []
 metadata:
-  omniworker:
+  flux-agent:
     tags: [ASCII, Art, Banners, Creative]
     related_skills: [excalidraw]
 ---
@@ -1289,24 +1289,24 @@ metadata:
 
 **Discovery:**
 
-- Auto-discovered from `~/.omniworker/skills/` + external dirs
-- Skills index built at startup (`.omniworker-skills.json`)
+- Auto-discovered from `~/.flux-agent/skills/` + external dirs
+- Skills index built at startup (`.flux-agent-skills.json`)
 - Loaded as user messages to preserve prompt caching
-- Per-platform enable/disable via `omniworker skills`
+- Per-platform enable/disable via `flux-agent skills`
 - Skills Hub (`agentskills.io`) for community sharing
 
 ---
 
 ## 12. Plugin System
 
-Drop Python files into `~/.omniworker/plugins/` to extend OmniWorker.
+Drop Python files into `~/.flux-agent/plugins/` to extend OmniWorker.
 
 **Plugin Capabilities:**
 
 - Register custom tools and toolsets
 - Inject messages into conversation
 - Lifecycle hooks: `pre_llm_call`, `post_llm_call`, `on_session_start`, `on_session_end`
-- Enable/disable via `omniworker plugins enable/disable <name>`
+- Enable/disable via `flux-agent plugins enable/disable <name>`
 
 **Memory Provider Plugins (plugins/memory/):**
 8 implementations: openviking, mem0, hindsight, holographic, honcho, retaindb, byterover
@@ -1357,7 +1357,7 @@ memory:
 
 Agent Communication Protocol server for VS Code, Zed, JetBrains.
 
-**Entry:** `omniworker acp` → `acp_adapter/server.py`
+**Entry:** `flux-agent acp` → `acp_adapter/server.py`
 
 **OmniWorkerACPAgent Class:**
 
@@ -1400,7 +1400,7 @@ OpenAI-compatible API endpoint for headless integrations (e.g., Open WebUI).
 
 Expose OmniWorker conversations to MCP-compatible clients.
 
-**Entry:** `omniworker mcp serve`
+**Entry:** `flux-agent mcp serve`
 
 **Features:**
 
@@ -1441,7 +1441,7 @@ OmniWorkerAgentEnvConfig:
 
 - `web_research_env.py` — Web research tasks
 - `agentic_opd_env.py` — Observation-Prediction-Demonstration
-- `omniworker_swe_env.py` — Software engineering tasks
+- `flux-agent_swe_env.py` — Software engineering tasks
 
 **Supporting:**
 
@@ -1458,26 +1458,26 @@ Run multiple fully isolated OmniWorker instances from the same installation.
 **Commands:**
 
 ```bash
-omniworker profile create <name>
-omniworker profile list
-omniworker profile switch <name>
-omniworker profile delete <name>
-omniworker profile export <name>
-omniworker profile import <file>
-omniworker -p <name>             # Launch with specific profile
+flux-agent profile create <name>
+flux-agent profile list
+flux-agent profile switch <name>
+flux-agent profile delete <name>
+flux-agent profile export <name>
+flux-agent profile import <file>
+flux-agent -p <name>             # Launch with specific profile
 ```
 
 **Each profile gets:**
 
-- Own `OMNIWORKER_HOME` directory (`~/.omniworker/profiles/<name>/`)
+- Own `OMNIWORKER_HOME` directory (`~/.flux-agent/profiles/<name>/`)
 - Own config.yaml, .env, memory, sessions, skills, gateway service
 - Token-lock isolation (prevents two profiles sharing bot credentials)
 
 **Implementation:**
 
 - `_apply_profile_override()` sets `OMNIWORKER_HOME` env var before any imports
-- All 119+ references to `get_omniworker_home()` automatically scope to active profile
-- Profile operations are HOME-anchored (`~/.omniworker/profiles/`) for cross-profile visibility
+- All 119+ references to `get_flux-agent_home()` automatically scope to active profile
+- Profile operations are HOME-anchored (`~/.flux-agent/profiles/`) for cross-profile visibility
 
 ---
 
@@ -1588,14 +1588,14 @@ omniworker -p <name>             # Launch with specific profile
 - Centralized provider router (`call_llm()` API)
 - ACP server for IDE integration
 - CLI skin/theme engine
-- Git worktree isolation (`omniworker -w`)
+- Git worktree isolation (`flux-agent -w`)
 - Filesystem checkpoints and `/rollback`
 - 3,289 tests
 
 ### v0.3.0 (March 17, 2026) — Streaming, Plugins, Providers
 
 - Unified streaming infrastructure (token-by-token delivery)
-- First-class plugin architecture (`~/.omniworker/plugins/`)
+- First-class plugin architecture (`~/.flux-agent/plugins/`)
 - Native Anthropic provider with prompt caching
 - Smart approvals + `/stop` command
 - Honcho memory integration
@@ -1636,7 +1636,7 @@ omniworker -p <name>             # Launch with specific profile
 > 95 PRs and 16 resolved issues in 2 days
 
 - Profiles for multiple isolated agent instances
-- MCP Server Mode (`omniworker mcp serve`)
+- MCP Server Mode (`flux-agent mcp serve`)
 - Official Docker container
 - Ordered fallback provider chain
 - Feishu/Lark platform adapter
@@ -1664,7 +1664,7 @@ omniworker -p <name>             # Launch with specific profile
 ## 23. File Dependency Chain
 
 ```
-omniworker_constants.py  (no deps — imported by everything)
+flux-agent_constants.py  (no deps — imported by everything)
        ↑
 tools/registry.py  (no tool deps — imported by all tool files)
        ↑
@@ -1674,7 +1674,7 @@ model_tools.py  (imports tools/registry + triggers tool discovery)
        ↑
 run_agent.py (AIAgent), cli.py (OmniWorkerCLI), gateway/run.py (GatewayRunner)
        ↑
-omniworker_cli/main.py  (entry point — dispatches to all subsystems)
+flux-agent_cli/main.py  (entry point — dispatches to all subsystems)
 ```
 
 **Key Principle:** `tools/registry.py` is circular-import safe. It has no tool dependencies. Tool files import the registry; `model_tools.py` imports both.
@@ -1692,7 +1692,7 @@ omniworker_cli/main.py  (entry point — dispatches to all subsystems)
 | **Prefix Caching**             | System prompt cached across turns (Anthropic optimization); context never altered mid-conversation    |
 | **Proactive Compression**      | Triggered at 50% context usage; structured summaries with iterative updates                           |
 | **Async Bridging**             | Persistent event loops prevent "Event loop is closed"; per-thread loops for workers                   |
-| **Profile Isolation**          | OMNIWORKER_HOME env var set before imports; all state functions route through `get_omniworker_home()` |
+| **Profile Isolation**          | OMNIWORKER_HOME env var set before imports; all state functions route through `get_flux-agent_home()` |
 | **Agent Caching**              | Gateway caches AIAgent per session to preserve prompt cache across turns                              |
 | **WAL Concurrency**            | SQLite WAL mode + jitter retry for concurrent readers + single writer                                 |
 | **Plugin Architecture**        | Tools, toolsets, hooks, memory providers extensible via plugins                                       |
@@ -1726,21 +1726,21 @@ omniworker_cli/main.py  (entry point — dispatches to all subsystems)
 
 | File                              | Purpose                          |
 | --------------------------------- | -------------------------------- |
-| `~/.omniworker/config.yaml`       | Main configuration (YAML)        |
-| `~/.omniworker/.env`              | API keys and secrets             |
-| `~/.omniworker/MEMORY.md`         | Persistent agent memory          |
-| `~/.omniworker/USER.md`           | User profile                     |
-| `~/.omniworker/SOUL.md`           | Agent persona/identity           |
-| `~/.omniworker/sessions.db`       | SQLite session database          |
-| `~/.omniworker/cron/jobs.json`    | Cron job definitions             |
-| `.omniworker.md` (in project dir) | Per-project context file         |
+| `~/.flux-agent/config.yaml`       | Main configuration (YAML)        |
+| `~/.flux-agent/.env`              | API keys and secrets             |
+| `~/.flux-agent/MEMORY.md`         | Persistent agent memory          |
+| `~/.flux-agent/USER.md`           | User profile                     |
+| `~/.flux-agent/SOUL.md`           | Agent persona/identity           |
+| `~/.flux-agent/sessions.db`       | SQLite session database          |
+| `~/.flux-agent/cron/jobs.json`    | Cron job definitions             |
+| `.flux-agent.md` (in project dir) | Per-project context file         |
 | `AGENTS.md` (in project dir)      | Developer instructions for agent |
 
 ---
 
 ## 26. Known Pitfalls
 
-1. **DO NOT hardcode `~/.omniworker` paths** — Use `get_omniworker_home()` from `omniworker_constants`. Hardcoding breaks profiles.
+1. **DO NOT hardcode `~/.flux-agent` paths** — Use `get_flux-agent_home()` from `flux-agent_constants`. Hardcoding breaks profiles.
 
 2. **DO NOT use `simple_term_menu`** — Rendering bugs in tmux/iTerm2 (ghosting). Use `curses` instead.
 
@@ -1750,16 +1750,16 @@ omniworker_cli/main.py  (entry point — dispatches to all subsystems)
 
 5. **DO NOT hardcode cross-tool references in schemas** — Tool may be unavailable. Add dynamic references in `get_tool_definitions()`.
 
-6. **Tests must not write to `~/.omniworker/`** — `_isolate_omniworker_home` autouse fixture redirects to temp dir.
+6. **Tests must not write to `~/.flux-agent/`** — `_isolate_flux-agent_home` autouse fixture redirects to temp dir.
 
 7. **Prompt caching must not break** — Do NOT alter past context, change toolsets, reload memories, or rebuild system prompts mid-conversation.
 
 8. **Working directory behavior differs:** CLI uses `os.getcwd()`, gateway uses `MESSAGING_CWD` env var.
 
-9. **Config has three loaders:** `load_cli_config()` (CLI), `load_config()` (omniworker tools/setup), direct YAML (gateway). They have different merge behaviors.
+9. **Config has three loaders:** `load_cli_config()` (CLI), `load_config()` (flux-agent tools/setup), direct YAML (gateway). They have different merge behaviors.
 
-10. **Profile operations are HOME-anchored** — `_get_profiles_root()` returns `Path.home() / ".omniworker" / "profiles"`, NOT `get_omniworker_home() / "profiles"`. This is intentional for cross-profile visibility.
+10. **Profile operations are HOME-anchored** — `_get_profiles_root()` returns `Path.home() / ".flux-agent" / "profiles"`, NOT `get_flux-agent_home() / "profiles"`. This is intentional for cross-profile visibility.
 
 ---
 
-_This document covers OmniWorker Agent v0.7.0 as of April 2026. For the latest information, refer to the [official documentation](https://omniworker-agent.omniworker.com/docs/) and the [GitHub repository](https://github.com/OmniWorker/omniworker-agent)._
+_This document covers OmniWorker Agent v0.7.0 as of April 2026. For the latest information, refer to the [official documentation](https://flux-agent-agent.flux-agent.com/docs/) and the [GitHub repository](https://github.com/OmniWorker/flux-agent-agent)._

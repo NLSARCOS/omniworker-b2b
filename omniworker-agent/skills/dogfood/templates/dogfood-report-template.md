@@ -3,7 +3,7 @@
 **Target:** {target_url}
 **Date:** {date}
 **Scope:** {scope_description}
-**Tester:** OmniWorker Agent (automated exploratory QA)
+**Tester:** Flux Agent Agent (automated exploratory QA)
 
 ---
 

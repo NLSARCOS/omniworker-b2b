@@ -5,6 +5,7 @@ import { chatCompletionSchema } from "@/lib/validation";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { fetchWithBackoff } from "@/lib/fetch-backoff";
 import { compactMessages } from "@/lib/conversation-compaction";
+import { getHealthyModels } from "@/lib/provider-health";
 
 // Provider → URL mapping
 const PROVIDER_URLS: Record<string, string> = {
@@ -92,13 +93,18 @@ function isSimpleGreeting(messages: any[]): boolean {
   return greetingPhrases.some(p => p.test(text));
 }
 
-function trimSystemPrompt(_systemContent: string): string {
-  return "You are a helpful assistant. Reply in 1-2 short sentences.";
+function trimSystemPrompt(systemContent: string): string {
+  // For simple greetings, keep the first 500 chars of the system prompt
+  // (identity + core instructions) instead of replacing everything with a
+  // generic "helpful assistant" message that destroys all session context.
+  const trimmed = systemContent.slice(0, 500).trim();
+  if (!trimmed) return "You are a helpful assistant. Reply in 1-2 short sentences.";
+  return trimmed + "\n\nReply in 1-2 short sentences for this greeting.";
 }
 
-// OmniWorker virtual models → role-based system prompts
-const OMNIWORKER_ROLES: Record<string, string> = {
-  "omniworker-code": `You are OmniWorker Code, an expert software engineer and coding assistant.
+// Flux Agent virtual models → role-based system prompts
+const FLUX AGENT_ROLES: Record<string, string> = {
+  "flux-agent-code": `You are Flux Agent Code, an expert software engineer and coding assistant.
 You write clean, efficient, well-documented code.
 Always prefer production-quality solutions with proper error handling.
 When fixing bugs, explain the root cause. When suggesting code, include complete examples.
@@ -254,7 +260,7 @@ async function reconcileStreamBilling(
         promptTokens: actual.promptTokens,
         completionTks: actual.completionTokens,
         modelUsed: requestedModel,
-        taskType: requestedModel === "omniworker-code" ? "code_generation" : "cloud_reasoning",
+        taskType: requestedModel === "flux-agent-code" ? "code_generation" : "cloud_reasoning",
         status: "completed",
       },
     });
@@ -415,8 +421,8 @@ function detectProvider(model: string): string {
   return "openai";
 }
 
-function isOmniWorkerVirtualModel(model: string): boolean {
-  return model.startsWith("omniworker");
+function isFlux AgentVirtualModel(model: string): boolean {
+  return model.startsWith("flux-agent");
 }
 
 export async function POST(request: Request) {
@@ -465,8 +471,8 @@ export async function POST(request: Request) {
   const requestedModel = (body.model || "gpt-4o-mini").toLowerCase();
   const isStream = body.stream === true;
 
-  // ── OmniWorker virtual model handling ──────────────────────────────
-  if (isOmniWorkerVirtualModel(requestedModel)) {
+  // ── Flux Agent virtual model handling ──────────────────────────────
+  if (isFlux AgentVirtualModel(requestedModel)) {
     // Find the highest active priority level
     const topProvider = await prisma.masterProvider.findFirst({
       where: { isActive: true },
@@ -528,6 +534,38 @@ export async function POST(request: Request) {
       body = { ...body, messages: compacted };
     }
 
+    // ── Context Bridge: inject session continuity header ─────────────
+    // When the conversation is long enough, generate (or cache) a compact
+    // Context Header summarizing session state. This ensures that no matter
+    // which model in the cascade responds, it has full knowledge of
+    // decisions, files, and task state from the session.
+    if (body.messages && body.messages.length >= 6 && topProvider?.apiKey) {
+      try {
+        const { getOrBuildContextHeader, injectContextHeader } = await import("@/lib/context-bridge");
+        const cbConfig = {
+          provider: topProvider.provider,
+          apiKey: topProvider.apiKey,
+          model: topProvider.defaultModel || DEFAULT_PROVIDER_MODELS[topProvider.provider] || "gpt-4o-mini",
+          endpoint: topProvider.provider === "opencode-go" ? ("chat_completions" as const) : undefined,
+        };
+        const contextHeader = await getOrBuildContextHeader(
+          String(user.id), body.messages, cbConfig
+        );
+        if (contextHeader) {
+          body = { ...body, messages: injectContextHeader(body.messages, contextHeader) };
+          console.log("[ContextBridge] Header injected:", {
+            summary: contextHeader.sessionSummary?.slice(0, 80),
+            decisions: contextHeader.recentDecisions.length,
+            entities: contextHeader.keyEntities.length,
+            cached: Date.now() - contextHeader.generatedAt < 1000 ? "fresh" : "cached",
+          });
+        }
+      } catch (cbErr) {
+        // Context Bridge failures are non-fatal — the request proceeds without the header
+        console.error("[ContextBridge] Failed (non-fatal):", cbErr);
+      }
+    }
+
     let aiResponse: Response | null = null;
     let selectedProvider: any = null;
     let selectedRealModel = "";
@@ -561,7 +599,7 @@ export async function POST(request: Request) {
       }
 
       // Inject role-based system prompt for code mode
-      const rolePrompt = OMNIWORKER_ROLES[requestedModel] || null;
+      const rolePrompt = FLUX AGENT_ROLES[requestedModel] || null;
       let messages = body.messages || [];
       if (rolePrompt && messages.length > 0) {
         messages = [{ role: "system", content: rolePrompt }, ...messages];
@@ -674,7 +712,7 @@ export async function POST(request: Request) {
       // Apply NVIDIA GLM-specific config (thinking with clear_thinking)
       payload = applyNvidiaGLMConfig(payload, realModel, targetProvider);
 
-      console.log(`[OmniWorker Cloud] ${user.email} → trying provider ${targetProvider} (${realModel}) [${requestedModel}]`);
+      console.log(`[Flux Agent Cloud] ${user.email} → trying provider ${targetProvider} (${realModel}) [${requestedModel}]`);
 
       try {
         const response = await fetchWithBackoff(resolvedUrl, {
@@ -696,18 +734,18 @@ export async function POST(request: Request) {
           break; // Success! Exit the candidates loop.
         } else {
           const errTxt = await response.text();
-          console.warn(`[OmniWorker Cloud] Provider ${targetProvider} failed with status ${response.status}:`, errTxt);
+          console.warn(`[Flux Agent Cloud] Provider ${targetProvider} failed with status ${response.status}:`, errTxt);
           lastErrorDetails = { provider: targetProvider, status: response.status, error: errTxt };
         }
       } catch (err: any) {
-        console.error(`[OmniWorker Cloud] Fetch error to provider ${targetProvider}:`, err);
+        console.error(`[Flux Agent Cloud] Fetch error to provider ${targetProvider}:`, err);
         lastErrorDetails = { provider: targetProvider, error: err.message || String(err) };
       }
     }
 
     if (!aiResponse || !selectedProvider) {
       // Log internally for debugging — never expose provider details to the client
-      console.error("[OmniWorker Cloud] All providers failed:", JSON.stringify(lastErrorDetails));
+      console.error("[Flux Agent Cloud] All providers failed:", JSON.stringify(lastErrorDetails));
       return NextResponse.json(
         { error: "El servicio no está disponible temporalmente. Intenta de nuevo más tarde." },
         { status: 502 }
@@ -856,7 +894,7 @@ export async function POST(request: Request) {
           promptTokens: promptTokens,
           completionTks: completionTokens,
           modelUsed: requestedModel,
-          taskType: requestedModel === "omniworker-code" ? "code_generation" : "cloud_reasoning",
+          taskType: requestedModel === "flux-agent-code" ? "code_generation" : "cloud_reasoning",
           status: "completed",
         },
       });
@@ -895,10 +933,36 @@ export async function POST(request: Request) {
   });
 
   // Put the primary provider first, then remaining as fallbacks
-  const candidateProviders = [
+  let candidateProviders = [
     ...allActiveProviders.filter(p => p.provider === targetProvider),
     ...allActiveProviders.filter(p => p.provider !== targetProvider && PROVIDER_URLS[p.provider]),
   ];
+
+  // ── Health filter: skip providers with no healthy models ──────────
+  try {
+    const healthyProviderSet = new Set<string>();
+    for (const p of candidateProviders) {
+      const healthyModels = await getHealthyModels(prisma, p.provider);
+      if (healthyModels.length > 0) {
+        healthyProviderSet.add(p.provider);
+      } else {
+        console.log(`[HealthFilter] Skipping provider ${p.provider} (id=${p.id}) — no healthy models`);
+      }
+    }
+
+    if (healthyProviderSet.size > 0) {
+      const filtered = candidateProviders.filter(p => healthyProviderSet.has(p.provider));
+      const skipped = candidateProviders.length - filtered.length;
+      if (skipped > 0) {
+        console.log(`[HealthFilter] Skipped ${skipped} unhealthy provider(s) from fallback loop`);
+      }
+      candidateProviders = filtered;
+    }
+    // If ALL providers are unhealthy, proceed with all candidates as last resort
+    // (health data may be stale or this is the first run before any checks)
+  } catch (healthErr) {
+    console.warn("[HealthFilter] Health check failed, proceeding with all providers:", healthErr);
+  }
 
   if (candidateProviders.length === 0) {
     return NextResponse.json(
@@ -994,7 +1058,7 @@ export async function POST(request: Request) {
       tryUrl = OPENCODE_GO_ENDPOINTS[resolvedEndpoint];
     }
 
-    console.log(`[OmniWorker Cloud] ${user.email} → trying ${provName} (${requestedModel}) url=${tryUrl}`);
+    console.log(`[Flux Agent Cloud] ${user.email} → trying ${provName} (${requestedModel}) url=${tryUrl}`);
 
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -1073,7 +1137,7 @@ export async function POST(request: Request) {
       // Provider returned an error — log and try next
       const errTxt = await resp.text();
       lastProviderError = errTxt;
-      console.warn(`[OmniWorker Cloud] Provider ${provName} failed (${resp.status}): ${errTxt.substring(0, 200)}`);
+      console.warn(`[Flux Agent Cloud] Provider ${provName} failed (${resp.status}): ${errTxt.substring(0, 200)}`);
 
       // Only break on non-retryable client errors.
       // 429 (rate limit), 401 (auth), 404 (model not found) → try next provider.
@@ -1083,13 +1147,13 @@ export async function POST(request: Request) {
       }
     } catch (err: any) {
       lastProviderError = err.message;
-      console.warn(`[OmniWorker Cloud] Provider ${provName} exception: ${err.message}`);
+      console.warn(`[Flux Agent Cloud] Provider ${provName} exception: ${err.message}`);
       // Continue to next provider
     }
   }
 
   if (!aiResponse) {
-    console.error(`[OmniWorker Cloud] All providers failed. Last error: ${lastProviderError}`);
+    console.error(`[Flux Agent Cloud] All providers failed. Last error: ${lastProviderError}`);
     return NextResponse.json(
       { error: "El servicio no está disponible temporalmente. Intenta de nuevo más tarde." },
       { status: 502 }
@@ -1097,7 +1161,7 @@ export async function POST(request: Request) {
   }
 
   // Log the provider that actually handled the request
-  console.log(`[OmniWorker Cloud] ${user.email} → ${usedProvider!.provider} (${requestedModel}) url=${usedUrl}`);
+  console.log(`[Flux Agent Cloud] ${user.email} → ${usedProvider!.provider} (${requestedModel}) url=${usedUrl}`);
 
   try {
 

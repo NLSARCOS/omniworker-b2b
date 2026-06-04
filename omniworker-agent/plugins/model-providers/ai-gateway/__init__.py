@@ -1,6 +1,6 @@
 """Vercel AI Gateway provider profile.
 
-AI Gateway routes to multiple backends. OmniWorker sends attribution
+AI Gateway routes to multiple backends. Flux Agent sends attribution
 headers and full reasoning config passthrough.
 """
 
@@ -34,8 +34,8 @@ vercel = VercelAIGatewayProfile(
     env_vars=("AI_GATEWAY_API_KEY",),
     base_url="https://ai-gateway.vercel.sh/v1",
     default_headers={
-        "HTTP-Referer": "https://omniworker-agent.omniworker.com",
-        "X-Title": "OmniWorker Agent",
+        "HTTP-Referer": "https://flux-agent-agent.flux-agent.com",
+        "X-Title": "Flux Agent Agent",
     },
     default_aux_model="google/gemini-3-flash",
 )

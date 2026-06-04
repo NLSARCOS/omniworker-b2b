@@ -1,4 +1,4 @@
-"""``hermes debug`` debug tools for OmniWorker Agent.
+"""``hermes debug`` debug tools for Flux Agent Agent.
 
 Currently supports:
     hermes debug share    Upload debug report (system info + logs) to a
@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from omniworker_constants import get_omniworker_home
+from flux-agent_constants import get_flux-agent_home
 from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ def _pending_file() -> Path:
     runs an opportunistic sweep on entry as a fallback for CLI-only users
     who never start the gateway.
     """
-    return get_omniworker_home() / "pastes" / "pending.json"
+    return get_flux-agent_home() / "pastes" / "pending.json"
 
 
 def _load_pending() -> list[dict]:
@@ -184,7 +184,7 @@ def _best_effort_sweep_expired_pastes() -> None:
 
 _PRIVACY_NOTICE = """\
 ⚠️  This will upload the following to a public paste service:
-  • System info (OS, Python version, OmniWorker version, provider, which API keys
+  • System info (OS, Python version, Flux Agent version, provider, which API keys
     are configured — NOT the actual keys)
   • Recent log lines (agent.log, errors.log, gateway.log — may contain
     conversation fragments and file paths)
@@ -287,7 +287,7 @@ def _upload_dpaste_com(content: str, expiry_days: int = 7) -> str:
 
     dpaste.com uses multipart form data.
     """
-    boundary = "----OmniWorkerDebugBoundary9f3c"
+    boundary = "----Flux AgentDebugBoundary9f3c"
 
     def _field(name: str, value: str) -> str:
         return (
@@ -358,10 +358,10 @@ class LogSnapshot:
 
 def _primary_log_path(log_name: str) -> Optional[Path]:
     """Where *log_name* would live if present. Doesn't check existence."""
-    from omniworker_cli.logs import LOG_FILES
+    from flux-agent_cli.logs import LOG_FILES
 
     filename = LOG_FILES.get(log_name)
-    return (get_omniworker_home() / "logs" / filename) if filename else None
+    return (get_flux-agent_home() / "logs" / filename) if filename else None
 
 
 def _resolve_log_path(log_name: str) -> Optional[Path]:
@@ -515,7 +515,7 @@ def _capture_default_log_snapshots(
 
 def _capture_dump() -> str:
     """Run ``hermes dump`` and return its stdout as a string."""
-    from omniworker_cli.dump import run_dump
+    from flux-agent_cli.dump import run_dump
 
     class _FakeArgs:
         show_keys = False
@@ -687,7 +687,7 @@ def run_debug_share(args):
     # Manual delete fallback
     print(f"To delete now:  hermes debug delete <url>")
 
-    print(f"\nShare these links with the OmniWorker team for support.")
+    print(f"\nShare these links with the Flux Agent team for support.")
 
 
 def run_debug_delete(args):

@@ -1,4 +1,4 @@
-"""Windows UTF-8 bootstrap for OmniWorker entry points.
+"""Windows UTF-8 bootstrap for Flux Agent entry points.
 
 Python on Windows has two long-standing text-encoding footguns:
 
@@ -13,7 +13,7 @@ Python on Windows has two long-standing text-encoding footguns:
    cp1252 defaults and hits the same UnicodeEncodeError.
 
 This module fixes both on Windows *only* — POSIX is untouched.  It
-should be imported at the very top of every OmniWorker entry point
+should be imported at the very top of every Flux Agent entry point
 (``hermes``, ``hermes-agent``, ``hermes-acp``, ``python -m gateway.run``,
 ``batch_runner.py``, ``cron/scheduler.py``) before any other imports
 that might do file I/O or print to stdout.
@@ -122,8 +122,8 @@ def apply_windows_utf8_bootstrap() -> bool:
     return True
 
 
-# Apply on import — entry points just need ``import omniworker_bootstrap``
-# (or ``from omniworker_bootstrap import apply_windows_utf8_bootstrap``) at
+# Apply on import — entry points just need ``import flux-agent_bootstrap``
+# (or ``from flux-agent_bootstrap import apply_windows_utf8_bootstrap``) at
 # the very top of their module, before importing anything else.  The
 # import side effect does the right thing.
 apply_windows_utf8_bootstrap()

@@ -1,4 +1,4 @@
-"""ACP agent server — exposes OmniWorker Agent via the Agent Client Protocol."""
+"""ACP agent server — exposes Flux Agent Agent via the Agent Client Protocol."""
 
 from __future__ import annotations
 
@@ -71,9 +71,9 @@ from acp_adapter.tools import build_tool_complete, build_tool_start
 logger = logging.getLogger(__name__)
 
 try:
-    from omniworker_cli import __version__ as OMNIWORKER_VERSION
+    from flux-agent_cli import __version__ as FLUX AGENT_VERSION
 except Exception:
-    OMNIWORKER_VERSION = "0.0.0"
+    FLUX AGENT_VERSION = "0.0.0"
 
 # Thread pool for running AIAgent (synchronous) in parallel.
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="acp-agent")
@@ -145,7 +145,7 @@ def _path_from_file_uri(uri: str) -> Path | None:
 
     Zed may send POSIX file URIs from Linux/WSL workspaces or Windows-ish paths
     when launched through wsl.exe. Translate the common Windows drive form to
-    /mnt/<drive>/... so OmniWorker running in WSL can read it.
+    /mnt/<drive>/... so Flux Agent running in WSL can read it.
     """
     raw = (uri or "").strip()
     if not raw:
@@ -226,7 +226,7 @@ def _resource_link_to_parts(block: ResourceContentBlock) -> list[dict[str, Any]]
                 uri=uri,
                 name=name,
                 title=title,
-                body="[Resource link only; OmniWorker cannot read non-file ACP resource URIs directly.]",
+                body="[Resource link only; Flux Agent cannot read non-file ACP resource URIs directly.]",
             ),
         }]
 
@@ -394,7 +394,7 @@ def _content_blocks_to_openai_user_content(
         | EmbeddedResourceContentBlock
     ],
 ) -> str | list[dict[str, Any]]:
-    """Convert ACP prompt blocks into a OmniWorker/OpenAI-compatible user content payload."""
+    """Convert ACP prompt blocks into a Flux Agent/OpenAI-compatible user content payload."""
     parts: list[dict[str, Any]] = []
     text_parts: list[str] = []
 
@@ -436,8 +436,8 @@ def _content_blocks_to_openai_user_content(
     return parts
 
 
-class OmniWorkerACPAgent(acp.Agent):
-    """ACP Agent implementation wrapping OmniWorker AIAgent."""
+class Flux AgentACPAgent(acp.Agent):
+    """ACP Agent implementation wrapping Flux Agent AIAgent."""
 
     _SLASH_COMMANDS = {
         "help": "Show available commands",
@@ -448,7 +448,7 @@ class OmniWorkerACPAgent(acp.Agent):
         "compact": "Compress conversation context",
         "steer": "Inject guidance into the currently running agent turn",
         "queue": "Queue a prompt to run after the current turn finishes",
-        "version": "Show OmniWorker version",
+        "version": "Show Flux Agent version",
     }
 
     _ADVERTISED_COMMANDS = (
@@ -489,7 +489,7 @@ class OmniWorkerACPAgent(acp.Agent):
         },
         {
             "name": "version",
-            "description": "Show OmniWorker version",
+            "description": "Show Flux Agent version",
         },
     )
 
@@ -522,7 +522,7 @@ class OmniWorkerACPAgent(acp.Agent):
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
 
         try:
-            from omniworker_cli.models import curated_models_for_provider, normalize_provider, provider_label
+            from flux-agent_cli.models import curated_models_for_provider, normalize_provider, provider_label
 
             normalized_provider = normalize_provider(provider)
             provider_name = provider_label(normalized_provider)
@@ -585,7 +585,7 @@ class OmniWorkerACPAgent(acp.Agent):
         new_model = raw_model.strip()
 
         try:
-            from omniworker_cli.models import detect_provider_for_model, parse_model_input
+            from flux-agent_cli.models import detect_provider_for_model, parse_model_input
 
             target_provider, new_model = parse_model_input(new_model, current_provider)
             if target_provider == current_provider:
@@ -603,7 +603,7 @@ class OmniWorkerACPAgent(acp.Agent):
 
         Zed's circular context indicator is driven by ACP ``usage_update``
         session updates: ``size`` is the model context window and ``used`` is
-        the current request pressure.  OmniWorker estimates ``used`` from the same
+        the current request pressure.  Flux Agent estimates ``used`` from the same
         buckets it sends to providers: system prompt, conversation history, and
         tool schemas.
         """
@@ -698,7 +698,7 @@ class OmniWorkerACPAgent(acp.Agent):
             from model_tools import get_tool_definitions
 
             enabled_toolsets = _expand_acp_enabled_toolsets(
-                getattr(state.agent, "enabled_toolsets", None) or ["omniworker-acp"],
+                getattr(state.agent, "enabled_toolsets", None) or ["flux-agent-acp"],
                 mcp_server_names=[server.name for server in mcp_servers],
             )
             state.agent.enabled_toolsets = enabled_toolsets
@@ -749,7 +749,7 @@ class OmniWorkerACPAgent(acp.Agent):
 
         return InitializeResponse(
             protocol_version=acp.PROTOCOL_VERSION,
-            agent_info=Implementation(name="omniworker-agent", version=OMNIWORKER_VERSION),
+            agent_info=Implementation(name="flux-agent-agent", version=FLUX AGENT_VERSION),
             agent_capabilities=AgentCapabilities(
                 load_session=True,
                 prompt_capabilities=PromptCapabilities(image=True),
@@ -767,7 +767,7 @@ class OmniWorkerACPAgent(acp.Agent):
         # provider we advertised in initialize(). Without this check,
         # authenticate() would acknowledge any method_id as long as the
         # server has provider credentials configured — harmless under
-        # OmniWorker' threat model (ACP is stdio-only, local-trust), but poor
+        # Flux Agent' threat model (ACP is stdio-only, local-trust), but poor
         # API hygiene and confusing if ACP ever grows multi-method auth.
         if not isinstance(method_id, str):
             return None
@@ -775,7 +775,7 @@ class OmniWorkerACPAgent(acp.Agent):
         provider = detect_provider()
 
         if normalized_method == TERMINAL_SETUP_AUTH_METHOD_ID:
-            # Terminal auth launches OmniWorker setup/model selection out-of-band.
+            # Terminal auth launches Flux Agent setup/model selection out-of-band.
             # Only report success once that flow has produced usable runtime
             # credentials for the normal ACP session.
             return AuthenticateResponse() if provider else None
@@ -858,7 +858,7 @@ class OmniWorkerACPAgent(acp.Agent):
         Zed's ACP history UI calls ``session/load`` after the user picks an item
         from the Agents sidebar. The agent must then replay the full conversation
         as user/assistant chunks plus reconstructed tool-call start/completion
-        notifications; merely restoring server-side state makes OmniWorker remember
+        notifications; merely restoring server-side state makes Flux Agent remember
         context, but leaves the editor looking like a clean thread.
         """
         if not self._conn or not state.history:
@@ -1073,7 +1073,7 @@ class OmniWorkerACPAgent(acp.Agent):
         session_id: str,
         **kwargs: Any,
     ) -> PromptResponse:
-        """Run OmniWorker on the user's prompt and stream events back to the editor."""
+        """Run Flux Agent on the user's prompt and stream events back to the editor."""
         state = self.session_manager.get_session(session_id)
         if state is None:
             logger.error("prompt: session %s not found", session_id)
@@ -1188,7 +1188,7 @@ class OmniWorkerACPAgent(acp.Agent):
 
         agent = state.agent
         agent.tool_progress_callback = tool_progress_cb
-        # ACP thought panes should not receive OmniWorker' local kawaii waiting/status
+        # ACP thought panes should not receive Flux Agent' local kawaii waiting/status
         # updates. Route provider/model reasoning deltas instead; if the provider
         # emits no reasoning, Zed should not get a fake "thinking" accordion.
         agent.thinking_callback = None
@@ -1199,19 +1199,19 @@ class OmniWorkerACPAgent(acp.Agent):
         # Approval callback is per-thread (thread-local, GHSA-qg5c-hvr5-hjgr).
         # Set it INSIDE _run_agent so the TLS write happens in the executor
         # thread — setting it here would write to the event-loop thread's TLS,
-        # not the executor's. Also set OMNIWORKER_INTERACTIVE so approval.py
+        # not the executor's. Also set FLUX AGENT_INTERACTIVE so approval.py
         # takes the CLI-interactive path (which calls the registered
         # callback via prompt_dangerous_approval) instead of the
         # non-interactive auto-approve branch (GHSA-96vc-wcxf-jjff).
         # ACP's conn.request_permission maps cleanly to the interactive
-        # callback shape — not the gateway-queue OMNIWORKER_EXEC_ASK path,
+        # callback shape — not the gateway-queue FLUX AGENT_EXEC_ASK path,
         # which requires a notify_cb registered in _gateway_notify_cbs.
         previous_approval_cb = None
         previous_interactive = None
 
         def _run_agent() -> dict:
             nonlocal previous_approval_cb, previous_interactive
-            # Bind OMNIWORKER_SESSION_KEY for this session so per-session caches
+            # Bind FLUX AGENT_SESSION_KEY for this session so per-session caches
             # (e.g. the interactive sudo password cache in tools.terminal_tool)
             # scope to the ACP session rather than leaking across sessions
             # that land on the same reused executor thread. This call runs
@@ -1236,8 +1236,8 @@ class OmniWorkerACPAgent(acp.Agent):
                     logger.debug("Could not set ACP approval callback", exc_info=True)
             # Signal to tools.approval that we have an interactive callback
             # and the non-interactive auto-approve path must not fire.
-            previous_interactive = os.environ.get("OMNIWORKER_INTERACTIVE")
-            os.environ["OMNIWORKER_INTERACTIVE"] = "1"
+            previous_interactive = os.environ.get("FLUX AGENT_INTERACTIVE")
+            os.environ["FLUX AGENT_INTERACTIVE"] = "1"
             try:
                 result = agent.run_conversation(
                     user_message=user_content,
@@ -1250,11 +1250,11 @@ class OmniWorkerACPAgent(acp.Agent):
                 logger.exception("Agent error in session %s", session_id)
                 return {"final_response": f"Error: {e}", "messages": state.history}
             finally:
-                # Restore OMNIWORKER_INTERACTIVE.
+                # Restore FLUX AGENT_INTERACTIVE.
                 if previous_interactive is None:
-                    os.environ.pop("OMNIWORKER_INTERACTIVE", None)
+                    os.environ.pop("FLUX AGENT_INTERACTIVE", None)
                 else:
-                    os.environ["OMNIWORKER_INTERACTIVE"] = previous_interactive
+                    os.environ["FLUX AGENT_INTERACTIVE"] = previous_interactive
                 if approval_cb:
                     try:
                         from tools import terminal_tool as _terminal_tool
@@ -1270,7 +1270,7 @@ class OmniWorkerACPAgent(acp.Agent):
         try:
             # Wrap the executor call in a fresh copy of the current context so
             # concurrent ACP sessions on the shared ThreadPoolExecutor don't
-            # stomp on each other's ContextVar writes (OMNIWORKER_SESSION_KEY in
+            # stomp on each other's ContextVar writes (FLUX AGENT_SESSION_KEY in
             # particular — used by the interactive sudo password cache scope).
             ctx = contextvars.copy_context()
             result = await loop.run_in_executor(_executor, ctx.run, _run_agent)
@@ -1452,7 +1452,7 @@ class OmniWorkerACPAgent(acp.Agent):
         try:
             from model_tools import get_tool_definitions
             toolsets = _expand_acp_enabled_toolsets(
-                getattr(state.agent, "enabled_toolsets", None) or ["omniworker-acp"]
+                getattr(state.agent, "enabled_toolsets", None) or ["flux-agent-acp"]
             )
             tools = get_tool_definitions(enabled_toolsets=toolsets, quiet_mode=True)
             if not tools:
@@ -1637,7 +1637,7 @@ class OmniWorkerACPAgent(acp.Agent):
         return f"Queued for the next turn. ({depth} queued)"
 
     def _cmd_version(self, args: str, state: SessionState) -> str:
-        return f"OmniWorker Agent v{OMNIWORKER_VERSION}"
+        return f"Flux Agent Agent v{FLUX AGENT_VERSION}"
 
     # ---- Model switching (ACP protocol method) -------------------------------
 
@@ -1691,7 +1691,7 @@ class OmniWorkerACPAgent(acp.Agent):
     async def set_config_option(
         self, config_id: str, session_id: str, value: str, **kwargs: Any
     ) -> SetSessionConfigOptionResponse | None:
-        """Accept ACP config option updates even when OmniWorker has no typed ACP config surface yet."""
+        """Accept ACP config option updates even when Flux Agent has no typed ACP config surface yet."""
         state = self.session_manager.get_session(session_id)
         if state is None:
             logger.warning("Session %s: config update requested for missing session", session_id)

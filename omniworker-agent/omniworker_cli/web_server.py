@@ -1,12 +1,12 @@
 """
-OmniWorker Agent — Web UI server.
+Flux Agent Agent — Web UI server.
 
 Provides a FastAPI backend serving the Vite/React frontend and REST API
 endpoints for managing configuration, environment variables, and sessions.
 
 Usage:
-    python -m omniworker_cli.main web          # Start on http://127.0.0.1:9119
-    python -m omniworker_cli.main web --port 8080
+    python -m flux-agent_cli.main web          # Start on http://127.0.0.1:9119
+    python -m flux-agent_cli.main web --port 8080
 """
 
 import asyncio
@@ -31,14 +31,14 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from omniworker_cli import __version__, __release_date__
-from omniworker_cli.config import (
+from flux-agent_cli import __version__, __release_date__
+from flux-agent_cli.config import (
     cfg_get,
     DEFAULT_CONFIG,
     OPTIONAL_ENV_VARS,
     get_config_path,
     get_env_path,
-    get_omniworker_home,
+    get_flux-agent_home,
     load_config,
     load_env,
     save_config,
@@ -73,10 +73,10 @@ except ImportError:
             f"Install with: {sys.executable} -m pip install 'fastapi' 'uvicorn[standard]'"
         )
 
-WEB_DIST = Path(os.environ["OMNIWORKER_WEB_DIST"]) if "OMNIWORKER_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
+WEB_DIST = Path(os.environ["FLUX AGENT_WEB_DIST"]) if "FLUX AGENT_WEB_DIST" in os.environ else Path(__file__).parent / "web_dist"
 _log = logging.getLogger(__name__)
 
-app = FastAPI(title="OmniWorker Agent", version=__version__)
+app = FastAPI(title="Flux Agent Agent", version=__version__)
 
 # ---------------------------------------------------------------------------
 # Session token for protecting sensitive endpoints (reveal).
@@ -84,10 +84,10 @@ app = FastAPI(title="OmniWorker Agent", version=__version__)
 # Injected into the SPA HTML so only the legitimate web UI can use it.
 # ---------------------------------------------------------------------------
 _SESSION_TOKEN = secrets.token_urlsafe(32)
-_SESSION_HEADER_NAME = "X-OmniWorker-Session-Token"
+_SESSION_HEADER_NAME = "X-Flux Agent-Session-Token"
 
 # In-browser Chat tab (/chat, /api/pty, …).  Off unless ``hermes dashboard --tui``
-# or OMNIWORKER_DASHBOARD_TUI=1.  Set from :func:`start_server`.
+# or FLUX AGENT_DASHBOARD_TUI=1.  Set from :func:`start_server`.
 _DASHBOARD_EMBEDDED_CHAT_ENABLED = False
 
 # Simple rate limiter for the reveal endpoint
@@ -606,7 +606,7 @@ async def get_status():
 
     active_sessions = 0
     try:
-        from omniworker_state import SessionDB
+        from flux-agent_state import SessionDB
         db = SessionDB()
         try:
             sessions = db.list_sessions_rich(limit=50)
@@ -624,7 +624,7 @@ async def get_status():
     return {
         "version": __version__,
         "release_date": __release_date__,
-        "omniworker_home": str(get_omniworker_home()),
+        "flux-agent_home": str(get_flux-agent_home()),
         "config_path": str(get_config_path()),
         "env_path": str(get_env_path()),
         "config_version": current_ver,
@@ -650,7 +650,7 @@ async def get_status():
 # the dashboard can tail them back to the user.
 # ---------------------------------------------------------------------------
 
-_ACTION_LOG_DIR: Path = get_omniworker_home() / "logs"
+_ACTION_LOG_DIR: Path = get_flux-agent_home() / "logs"
 
 # Short ``name`` (from the URL) → absolute log file path.
 _ACTION_LOG_FILES: Dict[str, str] = {
@@ -666,7 +666,7 @@ _ACTION_PROCS: Dict[str, subprocess.Popen] = {}
 def _spawn_hermes_action(subcommand: List[str], name: str) -> subprocess.Popen:
     """Spawn ``hermes <subcommand>`` detached and record the Popen handle.
 
-    Uses the running interpreter's ``omniworker_cli.main`` module so the action
+    Uses the running interpreter's ``flux-agent_cli.main`` module so the action
     inherits the same venv/PYTHONPATH the web server is using.
     """
     log_file_name = _ACTION_LOG_FILES[name]
@@ -677,14 +677,14 @@ def _spawn_hermes_action(subcommand: List[str], name: str) -> subprocess.Popen:
         f"\n=== {name} started {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n".encode()
     )
 
-    cmd = [sys.executable, "-m", "omniworker_cli.main", *subcommand]
+    cmd = [sys.executable, "-m", "flux-agent_cli.main", *subcommand]
 
     popen_kwargs: Dict[str, Any] = {
         "cwd": str(PROJECT_ROOT),
         "stdin": subprocess.DEVNULL,
         "stdout": log_file,
         "stderr": subprocess.STDOUT,
-        "env": {**os.environ, "OMNIWORKER_NONINTERACTIVE": "1"},
+        "env": {**os.environ, "FLUX AGENT_NONINTERACTIVE": "1"},
     }
     if sys.platform == "win32":
         popen_kwargs["creationflags"] = (
@@ -775,7 +775,7 @@ async def get_action_status(name: str, lines: int = 200):
 @app.get("/api/sessions")
 async def get_sessions(limit: int = 20, offset: int = 0):
     try:
-        from omniworker_state import SessionDB
+        from flux-agent_state import SessionDB
         db = SessionDB()
         try:
             sessions = db.list_sessions_rich(limit=limit, offset=offset)
@@ -800,7 +800,7 @@ async def search_sessions(q: str = "", limit: int = 20):
     if not q or not q.strip():
         return {"results": []}
     try:
-        from omniworker_state import SessionDB
+        from flux-agent_state import SessionDB
         db = SessionDB()
         try:
             # Auto-add prefix wildcards so partial words match
@@ -839,7 +839,7 @@ async def search_sessions(q: str = "", limit: int = 20):
 def _normalize_config_for_web(config: Dict[str, Any]) -> Dict[str, Any]:
     """Normalize config for the web UI.
 
-    OmniWorker supports ``model`` as either a bare string (``"anthropic/claude-sonnet-4"``)
+    Flux Agent supports ``model`` as either a bare string (``"anthropic/claude-sonnet-4"``)
     or a dict (``{default: ..., provider: ..., base_url: ...}``).  The schema is built
     from DEFAULT_CONFIG where ``model`` is a string, but user configs often have the
     dict form.  Normalize to the string form so the frontend schema matches.
@@ -970,7 +970,7 @@ def get_model_info():
 # ---------------------------------------------------------------------------
 
 # Canonical auxiliary task slots. Keep in sync with DEFAULT_CONFIG["auxiliary"]
-# in omniworker_cli/config.py — listed here for deterministic ordering in the UI.
+# in flux-agent_cli/config.py — listed here for deterministic ordering in the UI.
 _AUX_TASK_SLOTS: Tuple[str, ...] = (
     "vision",
     "web_extract",
@@ -994,7 +994,7 @@ def get_model_options():
     can share the same types.
     """
     try:
-        from omniworker_cli.inventory import build_models_payload, load_picker_context
+        from flux-agent_cli.inventory import build_models_payload, load_picker_context
 
         return build_models_payload(load_picker_context(), max_models=50)
     except Exception:
@@ -1309,8 +1309,8 @@ def _truncate_token(value: Optional[str], visible: int = 6) -> str:
 def _anthropic_oauth_status() -> Dict[str, Any]:
     """Combined status across the three Anthropic credential sources we read.
 
-    OmniWorker resolves Anthropic creds in this order at runtime:
-    1. ``~/.hermes/.anthropic_oauth.json`` — OmniWorker-managed PKCE flow
+    Flux Agent resolves Anthropic creds in this order at runtime:
+    1. ``~/.hermes/.anthropic_oauth.json`` — Flux Agent-managed PKCE flow
     2. ``~/.claude/.credentials.json`` — Claude Code CLI credentials (auto)
     3. ``ANTHROPIC_TOKEN`` / ``ANTHROPIC_API_KEY`` env vars
     The dashboard reports the highest-priority source that's actually present.
@@ -1319,12 +1319,12 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
         from agent.anthropic_adapter import (
             read_hermes_oauth_credentials,
             read_claude_code_credentials,
-            _OMNIWORKER_OAUTH_FILE,
+            _FLUX AGENT_OAUTH_FILE,
         )
     except ImportError:
         read_claude_code_credentials = None  # type: ignore
         read_hermes_oauth_credentials = None  # type: ignore
-        _OMNIWORKER_OAUTH_FILE = None  # type: ignore
+        _FLUX AGENT_OAUTH_FILE = None  # type: ignore
 
     hermes_creds = None
     if read_hermes_oauth_credentials:
@@ -1336,7 +1336,7 @@ def _anthropic_oauth_status() -> Dict[str, Any]:
         return {
             "logged_in": True,
             "source": "hermes_pkce",
-            "source_label": f"OmniWorker PKCE ({_OMNIWORKER_OAUTH_FILE})",
+            "source_label": f"Flux Agent PKCE ({_FLUX AGENT_OAUTH_FILE})",
             "token_preview": _truncate_token(hermes_creds.get("accessToken")),
             "expires_at": hermes_creds.get("expiresAt"),
             "has_refresh_token": bool(hermes_creds.get("refreshToken")),
@@ -1375,8 +1375,8 @@ def _claude_code_only_status() -> Dict[str, Any]:
     """Surface Claude Code CLI credentials as their own provider entry.
 
     Independent of the Anthropic entry above so users can see whether their
-    Claude Code subscription tokens are actively flowing into OmniWorker even
-    when they also have a separate OmniWorker-managed PKCE login.
+    Claude Code subscription tokens are actively flowing into Flux Agent even
+    when they also have a separate Flux Agent-managed PKCE login.
     """
     try:
         from agent.anthropic_adapter import read_claude_code_credentials
@@ -1467,7 +1467,7 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
         except Exception as e:
             return {"logged_in": False, "error": str(e)}
     try:
-        from omniworker_cli import auth as hauth
+        from flux-agent_cli import auth as hauth
         if provider_id == "nous":
             raw = hauth.get_nous_auth_status()
             return {
@@ -1559,20 +1559,20 @@ async def disconnect_oauth_provider(provider_id: str, request: Request):
                    f"Available: {', '.join(sorted(valid_ids))}",
         )
 
-    # Anthropic and claude-code clear the same OmniWorker-managed PKCE file
+    # Anthropic and claude-code clear the same Flux Agent-managed PKCE file
     # AND forget the Claude Code import. We don't touch ~/.claude/* directly
     # — that's owned by the Claude Code CLI; users can re-auth there if they
     # want to undo a disconnect.
     if provider_id in {"anthropic", "claude-code"}:
         try:
-            from agent.anthropic_adapter import _OMNIWORKER_OAUTH_FILE
-            if _OMNIWORKER_OAUTH_FILE.exists():
-                _OMNIWORKER_OAUTH_FILE.unlink()
+            from agent.anthropic_adapter import _FLUX AGENT_OAUTH_FILE
+            if _FLUX AGENT_OAUTH_FILE.exists():
+                _FLUX AGENT_OAUTH_FILE.unlink()
         except Exception:
             pass
         # Also clear the credential pool entry if present.
         try:
-            from omniworker_cli.auth import clear_provider_auth
+            from flux-agent_cli.auth import clear_provider_auth
             clear_provider_auth("anthropic")
         except Exception:
             pass
@@ -1580,7 +1580,7 @@ async def disconnect_oauth_provider(provider_id: str, request: Request):
         return {"ok": True, "provider": provider_id}
 
     try:
-        from omniworker_cli.auth import clear_provider_auth
+        from flux-agent_cli.auth import clear_provider_auth
         cleared = clear_provider_auth(provider_id)
         _log.info("oauth/disconnect: %s (cleared=%s)", provider_id, cleared)
         return {"ok": bool(cleared), "provider": provider_id}
@@ -1672,19 +1672,19 @@ def _new_oauth_session(provider_id: str, flow: str) -> tuple[str, Dict[str, Any]
 
 
 def _save_anthropic_oauth_creds(access_token: str, refresh_token: str, expires_at_ms: int) -> None:
-    """Persist Anthropic PKCE creds to both OmniWorker file AND credential pool.
+    """Persist Anthropic PKCE creds to both Flux Agent file AND credential pool.
 
     Mirrors what auth_commands.add_command does so the dashboard flow leaves
     the system in the same state as ``hermes auth add anthropic``.
     """
-    from agent.anthropic_adapter import _OMNIWORKER_OAUTH_FILE
+    from agent.anthropic_adapter import _FLUX AGENT_OAUTH_FILE
     payload = {
         "accessToken": access_token,
         "refreshToken": refresh_token,
         "expiresAt": expires_at_ms,
     }
-    _OMNIWORKER_OAUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _OMNIWORKER_OAUTH_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _FLUX AGENT_OAUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _FLUX AGENT_OAUTH_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     # Best-effort credential-pool insert. Failure here doesn't invalidate
     # the file write — pool registration only matters for the rotation
     # strategy, not for runtime credential resolution.
@@ -1821,7 +1821,7 @@ async def _start_device_code_flow(provider_id: str) -> Dict[str, Any]:
     so the UI can render the verification page link + user code.
     """
     if provider_id == "nous":
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             _nous_device_scope_with_env_override,
             _request_nous_device_code_with_scope_fallback,
             PROVIDER_REGISTRY,
@@ -1829,7 +1829,7 @@ async def _start_device_code_flow(provider_id: str) -> Dict[str, Any]:
         import httpx
         pconfig = PROVIDER_REGISTRY["nous"]
         portal_base_url = (
-            os.getenv("OMNIWORKER_PORTAL_BASE_URL")
+            os.getenv("FLUX AGENT_PORTAL_BASE_URL")
             or os.getenv("NOUS_PORTAL_BASE_URL")
             or pconfig.portal_base_url
         ).rstrip("/")
@@ -1916,7 +1916,7 @@ async def _start_device_code_flow(provider_id: str) -> Dict[str, Any]:
         # flow; the PKCE bit (verifier + challenge from
         # _minimax_pkce_pair) is a security extension that binds the
         # token exchange to the original session.
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             _minimax_pkce_pair,
             _minimax_request_user_code,
             MINIMAX_OAUTH_CLIENT_ID,
@@ -1990,7 +1990,7 @@ async def _start_device_code_flow(provider_id: str) -> Dict[str, Any]:
 
 def _nous_poller(session_id: str) -> None:
     """Background poller that drives a Nous device-code flow to completion."""
-    from omniworker_cli.auth import (
+    from flux-agent_cli.auth import (
         NOUS_INFERENCE_AUTH_MODE_FRESH,
         _poll_for_token,
         refresh_nous_oauth_from_state,
@@ -2042,7 +2042,7 @@ def _nous_poller(session_id: str) -> None:
             force_refresh=False,
             inference_auth_mode=NOUS_INFERENCE_AUTH_MODE_FRESH,
         )
-        from omniworker_cli.auth import persist_nous_credentials
+        from flux-agent_cli.auth import persist_nous_credentials
         persist_nous_credentials(full_state)
         with _oauth_sessions_lock:
             sess["status"] = "approved"
@@ -2065,7 +2065,7 @@ def _minimax_poller(session_id: str) -> None:
     path leaves the system in the same state as
     ``hermes auth add minimax-oauth``.
     """
-    from omniworker_cli.auth import (
+    from flux-agent_cli.auth import (
         _minimax_poll_token,
         _minimax_resolve_token_expiry_unix,
         _minimax_save_auth_state,
@@ -2154,7 +2154,7 @@ def _codex_full_login_worker(session_id: str) -> None:
     """
     try:
         import httpx
-        from omniworker_cli.auth import (
+        from flux-agent_cli.auth import (
             CODEX_OAUTH_CLIENT_ID,
             CODEX_OAUTH_TOKEN_URL,
             DEFAULT_CODEX_BASE_URL,
@@ -2247,7 +2247,7 @@ def _codex_full_login_worker(session_id: str) -> None:
         import uuid as _uuid
         pool = load_pool("openai-codex")
         base_url = (
-            os.getenv("OMNIWORKER_CODEX_BASE_URL", "").strip().rstrip("/")
+            os.getenv("FLUX AGENT_CODEX_BASE_URL", "").strip().rstrip("/")
             or DEFAULT_CODEX_BASE_URL
         )
         entry = PooledCredential(
@@ -2363,7 +2363,7 @@ def _session_latest_descendant(session_id: str):
     /model may create child sessions. Dashboard refresh should continue the
     newest child instead of reopening the old parent.
     """
-    from omniworker_state import SessionDB
+    from flux-agent_state import SessionDB
 
     def row_get(row, key, index):
         if isinstance(row, dict):
@@ -2435,7 +2435,7 @@ def _session_latest_descendant(session_id: str):
 
 @app.get("/api/sessions/{session_id}")
 async def get_session_detail(session_id: str):
-    from omniworker_state import SessionDB
+    from flux-agent_state import SessionDB
     db = SessionDB()
     try:
         sid = db.resolve_session_id(session_id)
@@ -2462,7 +2462,7 @@ async def get_session_latest_descendant(session_id: str):
 
 @app.get("/api/sessions/{session_id}/messages")
 async def get_session_messages(session_id: str):
-    from omniworker_state import SessionDB
+    from flux-agent_state import SessionDB
     db = SessionDB()
     try:
         sid = db.resolve_session_id(session_id)
@@ -2476,7 +2476,7 @@ async def get_session_messages(session_id: str):
 
 @app.delete("/api/sessions/{session_id}")
 async def delete_session_endpoint(session_id: str):
-    from omniworker_state import SessionDB
+    from flux-agent_state import SessionDB
     db = SessionDB()
     try:
         if not db.delete_session(session_id):
@@ -2499,17 +2499,17 @@ async def get_logs(
     component: Optional[str] = None,
     search: Optional[str] = None,
 ):
-    from omniworker_cli.logs import _read_tail, LOG_FILES
+    from flux-agent_cli.logs import _read_tail, LOG_FILES
 
     log_name = LOG_FILES.get(file)
     if not log_name:
         raise HTTPException(status_code=400, detail=f"Unknown log file: {file}")
-    log_path = get_omniworker_home() / "logs" / log_name
+    log_path = get_flux-agent_home() / "logs" / log_name
     if not log_path.exists():
         return {"file": file, "lines": []}
 
     try:
-        from omniworker_logging import COMPONENT_PREFIXES
+        from flux-agent_logging import COMPONENT_PREFIXES
     except ImportError:
         COMPONENT_PREFIXES = {}
 
@@ -2677,7 +2677,7 @@ def _fallback_profile_dicts(profiles_mod) -> List[Dict[str, Any]]:
             return default
 
     profiles: List[Dict[str, Any]] = []
-    default_home = profiles_mod._get_default_omniworker_home()
+    default_home = profiles_mod._get_default_flux-agent_home()
     if default_home.is_dir():
         model, provider = _safe(lambda: profiles_mod._read_config_model(default_home), (None, None))
         profiles.append({
@@ -2711,7 +2711,7 @@ def _fallback_profile_dicts(profiles_mod) -> List[Dict[str, Any]]:
 
 def _resolve_profile_dir(name: str) -> Path:
     """Validate ``name`` and resolve to its directory or raise an HTTPException."""
-    from omniworker_cli import profiles as profiles_mod
+    from flux-agent_cli import profiles as profiles_mod
     try:
         profiles_mod.validate_profile_name(name)
     except ValueError as e:
@@ -2729,7 +2729,7 @@ def _profile_setup_command(name: str) -> str:
 
 @app.get("/api/profiles")
 async def list_profiles_endpoint():
-    from omniworker_cli import profiles as profiles_mod
+    from flux-agent_cli import profiles as profiles_mod
     try:
         return {"profiles": [_profile_to_dict(p) for p in profiles_mod.list_profiles()]}
     except Exception:
@@ -2739,7 +2739,7 @@ async def list_profiles_endpoint():
 
 @app.post("/api/profiles")
 async def create_profile_endpoint(body: ProfileCreate):
-    from omniworker_cli import profiles as profiles_mod
+    from flux-agent_cli import profiles as profiles_mod
     try:
         path = profiles_mod.create_profile(
             name=body.name,
@@ -2829,7 +2829,7 @@ async def open_profile_terminal_endpoint(name: str):
 
 @app.patch("/api/profiles/{name}")
 async def rename_profile_endpoint(name: str, body: ProfileRename):
-    from omniworker_cli import profiles as profiles_mod
+    from flux-agent_cli import profiles as profiles_mod
     try:
         path = profiles_mod.rename_profile(name, body.new_name)
     except FileNotFoundError as e:
@@ -2847,7 +2847,7 @@ async def delete_profile_endpoint(name: str):
     """Delete a profile. The dashboard collects the user's confirmation in
     its own dialog before this request, so we always pass ``yes=True`` to
     skip the CLI's interactive prompt."""
-    from omniworker_cli import profiles as profiles_mod
+    from flux-agent_cli import profiles as profiles_mod
     try:
         path = profiles_mod.delete_profile(name, yes=True)
     except FileNotFoundError as e:
@@ -2895,7 +2895,7 @@ class SkillToggle(BaseModel):
 @app.get("/api/skills")
 async def get_skills():
     from tools.skills_tool import _find_all_skills
-    from omniworker_cli.skills_config import get_disabled_skills
+    from flux-agent_cli.skills_config import get_disabled_skills
     config = load_config()
     disabled = get_disabled_skills(config)
     skills = _find_all_skills(skip_disabled=True)
@@ -2906,7 +2906,7 @@ async def get_skills():
 
 @app.put("/api/skills/toggle")
 async def toggle_skill(body: SkillToggle):
-    from omniworker_cli.skills_config import get_disabled_skills, save_disabled_skills
+    from flux-agent_cli.skills_config import get_disabled_skills, save_disabled_skills
     config = load_config()
     disabled = get_disabled_skills(config)
     if body.enabled:
@@ -2919,7 +2919,7 @@ async def toggle_skill(body: SkillToggle):
 
 @app.get("/api/tools/toolsets")
 async def get_toolsets():
-    from omniworker_cli.tools_config import (
+    from flux-agent_cli.tools_config import (
         _get_effective_configurable_toolsets,
         _get_platform_tools,
         _toolset_has_keys,
@@ -2985,7 +2985,7 @@ async def update_config_raw(body: RawConfigUpdate):
 
 @app.get("/api/analytics/usage")
 async def get_usage_analytics(days: int = 30):
-    from omniworker_state import SessionDB
+    from flux-agent_state import SessionDB
     from agent.insights import InsightsEngine
 
     db = SessionDB()
@@ -3059,7 +3059,7 @@ async def get_models_analytics(days: int = 30):
     Returns token/cost/session breakdown per model plus capability metadata
     from models.dev (context window, vision, tools, reasoning, etc.).
     """
-    from omniworker_state import SessionDB
+    from flux-agent_state import SessionDB
 
     db = SessionDB()
     try:
@@ -3167,7 +3167,7 @@ import asyncio
 # the dashboard (sessions, jobs, metrics, config editor) still loads and the
 # /api/pty endpoint cleanly refuses with a WSL-suggested message.
 try:
-    from omniworker_cli.pty_bridge import PtyBridge, PtyUnavailableError
+    from flux-agent_cli.pty_bridge import PtyBridge, PtyUnavailableError
     _PTY_BRIDGE_AVAILABLE = True
 except ImportError as _pty_import_err:  # pragma: no cover - Windows-only path
     PtyBridge = None  # type: ignore[assignment]
@@ -3221,16 +3221,16 @@ def _resolve_chat_argv(
     function to inject a tiny fake command (``cat``, ``sh -c 'printf …'``)
     so nothing has to build Node or the TUI bundle.
 
-    Session resume is propagated via the ``OMNIWORKER_TUI_RESUME`` env var —
-    matching what ``omniworker_cli.main._launch_tui`` does for the CLI path.
+    Session resume is propagated via the ``FLUX AGENT_TUI_RESUME`` env var —
+    matching what ``flux-agent_cli.main._launch_tui`` does for the CLI path.
     Appending ``--resume <id>`` to argv doesn't work because ``ui-tui`` does
     not parse its argv.
 
-    `sidecar_url` (when set) is forwarded as ``OMNIWORKER_TUI_SIDECAR_URL`` so
+    `sidecar_url` (when set) is forwarded as ``FLUX AGENT_TUI_SIDECAR_URL`` so
     the spawned ``tui_gateway.entry`` can mirror dispatcher emits to the
     dashboard's ``/api/pub`` endpoint (see :func:`pub_ws`).
     """
-    from omniworker_cli.main import PROJECT_ROOT, _make_tui_argv
+    from flux-agent_cli.main import PROJECT_ROOT, _make_tui_argv
 
     argv, cwd = _make_tui_argv(PROJECT_ROOT / "ui-tui", tui_dev=False)
     env = os.environ.copy()
@@ -3241,16 +3241,16 @@ def _resolve_chat_argv(
     # makes browser-side transcript scrolling feel broken. Keep the terminal
     # build unchanged for native CLI usage; only disable mouse tracking for
     # the dashboard PTY path.
-    env.setdefault("OMNIWORKER_TUI_DISABLE_MOUSE", "1")
+    env.setdefault("FLUX AGENT_TUI_DISABLE_MOUSE", "1")
 
     if resume:
         latest_resume, _latest_path = _session_latest_descendant(resume)
         if latest_resume:
             resume = latest_resume
-        env["OMNIWORKER_TUI_RESUME"] = resume
+        env["FLUX AGENT_TUI_RESUME"] = resume
 
     if sidecar_url:
-        env["OMNIWORKER_TUI_SIDECAR_URL"] = sidecar_url
+        env["FLUX AGENT_TUI_SIDECAR_URL"] = sidecar_url
 
     return list(argv), str(cwd) if cwd else None, env
 
@@ -3315,7 +3315,7 @@ async def pty_ws(ws: WebSocket) -> None:
         await ws.send_text(
             "\r\n\x1b[31mChat unavailable: the embedded terminal requires a "
             "POSIX PTY, which native Windows Python doesn't provide.\x1b[0m\r\n"
-            "\x1b[33mInstall OmniWorker inside WSL2 to use the dashboard's /chat "
+            "\x1b[33mInstall Flux Agent inside WSL2 to use the dashboard's /chat "
             "tab — the rest of the dashboard works here.\x1b[0m\r\n"
         )
         await ws.close(code=1011)
@@ -3435,7 +3435,7 @@ async def gateway_ws(ws: WebSocket) -> None:
 # /api/pub + /api/events — chat-tab event broadcast.
 #
 # The PTY-side ``tui_gateway.entry`` opens /api/pub at startup (driven by
-# OMNIWORKER_TUI_SIDECAR_URL set in /api/pty's PTY env) and writes every
+# FLUX AGENT_TUI_SIDECAR_URL set in /api/pty's PTY env) and writes every
 # dispatcher emit through it.  The dashboard fans those frames out to any
 # subscriber that opened /api/events on the same channel id.  This is what
 # gives the React sidebar its tool-call feed without breaking the PTY
@@ -3550,7 +3550,7 @@ def mount_spa(application: FastAPI):
     ``mission-control.tilos.com/hermes/*`` -> local Caddy -> :9119), the
     proxy injects ``X-Forwarded-Prefix: /hermes`` on every request. We
     rewrite the served ``index.html`` so absolute asset URLs (``/assets/...``)
-    and the SPA's runtime ``__OMNIWORKER_BASE_PATH__`` honour that prefix
+    and the SPA's runtime ``__FLUX AGENT_BASE_PATH__`` honour that prefix
     without rebuilding the bundle.
     """
     if not WEB_DIST.exists():
@@ -3573,9 +3573,9 @@ def mount_spa(application: FastAPI):
         html = _index_path.read_text()
         chat_js = "true" if _DASHBOARD_EMBEDDED_CHAT_ENABLED else "false"
         token_script = (
-            f'<script>window.__OMNIWORKER_SESSION_TOKEN__="{_SESSION_TOKEN}";'
-            f"window.__OMNIWORKER_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
-            f'window.__OMNIWORKER_BASE_PATH__="{prefix}";</script>'
+            f'<script>window.__FLUX AGENT_SESSION_TOKEN__="{_SESSION_TOKEN}";'
+            f"window.__FLUX AGENT_DASHBOARD_EMBEDDED_CHAT__={chat_js};"
+            f'window.__FLUX AGENT_BASE_PATH__="{prefix}";</script>'
         )
         if prefix:
             # Rewrite absolute asset URLs baked into the Vite build so the
@@ -3596,7 +3596,7 @@ def mount_spa(application: FastAPI):
     # absolute ``url(/fonts/...)`` and ``url(/ds-assets/...)`` references.
     # Browsers resolve those against the document origin, which means
     # under ``/hermes`` they'd hit ``mission-control.tilos.com/fonts/...``
-    # (the MC Pages app), not the OmniWorker backend. Intercept CSS asset
+    # (the MC Pages app), not the Flux Agent backend. Intercept CSS asset
     # requests BEFORE the StaticFiles mount and rewrite the absolute paths
     # when a prefix is in play.
     @application.get("/assets/{filename}.css")
@@ -3639,8 +3639,8 @@ def mount_spa(application: FastAPI):
 # Built-in dashboard themes — label + description only.  The actual color
 # definitions live in the frontend (web/src/themes/presets.ts).
 _BUILTIN_DASHBOARD_THEMES = [
-    {"name": "default",       "label": "OmniWorker Teal",         "description": "Classic dark teal — the canonical OmniWorker look"},
-    {"name": "default-large", "label": "OmniWorker Teal (Large)", "description": "OmniWorker Teal with bigger fonts and roomier spacing"},
+    {"name": "default",       "label": "Flux Agent Teal",         "description": "Classic dark teal — the canonical Flux Agent look"},
+    {"name": "default-large", "label": "Flux Agent Teal (Large)", "description": "Flux Agent Teal with bigger fonts and roomier spacing"},
     {"name": "midnight",      "label": "Midnight",            "description": "Deep blue-violet with cool accents"},
     {"name": "ember",     "label": "Ember",          "description": "Warm crimson and bronze — forge vibes"},
     {"name": "mono",      "label": "Mono",           "description": "Clean grayscale — minimal and focused"},
@@ -3870,7 +3870,7 @@ def _discover_user_themes() -> list:
     to the frontend, so the client can apply them without a secondary
     round-trip or a built-in stub.
     """
-    themes_dir = get_omniworker_home() / "dashboard-themes"
+    themes_dir = get_flux-agent_home() / "dashboard-themes"
     if not themes_dir.is_dir():
         return []
     result = []
@@ -3938,22 +3938,22 @@ async def set_dashboard_theme(body: ThemeSetBody):
 def _discover_dashboard_plugins() -> list:
     """Scan plugins/*/dashboard/manifest.json for dashboard extensions.
 
-    Checks three plugin sources (same as omniworker_cli.plugins):
+    Checks three plugin sources (same as flux-agent_cli.plugins):
     1. User plugins:    ~/.hermes/plugins/<name>/dashboard/manifest.json
     2. Bundled plugins: <repo>/plugins/<name>/dashboard/manifest.json  (memory/, etc.)
-    3. Project plugins: ./.hermes/plugins/  (only if OMNIWORKER_ENABLE_PROJECT_PLUGINS)
+    3. Project plugins: ./.hermes/plugins/  (only if FLUX AGENT_ENABLE_PROJECT_PLUGINS)
     """
     plugins = []
     seen_names: set = set()
 
-    from omniworker_cli.plugins import get_bundled_plugins_dir
+    from flux-agent_cli.plugins import get_bundled_plugins_dir
     bundled_root = get_bundled_plugins_dir()
     search_dirs = [
-        (get_omniworker_home() / "plugins", "user"),
+        (get_flux-agent_home() / "plugins", "user"),
         (bundled_root / "memory", "bundled"),
         (bundled_root, "bundled"),
     ]
-    if os.environ.get("OMNIWORKER_ENABLE_PROJECT_PLUGINS"):
+    if os.environ.get("FLUX AGENT_ENABLE_PROJECT_PLUGINS"):
         search_dirs.append((Path.cwd() / ".hermes" / "plugins", "project"))
 
     for plugins_root, source in search_dirs:
@@ -4061,7 +4061,7 @@ def _strip_dashboard_manifest(p: Dict[str, Any]) -> Dict[str, Any]:
 
 def _merged_plugins_hub() -> Dict[str, Any]:
     """Agent discovery + dashboard manifests + optional provider picker metadata."""
-    from omniworker_cli.plugins_cmd import (
+    from flux-agent_cli.plugins_cmd import (
         _discover_all_plugins,
         _get_current_context_engine,
         _get_current_memory_provider,
@@ -4082,7 +4082,7 @@ def _merged_plugins_hub() -> Dict[str, Any]:
     config = load_config()
     hidden_plugins: list = cfg_get(config, "dashboard", "hidden_plugins", default=[]) or []
 
-    plugins_root_resolved = (get_omniworker_home() / "plugins").resolve()
+    plugins_root_resolved = (get_flux-agent_home() / "plugins").resolve()
     rows: List[Dict[str, Any]] = []
 
     for name, version, description, source, dir_str in _discover_all_plugins():
@@ -4188,7 +4188,7 @@ async def get_plugins_hub(request: Request):
 @app.post("/api/dashboard/agent-plugins/install")
 async def post_agent_plugin_install(request: Request, body: _AgentPluginInstallBody):
     _require_token(request)
-    from omniworker_cli.plugins_cmd import dashboard_install_plugin
+    from flux-agent_cli.plugins_cmd import dashboard_install_plugin
 
     result = dashboard_install_plugin(
         body.identifier.strip(),
@@ -4217,7 +4217,7 @@ def _validate_plugin_name(name: str) -> str:
 async def post_agent_plugin_enable(request: Request, name: str):
     _require_token(request)
     name = _validate_plugin_name(name)
-    from omniworker_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
+    from flux-agent_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
 
     result = dashboard_set_agent_plugin_enabled(name, enabled=True)
     if not result.get("ok"):
@@ -4229,7 +4229,7 @@ async def post_agent_plugin_enable(request: Request, name: str):
 async def post_agent_plugin_disable(request: Request, name: str):
     _require_token(request)
     name = _validate_plugin_name(name)
-    from omniworker_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
+    from flux-agent_cli.plugins_cmd import dashboard_set_agent_plugin_enabled
 
     result = dashboard_set_agent_plugin_enabled(name, enabled=False)
     if not result.get("ok"):
@@ -4241,7 +4241,7 @@ async def post_agent_plugin_disable(request: Request, name: str):
 async def post_agent_plugin_update(request: Request, name: str):
     _require_token(request)
     name = _validate_plugin_name(name)
-    from omniworker_cli.plugins_cmd import dashboard_update_user_plugin
+    from flux-agent_cli.plugins_cmd import dashboard_update_user_plugin
 
     result = dashboard_update_user_plugin(name)
     if not result.get("ok"):
@@ -4254,7 +4254,7 @@ async def post_agent_plugin_update(request: Request, name: str):
 async def delete_agent_plugin(request: Request, name: str):
     _require_token(request)
     name = _validate_plugin_name(name)
-    from omniworker_cli.plugins_cmd import dashboard_remove_user_plugin
+    from flux-agent_cli.plugins_cmd import dashboard_remove_user_plugin
 
     result = dashboard_remove_user_plugin(name)
     if not result.get("ok"):
@@ -4272,7 +4272,7 @@ class _PluginProvidersPutBody(BaseModel):
 async def put_plugin_providers(request: Request, body: _PluginProvidersPutBody):
     """Persist memory provider / context engine selection (writes config.yaml)."""
     _require_token(request)
-    from omniworker_cli.plugins_cmd import (
+    from flux-agent_cli.plugins_cmd import (
         _save_context_engine,
         _save_memory_provider,
     )
@@ -4467,7 +4467,7 @@ def start_server(
                 "(headless Linux). Pass --no-open to suppress this detection."
             )
 
-    print(f"  OmniWorker Web UI → http://{host}:{port}")
+    print(f"  Flux Agent Web UI → http://{host}:{port}")
     # proxy_headers=False so _ws_client_is_allowed sees the real connection peer
     # rather than X-Forwarded-For's rewritten value (which would defeat the
     # loopback gate when behind a reverse proxy).

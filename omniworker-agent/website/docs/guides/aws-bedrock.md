@@ -1,12 +1,12 @@
 ---
 sidebar_position: 14
 title: "AWS Bedrock"
-description: "Use OmniWorker Agent with Amazon Bedrock — native Converse API, IAM authentication, Guardrails, and cross-region inference"
+description: "Use Flux Agent Agent with Amazon Bedrock — native Converse API, IAM authentication, Guardrails, and cross-region inference"
 ---
 
 # AWS Bedrock
 
-OmniWorker Agent supports Amazon Bedrock as a native provider using the **Converse API** — not the OpenAI-compatible endpoint. This gives you full access to the Bedrock ecosystem: IAM authentication, Guardrails, cross-region inference profiles, and all foundation models.
+Flux Agent Agent supports Amazon Bedrock as a native provider using the **Converse API** — not the OpenAI-compatible endpoint. This gives you full access to the Bedrock ecosystem: IAM authentication, Guardrails, cross-region inference profiles, and all foundation models.
 
 ## Prerequisites
 
@@ -15,33 +15,33 @@ OmniWorker Agent supports Amazon Bedrock as a native provider using the **Conver
   - `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` environment variables
   - `AWS_PROFILE` for SSO or named profiles
   - `aws configure` for local development
-- **boto3** — install with `pip install omniworker-agent[bedrock]`
+- **boto3** — install with `pip install flux-agent-agent[bedrock]`
 - **IAM permissions** — at minimum:
   - `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` (for inference)
   - `bedrock:ListFoundationModels` and `bedrock:ListInferenceProfiles` (for model discovery)
 
 :::tip EC2 / ECS / Lambda
-On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're done. No API keys, no `.env` configuration — OmniWorker detects the instance role automatically.
+On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're done. No API keys, no `.env` configuration — Flux Agent detects the instance role automatically.
 :::
 
 ## Quick Start
 
 ```bash
 # Install with Bedrock support
-pip install omniworker-agent[bedrock]
+pip install flux-agent-agent[bedrock]
 
 # Select Bedrock as your provider
-omniworker model
+flux-agent model
 # → Choose "More providers..." → "AWS Bedrock"
 # → Select your region and model
 
 # Start chatting
-omniworker chat
+flux-agent chat
 ```
 
 ## Configuration
 
-After running `omniworker model`, your `~/.omniworker/config.yaml` will contain:
+After running `flux-agent model`, your `~/.flux-agent/config.yaml` will contain:
 
 ```yaml
 model:
@@ -78,7 +78,7 @@ bedrock:
 
 ### Model Discovery
 
-OmniWorker auto-discovers available models via the Bedrock control plane. You can customize discovery:
+Flux Agent auto-discovers available models via the Bedrock control plane. You can customize discovery:
 
 ```yaml
 bedrock:
@@ -90,7 +90,7 @@ bedrock:
 
 ## Available Models
 
-Bedrock models use **inference profile IDs** for on-demand invocation. The `omniworker model` picker shows these automatically, with recommended models at the top:
+Bedrock models use **inference profile IDs** for on-demand invocation. The `flux-agent model` picker shows these automatically, with recommended models at the top:
 
 | Model | ID | Notes |
 |-------|-----|-------|
@@ -119,7 +119,7 @@ Use the `/model` command during a conversation:
 ## Diagnostics
 
 ```bash
-omniworker doctor
+flux-agent doctor
 ```
 
 The doctor checks:
@@ -130,11 +130,11 @@ The doctor checks:
 
 ## Gateway (Messaging Platforms)
 
-Bedrock works with all OmniWorker gateway platforms (Telegram, Discord, Slack, Feishu, etc.). Configure Bedrock as your provider, then start the gateway normally:
+Bedrock works with all Flux Agent gateway platforms (Telegram, Discord, Slack, Feishu, etc.). Configure Bedrock as your provider, then start the gateway normally:
 
 ```bash
-omniworker gateway setup
-omniworker gateway start
+flux-agent gateway setup
+flux-agent gateway start
 ```
 
 The gateway reads `config.yaml` and uses the same Bedrock provider configuration.
@@ -143,7 +143,7 @@ The gateway reads `config.yaml` and uses the same Bedrock provider configuration
 
 ### "No API key found" / "No AWS credentials"
 
-OmniWorker checks for credentials in this order:
+Flux Agent checks for credentials in this order:
 1. `AWS_BEARER_TOKEN_BEDROCK`
 2. `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY`
 3. `AWS_PROFILE`
@@ -161,10 +161,10 @@ Use an **inference profile ID** (prefixed with `us.` or `global.`) instead of th
 
 ### "ThrottlingException"
 
-You've hit the Bedrock per-model rate limit. OmniWorker automatically retries with backoff. To increase limits, request a quota increase in the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/).
+You've hit the Bedrock per-model rate limit. Flux Agent automatically retries with backoff. To increase limits, request a quota increase in the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/).
 
 ## One-Click AWS Deployment
 
 For a fully automated deployment on EC2 with CloudFormation:
 
-**[sample-omniworker-agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-omniworker-agent-on-aws-with-bedrock)** — creates VPC, IAM role, EC2 instance, and configures Bedrock automatically. Deploy in any region with one click.
+**[sample-flux-agent-agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-flux-agent-agent-on-aws-with-bedrock)** — creates VPC, IAM role, EC2 instance, and configures Bedrock automatically. Deploy in any region with one click.

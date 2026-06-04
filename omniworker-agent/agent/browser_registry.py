@@ -194,7 +194,7 @@ def get_active_browser_provider() -> Optional[BrowserProvider]:
     available.
     """
     try:
-        from omniworker_cli.config import read_raw_config
+        from flux-agent_cli.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})

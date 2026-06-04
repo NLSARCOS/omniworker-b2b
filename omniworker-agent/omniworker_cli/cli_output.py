@@ -1,4 +1,4 @@
-"""Shared CLI output helpers for OmniWorker CLI modules.
+"""Shared CLI output helpers for Flux Agent CLI modules.
 
 Extracts the identical ``print_info/success/warning/error`` and ``prompt()``
 functions previously duplicated across setup.py, tools_config.py,
@@ -7,7 +7,7 @@ mcp_config.py, and memory_setup.py.
 
 import getpass
 
-from omniworker_cli.colors import Colors, color
+from flux-agent_cli.colors import Colors, color
 
 
 # ─── Print Helpers ────────────────────────────────────────────────────────────

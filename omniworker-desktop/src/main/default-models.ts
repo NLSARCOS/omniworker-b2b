@@ -1,9 +1,9 @@
 /**
- * OmniWorker B2B — Fixed models.
+ * Flux Agent B2B — Fixed models.
  *
  * Only two modes are exposed to B2B users:
- *   1. OmniWorker Normal  — general-purpose assistant
- *   2. OmniWorker Code    — code-optimized assistant
+ *   1. Flux Agent Normal  — general-purpose assistant
+ *   2. Flux Agent Code    — code-optimized assistant
  *
  * The actual LLM routing happens on the SaaS backend.
  */
@@ -17,15 +17,15 @@ export interface DefaultModel {
 
 const DEFAULT_MODELS: DefaultModel[] = [
   {
-    name: "OmniWorker Normal",
-    provider: "omniworker",
-    model: "omniworker",
+    name: "Flux Agent Normal",
+    provider: "flux-agent",
+    model: "flux-agent",
     baseUrl: "",
   },
   {
-    name: "OmniWorker Code",
-    provider: "omniworker",
-    model: "omniworker-code",
+    name: "Flux Agent Code",
+    provider: "flux-agent",
+    model: "flux-agent-code",
     baseUrl: "",
   },
 ];

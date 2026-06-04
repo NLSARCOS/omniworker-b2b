@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OmniWorker Smart Router — Routes LLM inference between local SLM and cloud SaaS.
+Flux Agent Smart Router — Routes LLM inference between local SLM and cloud SaaS.
 
 Architecture:
   Desktop App → Agent Gateway → Smart Router (this, port 8341)
@@ -130,7 +130,7 @@ def get_cloud_connection(use_https, host, port, verify=True):
     return CLOUD_CONN
 
 def resolve_env_path() -> str:
-    home_env = os.environ.get("OMNIWORKER_HOME", "").strip()
+    home_env = os.environ.get("FLUX AGENT_HOME", "").strip()
     if home_env:
         resolved_home = os.path.abspath(home_env)
         parent_dir = os.path.basename(os.path.dirname(resolved_home))
@@ -138,7 +138,7 @@ def resolve_env_path() -> str:
             return os.path.join(resolved_home, ".env")
         root_dir = resolved_home
     else:
-        dot_omni = os.path.expanduser("~/.omniworker")
+        dot_omni = os.path.expanduser("~/.flux-agent")
         dot_hermes = os.path.expanduser("~/.hermes")
         if os.path.exists(dot_omni):
             root_dir = dot_omni
@@ -344,19 +344,15 @@ def classify_request(data: dict) -> str:
         if msg.get("role") == "tool":
             has_tool_results = True
 
+    # Tool calling/availability requires a capable model — always cloud
+    if has_tool_calls or has_tool_results or data.get("tools"):
+        return "cloud"
+
     # ── Fast Path for Simple Chitchat/Greetings ──
     # If the user says just "hola" or "gracias" in a fresh conversation without tools,
     # bypass tools/schemas and simplify payload to save 98%+ of tokens in the cloud.
-    if SIMPLE_PATTERNS.match(trimmed_last) and len(messages) <= 4 and not has_tool_calls and not has_tool_results:
+    if is_greeting_message(messages) and len(messages) <= 4:
         return "local"
-
-    # Tool calling requires a capable model — always cloud
-    if has_tool_calls:
-        return "cloud"
-
-    # If there are tools defined in the request, the agent expects tool calling
-    if data.get("tools"):
-        return "cloud"
 
     # ── Level 3: Inference complexity routing ──
 
@@ -489,6 +485,28 @@ def simplify_chitchat_payload(data: dict) -> dict:
     return simplified
 
 
+def is_greeting_message(messages: list) -> bool:
+    """Check if the conversation is a simple greeting/chitchat.
+    A conversation is a simple greeting/chitchat ONLY if:
+    1. There are no tool calls or tool results in the message history.
+    2. All user messages in the history match SIMPLE_PATTERNS.
+    """
+    has_user_msg = False
+    for msg in messages:
+        # If any tool calls or tool results are present, it's not a greeting chitchat
+        if msg.get("tool_calls") or msg.get("role") == "tool":
+            return False
+            
+        if msg.get("role") == "user":
+            has_user_msg = True
+            content = (msg.get("content") or "").strip()
+            # If any user message doesn't match the simple patterns, it's not a chitchat
+            if not content or len(content) > 80 or not SIMPLE_PATTERNS.match(content):
+                return False
+                
+    return has_user_msg
+
+
 # ────────────────────────────────────────────────────
 # HTTP Proxy Handler
 # ────────────────────────────────────────────────────
@@ -513,14 +531,13 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         target = classify_request(data)
 
         # Since we are Cloud-Only, we never use the local SLM.
-        # Instead, if the request is classified as "local" (chitchat),
-        # we optimize the payload to save ~98% of tokens in the cloud.
-        if target == "local":
+        is_greeting = is_greeting_message(messages)
+        if is_greeting or (target == "local" and not data.get("tools")):
             try:
                 optimized_data = simplify_chitchat_payload(data)
                 body = json.dumps(optimized_data).encode("utf-8")
                 if ROUTER_LOG:
-                    logger.info("⚡ Chitchat optimized: Payload simplified to save tokens in the cloud.")
+                    logger.info(f"⚡ {'Greeting' if is_greeting else 'Chitchat'} optimized: Payload simplified to save tokens in the cloud (was {target}).")
             except Exception as opt_err:
                 logger.warning(f"Failed to optimize chitchat payload: {opt_err}")
 

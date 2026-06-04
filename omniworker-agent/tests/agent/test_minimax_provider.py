@@ -191,24 +191,24 @@ class TestMinimaxApiMode:
     """
 
     def test_minimax_returns_anthropic_messages(self):
-        from omniworker_cli.providers import determine_api_mode
+        from flux-agent_cli.providers import determine_api_mode
         assert determine_api_mode("minimax") == "anthropic_messages"
 
     def test_minimax_cn_returns_anthropic_messages(self):
-        from omniworker_cli.providers import determine_api_mode
+        from flux-agent_cli.providers import determine_api_mode
         assert determine_api_mode("minimax-cn") == "anthropic_messages"
 
     def test_minimax_with_url_also_works(self):
-        from omniworker_cli.providers import determine_api_mode
+        from flux-agent_cli.providers import determine_api_mode
         # Even with explicit base_url, provider lookup takes priority
         assert determine_api_mode("minimax", "https://api.minimax.io/anthropic") == "anthropic_messages"
 
     def test_anthropic_still_returns_anthropic_messages(self):
-        from omniworker_cli.providers import determine_api_mode
+        from flux-agent_cli.providers import determine_api_mode
         assert determine_api_mode("anthropic") == "anthropic_messages"
 
     def test_openai_returns_chat_completions(self):
-        from omniworker_cli.providers import determine_api_mode
+        from flux-agent_cli.providers import determine_api_mode
         # Sanity check: standard providers are unaffected
         result = determine_api_mode("deepseek")
         assert result == "chat_completions"
@@ -217,7 +217,7 @@ class TestMinimaxApiMode:
 class TestMinimaxMaxOutput:
     """Verify _get_anthropic_max_output returns correct limits for MiniMax models.
 
-    MiniMax max output is 131,072 tokens (source: OmniWorker model definitions,
+    MiniMax max output is 131,072 tokens (source: Flux Agent model definitions,
     cross-referenced with MiniMax API behavior).
     """
 

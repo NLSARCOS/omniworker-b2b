@@ -2,11 +2,11 @@
 name: writing-plans
 description: "Write implementation plans: bite-sized tasks, paths, code."
 version: 1.1.0
-author: OmniWorker Agent (adapted from obra/superpowers)
+author: Flux Agent Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [planning, design, implementation, workflow, documentation]
     related_skills: [subagent-driven-development, test-driven-development, requesting-code-review]
 ---
@@ -71,7 +71,7 @@ Every plan MUST start with:
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For OmniWorker:** Use subagent-driven-development skill to implement this plan task-by-task.
+> **For Flux Agent:** Use subagent-driven-development skill to implement this plan task-by-task.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -141,7 +141,7 @@ Read and understand:
 
 ### Step 2: Explore the Codebase
 
-Use OmniWorker tools to understand the project:
+Use Flux Agent tools to understand the project:
 
 ```python
 # Understand project structure

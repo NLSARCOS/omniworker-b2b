@@ -1,5 +1,5 @@
 import { useState } from "react";
-import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
+import Flux AgentLogo from "../../components/common/Flux AgentLogo";
 import { ArrowRight, ArrowLeft, Spinner } from "../../assets/icons";
 
 interface OnboardingProps {
@@ -47,7 +47,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
     setSaving(true);
     setError(null);
     try {
-      const res = await window.omniworkerAPI.saveOnboardingData({
+      const res = await window.flux-agentAPI.saveOnboardingData({
         userName: userName.trim(),
         language,
         role,
@@ -63,7 +63,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
       if (res.success) {
         if (gatewayEnabled) {
           try {
-            await window.omniworkerAPI.startGateway();
+            await window.flux-agentAPI.startGateway();
           } catch (e) {
             console.error("Failed to start gateway:", e);
           }
@@ -86,7 +86,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
       <div className="onboarding-container">
         {/* Header with logo & title */}
         <div className="onboarding-header">
-          <OmniWorkerLogo size={42} />
+          <Flux AgentLogo size={42} />
           {step > 0 && (
             <div className="onboarding-progress-container">
               <div className="onboarding-steps-text">
@@ -107,7 +107,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
           {/* STEP 0: Cinematic Welcome */}
           {step === 0 && (
             <div className="onboarding-step-content step-fade-in">
-              <h1 className="onboarding-title">Configuración de tu OmniWorker</h1>
+              <h1 className="onboarding-title">Configuración de tu Flux Agent</h1>
               <p className="onboarding-description">
                 Personaliza tu asistente inteligente en tres sencillos pasos para alinearlo perfectamente con tu flujo de trabajo diario y tus preferencias.
               </p>
@@ -177,7 +177,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
             <div className="onboarding-step-content step-fade-in">
               <h1 className="onboarding-title">¿Cuál será mi enfoque y funciones?</h1>
               <p className="onboarding-description">
-                Selecciona la especialidad de tu OmniWorker y describe en tus propias palabras qué fin o tareas específicas deseas que realice.
+                Selecciona la especialidad de tu Flux Agent y describe en tus propias palabras qué fin o tareas específicas deseas que realice.
               </p>
               
               <div className="onboarding-grid-roles" style={{ gridTemplateColumns: "1fr 1fr" }}>

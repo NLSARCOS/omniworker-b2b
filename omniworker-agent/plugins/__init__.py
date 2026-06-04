@@ -1,1 +1,1 @@
-# OmniWorker plugins package
+# Flux Agent plugins package

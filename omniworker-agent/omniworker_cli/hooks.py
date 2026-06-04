@@ -49,7 +49,7 @@ def hooks_command(args) -> None:
 # ---------------------------------------------------------------------------
 
 def _cmd_list(_args) -> None:
-    from omniworker_cli.config import load_config
+    from flux-agent_cli.config import load_config
     from agent import shell_hooks
 
     specs = shell_hooks.iter_configured_hooks(load_config())
@@ -186,8 +186,8 @@ _DEFAULT_PAYLOADS = {
 
 
 def _cmd_test(args) -> None:
-    from omniworker_cli.config import load_config
-    from omniworker_cli.plugins import VALID_HOOKS
+    from flux-agent_cli.config import load_config
+    from flux-agent_cli.plugins import VALID_HOOKS
     from agent import shell_hooks
 
     event = args.event
@@ -259,7 +259,7 @@ def _print_run_result(result: Dict[str, Any]) -> None:
 
     parsed = result.get("parsed")
     if parsed:
-        print(f"      parsed (OmniWorker wire shape): {json.dumps(parsed)}")
+        print(f"      parsed (Flux Agent wire shape): {json.dumps(parsed)}")
     else:
         print("      parsed: <none — hook contributed nothing to the dispatcher>")
 
@@ -291,7 +291,7 @@ def _cmd_revoke(args) -> None:
 # ---------------------------------------------------------------------------
 
 def _cmd_doctor(_args) -> None:
-    from omniworker_cli.config import load_config
+    from flux-agent_cli.config import load_config
     from agent import shell_hooks
 
     specs = shell_hooks.iter_configured_hooks(load_config())

@@ -74,7 +74,7 @@ export default function DashboardMockup({ className = "" }: DashboardMockupProps
           <span className="w-3 h-3 rounded-full bg-green-500/80" />
         </div>
         <span className="ml-3 text-xs text-neutral-500 font-mono tracking-wide">
-          omniworker-dashboard
+          flux-agent-dashboard
         </span>
         <div className="ml-auto flex items-center gap-3">
           {/* Data flow lines */}

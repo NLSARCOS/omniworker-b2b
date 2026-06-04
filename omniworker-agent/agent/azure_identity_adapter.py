@@ -20,7 +20,7 @@ Architecture mirrors `agent/bedrock_adapter.py`:
   purpose prevents accidental token-minting in logging paths or token
   leakage into cache keys / dashboard JSON.
 * No persisted JWT. ``azure-identity`` caches in-process and (where
-  available) in the OS keychain or ``~/.IdentityService``. OmniWorker does
+  available) in the OS keychain or ``~/.IdentityService``. Flux Agent does
   not duplicate that storage in ``auth.json``.
 
 Reference: https://learn.microsoft.com/azure/ai-foundry/foundry-models/how-to/configure-entra-id
@@ -123,12 +123,12 @@ def reset_credential_cache() -> None:
 class EntraIdentityConfig:
     """Serializable Entra ID config.
 
-    Captures the OmniWorker-managed Entra knobs we need outside Azure SDK
+    Captures the Flux Agent-managed Entra knobs we need outside Azure SDK
     environment configuration. Everything else
     (tenant ID, service principal secret, federated token file, sovereign
     cloud authority, etc.) flows through azure-identity's standard
     ``AZURE_*`` env vars — see the Bedrock pattern in
-    ``omniworker_cli/runtime_provider.py:1310-1377`` for the analogous
+    ``flux-agent_cli/runtime_provider.py:1310-1377`` for the analogous
     "let the SDK read env" approach.
 
     ``scope`` is Microsoft's documented Foundry inference audience. Almost
@@ -174,7 +174,7 @@ class EntraIdentityConfig:
 def _build_default_credential(config: EntraIdentityConfig) -> Any:
     """Construct a ``DefaultAzureCredential`` for ``config``.
 
-    Only OmniWorker-selected knobs are passed as kwargs. Everything else
+    Only Flux Agent-selected knobs are passed as kwargs. Everything else
     (tenant, service principal secret, federated token file, sovereign
     cloud authority, etc.) is read by ``azure-identity`` from the
     standard ``AZURE_*`` environment variables — see Microsoft's
@@ -194,7 +194,7 @@ def _build_default_credential(config: EntraIdentityConfig) -> Any:
 def build_credential(config: EntraIdentityConfig) -> Any:
     """Return the cached ``DefaultAzureCredential`` for ``config``.
 
-    OmniWorker processes use exactly one Entra config at a time (the
+    Flux Agent processes use exactly one Entra config at a time (the
     ``model.entra.*`` block in config.yaml drives every aux task,
     subagent, and credential probe in the session). ``maxsize=1`` is
     intentional: it reflects the actual usage pattern and keeps the
@@ -434,7 +434,7 @@ def materialize_bearer_for_http(value: Any) -> str:
     """Return a fresh Bearer JWT for a manual HTTP request.
 
     Only call this at sites that must construct an ``Authorization``
-    header outside the OpenAI SDK (e.g. ``omniworker_cli/azure_detect.py``).
+    header outside the OpenAI SDK (e.g. ``flux-agent_cli/azure_detect.py``).
     Calls the callable exactly once and returns the resulting token.
 
     **Anthropic SDK integration:** the Anthropic Python SDK does not

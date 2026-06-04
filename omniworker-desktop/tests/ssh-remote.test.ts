@@ -5,7 +5,7 @@ import type { SshConfig } from "../src/main/ssh-tunnel";
 const sshConfig: SshConfig = {
   host: "example.test",
   port: 22,
-  username: "omniworker",
+  username: "flux-agent",
   keyPath: "",
   remotePort: 8642,
   localPort: 18642,

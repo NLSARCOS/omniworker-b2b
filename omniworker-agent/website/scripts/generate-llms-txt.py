@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate llms.txt and llms-full.txt for the OmniWorker docs site.
+"""Generate llms.txt and llms-full.txt for the Flux Agent docs site.
 
 Outputs:
   website/static/llms.txt        — short curated index of the docs, one link per page,
@@ -9,8 +9,8 @@ Outputs:
                                     comments separating files.
 
 Both publish at:
-  https://omniworker-agent.omniworker.com/docs/llms.txt
-  https://omniworker-agent.omniworker.com/docs/llms-full.txt
+  https://flux-agent-agent.flux-agent.com/docs/llms.txt
+  https://flux-agent-agent.flux-agent.com/docs/llms-full.txt
 
 The `/docs/` prefix is not a mistake — Docusaurus serves `website/static/`
 at the `docs/` base path. Clients and IDE plugins that probe the classic
@@ -31,7 +31,7 @@ WEBSITE = SCRIPT_DIR.parent
 DOCS = WEBSITE / "docs"
 STATIC = WEBSITE / "static"
 
-SITE_BASE = "https://omniworker-agent.omniworker.com/docs"
+SITE_BASE = "https://flux-agent-agent.flux-agent.com/docs"
 
 # Curated sections for llms.txt — mirrors the product story, not the filesystem.
 # Each entry: (docs-relative path without .md, display title, optional short desc).
@@ -45,7 +45,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
         ("getting-started/termux", "Termux (Android)", None),
         ("getting-started/nix-setup", "Nix Setup", None),
     ]),
-    ("Using OmniWorker", [
+    ("Using Flux Agent", [
         ("user-guide/cli", "CLI", None),
         ("user-guide/tui", "TUI (Ink terminal UI)", None),
         ("user-guide/configuration", "Configuration", None),
@@ -117,11 +117,11 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
         ("guides/local-llm-on-mac", "Local LLMs on Mac", None),
         ("guides/daily-briefing-bot", "Daily Briefing Bot", None),
         ("guides/team-telegram-assistant", "Team Telegram Assistant", None),
-        ("guides/python-library", "Use OmniWorker as a Python Library", None),
-        ("guides/use-mcp-with-omniworker", "Use MCP with OmniWorker", None),
-        ("guides/use-voice-mode-with-omniworker", "Use Voice Mode with OmniWorker", None),
-        ("guides/use-soul-with-omniworker", "Use SOUL.md with OmniWorker", None),
-        ("guides/build-a-omniworker-plugin", "Build a OmniWorker Plugin", None),
+        ("guides/python-library", "Use Flux Agent as a Python Library", None),
+        ("guides/use-mcp-with-flux-agent", "Use MCP with Flux Agent", None),
+        ("guides/use-voice-mode-with-flux-agent", "Use Voice Mode with Flux Agent", None),
+        ("guides/use-soul-with-flux-agent", "Use SOUL.md with Flux Agent", None),
+        ("guides/build-a-flux-agent-plugin", "Build a Flux Agent Plugin", None),
         ("guides/automate-with-cron", "Automate with Cron", None),
         ("guides/work-with-skills", "Work with Skills", None),
         ("guides/delegation-patterns", "Delegation Patterns", None),
@@ -151,7 +151,7 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
         ("reference/toolsets-reference", "Toolsets Reference", None),
         ("reference/mcp-config-reference", "MCP Config Reference", None),
         ("reference/model-catalog", "Model Catalog", None),
-        ("reference/skills-catalog", "Bundled Skills Catalog", "Table of all ~90 skills bundled with OmniWorker"),
+        ("reference/skills-catalog", "Bundled Skills Catalog", "Table of all ~90 skills bundled with Flux Agent"),
         ("reference/optional-skills-catalog", "Optional Skills Catalog", "Table of ~60 additional installable skills"),
         ("reference/faq", "FAQ & Troubleshooting", None),
     ]),
@@ -197,7 +197,7 @@ def resolve_desc(slug: str, provided: str | None) -> str:
 def emit_llms_index() -> str:
     """Build the short llms.txt index."""
     lines: list[str] = []
-    lines.append("# OmniWorker Agent")
+    lines.append("# Flux Agent Agent")
     lines.append("")
     lines.append(
         "> The self-improving AI agent built by Nous Research. A terminal-native "
@@ -210,12 +210,12 @@ def emit_llms_index() -> str:
     )
     lines.append("")
     lines.append(
-        "Install: `curl -fsSL https://raw.githubusercontent.com/OmniWorker/"
-        "omniworker-agent/main/scripts/install.sh | bash`  "
+        "Install: `curl -fsSL https://raw.githubusercontent.com/Flux Agent/"
+        "flux-agent-agent/main/scripts/install.sh | bash`  "
         "(Linux, macOS, WSL2, Termux)"
     )
     lines.append("")
-    lines.append("Repo: https://github.com/OmniWorker/omniworker-agent")
+    lines.append("Repo: https://github.com/Flux Agent/flux-agent-agent")
     lines.append("")
 
     for section, items in SECTIONS:
@@ -241,15 +241,15 @@ def emit_llms_full() -> str:
     """
     seen: set[Path] = set()
     chunks: list[str] = [
-        "# OmniWorker Agent — Full Documentation\n",
+        "# Flux Agent Agent — Full Documentation\n",
         (
-            "This file is the entire OmniWorker Agent documentation concatenated for LLM "
+            "This file is the entire Flux Agent Agent documentation concatenated for LLM "
             "context ingestion. Section order reflects docs-site navigation: Getting "
-            "Started, Using OmniWorker, Features, Messaging, Integrations, Guides, "
+            "Started, Using Flux Agent, Features, Messaging, Integrations, Guides, "
             "Developer Guide, Reference, then everything else.\n"
         ),
-        "Canonical site: https://omniworker-agent.omniworker.com/docs\n",
-        "Short index: https://omniworker-agent.omniworker.com/docs/llms.txt\n",
+        "Canonical site: https://flux-agent-agent.flux-agent.com/docs\n",
+        "Short index: https://flux-agent-agent.flux-agent.com/docs/llms.txt\n",
         "\n---\n\n",
     ]
 

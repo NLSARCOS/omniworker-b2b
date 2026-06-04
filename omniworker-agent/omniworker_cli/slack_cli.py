@@ -27,12 +27,12 @@ def _build_full_manifest(bot_name: str, bot_description: str) -> dict:
     """Build a full Slack manifest merging display info + our slash list.
 
     The slash-command list is always generated from ``COMMAND_REGISTRY`` so
-    it stays in sync with the rest of OmniWorker. Other manifest sections
+    it stays in sync with the rest of Flux Agent. Other manifest sections
     (display info, OAuth scopes, socket mode) are set to sensible defaults
-    for a OmniWorker deployment — users can tweak them in the Slack UI after
+    for a Flux Agent deployment — users can tweak them in the Slack UI after
     pasting.
     """
-    from omniworker_cli.commands import slack_app_manifest
+    from flux-agent_cli.commands import slack_app_manifest
 
     partial = slack_app_manifest()
     slashes = partial["features"]["slash_commands"]
@@ -44,7 +44,7 @@ def _build_full_manifest(bot_name: str, bot_description: str) -> dict:
         },
         "display_information": {
             "name": bot_name[:35],
-            "description": (bot_description or "Your OmniWorker agent on Slack")[:140],
+            "description": (bot_description or "Your Flux Agent agent on Slack")[:140],
             "background_color": "#1a1a2e",
         },
         "features": {
@@ -59,7 +59,7 @@ def _build_full_manifest(bot_name: str, bot_description: str) -> dict:
             },
             "slash_commands": slashes,
             "assistant_view": {
-                "assistant_description": "Chat with OmniWorker in threads and DMs.",
+                "assistant_description": "Chat with Flux Agent in threads and DMs.",
             },
         },
         "oauth_config": {
@@ -106,19 +106,19 @@ def _build_full_manifest(bot_name: str, bot_description: str) -> dict:
 def slack_manifest_command(args) -> int:
     """Print or write a Slack app manifest JSON.
 
-    Flags (all parsed in ``omniworker_cli/main.py``):
+    Flags (all parsed in ``flux-agent_cli/main.py``):
       --write [PATH]  Write to file instead of stdout (default path:
-                      ``$OMNIWORKER_HOME/slack-manifest.json``)
-      --name NAME     Override the bot display name (default: "OmniWorker")
+                      ``$FLUX AGENT_HOME/slack-manifest.json``)
+      --name NAME     Override the bot display name (default: "Flux Agent")
       --description DESC  Override the bot description
       --slashes-only  Emit only the ``features.slash_commands`` array (for
                       merging into an existing manifest manually)
     """
-    name = getattr(args, "name", None) or "OmniWorker"
-    description = getattr(args, "description", None) or "Your OmniWorker agent on Slack"
+    name = getattr(args, "name", None) or "Flux Agent"
+    description = getattr(args, "description", None) or "Your Flux Agent agent on Slack"
 
     if getattr(args, "slashes_only", False):
-        from omniworker_cli.commands import slack_app_manifest
+        from flux-agent_cli.commands import slack_app_manifest
 
         manifest = slack_app_manifest()["features"]["slash_commands"]
     else:
@@ -131,11 +131,11 @@ def slack_manifest_command(args) -> int:
         if isinstance(write_target, bool) and write_target:
             # --write with no value → default location
             try:
-                from omniworker_constants import get_omniworker_home
+                from flux-agent_constants import get_flux-agent_home
 
-                target = Path(get_omniworker_home()) / "slack-manifest.json"
+                target = Path(get_flux-agent_home()) / "slack-manifest.json"
             except Exception:
-                target = Path(os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".hermes")) / "slack-manifest.json"
+                target = Path(os.environ.get("FLUX AGENT_HOME") or str(Path.home() / ".hermes")) / "slack-manifest.json"
         else:
             target = Path(write_target).expanduser()
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -143,7 +143,7 @@ def slack_manifest_command(args) -> int:
         print(f"Slack manifest written to: {target}", file=sys.stderr)
         print(
             "\nNext steps:\n"
-            "  1. Open https://api.slack.com/apps and pick your OmniWorker app\n"
+            "  1. Open https://api.slack.com/apps and pick your Flux Agent app\n"
             "     (or create a new one: Create New App → From an app manifest).\n"
             f"  2. Features → App Manifest → paste the contents of\n"
             f"     {target}\n"

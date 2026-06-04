@@ -9,24 +9,24 @@ import pytest
 
 @pytest.fixture
 def _isolate(tmp_path, monkeypatch):
-    """Isolate OMNIWORKER_HOME so tests don't touch real config."""
-    home = tmp_path / ".omniworker"
+    """Isolate FLUX AGENT_HOME so tests don't touch real config."""
+    home = tmp_path / ".flux-agent"
     home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(home))
+    monkeypatch.setenv("FLUX AGENT_HOME", str(home))
 
 
 @pytest.fixture
 def cli_obj(_isolate):
-    """Create a minimal OmniWorkerCLI instance for banner testing."""
+    """Create a minimal Flux AgentCLI instance for banner testing."""
     with patch("cli.load_cli_config", return_value={
         "display": {"tool_progress": "new"},
         "terminal": {},
     }), patch("cli.get_tool_definitions", return_value=[]), \
          patch("cli.build_welcome_banner"):
-        from cli import OmniWorkerCLI
-        obj = OmniWorkerCLI.__new__(OmniWorkerCLI)
+        from cli import Flux AgentCLI
+        obj = Flux AgentCLI.__new__(Flux AgentCLI)
         obj.model = "test-model"
-        obj.enabled_toolsets = ["omniworker-core"]
+        obj.enabled_toolsets = ["flux-agent-core"]
         obj.compact = False
         obj.console = MagicMock()
         obj.session_id = None

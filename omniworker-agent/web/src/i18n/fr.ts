@@ -266,7 +266,7 @@ export const fr: Translations = {
     enableRuntime: "Activer",
     forceReinstall: "Forcer la réinstallation (supprimer d'abord le dossier existant)",
     headline:
-      "Découvrez, installez, activez et mettez à jour les plugins OmniWorker (parité avec `omniworker plugins`).",
+      "Découvrez, installez, activez et mettez à jour les plugins OmniWorker (parité avec `flux-agent plugins`).",
     identifierLabel: "URL Git ou owner/repo",
     inactive: "inactif",
     installBtn: "Installer depuis Git",
@@ -283,8 +283,8 @@ export const fr: Translations = {
     providersHint:
       "Écrit memory.provider (vide = intégré) et context.engine dans config.yaml. Prend effet à la prochaine session.",
     refreshDashboard: "Re-scanner les extensions du tableau de bord",
-    removeConfirm: "Retirer ce plugin de ~/.omniworker/plugins/ ?",
-    removeHint: "Seuls les plugins installés par l'utilisateur sous ~/.omniworker/plugins peuvent être supprimés.",
+    removeConfirm: "Retirer ce plugin de ~/.flux-agent/plugins/ ?",
+    removeHint: "Seuls les plugins installés par l'utilisateur sous ~/.flux-agent/plugins peuvent être supprimés.",
     rescanHeading: "Registre des plugins SPA",
     rescanHint: "Re-scannez après avoir ajouté des fichiers sur le disque pour que la barre latérale prenne en compte les nouveaux manifestes.",
     runtimeHeading: "Exécution de la passerelle (plugins YAML)",
@@ -306,7 +306,7 @@ export const fr: Translations = {
     all: "Toutes",
     categories: "Catégories",
     filters: "Filtres",
-    noSkills: "Aucune compétence trouvée. Les compétences sont chargées depuis ~/.omniworker/skills/",
+    noSkills: "Aucune compétence trouvée. Les compétences sont chargées depuis ~/.flux-agent/skills/",
     noSkillsMatch: "Aucune compétence ne correspond à votre recherche ou filtre.",
     skillCount: "{count} compétence{s}",
     resultCount: "{count} résultat{s}",
@@ -320,7 +320,7 @@ export const fr: Translations = {
   },
 
   config: {
-    configPath: "~/.omniworker/config.yaml",
+    configPath: "~/.flux-agent/config.yaml",
     filters: "Filtres",
     sections: "Sections",
     exportConfig: "Exporter la configuration en JSON",

@@ -8,9 +8,9 @@ description: "On-demand knowledge documents — progressive disclosure, agent-ma
 
 Skills are on-demand knowledge documents the agent can load when needed. They follow a **progressive disclosure** pattern to minimize token usage and are compatible with the [agentskills.io](https://agentskills.io/specification) open standard.
 
-All skills live in **`~/.omniworker/skills/`** — the primary directory and source of truth. On fresh install, bundled skills are copied from the repo. Hub-installed and agent-created skills also go here. The agent can modify or delete any skill.
+All skills live in **`~/.flux-agent/skills/`** — the primary directory and source of truth. On fresh install, bundled skills are copied from the repo. Hub-installed and agent-created skills also go here. The agent can modify or delete any skill.
 
-You can also point OmniWorker at **external skill directories** — additional folders scanned alongside the local one. See [External Skill Directories](#external-skill-directories) below.
+You can also point Flux Agent at **external skill directories** — additional folders scanned alongside the local one. See [External Skill Directories](#external-skill-directories) below.
 
 See also:
 
@@ -32,13 +32,13 @@ Every installed skill is automatically available as a slash command:
 /excalidraw
 ```
 
-The bundled `plan` skill is a good example. Running `/plan [request]` loads the skill's instructions, telling OmniWorker to inspect context if needed, write a markdown implementation plan instead of executing the task, and save the result under `.omniworker/plans/` relative to the active workspace/backend working directory.
+The bundled `plan` skill is a good example. Running `/plan [request]` loads the skill's instructions, telling Flux Agent to inspect context if needed, write a markdown implementation plan instead of executing the task, and save the result under `.flux-agent/plans/` relative to the active workspace/backend working directory.
 
 You can also interact with skills through natural conversation:
 
 ```bash
-omniworker chat --toolsets skills -q "What skills do you have?"
-omniworker chat --toolsets skills -q "Show me the axolotl skill"
+flux-agent chat --toolsets skills -q "What skills do you have?"
+flux-agent chat --toolsets skills -q "Show me the axolotl skill"
 ```
 
 ## Progressive Disclosure
@@ -62,7 +62,7 @@ description: Brief description of what this skill does
 version: 1.0.0
 platforms: [macos, linux]     # Optional — restrict to specific OS platforms
 metadata:
-  omniworker:
+  flux-agent:
     tags: [python, automation]
     category: devops
     fallback_for_toolsets: [web]    # Optional — conditional activation (see below)
@@ -113,7 +113,7 @@ Skills can automatically show or hide themselves based on which tools are availa
 
 ```yaml
 metadata:
-  omniworker:
+  flux-agent:
     fallback_for_toolsets: [web]      # Show ONLY when these toolsets are unavailable
     requires_toolsets: [terminal]     # Show ONLY when these toolsets are available
     fallback_for_tools: [web_search]  # Show ONLY when these specific tools are unavailable
@@ -143,7 +143,7 @@ required_environment_variables:
     required_for: full functionality
 ```
 
-When a missing value is encountered, OmniWorker asks for it securely only when the skill is actually loaded in the local CLI. You can skip setup and keep using the skill. Messaging surfaces never ask for secrets in chat — they tell you to use `omniworker setup` or `~/.omniworker/.env` locally instead.
+When a missing value is encountered, Flux Agent asks for it securely only when the skill is actually loaded in the local CLI. You can skip setup and keep using the skill. Messaging surfaces never ask for secrets in chat — they tell you to use `flux-agent setup` or `~/.flux-agent/.env` locally instead.
 
 Once set, declared env vars are **automatically passed through** to `execute_code` and `terminal` sandboxes — the skill's scripts can use `$TENOR_API_KEY` directly. For non-skill env vars, use the `terminal.env_passthrough` config option. See [Environment Variable Passthrough](/docs/user-guide/security#environment-variable-passthrough) for details.
 
@@ -153,7 +153,7 @@ Skills can also declare non-secret config settings (paths, preferences) stored i
 
 ```yaml
 metadata:
-  omniworker:
+  flux-agent:
     config:
       - key: myplugin.path
         description: Path to the plugin data directory
@@ -161,14 +161,14 @@ metadata:
         prompt: Plugin data directory path
 ```
 
-Settings are stored under `skills.config` in your config.yaml. `omniworker config migrate` prompts for unconfigured settings, and `omniworker config show` displays them. When a skill loads, its resolved config values are injected into the context so the agent knows the configured values automatically.
+Settings are stored under `skills.config` in your config.yaml. `flux-agent config migrate` prompts for unconfigured settings, and `flux-agent config show` displays them. When a skill loads, its resolved config values are injected into the context so the agent knows the configured values automatically.
 
 See [Skill Settings](/docs/user-guide/configuration#skill-settings) and [Creating Skills — Config Settings](/docs/developer-guide/creating-skills#config-settings-configyaml) for details.
 
 ## Skill Directory Structure
 
 ```text
-~/.omniworker/skills/                  # Single source of truth
+~/.flux-agent/skills/                  # Single source of truth
 ├── mlops/                         # Category directory
 │   ├── axolotl/
 │   │   ├── SKILL.md               # Main instructions (required)
@@ -191,9 +191,9 @@ See [Skill Settings](/docs/user-guide/configuration#skill-settings) and [Creatin
 
 ## External Skill Directories
 
-If you maintain skills outside of OmniWorker — for example, a shared `~/.agents/skills/` directory used by multiple AI tools — you can tell OmniWorker to scan those directories too.
+If you maintain skills outside of Flux Agent — for example, a shared `~/.agents/skills/` directory used by multiple AI tools — you can tell Flux Agent to scan those directories too.
 
-Add `external_dirs` under the `skills` section in `~/.omniworker/config.yaml`:
+Add `external_dirs` under the `skills` section in `~/.flux-agent/config.yaml`:
 
 ```yaml
 skills:
@@ -207,15 +207,15 @@ Paths support `~` expansion and `${VAR}` environment variable substitution.
 
 ### How it works
 
-- **Read-only**: External dirs are only scanned for skill discovery. When the agent creates or edits a skill, it always writes to `~/.omniworker/skills/`.
+- **Read-only**: External dirs are only scanned for skill discovery. When the agent creates or edits a skill, it always writes to `~/.flux-agent/skills/`.
 - **Local precedence**: If the same skill name exists in both the local dir and an external dir, the local version wins.
 - **Full integration**: External skills appear in the system prompt index, `skills_list`, `skill_view`, and as `/skill-name` slash commands — no different from local skills.
-- **Non-existent paths are silently skipped**: If a configured directory doesn't exist, OmniWorker ignores it without errors. Useful for optional shared directories that may not be present on every machine.
+- **Non-existent paths are silently skipped**: If a configured directory doesn't exist, Flux Agent ignores it without errors. Useful for optional shared directories that may not be present on every machine.
 
 ### Example
 
 ```text
-~/.omniworker/skills/               # Local (primary, read-write)
+~/.flux-agent/skills/               # Local (primary, read-write)
 ├── devops/deploy-k8s/
 │   └── SKILL.md
 └── mlops/axolotl/
@@ -263,36 +263,36 @@ Browse, search, install, and manage skills from online registries, `skills.sh`, 
 ### Common commands
 
 ```bash
-omniworker skills browse                              # Browse all hub skills (official first)
-omniworker skills browse --source official            # Browse only official optional skills
-omniworker skills search kubernetes                   # Search all sources
-omniworker skills search react --source skills-sh     # Search the skills.sh directory
-omniworker skills search https://mintlify.com/docs --source well-known
-omniworker skills inspect openai/skills/k8s           # Preview before installing
-omniworker skills install openai/skills/k8s           # Install with security scan
-omniworker skills install official/security/1password
-omniworker skills install skills-sh/vercel-labs/json-render/json-render-react --force
-omniworker skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
-omniworker skills install https://sharethis.chat/SKILL.md              # Direct URL (single-file SKILL.md)
-omniworker skills install https://example.com/SKILL.md --name my-skill # Override name when frontmatter has none
-omniworker skills list --source hub                   # List hub-installed skills
-omniworker skills check                               # Check installed hub skills for upstream updates
-omniworker skills update                              # Reinstall hub skills with upstream changes when needed
-omniworker skills audit                               # Re-scan all hub skills for security
-omniworker skills uninstall k8s                       # Remove a hub skill
-omniworker skills reset google-workspace              # Un-stick a bundled skill from "user-modified" (see below)
-omniworker skills reset google-workspace --restore    # Also restore the bundled version, deleting your local edits
-omniworker skills publish skills/my-skill --to github --repo owner/repo
-omniworker skills snapshot export setup.json          # Export skill config
-omniworker skills tap add myorg/skills-repo           # Add a custom GitHub source
+flux-agent skills browse                              # Browse all hub skills (official first)
+flux-agent skills browse --source official            # Browse only official optional skills
+flux-agent skills search kubernetes                   # Search all sources
+flux-agent skills search react --source skills-sh     # Search the skills.sh directory
+flux-agent skills search https://mintlify.com/docs --source well-known
+flux-agent skills inspect openai/skills/k8s           # Preview before installing
+flux-agent skills install openai/skills/k8s           # Install with security scan
+flux-agent skills install official/security/1password
+flux-agent skills install skills-sh/vercel-labs/json-render/json-render-react --force
+flux-agent skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
+flux-agent skills install https://sharethis.chat/SKILL.md              # Direct URL (single-file SKILL.md)
+flux-agent skills install https://example.com/SKILL.md --name my-skill # Override name when frontmatter has none
+flux-agent skills list --source hub                   # List hub-installed skills
+flux-agent skills check                               # Check installed hub skills for upstream updates
+flux-agent skills update                              # Reinstall hub skills with upstream changes when needed
+flux-agent skills audit                               # Re-scan all hub skills for security
+flux-agent skills uninstall k8s                       # Remove a hub skill
+flux-agent skills reset google-workspace              # Un-stick a bundled skill from "user-modified" (see below)
+flux-agent skills reset google-workspace --restore    # Also restore the bundled version, deleting your local edits
+flux-agent skills publish skills/my-skill --to github --repo owner/repo
+flux-agent skills snapshot export setup.json          # Export skill config
+flux-agent skills tap add myorg/skills-repo           # Add a custom GitHub source
 ```
 
 ### Supported hub sources
 
 | Source | Example | Notes |
 |--------|---------|-------|
-| `official` | `official/security/1password` | Optional skills shipped with OmniWorker. |
-| `skills-sh` | `skills-sh/vercel-labs/agent-skills/vercel-react-best-practices` | Searchable via `omniworker skills search <query> --source skills-sh`. OmniWorker resolves alias-style skills when the skills.sh slug differs from the repo folder. |
+| `official` | `official/security/1password` | Optional skills shipped with Flux Agent. |
+| `skills-sh` | `skills-sh/vercel-labs/agent-skills/vercel-react-best-practices` | Searchable via `flux-agent skills search <query> --source skills-sh`. Flux Agent resolves alias-style skills when the skills.sh slug differs from the repo folder. |
 | `well-known` | `well-known:https://mintlify.com/docs/.well-known/skills/mintlify` | Skills served directly from `/.well-known/skills/index.json` on a website. Search using the site or docs URL. |
 | `url` | `https://sharethis.chat/SKILL.md` | Direct HTTP(S) URL to a single-file `SKILL.md`. Name resolution: frontmatter → URL slug → interactive prompt → `--name` flag. |
 | `github` | `openai/skills/k8s` | Direct GitHub repo/path installs and custom taps. |
@@ -300,24 +300,24 @@ omniworker skills tap add myorg/skills-repo           # Add a custom GitHub sour
 
 ### Integrated hubs and registries
 
-OmniWorker currently integrates with these skills ecosystems and discovery sources:
+Flux Agent currently integrates with these skills ecosystems and discovery sources:
 
 #### 1. Official optional skills (`official`)
 
-These are maintained in the OmniWorker repository itself and install with builtin trust.
+These are maintained in the Flux Agent repository itself and install with builtin trust.
 
 - Catalog: [Official Optional Skills Catalog](../../reference/optional-skills-catalog)
 - Source in repo: `optional-skills/`
 - Example:
 
 ```bash
-omniworker skills browse --source official
-omniworker skills install official/security/1password
+flux-agent skills browse --source official
+flux-agent skills install official/security/1password
 ```
 
 #### 2. skills.sh (`skills-sh`)
 
-This is Vercel's public skills directory. OmniWorker can search it directly, inspect skill detail pages, resolve alias-style slugs, and install from the underlying source repo.
+This is Vercel's public skills directory. Flux Agent can search it directly, inspect skill detail pages, resolve alias-style slugs, and install from the underlying source repo.
 
 - Directory: [skills.sh](https://skills.sh/)
 - CLI/tooling repo: [vercel-labs/skills](https://github.com/vercel-labs/skills)
@@ -325,9 +325,9 @@ This is Vercel's public skills directory. OmniWorker can search it directly, ins
 - Example:
 
 ```bash
-omniworker skills search react --source skills-sh
-omniworker skills inspect skills-sh/vercel-labs/json-render/json-render-react
-omniworker skills install skills-sh/vercel-labs/json-render/json-render-react --force
+flux-agent skills search react --source skills-sh
+flux-agent skills inspect skills-sh/vercel-labs/json-render/json-render-react
+flux-agent skills install skills-sh/vercel-labs/json-render/json-render-react --force
 ```
 
 #### 3. Well-known skill endpoints (`well-known`)
@@ -339,14 +339,14 @@ This is URL-based discovery from sites that publish `/.well-known/skills/index.j
 - Example:
 
 ```bash
-omniworker skills search https://mintlify.com/docs --source well-known
-omniworker skills inspect well-known:https://mintlify.com/docs/.well-known/skills/mintlify
-omniworker skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
+flux-agent skills search https://mintlify.com/docs --source well-known
+flux-agent skills inspect well-known:https://mintlify.com/docs/.well-known/skills/mintlify
+flux-agent skills install well-known:https://mintlify.com/docs/.well-known/skills/mintlify
 ```
 
 #### 4. Direct GitHub skills (`github`)
 
-OmniWorker can install directly from GitHub repositories and GitHub-based taps. This is useful when you already know the repo/path or want to add your own custom source repo.
+Flux Agent can install directly from GitHub repositories and GitHub-based taps. This is useful when you already know the repo/path or want to add your own custom source repo.
 
 Default taps (browsable without any setup):
 - [openai/skills](https://github.com/openai/skills)
@@ -358,8 +358,8 @@ Default taps (browsable without any setup):
 - Example:
 
 ```bash
-omniworker skills install openai/skills/k8s
-omniworker skills tap add myorg/skills-repo
+flux-agent skills install openai/skills/k8s
+flux-agent skills tap add myorg/skills-repo
 ```
 
 #### 5. ClawHub (`clawhub`)
@@ -367,38 +367,38 @@ omniworker skills tap add myorg/skills-repo
 A third-party skills marketplace integrated as a community source.
 
 - Site: [clawhub.ai](https://clawhub.ai/)
-- OmniWorker source id: `clawhub`
+- Flux Agent source id: `clawhub`
 
 #### 6. Claude marketplace-style repos (`claude-marketplace`)
 
-OmniWorker supports marketplace repos that publish Claude-compatible plugin/marketplace manifests.
+Flux Agent supports marketplace repos that publish Claude-compatible plugin/marketplace manifests.
 
 Known integrated sources include:
 - [anthropics/skills](https://github.com/anthropics/skills)
 - [aiskillstore/marketplace](https://github.com/aiskillstore/marketplace)
 
-OmniWorker source id: `claude-marketplace`
+Flux Agent source id: `claude-marketplace`
 
 #### 7. LobeHub (`lobehub`)
 
-OmniWorker can search and convert agent entries from LobeHub's public catalog into installable OmniWorker skills.
+Flux Agent can search and convert agent entries from LobeHub's public catalog into installable Flux Agent skills.
 
 - Site: [LobeHub](https://lobehub.com/)
 - Public agents index: [chat-agents.lobehub.com](https://chat-agents.lobehub.com/)
 - Backing repo: [lobehub/lobe-chat-agents](https://github.com/lobehub/lobe-chat-agents)
-- OmniWorker source id: `lobehub`
+- Flux Agent source id: `lobehub`
 
 #### 8. Direct URL (`url`)
 
-Install a single-file `SKILL.md` directly from any HTTP(S) URL — useful when an author hosts a skill on their own site (no hub listing, no GitHub path to type). OmniWorker fetches the URL, parses the YAML frontmatter, security-scans it, and installs.
+Install a single-file `SKILL.md` directly from any HTTP(S) URL — useful when an author hosts a skill on their own site (no hub listing, no GitHub path to type). Flux Agent fetches the URL, parses the YAML frontmatter, security-scans it, and installs.
 
-- OmniWorker source id: `url`
+- Flux Agent source id: `url`
 - Identifier: the URL itself (no prefix needed)
 - Scope: **single-file `SKILL.md`** only. Multi-file skills with `references/` or `scripts/` need a manifest and should be published via one of the other sources above.
 
 ```bash
-omniworker skills install https://sharethis.chat/SKILL.md
-omniworker skills install https://example.com/my-skill/SKILL.md --category productivity
+flux-agent skills install https://sharethis.chat/SKILL.md
+flux-agent skills install https://example.com/my-skill/SKILL.md --category productivity
 ```
 
 Name resolution, in order:
@@ -409,19 +409,19 @@ Name resolution, in order:
 
 ```bash
 # Frontmatter has no name and the URL slug is unhelpful — supply one:
-omniworker skills install https://example.com/SKILL.md --name sharethis-chat
+flux-agent skills install https://example.com/SKILL.md --name sharethis-chat
 
 # Or inside a chat session:
 /skills install https://example.com/SKILL.md --name sharethis-chat
 ```
 
-Trust level is always `community` — the same security scan runs as for every other source. The URL is stored as the install identifier, so `omniworker skills update` re-fetches from the same URL automatically when you want to refresh.
+Trust level is always `community` — the same security scan runs as for every other source. The URL is stored as the install identifier, so `flux-agent skills update` re-fetches from the same URL automatically when you want to refresh.
 
 ### Security scanning and `--force`
 
 All hub-installed skills go through a **security scanner** that checks for data exfiltration, prompt injection, destructive commands, supply-chain signals, and other threats.
 
-`omniworker skills inspect ...` now also surfaces upstream metadata when available:
+`flux-agent skills inspect ...` now also surfaces upstream metadata when available:
 - repo URL
 - skills.sh detail page URL
 - install command
@@ -432,7 +432,7 @@ All hub-installed skills go through a **security scanner** that checks for data 
 Use `--force` when you have reviewed a third-party skill and want to override a non-dangerous policy block:
 
 ```bash
-omniworker skills install skills-sh/anthropics/skills/pdf --force
+flux-agent skills install skills-sh/anthropics/skills/pdf --force
 ```
 
 Important behavior:
@@ -444,7 +444,7 @@ Important behavior:
 
 | Level | Source | Policy |
 |-------|--------|--------|
-| `builtin` | Ships with OmniWorker | Always trusted |
+| `builtin` | Ships with Flux Agent | Always trusted |
 | `official` | `optional-skills/` in the repo | Builtin trust, no third-party warning |
 | `trusted` | Trusted registries/repos such as `openai/skills`, `anthropics/skills`, `huggingface/skills` | More permissive policy than community sources |
 | `community` | Everything else (`skills.sh`, well-known endpoints, custom GitHub repos, most marketplaces) | Non-dangerous findings can be overridden with `--force`; `dangerous` verdicts stay blocked |
@@ -454,9 +454,9 @@ Important behavior:
 The hub now tracks enough provenance to re-check upstream copies of installed skills:
 
 ```bash
-omniworker skills check          # Report which installed hub skills changed upstream
-omniworker skills update         # Reinstall only the skills with updates available
-omniworker skills update react   # Update one specific installed hub skill
+flux-agent skills check          # Report which installed hub skills changed upstream
+flux-agent skills update         # Reinstall only the skills with updates available
+flux-agent skills update react   # Update one specific installed hub skill
 ```
 
 This uses the stored source identifier plus the current upstream bundle content hash to detect drift.
@@ -467,7 +467,7 @@ Skills hub operations use the GitHub API, which has a rate limit of 60 requests/
 
 ### Publishing a custom skill tap
 
-If you want to share a curated set of skills — for your team, your org, or publicly — you can publish them as a **tap**: a GitHub repository other OmniWorker users add with `omniworker skills tap add <owner/repo>`. No server, no registry sign-up, no release pipeline. Just a directory of `SKILL.md` files.
+If you want to share a curated set of skills — for your team, your org, or publicly — you can publish them as a **tap**: a GitHub repository other Flux Agent users add with `flux-agent skills tap add <owner/repo>`. No server, no registry sign-up, no release pipeline. Just a directory of `SKILL.md` files.
 
 #### Repo layout
 
@@ -491,16 +491,16 @@ owner/repo
 Rules:
 - Each skill lives in its own directory under the tap's root path (default `skills/`).
 - The directory name becomes the skill's install slug.
-- Each skill directory must contain a `SKILL.md` with standard [SKILL.md frontmatter](#skillmd-format) (`name`, `description`, plus optional `metadata.omniworker.tags`, `version`, `author`, `platforms`, `metadata.omniworker.config`).
+- Each skill directory must contain a `SKILL.md` with standard [SKILL.md frontmatter](#skillmd-format) (`name`, `description`, plus optional `metadata.flux-agent.tags`, `version`, `author`, `platforms`, `metadata.flux-agent.config`).
 - Subdirectories like `references/`, `templates/`, `scripts/`, `assets/` are downloaded alongside `SKILL.md` at install time.
 - Skills whose directory name starts with `.` or `_` are ignored.
 
-OmniWorker discovers skills by listing every subdirectory of the tap path and probing each for `SKILL.md`.
+Flux Agent discovers skills by listing every subdirectory of the tap path and probing each for `SKILL.md`.
 
 #### Minimal tap example
 
 ```
-my-org/omniworker-skills
+my-org/flux-agent-skills
 └── skills/
     └── deploy-runbook/
         └── SKILL.md
@@ -515,7 +515,7 @@ description: Our deployment runbook — services, rollback, Slack channels
 version: 1.0.0
 author: My Org Platform Team
 metadata:
-  omniworker:
+  flux-agent:
     tags: [deployment, runbook, internal]
 ---
 
@@ -524,17 +524,17 @@ metadata:
 Step 1: ...
 ```
 
-After pushing that to GitHub, any OmniWorker user can subscribe and install:
+After pushing that to GitHub, any Flux Agent user can subscribe and install:
 
 ```bash
-omniworker skills tap add my-org/omniworker-skills
-omniworker skills search deploy
-omniworker skills install my-org/omniworker-skills/deploy-runbook
+flux-agent skills tap add my-org/flux-agent-skills
+flux-agent skills search deploy
+flux-agent skills install my-org/flux-agent-skills/deploy-runbook
 ```
 
 #### Non-default paths
 
-If your skills don't live under `skills/` (common when you're adding a `skills/` subtree to an existing project), edit the tap entry in `~/.omniworker/.hub/taps.json`:
+If your skills don't live under `skills/` (common when you're adding a `skills/` subtree to an existing project), edit the tap entry in `~/.flux-agent/.hub/taps.json`:
 
 ```json
 {
@@ -544,28 +544,28 @@ If your skills don't live under `skills/` (common when you're adding a `skills/`
 }
 ```
 
-The `omniworker skills tap add` CLI defaults new taps to `path: "skills/"`; edit the file directly if you need a different path. `omniworker skills tap list` shows the effective path per tap.
+The `flux-agent skills tap add` CLI defaults new taps to `path: "skills/"`; edit the file directly if you need a different path. `flux-agent skills tap list` shows the effective path per tap.
 
 #### Installing individual skills directly (without adding a tap)
 
 Users can also install a single skill from any public GitHub repo without adding the whole repo as a tap:
 
 ```bash
-omniworker skills install owner/repo/skills/my-workflow
+flux-agent skills install owner/repo/skills/my-workflow
 ```
 
 Useful when you want to share one skill without asking the user to subscribe to your whole registry.
 
 #### Trust levels for taps
 
-New taps are assigned `community` trust by default. Skills installed from them run through the standard security scan and show the third-party warning panel on first install. If your org or a widely-trusted source should get higher trust, add its repo to `TRUSTED_REPOS` in `tools/skills_hub.py` (requires a OmniWorker core PR).
+New taps are assigned `community` trust by default. Skills installed from them run through the standard security scan and show the third-party warning panel on first install. If your org or a widely-trusted source should get higher trust, add its repo to `TRUSTED_REPOS` in `tools/skills_hub.py` (requires a Flux Agent core PR).
 
 #### Tap management
 
 ```bash
-omniworker skills tap list                                # show all configured taps
-omniworker skills tap add myorg/skills-repo               # add (default path: skills/)
-omniworker skills tap remove myorg/skills-repo            # remove
+flux-agent skills tap list                                # show all configured taps
+flux-agent skills tap add myorg/skills-repo               # add (default path: skills/)
+flux-agent skills tap remove myorg/skills-repo            # remove
 ```
 
 Inside a running session:
@@ -576,32 +576,32 @@ Inside a running session:
 /skills tap remove myorg/skills-repo
 ```
 
-Taps are stored in `~/.omniworker/.hub/taps.json` (created on demand).
+Taps are stored in `~/.flux-agent/.hub/taps.json` (created on demand).
 
-## Bundled skill updates (`omniworker skills reset`)
+## Bundled skill updates (`flux-agent skills reset`)
 
-OmniWorker ships with a set of bundled skills in `skills/` inside the repo. On install and on every `omniworker update`, a sync pass copies those into `~/.omniworker/skills/` and records a manifest at `~/.omniworker/skills/.bundled_manifest` mapping each skill name to the content hash at the time it was synced (the **origin hash**).
+Flux Agent ships with a set of bundled skills in `skills/` inside the repo. On install and on every `flux-agent update`, a sync pass copies those into `~/.flux-agent/skills/` and records a manifest at `~/.flux-agent/skills/.bundled_manifest` mapping each skill name to the content hash at the time it was synced (the **origin hash**).
 
-On each sync, OmniWorker recomputes the hash of your local copy and compares it to the origin hash:
+On each sync, Flux Agent recomputes the hash of your local copy and compares it to the origin hash:
 
 - **Unchanged** → safe to pull upstream changes, copy the new bundled version in, record the new origin hash.
 - **Changed** → treated as **user-modified** and skipped forever, so your edits never get stomped.
 
-The protection is good, but it has one sharp edge. If you edit a bundled skill and then later want to abandon your changes and go back to the bundled version by just copy-pasting from `~/.omniworker/omniworker-agent/skills/`, the manifest still holds the *old* origin hash from whenever the last successful sync ran. Your fresh copy-paste contents (current bundled hash) won't match that stale origin hash, so sync keeps flagging it as user-modified.
+The protection is good, but it has one sharp edge. If you edit a bundled skill and then later want to abandon your changes and go back to the bundled version by just copy-pasting from `~/.flux-agent/flux-agent-agent/skills/`, the manifest still holds the *old* origin hash from whenever the last successful sync ran. Your fresh copy-paste contents (current bundled hash) won't match that stale origin hash, so sync keeps flagging it as user-modified.
 
-`omniworker skills reset` is the escape hatch:
+`flux-agent skills reset` is the escape hatch:
 
 ```bash
 # Safe: clears the manifest entry for this skill. Your current copy is preserved,
 # but the next sync re-baselines against it so future updates work normally.
-omniworker skills reset google-workspace
+flux-agent skills reset google-workspace
 
 # Full restore: also deletes your local copy and re-copies the current bundled
 # version. Use this when you want the pristine upstream skill back.
-omniworker skills reset google-workspace --restore
+flux-agent skills reset google-workspace --restore
 
 # Non-interactive (e.g. in scripts or TUI mode) — skip the --restore confirmation.
-omniworker skills reset google-workspace --restore --yes
+flux-agent skills reset google-workspace --restore --yes
 ```
 
 The same command works in chat as a slash command:
@@ -612,7 +612,7 @@ The same command works in chat as a slash command:
 ```
 
 :::note Profiles
-Each profile has its own `.bundled_manifest` under its own `OMNIWORKER_HOME`, so `omniworker -p coder skills reset <name>` only affects that profile.
+Each profile has its own `.bundled_manifest` under its own `FLUX AGENT_HOME`, so `flux-agent -p coder skills reset <name>` only affects that profile.
 :::
 
 ### Slash commands (inside chat)
@@ -631,4 +631,4 @@ All the same commands work with `/skills`:
 /skills list
 ```
 
-Official optional skills still use identifiers like `official/security/1password` and `official/migration/omniworker-migration`.
+Official optional skills still use identifiers like `official/security/1password` and `official/migration/flux-agent-migration`.

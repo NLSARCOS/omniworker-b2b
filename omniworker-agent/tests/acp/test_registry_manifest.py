@@ -1,4 +1,4 @@
-"""Tests for ACP Registry metadata shipped with OmniWorker."""
+"""Tests for ACP Registry metadata shipped with Flux Agent."""
 
 from __future__ import annotations
 
@@ -28,12 +28,12 @@ def test_agent_json_matches_official_registry_required_fields():
     data = _manifest()
 
     assert FORBIDDEN_MANIFEST_KEYS.isdisjoint(data)
-    assert data["id"] == "omniworker-agent"
+    assert data["id"] == "flux-agent-agent"
     assert re.fullmatch(r"[a-z][a-z0-9-]*", data["id"])
-    assert data["name"] == "OmniWorker Agent"
+    assert data["name"] == "Flux Agent Agent"
     assert data["description"]
-    assert data["repository"] == "https://github.com/OmniWorker/omniworker-agent"
-    assert data["website"].startswith("https://omniworker-agent.omniworker.com/")
+    assert data["repository"] == "https://github.com/Flux Agent/flux-agent-agent"
+    assert data["website"].startswith("https://flux-agent-agent.flux-agent.com/")
     assert data["authors"] == ["Nous Research"]
     assert data["license"] == "MIT"
     assert set(data["distribution"]) <= ALLOWED_DISTRIBUTIONS
@@ -47,8 +47,8 @@ def test_agent_json_uses_uvx_distribution_without_local_command_fields():
     # Schema allows {package, args, env}; we use {package, args}.
     assert set(uvx) <= {"package", "args", "env"}
     assert "package" in uvx
-    assert uvx["package"] == f"omniworker-agent[acp]=={data['version']}"
-    assert uvx["args"] == ["omniworker-acp"]
+    assert uvx["package"] == f"flux-agent-agent[acp]=={data['version']}"
+    assert uvx["args"] == ["flux-agent-acp"]
     # Old command-shape fields must not leak back in.
     assert "type" not in data["distribution"]
     assert "command" not in data["distribution"]
@@ -62,7 +62,7 @@ def test_agent_json_pins_uvx_package_to_pyproject_version():
     """The registry CI rejects ``@latest`` and floating pins; the manifest must
     always reference the exact PyPI version listed in pyproject.toml."""
     assert _manifest()["distribution"]["uvx"]["package"] == (
-        f"omniworker-agent[acp]=={_pyproject_version()}"
+        f"flux-agent-agent[acp]=={_pyproject_version()}"
     )
 
 

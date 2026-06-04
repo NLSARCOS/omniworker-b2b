@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from omniworker_cli.plugins import (
+from flux-agent_cli.plugins import (
     PluginContext,
     PluginManager,
     PluginManifest,

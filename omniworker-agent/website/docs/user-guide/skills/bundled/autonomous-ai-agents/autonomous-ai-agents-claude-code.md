@@ -17,21 +17,21 @@ Delegate coding to Claude Code CLI (features, PRs).
 | Source | Bundled (installed by default) |
 | Path | `skills/autonomous-ai-agents/claude-code` |
 | Version | `2.2.0` |
-| Author | OmniWorker Agent + Teknium |
+| Author | Flux Agent Agent + Teknium |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Coding-Agent`, `Claude`, `Anthropic`, `Code-Review`, `Refactoring`, `PTY`, `Automation` |
-| Related skills | [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`omniworker-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-omniworker-agent), [`opencode`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-opencode) |
+| Related skills | [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`flux-agent-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-flux-agent-agent), [`opencode`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-opencode) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that OmniWorker loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that Flux Agent loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
-# Claude Code — OmniWorker Orchestration Guide
+# Claude Code — Flux Agent Orchestration Guide
 
-Delegate coding tasks to [Claude Code](https://code.claude.com/docs/en/cli-reference) (Anthropic's autonomous coding agent CLI) via the OmniWorker terminal. Claude Code v2.x can read files, write code, run shell commands, spawn subagents, and manage git workflows autonomously.
+Delegate coding tasks to [Claude Code](https://code.claude.com/docs/en/cli-reference) (Anthropic's autonomous coding agent CLI) via the Flux Agent terminal. Claude Code v2.x can read files, write code, run shell commands, spawn subagents, and manage git workflows autonomously.
 
 ## Prerequisites
 
@@ -46,7 +46,7 @@ Delegate coding tasks to [Claude Code](https://code.claude.com/docs/en/cli-refer
 
 ## Two Orchestration Modes
 
-OmniWorker interacts with Claude Code in two fundamentally different ways. Choose based on the task.
+Flux Agent interacts with Claude Code in two fundamentally different ways. Choose based on the task.
 
 ### Mode 1: Print Mode (`-p`) — Non-Interactive (PREFERRED for most tasks)
 
@@ -736,7 +736,7 @@ Use `/context` in interactive mode to see a colored grid of context usage. Key t
 
 ## Pitfalls & Gotchas
 
-1. **Interactive mode REQUIRES tmux** — Claude Code is a full TUI app. Using `pty=true` alone in OmniWorker terminal works but tmux gives you `capture-pane` for monitoring and `send-keys` for input, which is essential for orchestration.
+1. **Interactive mode REQUIRES tmux** — Claude Code is a full TUI app. Using `pty=true` alone in Flux Agent terminal works but tmux gives you `capture-pane` for monitoring and `send-keys` for input, which is essential for orchestration.
 2. **`--dangerously-skip-permissions` dialog defaults to "No, exit"** — you must send Down then Enter to accept. Print mode (`-p`) skips this entirely.
 3. **`--max-budget-usd` minimum is ~$0.05** — system prompt cache creation alone costs this much. Setting lower will error immediately.
 4. **`--max-turns` is print-mode only** — ignored in interactive sessions.
@@ -749,7 +749,7 @@ Use `/context` in interactive mode to see a colored grid of context usage. Key t
 11. **`--bare` skips OAuth** — requires `ANTHROPIC_API_KEY` env var or an `apiKeyHelper` in settings.
 12. **Context degradation is real** — AI output quality measurably degrades above 70% context window usage. Monitor with `/context` and proactively `/compact`.
 
-## Rules for OmniWorker Agents
+## Rules for Flux Agent Agents
 
 1. **Prefer print mode (`-p`) for single tasks** — cleaner, no dialog handling, structured output
 2. **Use tmux for multi-turn interactive work** — the only reliable way to orchestrate the TUI

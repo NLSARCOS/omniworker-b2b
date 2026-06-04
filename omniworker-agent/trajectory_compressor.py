@@ -45,15 +45,15 @@ from utils import base_url_host_matches, base_url_hostname
 import fire
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, TimeRemainingColumn
 from rich.console import Console
-from omniworker_constants import OPENROUTER_BASE_URL, get_omniworker_home
+from flux-agent_constants import OPENROUTER_BASE_URL, get_flux-agent_home
 from agent.retry_utils import jittered_backoff
 
 # Load .env from OMNIWORKER_HOME first, then project root as a dev fallback.
-from omniworker_cli.env_loader import load_omniworker_dotenv
+from flux-agent_cli.env_loader import load_flux-agent_dotenv
 
-_omniworker_home = get_omniworker_home()
+_flux-agent_home = get_flux-agent_home()
 _project_env = Path(__file__).parent / ".env"
-load_omniworker_dotenv(omniworker_home=_omniworker_home, project_env=_project_env)
+load_flux-agent_dotenv(flux-agent_home=_flux-agent_home, project_env=_project_env)
 
 
 def _effective_temperature_for_model(
@@ -391,7 +391,7 @@ class TrajectoryCompressor:
             if client is None:
                 raise RuntimeError(
                     f"Provider '{provider}' is not configured. "
-                    f"Check your API key or run: omniworker setup")
+                    f"Check your API key or run: flux-agent setup")
             self.client = None  # Not used directly
             self.async_client = None  # Not used directly
         else:
@@ -437,7 +437,7 @@ class TrajectoryCompressor:
         url = self.config.base_url or ""
         if base_url_host_matches(url, "openrouter.ai"):
             return "openrouter"
-        if base_url_host_matches(url, "omniworker.com"):
+        if base_url_host_matches(url, "flux-agent.com"):
             return "nous"
         if (
             base_url_hostname(url) == "chatgpt.com"

@@ -262,15 +262,15 @@ class TestRunBrowserCommandPathConstruction:
             "cdp_url": None,
         }
         fake_json = json.dumps({"success": True})
-        browser_path = "/Users/test/Library/Application Support/omniworker/node_modules/.bin/agent-browser"
-        omniworker_home = str(tmp_path / "omniworker-home")
+        browser_path = "/Users/test/Library/Application Support/flux-agent/node_modules/.bin/agent-browser"
+        flux-agent_home = str(tmp_path / "flux-agent-home")
 
         with patch("tools.browser_tool._find_agent_browser", return_value=browser_path), \
  patch("tools.browser_tool._chromium_installed", return_value=True), \
              patch("tools.browser_tool._get_session_info", return_value=fake_session), \
              patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
              patch("tools.browser_tool._discover_homebrew_node_dirs", return_value=[]), \
-             patch("omniworker_constants.Path.home", return_value=tmp_path), \
+             patch("flux-agent_constants.Path.home", return_value=tmp_path), \
              patch("subprocess.Popen", side_effect=capture_popen), \
              patch("os.open", return_value=99), \
              patch("os.close"), \
@@ -280,7 +280,7 @@ class TestRunBrowserCommandPathConstruction:
                  {
                      "PATH": "/usr/bin:/bin",
                      "HOME": "/home/test",
-                     "OMNIWORKER_HOME": omniworker_home,
+                     "OMNIWORKER_HOME": flux-agent_home,
                  },
                  clear=True,
              ):
@@ -315,14 +315,14 @@ class TestRunBrowserCommandPathConstruction:
             "cdp_url": None,
         }
         fake_json = json.dumps({"success": True})
-        omniworker_home = str(tmp_path / "omniworker-home")
+        flux-agent_home = str(tmp_path / "flux-agent-home")
 
         with patch("tools.browser_tool._find_agent_browser", return_value="npx agent-browser"), \
  patch("tools.browser_tool._chromium_installed", return_value=True), \
              patch("tools.browser_tool._get_session_info", return_value=fake_session), \
              patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
              patch("tools.browser_tool._discover_homebrew_node_dirs", return_value=[]), \
-             patch("omniworker_constants.Path.home", return_value=tmp_path), \
+             patch("flux-agent_constants.Path.home", return_value=tmp_path), \
              patch("subprocess.Popen", side_effect=capture_popen), \
              patch("os.open", return_value=99), \
              patch("os.close"), \
@@ -332,7 +332,7 @@ class TestRunBrowserCommandPathConstruction:
                  {
                      "PATH": "/usr/bin:/bin",
                      "HOME": "/home/test",
-                     "OMNIWORKER_HOME": omniworker_home,
+                     "OMNIWORKER_HOME": flux-agent_home,
                  },
                  clear=True,
              ):

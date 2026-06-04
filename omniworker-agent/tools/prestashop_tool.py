@@ -1,4 +1,4 @@
-"""PrestaShop integration tool for the OmniWorker agent.
+"""PrestaShop integration tool for the Flux Agent agent.
 
 Reads credentials from environment variables:
   PRESTASHOP_STORE_URL  (e.g. https://my-store.com)

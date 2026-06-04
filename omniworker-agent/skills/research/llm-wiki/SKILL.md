@@ -2,11 +2,11 @@
 name: llm-wiki
 description: "Karpathy's LLM Wiki: build/query interlinked markdown KB."
 version: 2.1.0
-author: OmniWorker Agent
+author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  omniworker:
+  flux-agent:
     tags: [wiki, knowledge-base, research, notes, markdown, rag-alternative]
     category: research
     related_skills: [obsidian, arxiv]
@@ -35,7 +35,7 @@ Use this skill when the user:
 
 ## Wiki Location
 
-**Location:** Set via `WIKI_PATH` environment variable (e.g. in `~/.omniworker/.env`).
+**Location:** Set via `WIKI_PATH` environment variable (e.g. in `~/.flux-agent/.env`).
 
 If unset, defaults to `~/wiki`.
 

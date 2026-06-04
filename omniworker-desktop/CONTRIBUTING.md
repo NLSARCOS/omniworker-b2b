@@ -1,6 +1,6 @@
-# Contributing to OmniWorker Desktop
+# Contributing to Flux Agent Desktop
 
-Thanks for your interest in contributing to OmniWorker Desktop! Whether it's a bug fix, a new feature, improved docs, or just a typo — every contribution helps.
+Thanks for your interest in contributing to Flux Agent Desktop! Whether it's a bug fix, a new feature, improved docs, or just a typo — every contribution helps.
 
 ## Languages
 
@@ -61,7 +61,7 @@ A maintainer will review your PR and may request changes. Once approved, it will
 
 ## Reporting Bugs
 
-Found a bug? [Open an issue](https://github.com/OmniWorker/omniworker-desktop/issues/new) with:
+Found a bug? [Open an issue](https://github.com/Flux Agent/flux-agent-desktop/issues/new) with:
 
 - A clear title and description.
 - Steps to reproduce the issue.
@@ -70,7 +70,7 @@ Found a bug? [Open an issue](https://github.com/OmniWorker/omniworker-desktop/is
 
 ## Requesting Features
 
-Have an idea? [Open an issue](https://github.com/OmniWorker/omniworker-desktop/issues/new) and describe:
+Have an idea? [Open an issue](https://github.com/Flux Agent/flux-agent-desktop/issues/new) and describe:
 
 - The problem you're trying to solve.
 - How you'd like it to work.
@@ -79,7 +79,7 @@ Have an idea? [Open an issue](https://github.com/OmniWorker/omniworker-desktop/i
 ## Project Structure
 
 ```text
-src/main/                Electron main process, IPC handlers, OmniWorker integration
+src/main/                Electron main process, IPC handlers, Flux Agent integration
 src/preload/             Secure renderer bridge
 src/renderer/src/        React app and UI components
 resources/               App icons and packaged assets
@@ -95,8 +95,8 @@ build/                   Packaging resources
 
 ## Community
 
-- Join the [Nous Research Discord](https://discord.gg/OmniWorker) to chat with other contributors.
-- Check the [documentation](https://omniworker-agent.omniworker.com/docs/) for more context on how OmniWorker works.
+- Join the [Nous Research Discord](https://discord.gg/Flux Agent) to chat with other contributors.
+- Check the [documentation](https://flux-agent-agent.flux-agent.com/docs/) for more context on how Flux Agent works.
 
 ## License
 

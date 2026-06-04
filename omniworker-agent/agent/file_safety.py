@@ -7,18 +7,18 @@ from pathlib import Path
 from typing import Optional
 
 
-def _omniworker_home_path() -> Path:
-    """Resolve the active OMNIWORKER_HOME (profile-aware) without circular imports."""
+def _flux-agent_home_path() -> Path:
+    """Resolve the active FLUX AGENT_HOME (profile-aware) without circular imports."""
     try:
-        from omniworker_constants import get_omniworker_home  # local import to avoid cycles
-        return get_omniworker_home()
+        from flux-agent_constants import get_flux-agent_home  # local import to avoid cycles
+        return get_flux-agent_home()
     except Exception:
         return Path(os.path.expanduser("~/.hermes"))
 
 
 def build_write_denied_paths(home: str) -> set[str]:
     """Return exact sensitive paths that must never be written."""
-    omniworker_home = _omniworker_home_path()
+    flux-agent_home = _flux-agent_home_path()
     return {
         os.path.realpath(p)
         for p in [
@@ -26,7 +26,7 @@ def build_write_denied_paths(home: str) -> set[str]:
             os.path.join(home, ".ssh", "id_rsa"),
             os.path.join(home, ".ssh", "id_ed25519"),
             os.path.join(home, ".ssh", "config"),
-            str(omniworker_home / ".env"),
+            str(flux-agent_home / ".env"),
             os.path.join(home, ".bashrc"),
             os.path.join(home, ".zshrc"),
             os.path.join(home, ".profile"),
@@ -62,8 +62,8 @@ def build_write_denied_prefixes(home: str) -> list[str]:
 
 
 def get_safe_write_root() -> Optional[str]:
-    """Return the resolved OMNIWORKER_WRITE_SAFE_ROOT path, or None if unset."""
-    root = os.getenv("OMNIWORKER_WRITE_SAFE_ROOT", "")
+    """Return the resolved FLUX AGENT_WRITE_SAFE_ROOT path, or None if unset."""
+    root = os.getenv("FLUX AGENT_WRITE_SAFE_ROOT", "")
     if not root:
         return None
     try:
@@ -91,12 +91,12 @@ def is_write_denied(path: str) -> bool:
 
 
 def get_read_block_error(path: str) -> Optional[str]:
-    """Return an error message when a read targets internal OmniWorker cache files."""
+    """Return an error message when a read targets internal Flux Agent cache files."""
     resolved = Path(path).expanduser().resolve()
-    omniworker_home = _omniworker_home_path().resolve()
+    flux-agent_home = _flux-agent_home_path().resolve()
     blocked_dirs = [
-        omniworker_home / "skills" / ".hub" / "index-cache",
-        omniworker_home / "skills" / ".hub",
+        flux-agent_home / "skills" / ".hub" / "index-cache",
+        flux-agent_home / "skills" / ".hub",
     ]
     for blocked in blocked_dirs:
         try:
@@ -104,7 +104,7 @@ def get_read_block_error(path: str) -> Optional[str]:
         except ValueError:
             continue
         return (
-            f"Access denied: {path} is an internal OmniWorker cache file "
+            f"Access denied: {path} is an internal Flux Agent cache file "
             "and cannot be read directly to prevent prompt injection. "
             "Use the skills_list or skill_view tools instead."
         )

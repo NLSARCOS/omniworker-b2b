@@ -1,12 +1,12 @@
 ---
 sidebar_position: 5
 title: "WhatsApp"
-description: "Set up OmniWorker Agent as a WhatsApp bot via the built-in Baileys bridge"
+description: "Set up Flux Agent Agent as a WhatsApp bot via the built-in Baileys bridge"
 ---
 
 # WhatsApp Setup
 
-OmniWorker connects to WhatsApp through a built-in bridge based on **Baileys**. This works by emulating a WhatsApp Web session — **not** through the official WhatsApp Business API. No Meta developer account or Business verification is required.
+Flux Agent connects to WhatsApp through a built-in bridge based on **Baileys**. This works by emulating a WhatsApp Web session — **not** through the official WhatsApp Business API. No Meta developer account or Business verification is required.
 
 :::warning Unofficial API — Ban Risk
 WhatsApp does **not** officially support third-party bots outside the Business API. Using a third-party bridge carries a small risk of account restrictions. To minimize risk:
@@ -17,8 +17,8 @@ WhatsApp does **not** officially support third-party bots outside the Business A
 
 :::warning WhatsApp Web Protocol Updates
 WhatsApp periodically updates their Web protocol, which can temporarily break compatibility
-with third-party bridges. When this happens, OmniWorker will update the bridge dependency. If the
-bot stops working after a WhatsApp update, pull the latest OmniWorker version and re-pair.
+with third-party bridges. When this happens, Flux Agent will update the bridge dependency. If the
+bot stops working after a WhatsApp update, pull the latest Flux Agent version and re-pair.
 :::
 
 ## Two Modes
@@ -42,7 +42,7 @@ Unlike older browser-driven bridges, the current Baileys-based bridge does **not
 ## Step 1: Run the Setup Wizard
 
 ```bash
-omniworker whatsapp
+flux-agent whatsapp
 ```
 
 The wizard will:
@@ -82,13 +82,13 @@ After getting the number:
 
 1. Install WhatsApp on a phone (or use WhatsApp Business app with dual-SIM)
 2. Register the new number with WhatsApp
-3. Run `omniworker whatsapp` and scan the QR code from that WhatsApp account
+3. Run `flux-agent whatsapp` and scan the QR code from that WhatsApp account
 
 ---
 
-## Step 3: Configure OmniWorker
+## Step 3: Configure Flux Agent
 
-Add the following to your `~/.omniworker/.env` file:
+Add the following to your `~/.flux-agent/.env` file:
 
 ```bash
 # Required
@@ -108,7 +108,7 @@ To use the pairing flow instead, remove both variables and rely on the
 [DM pairing system](/docs/user-guide/security#dm-pairing-system).
 :::
 
-Optional behavior settings in `~/.omniworker/config.yaml`:
+Optional behavior settings in `~/.flux-agent/config.yaml`:
 
 ```yaml
 unauthorized_dm_behavior: pair
@@ -123,9 +123,9 @@ whatsapp:
 Then start the gateway:
 
 ```bash
-omniworker gateway              # Foreground
-omniworker gateway install      # Install as a user service
-sudo omniworker gateway install --system   # Linux only: boot-time system service
+flux-agent gateway              # Foreground
+flux-agent gateway install      # Install as a user service
+sudo flux-agent gateway install --system   # Linux only: boot-time system service
 ```
 
 The gateway starts the WhatsApp bridge automatically using the saved session.
@@ -134,7 +134,7 @@ The gateway starts the WhatsApp bridge automatically using the saved session.
 
 ## Session Persistence
 
-The Baileys bridge saves its session under `~/.omniworker/platforms/whatsapp/session`. This means:
+The Baileys bridge saves its session under `~/.flux-agent/platforms/whatsapp/session`. This means:
 
 - **Sessions survive restarts** — you don't need to re-scan the QR code every time
 - The session data includes encryption keys and device credentials
@@ -148,7 +148,7 @@ If the session breaks (phone reset, WhatsApp update, manually unlinked), you'll 
 errors in the gateway logs. To fix it:
 
 ```bash
-omniworker whatsapp
+flux-agent whatsapp
 ```
 
 This generates a fresh QR code. Scan it again and the session is re-established. The gateway
@@ -159,14 +159,14 @@ with reconnection logic.
 
 ## Voice Messages
 
-OmniWorker supports voice on WhatsApp:
+Flux Agent supports voice on WhatsApp:
 
 - **Incoming:** Voice messages (`.ogg` opus) are automatically transcribed using the configured STT provider: local `faster-whisper`, Groq Whisper (`GROQ_API_KEY`), or OpenAI Whisper (`VOICE_TOOLS_OPENAI_KEY`)
 - **Outgoing:** TTS responses are sent as MP3 audio file attachments
-- Agent responses are prefixed with "⚕ **OmniWorker Agent**" by default. You can customize or disable this in `config.yaml`:
+- Agent responses are prefixed with "⚕ **Flux Agent Agent**" by default. You can customize or disable this in `config.yaml`:
 
 ```yaml
-# ~/.omniworker/config.yaml
+# ~/.flux-agent/config.yaml
 whatsapp:
   reply_prefix: ""                          # Empty string disables the header
   # reply_prefix: "🤖 *My Bot*\n──────\n"  # Custom prefix (supports \n for newlines)
@@ -206,14 +206,14 @@ When the agent calls tools (web search, file operations, etc.), WhatsApp display
 | Problem | Solution |
 |---------|----------|
 | **QR code not scanning** | Ensure terminal is wide enough (60+ columns). Try a different terminal. Make sure you're scanning from the correct WhatsApp account (bot number, not personal). |
-| **QR code expires** | QR codes refresh every ~20 seconds. If it times out, restart `omniworker whatsapp`. |
-| **Session not persisting** | Check that `~/.omniworker/platforms/whatsapp/session` exists and is writable. If containerized, mount it as a persistent volume. |
-| **Logged out unexpectedly** | WhatsApp unlinks devices after long inactivity. Keep the phone on and connected to the network, then re-pair with `omniworker whatsapp` if needed. |
-| **Bridge crashes or reconnect loops** | Restart the gateway, update OmniWorker, and re-pair if the session was invalidated by a WhatsApp protocol change. |
-| **Bot stops working after WhatsApp update** | Update OmniWorker to get the latest bridge version, then re-pair. |
-| **macOS: "Node.js not installed" but node works in terminal** | launchd services don't inherit your shell PATH. Run `omniworker gateway install` to re-snapshot your current PATH into the plist, then `omniworker gateway start`. See the [Gateway Service docs](./index.md#macos-launchd) for details. |
+| **QR code expires** | QR codes refresh every ~20 seconds. If it times out, restart `flux-agent whatsapp`. |
+| **Session not persisting** | Check that `~/.flux-agent/platforms/whatsapp/session` exists and is writable. If containerized, mount it as a persistent volume. |
+| **Logged out unexpectedly** | WhatsApp unlinks devices after long inactivity. Keep the phone on and connected to the network, then re-pair with `flux-agent whatsapp` if needed. |
+| **Bridge crashes or reconnect loops** | Restart the gateway, update Flux Agent, and re-pair if the session was invalidated by a WhatsApp protocol change. |
+| **Bot stops working after WhatsApp update** | Update Flux Agent to get the latest bridge version, then re-pair. |
+| **macOS: "Node.js not installed" but node works in terminal** | launchd services don't inherit your shell PATH. Run `flux-agent gateway install` to re-snapshot your current PATH into the plist, then `flux-agent gateway start`. See the [Gateway Service docs](./index.md#macos-launchd) for details. |
 | **Messages not being received** | Verify `WHATSAPP_ALLOWED_USERS` includes the sender's number (with country code, no `+` or spaces), or set it to `*` to allow everyone. Set `WHATSAPP_DEBUG=true` in `.env` and restart the gateway to see raw message events in `bridge.log`. |
-| **Bot replies to strangers with a pairing code** | Set `whatsapp.unauthorized_dm_behavior: ignore` in `~/.omniworker/config.yaml` if you want unauthorized DMs to be silently ignored instead. |
+| **Bot replies to strangers with a pairing code** | Set `whatsapp.unauthorized_dm_behavior: ignore` in `~/.flux-agent/config.yaml` if you want unauthorized DMs to be silently ignored instead. |
 
 ---
 
@@ -233,8 +233,8 @@ whatsapp:
   unauthorized_dm_behavior: ignore
 ```
 
-- The `~/.omniworker/platforms/whatsapp/session` directory contains full session credentials — protect it like a password
-- Set file permissions: `chmod 700 ~/.omniworker/platforms/whatsapp/session`
+- The `~/.flux-agent/platforms/whatsapp/session` directory contains full session credentials — protect it like a password
+- Set file permissions: `chmod 700 ~/.flux-agent/platforms/whatsapp/session`
 - Use a **dedicated phone number** for the bot to isolate risk from your personal account
 - If you suspect compromise, unlink the device from WhatsApp → Settings → Linked Devices
 - Phone numbers in logs are partially redacted, but review your log retention policy

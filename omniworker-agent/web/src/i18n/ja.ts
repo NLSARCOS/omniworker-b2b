@@ -266,7 +266,7 @@ export const ja: Translations = {
     enableRuntime: "有効化",
     forceReinstall: "強制再インストール (既存のフォルダを先に削除)",
     headline:
-      "OmniWorker プラグインを発見、インストール、有効化、更新します (`omniworker plugins` 相当)。",
+      "OmniWorker プラグインを発見、インストール、有効化、更新します (`flux-agent plugins` 相当)。",
     identifierLabel: "Git URL または owner/repo",
     inactive: "非アクティブ",
     installBtn: "Git からインストール",
@@ -283,8 +283,8 @@ export const ja: Translations = {
     providersHint:
       "memory.provider (空 = 組み込み) と context.engine を config.yaml に書き込みます。次のセッションで有効になります。",
     refreshDashboard: "ダッシュボード拡張を再スキャン",
-    removeConfirm: "このプラグインを ~/.omniworker/plugins/ から削除しますか？",
-    removeHint: "削除できるのは ~/.omniworker/plugins 配下のユーザーがインストールしたプラグインのみです。",
+    removeConfirm: "このプラグインを ~/.flux-agent/plugins/ から削除しますか？",
+    removeHint: "削除できるのは ~/.flux-agent/plugins 配下のユーザーがインストールしたプラグインのみです。",
     rescanHeading: "SPA プラグインレジストリ",
     rescanHint: "ディスクにファイルを追加した後に再スキャンすると、ダッシュボードのサイドバーが新しいマニフェストを認識します。",
     runtimeHeading: "ゲートウェイランタイム (YAML プラグイン)",
@@ -306,7 +306,7 @@ export const ja: Translations = {
     all: "すべて",
     categories: "カテゴリ",
     filters: "フィルター",
-    noSkills: "スキルが見つかりません。スキルは ~/.omniworker/skills/ から読み込まれます",
+    noSkills: "スキルが見つかりません。スキルは ~/.flux-agent/skills/ から読み込まれます",
     noSkillsMatch: "検索またはフィルターに一致するスキルはありません。",
     skillCount: "{count} スキル{s}",
     resultCount: "{count} 件の結果{s}",
@@ -320,7 +320,7 @@ export const ja: Translations = {
   },
 
   config: {
-    configPath: "~/.omniworker/config.yaml",
+    configPath: "~/.flux-agent/config.yaml",
     filters: "フィルター",
     sections: "セクション",
     exportConfig: "設定を JSON としてエクスポート",

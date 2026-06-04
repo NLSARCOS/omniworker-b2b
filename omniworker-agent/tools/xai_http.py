@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 
-def omniworker_xai_user_agent() -> str:
-    """Return a stable OmniWorker-specific User-Agent for xAI HTTP calls."""
+def flux-agent_xai_user_agent() -> str:
+    """Return a stable Flux Agent-specific User-Agent for xAI HTTP calls."""
     try:
-        from omniworker_cli import __version__
+        from flux-agent_cli import __version__
     except Exception:
         __version__ = "unknown"
-    return f"OmniWorker-Agent/{__version__}"
+    return f"Flux Agent-Agent/{__version__}"
