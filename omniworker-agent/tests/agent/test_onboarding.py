@@ -11,10 +11,10 @@ from agent.onboarding import (
     TOOL_PROGRESS_FLAG,
     busy_input_hint_cli,
     busy_input_hint_gateway,
-    detect_flux-agent_residue,
+    detect_omniworker_residue,
     is_seen,
     mark_seen,
-    flux-agent_residue_hint_cli,
+    omniworker_residue_hint_cli,
     tool_progress_hint_cli,
     tool_progress_hint_gateway,
 )
@@ -187,42 +187,42 @@ class TestRoundTrip:
 
 
 class TestDetectOpenclawResidue:
-    def test_returns_true_when_flux-agent_dir_present(self, tmp_path):
-        (tmp_path / ".flux-agent").mkdir()
-        assert detect_flux-agent_residue(home=tmp_path) is True
+    def test_returns_true_when_omniworker_dir_present(self, tmp_path):
+        (tmp_path / ".omniworker").mkdir()
+        assert detect_omniworker_residue(home=tmp_path) is True
 
     def test_returns_false_when_absent(self, tmp_path):
-        assert detect_flux-agent_residue(home=tmp_path) is False
+        assert detect_omniworker_residue(home=tmp_path) is False
 
     def test_returns_false_when_path_is_a_file(self, tmp_path):
-        # A stray file named ``.flux-agent`` is NOT a workspace — skip the banner.
-        (tmp_path / ".flux-agent").write_text("oops")
-        assert detect_flux-agent_residue(home=tmp_path) is False
+        # A stray file named ``.omniworker`` is NOT a workspace — skip the banner.
+        (tmp_path / ".omniworker").write_text("oops")
+        assert detect_omniworker_residue(home=tmp_path) is False
 
     def test_default_home_does_not_crash(self):
         # Smoke: real $HOME lookup must not raise regardless of state.
-        assert isinstance(detect_flux-agent_residue(), bool)
+        assert isinstance(detect_omniworker_residue(), bool)
 
 
 class TestOpenclawResidueHint:
     def test_hint_mentions_migrate_command(self):
         # `migrate` is the non-destructive path — should lead the banner.
-        msg = flux-agent_residue_hint_cli()
-        assert "flux-agent claw migrate" in msg
-        assert "~/.flux-agent" in msg
+        msg = omniworker_residue_hint_cli()
+        assert "omniworker claw migrate" in msg
+        assert "~/.omniworker" in msg
 
     def test_hint_mentions_cleanup_command(self):
         # `cleanup` is mentioned as the follow-up archive step.
-        assert "flux-agent claw cleanup" in flux-agent_residue_hint_cli()
+        assert "omniworker claw cleanup" in omniworker_residue_hint_cli()
 
-    def test_hint_warns_cleanup_breaks_flux-agent(self):
+    def test_hint_warns_cleanup_breaks_omniworker(self):
         # Archiving the directory breaks Flux Agent for users still running it —
         # the banner must flag that side effect.
-        msg = flux-agent_residue_hint_cli().lower()
-        assert "flux-agent will stop working" in msg or "stop working" in msg
+        msg = omniworker_residue_hint_cli().lower()
+        assert "omniworker will stop working" in msg or "stop working" in msg
 
     def test_hint_not_empty(self):
-        assert flux-agent_residue_hint_cli().strip()
+        assert omniworker_residue_hint_cli().strip()
 
 
 class TestOpenclawResidueSeenFlag:

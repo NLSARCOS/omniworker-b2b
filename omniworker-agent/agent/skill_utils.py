@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from flux-agent_constants import get_config_path, get_skills_dir
+from omniworker_constants import get_config_path, get_skills_dir
 
 logger = logging.getLogger(__name__)
 
@@ -236,9 +236,9 @@ def get_external_skills_dirs() -> List[Path]:
     if not isinstance(raw_dirs, list):
         return []
 
-    from flux-agent_constants import get_flux-agent_home
+    from omniworker_constants import get_omniworker_home
 
-    flux-agent_home = get_flux-agent_home()
+    omniworker_home = get_omniworker_home()
     local_skills = get_skills_dir().resolve()
     seen: Set[Path] = set()
     result = []
@@ -252,7 +252,7 @@ def get_external_skills_dirs() -> List[Path]:
         p = Path(expanded)
         # Resolve relative paths against OMNIWORKER_HOME, not cwd
         if not p.is_absolute():
-            p = (flux-agent_home / p).resolve()
+            p = (omniworker_home / p).resolve()
         else:
             p = p.resolve()
         if p == local_skills:

@@ -30,17 +30,17 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Ensure sibling modules (_flux-agent_home) are importable when run standalone.
+# Ensure sibling modules (_omniworker_home) are importable when run standalone.
 _SCRIPTS_DIR = str(Path(__file__).resolve().parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from _flux-agent_home import display_flux-agent_home, get_flux-agent_home
+from _omniworker_home import display_omniworker_home, get_omniworker_home
 
-FLUX AGENT_HOME = get_flux-agent_home()
-TOKEN_PATH = FLUX AGENT_HOME / "google_token.json"
-CLIENT_SECRET_PATH = FLUX AGENT_HOME / "google_client_secret.json"
-PENDING_AUTH_PATH = FLUX AGENT_HOME / "google_oauth_pending.json"
+OMNIWORKER_HOME = get_omniworker_home()
+TOKEN_PATH = OMNIWORKER_HOME / "google_token.json"
+CLIENT_SECRET_PATH = OMNIWORKER_HOME / "google_client_secret.json"
+PENDING_AUTH_PATH = OMNIWORKER_HOME / "google_oauth_pending.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -115,7 +115,7 @@ def install_deps():
         print(
             "On environments without pip (e.g. Nix), install the optional extra instead:"
         )
-        print("  pip install 'flux-agent-agent[google]'")
+        print("  pip install 'omniworker-agent[google]'")
         print(f"Or manually: {sys.executable} -m pip install {' '.join(REQUIRED_PACKAGES)}")
         return False
 
@@ -387,7 +387,7 @@ def exchange_auth_code(code: str):
     TOKEN_PATH.write_text(json.dumps(token_payload, indent=2))
     PENDING_AUTH_PATH.unlink(missing_ok=True)
     print(f"OK: Authenticated. Token saved to {TOKEN_PATH}")
-    print(f"Profile-scoped token location: {display_flux-agent_home()}/google_token.json")
+    print(f"Profile-scoped token location: {display_omniworker_home()}/google_token.json")
 
 
 def revoke():

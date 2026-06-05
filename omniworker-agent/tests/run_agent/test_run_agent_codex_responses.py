@@ -625,7 +625,7 @@ def test_try_refresh_codex_client_credentials_rebuilds_client(monkeypatch):
         return _RebuiltClient()
 
     monkeypatch.setattr(
-        "flux-agent_cli.auth.resolve_codex_runtime_credentials",
+        "omniworker_cli.auth.resolve_codex_runtime_credentials",
         lambda force_refresh=True: {
             "api_key": "new-codex-token",
             "base_url": "https://chatgpt.com/backend-api/codex",
@@ -660,7 +660,7 @@ def test_try_refresh_copilot_client_credentials_rebuilds_client(monkeypatch):
         return _RebuiltClient()
 
     monkeypatch.setattr(
-        "flux-agent_cli.copilot_auth.resolve_copilot_token",
+        "omniworker_cli.copilot_auth.resolve_copilot_token",
         lambda: ("gho_new_token", "GH_TOKEN"),
     )
     monkeypatch.setattr(run_agent, "OpenAI", _fake_openai)
@@ -688,7 +688,7 @@ def test_try_refresh_copilot_client_credentials_rebuilds_even_if_token_unchanged
         return _RebuiltClient()
 
     monkeypatch.setattr(
-        "flux-agent_cli.copilot_auth.resolve_copilot_token",
+        "omniworker_cli.copilot_auth.resolve_copilot_token",
         lambda: ("gh-token", "gh auth token"),
     )
     monkeypatch.setattr(run_agent, "OpenAI", _fake_openai)
@@ -1288,7 +1288,7 @@ def test_run_conversation_codex_continues_after_ack_stop_message(monkeypatch):
     agent = _build_agent(monkeypatch)
     responses = [
         _codex_ack_message_response(
-            "Absolutely — I can do that. I'll inspect ~/flux-agent-studio and report back with a walkthrough."
+            "Absolutely — I can do that. I'll inspect ~/omniworker-studio and report back with a walkthrough."
         ),
         _codex_tool_call_response(),
         _codex_message_response("Architecture summary complete."),
@@ -1307,14 +1307,14 @@ def test_run_conversation_codex_continues_after_ack_stop_message(monkeypatch):
 
     monkeypatch.setattr(agent, "_execute_tool_calls", _fake_execute_tool_calls)
 
-    result = agent.run_conversation("look into ~/flux-agent-studio and tell me how it works")
+    result = agent.run_conversation("look into ~/omniworker-studio and tell me how it works")
 
     assert result["completed"] is True
     assert result["final_response"] == "Architecture summary complete."
     assert any(
         msg.get("role") == "assistant"
         and msg.get("finish_reason") == "incomplete"
-        and "inspect ~/flux-agent-studio" in (msg.get("content") or "")
+        and "inspect ~/omniworker-studio" in (msg.get("content") or "")
         for msg in result["messages"]
     )
     assert any(

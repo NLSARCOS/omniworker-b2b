@@ -9,7 +9,7 @@ interface LocalCommands {
 
 interface UseChatActionsArgs {
   profile?: string;
-  flux-agentSessionId: string | null;
+  omniworkerSessionId: string | null;
   messages: ChatMessage[];
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -35,7 +35,7 @@ interface UseChatActionsResult {
  */
 export function useChatActions({
   profile,
-  flux-agentSessionId,
+  omniworkerSessionId,
   messages,
   isLoading,
   setIsLoading,
@@ -67,14 +67,14 @@ export function useChatActions({
         // When we have a server-issued session ID, let the backend recover
         // the full conversation history from SQLite instead of sending a
         // truncated / lossy client-side snapshot.
-        const hasSession = Boolean(flux-agentSessionId);
+        const hasSession = Boolean(omniworkerSessionId);
         const historyLength = messagesRef.current.length;
         const shouldSendHistory = !hasSession || historyLength <= 10;
 
-        await window.flux-agentAPI.sendMessage(
+        await window.omniworkerAPI.sendMessage(
           text,
           profile,
-          flux-agentSessionId || undefined,
+          omniworkerSessionId || undefined,
           shouldSendHistory
             ? messagesRef.current.map((m) => ({
                 role: m.role,
@@ -86,7 +86,7 @@ export function useChatActions({
         // onChatError IPC already surfaces this to the user
       }
     },
-    [profile, flux-agentSessionId],
+    [profile, omniworkerSessionId],
   );
 
   const handleSend = useCallback(
@@ -119,7 +119,7 @@ export function useChatActions({
   );
 
   const handleAbort = useCallback(() => {
-    window.flux-agentAPI.abortChat();
+    window.omniworkerAPI.abortChat();
     setIsLoading(false);
     setTimeout(() => chatInputRef.current?.focus(), 50);
   }, [chatInputRef, setIsLoading]);

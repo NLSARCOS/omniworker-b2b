@@ -38,9 +38,9 @@ Mode — all at once.
 
 1. Generate the manifest:
    ```bash
-   flux-agent slack manifest --write
+   omniworker slack manifest --write
    ```
-   This writes `~/.flux-agent/slack-manifest.json` and prints paste-in
+   This writes `~/.omniworker/slack-manifest.json` and prints paste-in
    instructions.
 2. Go to [https://api.slack.com/apps](https://api.slack.com/apps) →
    **Create New App** → **From an app manifest**
@@ -101,7 +101,7 @@ Socket Mode lets the bot connect via WebSocket instead of requiring a public URL
 1. In the sidebar, go to **Settings → Socket Mode**
 2. Toggle **Enable Socket Mode** to ON
 3. You'll be prompted to create an **App-Level Token**:
-   - Name it something like `flux-agent-socket` (the name doesn't matter)
+   - Name it something like `omniworker-socket` (the name doesn't matter)
    - Add the **`connections:write`** scope
    - Click **Generate**
 4. **Copy the token** — it starts with `xapp-`. This is your `SLACK_APP_TOKEN`
@@ -186,7 +186,7 @@ Member IDs look like `U01ABC2DEF3`. You need your own Member ID at minimum.
 
 ## Step 8: Configure Flux Agent
 
-Add the following to your `~/.flux-agent/.env` file:
+Add the following to your `~/.omniworker/.env` file:
 
 ```bash
 # Required
@@ -202,15 +202,15 @@ SLACK_HOME_CHANNEL_NAME=general              # Human-readable name for the home 
 Or run the interactive setup:
 
 ```bash
-flux-agent gateway setup    # Select Slack when prompted
+omniworker gateway setup    # Select Slack when prompted
 ```
 
 Then start the gateway:
 
 ```bash
-flux-agent gateway              # Foreground
-flux-agent gateway install      # Install as a user service
-sudo flux-agent gateway install --system   # Linux only: boot-time system service
+omniworker gateway              # Foreground
+omniworker gateway install      # Install as a user service
+sudo omniworker gateway install --system   # Linux only: boot-time system service
 ```
 
 ---
@@ -236,32 +236,32 @@ Flux Agent command with its description.
 
 Under the hood: Flux Agent ships with a generated Slack app manifest (see
 Step 1, Option A) that declares every command in
-[`COMMAND_REGISTRY`](https://github.com/Flux Agent/flux-agent-agent/blob/main/flux-agent_cli/commands.py)
+[`COMMAND_REGISTRY`](https://github.com/Flux Agent/omniworker-agent/blob/main/omniworker_cli/commands.py)
 as a slash command. In Socket Mode, Slack routes the command event
 through the WebSocket regardless of the manifest's `url` field.
 
 ### Refreshing slash commands after updates
 
-When Flux Agent adds new commands (e.g. after `flux-agent update`), regenerate
+When Flux Agent adds new commands (e.g. after `omniworker update`), regenerate
 the manifest and update your Slack app:
 
 ```bash
-flux-agent slack manifest --write
+omniworker slack manifest --write
 ```
 
 Then in Slack:
 1. Open [https://api.slack.com/apps](https://api.slack.com/apps) →
    your Flux Agent app
 2. **Features → App Manifest → Edit**
-3. Paste the new contents of `~/.flux-agent/slack-manifest.json`
+3. Paste the new contents of `~/.omniworker/slack-manifest.json`
 4. **Save**. Slack will prompt to reinstall the app if scopes or slash
    commands changed.
 
-### Legacy `/flux-agent <subcommand>` still works
+### Legacy `/omniworker <subcommand>` still works
 
 For backward compatibility with older manifests, you can still type
-`/flux-agent btw run the tests` — Flux Agent routes it the same way as `/btw
-run the tests`. Free-form questions also work: `/flux-agent what's the
+`/omniworker btw run the tests` — Flux Agent routes it the same way as `/btw
+run the tests`. Free-form questions also work: `/omniworker what's the
 weather?` is treated as a regular message.
 
 ### Using commands inside threads (the `!cmd` prefix)
@@ -286,7 +286,7 @@ If you maintain your Slack manifest by hand and just want the slash
 command list:
 
 ```bash
-flux-agent slack manifest --slashes-only > /tmp/slashes.json
+omniworker slack manifest --slashes-only > /tmp/slashes.json
 ```
 
 Paste that array into the `features.slash_commands` key of your
@@ -312,7 +312,7 @@ In channels, always @mention the bot to start a conversation. Once the bot is ac
 
 ## Configuration Options
 
-Beyond the required environment variables from Step 8, you can customize Slack bot behavior through `~/.flux-agent/config.yaml`.
+Beyond the required environment variables from Step 8, you can customize Slack bot behavior through `~/.omniworker/config.yaml`.
 
 ### Thread & Reply Behavior
 
@@ -374,8 +374,8 @@ slack:
   # Custom mention patterns that trigger the bot
   # (in addition to the default @mention detection)
   mention_patterns:
-    - "hey flux-agent"
-    - "flux-agent,"
+    - "hey omniworker"
+    - "omniworker,"
 
   # Text prepended to every outgoing message
   reply_prefix: ""
@@ -474,7 +474,7 @@ SLACK_BOT_TOKEN=xoxb-workspace1-token,xoxb-workspace2-token,xoxb-workspace3-toke
 SLACK_APP_TOKEN=xapp-your-app-token
 ```
 
-Or in `~/.flux-agent/config.yaml`:
+Or in `~/.omniworker/config.yaml`:
 
 ```yaml
 platforms:
@@ -487,7 +487,7 @@ platforms:
 In addition to tokens in the environment or config, Flux Agent also loads tokens from an **OAuth token file** at:
 
 ```
-~/.flux-agent/slack_tokens.json
+~/.omniworker/slack_tokens.json
 ```
 
 This file is a JSON object mapping team IDs to token entries:
@@ -605,7 +605,7 @@ the gateway will **deny all messages** by default as a safety measure. Never sha
 treat them like passwords.
 :::
 
-- Tokens should be stored in `~/.flux-agent/.env` (file permissions `600`)
+- Tokens should be stored in `~/.omniworker/.env` (file permissions `600`)
 - Rotate tokens periodically via the Slack app settings
 - Audit who has access to your Flux Agent config directory
 - Socket Mode means no public endpoint is exposed — one less attack surface

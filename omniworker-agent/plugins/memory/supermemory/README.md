@@ -10,23 +10,23 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 ## Setup
 
 ```bash
-flux-agent memory setup    # select "supermemory"
+omniworker memory setup    # select "supermemory"
 ```
 
 Or manually:
 
 ```bash
-flux-agent config set memory.provider supermemory
-echo 'SUPERMEMORY_API_KEY=***' >> ~/.flux-agent/.env
+omniworker config set memory.provider supermemory
+echo 'SUPERMEMORY_API_KEY=***' >> ~/.omniworker/.env
 ```
 
 ## Config
 
-Config file: `$FLUX AGENT_HOME/supermemory.json`
+Config file: `$OMNIWORKER_HOME/supermemory.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `container_tag` | `flux-agent` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags (e.g. `flux-agent-{identity}` → `flux-agent-coder`). |
+| `container_tag` | `omniworker` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags (e.g. `omniworker-{identity}` → `omniworker-coder`). |
 | `auto_recall` | `true` | Inject relevant memory context before turns |
 | `auto_capture` | `true` | Store cleaned user-assistant turns after each response |
 | `max_recall_results` | `10` | Max recalled items to format into context |
@@ -67,11 +67,11 @@ Use `{identity}` in the `container_tag` to scope memories per Flux Agent profile
 
 ```json
 {
-  "container_tag": "flux-agent-{identity}"
+  "container_tag": "omniworker-{identity}"
 }
 ```
 
-For a profile named `coder`, this resolves to `flux-agent-coder`. The default profile resolves to `flux-agent-default`. Without `{identity}`, all profiles share the same container.
+For a profile named `coder`, this resolves to `omniworker-coder`. The default profile resolves to `omniworker-default`. Without `{identity}`, all profiles share the same container.
 
 ## Multi-Container Mode
 
@@ -79,7 +79,7 @@ For advanced setups (e.g. Flux Agent-style multi-workspace), you can enable cust
 
 ```json
 {
-  "container_tag": "flux-agent",
+  "container_tag": "omniworker",
   "enable_custom_container_tags": true,
   "custom_containers": ["project-alpha", "project-beta", "shared-knowledge"],
   "custom_container_instructions": "Use project-alpha for coding tasks, project-beta for research, and shared-knowledge for team-wide facts."

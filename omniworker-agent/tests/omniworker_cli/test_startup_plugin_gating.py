@@ -1,9 +1,9 @@
 """Guards for CLI startup performance regression.
 
-``flux-agent_cli.main`` skips eager plugin discovery at argparse-setup time
+``omniworker_cli.main`` skips eager plugin discovery at argparse-setup time
 when the invocation is clearly targeting a known built-in subcommand.
-This saves 500-650ms on ``flux-agent --help``, ``flux-agent version``,
-``flux-agent logs``, etc., by not importing ``google.cloud.pubsub_v1``,
+This saves 500-650ms on ``omniworker --help``, ``omniworker version``,
+``omniworker logs``, etc., by not importing ``google.cloud.pubsub_v1``,
 ``aiohttp``, ``grpc``, and friends.
 
 Two invariants:
@@ -28,7 +28,7 @@ from unittest.mock import patch
 
 import pytest
 
-from flux-agent_cli.main import (
+from omniworker_cli.main import (
     _BUILTIN_SUBCOMMANDS,
     _first_positional_argv,
     _plugin_cli_discovery_needed,
@@ -39,16 +39,16 @@ from flux-agent_cli.main import (
 
 
 def _live_subcommand_names() -> set[str]:
-    """Run ``flux-agent --help`` in-process and parse the subcommand block.
+    """Run ``omniworker --help`` in-process and parse the subcommand block.
 
     We patch ``_plugin_cli_discovery_needed`` to always return False so
     plugin-registered commands aren't included — we're validating the
     built-in-only set.
     """
-    from flux-agent_cli import main as _main
+    from omniworker_cli import main as _main
 
     argv_backup = sys.argv[:]
-    sys.argv = ["flux-agent", "--help"]
+    sys.argv = ["omniworker", "--help"]
     buf = io.StringIO()
     try:
         with patch.object(_main, "_plugin_cli_discovery_needed", return_value=False):
@@ -71,32 +71,32 @@ def _live_subcommand_names() -> set[str]:
 @pytest.mark.parametrize(
     "argv,expected",
     [
-        (["flux-agent"], None),
-        (["flux-agent", "--help"], None),
-        (["flux-agent", "-h"], None),
-        (["flux-agent", "--version"], None),
-        (["flux-agent", "-w"], None),
+        (["omniworker"], None),
+        (["omniworker", "--help"], None),
+        (["omniworker", "-h"], None),
+        (["omniworker", "--version"], None),
+        (["omniworker", "-w"], None),
         # -p / --profile is stripped from sys.argv by
         # _apply_profile_override() at import time, so it never reaches
         # _first_positional_argv. We test with just -w / --tui here.
-        (["flux-agent", "-w", "--tui"], None),
-        (["flux-agent", "version"], "version"),
-        (["flux-agent", "--tui", "chat"], "chat"),
-        (["flux-agent", "-w", "logs"], "logs"),
-        (["flux-agent", "chat", "hello world"], "chat"),
-        (["flux-agent", "gateway", "run"], "gateway"),
+        (["omniworker", "-w", "--tui"], None),
+        (["omniworker", "version"], "version"),
+        (["omniworker", "--tui", "chat"], "chat"),
+        (["omniworker", "-w", "logs"], "logs"),
+        (["omniworker", "chat", "hello world"], "chat"),
+        (["omniworker", "gateway", "run"], "gateway"),
         # Top-level value-taking flags: the value should be skipped.
-        (["flux-agent", "-m", "gpt5", "chat"], "chat"),
-        (["flux-agent", "--model", "gpt5", "chat", "hi"], "chat"),
-        (["flux-agent", "-m", "gpt5", "--provider", "openai", "chat"], "chat"),
-        (["flux-agent", "-z", "hello world"], None),
-        (["flux-agent", "-z", "hello", "chat"], "chat"),
-        (["flux-agent", "--model=gpt5", "chat"], "chat"),     # inline form
-        (["flux-agent", "--", "chat"], "chat"),               # -- terminator
-        (["flux-agent", "-w", "--"], None),
+        (["omniworker", "-m", "gpt5", "chat"], "chat"),
+        (["omniworker", "--model", "gpt5", "chat", "hi"], "chat"),
+        (["omniworker", "-m", "gpt5", "--provider", "openai", "chat"], "chat"),
+        (["omniworker", "-z", "hello world"], None),
+        (["omniworker", "-z", "hello", "chat"], "chat"),
+        (["omniworker", "--model=gpt5", "chat"], "chat"),     # inline form
+        (["omniworker", "--", "chat"], "chat"),               # -- terminator
+        (["omniworker", "-w", "--"], None),
         # Unknown positional after skipped flags → plugin-cmd candidate.
-        (["flux-agent", "some-plugin-cmd"], "some-plugin-cmd"),
-        (["flux-agent", "-m", "gpt5", "some-plugin-cmd"], "some-plugin-cmd"),
+        (["omniworker", "some-plugin-cmd"], "some-plugin-cmd"),
+        (["omniworker", "-m", "gpt5", "some-plugin-cmd"], "some-plugin-cmd"),
     ],
 )
 def test_first_positional_argv(argv, expected):
@@ -110,17 +110,17 @@ def test_first_positional_argv(argv, expected):
 @pytest.mark.parametrize(
     "argv",
     [
-        ["flux-agent"],                          # bare → chat
-        ["flux-agent", "--help"],                # top-level help
-        ["flux-agent", "-h"],
-        ["flux-agent", "version"],               # known built-in
-        ["flux-agent", "logs"],
-        ["flux-agent", "gateway", "run"],
-        ["flux-agent", "--tui"],
-        ["flux-agent", "-w", "--tui"],
-        ["flux-agent", "chat", "hi"],
-        ["flux-agent", "help"],                  # accepted built-in-ish
-        ["flux-agent", "-m", "gpt5", "chat"],    # flag-value-skipping
+        ["omniworker"],                          # bare → chat
+        ["omniworker", "--help"],                # top-level help
+        ["omniworker", "-h"],
+        ["omniworker", "version"],               # known built-in
+        ["omniworker", "logs"],
+        ["omniworker", "gateway", "run"],
+        ["omniworker", "--tui"],
+        ["omniworker", "-w", "--tui"],
+        ["omniworker", "chat", "hi"],
+        ["omniworker", "help"],                  # accepted built-in-ish
+        ["omniworker", "-m", "gpt5", "chat"],    # flag-value-skipping
     ],
 )
 def test_discovery_skipped_for_builtins(argv):
@@ -131,9 +131,9 @@ def test_discovery_skipped_for_builtins(argv):
 @pytest.mark.parametrize(
     "argv",
     [
-        ["flux-agent", "meet", "join"],          # potential google_meet plugin
-        ["flux-agent", "honcho", "status"],      # potential memory plugin
-        ["flux-agent", "unknown-subcmd"],
+        ["omniworker", "meet", "join"],          # potential google_meet plugin
+        ["omniworker", "honcho", "status"],      # potential memory plugin
+        ["omniworker", "unknown-subcmd"],
     ],
 )
 def test_discovery_runs_for_unknown_positional(argv):
@@ -152,14 +152,14 @@ def test_builtin_set_covers_every_registered_subcommand():
     """
     live = _live_subcommand_names()
     # "help" is synthetic — an argparse-implicit convenience we include
-    # in the set so ``flux-agent help <cmd>`` skips discovery; it won't show
+    # in the set so ``omniworker help <cmd>`` skips discovery; it won't show
     # up as a subparser in the --help output.
     declared = _BUILTIN_SUBCOMMANDS - {"help"}
     missing_from_declaration = live - declared
     assert not missing_from_declaration, (
         f"_BUILTIN_SUBCOMMANDS is missing these live subcommands: "
         f"{sorted(missing_from_declaration)}. Add them to "
-        f"flux-agent_cli/main.py::_BUILTIN_SUBCOMMANDS so plugin discovery "
+        f"omniworker_cli/main.py::_BUILTIN_SUBCOMMANDS so plugin discovery "
         f"can be skipped when the user targets them."
     )
 

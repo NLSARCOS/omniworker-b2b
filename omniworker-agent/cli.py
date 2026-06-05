@@ -12,12 +12,12 @@ Usage:
     python cli.py --list-tools             # List available tools and exit
 """
 
-# IMPORTANT: flux-agent_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See flux-agent_bootstrap.py for full rationale.
+# IMPORTANT: omniworker_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See omniworker_bootstrap.py for full rationale.
 try:
-    import flux-agent_bootstrap  # noqa: F401
+    import omniworker_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    # Graceful fallback when flux-agent_bootstrap isn't registered in the venv
+    # Graceful fallback when omniworker_bootstrap isn't registered in the venv
     # yet — happens during partial ``hermes update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
@@ -47,7 +47,7 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 # Suppress startup messages for clean CLI experience
-os.environ["FLUX AGENT_QUIET"] = "1"  # Our own modules
+os.environ["OMNIWORKER_QUIET"] = "1"  # Our own modules
 
 import yaml
 
@@ -72,7 +72,7 @@ except (ImportError, AttributeError):
     _STEADY_CURSOR = None
 
 try:
-    from flux-agent_cli.pt_input_extras import install_shift_enter_alias, install_ctrl_enter_alias
+    from omniworker_cli.pt_input_extras import install_shift_enter_alias, install_ctrl_enter_alias
     install_shift_enter_alias()
     install_ctrl_enter_alias()
     del install_shift_enter_alias, install_ctrl_enter_alias
@@ -95,25 +95,25 @@ from agent.markdown_tables import (
 # NOTE: `from agent.account_usage import ...` is deliberately NOT at module
 # top — it transitively pulls the OpenAI SDK chain (~230 ms cold) and is only
 # needed when the user runs `/limits`. Lazy-imported inside the handler below.
-from flux-agent_cli.banner import _format_context_length, format_banner_version_label
+from omniworker_cli.banner import _format_context_length, format_banner_version_label
 
 _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
 
 
 # Load .env from ~/.hermes/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from flux-agent_constants import get_flux-agent_home, display_flux-agent_home
-from flux-agent_cli.browser_connect import (
+from omniworker_constants import get_omniworker_home, display_omniworker_home
+from omniworker_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL,
     manual_chrome_debug_command,
     try_launch_chrome_debug,
 )
-from flux-agent_cli.env_loader import load_hermes_dotenv
+from omniworker_cli.env_loader import load_hermes_dotenv
 from utils import base_url_host_matches, is_truthy_value
 
-_flux-agent_home = get_flux-agent_home()
+_omniworker_home = get_omniworker_home()
 _project_env = Path(__file__).parent / '.env'
-load_hermes_dotenv(flux-agent_home=_flux-agent_home, project_env=_project_env)
+load_hermes_dotenv(omniworker_home=_omniworker_home, project_env=_project_env)
 
 
 _REASONING_TAGS = (
@@ -233,7 +233,7 @@ def _load_prefill_messages(file_path: str) -> List[Dict[str, Any]]:
         return []
     path = Path(file_path).expanduser()
     if not path.is_absolute():
-        path = _flux-agent_home / path
+        path = _omniworker_home / path
     if not path.exists():
         logger.warning("Prefill messages file not found: %s", path)
         return []
@@ -251,7 +251,7 @@ def _load_prefill_messages(file_path: str) -> List[Dict[str, Any]]:
 
 def _parse_reasoning_config(effort: str) -> dict | None:
     """Parse a reasoning effort level into an OpenRouter reasoning config dict."""
-    from flux-agent_constants import parse_reasoning_effort
+    from omniworker_constants import parse_reasoning_effort
     result = parse_reasoning_effort(effort)
     if effort and effort.strip() and result is None:
         logger.warning("Unknown reasoning_effort '%s', using default (medium)", effort)
@@ -279,19 +279,19 @@ def load_cli_config() -> Dict[str, Any]:
     Environment variables take precedence over config file values.
     Returns default values if no config file exists.
 
-    If FLUX AGENT_IGNORE_USER_CONFIG=1 is set (via ``hermes chat --ignore-user-config``),
+    If OMNIWORKER_IGNORE_USER_CONFIG=1 is set (via ``hermes chat --ignore-user-config``),
     the user config at ``~/.hermes/config.yaml`` is skipped entirely and only the
     built-in defaults plus the project-level ``cli-config.yaml`` (if any) are used.
     Credentials in ``.env`` are still loaded — this flag only suppresses
     behavioral/config settings.
     """
-    # Check user config first ({FLUX AGENT_HOME}/config.yaml)
-    user_config_path = _flux-agent_home / 'config.yaml'
+    # Check user config first ({OMNIWORKER_HOME}/config.yaml)
+    user_config_path = _omniworker_home / 'config.yaml'
     project_config_path = Path(__file__).parent / 'cli-config.yaml'
 
     # --ignore-user-config: force-skip the user config.yaml (still honor project
     # config as a fallback so defaults stay sensible).
-    ignore_user_config = os.environ.get("FLUX AGENT_IGNORE_USER_CONFIG") == "1"
+    ignore_user_config = os.environ.get("OMNIWORKER_IGNORE_USER_CONFIG") == "1"
 
     # Use user config if it exists, otherwise project config
     if user_config_path.exists() and not ignore_user_config:
@@ -426,7 +426,7 @@ def load_cli_config() -> Dict[str, Any]:
                     # choice isn't shadowed by the hardcoded default.  Without this,
                     # profile configs that only set "model:" (not "default:") silently
                     # fall back to claude-opus because the merge preserves the
-                    # hardcoded default and Flux AgentCLI.__init__ checks "default" first.
+                    # hardcoded default and OmniWorkerCLI.__init__ checks "default" first.
                     if "model" in file_config["model"] and "default" not in file_config["model"]:
                         defaults["model"]["default"] = file_config["model"]["model"]
 
@@ -474,13 +474,13 @@ def load_cli_config() -> Dict[str, Any]:
             logger.warning("Failed to load cli-config.yaml: %s", e)
 
     # Expand ${ENV_VAR} references in config values before bridging to env vars.
-    from flux-agent_cli.config import _expand_env_vars
+    from omniworker_cli.config import _expand_env_vars
     defaults = _expand_env_vars(defaults)
 
     # Apply terminal config to environment variables (so terminal_tool picks them up)
     terminal_config = defaults.get("terminal", {})
     
-    # Normalize config key: the new config system (flux-agent_cli/config.py) and all
+    # Normalize config key: the new config system (omniworker_cli/config.py) and all
     # documentation use "backend", the legacy cli-config.yaml uses "env_type".
     # Accept both, with "backend" taking precedence (it's the documented key).
     if "backend" in terminal_config:
@@ -533,9 +533,9 @@ def load_cli_config() -> Dict[str, Any]:
     }
     
     # Bridge config → env vars for terminal_tool. TERMINAL_CWD is force-exported
-    # UNLESS we're inside a gateway process (detected by _FLUX AGENT_GATEWAY marker)
+    # UNLESS we're inside a gateway process (detected by _OMNIWORKER_GATEWAY marker)
     # where it was already set correctly by gateway/run.py's config bridge.
-    _is_gateway = os.environ.get("_FLUX AGENT_GATEWAY") == "1"
+    _is_gateway = os.environ.get("_OMNIWORKER_GATEWAY") == "1"
     for config_key, env_var in env_mappings.items():
         if config_key in terminal_config:
             if env_var == "TERMINAL_CWD":
@@ -612,7 +612,7 @@ def load_cli_config() -> Dict[str, Any]:
     if isinstance(security_config, dict):
         redact = security_config.get("redact_secrets")
         if redact is not None:
-            os.environ["FLUX AGENT_REDACT_SECRETS"] = str(redact).lower()
+            os.environ["OMNIWORKER_REDACT_SECRETS"] = str(redact).lower()
 
     return defaults
 
@@ -623,21 +623,21 @@ CLI_CONFIG = load_cli_config()
 # Initialize centralized logging early — agent.log + errors.log in ~/.hermes/logs/.
 # This ensures CLI sessions produce a log trail even before AIAgent is instantiated.
 try:
-    from flux-agent_logging import setup_logging
+    from omniworker_logging import setup_logging
     setup_logging(mode="cli")
 except Exception:
     pass  # Logging setup is best-effort — don't crash the CLI
 
 # Validate config structure early — print warnings before user hits cryptic errors
 try:
-    from flux-agent_cli.config import print_config_warnings
+    from omniworker_cli.config import print_config_warnings
     print_config_warnings()
 except Exception:
     pass
 
 # Initialize the skin engine from config
 try:
-    from flux-agent_cli.skin_engine import init_skin_from_config
+    from omniworker_cli.skin_engine import init_skin_from_config
     init_skin_from_config(CLI_CONFIG)
 except Exception:
     pass  # Skin engine is optional — default skin used if unavailable
@@ -674,8 +674,8 @@ from run_agent import AIAgent
 from model_tools import get_tool_definitions, get_toolset_for_tool
 
 # Extracted CLI modules (Phase 3)
-from flux-agent_cli.banner import build_welcome_banner
-from flux-agent_cli.commands import SlashCommandCompleter, SlashCommandAutoSuggest
+from omniworker_cli.banner import build_welcome_banner
+from omniworker_cli.commands import SlashCommandCompleter, SlashCommandAutoSuggest
 from toolsets import get_all_toolsets, get_toolset_info, validate_toolset
 
 # Cron job system for scheduled tasks (execution is handled by the gateway)
@@ -685,7 +685,7 @@ from cron import get_job
 from tools.terminal_tool import cleanup_all_environments as _cleanup_all_terminals
 from tools.terminal_tool import set_sudo_password_callback, set_approval_callback
 from tools.skills_tool import set_secret_capture_callback
-from flux-agent_cli.callbacks import prompt_for_secret
+from omniworker_cli.callbacks import prompt_for_secret
 from tools.browser_tool import _emergency_cleanup_all_sessions as _cleanup_all_browsers
 
 # Guard to prevent cleanup from running multiple times on exit
@@ -724,7 +724,7 @@ def _run_cleanup():
     # Shut down memory provider (on_session_end + shutdown_all) at actual
     # session boundary — NOT per-turn inside run_conversation().
     try:
-        from flux-agent_cli.plugins import invoke_hook as _invoke_hook
+        from omniworker_cli.plugins import invoke_hook as _invoke_hook
         _invoke_hook("on_session_finalize", session_id=_active_agent_ref.session_id if _active_agent_ref else None, platform="cli")
     except Exception:
         pass
@@ -1008,7 +1008,7 @@ def _run_state_db_auto_maintenance(session_db) -> None:
     """Call ``SessionDB.maybe_auto_prune_and_vacuum`` using current config.
 
     Reads the ``sessions:`` section from config.yaml via
-    :func:`flux-agent_cli.config.load_config` (the authoritative loader that
+    :func:`omniworker_cli.config.load_config` (the authoritative loader that
     deep-merges DEFAULT_CONFIG, so unmigrated configs still get default
     values). Honours ``auto_prune`` / ``retention_days`` /
     ``vacuum_after_prune`` / ``min_interval_hours``, and delegates to the
@@ -1017,15 +1017,15 @@ def _run_state_db_auto_maintenance(session_db) -> None:
     if session_db is None:
         return
     try:
-        from flux-agent_cli.config import load_config as _load_full_config
-        from flux-agent_constants import get_flux-agent_home as _get_flux-agent_home
-        _flux-agent_home_maint = _get_flux-agent_home()
+        from omniworker_cli.config import load_config as _load_full_config
+        from omniworker_constants import get_omniworker_home as _get_omniworker_home
+        _omniworker_home_maint = _get_omniworker_home()
 
         # One-time prune of empty TUI ghost sessions.
         try:
             if not session_db.get_meta("ghost_session_prune_v1"):
                 pruned = session_db.prune_empty_ghost_sessions(
-                    sessions_dir=_flux-agent_home_maint / "sessions"
+                    sessions_dir=_omniworker_home_maint / "sessions"
                 )
                 session_db.set_meta("ghost_session_prune_v1", "1")
                 if pruned:
@@ -1052,7 +1052,7 @@ def _run_state_db_auto_maintenance(session_db) -> None:
             retention_days=int(cfg.get("retention_days", 90)),
             min_interval_hours=int(cfg.get("min_interval_hours", 24)),
             vacuum=bool(cfg.get("vacuum_after_prune", True)),
-            sessions_dir=_flux-agent_home_maint / "sessions",
+            sessions_dir=_omniworker_home_maint / "sessions",
         )
     except Exception as exc:
         logger.debug("state.db auto-maintenance skipped: %s", exc)
@@ -1062,12 +1062,12 @@ def _run_checkpoint_auto_maintenance() -> None:
     """Call ``checkpoint_manager.maybe_auto_prune_checkpoints`` using current config.
 
     Reads the ``checkpoints:`` section from config.yaml via
-    :func:`flux-agent_cli.config.load_config`. Honours ``auto_prune`` /
+    :func:`omniworker_cli.config.load_config`. Honours ``auto_prune`` /
     ``retention_days`` / ``delete_orphans`` / ``min_interval_hours``.
     Never raises — maintenance must never block interactive startup.
     """
     try:
-        from flux-agent_cli.config import load_config as _load_full_config
+        from omniworker_cli.config import load_config as _load_full_config
         cfg = (_load_full_config().get("checkpoints") or {})
         if not cfg.get("auto_prune", False):
             return
@@ -1268,9 +1268,9 @@ def _hex_to_ansi(hex_color: str, *, bold: bool = False) -> str:
 # Terminal.app / iTerm2 background.
 #
 # Detection priority:
-#   1. FLUX AGENT_LIGHT / FLUX AGENT_TUI_LIGHT env (true/false) — explicit override
-#   2. FLUX AGENT_TUI_THEME=light|dark — explicit theme
-#   3. FLUX AGENT_TUI_BACKGROUND=#RRGGBB — explicit bg hint
+#   1. OMNIWORKER_LIGHT / OMNIWORKER_TUI_LIGHT env (true/false) — explicit override
+#   2. OMNIWORKER_TUI_THEME=light|dark — explicit theme
+#   3. OMNIWORKER_TUI_BACKGROUND=#RRGGBB — explicit bg hint
 #   4. COLORFGBG env (set by xterm/Konsole/urxvt) — bg slot 7/15 = light
 #   5. OSC 11 query (\x1b]11;?\x1b\\) — ask the terminal directly
 #   6. Default: assume dark (matches the legacy Flux Agent assumption)
@@ -1365,7 +1365,7 @@ def _detect_light_mode() -> bool:
     result = False
     try:
         # 1. Explicit env override
-        for var in ("FLUX AGENT_LIGHT", "FLUX AGENT_TUI_LIGHT"):
+        for var in ("OMNIWORKER_LIGHT", "OMNIWORKER_TUI_LIGHT"):
             v = (os.environ.get(var) or "").strip().lower()
             if _TRUE_RE.match(v):
                 result = True
@@ -1375,7 +1375,7 @@ def _detect_light_mode() -> bool:
                 _LIGHT_MODE_CACHE = result
                 return result
         # 2. Theme hint
-        theme = (os.environ.get("FLUX AGENT_TUI_THEME") or "").strip().lower()
+        theme = (os.environ.get("OMNIWORKER_TUI_THEME") or "").strip().lower()
         if theme == "light":
             result = True
             _LIGHT_MODE_CACHE = result
@@ -1384,7 +1384,7 @@ def _detect_light_mode() -> bool:
             _LIGHT_MODE_CACHE = result
             return result
         # 3. Explicit bg hex
-        bg_hint = os.environ.get("FLUX AGENT_TUI_BACKGROUND") or ""
+        bg_hint = os.environ.get("OMNIWORKER_TUI_BACKGROUND") or ""
         bg_lum = _luminance_from_hex(bg_hint)
         if bg_lum is not None:
             result = bg_lum >= 0.5
@@ -1471,7 +1471,7 @@ def _install_skin_light_mode_hook() -> None:
     """Wrap SkinConfig.get_color at import time so EVERY skin color read goes
     through the light-mode remap.  Idempotent."""
     try:
-        from flux-agent_cli.skin_engine import SkinConfig  # type: ignore[import]
+        from omniworker_cli.skin_engine import SkinConfig  # type: ignore[import]
     except Exception:
         return
     if getattr(SkinConfig, "_hermes_light_mode_hook_installed", False):
@@ -1519,7 +1519,7 @@ class _SkinAwareAnsi:
     def __str__(self) -> str:
         if self._cached is None:
             try:
-                from flux-agent_cli.skin_engine import get_active_skin
+                from omniworker_cli.skin_engine import get_active_skin
                 self._cached = _hex_to_ansi(
                     get_active_skin().get_color(self._skin_key, self._fallback_hex),
                     bold=self._bold,
@@ -1551,7 +1551,7 @@ _DIM = "\x1b[2;3m"
 def _accent_hex() -> str:
     """Return the active skin accent color for legacy CLI output lines."""
     try:
-        from flux-agent_cli.skin_engine import get_active_skin
+        from omniworker_cli.skin_engine import get_active_skin
         return get_active_skin().get_color("ui_accent", "#FFBF00")
     except Exception:
         return "#FFBF00"
@@ -1862,7 +1862,7 @@ _IMAGE_EXTENSIONS = frozenset({
 })
 
 
-from flux-agent_constants import is_termux as _is_termux_environment
+from omniworker_constants import is_termux as _is_termux_environment
 
 
 def _termux_example_image_path(filename: str = "cat.png") -> str:
@@ -2327,12 +2327,12 @@ class ChatConsole:
         ``ChatConsole()``, which historically only implemented ``print()``.
         Returning a silent context manager keeps slash commands compatible
         without duplicating the higher-level busy indicator already shown by
-        ``Flux AgentCLI._busy_command()``.
+        ``OmniWorkerCLI._busy_command()``.
         """
         yield self
 
 # ASCII Art - HERMES-AGENT logo (full width, single line - requires ~95 char terminal)
-FLUX AGENT_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+OMNIWORKER_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
 [bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
 [#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
 [#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
@@ -2340,7 +2340,7 @@ FLUX AGENT_AGENT_LOGO = """[bold #FFD700]██╗  ██╗██████�
 [#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
 
 # ASCII Art - Flux Agent Caduceus (compact, fits in left panel)
-FLUX AGENT_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+OMNIWORKER_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
 [#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
 [#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
 [#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
@@ -2361,7 +2361,7 @@ FLUX AGENT_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀�
 def _build_compact_banner() -> str:
     """Build a compact banner that fits the current terminal width."""
     try:
-        from flux-agent_cli.skin_engine import get_active_skin
+        from omniworker_cli.skin_engine import get_active_skin
         _skin = get_active_skin()
     except Exception:
         _skin = None
@@ -2441,7 +2441,7 @@ _skill_commands = scan_skill_commands()
 def _get_plugin_cmd_handler_names() -> set:
     """Return plugin command names (without slash prefix) for dispatch matching."""
     try:
-        from flux-agent_cli.plugins import get_plugin_commands
+        from omniworker_cli.plugins import get_plugin_commands
         return set(get_plugin_commands().keys())
     except Exception:
         return set()
@@ -2487,7 +2487,7 @@ def save_config_value(key_path: str, value: any) -> bool:
         True if successful, False otherwise
     """
     # Use the same precedence as load_cli_config: user config first, then project config
-    user_config_path = _flux-agent_home / 'config.yaml'
+    user_config_path = _omniworker_home / 'config.yaml'
     project_config_path = Path(__file__).parent / 'cli-config.yaml'
     config_path = user_config_path if user_config_path.exists() else project_config_path
     
@@ -2515,10 +2515,10 @@ def save_config_value(key_path: str, value: any) -> bool:
 
 
 # ============================================================================
-# Flux AgentCLI Class
+# OmniWorkerCLI Class
 # ============================================================================
 
-class Flux AgentCLI:
+class OmniWorkerCLI:
     """
     Interactive CLI for the Flux Agent Agent.
     
@@ -2643,7 +2643,7 @@ class Flux AgentCLI:
         if self.model == _DEFAULT_CONFIG_MODEL:
             _base_url = (_model_config.get("base_url") or "") if isinstance(_model_config, dict) else ""
             if "localhost" in _base_url or "127.0.0.1" in _base_url:
-                from flux-agent_cli.runtime_provider import _auto_detect_local_model
+                from omniworker_cli.runtime_provider import _auto_detect_local_model
                 _detected = _auto_detect_local_model(_base_url)
                 if _detected:
                     self.model = _detected
@@ -2664,7 +2664,7 @@ class Flux AgentCLI:
         self.requested_provider = (
             provider
             or CLI_CONFIG["model"].get("provider")
-            or os.getenv("FLUX AGENT_INFERENCE_PROVIDER")
+            or os.getenv("OMNIWORKER_INFERENCE_PROVIDER")
             or "auto"
         )
         self._provider_source: Optional[str] = None
@@ -2691,9 +2691,9 @@ class Flux AgentCLI:
             self.max_turns = CLI_CONFIG["agent"]["max_turns"]
         elif CLI_CONFIG.get("max_turns"):  # Backwards compat: root-level max_turns
             self.max_turns = CLI_CONFIG["max_turns"]
-        elif os.getenv("FLUX AGENT_MAX_ITERATIONS"):
+        elif os.getenv("OMNIWORKER_MAX_ITERATIONS"):
             try:
-                self.max_turns = int(os.getenv("FLUX AGENT_MAX_ITERATIONS", ""))
+                self.max_turns = int(os.getenv("OMNIWORKER_MAX_ITERATIONS", ""))
             except (TypeError, ValueError):
                 self.max_turns = 90
         else:
@@ -2722,14 +2722,14 @@ class Flux AgentCLI:
         self.checkpoint_max_file_size_mb = cp_cfg.get("max_file_size_mb", 10)
         self.pass_session_id = pass_session_id
         # --ignore-rules: honor either the constructor flag or the env var set
-        # by `hermes chat --ignore-rules` in flux-agent_cli/main.py. When true we
+        # by `hermes chat --ignore-rules` in omniworker_cli/main.py. When true we
         # pass skip_context_files=True and skip_memory=True to AIAgent so
         # AGENTS.md/SOUL.md/.cursorrules and persistent memory are not loaded.
-        self.ignore_rules = ignore_rules or os.environ.get("FLUX AGENT_IGNORE_RULES") == "1"
+        self.ignore_rules = ignore_rules or os.environ.get("OMNIWORKER_IGNORE_RULES") == "1"
         
         # Ephemeral system prompt: env var takes precedence, then config
         self.system_prompt = (
-            os.getenv("FLUX AGENT_EPHEMERAL_SYSTEM_PROMPT", "")
+            os.getenv("OMNIWORKER_EPHEMERAL_SYSTEM_PROMPT", "")
             or CLI_CONFIG["agent"].get("system_prompt", "")
         )
         self.personalities = CLI_CONFIG["agent"].get("personalities", {})
@@ -2798,14 +2798,14 @@ class Flux AgentCLI:
         # Initialize SQLite session store early so /title works before first message
         self._session_db = None
         try:
-            from flux-agent_state import SessionDB
+            from omniworker_state import SessionDB
             self._session_db = SessionDB()
         except Exception as e:
             logger.warning("Failed to initialize SessionDB — session will NOT be indexed for search: %s", e)
 
         # Opportunistic state.db maintenance — runs at most once per
         # min_interval_hours, tracked via state_meta in state.db itself so
-        # it's shared across all Flux Agent processes for this FLUX AGENT_HOME.
+        # it's shared across all Flux Agent processes for this OMNIWORKER_HOME.
         # Never blocks startup on failure.
         _run_state_db_auto_maintenance(self._session_db)
 
@@ -2827,7 +2827,7 @@ class Flux AgentCLI:
             self.session_id = f"{timestamp_str}_{short_uuid}"
         
         # History file for persistent input recall across sessions
-        self._history_file = _flux-agent_home / ".hermes_history"
+        self._history_file = _omniworker_home / ".hermes_history"
         self._last_invalidate: float = 0.0  # throttle UI repaints
         self._app = None
 
@@ -3340,7 +3340,7 @@ class Flux AgentCLI:
         registered so the cached label always matches the live binding.
         """
         try:
-            from flux-agent_cli.voice import format_voice_record_key_for_status
+            from omniworker_cli.voice import format_voice_record_key_for_status
             self._voice_record_key_display_cache = format_voice_record_key_for_status(raw_key)
         except Exception:
             self._voice_record_key_display_cache = "Ctrl+B"
@@ -3374,7 +3374,7 @@ class Flux AgentCLI:
             percent_label = f"{percent}%" if percent is not None else "--"
             duration_label = snapshot["duration"]
 
-            yolo_active = bool(os.getenv("FLUX AGENT_YOLO_MODE"))
+            yolo_active = bool(os.getenv("OMNIWORKER_YOLO_MODE"))
             if width < 52:
                 text = f"⚕ {snapshot['model_short']} · {duration_label}"
                 if yolo_active:
@@ -3429,7 +3429,7 @@ class Flux AgentCLI:
             # line and produce duplicated status bar rows over long sessions.
             width = self._get_tui_terminal_width()
             duration_label = snapshot["duration"]
-            yolo_active = bool(os.getenv("FLUX AGENT_YOLO_MODE"))
+            yolo_active = bool(os.getenv("OMNIWORKER_YOLO_MODE"))
 
             if width < 52:
                 frags = [
@@ -3524,7 +3524,7 @@ class Flux AgentCLI:
         changed = False
 
         try:
-            from flux-agent_cli.model_normalize import (
+            from omniworker_cli.model_normalize import (
                 _AGGREGATOR_PROVIDERS,
                 normalize_model_for_provider,
             )
@@ -3544,7 +3544,7 @@ class Flux AgentCLI:
 
         if resolved_provider == "copilot":
             try:
-                from flux-agent_cli.models import copilot_model_api_mode, normalize_copilot_model_id
+                from omniworker_cli.models import copilot_model_api_mode, normalize_copilot_model_id
 
                 canonical = normalize_copilot_model_id(current_model, api_key=self.api_key)
                 if canonical and canonical != current_model:
@@ -3566,7 +3566,7 @@ class Flux AgentCLI:
 
         if resolved_provider in {"opencode-zen", "opencode-go"}:
             try:
-                from flux-agent_cli.models import normalize_opencode_model_id, opencode_model_api_mode
+                from omniworker_cli.models import normalize_opencode_model_id, opencode_model_api_mode
 
                 canonical = normalize_opencode_model_id(resolved_provider, current_model)
                 if canonical and canonical != current_model:
@@ -3605,7 +3605,7 @@ class Flux AgentCLI:
         if self._model_is_default:
             fallback_model = "gpt-5.3-codex"
             try:
-                from flux-agent_cli.codex_models import get_codex_model_ids
+                from omniworker_cli.codex_models import get_codex_model_ids
 
                 available = get_codex_model_ids(
                     access_token=self.api_key if self.api_key else None,
@@ -4004,7 +4004,7 @@ class Flux AgentCLI:
                 return
             self._stream_box_opened = True
             try:
-                from flux-agent_cli.skin_engine import get_active_skin
+                from omniworker_cli.skin_engine import get_active_skin
                 _skin = get_active_skin()
                 label = _skin.get_branding("response_label", "⚕ Flux Agent")
                 _text_hex = _skin.get_color("banner_text", "#FFF8DC")
@@ -4023,7 +4023,7 @@ class Flux AgentCLI:
             if self.show_timestamps:
                 label = f"{label} {datetime.now().strftime('%H:%M')}"
             w = self._scrollback_box_width()
-            fill = w - 2 - Flux AgentCLI._status_bar_display_width(label)
+            fill = w - 2 - OmniWorkerCLI._status_bar_display_width(label)
             _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
 
         self._stream_buf += text
@@ -4222,7 +4222,7 @@ class Flux AgentCLI:
         are picked up without restarting the CLI.
         Returns True if credentials are ready, False on auth failure.
         """
-        from flux-agent_cli.runtime_provider import (
+        from omniworker_cli.runtime_provider import (
             resolve_runtime_provider,
             format_runtime_provider_error,
         )
@@ -4240,7 +4240,7 @@ class Flux AgentCLI:
 
         # Primary provider auth failed — try fallback providers before giving up.
         if runtime is None and _primary_exc is not None:
-            from flux-agent_cli.auth import AuthError
+            from omniworker_cli.auth import AuthError
             if isinstance(_primary_exc, AuthError):
                 _fb_chain = self._fallback_model if isinstance(self._fallback_model, list) else []
                 for _fb in _fb_chain:
@@ -4340,7 +4340,7 @@ class Flux AgentCLI:
         # model so the API call doesn't fail with "model must be non-empty".
         if not self.model and resolved_provider:
             try:
-                from flux-agent_cli.models import get_default_model_for_provider
+                from omniworker_cli.models import get_default_model_for_provider
                 _default = get_default_model_for_provider(resolved_provider)
                 if _default:
                     self.model = _default
@@ -4371,7 +4371,7 @@ class Flux AgentCLI:
         Processing / Anthropic fast mode, attach `request_overrides` so the
         API call is marked accordingly.
         """
-        from flux-agent_cli.models import resolve_fast_mode_overrides
+        from omniworker_cli.models import resolve_fast_mode_overrides
 
         runtime = {
             "api_key": self.api_key,
@@ -4424,7 +4424,7 @@ class Flux AgentCLI:
         # Initialize SQLite session store for CLI sessions (if not already done in __init__)
         if self._session_db is None:
             try:
-                from flux-agent_state import SessionDB
+                from omniworker_state import SessionDB
                 self._session_db = SessionDB()
             except Exception as e:
                 logger.warning("SQLite session store not available — session will NOT be indexed: %s", e)
@@ -4584,7 +4584,7 @@ class Flux AgentCLI:
         small.
         """
         try:
-            from flux-agent_cli.security_advisories import (
+            from omniworker_cli.security_advisories import (
                 detect_compromised,
                 startup_banner,
             )
@@ -4660,7 +4660,7 @@ class Flux AgentCLI:
                 )
 
         # Warn if the configured model is a Nous Flux Agent LLM (not agentic)
-        from flux-agent_cli.model_switch import is_nous_hermes_non_agentic
+        from omniworker_cli.model_switch import is_nous_hermes_non_agentic
 
         model_name = getattr(self, "model", "") or ""
         if is_nous_hermes_non_agentic(model_name):
@@ -4862,7 +4862,7 @@ class Flux AgentCLI:
         from rich.text import Text
 
         try:
-            from flux-agent_cli.skin_engine import get_active_skin
+            from omniworker_cli.skin_engine import get_active_skin
             _skin = get_active_skin()
             _history_text_c = _skin.get_color("banner_text", "#FFF8DC")
             _session_label_c = _skin.get_color("session_label", "#DAA520")
@@ -4939,9 +4939,9 @@ class Flux AgentCLI:
         Saves the image to ~/.hermes/images/ and appends the path to
         ``_attached_images``.  Returns True if an image was attached.
         """
-        from flux-agent_cli.clipboard import save_clipboard_image
+        from omniworker_cli.clipboard import save_clipboard_image
 
-        img_dir = get_flux-agent_home() / "images"
+        img_dir = get_omniworker_home() / "images"
         self._image_counter += 1
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         img_path = img_dir / f"clip_{ts}_{self._image_counter}.png"
@@ -5068,11 +5068,11 @@ class Flux AgentCLI:
             /snapshot restore <id>     — restore state from snapshot
             /snapshot prune [N]        — prune to N snapshots (default 20)
         """
-        from flux-agent_cli.backup import (
+        from omniworker_cli.backup import (
             create_quick_snapshot, list_quick_snapshots,
             restore_quick_snapshot, prune_quick_snapshots,
         )
-        from flux-agent_constants import display_flux-agent_home
+        from omniworker_constants import display_omniworker_home
 
         parts = command.split()
         subcmd = parts[1].lower() if len(parts) > 1 else "list"
@@ -5083,7 +5083,7 @@ class Flux AgentCLI:
                 print("  No state snapshots yet.")
                 print("  Create one: /snapshot create [label]")
                 return
-            print(f"  State snapshots ({display_flux-agent_home()}/state-snapshots/):\n")
+            print(f"  State snapshots ({display_omniworker_home()}/state-snapshots/):\n")
             print(f"  {'#':>3}  {'ID':<35} {'Files':>5} {'Size':>10} {'Label'}")
             print(f"  {'─'*3}  {'─'*35} {'─'*5} {'─'*10} {'─'*20}")
             for i, s in enumerate(snaps, 1):
@@ -5200,7 +5200,7 @@ class Flux AgentCLI:
             )
             return
 
-        from flux-agent_cli.clipboard import has_clipboard_image
+        from omniworker_cli.clipboard import has_clipboard_image
         if has_clipboard_image():
             if self._try_attach_clipboard_image():
                 n = len(self._attached_images)
@@ -5427,7 +5427,7 @@ class Flux AgentCLI:
 
         # Build status line with proper markup — skin-aware colors
         try:
-            from flux-agent_cli.skin_engine import get_active_skin
+            from omniworker_cli.skin_engine import get_active_skin
             skin = get_active_skin()
             separator_color = skin.get_color("banner_dim", "#B8860B")
             accent_color = skin.get_color("ui_accent", "#FFBF00")
@@ -5488,7 +5488,7 @@ class Flux AgentCLI:
             "Flux Agent CLI Status",
             "",
             f"Session ID: {self.session_id}",
-            f"Path: {display_flux-agent_home()}",
+            f"Path: {display_omniworker_home()}",
         ]
         if title:
             lines.append(f"Title: {title}")
@@ -5505,7 +5505,7 @@ class Flux AgentCLI:
         # No LLM call, no prompt-cache impact. Inspired by Claude Code
         # 2.1.114's /recap.
         try:
-            from flux-agent_cli.session_recap import build_recap
+            from omniworker_cli.session_recap import build_recap
             recap = build_recap(
                 self.conversation_history or [],
                 session_title=title or None,
@@ -5521,7 +5521,7 @@ class Flux AgentCLI:
     
     def _fast_command_available(self) -> bool:
         try:
-            from flux-agent_cli.models import model_supports_fast_mode
+            from omniworker_cli.models import model_supports_fast_mode
         except Exception:
             return False
         agent = getattr(self, "agent", None)
@@ -5535,10 +5535,10 @@ class Flux AgentCLI:
 
     def show_help(self):
         """Display help information with categorized commands."""
-        from flux-agent_cli.commands import COMMANDS_BY_CATEGORY
+        from omniworker_cli.commands import COMMANDS_BY_CATEGORY
 
         try:
-            from flux-agent_cli.skin_engine import get_active_help_header
+            from omniworker_cli.skin_engine import get_active_help_header
             header = get_active_help_header("(^_^)? Available Commands")
         except Exception:
             header = "(^_^)? Available Commands"
@@ -5627,7 +5627,7 @@ class Flux AgentCLI:
         from argparse import Namespace
         from contextlib import redirect_stdout
         from io import StringIO
-        from flux-agent_cli.tools_config import tools_disable_enable_command
+        from omniworker_cli.tools_config import tools_disable_enable_command
 
         def _run_capture(ns: Namespace) -> None:
             """Run tools_disable_enable_command, routing its ANSI-colored
@@ -5643,7 +5643,7 @@ class Flux AgentCLI:
                 tools_disable_enable_command(ns)
                 return
 
-            # Buffer reports isatty()=True so color() in flux-agent_cli/colors.py
+            # Buffer reports isatty()=True so color() in omniworker_cli/colors.py
             # still emits ANSI escapes. StringIO.isatty() is False, which
             # would otherwise strip all colors before we re-render them.
             class _TTYBuf(StringIO):
@@ -5687,8 +5687,8 @@ class Flux AgentCLI:
         _run_capture(Namespace(tools_action=subcommand, names=names, platform="cli"))
 
         # Reset session so the new tool config is picked up from a clean state
-        from flux-agent_cli.tools_config import _get_platform_tools
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.tools_config import _get_platform_tools
+        from omniworker_cli.config import load_config
         self.enabled_toolsets = _get_platform_tools(load_config(), "cli")
         self.new_session()
         _cprint(f"{_DIM}Session reset. New tool configuration is active.{_RST}")
@@ -5726,10 +5726,10 @@ class Flux AgentCLI:
     
     def _handle_profile_command(self):
         """Display active profile name and home directory."""
-        from flux-agent_constants import display_flux-agent_home
-        from flux-agent_cli.profiles import get_active_profile_name
+        from omniworker_constants import display_omniworker_home
+        from omniworker_cli.profiles import get_active_profile_name
 
-        display = display_flux-agent_home()
+        display = display_omniworker_home()
         profile_name = get_active_profile_name()
 
         print()
@@ -5744,7 +5744,7 @@ class Flux AgentCLI:
         terminal_cwd = os.getenv("TERMINAL_CWD", os.getcwd())
         terminal_timeout = os.getenv("TERMINAL_TIMEOUT", "60")
         
-        user_config_path = _flux-agent_home / 'config.yaml'
+        user_config_path = _omniworker_home / 'config.yaml'
         project_config_path = Path(__file__).parent / 'cli-config.yaml'
         if user_config_path.exists():
             config_path = user_config_path
@@ -5818,7 +5818,7 @@ class Flux AgentCLI:
         if not sessions:
             return False
 
-        from flux-agent_cli.main import _relative_time
+        from omniworker_cli.main import _relative_time
 
         print()
         if reason == "history":
@@ -5912,7 +5912,7 @@ class Flux AgentCLI:
         lifecycle point (shutdown, /new, /reset).
         """
         try:
-            from flux-agent_cli.plugins import invoke_hook as _invoke_hook
+            from omniworker_cli.plugins import invoke_hook as _invoke_hook
             _invoke_hook(
                 event_type,
                 session_id=self.agent.session_id if self.agent else None,
@@ -5966,7 +5966,7 @@ class Flux AgentCLI:
                     self.agent._session_db_created = False
                     self._session_db.create_session(
                         session_id=self.session_id,
-                        source=os.environ.get("FLUX AGENT_SESSION_SOURCE", "cli"),
+                        source=os.environ.get("OMNIWORKER_SESSION_SOURCE", "cli"),
                         model=self.model,
                         model_config={
                             "max_iterations": self.max_turns,
@@ -5977,7 +5977,7 @@ class Flux AgentCLI:
                 except Exception:
                     pass
                 if title and self._session_db:
-                    from flux-agent_state import SessionDB
+                    from omniworker_state import SessionDB
                     try:
                         sanitized = SessionDB.sanitize_title(title)
                     except ValueError as e:
@@ -6039,7 +6039,7 @@ class Flux AgentCLI:
         Returns:
             False to signal CLI exit, True to keep going.
         """
-        from flux-agent_state import format_session_db_unavailable
+        from omniworker_state import format_session_db_unavailable
 
         parts = cmd_original.split(maxsplit=1)
         if len(parts) < 2 or not parts[1].strip():
@@ -6089,7 +6089,7 @@ class Flux AgentCLI:
         # Make sure we have a SessionDB handle.
         if not self._session_db:
             try:
-                from flux-agent_state import SessionDB
+                from omniworker_state import SessionDB
                 self._session_db = SessionDB()
             except Exception:
                 pass
@@ -6185,12 +6185,12 @@ class Flux AgentCLI:
             return
 
         if not self._session_db:
-            from flux-agent_state import format_session_db_unavailable
+            from omniworker_state import format_session_db_unavailable
             _cprint(f"  {format_session_db_unavailable()}")
             return
 
         # Resolve title or ID
-        from flux-agent_cli.main import _resolve_session_by_name_or_id
+        from omniworker_cli.main import _resolve_session_by_name_or_id
         resolved = _resolve_session_by_name_or_id(target)
         target_id = resolved or target
 
@@ -6307,7 +6307,7 @@ class Flux AgentCLI:
         # Bare /sessions or /sessions list — show recent sessions inline.
         if not arg or sub in {"list", "ls", "browse"}:
             if not self._session_db:
-                from flux-agent_state import format_session_db_unavailable
+                from omniworker_state import format_session_db_unavailable
                 _cprint(f"  {format_session_db_unavailable()}")
                 return
             if not self._show_recent_sessions(reason="sessions"):
@@ -6329,7 +6329,7 @@ class Flux AgentCLI:
             return
 
         if not self._session_db:
-            from flux-agent_state import format_session_db_unavailable
+            from omniworker_state import format_session_db_unavailable
             _cprint(f"  {format_session_db_unavailable()}")
             return
 
@@ -6366,7 +6366,7 @@ class Flux AgentCLI:
         try:
             self._session_db.create_session(
                 session_id=new_session_id,
-                source=os.environ.get("FLUX AGENT_SESSION_SOURCE", "cli"),
+                source=os.environ.get("OMNIWORKER_SESSION_SOURCE", "cli"),
                 model=self.model,
                 model_config={
                     "max_iterations": self.max_turns,
@@ -6464,7 +6464,7 @@ class Flux AgentCLI:
             return
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        saved_dir = get_flux-agent_home() / "sessions" / "saved"
+        saved_dir = get_omniworker_home() / "sessions" / "saved"
         try:
             saved_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
@@ -6550,7 +6550,7 @@ class Flux AgentCLI:
     def _run_curses_picker(self, title: str, items: list[str], default_index: int = 0) -> int | None:
         """Run curses_single_select via run_in_terminal so prompt_toolkit handles terminal ownership cleanly."""
         import threading
-        from flux-agent_cli.curses_ui import curses_single_select
+        from omniworker_cli.curses_ui import curses_single_select
 
         result = [None]
 
@@ -6905,7 +6905,7 @@ class Flux AgentCLI:
         # (e.g. gpt-5.5 is 1.05M on openai but 272K on Codex OAuth).
         mi = result.model_info
         try:
-            from flux-agent_cli.model_switch import resolve_display_context_length
+            from omniworker_cli.model_switch import resolve_display_context_length
             ctx = resolve_display_context_length(
                 result.new_model,
                 result.target_provider,
@@ -6960,7 +6960,7 @@ class Flux AgentCLI:
             model_list = provider_data.get("models", [])
             if not model_list:
                 try:
-                    from flux-agent_cli.models import provider_model_ids
+                    from omniworker_cli.models import provider_model_ids
                     live = provider_model_ids(provider_data["slug"])
                     if live:
                         model_list = live
@@ -6986,7 +6986,7 @@ class Flux AgentCLI:
                 self._close_model_picker()
                 return
             if selected < len(model_list):
-                from flux-agent_cli.model_switch import switch_model
+                from omniworker_cli.model_switch import switch_model
                 chosen_model = model_list[selected]
                 result = switch_model(
                     raw_input=chosen_model,
@@ -7014,8 +7014,8 @@ class Flux AgentCLI:
           /model <name> --provider <provider> — switch provider + model
           /model --provider <provider>        — switch to provider, auto-detect model
         """
-        from flux-agent_cli.model_switch import switch_model, parse_model_flags
-        from flux-agent_cli.providers import get_label
+        from omniworker_cli.model_switch import switch_model, parse_model_flags
+        from omniworker_cli.providers import get_label
 
         # Parse args from the original command
         parts = cmd_original.split(None, 1)  # split off '/model'
@@ -7028,7 +7028,7 @@ class Flux AgentCLI:
         # dashboard / TUI used to duplicate. Overlay live session state
         # via with_overrides (truthy-only) so empty self.* attrs don't
         # clobber disk config.
-        from flux-agent_cli.inventory import build_models_payload, load_picker_context
+        from omniworker_cli.inventory import build_models_payload, load_picker_context
 
         try:
             ctx = load_picker_context().with_overrides(
@@ -7139,7 +7139,7 @@ class Flux AgentCLI:
         # Copilot, and Nous-enforced caps win over the raw models.dev entry
         # (e.g. gpt-5.5 is 1.05M on openai but 272K on Codex OAuth).
         mi = result.model_info
-        from flux-agent_cli.model_switch import resolve_display_context_length
+        from omniworker_cli.model_switch import resolve_display_context_length
         ctx = resolve_display_context_length(
             result.new_model,
             result.target_provider,
@@ -7187,7 +7187,7 @@ class Flux AgentCLI:
             /codex-runtime codex_app_server      — hand turns to codex subprocess
             /codex-runtime on / off              — synonyms for the above
         """
-        from flux-agent_cli import codex_runtime_switch as crs
+        from omniworker_cli import codex_runtime_switch as crs
 
         parts = cmd_original.split(None, 1)
         raw_args = parts[1].strip() if len(parts) > 1 else ""
@@ -7199,7 +7199,7 @@ class Flux AgentCLI:
 
         # Load + persist via the existing config helpers
         try:
-            from flux-agent_cli.config import load_config, save_config
+            from omniworker_cli.config import load_config, save_config
         except Exception as exc:
             _cprint(f"❌ could not load config: {exc}")
             return
@@ -7223,7 +7223,7 @@ class Flux AgentCLI:
         if not text or has_images or not _looks_like_slash_command(text):
             return False
         try:
-            from flux-agent_cli.commands import resolve_command
+            from omniworker_cli.commands import resolve_command
             base = text.split(None, 1)[0].lower().lstrip('/')
             cmd = resolve_command(base)
             return bool(cmd and cmd.name == "model")
@@ -7247,7 +7247,7 @@ class Flux AgentCLI:
         if not getattr(self, "_agent_running", False):
             return False
         try:
-            from flux-agent_cli.commands import resolve_command
+            from omniworker_cli.commands import resolve_command
             base = text.split(None, 1)[0].lower().lstrip('/')
             cmd = resolve_command(base)
             return bool(cmd and cmd.name == "steer")
@@ -7615,7 +7615,7 @@ class Flux AgentCLI:
     def _handle_curator_command(self, cmd: str):
         """Handle /curator slash command.
 
-        Delegates to flux-agent_cli.curator so the CLI and the `hermes curator`
+        Delegates to omniworker_cli.curator so the CLI and the `hermes curator`
         subcommand share the same handler set.
         """
         import shlex
@@ -7625,7 +7625,7 @@ class Flux AgentCLI:
             tokens = ["status"]
 
         try:
-            from flux-agent_cli.curator import cli_main
+            from omniworker_cli.curator import cli_main
             cli_main(tokens)
         except SystemExit:
             # argparse calls sys.exit() on --help or errors; swallow so we
@@ -7641,7 +7641,7 @@ class Flux AgentCLI:
         including the leading slash; we strip it and hand the remainder
         to ``kanban.run_slash`` which returns a single formatted string.
         """
-        from flux-agent_cli.kanban import run_slash
+        from omniworker_cli.kanban import run_slash
 
         rest = cmd.strip()
         if rest.startswith("/"):
@@ -7656,8 +7656,8 @@ class Flux AgentCLI:
             print(output)
 
     def _handle_skills_command(self, cmd: str):
-        """Handle /skills slash command — delegates to flux-agent_cli.skills_hub."""
-        from flux-agent_cli.skills_hub import handle_skills_slash
+        """Handle /skills slash command — delegates to omniworker_cli.skills_hub."""
+        from omniworker_cli.skills_hub import handle_skills_slash
         handle_skills_slash(cmd, ChatConsole())
 
     def _show_gateway_status(self):
@@ -7704,7 +7704,7 @@ class Flux AgentCLI:
             print("  To start the gateway:")
             print("    python cli.py --gateway")
             print()
-            print(f"  Configuration file: {display_flux-agent_home()}/config.yaml")
+            print(f"  Configuration file: {display_omniworker_home()}/config.yaml")
             print()
             
         except Exception as e:
@@ -7714,7 +7714,7 @@ class Flux AgentCLI:
             print("    1. Set environment variables:")
             print("       TELEGRAM_BOT_TOKEN=your_token")
             print("       DISCORD_BOT_TOKEN=your_token")
-            print(f"    2. Or configure settings in {display_flux-agent_home()}/config.yaml")
+            print(f"    2. Or configure settings in {display_omniworker_home()}/config.yaml")
             print()
     
     def process_command(self, command: str) -> bool:
@@ -7732,8 +7732,8 @@ class Flux AgentCLI:
         cmd_original = command.strip()
 
         # Resolve aliases via central registry so adding an alias is a one-line
-        # change in flux-agent_cli/commands.py instead of touching every dispatch site.
-        from flux-agent_cli.commands import resolve_command as _resolve_cmd
+        # change in omniworker_cli/commands.py instead of touching every dispatch site.
+        from omniworker_cli.commands import resolve_command as _resolve_cmd
         _base_word = cmd_lower.split()[0].lstrip("/")
         _cmd_def = _resolve_cmd(_base_word)
         canonical = _cmd_def.name if _cmd_def else _base_word
@@ -7813,10 +7813,10 @@ class Flux AgentCLI:
                 _cprint("  ✨ (◕‿◕)✨ Fresh start! Screen cleared and conversation reset.\n")
                 # Show a random tip on new session
                 try:
-                    from flux-agent_cli.tips import get_random_tip
+                    from omniworker_cli.tips import get_random_tip
                     _tip = get_random_tip()
                     try:
-                        from flux-agent_cli.skin_engine import get_active_skin
+                        from omniworker_cli.skin_engine import get_active_skin
                         _tip_color = get_active_skin().get_color("banner_dim", "#B8860B")
                     except Exception:
                         _tip_color = "#B8860B"
@@ -7828,10 +7828,10 @@ class Flux AgentCLI:
                 print("  ✨ (◕‿◕)✨ Fresh start! Screen cleared and conversation reset.\n")
                 # Show a random tip on new session
                 try:
-                    from flux-agent_cli.tips import get_random_tip
+                    from omniworker_cli.tips import get_random_tip
                     _tip = get_random_tip()
                     try:
-                        from flux-agent_cli.skin_engine import get_active_skin
+                        from omniworker_cli.skin_engine import get_active_skin
                         _tip_color = get_active_skin().get_color("banner_dim", "#B8860B")
                     except Exception:
                         _tip_color = "#B8860B"
@@ -7848,7 +7848,7 @@ class Flux AgentCLI:
                     if self._session_db:
                         # Sanitize the title early so feedback matches what gets stored
                         try:
-                            from flux-agent_state import SessionDB
+                            from omniworker_state import SessionDB
                             new_title = SessionDB.sanitize_title(raw_title)
                         except ValueError as e:
                             _cprint(f"  {e}")
@@ -7874,7 +7874,7 @@ class Flux AgentCLI:
                                 self._pending_title = new_title
                                 _cprint(f"  Session title queued: {new_title} (will be saved on first message)")
                     else:
-                        from flux-agent_state import format_session_db_unavailable
+                        from omniworker_state import format_session_db_unavailable
                         _cprint(f"  {format_session_db_unavailable()}")
                 else:
                     _cprint("  Usage: /title <your session title>")
@@ -7889,7 +7889,7 @@ class Flux AgentCLI:
                 else:
                     _cprint("  No title set. Usage: /title <your session title>")
             else:
-                from flux-agent_state import format_session_db_unavailable
+                from omniworker_state import format_session_db_unavailable
                 _cprint(f"  {format_session_db_unavailable()}")
         elif canonical == "handoff":
             if not self._handle_handoff_command(cmd_original):
@@ -7979,7 +7979,7 @@ class Flux AgentCLI:
         elif canonical == "image":
             self._handle_image_command(cmd_original)
         elif canonical == "reload":
-            from flux-agent_cli.config import reload_env
+            from omniworker_cli.config import reload_env
             count = reload_env()
             print(f"  Reloaded .env ({count} var(s) updated)")
         elif canonical == "reload-mcp":
@@ -7994,12 +7994,12 @@ class Flux AgentCLI:
             self._handle_browser_command(cmd_original)
         elif canonical == "plugins":
             try:
-                from flux-agent_cli.plugins import get_plugin_manager
+                from omniworker_cli.plugins import get_plugin_manager
                 mgr = get_plugin_manager()
                 plugins = mgr.list_plugins()
                 if not plugins:
                     print("No plugins installed.")
-                    print(f"Drop plugin directories into {display_flux-agent_home()}/plugins/ to get started.")
+                    print(f"Drop plugin directories into {display_omniworker_home()}/plugins/ to get started.")
                 else:
                     print(f"Plugins ({len(plugins)}):")
                     for p in plugins:
@@ -8111,7 +8111,7 @@ class Flux AgentCLI:
                     self._console_print(f"[bold red]Quick command '{base_cmd}' has unsupported type (supported: 'exec', 'alias')[/]")
             # Check for plugin-registered slash commands
             elif base_cmd.lstrip("/") in _get_plugin_cmd_handler_names():
-                from flux-agent_cli.plugins import (
+                from omniworker_cli.plugins import (
                     get_plugin_command_handler,
                     resolve_plugin_command_result,
                 )
@@ -8143,7 +8143,7 @@ class Flux AgentCLI:
                 # Prefix matching: if input uniquely identifies one command, execute it.
                 # Matches against both built-in COMMANDS and installed skill commands so
                 # that execution-time resolution agrees with tab-completion.
-                from flux-agent_cli.commands import COMMANDS
+                from omniworker_cli.commands import COMMANDS
                 typed_base = cmd_lower.split()[0]
                 all_known = set(COMMANDS) | set(_skill_commands)
                 matches = [c for c in all_known if c.startswith(typed_base)]
@@ -8281,7 +8281,7 @@ class Flux AgentCLI:
                 ChatConsole().print(f"[{_accent_hex()}]{'─' * 40}[/]")
                 if response:
                     try:
-                        from flux-agent_cli.skin_engine import get_active_skin
+                        from omniworker_cli.skin_engine import get_active_skin
                         _skin = get_active_skin()
                         label = _skin.get_branding("response_label", "⚕ Flux Agent")
                         _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
@@ -8572,8 +8572,8 @@ class Flux AgentCLI:
         session split).
         """
         try:
-            from flux-agent_cli.goals import GoalManager
-            from flux-agent_cli.config import load_config
+            from omniworker_cli.goals import GoalManager
+            from omniworker_cli.config import load_config
         except Exception as exc:
             logging.debug("goal manager unavailable: %s", exc)
             return None
@@ -8857,7 +8857,7 @@ class Flux AgentCLI:
     def _handle_skin_command(self, cmd: str):
         """Handle /skin [name] — show or change the display skin."""
         try:
-            from flux-agent_cli.skin_engine import list_skins, set_active_skin, get_active_skin_name
+            from omniworker_cli.skin_engine import list_skins, set_active_skin, get_active_skin_name
         except ImportError:
             print("Skin engine not available.")
             return
@@ -8874,7 +8874,7 @@ class Flux AgentCLI:
                 source = f" ({s['source']})" if s["source"] == "user" else ""
                 print(f"   {marker} {s['name']}{source} — {s['description']}")
             print("\n  Usage: /skin <name>")
-            print(f"  Custom skins: drop a YAML file in {display_flux-agent_home()}/skins/\n")
+            print(f"  Custom skins: drop a YAML file in {display_omniworker_home()}/skins/\n")
             return
 
         new_skin = parts[1].strip().lower()
@@ -8904,8 +8904,8 @@ class Flux AgentCLI:
             /footer on|off    → explicit
             /footer status    → show current state
         """
-        from flux-agent_cli.config import load_config
-        from flux-agent_cli.colors import Colors as _Colors
+        from omniworker_cli.config import load_config
+        from omniworker_cli.colors import Colors as _Colors
 
         # Parse arg
         arg = ""
@@ -8967,7 +8967,7 @@ class Flux AgentCLI:
         # prompt_toolkit's renderer.  self.console.print() with Rich markup
         # writes directly to stdout which patch_stdout's StdoutProxy mangles
         # into garbled sequences like '?[33mTool progress: NEW?[0m' (#2262).
-        from flux-agent_cli.colors import Colors as _Colors
+        from omniworker_cli.colors import Colors as _Colors
         labels = {
             "off": f"{_Colors.DIM}Tool progress: OFF{_Colors.RESET} — silent mode, just the final response.",
             "new": f"{_Colors.YELLOW}Tool progress: NEW{_Colors.RESET} — show each new tool (skip repeats).",
@@ -8979,17 +8979,17 @@ class Flux AgentCLI:
     def _toggle_yolo(self):
         """Toggle YOLO mode — skip all dangerous command approval prompts."""
         import os
-        from flux-agent_cli.colors import Colors as _Colors
+        from omniworker_cli.colors import Colors as _Colors
 
-        current = is_truthy_value(os.environ.get("FLUX AGENT_YOLO_MODE"))
+        current = is_truthy_value(os.environ.get("OMNIWORKER_YOLO_MODE"))
         if current:
-            os.environ.pop("FLUX AGENT_YOLO_MODE", None)
+            os.environ.pop("OMNIWORKER_YOLO_MODE", None)
             _cprint(
                 f"  ⚠ YOLO mode {_Colors.BOLD}{_Colors.RED}OFF{_Colors.RESET}"
                 " — dangerous commands will require approval."
             )
         else:
-            os.environ["FLUX AGENT_YOLO_MODE"] = "1"
+            os.environ["OMNIWORKER_YOLO_MODE"] = "1"
             _cprint(
                 f"  ⚡ YOLO mode {_Colors.BOLD}{_Colors.GREEN}ON{_Colors.RESET}"
                 " — all commands auto-approved. Use with caution."
@@ -9106,7 +9106,7 @@ class Flux AgentCLI:
 
         # Determine the branding for the current model
         try:
-            from flux-agent_cli.models import _is_anthropic_fast_model
+            from omniworker_cli.models import _is_anthropic_fast_model
             agent = getattr(self, "agent", None)
             model = getattr(agent, "model", None) or getattr(self, "model", None)
             feature_name = "Anthropic Fast Mode" if _is_anthropic_fast_model(model) else "Priority Processing"
@@ -9250,7 +9250,7 @@ class Flux AgentCLI:
 
     def _handle_debug_command(self):
         """Handle /debug — upload debug report + logs and print paste URLs."""
-        from flux-agent_cli.debug import run_debug_share
+        from omniworker_cli.debug import run_debug_share
         from types import SimpleNamespace
 
         args = SimpleNamespace(lines=200, expire=7, local=False)
@@ -9268,7 +9268,7 @@ class Flux AgentCLI:
         prompt_toolkit cleans up terminal modes).  Returns ``False`` / falsy
         when cancelled.
         """
-        from flux-agent_cli.config import is_managed, format_managed_message
+        from omniworker_cli.config import is_managed, format_managed_message
 
         if is_managed():
             print(f"  ✗ {format_managed_message('update Flux Agent Agent')}")
@@ -9423,7 +9423,7 @@ class Flux AgentCLI:
             # above the file handler level filters records before they
             # reach handlers, so agent.log / errors.log lose visibility
             # into stream-retry events, credential rotations, etc.
-            # Console quietness is enforced by flux-agent_logging not
+            # Console quietness is enforced by omniworker_logging not
             # installing a console StreamHandler in non-verbose mode.
 
     def _show_insights(self, command: str = "/insights"):
@@ -9451,7 +9451,7 @@ class Flux AgentCLI:
                 i += 1
 
         try:
-            from flux-agent_state import SessionDB
+            from omniworker_state import SessionDB
             from agent.insights import InsightsEngine
 
             db = SessionDB()
@@ -9479,7 +9479,7 @@ class Flux AgentCLI:
             return
         self._last_config_check = now
 
-        from flux-agent_cli.config import get_config_path as _get_config_path
+        from omniworker_cli.config import get_config_path as _get_config_path
         cfg_path = _get_config_path()
         if not cfg_path.exists():
             return
@@ -9898,7 +9898,7 @@ class Flux AgentCLI:
                         if not is_seen(CLI_CONFIG, TOOL_PROGRESS_FLAG):
                             self._long_tool_hint_fired = True
                             _cprint(f"  {_DIM}{tool_progress_hint_cli()}{_RST}")
-                            mark_seen(_flux-agent_home / "config.yaml", TOOL_PROGRESS_FLAG)
+                            mark_seen(_omniworker_home / "config.yaml", TOOL_PROGRESS_FLAG)
                             CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[TOOL_PROGRESS_FLAG] = True
                 except Exception:
                     pass
@@ -9999,7 +9999,7 @@ class Flux AgentCLI:
         # instead of crashing on ``.get()``.
         voice_cfg: dict = {}
         try:
-            from flux-agent_cli.config import load_config
+            from omniworker_cli.config import load_config
             _cfg = load_config().get("voice")
             voice_cfg = _cfg if isinstance(_cfg, dict) else {}
         except Exception:
@@ -10109,7 +10109,7 @@ class Flux AgentCLI:
             # Get STT model from config
             stt_model = None
             try:
-                from flux-agent_cli.config import load_config
+                from omniworker_cli.config import load_config
                 stt_config = load_config().get("stt", {})
                 stt_model = stt_config.get("model")
             except Exception:
@@ -10259,7 +10259,7 @@ class Flux AgentCLI:
     def _voice_beeps_enabled(self) -> bool:
         """Return whether CLI voice mode should play record start/stop beeps."""
         try:
-            from flux-agent_cli.config import load_config
+            from omniworker_cli.config import load_config
             voice_cfg = load_config().get("voice", {})
             if isinstance(voice_cfg, dict):
                 return bool(voice_cfg.get("beep_enabled", True))
@@ -10303,7 +10303,7 @@ class Flux AgentCLI:
         # Check config for auto_tts (shape-safe — malformed ``voice:`` YAML
         # leaves ``voice_config`` as a non-dict, so guard before .get()).
         try:
-            from flux-agent_cli.config import load_config
+            from omniworker_cli.config import load_config
             _raw_voice = load_config().get("voice")
             voice_config = _raw_voice if isinstance(_raw_voice, dict) else {}
             if voice_config.get("auto_tts", False):
@@ -10888,7 +10888,7 @@ class Flux AgentCLI:
                     build_native_content_parts,
                     decide_image_input_mode,
                 )
-                from flux-agent_cli.config import load_config
+                from omniworker_cli.config import load_config
 
                 _img_mode = decide_image_input_mode(
                     (self.provider or "").strip(),
@@ -11024,7 +11024,7 @@ class Flux AgentCLI:
                         label = " ⚕ Flux Agent "
                         if self.show_timestamps:
                             label = f"{label}{datetime.now().strftime('%H:%M')} "
-                        fill = w - 2 - Flux AgentCLI._status_bar_display_width(label)
+                        fill = w - 2 - OmniWorkerCLI._status_bar_display_width(label)
                         _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
                     _cprint(f"{_STREAM_PAD}{sentence.rstrip()}")
 
@@ -11139,7 +11139,7 @@ class Flux AgentCLI:
                             self.agent.interrupt(interrupt_msg)
                             # Debug: log to file (stdout may be devnull from redirect_stdout)
                             try:
-                                _dbg = _flux-agent_home / "interrupt_debug.log"
+                                _dbg = _omniworker_home / "interrupt_debug.log"
                                 with open(_dbg, "a", encoding="utf-8") as _f:
                                     _f.write(f"{time.strftime('%H:%M:%S')} interrupt fired: msg={str(interrupt_msg)[:60]!r}, "
                                              f"children={len(self.agent._active_children)}, "
@@ -11322,7 +11322,7 @@ class Flux AgentCLI:
             if response and not response_previewed:
                 # Use skin engine for label/color with fallback
                 try:
-                    from flux-agent_cli.skin_engine import get_active_skin
+                    from omniworker_cli.skin_engine import get_active_skin
                     _skin = get_active_skin()
                     label = _skin.get_branding("response_label", "⚕ Flux Agent")
                     _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
@@ -11467,7 +11467,7 @@ class Flux AgentCLI:
             print(f"Messages:       {msg_count} ({user_msgs} user, {tool_calls} tool calls)")
         else:
             try:
-                from flux-agent_cli.skin_engine import get_active_goodbye
+                from omniworker_cli.skin_engine import get_active_goodbye
                 goodbye = get_active_goodbye("Goodbye! ⚕")
             except Exception:
                 goodbye = "Goodbye! ⚕"
@@ -11484,7 +11484,7 @@ class Flux AgentCLI:
         prepended to the prompt symbol: ``coder ❯`` instead of ``❯``.
         """
         try:
-            from flux-agent_cli.skin_engine import get_active_prompt_symbol
+            from omniworker_cli.skin_engine import get_active_prompt_symbol
             symbol = get_active_prompt_symbol("❯ ")
         except Exception:
             symbol = "❯ "
@@ -11493,7 +11493,7 @@ class Flux AgentCLI:
 
         # Prepend profile name when not default
         try:
-            from flux-agent_cli.profiles import get_active_profile_name
+            from omniworker_cli.profiles import get_active_profile_name
             profile = get_active_profile_name()
             if profile not in {"default", "custom"}:
                 symbol = f"{profile} {symbol}"
@@ -11578,7 +11578,7 @@ class Flux AgentCLI:
         """
         style_dict = dict(getattr(self, "_tui_style_base", {}) or {})
         try:
-            from flux-agent_cli.skin_engine import get_prompt_toolkit_style_overrides
+            from omniworker_cli.skin_engine import get_prompt_toolkit_style_overrides
             style_dict.update(get_prompt_toolkit_style_overrides())
         except Exception:
             pass
@@ -11725,7 +11725,7 @@ class Flux AgentCLI:
                 self._display_resumed_history()
 
         try:
-            from flux-agent_cli.skin_engine import get_active_skin
+            from omniworker_cli.skin_engine import get_active_skin
             _welcome_skin = get_active_skin()
             _welcome_text = _welcome_skin.get_branding("welcome", "Welcome to Flux Agent Agent! Type your message or /help for commands.")
             _welcome_color = _welcome_skin.get_color("banner_text", "#FFF8DC")
@@ -11739,11 +11739,11 @@ class Flux AgentCLI:
         # won't affect the running process — we just want the operator to
         # see that they're running without the safety net.
         try:
-            _redact_raw = os.getenv("FLUX AGENT_REDACT_SECRETS", "true")
+            _redact_raw = os.getenv("OMNIWORKER_REDACT_SECRETS", "true")
             if _redact_raw.lower() not in {"1", "true", "yes", "on"}:
                 self._console_print(
                     "[bold red]⚠  Secret redaction is DISABLED[/] "
-                    f"(FLUX AGENT_REDACT_SECRETS={_redact_raw}). "
+                    f"(OMNIWORKER_REDACT_SECRETS={_redact_raw}). "
                     "API keys and tokens may appear verbatim in chat output, "
                     "session JSONs, and logs. Set "
                     "[cyan]security.redact_secrets: true[/] in config.yaml "
@@ -11769,7 +11769,7 @@ class Flux AgentCLI:
                     _resid_color = "#B8860B"
                 self._console_print(f"[{_resid_color}]{openclaw_residue_hint_cli()}[/]")
                 try:
-                    from flux-agent_cli.config import get_config_path as _get_cfg_path_resid
+                    from omniworker_cli.config import get_config_path as _get_cfg_path_resid
                     mark_seen(_get_cfg_path_resid(), OPENCLAW_RESIDUE_FLAG)
                 except Exception:
                     pass  # best-effort — banner will fire again next session
@@ -11777,7 +11777,7 @@ class Flux AgentCLI:
             pass  # banner is non-critical — never break startup
         # Show a random tip to help users discover features
         try:
-            from flux-agent_cli.tips import get_random_tip
+            from omniworker_cli.tips import get_random_tip
             _tip = get_random_tip()
             try:
                 _tip_color = _welcome_skin.get_color("banner_dim", "#B8860B")
@@ -11820,11 +11820,11 @@ class Flux AgentCLI:
         self._last_ctrl_c_time = 0  # Track double Ctrl+C for force exit
 
         # Give plugin manager a CLI reference so plugins can inject messages
-        from flux-agent_cli.plugins import get_plugin_manager
+        from omniworker_cli.plugins import get_plugin_manager
         get_plugin_manager()._cli_ref = self
 
         # Config file watcher — detect mcp_servers changes and auto-reload
-        from flux-agent_cli.config import get_config_path as _get_config_path
+        from omniworker_cli.config import get_config_path as _get_config_path
         _cfg_path = _get_config_path()
         self._config_mtime: float = _cfg_path.stat().st_mtime if _cfg_path.exists() else 0.0
         self._config_mcp_servers: dict = self.config.get("mcp_servers") or {}
@@ -12061,7 +12061,7 @@ class Flux AgentCLI:
                         self._interrupt_queue.put(payload)
                         # Debug: log to file when message enters interrupt queue
                         try:
-                            _dbg = _flux-agent_home / "interrupt_debug.log"
+                            _dbg = _omniworker_home / "interrupt_debug.log"
                             with open(_dbg, "a", encoding="utf-8") as _f:
                                 _f.write(f"{time.strftime('%H:%M:%S')} ENTER: queued interrupt msg={str(payload)[:60]!r}, "
                                          f"agent_running={self._agent_running}\n")
@@ -12081,7 +12081,7 @@ class Flux AgentCLI:
                         )
                         if not is_seen(CLI_CONFIG, BUSY_INPUT_FLAG):
                             _cprint(f"  {_DIM}{busy_input_hint_cli(self.busy_input_mode)}{_RST}")
-                            mark_seen(_flux-agent_home / "config.yaml", BUSY_INPUT_FLAG)
+                            mark_seen(_omniworker_home / "config.yaml", BUSY_INPUT_FLAG)
                             CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[BUSY_INPUT_FLAG] = True
                     except Exception:
                         pass
@@ -12555,7 +12555,7 @@ class Flux AgentCLI:
                 return
             import signal as _sig
             from prompt_toolkit.application import run_in_terminal
-            from flux-agent_cli.skin_engine import get_active_skin
+            from omniworker_cli.skin_engine import get_active_skin
             agent_name = get_active_skin().get_branding("agent_name", "Flux Agent Agent")
             msg = f"\n{agent_name} has been suspended. Run `fg` to bring {agent_name} back."
             def _suspend():
@@ -12574,8 +12574,8 @@ class Flux AgentCLI:
         # TUI/CLI split instead of a silent mismatch (round-11).
         _raw_key: object = "ctrl+b"
         try:
-            from flux-agent_cli.config import load_config
-            from flux-agent_cli.voice import (
+            from omniworker_cli.config import load_config
+            from omniworker_cli.voice import (
                 normalize_voice_record_key_for_prompt_toolkit,
                 voice_record_key_from_config,
             )
@@ -12700,7 +12700,7 @@ class Flux AgentCLI:
                 buf = event.current_buffer
                 if line_count >= 5 and not buf.text.strip().startswith('/'):
                     _paste_counter[0] += 1
-                    paste_dir = _flux-agent_home / "pastes"
+                    paste_dir = _omniworker_home / "pastes"
                     paste_dir.mkdir(parents=True, exist_ok=True)
                     paste_file = paste_dir / f"paste_{_paste_counter[0]}_{datetime.now().strftime('%H%M%S')}.txt"
                     paste_file.write_text(pasted_text, encoding="utf-8")
@@ -12868,7 +12868,7 @@ class Flux AgentCLI:
             is_paste = chars_added > 1 or newlines_added >= 4
             if line_count >= 5 and is_paste and not text.startswith('/'):
                 _paste_counter[0] += 1
-                paste_dir = _flux-agent_home / "pastes"
+                paste_dir = _omniworker_home / "pastes"
                 paste_dir.mkdir(parents=True, exist_ok=True)
                 paste_file = paste_dir / f"paste_{_paste_counter[0]}_{datetime.now().strftime('%H%M%S')}.txt"
                 paste_file.write_text(text, encoding="utf-8")
@@ -13345,7 +13345,7 @@ class Flux AgentCLI:
                 term_rows = get_app().output.get_size().rows
             except Exception:
                 term_rows = shutil.get_terminal_size((100, 24)).lines
-            scroll_offset, visible = Flux AgentCLI._compute_model_picker_viewport(
+            scroll_offset, visible = OmniWorkerCLI._compute_model_picker_viewport(
                 selected, state.get("_scroll_offset", 0), len(choices), term_rows,
             )
             state["_scroll_offset"] = scroll_offset
@@ -13781,7 +13781,7 @@ class Flux AgentCLI:
             spawned with ``os.setsid`` and therefore survives as an orphan
             with PPID=1.
 
-            Grace window (``FLUX AGENT_SIGTERM_GRACE``, default 1.5 s) gives
+            Grace window (``OMNIWORKER_SIGTERM_GRACE``, default 1.5 s) gives
             the daemon time to: detect the interrupt (next 200 ms poll) →
             call _kill_process (SIGTERM + 1 s wait + SIGKILL if needed) →
             return from _wait_for_process.  ``time.sleep`` releases the
@@ -13806,7 +13806,7 @@ class Flux AgentCLI:
                 if getattr(self, "agent", None) and getattr(self, "_agent_running", False):
                     self.agent.interrupt(f"received signal {signum}")
                     try:
-                        _grace = float(os.getenv("FLUX AGENT_SIGTERM_GRACE", "1.5"))
+                        _grace = float(os.getenv("OMNIWORKER_SIGTERM_GRACE", "1.5"))
                     except (TypeError, ValueError):
                         _grace = 1.5
                     if _grace > 0:
@@ -13986,7 +13986,7 @@ class Flux AgentCLI:
                 # and SQLite history. Ported from google-gemini/gemini-cli#19332.
                 if getattr(self, '_delete_session_on_exit', False):
                     try:
-                        from flux-agent_constants import get_flux-agent_home as _ghh
+                        from omniworker_constants import get_omniworker_home as _ghh
                         _sessions_dir = _ghh() / "sessions"
                         _sid = self.agent.session_id
                         if self._session_db.delete_session(_sid, sessions_dir=_sessions_dir):
@@ -14001,7 +14001,7 @@ class Flux AgentCLI:
             # the exit occurred, meaning run_conversation's hook didn't fire.
             if self.agent and getattr(self, '_agent_running', False):
                 try:
-                    from flux-agent_cli.plugins import invoke_hook as _invoke_hook
+                    from omniworker_cli.plugins import invoke_hook as _invoke_hook
                     _invoke_hook(
                         "on_session_end",
                         session_id=self.agent.session_id,
@@ -14021,7 +14021,7 @@ class Flux AgentCLI:
         # thread (which would skip terminal cleanup on POSIX and only exit
         # the worker thread on Windows).
         if getattr(self, '_pending_relaunch', None):
-            from flux-agent_cli.relaunch import relaunch
+            from omniworker_cli.relaunch import relaunch
             relaunch(self._pending_relaunch, preserve_inherited=False)
 
 
@@ -14093,14 +14093,14 @@ def main(
     # Rich console prints Unicode box-drawing characters that would
     # UnicodeEncodeError on cp1252.  No-op on Linux/macOS.
     try:
-        from flux-agent_cli.stdio import configure_windows_stdio
+        from omniworker_cli.stdio import configure_windows_stdio
         configure_windows_stdio()
     except Exception:
         pass
 
     # Signal to terminal_tool that we're in interactive mode
     # This enables interactive sudo password prompts with timeout
-    os.environ["FLUX AGENT_INTERACTIVE"] = "1"
+    os.environ["OMNIWORKER_INTERACTIVE"] = "1"
     
     # Handle gateway mode (messaging + cron)
     if gateway:
@@ -14153,13 +14153,13 @@ def main(
                     toolsets_list.append(str(t))
     else:
         # Use the shared resolver so MCP servers are included at runtime
-        from flux-agent_cli.tools_config import _get_platform_tools
+        from omniworker_cli.tools_config import _get_platform_tools
         toolsets_list = sorted(_get_platform_tools(CLI_CONFIG, "cli"))
     
     parsed_skills = _parse_skills_argument(skills)
 
     # Create CLI instance
-    cli = Flux AgentCLI(
+    cli = OmniWorkerCLI(
         model=model,
         toolsets=toolsets_list,
         provider=provider,
@@ -14214,7 +14214,7 @@ def main(
     atexit.register(_run_cleanup)
 
     # Also install signal handlers in single-query / `-q` mode.  Interactive
-    # mode registers its own inside Flux AgentCLI.run(), but `-q` runs
+    # mode registers its own inside OmniWorkerCLI.run(), but `-q` runs
     # cli.agent.run_conversation() below and AIAgent spawns worker threads
     # for tools — so when SIGTERM arrives on the main thread, raising
     # KeyboardInterrupt only unwinds the main thread, not the worker
@@ -14226,7 +14226,7 @@ def main(
     # per-thread interrupt flag the worker's poll loop checks every 200 ms.
     # Give the worker a grace window to call _kill_process (SIGTERM to the
     # process group, then SIGKILL after 1 s), then raise KeyboardInterrupt
-    # so main unwinds normally.  FLUX AGENT_SIGTERM_GRACE overrides the 1.5 s
+    # so main unwinds normally.  OMNIWORKER_SIGTERM_GRACE overrides the 1.5 s
     # default for debugging.
     def _signal_handler_q(signum, frame):
         logger.debug("Received signal %s in single-query mode", signum)
@@ -14235,7 +14235,7 @@ def main(
             if _agent is not None:
                 _agent.interrupt(f"received signal {signum}")
                 try:
-                    _grace = float(os.getenv("FLUX AGENT_SIGTERM_GRACE", "1.5"))
+                    _grace = float(os.getenv("OMNIWORKER_SIGTERM_GRACE", "1.5"))
                 except (TypeError, ValueError):
                     _grace = 1.5
                 if _grace > 0:

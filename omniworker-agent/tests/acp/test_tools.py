@@ -29,8 +29,8 @@ COMMON_OMNIWORKER_TOOLS = ["read_file", "search_files", "terminal", "patch", "wr
 
 
 class TestToolKindMap:
-    def test_all_flux-agent_tools_have_kind(self):
-        """Every common flux-agent tool should appear in TOOL_KIND_MAP."""
+    def test_all_omniworker_tools_have_kind(self):
+        """Every common omniworker tool should appear in TOOL_KIND_MAP."""
         for tool in COMMON_OMNIWORKER_TOOLS:
             assert tool in TOOL_KIND_MAP, f"{tool} missing from TOOL_KIND_MAP"
 
@@ -125,15 +125,15 @@ class TestBuildToolTitle:
         assert title == "skill view (github-pitfalls/references/api.md)"
 
     def test_execute_code_title_includes_first_code_line(self):
-        title = build_tool_title("execute_code", {"code": "\nfrom flux-agent_tools import terminal\nprint('done')"})
-        assert title == "python: from flux-agent_tools import terminal"
+        title = build_tool_title("execute_code", {"code": "\nfrom omniworker_tools import terminal\nprint('done')"})
+        assert title == "python: from omniworker_tools import terminal"
 
     def test_skill_manage_title_includes_action_and_target(self):
         title = build_tool_title(
             "skill_manage",
-            {"action": "patch", "name": "flux-agent-agent-operations", "file_path": "references/acp.md"},
+            {"action": "patch", "name": "omniworker-agent-operations", "file_path": "references/acp.md"},
         )
-        assert title == "skill patch: flux-agent-agent-operations/references/acp.md"
+        assert title == "skill patch: omniworker-agent-operations/references/acp.md"
 
     def test_unknown_tool_uses_name(self):
         title = build_tool_title("some_new_tool", {"foo": "bar"})
@@ -243,16 +243,16 @@ class TestBuildToolStart:
             "skill_manage",
             {
                 "action": "patch",
-                "name": "flux-agent-agent-operations",
+                "name": "omniworker-agent-operations",
                 "file_path": "references/acp.md",
                 "old_string": "old advice",
                 "new_string": "new advice",
             },
         )
         assert result.kind == "edit"
-        assert result.title == "skill patch: flux-agent-agent-operations/references/acp.md"
+        assert result.title == "skill patch: omniworker-agent-operations/references/acp.md"
         assert isinstance(result.content[0], FileEditToolCallContent)
-        assert result.content[0].path == "skills/flux-agent-agent-operations/references/acp.md"
+        assert result.content[0].path == "skills/omniworker-agent-operations/references/acp.md"
         assert result.content[0].old_text == "old advice"
         assert result.content[0].new_text == "new advice"
         assert result.raw_input is None
@@ -320,18 +320,18 @@ class TestBuildToolComplete:
         result = build_tool_complete(
             "tc-skill-manage",
             "skill_manage",
-            '{"success":true,"message":"Patched references/flux-agent-acp-zed-rendering.md in skill \'flux-agent-agent-operations\' (1 replacement)."}',
+            '{"success":true,"message":"Patched references/omniworker-acp-zed-rendering.md in skill \'omniworker-agent-operations\' (1 replacement)."}',
             function_args={
                 "action": "patch",
-                "name": "flux-agent-agent-operations",
-                "file_path": "references/flux-agent-acp-zed-rendering.md",
+                "name": "omniworker-agent-operations",
+                "file_path": "references/omniworker-acp-zed-rendering.md",
             },
         )
         text = result.content[0].content.text
         assert "**✅ Skill updated**" in text
         assert "`patch`" in text
-        assert "`flux-agent-agent-operations`" in text
-        assert "references/flux-agent-acp-zed-rendering.md" in text
+        assert "`omniworker-agent-operations`" in text
+        assert "references/omniworker-acp-zed-rendering.md" in text
         assert "{\"success\"" not in text
         assert result.raw_output is None
 
@@ -465,13 +465,13 @@ class TestBuildToolComplete:
     def test_build_tool_complete_for_write_file_uses_snapshot_diff(self, tmp_path):
         target = tmp_path / "diff-test.txt"
         snapshot = type("Snapshot", (), {"paths": [target], "before": {str(target): None}})()
-        target.write_text("hello from flux-agent\n", encoding="utf-8")
+        target.write_text("hello from omniworker\n", encoding="utf-8")
 
         result = build_tool_complete(
             "tc-wf1",
             "write_file",
             '{"bytes_written": 18, "dirs_created": false}',
-            function_args={"path": str(target), "content": "hello from flux-agent\n"},
+            function_args={"path": str(target), "content": "hello from omniworker\n"},
             snapshot=snapshot,
         )
         assert isinstance(result, ToolCallProgress)
@@ -480,7 +480,7 @@ class TestBuildToolComplete:
         assert isinstance(diff_item, FileEditToolCallContent)
         assert diff_item.path.endswith("diff-test.txt")
         assert diff_item.old_text is None
-        assert diff_item.new_text == "hello from flux-agent"
+        assert diff_item.new_text == "hello from omniworker"
 
 
 # ---------------------------------------------------------------------------

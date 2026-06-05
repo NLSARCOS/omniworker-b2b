@@ -674,13 +674,13 @@ class MemoryManager:
     def initialize_all(self, session_id: str, **kwargs) -> None:
         """Initialize all providers.
 
-        Automatically injects ``flux-agent_home`` into *kwargs* so that every
+        Automatically injects ``omniworker_home`` into *kwargs* so that every
         provider can resolve profile-scoped storage paths without importing
-        ``get_flux-agent_home()`` themselves.
+        ``get_omniworker_home()`` themselves.
         """
-        if "flux-agent_home" not in kwargs:
-            from flux-agent_constants import get_flux-agent_home
-            kwargs["flux-agent_home"] = str(get_flux-agent_home())
+        if "omniworker_home" not in kwargs:
+            from omniworker_constants import get_omniworker_home
+            kwargs["omniworker_home"] = str(get_omniworker_home())
         for provider in self._providers:
             try:
                 provider.initialize(session_id=session_id, **kwargs)

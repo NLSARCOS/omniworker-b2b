@@ -11,19 +11,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 @pytest.fixture
 def cron_env(tmp_path, monkeypatch):
     """Isolated cron environment with temp OMNIWORKER_HOME."""
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir()
-    (flux-agent_home / "cron").mkdir()
-    (flux-agent_home / "cron" / "output").mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir()
+    (omniworker_home / "cron").mkdir()
+    (omniworker_home / "cron" / "output").mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     import cron.jobs as jobs_mod
-    monkeypatch.setattr(jobs_mod, "OMNIWORKER_DIR", flux-agent_home)
-    monkeypatch.setattr(jobs_mod, "CRON_DIR", flux-agent_home / "cron")
-    monkeypatch.setattr(jobs_mod, "JOBS_FILE", flux-agent_home / "cron" / "jobs.json")
-    monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", flux-agent_home / "cron" / "output")
+    monkeypatch.setattr(jobs_mod, "OMNIWORKER_DIR", omniworker_home)
+    monkeypatch.setattr(jobs_mod, "CRON_DIR", omniworker_home / "cron")
+    monkeypatch.setattr(jobs_mod, "JOBS_FILE", omniworker_home / "cron" / "jobs.json")
+    monkeypatch.setattr(jobs_mod, "OUTPUT_DIR", omniworker_home / "cron" / "output")
 
-    return flux-agent_home
+    return omniworker_home
 
 
 class TestJobContextFromField:

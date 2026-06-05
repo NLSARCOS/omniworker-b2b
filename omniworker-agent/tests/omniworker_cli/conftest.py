@@ -1,4 +1,4 @@
-"""Fixtures shared across flux-agent_cli kanban tests."""
+"""Fixtures shared across omniworker_cli kanban tests."""
 
 from __future__ import annotations
 
@@ -15,5 +15,5 @@ def all_assignees_spawnable(monkeypatch):
     those tasks into ``skipped_nonspawnable`` instead of spawning, which
     would break tests that assert spawn behavior.
     """
-    from flux-agent_cli import profiles
+    from omniworker_cli import profiles
     monkeypatch.setattr(profiles, "profile_exists", lambda name: True)

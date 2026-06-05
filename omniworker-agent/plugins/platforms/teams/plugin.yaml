@@ -8,8 +8,8 @@ description: >
   between Teams chats (personal DMs, group chats, channel posts) and
   the Flux Agent agent. Supports Adaptive Card approval prompts.
 author: Aamir Jawaid
-# ``requires_env`` entries are surfaced in ``flux-agent config`` UI via the
-# platform-plugin env var injector in ``flux-agent_cli/config.py``.
+# ``requires_env`` entries are surfaced in ``omniworker config`` UI via the
+# platform-plugin env var injector in ``omniworker_cli/config.py``.
 requires_env:
   - name: TEAMS_CLIENT_ID
     description: "Azure AD application (Bot Framework) client ID"

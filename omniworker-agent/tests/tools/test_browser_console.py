@@ -125,7 +125,7 @@ class TestBrowserConsoleToolsetWiring:
         from toolsets import TOOLSETS
         assert "browser_console" in TOOLSETS["browser"]["tools"]
 
-    def test_in_flux-agent_core_tools(self):
+    def test_in_omniworker_core_tools(self):
         from toolsets import _OMNIWORKER_CORE_TOOLS
         assert "browser_console" in _OMNIWORKER_CORE_TOOLS
 
@@ -213,11 +213,11 @@ class TestBrowserVisionConfig:
         mock_response.choices = [mock_choice]
 
         with (
-            patch("flux-agent_constants.get_flux-agent_dir", return_value=shots_dir),
+            patch("omniworker_constants.get_omniworker_dir", return_value=shots_dir),
             patch("tools.browser_tool._cleanup_old_screenshots"),
             patch("tools.browser_tool._run_browser_command", return_value={"success": True, "data": {"path": str(screenshot)}}),
             patch("tools.browser_tool._get_vision_model", return_value="test-model"),
-            patch("flux-agent_cli.config.load_config", return_value={"auxiliary": {"vision": {"temperature": 1, "timeout": 45}}}),
+            patch("omniworker_cli.config.load_config", return_value={"auxiliary": {"vision": {"temperature": 1, "timeout": 45}}}),
             patch("tools.browser_tool.call_llm", return_value=mock_response) as mock_llm,
         ):
             result = json.loads(browser_vision("what is on the page?", task_id="test"))
@@ -237,11 +237,11 @@ class TestBrowserVisionConfig:
         mock_response.choices = [mock_choice]
 
         with (
-            patch("flux-agent_constants.get_flux-agent_dir", return_value=shots_dir),
+            patch("omniworker_constants.get_omniworker_dir", return_value=shots_dir),
             patch("tools.browser_tool._cleanup_old_screenshots"),
             patch("tools.browser_tool._run_browser_command", return_value={"success": True, "data": {"path": str(screenshot)}}),
             patch("tools.browser_tool._get_vision_model", return_value="test-model"),
-            patch("flux-agent_cli.config.load_config", return_value={"auxiliary": {"vision": {}}}),
+            patch("omniworker_cli.config.load_config", return_value={"auxiliary": {"vision": {}}}),
             patch("tools.browser_tool.call_llm", return_value=mock_response) as mock_llm,
         ):
             result = json.loads(browser_vision("what is on the page?", task_id="test"))
@@ -259,7 +259,7 @@ class TestRecordSessionsConfig:
     """browser.record_sessions config option."""
 
     def test_default_config_has_record_sessions(self):
-        from flux-agent_cli.config import DEFAULT_CONFIG
+        from omniworker_cli.config import DEFAULT_CONFIG
 
         browser_cfg = DEFAULT_CONFIG.get("browser", {})
         assert "record_sessions" in browser_cfg

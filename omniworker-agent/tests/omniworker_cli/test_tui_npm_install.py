@@ -8,13 +8,13 @@ import pytest
 
 @pytest.fixture
 def main_mod():
-    import flux-agent_cli.main as m
+    import omniworker_cli.main as m
 
     return m
 
 
 def _touch_ink(root: Path) -> None:
-    ink = root / "node_modules" / "@flux-agent" / "ink" / "package.json"
+    ink = root / "node_modules" / "@omniworker" / "ink" / "package.json"
     ink.parent.mkdir(parents=True, exist_ok=True)
     ink.write_text("{}")
 

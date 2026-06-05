@@ -14,7 +14,7 @@ Build leveraged buyout models in Excel — sources & uses, debt schedule, cash s
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/finance/lbo-model` |
+| Source | Optional — install with `omniworker skills install official/finance/lbo-model` |
 | Path | `optional-skills/finance/lbo-model` |
 | Version | `1.0.0` |
 | Author | Anthropic (adapted by Nous Research) |

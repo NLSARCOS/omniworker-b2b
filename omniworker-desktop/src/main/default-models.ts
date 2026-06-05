@@ -18,14 +18,14 @@ export interface DefaultModel {
 const DEFAULT_MODELS: DefaultModel[] = [
   {
     name: "Flux Agent Normal",
-    provider: "flux-agent",
-    model: "flux-agent",
+    provider: "omniworker",
+    model: "omniworker",
     baseUrl: "",
   },
   {
     name: "Flux Agent Code",
-    provider: "flux-agent",
-    model: "flux-agent-code",
+    provider: "omniworker",
+    model: "omniworker-code",
     baseUrl: "",
   },
 ];

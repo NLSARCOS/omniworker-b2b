@@ -2,7 +2,7 @@
 
 Exposes OpenAI's ``gpt-image-2`` model at three quality tiers as an
 :class:`ImageGenProvider` implementation. The tiers are implemented as
-three virtual model IDs so the ``flux-agent tools`` model picker and the
+three virtual model IDs so the ``omniworker tools`` model picker and the
 ``image_gen.model`` config key behave like any other multi-model backend:
 
     gpt-image-2-low     ~15s   fastest, good for iteration
@@ -82,7 +82,7 @@ _SIZES = {
 def _load_openai_config() -> Dict[str, Any]:
     """Read ``image_gen`` from config.yaml (returns {} on any failure)."""
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
 
         cfg = load_config()
         section = cfg.get("image_gen") if isinstance(cfg, dict) else None
@@ -190,8 +190,8 @@ class OpenAIImageGenProvider(ImageGenProvider):
         if not os.environ.get("OPENAI_API_KEY"):
             return error_response(
                 error=(
-                    "OPENAI_API_KEY not set. Run `flux-agent tools` → Image "
-                    "Generation → OpenAI to configure, or `flux-agent setup` "
+                    "OPENAI_API_KEY not set. Run `omniworker tools` → Image "
+                    "Generation → OpenAI to configure, or `omniworker setup` "
                     "to add the key."
                 ),
                 error_type="auth_required",

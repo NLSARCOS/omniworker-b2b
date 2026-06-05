@@ -33,7 +33,7 @@ import urllib.request
 from contextlib import contextmanager
 from datetime import date, datetime
 from pathlib import Path
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from typing import Dict, Any, List, Optional
 
 from utils import atomic_replace
@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 # happened after the first import.
 def get_memory_dir() -> Path:
     """Return the profile-scoped memories directory."""
-    return get_flux-agent_home() / "memories"
+    return get_omniworker_home() / "memories"
 
 ENTRY_DELIMITER = "\n§\n"
 
@@ -176,7 +176,7 @@ _MEMORY_THREAT_PATTERNS = [
     # Persistence via shell rc
     (r'authorized_keys', "ssh_backdoor"),
     (r'\$HOME/\.ssh|\~/\.ssh', "ssh_access"),
-    (r'\$HOME/\.flux-agent/\.env|\~/\.flux-agent/\.env', "flux-agent_env"),
+    (r'\$HOME/\.omniworker/\.env|\~/\.omniworker/\.env', "omniworker_env"),
 ]
 
 # Subset of invisible chars for injection detection
@@ -259,7 +259,7 @@ class MemoryStore:
         mem_dir.mkdir(parents=True, exist_ok=True)
 
         engram_loaded = False
-        obs = _engram_request("GET", "/observations/recent?project=flux-agent&limit=100")
+        obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
         if obs is not None and isinstance(obs, list):
             try:
                 mem_list = []
@@ -451,7 +451,7 @@ class MemoryStore:
         # Try writing to Engram
         try:
             if target == "user":
-                obs = _engram_request("GET", "/observations/recent?project=flux-agent&limit=100")
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
                 existing_profile = None
                 if obs is not None and isinstance(obs, list):
                     existing_profile = next((o for o in obs if o.get("topic_key") == "user-profile" or o.get("type") == "user-profile"), None)
@@ -479,7 +479,7 @@ class MemoryStore:
                     "type": "fact",
                     "title": content[:40] + ("..." if len(content) > 40 else ""),
                     "content": content,
-                    "project": "flux-agent",
+                    "project": "omniworker",
                     "scope": "personal"
                 })
         except Exception as e:
@@ -700,7 +700,7 @@ class MemoryStore:
         # Try writing to Engram
         try:
             if target == "user":
-                obs = _engram_request("GET", "/observations/recent?project=flux-agent&limit=100")
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
                 existing_profile = None
                 if obs is not None and isinstance(obs, list):
                     existing_profile = next((o for o in obs if o.get("topic_key") == "user-profile" or o.get("type") == "user-profile"), None)
@@ -714,7 +714,7 @@ class MemoryStore:
                         new_profile_content = ENTRY_DELIMITER.join(current_entries)
                         _engram_request("PATCH", f"/observations/{existing_profile['id']}", {"content": new_profile_content})
             else:
-                obs = _engram_request("GET", "/observations/recent?project=flux-agent&limit=100")
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
                 if obs is not None and isinstance(obs, list):
                     matching_obs = next((o for o in obs if o.get("type") == "fact" and old_text in (o.get("content") or "")), None)
                     if matching_obs:
@@ -787,7 +787,7 @@ class MemoryStore:
         # Try writing to Engram
         try:
             if target == "user":
-                obs = _engram_request("GET", "/observations/recent?project=flux-agent&limit=100")
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
                 existing_profile = None
                 if obs is not None and isinstance(obs, list):
                     existing_profile = next((o for o in obs if o.get("topic_key") == "user-profile" or o.get("type") == "user-profile"), None)
@@ -801,7 +801,7 @@ class MemoryStore:
                         new_profile_content = ENTRY_DELIMITER.join(current_entries)
                         _engram_request("PATCH", f"/observations/{existing_profile['id']}", {"content": new_profile_content})
             else:
-                obs = _engram_request("GET", "/observations/recent?project=flux-agent&limit=100")
+                obs = _engram_request("GET", "/observations/recent?project=omniworker&limit=100")
                 if obs is not None and isinstance(obs, list):
                     matching_obs = next((o for o in obs if o.get("type") == "fact" and old_text in (o.get("content") or "")), None)
                     if matching_obs:

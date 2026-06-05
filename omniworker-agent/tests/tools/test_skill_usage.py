@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 
-def _bump_view_many(flux-agent_home: str, skill_name: str, iterations: int) -> None:
-    os.environ["OMNIWORKER_HOME"] = flux-agent_home
+def _bump_view_many(omniworker_home: str, skill_name: str, iterations: int) -> None:
+    os.environ["OMNIWORKER_HOME"] = omniworker_home
     from tools.skill_usage import bump_view
 
     for _ in range(iterations):
@@ -19,7 +19,7 @@ def _bump_view_many(flux-agent_home: str, skill_name: str, iterations: int) -> N
 @pytest.fixture
 def skills_home(tmp_path, monkeypatch):
     """Isolated OMNIWORKER_HOME with a clean skills/ dir for each test."""
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     (home / "skills").mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -403,7 +403,7 @@ def test_restore_skill_finds_nested_archive_subdir(skills_home):
     external imports — must still be restorable by name."""
     from tools.skill_usage import restore_skill, get_record
     skills_dir = skills_home / "skills"
-    nested = skills_dir / ".archive" / "flux-agent-imports" / "nested-skill"
+    nested = skills_dir / ".archive" / "omniworker-imports" / "nested-skill"
     nested.mkdir(parents=True)
     (nested / "SKILL.md").write_text(
         "---\nname: nested-skill\ndescription: x\n---\n", encoding="utf-8",

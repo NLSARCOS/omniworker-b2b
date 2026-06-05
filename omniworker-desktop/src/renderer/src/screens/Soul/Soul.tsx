@@ -18,7 +18,7 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
   const loadSoul = useCallback(async (): Promise<void> => {
     loaded.current = false;
     setLoading(true);
-    const text = await window.flux-agentAPI.readSoul(profile);
+    const text = await window.omniworkerAPI.readSoul(profile);
     setContent(text);
     setLoading(false);
     setTimeout(() => {
@@ -33,7 +33,7 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
   const saveSoul = useCallback(
     async (text: string) => {
       if (!loaded.current) return;
-      await window.flux-agentAPI.writeSoul(text, profile);
+      await window.omniworkerAPI.writeSoul(text, profile);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     },
@@ -52,7 +52,7 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
   }, [content, saveSoul]);
 
   async function handleReset(): Promise<void> {
-    const newContent = await window.flux-agentAPI.resetSoul(profile);
+    const newContent = await window.omniworkerAPI.resetSoul(profile);
     loaded.current = false;
     setContent(newContent);
     setShowReset(false);

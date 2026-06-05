@@ -11,7 +11,7 @@ which handles discovery, dynamic client registration, PKCE, token exchange,
 refresh, and step-up authorization automatically.
 
 This module provides the glue:
-    - ``Flux AgentTokenStorage``: persists tokens/client-info to disk so they
+    - ``OmniWorkerTokenStorage``: persists tokens/client-info to disk so they
       survive across process restarts.
     - Callback server: ephemeral localhost HTTP server to capture the OAuth
       redirect with the authorization code.
@@ -101,14 +101,14 @@ _oauth_port: int | None = None
 def _get_token_dir() -> Path:
     """Return the directory for MCP OAuth token files.
 
-    Uses FLUX AGENT_HOME so each profile gets its own OAuth tokens.
-    Layout: ``FLUX AGENT_HOME/mcp-tokens/``
+    Uses OMNIWORKER_HOME so each profile gets its own OAuth tokens.
+    Layout: ``OMNIWORKER_HOME/mcp-tokens/``
     """
     try:
-        from flux-agent_constants import get_flux-agent_home
-        base = Path(get_flux-agent_home())
+        from omniworker_constants import get_omniworker_home
+        base = Path(get_omniworker_home())
     except ImportError:
-        base = Path(os.environ.get("FLUX AGENT_HOME", str(Path.home() / ".flux-agent")))
+        base = Path(os.environ.get("OMNIWORKER_HOME", str(Path.home() / ".omniworker")))
     return base / "mcp-tokens"
 
 
@@ -202,18 +202,18 @@ def _write_json(path: Path, data: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Flux AgentTokenStorage -- persistent token/client-info on disk
+# OmniWorkerTokenStorage -- persistent token/client-info on disk
 # ---------------------------------------------------------------------------
 
 
-class Flux AgentTokenStorage:
+class OmniWorkerTokenStorage:
     """Persist OAuth tokens and client registration to JSON files.
 
     File layout::
 
-        FLUX AGENT_HOME/mcp-tokens/<server_name>.json         -- tokens
-        FLUX AGENT_HOME/mcp-tokens/<server_name>.client.json   -- client info
-        FLUX AGENT_HOME/mcp-tokens/<server_name>.meta.json     -- oauth server metadata
+        OMNIWORKER_HOME/mcp-tokens/<server_name>.json         -- tokens
+        OMNIWORKER_HOME/mcp-tokens/<server_name>.client.json   -- client info
+        OMNIWORKER_HOME/mcp-tokens/<server_name>.meta.json     -- oauth server metadata
     """
 
     def __init__(self, server_name: str):
@@ -482,7 +482,7 @@ async def _wait_for_callback() -> tuple[str, str | None]:
 
 def remove_oauth_tokens(server_name: str) -> None:
     """Delete stored OAuth tokens and client info for a server."""
-    storage = Flux AgentTokenStorage(server_name)
+    storage = OmniWorkerTokenStorage(server_name)
     storage.remove()
     logger.info("OAuth tokens removed for '%s'", server_name)
 
@@ -548,7 +548,7 @@ def _build_client_metadata(cfg: dict) -> "OAuthClientMetadata":
 
 
 def _maybe_preregister_client(
-    storage: "Flux AgentTokenStorage",
+    storage: "OmniWorkerTokenStorage",
     cfg: dict,
     client_metadata: "OAuthClientMetadata",
 ) -> None:
@@ -607,7 +607,7 @@ def build_oauth_auth(
         return None
 
     cfg = dict(oauth_config or {})  # copy — we mutate _resolved_port
-    storage = Flux AgentTokenStorage(server_name)
+    storage = OmniWorkerTokenStorage(server_name)
 
     if not _is_interactive() and not storage.has_cached_tokens():
         logger.warning(

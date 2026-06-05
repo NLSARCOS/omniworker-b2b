@@ -19,7 +19,7 @@ REFERENCE_PATTERN = re.compile(
 )
 TRAILING_PUNCTUATION = ",.;!?"
 _SENSITIVE_HOME_DIRS = (".ssh", ".aws", ".gnupg", ".kube", ".docker", ".azure", ".config/gh")
-_SENSITIVE_FLUX AGENT_DIRS = (Path("skills") / ".hub",)
+_SENSITIVE_OMNIWORKER_DIRS = (Path("skills") / ".hub",)
 _SENSITIVE_HOME_FILES = (
     Path(".ssh") / "authorized_keys",
     Path(".ssh") / "id_rsa",
@@ -340,14 +340,14 @@ def _resolve_path(cwd: Path, target: str, *, allowed_root: Path | None = None) -
 
 
 def _ensure_reference_path_allowed(path: Path) -> None:
-    from flux-agent_constants import get_flux-agent_home
+    from omniworker_constants import get_omniworker_home
     home = Path(os.path.expanduser("~")).resolve()
-    flux-agent_home = get_flux-agent_home().resolve()
+    omniworker_home = get_omniworker_home().resolve()
 
     blocked_exact = {home / rel for rel in _SENSITIVE_HOME_FILES}
-    blocked_exact.add(flux-agent_home / ".env")
+    blocked_exact.add(omniworker_home / ".env")
     blocked_dirs = [home / rel for rel in _SENSITIVE_HOME_DIRS]
-    blocked_dirs.extend(flux-agent_home / rel for rel in _SENSITIVE_FLUX AGENT_DIRS)
+    blocked_dirs.extend(omniworker_home / rel for rel in _SENSITIVE_OMNIWORKER_DIRS)
 
     if path in blocked_exact:
         raise ValueError("path is a sensitive credential file and cannot be attached")

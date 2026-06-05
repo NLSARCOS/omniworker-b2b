@@ -26,12 +26,12 @@ In BlueBubbles Server → **Settings → API**, note:
 Run the setup wizard:
 
 ```bash
-flux-agent gateway setup
+omniworker gateway setup
 ```
 
 Select **BlueBubbles (iMessage)** and enter your server URL and password.
 
-Or set environment variables directly in `~/.flux-agent/.env`:
+Or set environment variables directly in `~/.omniworker/.env`:
 
 ```bash
 BLUEBUBBLES_SERVER_URL=http://192.168.1.10:1234
@@ -45,16 +45,16 @@ Choose one approach:
 **DM Pairing (recommended):**
 When someone messages your iMessage, Flux Agent automatically sends them a pairing code. Approve it with:
 ```bash
-flux-agent pairing approve bluebubbles <CODE>
+omniworker pairing approve bluebubbles <CODE>
 ```
-Use `flux-agent pairing list` to see pending codes and approved users.
+Use `omniworker pairing list` to see pending codes and approved users.
 
-**Pre-authorize specific users** (in `~/.flux-agent/.env`):
+**Pre-authorize specific users** (in `~/.omniworker/.env`):
 ```bash
 BLUEBUBBLES_ALLOWED_USERS=user@icloud.com,+15551234567
 ```
 
-**Open access** (in `~/.flux-agent/.env`):
+**Open access** (in `~/.omniworker/.env`):
 ```bash
 BLUEBUBBLES_ALLOW_ALL_USERS=true
 ```
@@ -62,7 +62,7 @@ BLUEBUBBLES_ALLOW_ALL_USERS=true
 ### 5. Start the Gateway
 
 ```bash
-flux-agent gateway run
+omniworker gateway run
 ```
 
 Flux Agent will connect to your BlueBubbles server, register a webhook, and start listening for iMessage messages.
@@ -91,7 +91,7 @@ Flux Agent → BlueBubbles REST API → Messages.app → iMessage
 | `BLUEBUBBLES_ALLOWED_USERS` | No | — | Comma-separated authorized users |
 | `BLUEBUBBLES_ALLOW_ALL_USERS` | No | `false` | Allow all users |
 
-Auto-marking messages as read is controlled by the `send_read_receipts` key under `platforms.bluebubbles.extra` in `~/.flux-agent/config.yaml` (default: `true`). There is no corresponding environment variable.
+Auto-marking messages as read is controlled by the `send_read_receipts` key under `platforms.bluebubbles.extra` in `~/.omniworker/config.yaml` (default: `true`). There is no corresponding environment variable.
 
 ## Features
 
@@ -136,7 +136,7 @@ Without the Private API, basic text messaging and media still work.
 ### Messages not arriving
 - Check that the webhook is registered in BlueBubbles Server → Settings → API → Webhooks
 - Verify the webhook URL is reachable from the Mac
-- Check `flux-agent logs gateway` for webhook errors (or `flux-agent logs -f` to follow in real-time)
+- Check `omniworker logs gateway` for webhook errors (or `omniworker logs -f` to follow in real-time)
 
 ### "Private API helper not connected"
 - Install the Private API helper: [docs.bluebubbles.app](https://docs.bluebubbles.app/helper-bundle/installation)

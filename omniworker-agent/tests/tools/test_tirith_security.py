@@ -304,7 +304,7 @@ class TestEnsureInstalled:
                                  "tirith_timeout": 5, "tirith_fail_open": True}
         _tirith_mod._resolved_path = None
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=False), \
              patch("tools.tirith_security.threading.Thread") as MockThread:
             mock_thread = MagicMock()
@@ -321,7 +321,7 @@ class TestEnsureInstalled:
                                  "tirith_timeout": 5, "tirith_fail_open": True}
         _tirith_mod._resolved_path = None
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=False), \
              patch("tools.tirith_security.threading.Thread") as MockThread:
             mock_thread = MagicMock()
@@ -632,7 +632,7 @@ class TestBackgroundInstall:
                    return_value={"tirith_enabled": True, "tirith_path": "tirith",
                                  "tirith_timeout": 5, "tirith_fail_open": True}), \
              patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=False), \
              patch("tools.tirith_security.threading.Thread") as MockThread:
             mock_thread = MagicMock()
@@ -654,7 +654,7 @@ class TestBackgroundInstall:
                    return_value={"tirith_enabled": True, "tirith_path": "tirith",
                                  "tirith_timeout": 5, "tirith_fail_open": True}), \
              patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._read_failure_reason", return_value="download_failed"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=True):
 
@@ -674,7 +674,7 @@ class TestBackgroundInstall:
         _tirith_mod._install_thread = mock_thread
 
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"):
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"):
             result = _resolve_tirith_path("tirith")
             assert result == "tirith"  # returns configured default, doesn't block
 
@@ -801,7 +801,7 @@ class TestDiskFailureMarker:
         _tirith_mod._resolved_path = None
 
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._read_failure_reason", return_value="download_failed"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=True), \
              patch("tools.tirith_security._install_tirith") as mock_install:
@@ -826,25 +826,25 @@ class TestDiskFailureMarker:
 
         _tirith_mod._resolved_path = None
 
-    def test_install_failed_recovers_from_flux-agent_bin(self):
-        """After _INSTALL_FAILED, manual install in FLUX AGENT_HOME/bin is picked up."""
+    def test_install_failed_recovers_from_omniworker_bin(self):
+        """After _INSTALL_FAILED, manual install in OMNIWORKER_HOME/bin is picked up."""
         from tools.tirith_security import _resolve_tirith_path, _INSTALL_FAILED
         import tempfile
         tmpdir = tempfile.mkdtemp()
-        flux-agent_bin = os.path.join(tmpdir, "tirith")
+        omniworker_bin = os.path.join(tmpdir, "tirith")
         # Create a fake executable
-        with open(flux-agent_bin, "w") as f:
+        with open(omniworker_bin, "w") as f:
             f.write("#!/bin/sh\n")
-        os.chmod(flux-agent_bin, 0o755)
+        os.chmod(omniworker_bin, 0o755)
 
         _tirith_mod._resolved_path = _INSTALL_FAILED
 
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value=tmpdir), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value=tmpdir), \
              patch("tools.tirith_security._clear_install_failed") as mock_clear:
             result = _resolve_tirith_path("tirith")
-            assert result == flux-agent_bin
-            assert _tirith_mod._resolved_path == flux-agent_bin
+            assert result == omniworker_bin
+            assert _tirith_mod._resolved_path == omniworker_bin
             mock_clear.assert_called_once()
 
         _tirith_mod._resolved_path = None
@@ -855,7 +855,7 @@ class TestDiskFailureMarker:
         _tirith_mod._resolved_path = _INSTALL_FAILED
 
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._install_tirith") as mock_install:
             result = _resolve_tirith_path("tirith")
             assert result == "tirith"  # fallback to configured path
@@ -870,7 +870,7 @@ class TestDiskFailureMarker:
 
         # _is_install_failed_on_disk sees "cosign_missing" + cosign on PATH → returns False
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=False), \
              patch("tools.tirith_security._install_tirith", return_value=("/new/tirith", "")) as mock_install, \
              patch("tools.tirith_security._clear_install_failed"):
@@ -894,7 +894,7 @@ class TestDiskFailureMarker:
             return None
 
         with patch("tools.tirith_security.shutil.which", side_effect=_which_side_effect), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=False), \
              patch("tools.tirith_security._install_tirith", return_value=("/new/tirith", "")) as mock_install, \
              patch("tools.tirith_security._clear_install_failed"):
@@ -911,7 +911,7 @@ class TestDiskFailureMarker:
         _tirith_mod._install_failure_reason = "cosign_exec_failed"
 
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._install_tirith") as mock_install:
             result = _resolve_tirith_path("tirith")
             assert result == "tirith"  # fallback
@@ -926,7 +926,7 @@ class TestDiskFailureMarker:
         _tirith_mod._install_failure_reason = "cosign_missing"
 
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._install_tirith") as mock_install:
             result = _resolve_tirith_path("tirith")
             assert result == "tirith"  # fallback
@@ -941,7 +941,7 @@ class TestDiskFailureMarker:
 
         # First call: disk marker with cosign_missing is active, cosign still absent
         with patch("tools.tirith_security.shutil.which", return_value=None), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._read_failure_reason", return_value="cosign_missing"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=True):
             _resolve_tirith_path("tirith")
@@ -957,7 +957,7 @@ class TestDiskFailureMarker:
             return None
 
         with patch("tools.tirith_security.shutil.which", side_effect=_which_side_effect), \
-             patch("tools.tirith_security._flux-agent_bin_dir", return_value="/nonexistent"), \
+             patch("tools.tirith_security._omniworker_bin_dir", return_value="/nonexistent"), \
              patch("tools.tirith_security._is_install_failed_on_disk", return_value=False), \
              patch("tools.tirith_security._install_tirith", return_value=("/new/tirith", "")) as mock_install, \
              patch("tools.tirith_security._clear_install_failed"):
@@ -969,41 +969,41 @@ class TestDiskFailureMarker:
 
 
 # ---------------------------------------------------------------------------
-# FLUX AGENT_HOME isolation
+# OMNIWORKER_HOME isolation
 # ---------------------------------------------------------------------------
 
-class TestFlux AgentHomeIsolation:
-    def test_flux-agent_bin_dir_respects_flux-agent_home(self):
-        """_flux-agent_bin_dir must use FLUX AGENT_HOME, not hardcoded ~/.flux-agent."""
-        from tools.tirith_security import _flux-agent_bin_dir
+class TestOmniWorkerHomeIsolation:
+    def test_omniworker_bin_dir_respects_omniworker_home(self):
+        """_omniworker_bin_dir must use OMNIWORKER_HOME, not hardcoded ~/.omniworker."""
+        from tools.tirith_security import _omniworker_bin_dir
         import tempfile
         tmpdir = tempfile.mkdtemp()
-        with patch.dict(os.environ, {"FLUX AGENT_HOME": tmpdir}):
-            result = _flux-agent_bin_dir()
+        with patch.dict(os.environ, {"OMNIWORKER_HOME": tmpdir}):
+            result = _omniworker_bin_dir()
         assert result == os.path.join(tmpdir, "bin")
         assert os.path.isdir(result)
 
-    def test_failure_marker_respects_flux-agent_home(self):
-        """_failure_marker_path must use FLUX AGENT_HOME, not hardcoded ~/.flux-agent."""
+    def test_failure_marker_respects_omniworker_home(self):
+        """_failure_marker_path must use OMNIWORKER_HOME, not hardcoded ~/.omniworker."""
         from tools.tirith_security import _failure_marker_path
-        with patch.dict(os.environ, {"FLUX AGENT_HOME": "/custom/flux-agent"}):
+        with patch.dict(os.environ, {"OMNIWORKER_HOME": "/custom/omniworker"}):
             result = _failure_marker_path()
-        assert result == "/custom/flux-agent/.tirith-install-failed"
+        assert result == "/custom/omniworker/.tirith-install-failed"
 
     def test_conftest_isolation_prevents_real_home_writes(self):
-        """The conftest autouse fixture sets FLUX AGENT_HOME; verify it's active."""
-        flux-agent_home = os.getenv("FLUX AGENT_HOME")
-        assert flux-agent_home is not None, "FLUX AGENT_HOME should be set by conftest"
-        assert "flux-agent_test" in flux-agent_home, "Should point to test temp dir"
+        """The conftest autouse fixture sets OMNIWORKER_HOME; verify it's active."""
+        omniworker_home = os.getenv("OMNIWORKER_HOME")
+        assert omniworker_home is not None, "OMNIWORKER_HOME should be set by conftest"
+        assert "omniworker_test" in omniworker_home, "Should point to test temp dir"
 
-    def test_get_flux-agent_home_fallback(self):
-        """Without FLUX AGENT_HOME set, falls back to the active OS home."""
-        from tools.tirith_security import _get_flux-agent_home
+    def test_get_omniworker_home_fallback(self):
+        """Without OMNIWORKER_HOME set, falls back to the active OS home."""
+        from tools.tirith_security import _get_omniworker_home
         with patch.dict(os.environ, {}, clear=True):
-            # Remove FLUX AGENT_HOME entirely. With HOME also absent, expanduser
+            # Remove OMNIWORKER_HOME entirely. With HOME also absent, expanduser
             # falls back to the account database; compute expected under the
             # same environment instead of after patch.dict restores HOME.
-            os.environ.pop("FLUX AGENT_HOME", None)
-            expected = os.path.join(os.path.expanduser("~"), ".flux-agent")
-            result = _get_flux-agent_home()
+            os.environ.pop("OMNIWORKER_HOME", None)
+            expected = os.path.join(os.path.expanduser("~"), ".omniworker")
+            result = _get_omniworker_home()
         assert result == expected

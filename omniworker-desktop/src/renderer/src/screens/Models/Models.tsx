@@ -52,7 +52,7 @@ function Models(): React.JSX.Element {
   }
 
   const loadModels = useCallback(async () => {
-    const list = await window.flux-agentAPI.listModels();
+    const list = await window.omniworkerAPI.listModels();
     setModels(list);
     setLoading(false);
   }, []);
@@ -101,14 +101,14 @@ function Models(): React.JSX.Element {
     setFormError("");
 
     if (editingModel) {
-      await window.flux-agentAPI.updateModel(editingModel.id, {
+      await window.omniworkerAPI.updateModel(editingModel.id, {
         name,
         provider: formProvider,
         model,
         baseUrl: formBaseUrl.trim(),
       });
     } else {
-      await window.flux-agentAPI.addModel(
+      await window.omniworkerAPI.addModel(
         name,
         formProvider,
         model,
@@ -118,7 +118,7 @@ function Models(): React.JSX.Element {
 
     if (formApiKey.trim() && formProvider === "custom") {
       const envKey = resolveCustomEnvKey(formBaseUrl.trim());
-      await window.flux-agentAPI.setEnv(envKey, formApiKey.trim());
+      await window.omniworkerAPI.setEnv(envKey, formApiKey.trim());
     }
 
     closeModal();
@@ -126,7 +126,7 @@ function Models(): React.JSX.Element {
   }
 
   async function handleDelete(id: string): Promise<void> {
-    await window.flux-agentAPI.removeModel(id);
+    await window.omniworkerAPI.removeModel(id);
     setConfirmDelete(null);
     await loadModels();
   }

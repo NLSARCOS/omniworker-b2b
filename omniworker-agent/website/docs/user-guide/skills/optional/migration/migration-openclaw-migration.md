@@ -8,20 +8,20 @@ description: "Migrate a user's Flux Agent customization footprint into Flux Agen
 
 # Openclaw Migration
 
-Migrate a user's Flux Agent customization footprint into Flux Agent Agent. Imports Flux Agent-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.flux-agent, then reports exactly what could not be migrated and why.
+Migrate a user's Flux Agent customization footprint into Flux Agent Agent. Imports Flux Agent-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.omniworker, then reports exactly what could not be migrated and why.
 
 ## Skill metadata
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/migration/flux-agent-migration` |
-| Path | `optional-skills/migration/flux-agent-migration` |
+| Source | Optional — install with `omniworker skills install official/migration/omniworker-migration` |
+| Path | `optional-skills/migration/omniworker-migration` |
 | Version | `1.0.0` |
 | Author | Flux Agent Agent (Nous Research) |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Migration`, `Flux Agent`, `Flux Agent`, `Memory`, `Persona`, `Import` |
-| Related skills | [`flux-agent-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-flux-agent-agent) |
+| Related skills | [`omniworker-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-omniworker-agent) |
 
 ## Reference: full SKILL.md
 
@@ -38,28 +38,28 @@ Use this skill when a user wants to move their Flux Agent setup into Flux Agent 
 For a quick, non-interactive migration, use the built-in CLI command:
 
 ```bash
-flux-agent claw migrate              # Full interactive migration
-flux-agent claw migrate --dry-run    # Preview what would be migrated
-flux-agent claw migrate --preset user-data   # Migrate without secrets
-flux-agent claw migrate --overwrite  # Overwrite existing conflicts
-flux-agent claw migrate --source /custom/path/.flux-agent  # Custom source
+omniworker claw migrate              # Full interactive migration
+omniworker claw migrate --dry-run    # Preview what would be migrated
+omniworker claw migrate --preset user-data   # Migrate without secrets
+omniworker claw migrate --overwrite  # Overwrite existing conflicts
+omniworker claw migrate --source /custom/path/.omniworker  # Custom source
 ```
 
 The CLI command runs the same migration script described below. Use this skill (via the agent) when you want an interactive, guided migration with dry-run previews and per-item conflict resolution.
 
-**First-time setup:** The `flux-agent setup` wizard automatically detects `~/.flux-agent` and offers migration before configuration begins.
+**First-time setup:** The `omniworker setup` wizard automatically detects `~/.omniworker` and offers migration before configuration begins.
 
 ## What this skill does
 
-It uses `scripts/flux-agent_to_flux-agent.py` to:
+It uses `scripts/omniworker_to_omniworker.py` to:
 
 - import `SOUL.md` into the Flux Agent home directory as `SOUL.md`
 - transform Flux Agent `MEMORY.md` and `USER.md` into Flux Agent memory entries
 - merge Flux Agent command approval patterns into Flux Agent `command_allowlist`
 - migrate Flux Agent-compatible messaging settings such as `TELEGRAM_ALLOWED_USERS` and `MESSAGING_CWD`
-- copy Flux Agent skills into `~/.flux-agent/skills/flux-agent-imports/`
+- copy Flux Agent skills into `~/.omniworker/skills/omniworker-imports/`
 - optionally copy the Flux Agent workspace instructions file into a chosen Flux Agent workspace
-- mirror compatible workspace assets such as `workspace/tts/` into `~/.flux-agent/tts/`
+- mirror compatible workspace assets such as `workspace/tts/` into `~/.omniworker/tts/`
 - archive non-secret docs that do not have a direct Flux Agent destination
 - produce a structured report listing migrated items, conflicts, skipped items, and reasons
 
@@ -67,17 +67,17 @@ It uses `scripts/flux-agent_to_flux-agent.py` to:
 
 The helper script lives in this skill directory at:
 
-- `scripts/flux-agent_to_flux-agent.py`
+- `scripts/omniworker_to_omniworker.py`
 
 When this skill is installed from the Skills Hub, the normal location is:
 
-- `~/.flux-agent/skills/migration/flux-agent-migration/scripts/flux-agent_to_flux-agent.py`
+- `~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py`
 
-Do not guess a shorter path like `~/.flux-agent/skills/flux-agent-migration/...`.
+Do not guess a shorter path like `~/.omniworker/skills/omniworker-migration/...`.
 
 Before running the helper:
 
-1. Prefer the installed path under `~/.flux-agent/skills/migration/flux-agent-migration/`.
+1. Prefer the installed path under `~/.omniworker/skills/migration/omniworker-migration/`.
 2. If that path fails, inspect the installed skill directory and resolve the script relative to the installed `SKILL.md`.
 3. Only use `find` as a fallback if the installed location is missing or the skill was moved manually.
 4. When calling the terminal tool, do not pass `workdir: "~"`. Use an absolute directory such as the user's home directory, or omit `workdir` entirely.
@@ -247,37 +247,37 @@ The helper script still supports category-level `--include` / `--exclude`, but t
 Dry run with full discovery:
 
 ```bash
-python3 ~/.flux-agent/skills/migration/flux-agent-migration/scripts/flux-agent_to_flux-agent.py
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py
 ```
 
 When using the terminal tool, prefer an absolute invocation pattern such as:
 
 ```json
-{"command":"python3 /home/USER/.flux-agent/skills/migration/flux-agent-migration/scripts/flux-agent_to_flux-agent.py","workdir":"/home/USER"}
+{"command":"python3 /home/USER/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py","workdir":"/home/USER"}
 ```
 
 Dry run with the user-data preset:
 
 ```bash
-python3 ~/.flux-agent/skills/migration/flux-agent-migration/scripts/flux-agent_to_flux-agent.py --preset user-data
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py --preset user-data
 ```
 
 Execute a user-data migration:
 
 ```bash
-python3 ~/.flux-agent/skills/migration/flux-agent-migration/scripts/flux-agent_to_flux-agent.py --execute --preset user-data --skill-conflict skip
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py --execute --preset user-data --skill-conflict skip
 ```
 
 Execute a full compatible migration:
 
 ```bash
-python3 ~/.flux-agent/skills/migration/flux-agent-migration/scripts/flux-agent_to_flux-agent.py --execute --preset full --migrate-secrets --skill-conflict skip
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py --execute --preset full --migrate-secrets --skill-conflict skip
 ```
 
 Execute with workspace instructions included:
 
 ```bash
-python3 ~/.flux-agent/skills/migration/flux-agent-migration/scripts/flux-agent_to_flux-agent.py --execute --preset user-data --skill-conflict rename --workspace-target "/absolute/workspace/path"
+python3 ~/.omniworker/skills/migration/omniworker-migration/scripts/omniworker_to_omniworker.py --execute --preset user-data --skill-conflict rename --workspace-target "/absolute/workspace/path"
 ```
 
 Do not use `$PWD` or the home directory as the workspace target by default. Ask for an explicit workspace path first.
@@ -288,7 +288,7 @@ Do not use `$PWD` or the home directory as the workspace target by default. Ask 
 2. Do not migrate secrets by default. Tokens, auth blobs, device credentials, and raw gateway config should stay out of Flux Agent unless the user explicitly asks for secret migration.
 3. Do not silently overwrite non-empty Flux Agent targets unless the user explicitly wants that. The helper script will preserve backups when overwriting is enabled.
 4. Always give the user the skipped-items report. That report is part of the migration, not an optional extra.
-5. Prefer the primary Flux Agent workspace (`~/.flux-agent/workspace/`) over `workspace.default/`. Only use the default workspace as fallback when the primary files are missing.
+5. Prefer the primary Flux Agent workspace (`~/.omniworker/workspace/`) over `workspace.default/`. Only use the default workspace as fallback when the primary files are missing.
 6. Even in secret-migration mode, only migrate secrets with a clean Flux Agent destination. Unsupported auth blobs must still be reported as skipped.
 7. If the dry run shows a large asset copy, a conflicting `SOUL.md`, or overflowed memory entries, call those out separately before execution.
 8. Default to `user-data only` if the user is unsure.
@@ -312,5 +312,5 @@ After a successful run, the user should have:
 
 - Flux Agent persona state imported
 - Flux Agent memory files populated with converted Flux Agent knowledge
-- Flux Agent skills available under `~/.flux-agent/skills/flux-agent-imports/`
+- Flux Agent skills available under `~/.omniworker/skills/omniworker-imports/`
 - a migration report showing any conflicts, omissions, or unsupported data

@@ -3,12 +3,12 @@
 
 Usage (via cron with --no-agent):
 
-    flux-agent cron create flux-agent-issues \\
+    omniworker cron create omniworker-issues \\
       --schedule "*/5 * * * *" --no-agent \\
-      --script "$FLUX AGENT_HOME/skills/devops/watchers/scripts/watch_github.py" \\
-      --script-args "--name flux-agent-issues --repo Flux Agent/flux-agent-agent --scope issues"
+      --script "$OMNIWORKER_HOME/skills/devops/watchers/scripts/watch_github.py" \\
+      --script-args "--name omniworker-issues --repo Flux Agent/omniworker-agent --scope issues"
 
-Set GITHUB_TOKEN (or GH_TOKEN) in ~/.flux-agent/.env to avoid the 60 req/hr
+Set GITHUB_TOKEN (or GH_TOKEN) in ~/.omniworker/.env to avoid the 60 req/hr
 anonymous rate limit.
 
 Scopes: issues | pulls | releases | commits.  Or pass --search QUERY to

@@ -27,25 +27,25 @@ if (process.env.CLOUD_API_URL && process.env.CLOUD_API_URL.includes("worker.thel
 
 const IS_WINDOWS = process.platform === "win32";
 
-export const FLUX AGENT_HOME =
-  process.env.FLUX AGENT_HOME?.trim() || join(homedir(), ".flux-agent");
-export const FLUX AGENT_REPO = join(FLUX AGENT_HOME, "flux-agent-agent");
-export const FLUX AGENT_VENV = join(FLUX AGENT_REPO, "venv");
-export const FLUX AGENT_PYTHON = IS_WINDOWS
-  ? join(FLUX AGENT_VENV, "Scripts", "python.exe")
-  : join(FLUX AGENT_VENV, "bin", "python");
-export const FLUX AGENT_SCRIPT = IS_WINDOWS
-  ? join(FLUX AGENT_VENV, "Scripts", "flux-agent.exe")
-  : join(FLUX AGENT_REPO, "flux-agent");
-export const FLUX AGENT_ENV_FILE = join(FLUX AGENT_HOME, ".env");
-export const FLUX AGENT_CONFIG_FILE = join(FLUX AGENT_HOME, "config.yaml");
-export const FLUX AGENT_AUTH_FILE = join(FLUX AGENT_HOME, "auth.json");
+export const OMNIWORKER_HOME =
+  process.env.OMNIWORKER_HOME?.trim() || join(homedir(), ".omniworker");
+export const OMNIWORKER_REPO = join(OMNIWORKER_HOME, "omniworker-agent");
+export const OMNIWORKER_VENV = join(OMNIWORKER_REPO, "venv");
+export const OMNIWORKER_PYTHON = IS_WINDOWS
+  ? join(OMNIWORKER_VENV, "Scripts", "python.exe")
+  : join(OMNIWORKER_VENV, "bin", "python");
+export const OMNIWORKER_SCRIPT = IS_WINDOWS
+  ? join(OMNIWORKER_VENV, "Scripts", "omniworker.exe")
+  : join(OMNIWORKER_REPO, "omniworker");
+export const OMNIWORKER_ENV_FILE = join(OMNIWORKER_HOME, ".env");
+export const OMNIWORKER_CONFIG_FILE = join(OMNIWORKER_HOME, "config.yaml");
+export const OMNIWORKER_AUTH_FILE = join(OMNIWORKER_HOME, "auth.json");
 
-export function flux-agentCliArgs(args: string[] = []): string[] {
+export function omniworkerCliArgs(args: string[] = []): string[] {
   if (process.platform === "win32") {
-    return ["-m", "flux-agent_cli.main", ...args];
+    return ["-m", "omniworker_cli.main", ...args];
   }
-  return [FLUX AGENT_SCRIPT, ...args];
+  return [OMNIWORKER_SCRIPT, ...args];
 }
 
 export interface InstallStatus {
@@ -68,13 +68,13 @@ export function getEnhancedPath(): string {
   const extra = (
     IS_WINDOWS
       ? [
-          // Bundled by install.ps1 inside FLUX AGENT_HOME — these matter when the
+          // Bundled by install.ps1 inside OMNIWORKER_HOME — these matter when the
           // user's system PATH doesn't include git or node yet.
-          join(FLUX AGENT_HOME, "git", "bin"),
-          join(FLUX AGENT_HOME, "git", "cmd"),
-          join(FLUX AGENT_HOME, "git", "usr", "bin"),
-          join(FLUX AGENT_HOME, "node"),
-          join(FLUX AGENT_VENV, "Scripts"),
+          join(OMNIWORKER_HOME, "git", "bin"),
+          join(OMNIWORKER_HOME, "git", "cmd"),
+          join(OMNIWORKER_HOME, "git", "usr", "bin"),
+          join(OMNIWORKER_HOME, "node"),
+          join(OMNIWORKER_VENV, "Scripts"),
           // Common user/system installs used when Claw3D setup runs before or
           // outside the bundled installer.
           process.env.NVM_SYMLINK,
@@ -98,7 +98,7 @@ export function getEnhancedPath(): string {
       : [
           join(home, ".local", "bin"),
           join(home, ".cargo", "bin"),
-          join(FLUX AGENT_VENV, "bin"),
+          join(OMNIWORKER_VENV, "bin"),
           // Node version manager shim directories
           join(home, ".volta", "bin"),
           join(home, ".asdf", "shims"),
@@ -143,10 +143,10 @@ function resolveNvmBin(home: string): string[] {
   return [];
 }
 
-export function hasFlux AgentAuthCredential(provider: string): boolean {
-  if (!provider || !existsSync(FLUX AGENT_AUTH_FILE)) return false;
+export function hasOmniWorkerAuthCredential(provider: string): boolean {
+  if (!provider || !existsSync(OMNIWORKER_AUTH_FILE)) return false;
   try {
-    const auth = JSON.parse(readFileSync(FLUX AGENT_AUTH_FILE, "utf-8")) as {
+    const auth = JSON.parse(readFileSync(OMNIWORKER_AUTH_FILE, "utf-8")) as {
       active_provider?: string;
       credential_pool?: Record<string, unknown[]>;
       providers?: Record<string, unknown>;
@@ -177,8 +177,8 @@ export function checkInstallStatus(): InstallStatus {
   // latency, so it now lives in `verifyInstall()` and is invoked lazily
   // by the renderer after the main UI is mounted.
   const installed =
-    existsSync(FLUX AGENT_PYTHON) && existsSync(FLUX AGENT_SCRIPT);
-  const configured = existsSync(FLUX AGENT_ENV_FILE);
+    existsSync(OMNIWORKER_PYTHON) && existsSync(OMNIWORKER_SCRIPT);
+  const configured = existsSync(OMNIWORKER_ENV_FILE);
   let hasApiKey = false;
   const verified = installed;
 
@@ -189,7 +189,7 @@ export function checkInstallStatus(): InstallStatus {
     const localProviders = ["custom", "lmstudio", "ollama", "vllm", "llamacpp"];
     if (
       localProviders.includes(mc.provider) ||
-      hasFlux AgentAuthCredential(mc.provider)
+      hasOmniWorkerAuthCredential(mc.provider)
     ) {
       hasApiKey = true;
     }
@@ -199,7 +199,7 @@ export function checkInstallStatus(): InstallStatus {
 
   if (!hasApiKey && configured) {
     try {
-      const content = readFileSync(FLUX AGENT_ENV_FILE, "utf-8");
+      const content = readFileSync(OMNIWORKER_ENV_FILE, "utf-8");
       for (const line of content.split("\n")) {
         const trimmed = line.trim();
         if (trimmed.startsWith("#")) continue;
@@ -229,22 +229,22 @@ let _verifyCache: { ok: boolean; ts: number } | null = null;
 const VERIFY_TTL_MS = 5 * 60 * 1000;
 
 export async function verifyInstall(): Promise<boolean> {
-  if (!existsSync(FLUX AGENT_PYTHON) || !existsSync(FLUX AGENT_SCRIPT))
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT))
     return false;
   if (_verifyCache && Date.now() - _verifyCache.ts < VERIFY_TTL_MS) {
     return _verifyCache.ok;
   }
   return new Promise((resolve) => {
     execFile(
-      FLUX AGENT_PYTHON,
-      flux-agentCliArgs(["--version"]),
+      OMNIWORKER_PYTHON,
+      omniworkerCliArgs(["--version"]),
       {
-        cwd: FLUX AGENT_REPO,
+        cwd: OMNIWORKER_REPO,
         env: {
           ...process.env,
           PATH: getEnhancedPath(),
           HOME: homedir(),
-          FLUX AGENT_HOME,
+          OMNIWORKER_HOME,
         },
         timeout: 15000,
         ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -262,9 +262,9 @@ export async function verifyInstall(): Promise<boolean> {
 let _cachedVersion: string | null = null;
 let _versionFetching = false;
 
-export async function getFlux AgentVersion(): Promise<string | null> {
+export async function getOmniWorkerVersion(): Promise<string | null> {
   if (_cachedVersion !== null) return _cachedVersion;
-  if (!existsSync(FLUX AGENT_PYTHON) || !existsSync(FLUX AGENT_SCRIPT))
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT))
     return null;
   if (_versionFetching) {
     // Wait for in-flight fetch
@@ -280,15 +280,15 @@ export async function getFlux AgentVersion(): Promise<string | null> {
   _versionFetching = true;
   return new Promise((resolve) => {
     execFile(
-      FLUX AGENT_PYTHON,
-      flux-agentCliArgs(["--version"]),
+      OMNIWORKER_PYTHON,
+      omniworkerCliArgs(["--version"]),
       {
-        cwd: FLUX AGENT_REPO,
+        cwd: OMNIWORKER_REPO,
         env: {
           ...process.env,
           PATH: getEnhancedPath(),
           HOME: homedir(),
-          FLUX AGENT_HOME,
+          OMNIWORKER_HOME,
         },
         timeout: 15000,
         ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -310,21 +310,21 @@ export function clearVersionCache(): void {
   _cachedVersion = null;
 }
 
-export function runFlux AgentDoctor(): string {
-  if (!existsSync(FLUX AGENT_PYTHON) || !existsSync(FLUX AGENT_SCRIPT)) {
+export function runOmniWorkerDoctor(): string {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
     return "Flux Agent is not installed.";
   }
   try {
     const output = execFileSync(
-      FLUX AGENT_PYTHON,
-      flux-agentCliArgs(["doctor"]),
+      OMNIWORKER_PYTHON,
+      omniworkerCliArgs(["doctor"]),
       {
-        cwd: FLUX AGENT_REPO,
+        cwd: OMNIWORKER_REPO,
         env: {
           ...process.env,
           PATH: getEnhancedPath(),
           HOME: homedir(),
-          FLUX AGENT_HOME,
+          OMNIWORKER_HOME,
         },
         stdio: ["ignore", "pipe", "pipe"],
         timeout: 30000,
@@ -338,9 +338,9 @@ export function runFlux AgentDoctor(): string {
   }
 }
 
-const OPENCLAW_DIR_NAMES = [".flux-agent", ".clawdbot", ".moldbot"];
+const OPENCLAW_DIR_NAMES = [".omniworker", ".clawdbot", ".moldbot"];
 
-export function checkFlux AgentExists(): {
+export function checkOmniWorkerExists(): {
   found: boolean;
   path: string | null;
 } {
@@ -356,12 +356,12 @@ export function checkFlux AgentExists(): {
 export async function runClawMigrate(
   onProgress: (progress: InstallProgress) => void,
 ): Promise<void> {
-  if (!existsSync(FLUX AGENT_PYTHON) || !existsSync(FLUX AGENT_SCRIPT)) {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
     throw new Error("Flux Agent is not installed.");
   }
 
-  const flux-agent = checkFlux AgentExists();
-  if (!flux-agent.found) {
+  const omniworker = checkOmniWorkerExists();
+  if (!omniworker.found) {
     throw new Error("No Flux Agent installation found.");
   }
 
@@ -377,18 +377,18 @@ export async function runClawMigrate(
     });
   }
 
-  emit(`Migrating from ${flux-agent.path}...\n`);
+  emit(`Migrating from ${omniworker.path}...\n`);
 
   return new Promise((resolve, reject) => {
-    const args = flux-agentCliArgs(["claw", "migrate", "--preset", "full"]);
+    const args = omniworkerCliArgs(["claw", "migrate", "--preset", "full"]);
 
-    const proc = spawn(FLUX AGENT_PYTHON, args, {
-      cwd: FLUX AGENT_REPO,
+    const proc = spawn(OMNIWORKER_PYTHON, args, {
+      cwd: OMNIWORKER_REPO,
       env: {
         ...process.env,
         PATH: getEnhancedPath(),
         HOME: homedir(),
-        FLUX AGENT_HOME,
+        OMNIWORKER_HOME,
         TERM: "dumb",
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -418,10 +418,10 @@ export async function runClawMigrate(
   });
 }
 
-export async function runFlux AgentUpdate(
+export async function runOmniWorkerUpdate(
   onProgress: (progress: InstallProgress) => void,
 ): Promise<void> {
-  if (!existsSync(FLUX AGENT_PYTHON) || !existsSync(FLUX AGENT_SCRIPT)) {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
     throw new Error("Flux Agent is not installed. Please install it first.");
   }
 
@@ -437,16 +437,16 @@ export async function runFlux AgentUpdate(
     });
   }
 
-  emit("Running flux-agent update...\n");
+  emit("Running omniworker update...\n");
 
   return new Promise((resolve, reject) => {
-    const proc = spawn(FLUX AGENT_PYTHON, flux-agentCliArgs(["update"]), {
-      cwd: FLUX AGENT_REPO,
+    const proc = spawn(OMNIWORKER_PYTHON, omniworkerCliArgs(["update"]), {
+      cwd: OMNIWORKER_REPO,
       env: {
         ...process.env,
         PATH: getEnhancedPath(),
         HOME: homedir(),
-        FLUX AGENT_HOME,
+        OMNIWORKER_HOME,
         TERM: "dumb",
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -510,7 +510,7 @@ const STAGE_MARKERS: { pattern: RegExp; step: number; title: string }[] = [
   },
   {
     pattern:
-      /Cloning|cloning|Updating.*repository|Repository|Installing to .*flux-agent-agent|Downloading PortableGit/i,
+      /Cloning|cloning|Updating.*repository|Repository|Installing to .*omniworker-agent|Downloading PortableGit/i,
     step: 4,
     title: "Downloading Flux Agent Agent",
   },
@@ -531,7 +531,7 @@ const STAGE_MARKERS: { pattern: RegExp; step: number; title: string }[] = [
     // used to match here and pinned the progress bar at 100% while Playwright
     // and TUI deps were still running — see issue #104.
     pattern:
-      /Installation complete|flux-agent command ready|Configuration directory ready|Flux Agent (installation )?(finished|is ready)/i,
+      /Installation complete|omniworker command ready|Configuration directory ready|Flux Agent (installation )?(finished|is ready)/i,
     step: 7,
     title: "Finishing setup",
   },
@@ -617,11 +617,11 @@ export async function runInstall(
     emit("Authenticating with Flux Agent servers...\n");
     const tarballPath = join(
       tmpdir(),
-      `flux-agent-agent-${randomBytes(6).toString("hex")}.tar.gz`,
+      `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`,
     );
 
     await new Promise<void>((res, rej) => {
-      const url = `${SAAS_BASE_URL}/downloads/flux-agent-agent.tar.gz`;
+      const url = `${SAAS_BASE_URL}/downloads/omniworker-agent.tar.gz`;
       const file = createWriteStream(tarballPath);
       const req = https.get(
         url,
@@ -656,10 +656,10 @@ export async function runInstall(
     });
 
     emit("Extracting agent package...\n");
-    mkdirSync(FLUX AGENT_REPO, { recursive: true });
-    await extract({ cwd: FLUX AGENT_REPO, file: tarballPath, strip: 1 });
+    mkdirSync(OMNIWORKER_REPO, { recursive: true });
+    await extract({ cwd: OMNIWORKER_REPO, file: tarballPath, strip: 1 });
 
-    localInstallScript = join(FLUX AGENT_REPO, "scripts", "install.sh");
+    localInstallScript = join(OMNIWORKER_REPO, "scripts", "install.sh");
     if (!existsSync(localInstallScript)) {
       throw new Error(
         "Downloaded agent package is missing install.sh. Please contact support.",
@@ -669,8 +669,8 @@ export async function runInstall(
   } else {
     // Development mode: use local repo path
     const devPaths = [
-      join(__dirname, "../../../flux-agent-agent/scripts/install.sh"),
-      join(__dirname, "../../flux-agent-agent/scripts/install.sh"),
+      join(__dirname, "../../../omniworker-agent/scripts/install.sh"),
+      join(__dirname, "../../omniworker-agent/scripts/install.sh"),
     ];
     for (const p of devPaths) {
       if (existsSync(p)) {
@@ -682,7 +682,7 @@ export async function runInstall(
       throw new Error(
         "Agent source not found. The desktop app does not bundle the agent code.\n" +
           "In production, the agent is downloaded after login.\n" +
-          "In development, ensure the flux-agent-agent repo is cloned alongside the desktop.",
+          "In development, ensure the omniworker-agent repo is cloned alongside the desktop.",
       );
     }
   }
@@ -698,7 +698,7 @@ export async function runInstall(
 
       const installCmd = [
         shellProfile ? `source "${shellProfile}" 2>/dev/null;` : "",
-        `bash "${localInstallScript}" --dir "${FLUX AGENT_REPO}" --local --skip-setup`,
+        `bash "${localInstallScript}" --dir "${OMNIWORKER_REPO}" --local --skip-setup`,
       ].join(" ");
 
       const basePath = getEnhancedPath();
@@ -731,7 +731,7 @@ export async function runInstall(
           // The install script can exit non-zero due to benign issues
           // (e.g. git stash pop failure on already-clean repo).
           // If Flux Agent is actually installed and working, treat as success.
-          if (existsSync(FLUX AGENT_PYTHON) && existsSync(FLUX AGENT_SCRIPT)) {
+          if (existsSync(OMNIWORKER_PYTHON) && existsSync(OMNIWORKER_SCRIPT)) {
             emit(
               "\nInstall script exited with warnings, but Flux Agent is installed successfully.\n",
             );
@@ -785,11 +785,11 @@ async function runInstallWindows(
     emit("Authenticating with Flux Agent servers...\n");
     const tarballPath = join(
       tmpdir(),
-      `flux-agent-agent-${randomBytes(6).toString("hex")}.tar.gz`,
+      `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`,
     );
 
     await new Promise<void>((res, rej) => {
-      const url = `${SAAS_BASE_URL}/downloads/flux-agent-agent.tar.gz`;
+      const url = `${SAAS_BASE_URL}/downloads/omniworker-agent.tar.gz`;
       const file = createWriteStream(tarballPath);
       const req = https.get(
         url,
@@ -824,10 +824,10 @@ async function runInstallWindows(
     });
 
     emit("Extracting agent package...\n");
-    mkdirSync(FLUX AGENT_REPO, { recursive: true });
-    await extract({ cwd: FLUX AGENT_REPO, file: tarballPath, strip: 1 });
+    mkdirSync(OMNIWORKER_REPO, { recursive: true });
+    await extract({ cwd: OMNIWORKER_REPO, file: tarballPath, strip: 1 });
 
-    localInstallScript = join(FLUX AGENT_REPO, "scripts", "install.ps1");
+    localInstallScript = join(OMNIWORKER_REPO, "scripts", "install.ps1");
     if (!existsSync(localInstallScript)) {
       throw new Error(
         "Downloaded agent package is missing install.ps1. Please contact support.",
@@ -837,8 +837,8 @@ async function runInstallWindows(
   } else {
     // Development mode: use local repo path
     const devPaths = [
-      join(__dirname, "../../../flux-agent-agent/scripts/install.ps1"),
-      join(__dirname, "../../flux-agent-agent/scripts/install.ps1"),
+      join(__dirname, "../../../omniworker-agent/scripts/install.ps1"),
+      join(__dirname, "../../omniworker-agent/scripts/install.ps1"),
     ];
     for (const p of devPaths) {
       if (existsSync(p)) {
@@ -850,14 +850,14 @@ async function runInstallWindows(
       throw new Error(
         "Agent source not found. The desktop app does not bundle the agent code.\n" +
           "In production, the agent is downloaded after login.\n" +
-          "In development, ensure the flux-agent-agent repo is cloned alongside the desktop.",
+          "In development, ensure the omniworker-agent repo is cloned alongside the desktop.",
       );
     }
   }
 
   const home = homedir();
-  const flux-agentHome = FLUX AGENT_HOME;
-  const installDir = FLUX AGENT_REPO;
+  const omniworkerHome = OMNIWORKER_HOME;
+  const installDir = OMNIWORKER_REPO;
 
   const psExe = resolvePowerShellExe();
   const basePath = getEnhancedPath();
@@ -873,8 +873,8 @@ async function runInstallWindows(
         "-File",
         localInstallScript,
         "-SkipSetup",
-        "-Flux AgentHome",
-        flux-agentHome,
+        "-OmniWorkerHome",
+        omniworkerHome,
         "-InstallDir",
         installDir,
       ],
@@ -883,7 +883,7 @@ async function runInstallWindows(
         env: {
           ...process.env,
           PATH: basePath,
-          FLUX AGENT_HOME: flux-agentHome,
+          OMNIWORKER_HOME: omniworkerHome,
           // Hint that we're not interactive so install.ps1 doesn't `pause`
           // (the .cmd wrapper does on failure, but -File on .ps1 won't).
           NO_COLOR: "1",
@@ -908,7 +908,7 @@ async function runInstallWindows(
         return;
       }
       // Same tolerance as the bash path: if the binary tree exists, count it.
-      if (existsSync(FLUX AGENT_PYTHON) && existsSync(FLUX AGENT_SCRIPT)) {
+      if (existsSync(OMNIWORKER_PYTHON) && existsSync(OMNIWORKER_SCRIPT)) {
         emit(
           "\nInstall script exited with warnings, but Flux Agent is installed successfully.\n",
         );
@@ -933,27 +933,27 @@ async function runInstallWindows(
 //  Backup & Import
 // ────────────────────────────────────────────────────
 
-export async function runFlux AgentBackup(
+export async function runOmniWorkerBackup(
   profile?: string,
 ): Promise<{ success: boolean; path?: string; error?: string }> {
-  if (!existsSync(FLUX AGENT_PYTHON) || !existsSync(FLUX AGENT_SCRIPT)) {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
     return { success: false, error: "Flux Agent is not installed." };
   }
-  const args = flux-agentCliArgs();
+  const args = omniworkerCliArgs();
   if (profile && profile !== "default") args.push("-p", profile);
   args.push("backup");
 
   return new Promise((resolve) => {
     execFile(
-      FLUX AGENT_PYTHON,
+      OMNIWORKER_PYTHON,
       args,
       {
-        cwd: FLUX AGENT_REPO,
+        cwd: OMNIWORKER_REPO,
         env: {
           ...process.env,
           PATH: getEnhancedPath(),
           HOME: homedir(),
-          FLUX AGENT_HOME,
+          OMNIWORKER_HOME,
           TERM: "dumb",
         },
         timeout: 120000,
@@ -981,28 +981,28 @@ export async function runFlux AgentBackup(
   });
 }
 
-export async function runFlux AgentImport(
+export async function runOmniWorkerImport(
   archivePath: string,
   profile?: string,
 ): Promise<{ success: boolean; error?: string }> {
-  if (!existsSync(FLUX AGENT_PYTHON) || !existsSync(FLUX AGENT_SCRIPT)) {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
     return { success: false, error: "Flux Agent is not installed." };
   }
-  const args = flux-agentCliArgs();
+  const args = omniworkerCliArgs();
   if (profile && profile !== "default") args.push("-p", profile);
   args.push("import", archivePath);
 
   return new Promise((resolve) => {
     execFile(
-      FLUX AGENT_PYTHON,
+      OMNIWORKER_PYTHON,
       args,
       {
-        cwd: FLUX AGENT_REPO,
+        cwd: OMNIWORKER_REPO,
         env: {
           ...process.env,
           PATH: getEnhancedPath(),
           HOME: homedir(),
-          FLUX AGENT_HOME,
+          OMNIWORKER_HOME,
           TERM: "dumb",
         },
         timeout: 120000,
@@ -1026,21 +1026,21 @@ export async function runFlux AgentImport(
 //  Debug dump
 // ────────────────────────────────────────────────────
 
-export function runFlux AgentDump(): Promise<string> {
-  if (!existsSync(FLUX AGENT_PYTHON) || !existsSync(FLUX AGENT_SCRIPT)) {
+export function runOmniWorkerDump(): Promise<string> {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
     return Promise.resolve("Flux Agent is not installed.");
   }
   return new Promise((resolve) => {
     execFile(
-      FLUX AGENT_PYTHON,
-      flux-agentCliArgs(["dump"]),
+      OMNIWORKER_PYTHON,
+      omniworkerCliArgs(["dump"]),
       {
-        cwd: FLUX AGENT_REPO,
+        cwd: OMNIWORKER_REPO,
         env: {
           ...process.env,
           PATH: getEnhancedPath(),
           HOME: homedir(),
-          FLUX AGENT_HOME,
+          OMNIWORKER_HOME,
           TERM: "dumb",
         },
         timeout: 30000,
@@ -1076,7 +1076,7 @@ export interface MemoryProviderInfo {
 export function discoverMemoryProviders(
   profile?: string,
 ): MemoryProviderInfo[] {
-  const pluginsDir = join(FLUX AGENT_REPO, "plugins", "memory");
+  const pluginsDir = join(OMNIWORKER_REPO, "plugins", "memory");
   if (!existsSync(pluginsDir)) return [];
 
   const activeProvider = getActiveMemoryProvider(profile);
@@ -1242,7 +1242,7 @@ export function readLogs(
   logFile = "agent.log",
   lines = 200,
 ): { content: string; path: string } {
-  const logsDir = join(FLUX AGENT_HOME, "logs");
+  const logsDir = join(OMNIWORKER_HOME, "logs");
   // Sanitize: only allow known log file names
   const allowed = ["agent.log", "errors.log", "gateway.log"];
   const file = allowed.includes(logFile) ? logFile : "agent.log";
@@ -1266,7 +1266,7 @@ export async function downloadSLM(
   onProgress: (progress: InstallProgress) => void,
   authToken?: string,
 ): Promise<void> {
-  const modelDir = join(FLUX AGENT_HOME, "local-llm", "engine");
+  const modelDir = join(OMNIWORKER_HOME, "local-llm", "engine");
   const modelPath = join(modelDir, "slm.gguf");
   
   if (!existsSync(modelDir)) {
@@ -1344,7 +1344,7 @@ export async function downloadSLM(
 export async function downloadAndInstallOpenwa(
   onProgress: (progress: InstallProgress) => void,
 ): Promise<void> {
-  const openwaDir = join(FLUX AGENT_HOME, "openwa");
+  const openwaDir = join(OMNIWORKER_HOME, "openwa");
   const tempTarball = join(tmpdir(), `openwa-${randomBytes(4).toString("hex")}.tar.gz`);
 
   if (!existsSync(openwaDir)) {

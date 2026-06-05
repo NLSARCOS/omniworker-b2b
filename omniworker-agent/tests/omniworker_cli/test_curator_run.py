@@ -1,4 +1,4 @@
-"""Tests for `flux-agent curator run` CLI behavior."""
+"""Tests for `omniworker curator run` CLI behavior."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def _args(**kwargs):
 
 def test_run_defaults_to_synchronous(monkeypatch, capsys):
     import agent.curator as curator_state
-    import flux-agent_cli.curator as curator_cli
+    import omniworker_cli.curator as curator_cli
 
     calls = []
     monkeypatch.setattr(curator_state, "is_enabled", lambda: True)
@@ -36,7 +36,7 @@ def test_run_defaults_to_synchronous(monkeypatch, capsys):
 
 def test_run_background_opts_into_async(monkeypatch, capsys):
     import agent.curator as curator_state
-    import flux-agent_cli.curator as curator_cli
+    import omniworker_cli.curator as curator_cli
 
     calls = []
     monkeypatch.setattr(curator_state, "is_enabled", lambda: True)
@@ -54,7 +54,7 @@ def test_run_background_opts_into_async(monkeypatch, capsys):
 
 def test_run_sync_wins_over_background(monkeypatch):
     import agent.curator as curator_state
-    import flux-agent_cli.curator as curator_cli
+    import omniworker_cli.curator as curator_cli
 
     calls = []
     monkeypatch.setattr(curator_state, "is_enabled", lambda: True)
@@ -71,7 +71,7 @@ def test_run_sync_wins_over_background(monkeypatch):
 
 def test_dry_run_default_reports_synchronous_wording(monkeypatch, capsys):
     import agent.curator as curator_state
-    import flux-agent_cli.curator as curator_cli
+    import omniworker_cli.curator as curator_cli
 
     monkeypatch.setattr(curator_state, "is_enabled", lambda: True)
     monkeypatch.setattr(
@@ -84,4 +84,4 @@ def test_dry_run_default_reports_synchronous_wording(monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "When the report lands" not in out
-    assert "Read the report with `flux-agent curator status`" in out
+    assert "Read the report with `omniworker curator status`" in out

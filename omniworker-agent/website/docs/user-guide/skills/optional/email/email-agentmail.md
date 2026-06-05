@@ -8,13 +8,13 @@ description: "Give the agent its own dedicated email inbox via AgentMail"
 
 # Agentmail
 
-Give the agent its own dedicated email inbox via AgentMail. Send, receive, and manage email autonomously using agent-owned email addresses (e.g. flux-agent-agent@agentmail.to).
+Give the agent its own dedicated email inbox via AgentMail. Send, receive, and manage email autonomously using agent-owned email addresses (e.g. omniworker-agent@agentmail.to).
 
 ## Skill metadata
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/email/agentmail` |
+| Source | Optional — install with `omniworker skills install official/email/agentmail` |
 | Path | `optional-skills/email/agentmail` |
 | Version | `1.0.0` |
 | Platforms | linux, macos, windows |
@@ -52,7 +52,7 @@ AgentMail gives the agent its own identity and inbox.
 - Create an account and generate an API key (starts with `am_`)
 
 ### 2. Configure MCP Server
-Add to `~/.flux-agent/config.yaml` (paste your actual key — MCP env vars are not expanded from .env):
+Add to `~/.omniworker/config.yaml` (paste your actual key — MCP env vars are not expanded from .env):
 ```yaml
 mcp_servers:
   agentmail:
@@ -64,7 +64,7 @@ mcp_servers:
 
 ### 3. Restart Flux Agent
 ```bash
-flux-agent
+omniworker
 ```
 All 11 AgentMail tools are now available automatically.
 
@@ -88,8 +88,8 @@ All 11 AgentMail tools are now available automatically.
 
 ### Create an inbox and send an email
 1. Create a dedicated inbox:
-   - Use `create_inbox` with a username (e.g. `flux-agent-agent`)
-   - The agent gets address: `flux-agent-agent@agentmail.to`
+   - Use `create_inbox` with a username (e.g. `omniworker-agent`)
+   - The agent gets address: `omniworker-agent@agentmail.to`
 2. Send an email:
    - Use `send_message` with `inbox_id`, `to`, `subject`, `text`
 3. Check for replies:
@@ -117,7 +117,7 @@ All 11 AgentMail tools are now available automatically.
 
 **Agent-to-human outreach:**
 ```
-1. create_inbox (username: "flux-agent-outreach")
+1. create_inbox (username: "omniworker-outreach")
 2. send_message (to: user@example.com, subject: "Hello", text: "...")
 3. list_threads to check for replies
 ```
@@ -132,7 +132,7 @@ All 11 AgentMail tools are now available automatically.
 ## Verification
 After setup, test with:
 ```
-flux-agent --toolsets mcp -q "Create an AgentMail inbox called test-agent and tell me its email address"
+omniworker --toolsets mcp -q "Create an AgentMail inbox called test-agent and tell me its email address"
 ```
 You should see the new inbox address returned.
 

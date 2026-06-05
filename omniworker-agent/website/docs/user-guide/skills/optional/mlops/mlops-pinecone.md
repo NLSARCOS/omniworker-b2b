@@ -14,7 +14,7 @@ Managed vector database for production AI applications. Fully managed, auto-scal
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/mlops/pinecone` |
+| Source | Optional — install with `omniworker skills install official/mlops/pinecone` |
 | Path | `optional-skills/mlops/pinecone` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |

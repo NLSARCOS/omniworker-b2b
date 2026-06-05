@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from flux-agent_cli.codex_runtime_plugin_migration import (
+from omniworker_cli.codex_runtime_plugin_migration import (
     MIGRATION_MARKER,
     MIGRATION_END_MARKER,
     MigrationReport,
-    _build_flux-agent_tools_mcp_entry,
+    _build_omniworker_tools_mcp_entry,
     _format_toml_value,
     _looks_like_test_tempdir,
     _strip_existing_managed_block,
@@ -188,7 +188,7 @@ class TestTomlValueFormatter:
         migrate({"mcp_servers": {"x": {"command": "y"}}},
                 codex_home=tmp_path,
                 discover_plugins=False,
-                expose_flux-agent_tools=False,
+                expose_omniworker_tools=False,
                 default_permission_profile=None)
         # config.toml should exist
         assert (tmp_path / "config.toml").exists()
@@ -212,7 +212,7 @@ class TestTomlValueFormatter:
             {"mcp_servers": {"x": {"command": "y"}}},
             codex_home=tmp_path,
             discover_plugins=False,
-            expose_flux-agent_tools=False,
+            expose_omniworker_tools=False,
             default_permission_profile=None,
         )
         # Error surfaced
@@ -308,13 +308,13 @@ class TestStripExistingManagedBlock:
         assert 'foo = "bar"' in out
 
 
-# ---- end-to-end migrate(, expose_flux-agent_tools=False) ----
+# ---- end-to-end migrate(, expose_omniworker_tools=False) ----
 
 class TestMigrate:
     def test_no_servers_no_plugins_no_perms_writes_placeholder(self, tmp_path):
         report = migrate({}, codex_home=tmp_path,
                          discover_plugins=False,
-                         default_permission_profile=None, expose_flux-agent_tools=False)
+                         default_permission_profile=None, expose_omniworker_tools=False)
         assert report.written
         text = (tmp_path / "config.toml").read_text()
         assert MIGRATION_MARKER in text
@@ -324,7 +324,7 @@ class TestMigrate:
         """Even with zero MCP servers, enabling the runtime should write the
         default permissions profile so users don't get prompted on every
         write attempt. This is the fix for quirk #2."""
-        report = migrate({}, codex_home=tmp_path, discover_plugins=False, expose_flux-agent_tools=False)
+        report = migrate({}, codex_home=tmp_path, discover_plugins=False, expose_omniworker_tools=False)
         assert report.written
         text = (tmp_path / "config.toml").read_text()
         # Codex's schema: top-level `default_permissions` keying a built-in
@@ -337,7 +337,7 @@ class TestMigrate:
         report = migrate({"mcp_servers": {"x": {"command": "y"}}},
                          codex_home=tmp_path,
                          discover_plugins=False,
-                         default_permission_profile=None, expose_flux-agent_tools=False)
+                         default_permission_profile=None, expose_omniworker_tools=False)
         text = (tmp_path / "config.toml").read_text()
         assert "default_permissions" not in text
         assert "[permissions]" not in text
@@ -346,7 +346,7 @@ class TestMigrate:
     def test_plugin_discovery_writes_plugin_blocks(self, tmp_path, monkeypatch):
         """Discovered curated plugins land as [plugins."<name>@<marketplace>"]
         blocks. This is what Flux Agent calls 'migrate native codex plugins.'"""
-        from flux-agent_cli import codex_runtime_plugin_migration as crpm
+        from omniworker_cli import codex_runtime_plugin_migration as crpm
 
         def fake_query(codex_home=None, timeout=8.0):
             return [
@@ -369,8 +369,8 @@ class TestMigrate:
         """Plugins where codex reports availability != AVAILABLE should
         be skipped — they're broken/uninstallable on codex's side, so
         migrating them would write config that fails at activation
-        time. Cf. flux-agent#80815."""
-        from flux-agent_cli.codex_runtime_plugin_migration import _query_codex_plugins
+        time. Cf. omniworker#80815."""
+        from omniworker_cli.codex_runtime_plugin_migration import _query_codex_plugins
         from unittest.mock import patch
 
         # Fake a plugin/list response where one plugin is unavailable
@@ -416,14 +416,14 @@ class TestMigrate:
     def test_plugin_discovery_failure_non_fatal(self, tmp_path, monkeypatch):
         """If codex isn't installed or RPC fails, MCP migration still
         completes. The error surfaces in the report but doesn't abort."""
-        from flux-agent_cli import codex_runtime_plugin_migration as crpm
+        from omniworker_cli import codex_runtime_plugin_migration as crpm
 
         def fake_query_fails(codex_home=None, timeout=8.0):
             return [], "codex CLI not available"
         monkeypatch.setattr(crpm, "_query_codex_plugins", fake_query_fails)
 
         report = migrate({"mcp_servers": {"x": {"command": "y"}}},
-                         codex_home=tmp_path, discover_plugins=True, expose_flux-agent_tools=False)
+                         codex_home=tmp_path, discover_plugins=True, expose_omniworker_tools=False)
         assert report.written
         assert report.migrated == ["x"]
         assert report.plugin_query_error == "codex CLI not available"
@@ -432,7 +432,7 @@ class TestMigrate:
     def test_discover_plugins_false_skips_query(self, tmp_path, monkeypatch):
         """Tests and restricted environments can opt out of the subprocess
         spawn entirely."""
-        from flux-agent_cli import codex_runtime_plugin_migration as crpm
+        from omniworker_cli import codex_runtime_plugin_migration as crpm
 
         called = {"yes": False}
         def boom(*a, **kw):
@@ -441,13 +441,13 @@ class TestMigrate:
         monkeypatch.setattr(crpm, "_query_codex_plugins", boom)
 
         migrate({"mcp_servers": {"x": {"command": "y"}}},
-                codex_home=tmp_path, discover_plugins=False, expose_flux-agent_tools=False)
+                codex_home=tmp_path, discover_plugins=False, expose_omniworker_tools=False)
         assert called["yes"] is False
 
     def test_dry_run_skips_plugin_query(self, tmp_path, monkeypatch):
         """Dry run should never spawn codex. Even with discover_plugins=True
         the query is skipped because dry_run takes precedence."""
-        from flux-agent_cli import codex_runtime_plugin_migration as crpm
+        from omniworker_cli import codex_runtime_plugin_migration as crpm
 
         called = {"yes": False}
         def boom(*a, **kw):
@@ -456,13 +456,13 @@ class TestMigrate:
         monkeypatch.setattr(crpm, "_query_codex_plugins", boom)
 
         migrate({"mcp_servers": {"x": {"command": "y"}}},
-                codex_home=tmp_path, dry_run=True, discover_plugins=True, expose_flux-agent_tools=False)
+                codex_home=tmp_path, dry_run=True, discover_plugins=True, expose_omniworker_tools=False)
         assert called["yes"] is False
 
     def test_re_run_replaces_plugin_block(self, tmp_path, monkeypatch):
         """Plugin blocks are managed and re-runs should replace them
         cleanly — same idempotency contract as MCP servers."""
-        from flux-agent_cli import codex_runtime_plugin_migration as crpm
+        from omniworker_cli import codex_runtime_plugin_migration as crpm
 
         # First run: only github
         monkeypatch.setattr(crpm, "_query_codex_plugins",
@@ -471,7 +471,7 @@ class TestMigrate:
                                 None,
                             ))
         migrate({}, codex_home=tmp_path, discover_plugins=True,
-                default_permission_profile=None, expose_flux-agent_tools=False)
+                default_permission_profile=None, expose_omniworker_tools=False)
         first = (tmp_path / "config.toml").read_text()
         assert "github@openai-curated" in first
 
@@ -482,50 +482,50 @@ class TestMigrate:
                                 None,
                             ))
         migrate({}, codex_home=tmp_path, discover_plugins=True,
-                default_permission_profile=None, expose_flux-agent_tools=False)
+                default_permission_profile=None, expose_omniworker_tools=False)
         second = (tmp_path / "config.toml").read_text()
         assert "github@openai-curated" not in second
         assert "canva@openai-curated" in second
 
-    def test_expose_flux-agent_tools_writes_callback_mcp_entry(self, tmp_path):
-        """When expose_flux-agent_tools=True (production default), an
-        [mcp_servers.flux-agent-tools] entry is written so codex calls back
+    def test_expose_omniworker_tools_writes_callback_mcp_entry(self, tmp_path):
+        """When expose_omniworker_tools=True (production default), an
+        [mcp_servers.omniworker-tools] entry is written so codex calls back
         into Flux Agent for browser/web/delegate_task/vision/memory tools.
 
         This is the fix for 'all other tools that codex doesn't provide
-        should be useable by flux-agent' — quirk #7."""
+        should be useable by omniworker' — quirk #7."""
         report = migrate({}, codex_home=tmp_path,
                          discover_plugins=False,
                          default_permission_profile=None,
-                         expose_flux-agent_tools=True)
+                         expose_omniworker_tools=True)
         text = (tmp_path / "config.toml").read_text()
-        assert "[mcp_servers.flux-agent-tools]" in text
-        assert "flux-agent_tools_mcp_server" in text
+        assert "[mcp_servers.omniworker-tools]" in text
+        assert "omniworker_tools_mcp_server" in text
         # Must include startup + tool timeouts so codex doesn't give up
         assert "startup_timeout_sec" in text
         assert "tool_timeout_sec" in text
         # And the entry is reported
-        assert "flux-agent-tools" in report.migrated
+        assert "omniworker-tools" in report.migrated
 
-    def test_expose_flux-agent_tools_disabled_skips_entry(self, tmp_path):
-        """expose_flux-agent_tools=False suppresses the callback registration."""
+    def test_expose_omniworker_tools_disabled_skips_entry(self, tmp_path):
+        """expose_omniworker_tools=False suppresses the callback registration."""
         migrate({}, codex_home=tmp_path,
                 discover_plugins=False,
                 default_permission_profile=None,
-                expose_flux-agent_tools=False)
+                expose_omniworker_tools=False)
         text = (tmp_path / "config.toml").read_text()
-        assert "[mcp_servers.flux-agent-tools]" not in text
-        assert "flux-agent_tools_mcp_server" not in text
+        assert "[mcp_servers.omniworker-tools]" not in text
+        assert "omniworker_tools_mcp_server" not in text
 
     def test_dry_run_doesnt_write(self, tmp_path):
         report = migrate({"mcp_servers": {"x": {"command": "y"}}},
-                         codex_home=tmp_path, dry_run=True, expose_flux-agent_tools=False)
+                         codex_home=tmp_path, dry_run=True, expose_omniworker_tools=False)
         assert report.dry_run is True
         assert not (tmp_path / "config.toml").exists()
         assert "x" in report.migrated
 
     def test_full_migration_round_trip(self, tmp_path):
-        flux-agent_cfg = {
+        omniworker_cfg = {
             "mcp_servers": {
                 "filesystem": {
                     "command": "npx",
@@ -537,7 +537,7 @@ class TestMigrate:
                 },
             }
         }
-        report = migrate(flux-agent_cfg, codex_home=tmp_path, expose_flux-agent_tools=False)
+        report = migrate(omniworker_cfg, codex_home=tmp_path, expose_omniworker_tools=False)
         assert report.written
         text = (tmp_path / "config.toml").read_text()
         assert "[mcp_servers.filesystem]" in text
@@ -547,11 +547,11 @@ class TestMigrate:
 
     def test_idempotent_re_run_replaces_managed_block(self, tmp_path):
         # First migration
-        migrate({"mcp_servers": {"a": {"command": "x"}}}, codex_home=tmp_path, expose_flux-agent_tools=False)
+        migrate({"mcp_servers": {"a": {"command": "x"}}}, codex_home=tmp_path, expose_omniworker_tools=False)
         first_text = (tmp_path / "config.toml").read_text()
         assert "[mcp_servers.a]" in first_text
         # Second migration with different servers
-        migrate({"mcp_servers": {"b": {"command": "y"}}}, codex_home=tmp_path, expose_flux-agent_tools=False)
+        migrate({"mcp_servers": {"b": {"command": "y"}}}, codex_home=tmp_path, expose_omniworker_tools=False)
         second_text = (tmp_path / "config.toml").read_text()
         assert "[mcp_servers.a]" not in second_text
         assert "[mcp_servers.b]" in second_text
@@ -565,7 +565,7 @@ class TestMigrate:
             "[providers.openai]\n"
             'api_key = "sk-test"\n'
         )
-        migrate({"mcp_servers": {"a": {"command": "x"}}}, codex_home=tmp_path, expose_flux-agent_tools=False)
+        migrate({"mcp_servers": {"a": {"command": "x"}}}, codex_home=tmp_path, expose_omniworker_tools=False)
         new_text = target.read_text()
         # User's codex config preserved
         assert "[model]" in new_text
@@ -589,7 +589,7 @@ class TestMigrate:
             "[features]\n"
             "terminal_resize_reflow = true\n"
         )
-        migrate({}, codex_home=tmp_path, discover_plugins=False, expose_flux-agent_tools=False)
+        migrate({}, codex_home=tmp_path, discover_plugins=False, expose_omniworker_tools=False)
         new_text = target.read_text()
         parsed = tomllib.loads(new_text)
         assert parsed["default_permissions"] == ":workspace"
@@ -608,9 +608,9 @@ class TestMigrate:
             'args = ["--above"]\n'
         )
         # First migrate — adds managed block below user content
-        migrate({"mcp_servers": {"flux-agent-mcp": {"command": "npx"}}},
+        migrate({"mcp_servers": {"omniworker-mcp": {"command": "npx"}}},
                 codex_home=tmp_path, discover_plugins=False,
-                expose_flux-agent_tools=False)
+                expose_omniworker_tools=False)
         text = target.read_text()
         assert "user-above" in text, "user MCP server above managed block got nuked"
         assert 'command = "/usr/bin/above-server"' in text
@@ -620,14 +620,14 @@ class TestMigrate:
             text + "\n[mcp_servers.user-below]\ncommand = \"below-server\"\n"
         )
         # Re-migrate — both should survive
-        migrate({"mcp_servers": {"flux-agent-mcp": {"command": "npx"}}},
+        migrate({"mcp_servers": {"omniworker-mcp": {"command": "npx"}}},
                 codex_home=tmp_path, discover_plugins=False,
-                expose_flux-agent_tools=False)
+                expose_omniworker_tools=False)
         final = target.read_text()
         assert "user-above" in final
         assert "user-below" in final
         # And our managed block is still there with the new content
-        assert "[mcp_servers.flux-agent-mcp]" in final
+        assert "[mcp_servers.omniworker-mcp]" in final
 
     def test_skipped_keys_reported(self, tmp_path):
         report = migrate({
@@ -637,25 +637,25 @@ class TestMigrate:
                     "sampling": {"enabled": True},  # codex has no equivalent
                 }
             }
-        }, codex_home=tmp_path, expose_flux-agent_tools=False)
+        }, codex_home=tmp_path, expose_omniworker_tools=False)
         assert "x" in report.skipped_keys_per_server
         assert any("sampling" in s for s in report.skipped_keys_per_server["x"])
 
     def test_invalid_mcp_servers_value(self, tmp_path):
-        report = migrate({"mcp_servers": "notadict"}, codex_home=tmp_path, expose_flux-agent_tools=False)
+        report = migrate({"mcp_servers": "notadict"}, codex_home=tmp_path, expose_omniworker_tools=False)
         assert any("not a dict" in e for e in report.errors)
 
     def test_server_without_transport_skipped_with_error(self, tmp_path):
         report = migrate({
             "mcp_servers": {"broken": {"description": "no command/url"}}
-        }, codex_home=tmp_path, expose_flux-agent_tools=False)
+        }, codex_home=tmp_path, expose_omniworker_tools=False)
         assert "broken" not in report.migrated
         assert any("broken" in e for e in report.errors)
 
     def test_summary_reports_migration_count(self, tmp_path):
         report = migrate({
             "mcp_servers": {"a": {"command": "x"}, "b": {"command": "y"}}
-        }, codex_home=tmp_path, expose_flux-agent_tools=False)
+        }, codex_home=tmp_path, expose_omniworker_tools=False)
         summary = report.summary()
         assert "Migrated 2 MCP server(s)" in summary
         assert "- a" in summary
@@ -670,7 +670,7 @@ class TestStripUnmanagedPluginTables:
 
     When codex itself writes ``[plugins."<name>@<marketplace>"]`` tables
     (via the user running ``codex plugins enable`` directly), re-running
-    ``flux-agent codex-runtime migrate`` would re-emit them inside the managed
+    ``omniworker codex-runtime migrate`` would re-emit them inside the managed
     block and the resulting duplicate-table-header would crash codex.
     """
 
@@ -754,10 +754,10 @@ class TestStripUnmanagedPluginTables:
             )
 
         monkeypatch.setattr(
-            "flux-agent_cli.codex_runtime_plugin_migration._query_codex_plugins",
+            "omniworker_cli.codex_runtime_plugin_migration._query_codex_plugins",
             fake_query,
         )
-        migrate({}, codex_home=tmp_path, discover_plugins=True, expose_flux-agent_tools=False)
+        migrate({}, codex_home=tmp_path, discover_plugins=True, expose_omniworker_tools=False)
         new_text = target.read_text()
         # Only ONE [plugins."tasks@openai-curated"] header should remain — inside
         # the managed block — not the original outside-the-block copy.
@@ -785,81 +785,81 @@ class TestStripUnmanagedPluginTables:
             return ([], "plugin/list query failed: codex not installed")
 
         monkeypatch.setattr(
-            "flux-agent_cli.codex_runtime_plugin_migration._query_codex_plugins",
+            "omniworker_cli.codex_runtime_plugin_migration._query_codex_plugins",
             fake_query,
         )
-        migrate({}, codex_home=tmp_path, discover_plugins=True, expose_flux-agent_tools=False)
+        migrate({}, codex_home=tmp_path, discover_plugins=True, expose_omniworker_tools=False)
         new_text = target.read_text()
         # User's plugin table preserved verbatim — we can't re-emit it.
         assert '[plugins."tasks@openai-curated"]' in new_text
 
 
-# ---- Bug C: FLUX AGENT_HOME tempdir leak into ~/.codex/config.toml ----
+# ---- Bug C: OMNIWORKER_HOME tempdir leak into ~/.codex/config.toml ----
 
 
-class TestFlux AgentHomeLeakGuard:
+class TestOmniWorkerHomeLeakGuard:
     """Regression tests for issue #26250 Bug C.
 
-    Previously ``_build_flux-agent_tools_mcp_entry()`` read ``FLUX AGENT_HOME``
+    Previously ``_build_omniworker_tools_mcp_entry()`` read ``OMNIWORKER_HOME``
     directly from ``os.environ``, so a pytest ``monkeypatch.setenv`` would
     leak a transient tempdir path into the user's real ``~/.codex/config.toml``
-    once codex spawned the flux-agent-tools MCP subprocess.
+    once codex spawned the omniworker-tools MCP subprocess.
     """
 
     def test_tempdir_detector_recognizes_pytest_paths(self):
         assert _looks_like_test_tempdir(
-            "/private/var/folders/abc/pytest-of-kshitij/pytest-137/popen-gw2/test_X/flux-agent_test"
+            "/private/var/folders/abc/pytest-of-kshitij/pytest-137/popen-gw2/test_X/omniworker_test"
         )
         assert _looks_like_test_tempdir(
-            "/tmp/pytest-of-user/pytest-12/test_X/flux-agent"
+            "/tmp/pytest-of-user/pytest-12/test_X/omniworker"
         )
         assert _looks_like_test_tempdir(
             "/private/var/folders/zz/T/pytest-of-bob/pytest-1"
         )
 
-    def test_tempdir_detector_accepts_real_flux-agent_home(self):
-        assert not _looks_like_test_tempdir("/Users/alice/.flux-agent")
-        assert not _looks_like_test_tempdir("/home/bob/.flux-agent")
-        assert not _looks_like_test_tempdir("/opt/flux-agent")
+    def test_tempdir_detector_accepts_real_omniworker_home(self):
+        assert not _looks_like_test_tempdir("/Users/alice/.omniworker")
+        assert not _looks_like_test_tempdir("/home/bob/.omniworker")
+        assert not _looks_like_test_tempdir("/opt/omniworker")
         assert not _looks_like_test_tempdir("")
 
     def test_pytest_tempdir_not_burned_into_mcp_env(self, monkeypatch):
-        """The headline regression: even when FLUX AGENT_HOME points at a pytest
-        tempdir, _build_flux-agent_tools_mcp_entry() must NOT propagate it."""
+        """The headline regression: even when OMNIWORKER_HOME points at a pytest
+        tempdir, _build_omniworker_tools_mcp_entry() must NOT propagate it."""
         monkeypatch.setenv(
-            "FLUX AGENT_HOME",
-            "/private/var/folders/xx/pytest-of-user/pytest-99/test_x/flux-agent_test",
+            "OMNIWORKER_HOME",
+            "/private/var/folders/xx/pytest-of-user/pytest-99/test_x/omniworker_test",
         )
-        entry = _build_flux-agent_tools_mcp_entry()
+        entry = _build_omniworker_tools_mcp_entry()
         env = entry.get("env", {})
-        assert "FLUX AGENT_HOME" not in env, (
-            f"pytest-tempdir FLUX AGENT_HOME leaked into codex MCP entry: "
-            f"{env.get('FLUX AGENT_HOME')!r}"
+        assert "OMNIWORKER_HOME" not in env, (
+            f"pytest-tempdir OMNIWORKER_HOME leaked into codex MCP entry: "
+            f"{env.get('OMNIWORKER_HOME')!r}"
         )
 
-    def test_real_flux-agent_home_propagates(self, monkeypatch, tmp_path):
-        """A legitimate FLUX AGENT_HOME (not a tempdir path) DOES propagate so the
+    def test_real_omniworker_home_propagates(self, monkeypatch, tmp_path):
+        """A legitimate OMNIWORKER_HOME (not a tempdir path) DOES propagate so the
         MCP subprocess sees the same config as the parent CLI."""
         # Use a path that looks real — under /Users or /home, not /var/folders.
         # We can't easily create one in the test, so just use a stable path
         # outside any tempdir-detector needle. The detector checks for tempdir
         # markers, not for path existence.
-        real_path = "/Users/alice/.flux-agent"
-        monkeypatch.setenv("FLUX AGENT_HOME", real_path)
-        entry = _build_flux-agent_tools_mcp_entry()
+        real_path = "/Users/alice/.omniworker"
+        monkeypatch.setenv("OMNIWORKER_HOME", real_path)
+        entry = _build_omniworker_tools_mcp_entry()
         env = entry.get("env", {})
-        assert env.get("FLUX AGENT_HOME") == real_path
+        assert env.get("OMNIWORKER_HOME") == real_path
 
-    def test_unset_flux-agent_home_omits_env_key(self, monkeypatch):
-        """When FLUX AGENT_HOME is unset in the environment, the MCP entry MUST
+    def test_unset_omniworker_home_omits_env_key(self, monkeypatch):
+        """When OMNIWORKER_HOME is unset in the environment, the MCP entry MUST
         NOT bake in a resolved-default path. The codex subprocess should
-        inherit whatever FLUX AGENT_HOME its launcher (systemd, gateway, shell)
+        inherit whatever OMNIWORKER_HOME its launcher (systemd, gateway, shell)
         sets at runtime, rather than being pinned to migrate-time defaults.
         Regression guard for issue #26250 follow-up review."""
-        monkeypatch.delenv("FLUX AGENT_HOME", raising=False)
-        entry = _build_flux-agent_tools_mcp_entry()
+        monkeypatch.delenv("OMNIWORKER_HOME", raising=False)
+        entry = _build_omniworker_tools_mcp_entry()
         env = entry.get("env", {})
-        assert "FLUX AGENT_HOME" not in env, (
-            f"FLUX AGENT_HOME should not be set when env var is unset, got: "
-            f"{env.get('FLUX AGENT_HOME')!r}"
+        assert "OMNIWORKER_HOME" not in env, (
+            f"OMNIWORKER_HOME should not be set when env var is unset, got: "
+            f"{env.get('OMNIWORKER_HOME')!r}"
         )

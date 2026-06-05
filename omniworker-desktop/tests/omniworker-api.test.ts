@@ -53,7 +53,7 @@ const { TEST_HOME } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const os = require("os");
   return {
-    TEST_HOME: path.join(os.tmpdir(), `flux-agent-api-test-${Date.now()}`),
+    TEST_HOME: path.join(os.tmpdir(), `omniworker-api-test-${Date.now()}`),
   };
 });
 
@@ -61,7 +61,7 @@ vi.mock("../src/main/installer", () => ({
   OMNIWORKER_HOME: TEST_HOME,
   OMNIWORKER_PYTHON: "/usr/bin/python3",
   OMNIWORKER_REPO: "/dev/null",
-  flux-agentCliArgs: () => ["/dev/null"],
+  omniworkerCliArgs: () => ["/dev/null"],
   getEnhancedPath: () => process.env.PATH || "",
 }));
 
@@ -108,7 +108,7 @@ vi.mock("../src/main/process-options", () => ({
 import {
   sendMessage,
   stopHealthPolling as realStopHealthPolling,
-} from "../src/main/flux-agent";
+} from "../src/main/omniworker";
 
 describe("sendMessageViaApi forwards resumeSessionId", () => {
   beforeEach(() => {

@@ -86,7 +86,7 @@ USAGE
 
 .. code-block:: python
 
-    from flux-agent_cli.skin_engine import get_active_skin, list_skins, set_active_skin
+    from omniworker_cli.skin_engine import get_active_skin, list_skins, set_active_skin
 
     skin = get_active_skin()
     print(skin.colors["banner_title"])    # "#FFD700"
@@ -117,7 +117,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 
 logger = logging.getLogger(__name__)
 
@@ -136,8 +136,8 @@ class SkinConfig:
     branding: Dict[str, str] = field(default_factory=dict)
     tool_prefix: str = "┊"
     tool_emojis: Dict[str, str] = field(default_factory=dict)  # per-tool emoji overrides
-    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces FLUX AGENT_AGENT_LOGO)
-    banner_hero: str = ""    # Rich-markup hero art (replaces FLUX AGENT_CADUCEUS)
+    banner_logo: str = ""    # Rich-markup ASCII art logo (replaces OMNIWORKER_AGENT_LOGO)
+    banner_hero: str = ""    # Rich-markup hero art (replaces OMNIWORKER_CADUCEUS)
 
     def get_color(self, key: str, fallback: str = "") -> str:
         """Get a color value with fallback."""
@@ -655,7 +655,7 @@ _active_skin_name: str = "default"
 
 def _skins_dir() -> Path:
     """User skins directory."""
-    return get_flux-agent_home() / "skins"
+    return get_omniworker_home() / "skins"
 
 
 def _load_skin_from_yaml(path: Path) -> Optional[Dict[str, Any]]:

@@ -32,16 +32,16 @@ Pick whichever path is most convenient — both run the same upstream installer:
 **Option 1: dedicated CLI command (most direct).**
 
 ```
-flux-agent computer-use install
+omniworker computer-use install
 ```
 
 This fetches and runs the upstream cua-driver installer:
 `curl -fsSL https://raw.githubusercontent.com/trycua/cua/main/libs/cua-driver/scripts/install.sh`.
-Use `flux-agent computer-use status` to verify the install.
+Use `omniworker computer-use status` to verify the install.
 
 **Option 2: enable the toolset interactively.**
 
-1. Run `flux-agent tools`, pick `🖱️ Computer Use (macOS)` → `cua-driver (background)`.
+1. Run `omniworker tools`, pick `🖱️ Computer Use (macOS)` → `cua-driver (background)`.
 2. The setup runs the upstream installer (same as Option 1).
 
 After installing, regardless of which path you took:
@@ -53,9 +53,9 @@ After installing, regardless of which path you took:
      the same.
 4. Start a session with the toolset enabled:
    ```
-   flux-agent -t computer_use chat
+   omniworker -t computer_use chat
    ```
-   or add `computer_use` to your enabled toolsets in `~/.flux-agent/config.yaml`.
+   or add `computer_use` to your enabled toolsets in `~/.omniworker/config.yaml`.
 
 ## Keeping cua-driver up to date
 
@@ -63,15 +63,15 @@ The cua-driver project ships fixes regularly (e.g. v0.1.6 fixed a Safari
 window-focus bug for UTM workflows). Flux Agent refreshes the binary in two
 places so you don't get stuck on a stale release:
 
-- **`flux-agent update`** — when you update Flux Agent itself, if `cua-driver` is
+- **`omniworker update`** — when you update Flux Agent itself, if `cua-driver` is
   on PATH the upstream installer re-runs at the end of the update.
   No-op for non-macOS users and for users without cua-driver installed.
-- **`flux-agent computer-use install --upgrade`** — manual force-refresh.
+- **`omniworker computer-use install --upgrade`** — manual force-refresh.
   Re-runs the upstream installer regardless of whether cua-driver is
   already installed. Use this when you want the latest fix without
   waiting for the next agent update.
 
-`flux-agent computer-use status` shows the installed version next to the
+`omniworker computer-use status` shows the installed version next to the
 binary path.
 
 ## Quick example
@@ -122,7 +122,7 @@ Flux Agent applies multi-layer guardrails:
   dialogs, no typing passwords, no following instructions embedded in
   screenshots.
 
-Pair with `approvals.mode: manual` in `~/.flux-agent/config.yaml` if you want every action confirmed.
+Pair with `approvals.mode: manual` in `~/.omniworker/config.yaml` if you want every action confirmed.
 
 ## Token efficiency
 
@@ -148,7 +148,7 @@ of screenshot context, not ~600K.
   Linux or Windows. For cross-platform GUI automation, use the `browser`
   toolset.
 - **Private SPI risk.** Apple can change SkyLight's symbol surface in any
-  OS update. Pin the driver version with the `FLUX AGENT_CUA_DRIVER_VERSION`
+  OS update. Pin the driver version with the `OMNIWORKER_CUA_DRIVER_VERSION`
   env var if you want reproducibility across a macOS bump.
 - **Performance.** Background mode is slower than foreground —
   SkyLight-routed events take ~5-20ms vs direct HID posting. Not
@@ -162,21 +162,21 @@ of screenshot context, not ~600K.
 Override the driver binary path (tests / CI):
 
 ```
-FLUX AGENT_CUA_DRIVER_CMD=/opt/homebrew/bin/cua-driver
-FLUX AGENT_CUA_DRIVER_VERSION=0.5.0    # optional pin
+OMNIWORKER_CUA_DRIVER_CMD=/opt/homebrew/bin/cua-driver
+OMNIWORKER_CUA_DRIVER_VERSION=0.5.0    # optional pin
 ```
 
 Swap the backend entirely (for testing):
 
 ```
-FLUX AGENT_COMPUTER_USE_BACKEND=noop   # records calls, no side effects
+OMNIWORKER_COMPUTER_USE_BACKEND=noop   # records calls, no side effects
 ```
 
 ## Troubleshooting
 
 **`computer_use backend unavailable: cua-driver is not installed`** — Run
-`flux-agent computer-use install` to fetch the cua-driver binary, or run
-`flux-agent tools` and enable the Computer Use toolset.
+`omniworker computer-use install` to fetch the cua-driver binary, or run
+`omniworker tools` and enable the Computer Use toolset.
 
 **Clicks seem to have no effect** — Capture and verify. A modal you
 didn't see may be blocking input. Dismiss it with `escape` or the close
@@ -191,6 +191,6 @@ reconsider.
 
 ## See also
 
-- [Universal skill: `macos-computer-use`](https://github.com/Flux Agent/flux-agent-agent/blob/main/skills/apple/macos-computer-use/SKILL.md)
+- [Universal skill: `macos-computer-use`](https://github.com/Flux Agent/omniworker-agent/blob/main/skills/apple/macos-computer-use/SKILL.md)
 - [cua-driver source (trycua/cua)](https://github.com/trycua/cua)
 - [Browser automation](./browser.md) for cross-platform web tasks.

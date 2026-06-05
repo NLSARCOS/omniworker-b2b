@@ -14,7 +14,7 @@ Optional vendor skill for Parallel CLI — agent-native web search, extraction, 
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/research/parallel-cli` |
+| Source | Optional — install with `omniworker skills install official/research/parallel-cli` |
 | Path | `optional-skills/research/parallel-cli` |
 | Version | `1.1.0` |
 | Author | Flux Agent Agent |

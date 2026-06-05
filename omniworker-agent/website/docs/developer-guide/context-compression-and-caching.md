@@ -30,7 +30,7 @@ Selection is config-driven via `context.engine` in `config.yaml`. The resolution
 
 Plugin engines are **never auto-activated** — the user must explicitly set `context.engine` to the plugin's name. The default `"compressor"` always uses the built-in.
 
-Configure via `flux-agent plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
+Configure via `omniworker plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
 
 For building a context engine plugin, see [Context Engine Plugins](/docs/developer-guide/context-engine-plugin).
 

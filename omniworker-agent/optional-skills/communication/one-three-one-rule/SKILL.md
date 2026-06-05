@@ -14,7 +14,7 @@ author: Willard Moore
 license: MIT
 category: communication
 metadata:
-  flux-agent:
+  omniworker:
     tags: [communication, decision-making, proposals, trade-offs]
 ---
 

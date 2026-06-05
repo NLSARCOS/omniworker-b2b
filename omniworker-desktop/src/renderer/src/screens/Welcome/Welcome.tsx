@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Flux AgentLogo from "../../components/common/Flux AgentLogo";
+import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
 import {
   ArrowRight,
   Refresh,
@@ -56,9 +56,9 @@ function Welcome({
     setRemoteTesting(true);
     setRemoteError(null);
     try {
-      const ok = await window.flux-agentAPI.testRemoteConnection(url, key);
+      const ok = await window.omniworkerAPI.testRemoteConnection(url, key);
       if (ok) {
-        await window.flux-agentAPI.setConnectionConfig("remote", url, key);
+        await window.omniworkerAPI.setConnectionConfig("remote", url, key);
         onRecheck();
       } else {
         setRemoteError(
@@ -84,7 +84,7 @@ function Welcome({
     setSshTesting(true);
     setSshError(null);
     try {
-      const ok = await window.flux-agentAPI.testSshConnection(
+      const ok = await window.omniworkerAPI.testSshConnection(
         host,
         port,
         user,
@@ -92,7 +92,7 @@ function Welcome({
         remotePort,
       );
       if (ok) {
-        await window.flux-agentAPI.setSshConfig(
+        await window.omniworkerAPI.setSshConfig(
           host,
           port,
           user,
@@ -116,7 +116,7 @@ function Welcome({
   if (panel === "remote") {
     return (
       <div className="screen welcome-screen">
-        <Flux AgentLogo size={36} />
+        <OmniWorkerLogo size={36} />
         <h1 className="welcome-title" style={{ fontSize: 22 }}>
           {t("welcome.connectRemoteTitle")}
         </h1>
@@ -196,7 +196,7 @@ function Welcome({
   if (panel === "ssh") {
     return (
       <div className="screen welcome-screen">
-        <Flux AgentLogo size={36} />
+        <OmniWorkerLogo size={36} />
         <h1 className="welcome-title" style={{ fontSize: 22 }}>
           Connect via SSH
         </h1>
@@ -236,7 +236,7 @@ function Welcome({
           <input
             type="text"
             className="welcome-remote-input"
-            placeholder="flux-agent"
+            placeholder="omniworker"
             value={sshUser}
             onChange={(e) => setSshUser(e.target.value)}
           />
@@ -321,7 +321,7 @@ function Welcome({
 
   return (
     <div className="screen welcome-screen">
-      <Flux AgentLogo size={40} />
+      <OmniWorkerLogo size={40} />
 
       {error ? (
         <>

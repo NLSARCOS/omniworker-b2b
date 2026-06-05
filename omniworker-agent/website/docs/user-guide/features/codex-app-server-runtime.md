@@ -62,7 +62,7 @@ Flux Agent registers itself as an MCP server so codex can call back for tools co
 - **`skill_view` / `skills_list`** — read from Flux Agent' skill library.
 - **`text_to_speech`** — TTS through Flux Agent' configured provider.
 
-When the model wants one of these, codex spawns the `flux-agent_tools_mcp_server` subprocess via stdio MCP, the call is dispatched through `model_tools.handle_function_call()` (same code path as Flux Agent' default runtime), and the result is returned to codex like any other MCP response.
+When the model wants one of these, codex spawns the `omniworker_tools_mcp_server` subprocess via stdio MCP, the call is dispatched through `model_tools.handle_function_call()` (same code path as Flux Agent' default runtime), and the result is returned to codex like any other MCP response.
 
 ### What's NOT available on this runtime
 
@@ -83,7 +83,7 @@ These four Flux Agent tools require the running AIAgent context (mid-loop state)
 
 ### Kanban (multi-agent worktree dispatch)
 
-**Works on this runtime, with one subtle dependency.** The kanban dispatcher spawns each worker as a separate `flux-agent chat -q` subprocess that reads the user's config — which means if `model.openai_runtime: codex_app_server` is set globally, workers also come up on the codex runtime.
+**Works on this runtime, with one subtle dependency.** The kanban dispatcher spawns each worker as a separate `omniworker chat -q` subprocess that reads the user's config — which means if `model.openai_runtime: codex_app_server` is set globally, workers also come up on the codex runtime.
 
 What works inside a codex-runtime worker:
 - Codex's full toolset (shell, apply_patch, update_plan, view_image, web_search) — the worker does its actual task work natively
@@ -91,11 +91,11 @@ What works inside a codex-runtime worker:
 - The Flux Agent tool callback for browser_*, vision, image_gen, skills, TTS
 
 What also works because the MCP callback exposes them:
-- **`kanban_complete` / `kanban_block` / `kanban_comment` / `kanban_heartbeat`** — the worker handoff tools. These read `FLUX AGENT_KANBAN_TASK` from env (set by the dispatcher), gate access correctly, and write to `~/.flux-agent/kanban.db`. Without these in the callback, a worker on this runtime could do its task but couldn't report back, hanging until the dispatcher's timeout.
+- **`kanban_complete` / `kanban_block` / `kanban_comment` / `kanban_heartbeat`** — the worker handoff tools. These read `OMNIWORKER_KANBAN_TASK` from env (set by the dispatcher), gate access correctly, and write to `~/.omniworker/kanban.db`. Without these in the callback, a worker on this runtime could do its task but couldn't report back, hanging until the dispatcher's timeout.
 - **`kanban_show` / `kanban_list`** — read-only board queries for the worker to check its own context.
 - **`kanban_create` / `kanban_unblock` / `kanban_link`** — orchestrator-only operations. Available for orchestrator agents running on the codex runtime that need to dispatch new tasks.
 
-The kanban tools are gated by `FLUX AGENT_KANBAN_TASK` env var the dispatcher sets — that var is propagated to the codex subprocess (codex inherits env) and from there to the spawned `flux-agent-tools` MCP server subprocess. So the tools see the right task id and gate correctly.
+The kanban tools are gated by `OMNIWORKER_KANBAN_TASK` env var the dispatcher sets — that var is propagated to the codex subprocess (codex inherits env) and from there to the spawned `omniworker-tools` MCP server subprocess. So the tools see the right task id and gate correctly.
 
 ### Cron jobs
 
@@ -139,7 +139,7 @@ The kanban tools are gated by `FLUX AGENT_KANBAN_TASK` env var the dispatcher se
    ```bash
    codex login                  # writes tokens to ~/.codex/auth.json
    ```
-   Flux Agent' own `flux-agent auth login codex` writes to `~/.flux-agent/auth.json` — that's a separate session. **Run `codex login` separately** if you haven't.
+   Flux Agent' own `omniworker auth login codex` writes to `~/.omniworker/auth.json` — that's a separate session. **Run `codex login` separately** if you haven't.
 
 3. **(Optional) Install the Codex plugins you want.** When you enable the runtime, Flux Agent auto-migrates whichever curated plugins you've already installed via Codex CLI:
    ```bash
@@ -159,7 +159,7 @@ In a Flux Agent session:
 That command:
 - Verifies the `codex` CLI is installed (blocks with an install hint if not).
 - Persists `model.openai_runtime: codex_app_server` to your config.yaml.
-- Migrates user MCP servers from `~/.flux-agent/config.yaml` to `~/.codex/config.toml`.
+- Migrates user MCP servers from `~/.omniworker/config.yaml` to `~/.codex/config.toml`.
 - **Discovers and migrates installed native Codex plugins** (Linear, GitHub, Gmail, Calendar, Canva, etc.) by querying Codex's `plugin/list` RPC.
 - **Registers Flux Agent' own tools as an MCP server** so the codex subprocess can call back for tools codex doesn't ship with.
 - **Writes `default_permissions = ":workspace"`** so the sandbox allows writes within the workspace without prompting for every operation.
@@ -172,7 +172,7 @@ To check current state without changing anything:
 /codex-runtime
 ```
 
-You can also set it manually in `~/.flux-agent/config.yaml`:
+You can also set it manually in `~/.omniworker/config.yaml`:
 ```yaml
 model:
   openai_runtime: codex_app_server   # default is "auto" (= Flux Agent runtime)
@@ -238,7 +238,7 @@ You can override the default in `~/.codex/config.toml` outside Flux Agent' manag
 default_permissions = ":read-only"
 ```
 
-(Flux Agent will preserve your override on re-migration as long as it lives outside the `# managed by flux-agent-agent` markers.)
+(Flux Agent will preserve your override on re-migration as long as it lives outside the `# managed by omniworker-agent` markers.)
 
 ## Auxiliary tasks and ChatGPT subscription token cost
 
@@ -246,7 +246,7 @@ When this runtime is on with the `openai-codex` provider, **auxiliary tasks (tit
 
 This isn't specific to `codex_app_server` — it's true for the existing `codex_responses` path too — but it's more visible here because you're explicitly opting in for the subscription billing.
 
-To route specific aux tasks to a cheaper / different model, set explicit overrides in `~/.flux-agent/config.yaml`:
+To route specific aux tasks to a cheaper / different model, set explicit overrides in `~/.omniworker/config.yaml`:
 
 ```yaml
 auxiliary:
@@ -274,13 +274,13 @@ The self-improvement review fork inherits the main runtime via `_current_main_ru
 Flux Agent wraps everything it manages between two marker comments:
 
 ```toml
-# managed by flux-agent-agent — `flux-agent codex-runtime migrate` regenerates this section
+# managed by omniworker-agent — `omniworker codex-runtime migrate` regenerates this section
 default_permissions = ":workspace"
 [mcp_servers.filesystem]
 ...
 [plugins."github@openai-curated"]
 ...
-# end flux-agent-agent managed section
+# end omniworker-agent managed section
 ```
 
 Anything **outside** that block is yours. Re-running migration (via `/codex-runtime codex_app_server` or whenever you toggle the runtime on) replaces the managed block in place but preserves user content above and below it verbatim. This means you can:
@@ -294,16 +294,16 @@ Anything you add **inside** the managed block will get clobbered on the next mig
 
 ## Multi-profile / multi-tenant setups
 
-By default, Flux Agent points the codex subprocess at `~/.codex/` regardless of which Flux Agent profile is active. This means `flux-agent -p work` and `flux-agent -p personal` share the same Codex auth, plugins, and config. For most users this is the right behavior — it matches what running `codex` CLI directly would do.
+By default, Flux Agent points the codex subprocess at `~/.codex/` regardless of which Flux Agent profile is active. This means `omniworker -p work` and `omniworker -p personal` share the same Codex auth, plugins, and config. For most users this is the right behavior — it matches what running `codex` CLI directly would do.
 
-If you want per-profile Codex isolation (separate auth, separate installed plugins, separate config), set `CODEX_HOME` explicitly per profile. The cleanest way is to point at a directory under your `FLUX AGENT_HOME`:
+If you want per-profile Codex isolation (separate auth, separate installed plugins, separate config), set `CODEX_HOME` explicitly per profile. The cleanest way is to point at a directory under your `OMNIWORKER_HOME`:
 
 ```bash
-# Inside the work profile, you might wrap flux-agent:
-CODEX_HOME=~/.flux-agent/profiles/work/codex flux-agent chat
+# Inside the work profile, you might wrap omniworker:
+CODEX_HOME=~/.omniworker/profiles/work/codex omniworker chat
 ```
 
-You'll need to re-run `codex login` once with that `CODEX_HOME` set so the OAuth tokens land in the profile-scoped location. After that, `flux-agent -p work` will operate on isolated Codex state.
+You'll need to re-run `codex login` once with that `CODEX_HOME` set so the OAuth tokens land in the profile-scoped location. After that, `omniworker -p work` will operate on isolated Codex state.
 
 We don't auto-scope this because moving an existing user's `~/.codex/` would silently invalidate their Codex CLI auth — anyone who already ran `codex login` would have to re-authenticate. Opt-in feels safer than surprising users.
 
@@ -314,7 +314,7 @@ Flux Agent does NOT rewrite `HOME` when spawning the codex app-server subprocess
 - Commands codex runs via its `shell` tool see the real user `HOME` and find `~/.gitconfig`, `~/.gh/`, `~/.aws/`, `~/.npmrc`, etc. correctly.
 - Codex's internal state stays isolated through `CODEX_HOME` (which points at `~/.codex/` by default).
 
-This matches the boundary Flux Agent arrived at after some early experimentation: isolate Codex's state, leave the user's home alone. (Cf. flux-agent/flux-agent#81562.)
+This matches the boundary Flux Agent arrived at after some early experimentation: isolate Codex's state, leave the user's home alone. (Cf. omniworker/omniworker#81562.)
 
 ## MCP server migration
 
@@ -350,15 +350,15 @@ What's NOT migrated:
 Codex's built-in toolset covers shell/file ops/patches but doesn't have web search, browser automation, vision, image generation, etc. To keep those usable in a codex turn, Flux Agent registers itself as an MCP server in `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.flux-agent-tools]
+[mcp_servers.omniworker-tools]
 command = "/path/to/python"
-args = ["-m", "agent.transports.flux-agent_tools_mcp_server"]
-env = { FLUX AGENT_HOME = "/your/.flux-agent", PYTHONPATH = "...", FLUX AGENT_QUIET = "1" }
+args = ["-m", "agent.transports.omniworker_tools_mcp_server"]
+env = { OMNIWORKER_HOME = "/your/.omniworker", PYTHONPATH = "...", OMNIWORKER_QUIET = "1" }
 startup_timeout_sec = 30.0
 tool_timeout_sec = 600.0
 ```
 
-When the model calls `web_search` (or another exposed Flux Agent tool), codex spawns the `flux-agent_tools_mcp_server` subprocess via stdio, the request is dispatched through `model_tools.handle_function_call()`, and the result is projected back to codex like any other MCP response.
+When the model calls `web_search` (or another exposed Flux Agent tool), codex spawns the `omniworker_tools_mcp_server` subprocess via stdio, the request is dispatched through `model_tools.handle_function_call()`, and the result is projected back to codex like any other MCP response.
 
 **Tools available via the callback:** `web_search`, `web_extract`, `browser_navigate`, `browser_click`, `browser_type`, `browser_press`, `browser_snapshot`, `browser_scroll`, `browser_back`, `browser_get_images`, `browser_console`, `browser_vision`, `vision_analyze`, `image_generate`, `skill_view`, `skills_list`, `text_to_speech`.
 
@@ -380,7 +380,7 @@ This runtime is **opt-in beta**. Working as of Flux Agent Agent 2026.5 + Codex C
 
 - Multi-turn conversations
 - `commandExecution` and `fileChange` (apply_patch) approvals via Flux Agent UI
-- MCP tool calls (verified against `@modelcontextprotocol/server-filesystem` and the new `flux-agent-tools` callback)
+- MCP tool calls (verified against `@modelcontextprotocol/server-filesystem` and the new `omniworker-tools` callback)
 - Native Codex plugin migration (verified against Linear / GitHub / Calendar inventory)
 - Deny/cancel paths
 - Toggle on/off cycle
@@ -389,12 +389,12 @@ This runtime is **opt-in beta**. Working as of Flux Agent Agent 2026.5 + Codex C
 
 Known limitations:
 
-- **Flux Agent auth and codex auth are separate sessions.** You need both `codex login` AND `flux-agent auth login codex` for the cleanest UX (the runtime uses codex's session for the LLM call). This is a deliberate design choice in Flux Agent' `_import_codex_cli_tokens` — Flux Agent won't share OAuth state with codex CLI to avoid clobbering each other on token refresh.
+- **Flux Agent auth and codex auth are separate sessions.** You need both `codex login` AND `omniworker auth login codex` for the cleanest UX (the runtime uses codex's session for the LLM call). This is a deliberate design choice in Flux Agent' `_import_codex_cli_tokens` — Flux Agent won't share OAuth state with codex CLI to avoid clobbering each other on token refresh.
 - **`delegate_task`, `memory`, `session_search`, `todo` are unavailable on this runtime.** They need the running AIAgent context which a stateless MCP callback can't provide. Use `/codex-runtime auto` when you need these.
 - **No inline patch preview in approval prompts when codex doesn't track the changeset.** Codex's `fileChange` approval params don't always carry the changeset. Flux Agent caches the data from the corresponding `item/started` notification when possible, but if approval arrives before the item has streamed, the prompt falls back to whatever `reason` codex provides.
 - **Sub-second cancellation isn't guaranteed.** Mid-stream interrupts (Ctrl+C while codex is responding) are sent via `turn/interrupt`, but if codex has already flushed the final message, you get the response anyway.
 
-If you find a bug, [open an issue](https://github.com/Flux Agent/flux-agent-agent/issues) with the output of `flux-agent logs --since 5m`. Mention `codex-runtime` in the title so it's easy to triage.
+If you find a bug, [open an issue](https://github.com/Flux Agent/omniworker-agent/issues) with the output of `omniworker logs --since 5m`. Mention `codex-runtime` in the title so it's easy to triage.
 
 ## Architecture
 
@@ -426,7 +426,7 @@ If you find a bug, [open an issue](https://github.com/Flux Agent/flux-agent-agen
         │   │  │   (linear, github,   │     │
         │   │  │    gmail, calendar,  │     │
         │   │  │    canva, ...)       │     │
-        │   │  └─ flux-agent-tools ───────┼─────────────────┐
+        │   │  └─ omniworker-tools ───────┼─────────────────┐
         │   │       (callback to     │     │           │
         │   │        Flux Agent' richer  │     │           │
         │   │        tools)          │     │           │
@@ -435,10 +435,10 @@ If you find a bug, [open an issue](https://github.com/Flux Agent/flux-agent-agen
                                                         │
                                                         ▼
         ┌──────────────────────────────────────────────────────────┐
-        │  flux-agent_tools_mcp_server.py (subprocess on demand)        │
+        │  omniworker_tools_mcp_server.py (subprocess on demand)        │
         │   web_search, web_extract, browser_*, vision_analyze,    │
         │   image_generate, skill_view, skills_list, text_to_speech│
         └──────────────────────────────────────────────────────────┘
 ```
 
-For implementation details, see [PR #24182](https://github.com/Flux Agent/flux-agent-agent/pull/24182) and the [Codex app-server protocol README](https://github.com/openai/codex/blob/main/codex-rs/app-server/README.md).
+For implementation details, see [PR #24182](https://github.com/Flux Agent/omniworker-agent/pull/24182) and the [Codex app-server protocol README](https://github.com/openai/codex/blob/main/codex-rs/app-server/README.md).

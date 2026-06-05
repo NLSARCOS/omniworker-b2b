@@ -1,6 +1,6 @@
 import React from "react";
 
-function Flux AgentLogo({ size = 32 }: { size?: number }): React.JSX.Element {
+function OmniWorkerLogo({ size = 32 }: { size?: number }): React.JSX.Element {
   // SVG original width: 316.00723, height: 110.6771
   // Aspect ratio is 2.855
   const height = size;
@@ -57,4 +57,4 @@ function Flux AgentLogo({ size = 32 }: { size?: number }): React.JSX.Element {
   );
 }
 
-export default Flux AgentLogo;
+export default OmniWorkerLogo;

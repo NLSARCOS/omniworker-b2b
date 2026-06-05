@@ -32,7 +32,7 @@ MAX_SUMMARY_TOKENS = 10000
 def _get_session_search_max_concurrency(default: int = 3) -> int:
     """Read auxiliary.session_search.max_concurrency with sane bounds."""
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         config = load_config()
     except ImportError:
         return default
@@ -338,12 +338,12 @@ def session_search(
     """
     if db is None:
         try:
-            from flux-agent_state import SessionDB
+            from omniworker_state import SessionDB
 
             db = SessionDB()
         except Exception:
             logging.debug("SessionDB unavailable for session_search", exc_info=True)
-            from flux-agent_state import format_session_db_unavailable
+            from omniworker_state import format_session_db_unavailable
             return tool_error(format_session_db_unavailable(), success=False)
 
     # Defensive: models (especially open-source) may send non-int limit values
@@ -541,7 +541,7 @@ def session_search(
 def check_session_search_requirements() -> bool:
     """Requires SQLite state database and an auxiliary text model."""
     try:
-        from flux-agent_state import DEFAULT_DB_PATH
+        from omniworker_state import DEFAULT_DB_PATH
         return DEFAULT_DB_PATH.parent.exists()
     except ImportError:
         return False

@@ -97,7 +97,7 @@ gateway:
     upload_failed:         "✗ Debug-Bericht konnte nicht hochgeladen werden: {error}"
     header:                "**Debug-Bericht hochgeladen:**"
     auto_delete:           "⏱ Pastes werden in 6 Stunden automatisch gelöscht."
-    full_logs_hint:        "Für vollständige Log-Uploads verwenden Sie `flux-agent debug share` aus der CLI."
+    full_logs_hint:        "Für vollständige Log-Uploads verwenden Sie `omniworker debug share` aus der CLI."
     share_hint:            "Teilen Sie diese Links mit dem Flux Agent-Team, um Unterstützung zu erhalten."
 
   deny:
@@ -146,7 +146,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ Kanban-Fehler: {error}"
     subscribed_suffix:     "(abonniert — Sie werden benachrichtigt, wenn {task_id} abgeschlossen oder blockiert wird)"
-    truncated_suffix:      "… (gekürzt; verwenden Sie `flux-agent kanban …` im Terminal für die vollständige Ausgabe)"
+    truncated_suffix:      "… (gekürzt; verwenden Sie `omniworker kanban …` im Terminal für die vollständige Ausgabe)"
     no_output:             "(keine Ausgabe)"
 
   personality:
@@ -214,7 +214,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ Gateway-Neustart läuft bereits..."
-    restarting:            "♻ Gateway wird neu gestartet. Falls Sie nicht innerhalb von 60 Sekunden benachrichtigt werden, starten Sie über die Konsole mit `flux-agent gateway restart` neu."
+    restarting:            "♻ Gateway wird neu gestartet. Falls Sie nicht innerhalb von 60 Sekunden benachrichtigt werden, starten Sie über die Konsole mit `omniworker gateway restart` neu."
 
   resume:
     db_unavailable:        "Sitzungsdatenbank nicht verfügbar."
@@ -289,9 +289,9 @@ gateway:
     removed:               "↩️ {count} Nachricht(en) rückgängig gemacht.\nEntfernt: \"{preview}\""
 
   update:
-    platform_not_messaging:  "✗ /update ist nur auf Messaging-Plattformen verfügbar. Führen Sie `flux-agent update` im Terminal aus."
+    platform_not_messaging:  "✗ /update ist nur auf Messaging-Plattformen verfügbar. Führen Sie `omniworker update` im Terminal aus."
     not_git_repo:            "✗ Kein Git-Repository — Update nicht möglich."
-    flux-agent_cmd_not_found:    "✗ Der Befehl `flux-agent` konnte nicht gefunden werden. Flux Agent läuft, aber der Update-Befehl konnte das ausführbare Programm weder im PATH noch über den aktuellen Python-Interpreter finden. Versuchen Sie, `flux-agent update` manuell im Terminal auszuführen."
+    omniworker_cmd_not_found:    "✗ Der Befehl `omniworker` konnte nicht gefunden werden. Flux Agent läuft, aber der Update-Befehl konnte das ausführbare Programm weder im PATH noch über den aktuellen Python-Interpreter finden. Versuchen Sie, `omniworker update` manuell im Terminal auszuführen."
     start_failed:            "✗ Update konnte nicht gestartet werden: {error}"
     starting:                "⚕ Flux Agent-Update wird gestartet… Ich streame den Fortschritt hier."
 

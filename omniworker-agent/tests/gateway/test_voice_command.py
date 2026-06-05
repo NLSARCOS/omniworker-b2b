@@ -210,7 +210,7 @@ class TestHandleVoiceCommand:
 
         fake_cfg = {"voice": {"auto_tts": True}}
         monkeypatch.setattr(
-            "flux-agent_cli.config.load_config",
+            "omniworker_cli.config.load_config",
             lambda: fake_cfg,
         )
         adapter = SimpleNamespace(
@@ -577,13 +577,13 @@ class TestVoiceInHelp:
 
     def test_voice_in_help_output(self):
         """The gateway help text includes /voice (generated from registry)."""
-        from flux-agent_cli.commands import gateway_help_lines
+        from omniworker_cli.commands import gateway_help_lines
         help_text = "\n".join(gateway_help_lines())
         assert "/voice" in help_text
 
     def test_voice_is_known_command(self):
         """The /voice command is in GATEWAY_KNOWN_COMMANDS."""
-        from flux-agent_cli.commands import GATEWAY_KNOWN_COMMANDS
+        from omniworker_cli.commands import GATEWAY_KNOWN_COMMANDS
         assert "voice" in GATEWAY_KNOWN_COMMANDS
 
 
@@ -2067,7 +2067,7 @@ class TestSendVoiceReplyCleanup:
         runner._get_guild_id = MagicMock(return_value=None)
 
         # Create a fake audio file that TTS would produce
-        fake_audio = tmp_path / "flux-agent_voice"
+        fake_audio = tmp_path / "omniworker_voice"
         fake_audio.mkdir()
         audio_file = fake_audio / "test.mp3"
         audio_file.write_bytes(b"fake audio")
@@ -2131,7 +2131,7 @@ class TestVoiceChannelAwareness:
         adapter._voice_sources = {}
         adapter._voice_receivers = {}
         adapter._client = MagicMock()
-        adapter._client.user = SimpleNamespace(id=99999, name="Flux AgentBot")
+        adapter._client.user = SimpleNamespace(id=99999, name="OmniWorkerBot")
         return adapter
 
     def _make_member(self, user_id, display_name, is_bot=False):
@@ -2154,7 +2154,7 @@ class TestVoiceChannelAwareness:
         adapter = self._make_adapter()
         vc = MagicMock()
         vc.is_connected.return_value = True
-        bot_member = self._make_member(99999, "Flux AgentBot", is_bot=True)
+        bot_member = self._make_member(99999, "OmniWorkerBot", is_bot=True)
         user_a = self._make_member(1001, "Alice")
         user_b = self._make_member(1002, "Bob")
         vc.channel.name = "general-voice"
@@ -2168,7 +2168,7 @@ class TestVoiceChannelAwareness:
         names = [m["display_name"] for m in info["members"]]
         assert "Alice" in names
         assert "Bob" in names
-        assert "Flux AgentBot" not in names
+        assert "OmniWorkerBot" not in names
 
     def test_speaking_detection(self):
         adapter = self._make_adapter()

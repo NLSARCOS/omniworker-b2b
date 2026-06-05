@@ -29,10 +29,10 @@ load_dotenv()
 # Default datasets to sample from
 DEFAULT_DATASETS = [
     "Flux Agent/swe-terminus-agent-glm-kimi-minimax",
-    "Flux Agent/flux-agent-agent-megascience-sft1",
+    "Flux Agent/omniworker-agent-megascience-sft1",
     "Flux Agent/Flux Agent-Agent-Thinking-GLM-4.7-SFT2",
     "Flux Agent/Flux Agent-Agent-Thinking-GLM-4.7-SFT1",
-    "Flux Agent/terminal-tasks-glm-flux-agent-agent"
+    "Flux Agent/terminal-tasks-glm-omniworker-agent"
 ]
 
 

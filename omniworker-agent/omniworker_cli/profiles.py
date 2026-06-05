@@ -1,7 +1,7 @@
 """
 Profile management for multiple isolated Flux Agent instances.
 
-Each profile is a fully independent FLUX AGENT_HOME directory with its own
+Each profile is a fully independent OMNIWORKER_HOME directory with its own
 config.yaml, .env, memory, sessions, skills, gateway, cron, and logs.
 Profiles live under ``~/.hermes/profiles/<name>/`` by default.
 
@@ -45,7 +45,7 @@ _PROFILE_DIRS = [
     # Per-profile HOME for subprocesses: isolates system tool configs (git,
     # ssh, gh, npm …) so credentials don't bleed between profiles.  In Docker
     # this also ensures tool configs land inside the persistent volume.
-    # See flux-agent_constants.get_subprocess_home() and issue #4426.
+    # See omniworker_constants.get_subprocess_home() and issue #4426.
     "home",
 ]
 
@@ -133,7 +133,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
     clone.
     """
     source_resolved = source_dir.resolve()
-    is_default_source = source_resolved == _get_default_flux-agent_home().resolve()
+    is_default_source = source_resolved == _get_default_omniworker_home().resolve()
 
     def _ignore(directory: str, names: List[str]) -> List[str]:
         ignored: list[str] = []
@@ -174,7 +174,7 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     "node_modules",         # npm packages
     # Databases & runtime state
     "state.db", "state.db-shm", "state.db-wal",
-    "flux-agent_state.db",
+    "omniworker_state.db",
     "response_store.db", "response_store.db-shm", "response_store.db-wal",
     "gateway.pid", "gateway_state.json", "processes.json",
     "auth.json",            # API keys, OAuth tokens, credential pools
@@ -195,7 +195,7 @@ _RESERVED_NAMES = frozenset({
 })
 
 # Flux Agent subcommands that cannot be used as profile names/aliases
-_FLUX AGENT_SUBCOMMANDS = frozenset({
+_OMNIWORKER_SUBCOMMANDS = frozenset({
     "chat", "model", "gateway", "setup", "whatsapp", "login", "logout",
     "status", "cron", "doctor", "dump", "config", "pairing", "skills", "tools",
     "mcp", "sessions", "insights", "version", "update", "uninstall",
@@ -210,31 +210,31 @@ _FLUX AGENT_SUBCOMMANDS = frozenset({
 def _get_profiles_root() -> Path:
     """Return the directory where named profiles are stored.
 
-    Anchored to the hermes root, NOT to the current FLUX AGENT_HOME
+    Anchored to the hermes root, NOT to the current OMNIWORKER_HOME
     (which may itself be a profile).  This ensures ``coder profile list``
     can see all profiles.
 
-    In Docker/custom deployments where FLUX AGENT_HOME points outside
-    ``~/.hermes``, profiles live under ``FLUX AGENT_HOME/profiles/`` so
+    In Docker/custom deployments where OMNIWORKER_HOME points outside
+    ``~/.hermes``, profiles live under ``OMNIWORKER_HOME/profiles/`` so
     they persist on the mounted volume.
     """
-    return _get_default_flux-agent_home() / "profiles"
+    return _get_default_omniworker_home() / "profiles"
 
 
-def _get_default_flux-agent_home() -> Path:
-    """Return the default (pre-profile) FLUX AGENT_HOME path.
+def _get_default_omniworker_home() -> Path:
+    """Return the default (pre-profile) OMNIWORKER_HOME path.
 
     In standard deployments this is ``~/.hermes``.
-    In Docker/custom deployments where FLUX AGENT_HOME is outside ``~/.hermes``
-    (e.g. ``/opt/data``), returns FLUX AGENT_HOME directly.
+    In Docker/custom deployments where OMNIWORKER_HOME is outside ``~/.hermes``
+    (e.g. ``/opt/data``), returns OMNIWORKER_HOME directly.
     """
-    from flux-agent_constants import get_default_hermes_root
+    from omniworker_constants import get_default_hermes_root
     return get_default_hermes_root()
 
 
 def _get_active_profile_path() -> Path:
     """Return the path to the sticky active_profile file."""
-    return _get_default_flux-agent_home() / "active_profile"
+    return _get_default_omniworker_home() / "active_profile"
 
 
 def _get_wrapper_dir() -> Path:
@@ -295,10 +295,10 @@ def validate_profile_name(name: str) -> None:
 
 
 def get_profile_dir(name: str) -> Path:
-    """Resolve a profile name to its FLUX AGENT_HOME directory."""
+    """Resolve a profile name to its OMNIWORKER_HOME directory."""
     canon = normalize_profile_name(name)
     if canon == "default":
-        return _get_default_flux-agent_home()
+        return _get_default_omniworker_home()
     return _get_profiles_root() / canon
 
 
@@ -322,7 +322,7 @@ def check_alias_collision(name: str) -> Optional[str]:
     canon = normalize_profile_name(name)
     if canon in _RESERVED_NAMES:
         return f"'{canon}' is a reserved name"
-    if canon in _FLUX AGENT_SUBCOMMANDS:
+    if canon in _OMNIWORKER_SUBCOMMANDS:
         return f"'{canon}' conflicts with a hermes subcommand"
 
     # Check existing commands in PATH
@@ -576,7 +576,7 @@ def list_profiles() -> List[ProfileInfo]:
     wrapper_dir = _get_wrapper_dir()
 
     # Default profile
-    default_home = _get_default_flux-agent_home()
+    default_home = _get_default_omniworker_home()
     if default_home.is_dir():
         model, provider = _read_config_model(default_home)
         dist_name, dist_version, dist_source = _read_distribution_meta(default_home)
@@ -688,8 +688,8 @@ def create_profile(
     if clone_from is not None or clone_all or clone_config:
         if clone_from is None:
             # Default: clone from active profile
-            from flux-agent_constants import get_flux-agent_home
-            source_dir = get_flux-agent_home()
+            from omniworker_constants import get_omniworker_home
+            source_dir = get_omniworker_home()
         else:
             clone_from = normalize_profile_name(clone_from)
             validate_profile_name(clone_from)
@@ -743,7 +743,7 @@ def create_profile(
     soul_path = profile_dir / "SOUL.md"
     if not soul_path.exists():
         try:
-            from flux-agent_cli.default_soul import DEFAULT_SOUL_MD
+            from omniworker_cli.default_soul import DEFAULT_SOUL_MD
             soul_path.write_text(DEFAULT_SOUL_MD, encoding="utf-8")
         except Exception:
             pass  # best-effort — don't fail profile creation over this
@@ -780,7 +780,7 @@ def create_profile(
 def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict]:
     """Seed bundled skills into a profile via subprocess.
 
-    Uses subprocess because sync_skills() caches FLUX AGENT_HOME at module level.
+    Uses subprocess because sync_skills() caches OMNIWORKER_HOME at module level.
     Returns the sync result dict, or None on failure.
 
     Profiles that opted out of bundled skills (via ``hermes profile create
@@ -801,7 +801,7 @@ def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict
             [sys.executable, "-c",
              "import json; from tools.skills_sync import sync_skills; "
              "r = sync_skills(quiet=True); print(json.dumps(r))"],
-            env={**os.environ, "FLUX AGENT_HOME": str(profile_dir)},
+            env={**os.environ, "OMNIWORKER_HOME": str(profile_dir)},
             cwd=str(project_root),
             capture_output=True, text=True, timeout=60,
         )
@@ -925,11 +925,11 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> None:
     import platform as _platform
 
     # Derive service name for this profile
-    # Temporarily set FLUX AGENT_HOME so _profile_suffix resolves correctly
-    old_home = os.environ.get("FLUX AGENT_HOME")
+    # Temporarily set OMNIWORKER_HOME so _profile_suffix resolves correctly
+    old_home = os.environ.get("OMNIWORKER_HOME")
     try:
-        os.environ["FLUX AGENT_HOME"] = str(profile_dir)
-        from flux-agent_cli.gateway import get_service_name, get_launchd_plist_path
+        os.environ["OMNIWORKER_HOME"] = str(profile_dir)
+        from omniworker_cli.gateway import get_service_name, get_launchd_plist_path
 
         if _platform.system() == "Linux":
             svc_name = get_service_name()
@@ -963,9 +963,9 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> None:
         print(f"⚠ Service cleanup: {e}")
     finally:
         if old_home is not None:
-            os.environ["FLUX AGENT_HOME"] = old_home
-        elif "FLUX AGENT_HOME" in os.environ:
-            del os.environ["FLUX AGENT_HOME"]
+            os.environ["OMNIWORKER_HOME"] = old_home
+        elif "OMNIWORKER_HOME" in os.environ:
+            del os.environ["OMNIWORKER_HOME"]
 
 
 def _stop_gateway_process(profile_dir: Path) -> None:
@@ -1052,17 +1052,17 @@ def set_active_profile(name: str) -> None:
 
 
 def get_active_profile_name() -> str:
-    """Infer the current profile name from FLUX AGENT_HOME.
+    """Infer the current profile name from OMNIWORKER_HOME.
 
-    Returns ``"default"`` if FLUX AGENT_HOME is not set or points to ``~/.hermes``.
-    Returns the profile name if FLUX AGENT_HOME points into ``~/.hermes/profiles/<name>``.
-    Returns ``"custom"`` if FLUX AGENT_HOME is set to an unrecognized path.
+    Returns ``"default"`` if OMNIWORKER_HOME is not set or points to ``~/.hermes``.
+    Returns the profile name if OMNIWORKER_HOME points into ``~/.hermes/profiles/<name>``.
+    Returns ``"custom"`` if OMNIWORKER_HOME is set to an unrecognized path.
     """
-    from flux-agent_constants import get_flux-agent_home
-    flux-agent_home = get_flux-agent_home()
-    resolved = flux-agent_home.resolve()
+    from omniworker_constants import get_omniworker_home
+    omniworker_home = get_omniworker_home()
+    resolved = omniworker_home.resolve()
 
-    default_resolved = _get_default_flux-agent_home().resolve()
+    default_resolved = _get_default_omniworker_home().resolve()
     if resolved == default_resolved:
         return "default"
 
@@ -1301,7 +1301,7 @@ def _migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) ->
 
     candidates = [
         new_dir / "honcho.json",
-        _get_default_flux-agent_home() / "honcho.json",
+        _get_default_omniworker_home() / "honcho.json",
         Path.home() / ".honcho" / "config.json",
     ]
 
@@ -1407,10 +1407,10 @@ def rename_profile(old_name: str, new_name: str) -> Path:
 # ---------------------------------------------------------------------------
 
 def resolve_profile_env(profile_name: str) -> str:
-    """Resolve a profile name to a FLUX AGENT_HOME path string.
+    """Resolve a profile name to a OMNIWORKER_HOME path string.
 
     Called early in the CLI entry point, before any hermes modules
-    are imported, to set the FLUX AGENT_HOME environment variable.
+    are imported, to set the OMNIWORKER_HOME environment variable.
     """
     canon = normalize_profile_name(profile_name)
     validate_profile_name(canon)

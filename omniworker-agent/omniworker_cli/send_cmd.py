@@ -221,8 +221,8 @@ def _load_hermes_env() -> None:
         load_dotenv = None  # type: ignore[assignment]
 
     try:
-        from flux-agent_cli.config import get_flux-agent_home
-        home = get_flux-agent_home()
+        from omniworker_cli.config import get_omniworker_home
+        home = get_omniworker_home()
     except Exception:
         return
 
@@ -258,7 +258,7 @@ def _load_hermes_env() -> None:
         return
 
     try:
-        from flux-agent_cli.config import _expand_env_vars
+        from omniworker_cli.config import _expand_env_vars
         raw = _expand_env_vars(raw)
     except Exception:
         pass

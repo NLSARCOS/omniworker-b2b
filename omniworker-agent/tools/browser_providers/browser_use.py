@@ -165,7 +165,7 @@ class BrowserUseProvider(CloudBrowserProvider):
         session_data = response.json()
         if managed_mode:
             _clear_pending_create_key(task_id)
-        session_name = f"flux-agent_{task_id}_{uuid.uuid4().hex[:8]}"
+        session_name = f"omniworker_{task_id}_{uuid.uuid4().hex[:8]}"
         external_call_id = response.headers.get("x-external-call-id") if managed_mode else None
 
         logger.info("Created Browser Use session %s", session_name)

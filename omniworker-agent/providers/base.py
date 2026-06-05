@@ -22,17 +22,17 @@ OMIT_TEMPERATURE = object()
 
 
 def _profile_user_agent() -> str:
-    """Return a ``flux-agent-cli/<version>`` UA string, with a stable fallback.
+    """Return a ``omniworker-cli/<version>`` UA string, with a stable fallback.
 
     Used by ``ProviderProfile.fetch_models`` so the catalog probe is not
     served the default ``Python-urllib/<ver>`` UA — some providers
     (OpenCode Zen, etc.) sit behind a WAF that returns 403 for that.
     """
     try:
-        from flux-agent_cli import __version__ as _ver  # lazy: avoid layer cycle at import time
-        return f"flux-agent-cli/{_ver}"
+        from omniworker_cli import __version__ as _ver  # lazy: avoid layer cycle at import time
+        return f"omniworker-cli/{_ver}"
     except Exception:
-        return "flux-agent-cli"
+        return "omniworker-cli"
 
 
 @dataclass
@@ -169,7 +169,7 @@ class ProviderProfile:
         req.add_header("Accept", "application/json")
         # Some providers (e.g. OpenCode Zen) sit behind a WAF that blocks
         # the default ``Python-urllib/<ver>`` User-Agent.  Set a generic
-        # flux-agent-cli UA so the catalog endpoint is reachable.
+        # omniworker-cli UA so the catalog endpoint is reachable.
         req.add_header("User-Agent", _profile_user_agent())
         for k, v in self.default_headers.items():
             req.add_header(k, v)

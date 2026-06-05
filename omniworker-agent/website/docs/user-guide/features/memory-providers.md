@@ -11,14 +11,14 @@ Flux Agent Agent ships with 8 external memory provider plugins that give the age
 ## Quick Start
 
 ```bash
-flux-agent memory setup      # interactive picker + configuration
-flux-agent memory status     # check what's active
-flux-agent memory off        # disable external provider
+omniworker memory setup      # interactive picker + configuration
+omniworker memory status     # check what's active
+omniworker memory off        # disable external provider
 ```
 
-You can also select the active memory provider via `flux-agent plugins` → Provider Plugins → Memory Provider.
+You can also select the active memory provider via `omniworker plugins` → Provider Plugins → Memory Provider.
 
-Or set manually in `~/.flux-agent/config.yaml`:
+Or set manually in `~/.omniworker/config.yaml`:
 
 ```yaml
 memory:
@@ -63,12 +63,12 @@ AI-native cross-session user modeling with dialectic reasoning, session-scoped c
 
 **Setup Wizard:**
 ```bash
-flux-agent memory setup        # select "honcho" — runs the Honcho-specific post-setup
+omniworker memory setup        # select "honcho" — runs the Honcho-specific post-setup
 ```
 
-The legacy `flux-agent honcho setup` command still works (it now redirects to `flux-agent memory setup`), but is only registered after Honcho is selected as the active memory provider.
+The legacy `omniworker honcho setup` command still works (it now redirects to `omniworker memory setup`), but is only registered after Honcho is selected as the active memory provider.
 
-**Config:** `$FLUX AGENT_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$FLUX AGENT_HOME/honcho.json` > `~/.flux-agent/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/flux-agent-ai/flux-agent-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/flux-agent).
+**Config:** `$OMNIWORKER_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$OMNIWORKER_HOME/honcho.json` > `~/.omniworker/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/omniworker-ai/omniworker-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/omniworker).
 
 <details>
 <summary>Full config reference</summary>
@@ -105,11 +105,11 @@ The legacy `flux-agent honcho setup` command still works (it now redirects to `f
 {
   "apiKey": "your-key-from-app.honcho.dev",
   "hosts": {
-    "flux-agent": {
+    "omniworker": {
       "enabled": true,
-      "aiPeer": "flux-agent",
+      "aiPeer": "omniworker",
       "peerName": "your-name",
-      "workspace": "flux-agent"
+      "workspace": "omniworker"
     }
   }
 }
@@ -124,11 +124,11 @@ The legacy `flux-agent honcho setup` command still works (it now redirects to `f
 {
   "baseUrl": "http://localhost:8000",
   "hosts": {
-    "flux-agent": {
+    "omniworker": {
       "enabled": true,
-      "aiPeer": "flux-agent",
+      "aiPeer": "omniworker",
       "peerName": "your-name",
-      "workspace": "flux-agent"
+      "workspace": "omniworker"
     }
   }
 }
@@ -136,8 +136,8 @@ The legacy `flux-agent honcho setup` command still works (it now redirects to `f
 
 </details>
 
-:::tip Migrating from `flux-agent honcho`
-If you previously used `flux-agent honcho setup`, your config and all server-side data are intact. Just re-enable through the setup wizard again or manually set `memory.provider: honcho` to reactivate via the new system.
+:::tip Migrating from `omniworker honcho`
+If you previously used `omniworker honcho setup`, your config and all server-side data are intact. Just re-enable through the setup wizard again or manually set `memory.provider: honcho` to reactivate via the new system.
 :::
 
 **Multi-peer setup:**
@@ -150,31 +150,31 @@ The mapping:
 |---------|-----------|
 | **Workspace** | Shared environment. All Flux Agent profiles under one workspace see the same user identity. |
 | **User peer** (`peerName`) | The human. Shared across profiles in the workspace. |
-| **AI peer** (`aiPeer`) | One per Flux Agent profile. Host key `flux-agent` → default; `flux-agent.<profile>` for others. |
+| **AI peer** (`aiPeer`) | One per Flux Agent profile. Host key `omniworker` → default; `omniworker.<profile>` for others. |
 | **Observation** | Per-peer toggles controlling what Honcho models from whose messages. `directional` (default, all four on) or `unified` (single-observer pool). |
 
 ### New profile, fresh Honcho peer
 
 ```bash
-flux-agent profile create coder --clone
+omniworker profile create coder --clone
 ```
 
-`--clone` creates a `flux-agent.coder` host block in `honcho.json` with `aiPeer: "coder"`, shared `workspace`, inherited `peerName`, `recallMode`, `writeFrequency`, `observation`, etc. The AI peer is eagerly created in Honcho so it exists before the first message.
+`--clone` creates a `omniworker.coder` host block in `honcho.json` with `aiPeer: "coder"`, shared `workspace`, inherited `peerName`, `recallMode`, `writeFrequency`, `observation`, etc. The AI peer is eagerly created in Honcho so it exists before the first message.
 
 ### Existing profiles, backfill Honcho peers
 
 ```bash
-flux-agent honcho sync
+omniworker honcho sync
 ```
 
-Scans every Flux Agent profile, creates host blocks for any profile without one, inherits settings from the default `flux-agent` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
+Scans every Flux Agent profile, creates host blocks for any profile without one, inherits settings from the default `omniworker` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
 
 ### Per-profile observation
 
 Each host block can override the observation config independently. Example: a code-focused profile where the AI peer observes the user but doesn't self-model:
 
 ```json
-"flux-agent.coder": {
+"omniworker.coder": {
   "aiPeer": "coder",
   "observation": {
     "user": { "observeMe": true, "observeOthers": true },
@@ -205,13 +205,13 @@ See the [Honcho page](./honcho.md#observation-directional-vs-unified) for the fu
 ```json
 {
   "apiKey": "your-key",
-  "workspace": "flux-agent",
+  "workspace": "omniworker",
   "peerName": "eri",
   "hosts": {
-    "flux-agent": {
+    "omniworker": {
       "enabled": true,
-      "aiPeer": "flux-agent",
-      "workspace": "flux-agent",
+      "aiPeer": "omniworker",
+      "workspace": "omniworker",
       "peerName": "eri",
       "recallMode": "hybrid",
       "writeFrequency": "async",
@@ -229,10 +229,10 @@ See the [Honcho page](./honcho.md#observation-directional-vs-unified) for the fu
       "messageMaxChars": 25000,
       "saveMessages": true
     },
-    "flux-agent.coder": {
+    "omniworker.coder": {
       "enabled": true,
       "aiPeer": "coder",
-      "workspace": "flux-agent",
+      "workspace": "omniworker",
       "peerName": "eri",
       "recallMode": "tools",
       "observation": {
@@ -240,10 +240,10 @@ See the [Honcho page](./honcho.md#observation-directional-vs-unified) for the fu
         "ai": { "observeMe": true, "observeOthers": true }
       }
     },
-    "flux-agent.writer": {
+    "omniworker.writer": {
       "enabled": true,
       "aiPeer": "writer",
-      "workspace": "flux-agent",
+      "workspace": "omniworker",
       "peerName": "eri"
     }
   },
@@ -255,7 +255,7 @@ See the [Honcho page](./honcho.md#observation-directional-vs-unified) for the fu
 
 </details>
 
-See the [config reference](https://github.com/flux-agent-ai/flux-agent-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/flux-agent).
+See the [config reference](https://github.com/omniworker-ai/omniworker-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/omniworker).
 
 
 ---
@@ -280,10 +280,10 @@ pip install openviking
 openviking-server
 
 # Then configure Flux Agent
-flux-agent memory setup    # select "openviking"
+omniworker memory setup    # select "openviking"
 # Or manually:
-flux-agent config set memory.provider openviking
-echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.flux-agent/.env
+omniworker config set memory.provider openviking
+echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.omniworker/.env
 ```
 
 **Key features:**
@@ -308,18 +308,18 @@ Server-side LLM fact extraction with semantic search, reranking, and automatic d
 
 **Setup:**
 ```bash
-flux-agent memory setup    # select "mem0"
+omniworker memory setup    # select "mem0"
 # Or manually:
-flux-agent config set memory.provider mem0
-echo "MEM0_API_KEY=your-key" >> ~/.flux-agent/.env
+omniworker config set memory.provider mem0
+echo "MEM0_API_KEY=your-key" >> ~/.omniworker/.env
 ```
 
-**Config:** `$FLUX AGENT_HOME/mem0.json`
+**Config:** `$OMNIWORKER_HOME/mem0.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `user_id` | `flux-agent-user` | User identifier |
-| `agent_id` | `flux-agent` | Agent identifier |
+| `user_id` | `omniworker-user` | User identifier |
+| `agent_id` | `omniworker` | Agent identifier |
 
 ---
 
@@ -338,22 +338,22 @@ Long-term memory with knowledge graph, entity resolution, and multi-strategy ret
 
 **Setup:**
 ```bash
-flux-agent memory setup    # select "hindsight"
+omniworker memory setup    # select "hindsight"
 # Or manually:
-flux-agent config set memory.provider hindsight
-echo "HINDSIGHT_API_KEY=your-key" >> ~/.flux-agent/.env
+omniworker config set memory.provider hindsight
+echo "HINDSIGHT_API_KEY=your-key" >> ~/.omniworker/.env
 ```
 
 The setup wizard installs dependencies automatically and only installs what's needed for the selected mode (`hindsight-client` for cloud, `hindsight-all` for local). Requires `hindsight-client >= 0.4.22` (auto-upgraded on session start if outdated).
 
-**Local mode UI:** `hindsight-embed -p flux-agent ui start`
+**Local mode UI:** `hindsight-embed -p omniworker ui start`
 
-**Config:** `$FLUX AGENT_HOME/hindsight/config.json`
+**Config:** `$OMNIWORKER_HOME/hindsight/config.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `mode` | `cloud` | `cloud` or `local` |
-| `bank_id` | `flux-agent` | Memory bank identifier |
+| `bank_id` | `omniworker` | Memory bank identifier |
 | `recall_budget` | `mid` | Recall thoroughness: `low` / `mid` / `high` |
 | `memory_mode` | `hybrid` | `hybrid` (context + tools), `context` (auto-inject only), `tools` (tools only) |
 | `auto_retain` | `true` | Automatically retain conversation turns |
@@ -366,7 +366,7 @@ The setup wizard installs dependencies automatically and only installs what's ne
 | `retain_assistant_prefix` | `Assistant` | Label used before assistant turns in auto-retained transcripts |
 | `recall_tags` | — | Tags to filter on recall |
 
-See [plugin README](https://github.com/Flux Agent/flux-agent-agent/blob/main/plugins/memory/hindsight/README.md) for the full configuration reference.
+See [plugin README](https://github.com/Flux Agent/omniworker-agent/blob/main/plugins/memory/hindsight/README.md) for the full configuration reference.
 
 ---
 
@@ -385,16 +385,16 @@ Local SQLite fact store with FTS5 full-text search, trust scoring, and HRR (Holo
 
 **Setup:**
 ```bash
-flux-agent memory setup    # select "holographic"
+omniworker memory setup    # select "holographic"
 # Or manually:
-flux-agent config set memory.provider holographic
+omniworker config set memory.provider holographic
 ```
 
-**Config:** `config.yaml` under `plugins.flux-agent-memory-store`
+**Config:** `config.yaml` under `plugins.omniworker-memory-store`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `db_path` | `$FLUX AGENT_HOME/memory_store.db` | SQLite database path |
+| `db_path` | `$OMNIWORKER_HOME/memory_store.db` | SQLite database path |
 | `auto_extract` | `false` | Auto-extract facts at session end |
 | `default_trust` | `0.5` | Default trust score (0.0–1.0) |
 
@@ -421,10 +421,10 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking), 7 memory types,
 
 **Setup:**
 ```bash
-flux-agent memory setup    # select "retaindb"
+omniworker memory setup    # select "retaindb"
 # Or manually:
-flux-agent config set memory.provider retaindb
-echo "RETAINDB_API_KEY=your-key" >> ~/.flux-agent/.env
+omniworker config set memory.provider retaindb
+echo "RETAINDB_API_KEY=your-key" >> ~/.omniworker/.env
 ```
 
 ---
@@ -448,14 +448,14 @@ Persistent memory via the `brv` CLI — hierarchical knowledge tree with tiered 
 curl -fsSL https://byterover.dev/install.sh | sh
 
 # Then configure Flux Agent
-flux-agent memory setup    # select "byterover"
+omniworker memory setup    # select "byterover"
 # Or manually:
-flux-agent config set memory.provider byterover
+omniworker config set memory.provider byterover
 ```
 
 **Key features:**
 - Automatic pre-compression extraction (saves insights before context compression discards them)
-- Knowledge tree stored at `$FLUX AGENT_HOME/byterover/` (profile-scoped)
+- Knowledge tree stored at `$OMNIWORKER_HOME/byterover/` (profile-scoped)
 - SOC2 Type II certified cloud sync (optional)
 
 ---
@@ -475,17 +475,17 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 
 **Setup:**
 ```bash
-flux-agent memory setup    # select "supermemory"
+omniworker memory setup    # select "supermemory"
 # Or manually:
-flux-agent config set memory.provider supermemory
-echo 'SUPERMEMORY_API_KEY=***' >> ~/.flux-agent/.env
+omniworker config set memory.provider supermemory
+echo 'SUPERMEMORY_API_KEY=***' >> ~/.omniworker/.env
 ```
 
-**Config:** `$FLUX AGENT_HOME/supermemory.json`
+**Config:** `$OMNIWORKER_HOME/supermemory.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `container_tag` | `flux-agent` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags. |
+| `container_tag` | `omniworker` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags. |
 | `auto_recall` | `true` | Inject relevant memory context before turns |
 | `auto_capture` | `true` | Store cleaned user-assistant turns after each response |
 | `max_recall_results` | `10` | Max recalled items to format into context |
@@ -501,7 +501,7 @@ echo 'SUPERMEMORY_API_KEY=***' >> ~/.flux-agent/.env
 - Session-end conversation ingest for richer graph-level knowledge building
 - Profile facts injected on first turn and at configurable intervals
 - Trivial message filtering (skips "ok", "thanks", etc.)
-- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `flux-agent-{identity}` → `flux-agent-coder`) to isolate memories per Flux Agent profile
+- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `omniworker-{identity}` → `omniworker-coder`) to isolate memories per Flux Agent profile
 - **Multi-container mode** — enable `enable_custom_container_tags` with a `custom_containers` list to let the agent read/write across named containers. Automatic operations (sync, prefetch) stay on the primary container.
 
 <details>
@@ -509,7 +509,7 @@ echo 'SUPERMEMORY_API_KEY=***' >> ~/.flux-agent/.env
 
 ```json
 {
-  "container_tag": "flux-agent",
+  "container_tag": "omniworker",
   "enable_custom_container_tags": true,
   "custom_containers": ["project-alpha", "shared-knowledge"],
   "custom_container_instructions": "Use project-alpha for coding context."
@@ -539,8 +539,8 @@ echo 'SUPERMEMORY_API_KEY=***' >> ~/.flux-agent/.env
 
 Each provider's data is isolated per [profile](/docs/user-guide/profiles):
 
-- **Local storage providers** (Holographic, ByteRover) use `$FLUX AGENT_HOME/` paths which differ per profile
-- **Config file providers** (Honcho, Mem0, Hindsight, Supermemory) store config in `$FLUX AGENT_HOME/` so each profile has its own credentials
+- **Local storage providers** (Holographic, ByteRover) use `$OMNIWORKER_HOME/` paths which differ per profile
+- **Config file providers** (Honcho, Mem0, Hindsight, Supermemory) store config in `$OMNIWORKER_HOME/` so each profile has its own credentials
 - **Cloud providers** (RetainDB) auto-derive profile-scoped project names
 - **Env var providers** (OpenViking) are configured via each profile's `.env` file
 

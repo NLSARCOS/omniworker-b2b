@@ -85,7 +85,7 @@ class TestReconfigureWritesProvider:
     ):
         """Env vars present and user accepts current value → still writes
         video_gen.provider via the post-env-vars branch."""
-        from flux-agent_cli import tools_config
+        from omniworker_cli import tools_config
 
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
         video_gen_registry.register_provider(_FakeVideoProvider("xai_fake"))
@@ -120,7 +120,7 @@ class TestReconfigureWritesProvider:
     ):
         """No env vars at all (managed-style plugin) → writes
         video_gen.provider via the no-env-vars early-return branch."""
-        from flux-agent_cli import tools_config
+        from omniworker_cli import tools_config
 
         monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
         video_gen_registry.register_provider(_FakeVideoProvider(

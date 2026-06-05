@@ -354,7 +354,7 @@ async def test_gateway_runner_busy_ack_replies_to_triggering_message_for_telegra
     """GatewayRunner's duplicate thread metadata must match the base helper."""
     from gateway import run as gateway_run
 
-    monkeypatch.setattr(gateway_run, "_flux-agent_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_omniworker_home", tmp_path)
     GatewayRunner = gateway_run.GatewayRunner
 
     class BusyAdapter:
@@ -412,7 +412,7 @@ async def test_gateway_runner_busy_ack_replies_to_triggering_message_for_telegra
 
 
 @pytest.mark.asyncio
-async def test_send_uses_reply_fallback_for_flux-agent_dm_topics():
+async def test_send_uses_reply_fallback_for_omniworker_dm_topics():
     """Flux Agent-created Telegram DM topics route with thread id plus reply anchor."""
     adapter = _make_adapter()
     call_log = []

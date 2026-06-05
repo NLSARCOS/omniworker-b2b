@@ -42,7 +42,7 @@ If you installed Flux Agent with the standard install script, MCP support is alr
 If you installed without extras and need to add MCP separately:
 
 ```bash
-cd ~/.flux-agent/flux-agent-agent
+cd ~/.omniworker/omniworker-agent
 uv pip install -e ".[mcp]"
 ```
 
@@ -66,7 +66,7 @@ mcp_servers:
 Then start Flux Agent:
 
 ```bash
-flux-agent chat
+omniworker chat
 ```
 
 Now ask something concrete:
@@ -143,13 +143,13 @@ Use `chrome-devtools-mcp`.
 If your Windows Chrome already has live remote debugging enabled from `chrome://inspect/#remote-debugging`, add it like this from WSL:
 
 ```bash
-flux-agent mcp add chrome-devtools-win --command cmd.exe --args /c npx -y chrome-devtools-mcp@latest --autoConnect --no-usage-statistics
+omniworker mcp add chrome-devtools-win --command cmd.exe --args /c npx -y chrome-devtools-mcp@latest --autoConnect --no-usage-statistics
 ```
 
 After saving the server:
 
 ```bash
-flux-agent mcp test chrome-devtools-win
+omniworker mcp test chrome-devtools-win
 ```
 
 Then start a fresh Flux Agent session or run:

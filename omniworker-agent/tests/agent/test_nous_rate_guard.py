@@ -10,11 +10,11 @@ import pytest
 @pytest.fixture
 def rate_guard_env(tmp_path, monkeypatch):
     """Isolate rate guard state to a temp directory."""
-    flux-agent_home = str(tmp_path / ".flux-agent")
-    os.makedirs(flux-agent_home, exist_ok=True)
-    monkeypatch.setenv("FLUX AGENT_HOME", flux-agent_home)
+    omniworker_home = str(tmp_path / ".omniworker")
+    os.makedirs(omniworker_home, exist_ok=True)
+    monkeypatch.setenv("OMNIWORKER_HOME", omniworker_home)
     # Clear any cached module-level imports
-    return flux-agent_home
+    return omniworker_home
 
 
 class TestRecordNousRateLimit:

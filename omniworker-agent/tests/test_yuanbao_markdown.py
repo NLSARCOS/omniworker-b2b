@@ -2,7 +2,7 @@
 test_yuanbao_markdown.py - Unit tests for yuanbao_markdown.py
 
 Run (no pytest needed):
-    cd /root/.flux-agent/workspace/flux-agent-agent
+    cd /root/.omniworker/workspace/omniworker-agent
     python3 tests/test_yuanbao_markdown.py -v
 
 Or with pytest if available:

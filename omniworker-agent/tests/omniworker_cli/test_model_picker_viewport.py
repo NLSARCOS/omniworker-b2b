@@ -6,10 +6,10 @@ clipping the bottom border and any items past the terminal's last row.
 The viewport helper now caps visible items and slides the offset to keep
 the cursor on screen.
 """
-from cli import Flux AgentCLI
+from cli import OmniWorkerCLI
 
 
-_compute = Flux AgentCLI._compute_model_picker_viewport
+_compute = OmniWorkerCLI._compute_model_picker_viewport
 
 
 class TestPickerViewport:

@@ -1,6 +1,6 @@
 """Pattern Store — CRUD for detected_patterns in state.db.
 
-Thin layer on top of flux-agent_state.SessionDB schema. All writes go
+Thin layer on top of omniworker_state.SessionDB schema. All writes go
 through the same WAL-retry logic as sessions/messages.
 """
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Reuse SessionDB connection pattern; if unavailable, degrade gracefully.
 try:
-    from flux-agent_state import SessionDB
+    from omniworker_state import SessionDB
 except Exception as exc:  # pragma: no cover
     logger.debug("SessionDB import failed in pattern_store: %s", exc)
     SessionDB = None  # type: ignore
@@ -302,7 +302,7 @@ class PatternStore:
         # to avoid adding yet another table.
         try:
             key = f"_pattern_auto_created_{user_id}_{source_platform}"
-            from flux-agent_state import DEFAULT_DB_PATH
+            from omniworker_state import DEFAULT_DB_PATH
 
             def _write(conn):
                 conn.execute(

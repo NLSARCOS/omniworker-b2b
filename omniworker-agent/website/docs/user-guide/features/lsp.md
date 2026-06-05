@@ -90,27 +90,27 @@ agent sees a syntax-clean file with semantic problems as
 For "manual" entries, install the server through whatever toolchain
 manager makes sense for that language (rustup, ghcup, opam, brew,
 …). Flux Agent auto-detects the binary on PATH or in
-`<FLUX AGENT_HOME>/lsp/bin/`.
+`<OMNIWORKER_HOME>/lsp/bin/`.
 
 A few servers are installed alongside a peer dependency that npm
 won't auto-pull. The current case is `typescript-language-server`,
 which requires the `typescript` SDK importable from the same
 `node_modules` tree — Flux Agent installs both packages together when you
-run `flux-agent lsp install typescript` or auto-install fires on first
+run `omniworker lsp install typescript` or auto-install fires on first
 use.
 
 ## CLI
 
 ```
-flux-agent lsp status          # service state + per-server install status
-flux-agent lsp list            # registry, optionally --installed-only
-flux-agent lsp install <id>    # eagerly install one server
-flux-agent lsp install-all     # try every server with a known recipe
-flux-agent lsp restart         # tear down running clients
-flux-agent lsp which <id>      # print resolved binary path
+omniworker lsp status          # service state + per-server install status
+omniworker lsp list            # registry, optionally --installed-only
+omniworker lsp install <id>    # eagerly install one server
+omniworker lsp install-all     # try every server with a known recipe
+omniworker lsp restart         # tear down running clients
+omniworker lsp which <id>      # print resolved binary path
 ```
 
-`flux-agent lsp status` is the best starting point — it shows which
+`omniworker lsp status` is the best starting point — it shows which
 languages will get semantic diagnostics today and which need a
 binary installed.
 
@@ -131,7 +131,7 @@ lsp:
   wait_timeout: 5.0
 
   # How to handle missing server binaries.
-  #   auto    — install via npm/pip/go install into <FLUX AGENT_HOME>/lsp/bin
+  #   auto    — install via npm/pip/go install into <OMNIWORKER_HOME>/lsp/bin
   #   manual  — only use binaries already on PATH
   install_strategy: auto
 
@@ -163,8 +163,8 @@ lsp:
 ## Installation locations
 
 When `install_strategy: auto`, Flux Agent installs binaries into
-`<FLUX AGENT_HOME>/lsp/bin/`. NPM packages land in
-`<FLUX AGENT_HOME>/lsp/node_modules/` with bin symlinks one level up.
+`<OMNIWORKER_HOME>/lsp/bin/`. NPM packages land in
+`<OMNIWORKER_HOME>/lsp/node_modules/` with bin symlinks one level up.
 Go binaries come from `go install` with `GOBIN` pointed at the
 staging dir.
 
@@ -208,19 +208,19 @@ lsp:
 
 ## Troubleshooting
 
-**`flux-agent lsp status` shows a server as "missing"**
+**`omniworker lsp status` shows a server as "missing"**
 
-The binary isn't on PATH and isn't in `<FLUX AGENT_HOME>/lsp/bin/`. Run
-`flux-agent lsp install <server_id>` to attempt an auto-install, or
+The binary isn't on PATH and isn't in `<OMNIWORKER_HOME>/lsp/bin/`. Run
+`omniworker lsp install <server_id>` to attempt an auto-install, or
 install the binary manually through the language's normal toolchain.
 
-**`Backend warnings` section in `flux-agent lsp status`**
+**`Backend warnings` section in `omniworker lsp status`**
 
 Some servers ship as thin wrappers around an external CLI for actual
 diagnostics — they spawn cleanly and accept requests but never emit
 errors when the sidecar binary is missing. The most common case is
 `bash-language-server`, which delegates diagnostics to `shellcheck`.
-When `flux-agent lsp status` shows a `Backend warnings` section, install
+When `omniworker lsp status` shows a `Backend warnings` section, install
 the named tool through your OS package manager:
 
 ```
@@ -230,11 +230,11 @@ scoop install shellcheck    # Windows
 ```
 
 The same warning is logged once at server spawn time in
-`~/.flux-agent/logs/agent.log`.
+`~/.omniworker/logs/agent.log`.
 
 **Server starts but never returns diagnostics**
 
-Check `~/.flux-agent/logs/agent.log` for `[agent.lsp.client]` entries —
+Check `~/.omniworker/logs/agent.log` for `[agent.lsp.client]` entries —
 both stderr from the language server and protocol errors land
 there. Some servers (rust-analyzer especially) need to finish a
 project-wide index before they emit per-file diagnostics; the first
@@ -244,7 +244,7 @@ subsequent edits picking them up.
 **Server crashed**
 
 A crashed server is added to the broken-set and won't be retried for
-the rest of the session. Run `flux-agent lsp restart` to clear the set;
+the rest of the session. Run `omniworker lsp restart` to clear the set;
 the next edit re-spawns.
 
 **Editing a file outside any git repo**

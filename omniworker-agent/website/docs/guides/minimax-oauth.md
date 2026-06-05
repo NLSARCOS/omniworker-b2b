@@ -34,24 +34,24 @@ The transport reuses the `anthropic_messages` adapter (MiniMax exposes an Anthro
 
 ```bash
 # Launch the provider and model picker
-flux-agent model
+omniworker model
 # → Select "MiniMax (OAuth)" from the provider list
 # → Flux Agent opens your browser to the MiniMax authorization page
 # → Approve access in the browser
 # → Select a model (MiniMax-M2.7 or MiniMax-M2.7-highspeed)
 # → Start chatting
 
-flux-agent
+omniworker
 ```
 
-After the first login, credentials are stored under `~/.flux-agent/auth.json` and are refreshed automatically before each session.
+After the first login, credentials are stored under `~/.omniworker/auth.json` and are refreshed automatically before each session.
 
 ## Logging In Manually
 
 You can trigger a login without going through the model picker:
 
 ```bash
-flux-agent auth add minimax-oauth
+omniworker auth add minimax-oauth
 ```
 
 ### China region
@@ -59,9 +59,9 @@ flux-agent auth add minimax-oauth
 If your account is on the China platform (`minimaxi.com`), use the China-region OAuth provider id `minimax-cn` instead, or skip OAuth and configure `MINIMAX_CN_API_KEY` / `MINIMAX_CN_BASE_URL` directly. The `--region cn` flag described in older docs is **not** wired through the CLI's argument parser; use the `minimax-cn` provider instead:
 
 ```bash
-flux-agent auth add minimax-cn --type oauth   # if OAuth is supported on your CN account
+omniworker auth add minimax-cn --type oauth   # if OAuth is supported on your CN account
 # or simpler:
-echo 'MINIMAX_CN_API_KEY=your-key' >> ~/.flux-agent/.env
+echo 'MINIMAX_CN_API_KEY=your-key' >> ~/.omniworker/.env
 ```
 
 ### Remote / headless sessions
@@ -69,7 +69,7 @@ echo 'MINIMAX_CN_API_KEY=your-key' >> ~/.flux-agent/.env
 On servers or containers where no browser is available:
 
 ```bash
-flux-agent auth add minimax-oauth --no-browser
+omniworker auth add minimax-oauth --no-browser
 ```
 
 Flux Agent will print the verification URL and user code — open the URL on any device and enter the code when prompted.
@@ -82,14 +82,14 @@ Flux Agent implements a PKCE device-code flow against the MiniMax OAuth endpoint
 2. It POSTs to `{base_url}/oauth/code` with the challenge and receives a `user_code` and `verification_uri`.
 3. Your browser opens `verification_uri`. If prompted, enter the `user_code`.
 4. Flux Agent polls `{base_url}/oauth/token` until the token arrives (or the deadline passes).
-5. Tokens (`access_token`, `refresh_token`, expiry) are saved to `~/.flux-agent/auth.json` under the `minimax-oauth` key.
+5. Tokens (`access_token`, `refresh_token`, expiry) are saved to `~/.omniworker/auth.json` under the `minimax-oauth` key.
 
 Token refresh (standard OAuth `refresh_token` grant) runs automatically at each session start when the access token is within 60 seconds of expiry.
 
 ## Checking Login Status
 
 ```bash
-flux-agent doctor
+omniworker doctor
 ```
 
 The `◆ Auth Providers` section will show:
@@ -107,7 +107,7 @@ or, if not logged in:
 ## Switching Models
 
 ```bash
-flux-agent model
+omniworker model
 # → Select "MiniMax (OAuth)"
 # → Pick from the model list
 ```
@@ -115,13 +115,13 @@ flux-agent model
 Or set the model directly:
 
 ```bash
-flux-agent config set model MiniMax-M2.7
-flux-agent config set provider minimax-oauth
+omniworker config set model MiniMax-M2.7
+omniworker config set provider minimax-oauth
 ```
 
 ## Configuration Reference
 
-After login, `~/.flux-agent/config.yaml` will contain entries similar to:
+After login, `~/.omniworker/config.yaml` will contain entries similar to:
 
 ```yaml
 model:
@@ -142,10 +142,10 @@ model:
 All of the following resolve to `minimax-oauth`:
 
 ```bash
-flux-agent --provider minimax-oauth    # canonical
-flux-agent --provider minimax-portal   # alias
-flux-agent --provider minimax-global   # alias
-flux-agent --provider minimax_oauth    # alias (underscore form)
+omniworker --provider minimax-oauth    # canonical
+omniworker --provider minimax-portal   # alias
+omniworker --provider minimax-global   # alias
+omniworker --provider minimax_oauth    # alias (underscore form)
 ```
 
 ## Environment Variables
@@ -160,7 +160,7 @@ The `minimax-oauth` provider does **not** use `MINIMAX_API_KEY` or `MINIMAX_BASE
 To force the `minimax-oauth` provider at runtime:
 
 ```bash
-FLUX AGENT_INFERENCE_PROVIDER=minimax-oauth flux-agent
+OMNIWORKER_INFERENCE_PROVIDER=minimax-oauth omniworker
 ```
 
 ## Models
@@ -180,13 +180,13 @@ Both models support up to 200,000 tokens of context.
 
 Flux Agent refreshes the token on every session start if it is within 60 seconds of expiry. If the access token is already expired (for example, after a long offline period), the refresh happens automatically on the next request. If refresh fails with `refresh_token_reused` or `invalid_grant`, Flux Agent marks the session as requiring re-login.
 
-**Fix:** run `flux-agent auth add minimax-oauth` again to start a fresh login.
+**Fix:** run `omniworker auth add minimax-oauth` again to start a fresh login.
 
 ### Authorization timed out
 
 The device-code flow has a finite expiry window. If you don't approve the login in time, Flux Agent raises a timeout error.
 
-**Fix:** re-run `flux-agent auth add minimax-oauth` (or `flux-agent model`). The flow starts fresh.
+**Fix:** re-run `omniworker auth add minimax-oauth` (or `omniworker model`). The flow starts fresh.
 
 ### State mismatch (possible CSRF)
 
@@ -196,10 +196,10 @@ Flux Agent detected that the `state` value returned by the authorization server 
 
 ### Logging in from a remote server
 
-If `flux-agent` cannot open a browser window, use `--no-browser`:
+If `omniworker` cannot open a browser window, use `--no-browser`:
 
 ```bash
-flux-agent auth add minimax-oauth --no-browser
+omniworker auth add minimax-oauth --no-browser
 ```
 
 Flux Agent prints the URL and code. Open the URL on any device and complete the flow there.
@@ -208,14 +208,14 @@ Flux Agent prints the URL and code. Open the URL on any device and complete the 
 
 The auth store has no credentials for `minimax-oauth`. You have not logged in yet, or the credential file was deleted.
 
-**Fix:** run `flux-agent model` and select MiniMax (OAuth), or run `flux-agent auth add minimax-oauth`.
+**Fix:** run `omniworker model` and select MiniMax (OAuth), or run `omniworker auth add minimax-oauth`.
 
 ## Logging Out
 
 To remove stored MiniMax OAuth credentials:
 
 ```bash
-flux-agent auth remove minimax-oauth
+omniworker auth remove minimax-oauth
 ```
 
 ## See Also
@@ -223,4 +223,4 @@ flux-agent auth remove minimax-oauth
 - [AI Providers reference](../integrations/providers.md)
 - [Environment Variables](../reference/environment-variables.md)
 - [Configuration](../user-guide/configuration.md)
-- [flux-agent doctor](../reference/cli-commands.md)
+- [omniworker doctor](../reference/cli-commands.md)

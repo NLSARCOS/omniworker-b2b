@@ -1,21 +1,21 @@
-"""Regression: flux-agent doctor must not run a generic Bearer-auth health
+"""Regression: omniworker doctor must not run a generic Bearer-auth health
 check for providers that already have a dedicated check (Anthropic,
 OpenRouter, Bedrock).
 
 Anthropic's native API requires `x-api-key` + `anthropic-version` headers;
 the generic loop sends `Authorization: Bearer ...` which Anthropic answers
-with HTTP 404. The dedicated check at flux-agent_cli/doctor.py already covers
+with HTTP 404. The dedicated check at omniworker_cli/doctor.py already covers
 Anthropic with the right headers, so the pluggable profile must be
 skipped by `_build_apikey_providers_list()`.
 
-See: Flux Agent/flux-agent-agent#22346
+See: Flux Agent/omniworker-agent#22346
 """
 
 from __future__ import annotations
 
 
 def test_build_apikey_providers_list_skips_dedicated_check_providers():
-    from flux-agent_cli import doctor
+    from omniworker_cli import doctor
 
     # Force a rebuild — the module caches the list on first call.
     doctor._APIKEY_PROVIDERS_CACHE = None
@@ -40,7 +40,7 @@ def test_build_apikey_providers_list_skips_dedicated_check_providers():
 
 def test_build_apikey_providers_list_includes_non_dedicated_providers():
     """Sanity guard: the skip-set must not strip every provider."""
-    from flux-agent_cli import doctor
+    from omniworker_cli import doctor
 
     doctor._APIKEY_PROVIDERS_CACHE = None
     entries = doctor._build_apikey_providers_list()

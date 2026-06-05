@@ -6,7 +6,7 @@ author: unmodeled-tyler
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [osint, security, username, social-media, reconnaissance]
     category: security
 prerequisites:

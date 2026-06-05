@@ -15,19 +15,19 @@ Flux Agent isn't just a CLI tool. You can import `AIAgent` directly and use it p
 Install Flux Agent directly from the repository:
 
 ```bash
-pip install git+https://github.com/Flux Agent/flux-agent-agent.git
+pip install git+https://github.com/Flux Agent/omniworker-agent.git
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv pip install git+https://github.com/Flux Agent/flux-agent-agent.git
+uv pip install git+https://github.com/Flux Agent/omniworker-agent.git
 ```
 
 You can also pin it in your `requirements.txt`:
 
 ```text
-flux-agent-agent @ git+https://github.com/Flux Agent/flux-agent-agent.git
+omniworker-agent @ git+https://github.com/Flux Agent/omniworker-agent.git
 ```
 
 :::tip
@@ -266,7 +266,7 @@ client = discord.Client(intents=discord.Intents.default())
 async def on_message(message):
     if message.author == client.user:
         return
-    if message.content.startswith("!flux-agent "):
+    if message.content.startswith("!omniworker "):
         query = message.content[8:]
         agent = AIAgent(
             model="anthropic/claude-sonnet-4",

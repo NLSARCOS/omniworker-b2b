@@ -15,7 +15,7 @@ These tests pin the fixed behavior:
   :func:`agent.skill_commands.scan_skill_commands`), so the slug differs
   from the directory name when the declared name is multi-word.
 * ``disabled`` membership is checked by the declared name, because that
-  is what :func:`flux-agent_cli.skills_config.save_disabled_skills` stores.
+  is what :func:`omniworker_cli.skills_config.save_disabled_skills` stores.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ import pytest
 @pytest.fixture
 def tmp_skills(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Isolated skills dir + OMNIWORKER_HOME so the real user config is untouched."""
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     (home / "skills").mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
@@ -61,7 +61,7 @@ def test_frontmatter_slug_matched_even_when_dir_name_differs(
 
     _write_skill(tmp_skills, "mlops/stable-diffusion", "Stable Diffusion Image Generation")
 
-    # Config disables by declared name (matches what `flux-agent skills config` writes).
+    # Config disables by declared name (matches what `omniworker skills config` writes).
     monkeypatch.setattr(
         "gateway.run._get_disabled_skill_names",
         lambda: {"Stable Diffusion Image Generation"},
@@ -81,7 +81,7 @@ def test_frontmatter_slug_matched_even_when_dir_name_differs(
         "the old code compared the dir name 'stable-diffusion' and returned None"
     )
     assert "disabled" in msg.lower()
-    assert "flux-agent skills config" in msg
+    assert "omniworker skills config" in msg
 
 
 def test_unknown_command_still_returns_none(
@@ -161,7 +161,7 @@ def test_optional_skill_uses_frontmatter_slug(
     # ``get_optional_skills_dir(repo_root / "optional-skills")`` — we
     # can't easily retarget ``repo_root``, so patch the resolver.
     monkeypatch.setattr(
-        "flux-agent_constants.get_optional_skills_dir",
+        "omniworker_constants.get_optional_skills_dir",
         lambda _default: optional,
         raising=False,
     )

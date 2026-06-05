@@ -9,9 +9,9 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def _isolate_flux-agent(tmp_path, monkeypatch):
-    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / ".flux-agent"))
-    (tmp_path / ".flux-agent").mkdir(exist_ok=True)
+def _isolate_omniworker(tmp_path, monkeypatch):
+    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / ".omniworker"))
+    (tmp_path / ".omniworker").mkdir(exist_ok=True)
 
 
 def _make_agent(monkeypatch):

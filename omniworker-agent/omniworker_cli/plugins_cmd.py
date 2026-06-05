@@ -18,8 +18,8 @@ import sys
 from pathlib import Path
 from typing import Any, Optional
 
-from flux-agent_constants import get_flux-agent_home
-from flux-agent_cli.config import cfg_get
+from omniworker_constants import get_omniworker_home
+from omniworker_cli.config import cfg_get
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ _SUPPORTED_MANIFEST_VERSION = 1
 
 def _plugins_dir() -> Path:
     """Return the user plugins directory, creating it if needed."""
-    plugins = get_flux-agent_home() / "plugins"
+    plugins = get_omniworker_home() / "plugins"
     plugins.mkdir(parents=True, exist_ok=True)
     return plugins
 
@@ -197,7 +197,7 @@ def _missing_requires_env_names(manifest: dict) -> list[str]:
     if not requires_env:
         return []
 
-    from flux-agent_cli.config import get_env_value
+    from omniworker_cli.config import get_env_value
 
     env_specs: list[dict] = []
     for entry in requires_env:
@@ -233,8 +233,8 @@ def _prompt_plugin_env_vars(manifest: dict, console) -> None:
     if not requires_env:
         return
 
-    from flux-agent_cli.config import get_env_value, save_env_value  # noqa: F811
-    from flux-agent_constants import display_flux-agent_home
+    from omniworker_cli.config import get_env_value, save_env_value  # noqa: F811
+    from omniworker_constants import display_omniworker_home
 
     # Normalise to list-of-dicts
     env_specs: list[dict] = []
@@ -272,15 +272,15 @@ def _prompt_plugin_env_vars(manifest: dict, console) -> None:
             else:
                 value = input(f"  {name}: ").strip()
         except (EOFError, KeyboardInterrupt):
-            console.print(f"\n[dim]  Skipped (you can set these later in {display_flux-agent_home()}/.env)[/dim]")
+            console.print(f"\n[dim]  Skipped (you can set these later in {display_omniworker_home()}/.env)[/dim]")
             return
 
         if value:
             save_env_value(name, value)
             os.environ[name] = value
-            console.print(f"  [green]✓[/green] Saved to {display_flux-agent_home()}/.env")
+            console.print(f"  [green]✓[/green] Saved to {display_omniworker_home()}/.env")
         else:
-            console.print(f"  [dim]  Skipped (set {name} in {display_flux-agent_home()}/.env later)[/dim]")
+            console.print(f"  [dim]  Skipped (set {name} in {display_omniworker_home()}/.env later)[/dim]")
 
     console.print()
 
@@ -402,7 +402,7 @@ def _install_plugin_core(identifier: str, *, force: bool) -> tuple[Path, dict, s
                     f"'{mv}' (expected an integer).",
                 ) from None
             if mv_int > _SUPPORTED_MANIFEST_VERSION:
-                from flux-agent_cli.config import recommended_update_command
+                from omniworker_cli.config import recommended_update_command
 
                 raise PluginOperationError(
                     f"Plugin '{plugin_name}' requires manifest_version {mv}, "
@@ -582,7 +582,7 @@ def _get_disabled_set() -> set:
     listed in ``plugins.enabled``.
     """
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         config = load_config()
         disabled = cfg_get(config, "plugins", "disabled", default=[])
         return set(disabled) if isinstance(disabled, list) else set()
@@ -592,7 +592,7 @@ def _get_disabled_set() -> set:
 
 def _save_disabled_set(disabled: set) -> None:
     """Write the disabled plugins list to config.yaml."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
     config = load_config()
     if "plugins" not in config:
         config["plugins"] = {}
@@ -607,7 +607,7 @@ def _get_enabled_set() -> set:
     the key is missing (same behaviour as "nothing enabled yet").
     """
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         config = load_config()
         plugins_cfg = config.get("plugins", {})
         if not isinstance(plugins_cfg, dict):
@@ -620,7 +620,7 @@ def _get_enabled_set() -> set:
 
 def _save_enabled_set(enabled: set) -> None:
     """Write the enabled plugins list to config.yaml."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
     config = load_config()
     if "plugins" not in config:
         config["plugins"] = {}
@@ -694,8 +694,8 @@ def _plugin_exists(name: str) -> bool:
             manifest = _read_manifest(child)
             if manifest.get("name") == name:
                 return True
-    # Bundled: <repo>/plugins/<name>/ (or FLUX AGENT_BUNDLED_PLUGINS on Nix).
-    from flux-agent_cli.plugins import get_bundled_plugins_dir
+    # Bundled: <repo>/plugins/<name>/ (or OMNIWORKER_BUNDLED_PLUGINS on Nix).
+    from omniworker_cli.plugins import get_bundled_plugins_dir
     repo_plugins = get_bundled_plugins_dir()
     if repo_plugins.is_dir():
         candidate = repo_plugins / name
@@ -783,7 +783,7 @@ def _discover_all_plugins() -> list:
             sub_prefix = f"{prefix}/{d.name}" if prefix else d.name
             _scan(d, source, sub_prefix, depth + 1)
 
-    from flux-agent_cli.plugins import get_bundled_plugins_dir
+    from omniworker_cli.plugins import get_bundled_plugins_dir
     _scan(get_bundled_plugins_dir(), "bundled", "", 0)
     _scan(_plugins_dir(), "user", "", 0)
 
@@ -855,7 +855,7 @@ def _discover_context_engines() -> list[tuple[str, str]]:
 def _get_current_memory_provider() -> str:
     """Return the current memory.provider from config (empty = built-in)."""
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         config = load_config()
         return cfg_get(config, "memory", "provider", default="") or ""
     except Exception:
@@ -865,7 +865,7 @@ def _get_current_memory_provider() -> str:
 def _get_current_context_engine() -> str:
     """Return the current context.engine from config."""
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         config = load_config()
         return cfg_get(config, "context", "engine", default="compressor") or "compressor"
     except Exception:
@@ -874,7 +874,7 @@ def _get_current_context_engine() -> str:
 
 def _save_memory_provider(name: str) -> None:
     """Persist memory.provider to config.yaml."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
     config = load_config()
     if "memory" not in config:
         config["memory"] = {}
@@ -884,7 +884,7 @@ def _save_memory_provider(name: str) -> None:
 
 def _save_context_engine(name: str) -> None:
     """Persist context.engine to config.yaml."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
     config = load_config()
     if "context" not in config:
         config["context"] = {}
@@ -894,7 +894,7 @@ def _save_context_engine(name: str) -> None:
 
 def _configure_memory_provider() -> bool:
     """Launch a radio picker for memory providers. Returns True if changed."""
-    from flux-agent_cli.curses_ui import curses_radiolist
+    from omniworker_cli.curses_ui import curses_radiolist
 
     current = _get_current_memory_provider()
     providers = _discover_memory_providers()
@@ -932,7 +932,7 @@ def _configure_memory_provider() -> bool:
 
 def _configure_context_engine() -> bool:
     """Launch a radio picker for context engines. Returns True if changed."""
-    from flux-agent_cli.curses_ui import curses_radiolist
+    from omniworker_cli.curses_ui import curses_radiolist
 
     current = _get_current_context_engine()
     engines = _discover_context_engines()
@@ -1032,7 +1032,7 @@ def cmd_toggle() -> None:
 def _run_composite_ui(curses, plugin_names, plugin_labels, plugin_selected,
                       disabled, categories, console):
     """Custom curses screen with checkboxes + category action rows."""
-    from flux-agent_cli.curses_ui import flush_stdin
+    from omniworker_cli.curses_ui import flush_stdin
 
     chosen = set(plugin_selected)
     n_plugins = len(plugin_names)
@@ -1281,7 +1281,7 @@ def _run_composite_ui(curses, plugin_names, plugin_labels, plugin_selected,
 def _run_composite_fallback(plugin_names, plugin_labels, plugin_selected,
                             disabled, categories, console):
     """Text-based fallback for the composite plugins UI."""
-    from flux-agent_cli.colors import Colors, color
+    from omniworker_cli.colors import Colors, color
 
     print(color("\n  Plugins", Colors.YELLOW))
 
@@ -1401,7 +1401,7 @@ def _get_plugin_toolset_key(name: str) -> Optional[str]:
 
     # Check the plugin manager for tools this plugin registered
     try:
-        from flux-agent_cli.plugins import discover_plugins, get_plugin_manager
+        from omniworker_cli.plugins import discover_plugins, get_plugin_manager
         discover_plugins()  # idempotent — ensures plugins are loaded
         manager = get_plugin_manager()
         for _key, loaded in manager._plugins.items():
@@ -1416,7 +1416,7 @@ def _get_plugin_toolset_key(name: str) -> Optional[str]:
 
     # Fallback: read provides_tools from manifest on disk and query registry
     try:
-        from flux-agent_cli.plugins import get_bundled_plugins_dir
+        from omniworker_cli.plugins import get_bundled_plugins_dir
         for base in (get_bundled_plugins_dir(), _plugins_dir()):
             if not base.is_dir():
                 continue
@@ -1442,7 +1442,7 @@ def _toggle_plugin_toolset(name: str, *, enable: bool) -> None:
     if not toolset_key:
         return
 
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     config = load_config()
     platform_toolsets = config.get("platform_toolsets")

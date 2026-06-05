@@ -44,9 +44,9 @@ cloudflared tunnel --url http://localhost:8646
 ngrok http 8646
 
 # devtunnel
-devtunnel create flux-agent-line --allow-anonymous
-devtunnel port create flux-agent-line -p 8646 --protocol https
-devtunnel host flux-agent-line
+devtunnel create omniworker-line --allow-anonymous
+devtunnel port create omniworker-line -p 8646 --protocol https
+devtunnel host omniworker-line
 ```
 
 Copy the `https://...` URL — you'll set it as the webhook URL below. **Leave the tunnel running** while testing. For production, set up a fixed Cloudflare named tunnel so the webhook URL doesn't change on restart.
@@ -55,7 +55,7 @@ Copy the `https://...` URL — you'll set it as the webhook URL below. **Leave t
 
 ## Step 3: Configure Flux Agent
 
-Add to `~/.flux-agent/.env`:
+Add to `~/.omniworker/.env`:
 
 ```env
 LINE_CHANNEL_ACCESS_TOKEN=YOUR_LONG_LIVED_TOKEN
@@ -71,7 +71,7 @@ LINE_ALLOWED_ROOMS=R1234567890abcdef...           # optional room IDs
 LINE_PUBLIC_URL=https://my-tunnel.example.com
 ```
 
-Then in `~/.flux-agent/config.yaml`:
+Then in `~/.omniworker/config.yaml`:
 
 ```yaml
 gateway:
@@ -98,7 +98,7 @@ Back in the LINE console:
 ## Step 5: Run the gateway
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 The agent log shows:
@@ -134,7 +134,7 @@ LINE_SLOW_RESPONSE_THRESHOLD=0
 For the postback flow to fire reliably, suppress chatter that would consume the reply token before the threshold:
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 display:
   interim_assistant_messages: false
   platforms:
@@ -180,7 +180,7 @@ Cron jobs with `deliver: line` route to `LINE_HOME_CHANNEL`. The adapter ships a
 
 **"invalid signature" on webhook verify.** The `Channel secret` was copied wrong, or your tunnel rewrote the request body. Verify with `curl -i https://<tunnel>/line/webhook/health` first — that should return `{"status":"ok","platform":"line"}`.
 
-**Bot receives nothing in groups.** Check `LINE_ALLOWED_GROUPS` includes the `C...` group ID. To find a group ID, send a test message and grep `~/.flux-agent/logs/gateway.log` for `LINE: rejecting unauthorized source` — the rejected source dict has the IDs.
+**Bot receives nothing in groups.** Check `LINE_ALLOWED_GROUPS` includes the `C...` group ID. To find a group ID, send a test message and grep `~/.omniworker/logs/gateway.log` for `LINE: rejecting unauthorized source` — the rejected source dict has the IDs.
 
 **`send_image` fails with "LINE_PUBLIC_URL must be set".** LINE's Messaging API does not accept binary uploads — images, audio, and video must be reachable HTTPS URLs. Set `LINE_PUBLIC_URL` to the tunnel's public hostname and the adapter will serve files from `/line/media/<token>/<filename>` automatically.
 

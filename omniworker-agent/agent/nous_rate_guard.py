@@ -29,8 +29,8 @@ _STATE_FILENAME = "nous.json"
 def _state_path() -> str:
     """Return the path to the Nous rate limit state file."""
     try:
-        from flux-agent_constants import get_flux-agent_home
-        base = get_flux-agent_home()
+        from omniworker_constants import get_omniworker_home
+        base = get_omniworker_home()
     except ImportError:
         base = os.path.join(os.path.expanduser("~"), ".hermes")
     return os.path.join(base, _STATE_SUBDIR, _STATE_FILENAME)

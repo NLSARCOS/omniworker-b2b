@@ -15,16 +15,16 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from flux-agent_cli.config import (
+from omniworker_cli.config import (
     cfg_get,
     load_config,
     save_config,
     get_env_value,
     save_env_value,
-    get_flux-agent_home,  # noqa: F401 — used by test mocks
+    get_omniworker_home,  # noqa: F401 — used by test mocks
 )
-from flux-agent_cli.colors import Colors, color
-from flux-agent_constants import display_flux-agent_home
+from omniworker_cli.colors import Colors, color
+from omniworker_constants import display_omniworker_home
 from tools.mcp_tool import _ENV_VAR_PATTERN
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ def _confirm(question: str, default: bool = True) -> bool:
 
 
 def _prompt(question: str, *, password: bool = False, default: str = "") -> str:
-    from flux-agent_cli.cli_output import prompt as _shared_prompt
+    from omniworker_cli.cli_output import prompt as _shared_prompt
     return _shared_prompt(question, default=default, password=password)
 
 
@@ -229,7 +229,7 @@ def cmd_mcp_add(args):
     url = getattr(args, "url", None)
     # Read from `mcp_command` (set by --command via explicit dest) — see
     # mcp_add_p.add_argument("--command", dest="mcp_command", ...) in
-    # flux-agent_cli/main.py for why the dest is renamed.
+    # omniworker_cli/main.py for why the dest is renamed.
     command = getattr(args, "mcp_command", None)
     cmd_args = getattr(args, "args", None) or []
     auth_type = getattr(args, "auth", None)
@@ -325,7 +325,7 @@ def cmd_mcp_add(args):
                     api_key = _prompt("API key / Bearer token", password=True)
                     if api_key:
                         save_env_value(env_key, api_key)
-                        _success(f"Saved to {display_flux-agent_home()}/.env as {env_key}")
+                        _success(f"Saved to {display_omniworker_home()}/.env as {env_key}")
 
                 # Set header with env var interpolation
                 if api_key or existing_key:
@@ -382,7 +382,7 @@ def cmd_mcp_add(args):
 
     if choice in {"s", "select"}:
         # Interactive tool selection
-        from flux-agent_cli.curses_ui import curses_checklist
+        from omniworker_cli.curses_ui import curses_checklist
 
         labels = [f"{t[0]}  —  {t[1]}" for t in tools]
         pre_selected = set(range(len(tools)))
@@ -413,7 +413,7 @@ def cmd_mcp_add(args):
     _save_mcp_server(name, server_config)
 
     print()
-    _success(f"Saved '{name}' to {display_flux-agent_home()}/config.yaml ({tool_count}/{total} tools enabled)")
+    _success(f"Saved '{name}' to {display_omniworker_home()}/config.yaml ({tool_count}/{total} tools enabled)")
     _info("Start a new session to use these tools.")
 
 
@@ -703,7 +703,7 @@ def cmd_mcp_configure(args):
     print()
 
     # Interactive checklist
-    from flux-agent_cli.curses_ui import curses_checklist
+    from omniworker_cli.curses_ui import curses_checklist
 
     labels = [f"{t[0]}  —  {t[1]}" for t in all_tools]
 

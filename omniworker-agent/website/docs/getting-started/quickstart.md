@@ -36,11 +36,11 @@ Pick the row that matches your goal:
 
 | Goal | Do this first | Then do this |
 |---|---|---|
-| I just want Flux Agent working on my machine | `flux-agent setup` | Run a real chat and verify it responds |
-| I already know my provider | `flux-agent model` | Save the config, then start chatting |
-| I want a bot or always-on setup | `flux-agent gateway setup` after CLI works | Connect Telegram, Discord, Slack, or another platform |
-| I want a local or self-hosted model | `flux-agent model` → custom endpoint | Verify the endpoint, model name, and context length |
-| I want multi-provider fallback | `flux-agent model` first | Add routing and fallback only after the base chat works |
+| I just want Flux Agent working on my machine | `omniworker setup` | Run a real chat and verify it responds |
+| I already know my provider | `omniworker model` | Save the config, then start chatting |
+| I want a bot or always-on setup | `omniworker gateway setup` after CLI works | Connect Telegram, Discord, Slack, or another platform |
+| I want a local or self-hosted model | `omniworker model` → custom endpoint | Verify the endpoint, model name, and context length |
+| I want multi-provider fallback | `omniworker model` first | Add routing and fallback only after the base chat works |
 
 **Rule of thumb:** if Flux Agent cannot complete a normal chat, do not add more features yet. Get one clean conversation working first, then layer on gateway, cron, skills, voice, or routing.
 
@@ -52,7 +52,7 @@ Run the one-line installer:
 
 ```bash
 # Linux / macOS / WSL2 / Android (Termux)
-curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Flux Agent/omniworker-agent/main/scripts/install.sh | bash
 ```
 
 :::tip Android / Termux
@@ -73,26 +73,26 @@ For detailed installation options, prerequisites, and troubleshooting, see the [
 
 ## 2. Choose a Provider
 
-The single most important setup step. Use `flux-agent model` to walk through the choice interactively:
+The single most important setup step. Use `omniworker model` to walk through the choice interactively:
 
 ```bash
-flux-agent model
+omniworker model
 ```
 
 Good defaults:
 
 | Provider | What it is | How to set up |
 |----------|-----------|---------------|
-| **Nous Portal** | Subscription-based, zero-config | OAuth login via `flux-agent model` |
-| **OpenAI Codex** | ChatGPT OAuth, uses Codex models | Device code auth via `flux-agent model` |
-| **Anthropic** | Claude models directly — Max plan + extra usage credits (OAuth), or API key for pay-per-token | `flux-agent model` → OAuth login (requires Max + extra credits), or an Anthropic API key |
+| **Nous Portal** | Subscription-based, zero-config | OAuth login via `omniworker model` |
+| **OpenAI Codex** | ChatGPT OAuth, uses Codex models | Device code auth via `omniworker model` |
+| **Anthropic** | Claude models directly — Max plan + extra usage credits (OAuth), or API key for pay-per-token | `omniworker model` → OAuth login (requires Max + extra credits), or an Anthropic API key |
 | **OpenRouter** | Multi-provider routing across many models | Enter your API key |
 | **Z.AI** | GLM / Zhipu-hosted models | Set `GLM_API_KEY` / `ZAI_API_KEY` |
 | **Kimi / Moonshot** | Moonshot-hosted coding and chat models | Set `KIMI_API_KEY` (or the Kimi-Coding-specific `KIMI_CODING_API_KEY`) |
 | **Kimi / Moonshot China** | China-region Moonshot endpoint | Set `KIMI_CN_API_KEY` |
 | **Arcee AI** | Trinity models | Set `ARCEEAI_API_KEY` |
 | **GMI Cloud** | Multi-model direct API | Set `GMI_API_KEY` |
-| **MiniMax (OAuth)** | MiniMax-M2.7 via browser OAuth — no API key needed | `flux-agent model` → MiniMax (OAuth) |
+| **MiniMax (OAuth)** | MiniMax-M2.7 via browser OAuth — no API key needed | `omniworker model` → MiniMax (OAuth) |
 | **MiniMax** | International MiniMax endpoint | Set `MINIMAX_API_KEY` |
 | **MiniMax China** | China-region MiniMax endpoint | Set `MINIMAX_CN_API_KEY` |
 | **Alibaba Cloud** | Qwen models via DashScope | Set `DASHSCOPE_API_KEY` |
@@ -103,8 +103,8 @@ Good defaults:
 | **OpenCode Go** | $10/month subscription for open models | Set `OPENCODE_GO_API_KEY` |
 | **DeepSeek** | Direct DeepSeek API access | Set `DEEPSEEK_API_KEY` |
 | **NVIDIA NIM** | Nemotron models via build.nvidia.com or local NIM | Set `NVIDIA_API_KEY` (optional: `NVIDIA_BASE_URL`) |
-| **GitHub Copilot** | GitHub Copilot subscription (GPT-5.x, Claude, Gemini, etc.) | OAuth via `flux-agent model`, or `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` |
-| **GitHub Copilot ACP** | Copilot ACP agent backend (spawns local `copilot` CLI) | `flux-agent model` (requires `copilot` CLI + `copilot login`) |
+| **GitHub Copilot** | GitHub Copilot subscription (GPT-5.x, Claude, Gemini, etc.) | OAuth via `omniworker model`, or `COPILOT_GITHUB_TOKEN` / `GH_TOKEN` |
+| **GitHub Copilot ACP** | Copilot ACP agent backend (spawns local `copilot` CLI) | `omniworker model` (requires `copilot` CLI + `copilot login`) |
 | **Vercel AI Gateway** | Vercel AI Gateway routing | Set `AI_GATEWAY_API_KEY` |
 | **Custom Endpoint** | VLLM, SGLang, Ollama, or any OpenAI-compatible API | Set base URL + API key |
 
@@ -115,22 +115,22 @@ Flux Agent Agent requires a model with at least **64,000 tokens** of context. Mo
 :::
 
 :::tip
-You can switch providers at any time with `flux-agent model` — no lock-in. For a full list of all supported providers and setup details, see [AI Providers](../integrations/providers.md).
+You can switch providers at any time with `omniworker model` — no lock-in. For a full list of all supported providers and setup details, see [AI Providers](../integrations/providers.md).
 :::
 
 ### How settings are stored
 
 Flux Agent separates secrets from normal config:
 
-- **Secrets and tokens** → `~/.flux-agent/.env`
-- **Non-secret settings** → `~/.flux-agent/config.yaml`
+- **Secrets and tokens** → `~/.omniworker/.env`
+- **Non-secret settings** → `~/.omniworker/config.yaml`
 
 The easiest way to set values correctly is through the CLI:
 
 ```bash
-flux-agent config set model anthropic/claude-opus-4.6
-flux-agent config set terminal.backend docker
-flux-agent config set OPENROUTER_API_KEY sk-or-...
+omniworker config set model anthropic/claude-opus-4.6
+omniworker config set terminal.backend docker
+omniworker config set OPENROUTER_API_KEY sk-or-...
 ```
 
 The right value goes to the right file automatically.
@@ -138,14 +138,14 @@ The right value goes to the right file automatically.
 ## 3. Run Your First Chat
 
 ```bash
-flux-agent            # classic CLI
-flux-agent --tui      # modern TUI (recommended)
+omniworker            # classic CLI
+omniworker --tui      # modern TUI (recommended)
 ```
 
 You'll see a welcome banner with your model, available tools, and skills. Use a prompt that's specific and easy to verify:
 
 :::tip Pick your interface
-Flux Agent ships with two terminal interfaces: the classic `prompt_toolkit` CLI and a newer [TUI](../user-guide/tui.md) with modal overlays, mouse selection, and non-blocking input. Both share the same sessions, slash commands, and config — try each with `flux-agent` vs `flux-agent --tui`.
+Flux Agent ships with two terminal interfaces: the classic `prompt_toolkit` CLI and a newer [TUI](../user-guide/tui.md) with modal overlays, mouse selection, and non-blocking input. Both share the same sessions, slash commands, and config — try each with `omniworker` vs `omniworker --tui`.
 :::
 
 ```
@@ -174,8 +174,8 @@ If that works, you're past the hardest part.
 Before moving on, make sure resume works:
 
 ```bash
-flux-agent --continue    # Resume the most recent session
-flux-agent -c            # Short form
+omniworker --continue    # Resume the most recent session
+omniworker -c            # Short form
 ```
 
 That should bring you back to the session you just had. If it doesn't, check whether you're in the same profile and whether the session actually saved. This matters later when you're juggling multiple setups or machines.
@@ -217,15 +217,15 @@ Only after the base chat works. Pick what you need:
 ### Bot or shared assistant
 
 ```bash
-flux-agent gateway setup    # Interactive platform configuration
+omniworker gateway setup    # Interactive platform configuration
 ```
 
 Connect [Telegram](/docs/user-guide/messaging/telegram), [Discord](/docs/user-guide/messaging/discord), [Slack](/docs/user-guide/messaging/slack), [WhatsApp](/docs/user-guide/messaging/whatsapp), [Signal](/docs/user-guide/messaging/signal), [Email](/docs/user-guide/messaging/email), or [Home Assistant](/docs/user-guide/messaging/homeassistant), or [Microsoft Teams](/docs/user-guide/messaging/teams).
 
 ### Automation and tools
 
-- `flux-agent tools` — tune tool access per platform
-- `flux-agent skills` — browse and install reusable workflows
+- `omniworker tools` — tune tool access per platform
+- `omniworker skills` — browse and install reusable workflows
 - Cron — only after your bot or CLI setup is stable
 
 ### Sandboxed terminal
@@ -233,16 +233,16 @@ Connect [Telegram](/docs/user-guide/messaging/telegram), [Discord](/docs/user-gu
 For safety, run the agent in a Docker container or on a remote server:
 
 ```bash
-flux-agent config set terminal.backend docker    # Docker isolation
-flux-agent config set terminal.backend ssh       # Remote server
+omniworker config set terminal.backend docker    # Docker isolation
+omniworker config set terminal.backend ssh       # Remote server
 ```
 
 ### Voice mode
 
 ```bash
 # From the Flux Agent install directory (the curl installer placed it at
-# ~/.flux-agent/flux-agent-agent on Linux/macOS or %LOCALAPPDATA%\flux-agent\flux-agent-agent on Windows):
-cd ~/.flux-agent/flux-agent-agent
+# ~/.omniworker/omniworker-agent on Linux/macOS or %LOCALAPPDATA%\omniworker\omniworker-agent on Windows):
+cd ~/.omniworker/omniworker-agent
 uv pip install -e ".[voice]"
 # Includes faster-whisper for free local speech-to-text
 ```
@@ -252,8 +252,8 @@ Then in the CLI: `/voice on`. Press `Ctrl+B` to record. See [Voice Mode](../user
 ### Skills
 
 ```bash
-flux-agent skills search kubernetes
-flux-agent skills install openai/skills/k8s
+omniworker skills search kubernetes
+omniworker skills install openai/skills/k8s
 ```
 
 Or use `/skills` inside a chat session.
@@ -261,7 +261,7 @@ Or use `/skills` inside a chat session.
 ### MCP servers
 
 ```yaml
-# Add to ~/.flux-agent/config.yaml
+# Add to ~/.omniworker/config.yaml
 mcp_servers:
   github:
     command: npx
@@ -275,10 +275,10 @@ mcp_servers:
 ACP support ships with the standard `[all]` extras, so the curl installer already includes it. Just run:
 
 ```bash
-flux-agent acp
+omniworker acp
 ```
 
-(If you installed without `[all]`, run `cd ~/.flux-agent/flux-agent-agent && uv pip install -e ".[acp]"` first.)
+(If you installed without `[all]`, run `cd ~/.omniworker/omniworker-agent && uv pip install -e ".[acp]"` first.)
 
 See [ACP Editor Integration](../user-guide/features/acp.md).
 
@@ -290,23 +290,23 @@ These are the problems that waste the most time:
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Flux Agent opens but gives empty or broken replies | Provider auth or model selection is wrong | Run `flux-agent model` again and confirm provider, model, and auth |
+| Flux Agent opens but gives empty or broken replies | Provider auth or model selection is wrong | Run `omniworker model` again and confirm provider, model, and auth |
 | Custom endpoint "works" but returns garbage | Wrong base URL, model name, or not actually OpenAI-compatible | Verify the endpoint in a separate client first |
-| Gateway starts but nobody can message it | Bot token, allowlist, or platform setup is incomplete | Re-run `flux-agent gateway setup` and check `flux-agent gateway status` |
-| `flux-agent --continue` can't find old session | Switched profiles or session never saved | Check `flux-agent sessions list` and confirm you're in the right profile |
+| Gateway starts but nobody can message it | Bot token, allowlist, or platform setup is incomplete | Re-run `omniworker gateway setup` and check `omniworker gateway status` |
+| `omniworker --continue` can't find old session | Switched profiles or session never saved | Check `omniworker sessions list` and confirm you're in the right profile |
 | Model unavailable or odd fallback behavior | Provider routing or fallback settings are too aggressive | Keep routing off until the base provider is stable |
-| `flux-agent doctor` flags config problems | Config values are missing or stale | Fix the config, retest a plain chat before adding features |
+| `omniworker doctor` flags config problems | Config values are missing or stale | Fix the config, retest a plain chat before adding features |
 
 ## Recovery Toolkit
 
 When something feels off, use this order:
 
-1. `flux-agent doctor`
-2. `flux-agent model`
-3. `flux-agent setup`
-4. `flux-agent sessions list`
-5. `flux-agent --continue`
-6. `flux-agent gateway status`
+1. `omniworker doctor`
+2. `omniworker model`
+3. `omniworker setup`
+4. `omniworker sessions list`
+5. `omniworker --continue`
+6. `omniworker gateway status`
 
 That sequence gets you from "broken vibes" back to a known state fast.
 
@@ -316,14 +316,14 @@ That sequence gets you from "broken vibes" back to a known state fast.
 
 | Command | Description |
 |---------|-------------|
-| `flux-agent` | Start chatting |
-| `flux-agent model` | Choose your LLM provider and model |
-| `flux-agent tools` | Configure which tools are enabled per platform |
-| `flux-agent setup` | Full setup wizard (configures everything at once) |
-| `flux-agent doctor` | Diagnose issues |
-| `flux-agent update` | Update to latest version |
-| `flux-agent gateway` | Start the messaging gateway |
-| `flux-agent --continue` | Resume last session |
+| `omniworker` | Start chatting |
+| `omniworker model` | Choose your LLM provider and model |
+| `omniworker tools` | Configure which tools are enabled per platform |
+| `omniworker setup` | Full setup wizard (configures everything at once) |
+| `omniworker doctor` | Diagnose issues |
+| `omniworker update` | Update to latest version |
+| `omniworker gateway` | Start the messaging gateway |
+| `omniworker --continue` | Resume last session |
 
 ## Next Steps
 

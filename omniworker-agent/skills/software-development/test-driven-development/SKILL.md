@@ -6,7 +6,7 @@ author: Flux Agent Agent (adapted from obra/superpowers)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [testing, tdd, development, quality, red-green-refactor]
     related_skills: [systematic-debugging, writing-plans, subagent-driven-development]
 ---

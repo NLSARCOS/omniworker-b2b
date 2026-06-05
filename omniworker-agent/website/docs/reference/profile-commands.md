@@ -6,13 +6,13 @@ sidebar_position: 7
 
 This page covers all commands related to [Flux Agent profiles](../user-guide/profiles.md). For general CLI commands, see [CLI Commands Reference](./cli-commands.md).
 
-## `flux-agent profile`
+## `omniworker profile`
 
 ```bash
-flux-agent profile <subcommand>
+omniworker profile <subcommand>
 ```
 
-Top-level command for managing profiles. Running `flux-agent profile` without a subcommand shows help.
+Top-level command for managing profiles. Running `omniworker profile` without a subcommand shows help.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -29,10 +29,10 @@ Top-level command for managing profiles. Running `flux-agent profile` without a 
 | `update` | Re-pull a distribution-managed profile and re-apply its bundle. |
 | `info` | Show distribution metadata for a profile (origin URL, commit, last update). |
 
-## `flux-agent profile list`
+## `omniworker profile list`
 
 ```bash
-flux-agent profile list
+omniworker profile list
 ```
 
 Lists all profiles. The currently active profile is marked with `*`.
@@ -40,7 +40,7 @@ Lists all profiles. The currently active profile is marked with `*`.
 **Example:**
 
 ```bash
-$ flux-agent profile list
+$ omniworker profile list
   default
 * work
   dev
@@ -49,13 +49,13 @@ $ flux-agent profile list
 
 No options.
 
-## `flux-agent profile use`
+## `omniworker profile use`
 
 ```bash
-flux-agent profile use <name>
+omniworker profile use <name>
 ```
 
-Sets `<name>` as the active profile. All subsequent `flux-agent` commands (without `-p`) will use this profile.
+Sets `<name>` as the active profile. All subsequent `omniworker` commands (without `-p`) will use this profile.
 
 | Argument | Description |
 |----------|-------------|
@@ -64,14 +64,14 @@ Sets `<name>` as the active profile. All subsequent `flux-agent` commands (witho
 **Example:**
 
 ```bash
-flux-agent profile use work
-flux-agent profile use default
+omniworker profile use work
+omniworker profile use default
 ```
 
-## `flux-agent profile create`
+## `omniworker profile create`
 
 ```bash
-flux-agent profile create <name> [options]
+omniworker profile create <name> [options]
 ```
 
 Creates a new profile.
@@ -90,22 +90,22 @@ Creating a profile does **not** make that profile directory the default project/
 
 ```bash
 # Blank profile — needs full setup
-flux-agent profile create mybot
+omniworker profile create mybot
 
 # Clone config only from current profile
-flux-agent profile create work --clone
+omniworker profile create work --clone
 
 # Clone everything from current profile
-flux-agent profile create backup --clone-all
+omniworker profile create backup --clone-all
 
 # Clone config from a specific profile
-flux-agent profile create work2 --clone --clone-from work
+omniworker profile create work2 --clone --clone-from work
 ```
 
-## `flux-agent profile delete`
+## `omniworker profile delete`
 
 ```bash
-flux-agent profile delete <name> [options]
+omniworker profile delete <name> [options]
 ```
 
 Deletes a profile and removes its shell alias.
@@ -118,18 +118,18 @@ Deletes a profile and removes its shell alias.
 **Example:**
 
 ```bash
-flux-agent profile delete mybot
-flux-agent profile delete mybot --yes
+omniworker profile delete mybot
+omniworker profile delete mybot --yes
 ```
 
 :::warning
 This permanently deletes the profile's entire directory including all config, memories, sessions, and skills. Cannot delete the currently active profile.
 :::
 
-## `flux-agent profile show`
+## `omniworker profile show`
 
 ```bash
-flux-agent profile show <name>
+omniworker profile show <name>
 ```
 
 Displays details about a profile including its home directory, configured model, gateway status, skills count, and configuration file status.
@@ -143,9 +143,9 @@ This shows the profile's Flux Agent home directory, not the terminal working dir
 **Example:**
 
 ```bash
-$ flux-agent profile show work
+$ omniworker profile show work
 Profile: work
-Path:    ~/.flux-agent/profiles/work
+Path:    ~/.omniworker/profiles/work
 Model:   anthropic/claude-sonnet-4 (anthropic)
 Gateway: stopped
 Skills:  12
@@ -154,10 +154,10 @@ SOUL.md: exists
 Alias:   ~/.local/bin/work
 ```
 
-## `flux-agent profile alias`
+## `omniworker profile alias`
 
 ```bash
-flux-agent profile alias <name> [options]
+omniworker profile alias <name> [options]
 ```
 
 Regenerates the shell alias script at `~/.local/bin/<name>`. Useful if the alias was accidentally deleted or if you need to update it after moving your Flux Agent installation.
@@ -171,20 +171,20 @@ Regenerates the shell alias script at `~/.local/bin/<name>`. Useful if the alias
 **Example:**
 
 ```bash
-flux-agent profile alias work
+omniworker profile alias work
 # Creates/updates ~/.local/bin/work
 
-flux-agent profile alias work --name mywork
+omniworker profile alias work --name mywork
 # Creates ~/.local/bin/mywork
 
-flux-agent profile alias work --remove
+omniworker profile alias work --remove
 # Removes the wrapper script
 ```
 
-## `flux-agent profile rename`
+## `omniworker profile rename`
 
 ```bash
-flux-agent profile rename <old-name> <new-name>
+omniworker profile rename <old-name> <new-name>
 ```
 
 Renames a profile. Updates the directory and shell alias.
@@ -197,15 +197,15 @@ Renames a profile. Updates the directory and shell alias.
 **Example:**
 
 ```bash
-flux-agent profile rename mybot assistant
-# ~/.flux-agent/profiles/mybot → ~/.flux-agent/profiles/assistant
+omniworker profile rename mybot assistant
+# ~/.omniworker/profiles/mybot → ~/.omniworker/profiles/assistant
 # ~/.local/bin/mybot → ~/.local/bin/assistant
 ```
 
-## `flux-agent profile export`
+## `omniworker profile export`
 
 ```bash
-flux-agent profile export <name> [options]
+omniworker profile export <name> [options]
 ```
 
 Exports a profile as a compressed tar.gz archive.
@@ -218,16 +218,16 @@ Exports a profile as a compressed tar.gz archive.
 **Example:**
 
 ```bash
-flux-agent profile export work
+omniworker profile export work
 # Creates work.tar.gz in the current directory
 
-flux-agent profile export work -o ./work-2026-03-29.tar.gz
+omniworker profile export work -o ./work-2026-03-29.tar.gz
 ```
 
-## `flux-agent profile import`
+## `omniworker profile import`
 
 ```bash
-flux-agent profile import <archive> [options]
+omniworker profile import <archive> [options]
 ```
 
 Imports a profile from a tar.gz archive.
@@ -240,10 +240,10 @@ Imports a profile from a tar.gz archive.
 **Example:**
 
 ```bash
-flux-agent profile import ./work-2026-03-29.tar.gz
+omniworker profile import ./work-2026-03-29.tar.gz
 # Infers profile name from the archive
 
-flux-agent profile import ./work-2026-03-29.tar.gz --name work-restored
+omniworker profile import ./work-2026-03-29.tar.gz --name work-restored
 ```
 
 ## Distribution commands
@@ -265,16 +265,16 @@ The recipient's user data (memories, sessions, auth, their own edits to
 updates.
 
 :::info
-`flux-agent profile export` / `import` are still the right commands for
+`omniworker profile export` / `import` are still the right commands for
 **local backup and restore** of a profile on your own machine. Distribution
 (`install` / `update` / `info`) is a separate concept: ship a profile via
 git so someone else can install it.
 :::
 
-### `flux-agent profile install`
+### `omniworker profile install`
 
 ```bash
-flux-agent profile install <source> [--name <name>] [--alias] [--force] [--yes]
+omniworker profile install <source> [--name <name>] [--alias] [--force] [--yes]
 ```
 
 Installs a profile distribution from a git URL or a local directory.
@@ -283,7 +283,7 @@ Installs a profile distribution from a git URL or a local directory.
 |--------|-------------|
 | `<source>` | Git URL (`github.com/user/repo`, `https://...`, `git@...`, `ssh://`, `git://`) or a local directory containing `distribution.yaml` at its root. |
 | `--name NAME` | Override the profile name from the manifest. |
-| `--alias` | Also create a shell wrapper (e.g. `telemetry` → `flux-agent -p telemetry`). |
+| `--alias` | Also create a shell wrapper (e.g. `telemetry` → `omniworker -p telemetry`). |
 | `--force` | Overwrite an existing profile of the same name. User data is still preserved. |
 | `-y`, `--yes` | Skip the manifest-preview confirmation prompt. |
 
@@ -295,22 +295,22 @@ cron jobs before asking for confirmation. Required env vars go into a
 
 ```bash
 # Install from a GitHub repo (shorthand)
-flux-agent profile install github.com/kyle/telemetry-distribution --alias
+omniworker profile install github.com/kyle/telemetry-distribution --alias
 
 # Install from a full HTTPS git URL
-flux-agent profile install https://github.com/kyle/telemetry-distribution.git
+omniworker profile install https://github.com/kyle/telemetry-distribution.git
 
 # Install from SSH
-flux-agent profile install git@github.com:kyle/telemetry-distribution.git
+omniworker profile install git@github.com:kyle/telemetry-distribution.git
 
 # Install from a local directory during development
-flux-agent profile install ./telemetry/
+omniworker profile install ./telemetry/
 ```
 
-### `flux-agent profile update`
+### `omniworker profile update`
 
 ```bash
-flux-agent profile update <name> [--force-config] [--yes]
+omniworker profile update <name> [--force-config] [--yes]
 ```
 
 Re-clones the distribution from its recorded source and applies updates.
@@ -320,10 +320,10 @@ overwritten; user data (memories, sessions, auth, .env) is never touched.
 `config.yaml` is preserved by default to keep your local overrides.
 Pass `--force-config` to reset it to the distribution's shipped config.
 
-### `flux-agent profile info`
+### `omniworker profile info`
 
 ```bash
-flux-agent profile info <name>
+omniworker profile info <name>
 ```
 
 Prints the profile's distribution manifest — name, version, required
@@ -333,8 +333,8 @@ the `Installed:` timestamp recorded when the distribution was last
 needs before installing it, and for spotting "this profile was installed
 6 months ago and hasn't been updated."
 
-`flux-agent profile list` also shows the distribution name and version in a
-`Distribution` column, and `flux-agent profile show <name>` / `delete <name>`
+`omniworker profile list` also shows the distribution name and version in a
+`Distribution` column, and `omniworker profile show <name>` / `delete <name>`
 surface the source URL so you can tell at a glance which profiles came
 from a git repo vs. were created locally.
 
@@ -348,10 +348,10 @@ transparently.
 
 ```bash
 # Uses your SSH key, the same as any other `git clone`
-flux-agent profile install git@github.com:your-org/internal-assistant.git
+omniworker profile install git@github.com:your-org/internal-assistant.git
 
 # Uses your git credential helper
-flux-agent profile install https://github.com/your-org/internal-assistant.git
+omniworker profile install https://github.com/your-org/internal-assistant.git
 ```
 
 If a clone prompts for credentials interactively in your terminal during
@@ -366,7 +366,7 @@ Every distribution has a `distribution.yaml` at the root of its repository:
 name: telemetry
 version: 0.1.0
 description: "Compliance monitoring harness"
-flux-agent_requires: ">=0.12.0"
+omniworker_requires: ">=0.12.0"
 author: "Your Name"
 license: "MIT"
 env_requires:
@@ -384,7 +384,7 @@ distribution_owned:   # optional; defaults to SOUL.md, config.yaml,
   - cron/
 ```
 
-`flux-agent_requires` supports `>=`, `<=`, `==`, `!=`, `>`, `<`, or a bare
+`omniworker_requires` supports `>=`, `<=`, `==`, `!=`, `>`, `<`, or a bare
 version (treated as `>=`). Install fails with a clear error if the current
 Flux Agent version doesn't satisfy the spec.
 
@@ -400,16 +400,16 @@ Authoring a distribution is just a git push:
    and `version`.
 2. Initialize a git repo (or use an existing one) and push to GitHub /
    GitLab / any host Flux Agent can clone from.
-3. Tell recipients to run `flux-agent profile install <your-repo-url>`.
+3. Tell recipients to run `omniworker profile install <your-repo-url>`.
 
 Use git tags for versioned releases — recipients who clone `HEAD` get your
 latest state, and you can always bump `version:` in the manifest.
 
-## `flux-agent -p` / `flux-agent --profile`
+## `omniworker -p` / `omniworker --profile`
 
 ```bash
-flux-agent -p <name> <command> [options]
-flux-agent --profile <name> <command> [options]
+omniworker -p <name> <command> [options]
+omniworker --profile <name> <command> [options]
 ```
 
 Global flag to run any Flux Agent command under a specific profile without changing the sticky default. This overrides the active profile for the duration of the command.
@@ -421,16 +421,16 @@ Global flag to run any Flux Agent command under a specific profile without chang
 **Examples:**
 
 ```bash
-flux-agent -p work chat -q "Check the server status"
-flux-agent --profile dev gateway start
-flux-agent -p personal skills list
-flux-agent -p work config edit
+omniworker -p work chat -q "Check the server status"
+omniworker --profile dev gateway start
+omniworker -p personal skills list
+omniworker -p work config edit
 ```
 
-## `flux-agent completion`
+## `omniworker completion`
 
 ```bash
-flux-agent completion <shell>
+omniworker completion <shell>
 ```
 
 Generates shell completion scripts. Includes completions for profile names and profile subcommands.
@@ -443,18 +443,18 @@ Generates shell completion scripts. Includes completions for profile names and p
 
 ```bash
 # Install completions
-flux-agent completion bash >> ~/.bashrc
-flux-agent completion zsh >> ~/.zshrc
-flux-agent completion fish > ~/.config/fish/completions/flux-agent.fish
+omniworker completion bash >> ~/.bashrc
+omniworker completion zsh >> ~/.zshrc
+omniworker completion fish > ~/.config/fish/completions/omniworker.fish
 
 # Reload shell
 source ~/.bashrc
 ```
 
 After installation, tab completion works for:
-- `flux-agent profile <TAB>` — subcommands (list, use, create, etc.)
-- `flux-agent profile use <TAB>` — profile names
-- `flux-agent -p <TAB>` — profile names
+- `omniworker profile <TAB>` — subcommands (list, use, create, etc.)
+- `omniworker profile use <TAB>` — profile names
+- `omniworker -p <TAB>` — profile names
 
 ## See also
 

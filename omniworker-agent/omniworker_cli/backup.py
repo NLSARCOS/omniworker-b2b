@@ -5,7 +5,7 @@ Backup and import commands for hermes CLI.
 (excluding the hermes-agent repo and transient files).
 
 `hermes import` restores from a backup zip, overlaying onto the current
-FLUX AGENT_HOME root.
+OMNIWORKER_HOME root.
 """
 
 import json
@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from flux-agent_constants import get_default_hermes_root, get_flux-agent_home, display_flux-agent_home
+from omniworker_constants import get_default_hermes_root, get_omniworker_home, display_omniworker_home
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +152,7 @@ def run_backup(args) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Collect files
-    print(f"Scanning {display_flux-agent_home()} ...")
+    print(f"Scanning {display_omniworker_home()} ...")
     files_to_add: list[tuple[Path, Path]] = []  # (absolute, relative)
     skipped_dirs = set()
 
@@ -330,7 +330,7 @@ def run_import(args) -> None:
         file_count = len(members)
 
         print(f"Backup contains {file_count} files")
-        print(f"Target: {display_flux-agent_home()}")
+        print(f"Target: {display_omniworker_home()}")
 
         if prefix:
             print(f"Detected archive prefix: {prefix!r} (will be stripped)")
@@ -398,7 +398,7 @@ def run_import(args) -> None:
         # Summary
         print()
         print(f"Import complete: {restored} files restored in {elapsed:.1f}s")
-        print(f"  Target: {display_flux-agent_home()}")
+        print(f"  Target: {display_omniworker_home()}")
 
         if errors:
             print(f"\n  Warnings ({len(errors)} files skipped):")
@@ -412,7 +412,7 @@ def run_import(args) -> None:
         restored_profiles = []
         if profiles_dir.is_dir():
             try:
-                from flux-agent_cli.profiles import (
+                from omniworker_cli.profiles import (
                     create_wrapper_script, check_alias_collision,
                     _is_wrapper_dir_in_path, _get_wrapper_dir,
                 )
@@ -443,7 +443,7 @@ def run_import(args) -> None:
                         print('  Add to your shell config (~/.bashrc or ~/.zshrc):')
                         print('    export PATH="$HOME/.local/bin:$PATH"')
             except ImportError:
-                # flux-agent_cli.profiles might not be available (fresh install)
+                # omniworker_cli.profiles might not be available (fresh install)
                 if any(profiles_dir.iterdir()):
                     print(f"\n  Profiles detected but aliases could not be created.")
                     print(f"  Run: hermes profile list  (after installing hermes)")
@@ -467,7 +467,7 @@ def run_import(args) -> None:
 # Quick state snapshots (used by /snapshot slash command and hermes backup --quick)
 # ---------------------------------------------------------------------------
 
-# Critical state files to include in quick snapshots (relative to FLUX AGENT_HOME).
+# Critical state files to include in quick snapshots (relative to OMNIWORKER_HOME).
 # Everything else is either regeneratable (logs, cache) or managed separately
 # (skills, repo, sessions/).
 #
@@ -495,14 +495,14 @@ _QUICK_SNAPSHOTS_DIR = "state-snapshots"
 _QUICK_DEFAULT_KEEP = 20
 
 
-def _quick_snapshot_root(flux-agent_home: Optional[Path] = None) -> Path:
-    home = flux-agent_home or get_flux-agent_home()
+def _quick_snapshot_root(omniworker_home: Optional[Path] = None) -> Path:
+    home = omniworker_home or get_omniworker_home()
     return home / _QUICK_SNAPSHOTS_DIR
 
 
 def create_quick_snapshot(
     label: Optional[str] = None,
-    flux-agent_home: Optional[Path] = None,
+    omniworker_home: Optional[Path] = None,
 ) -> Optional[str]:
     """Create a quick state snapshot of critical files.
 
@@ -512,7 +512,7 @@ def create_quick_snapshot(
     Returns:
         Snapshot ID (timestamp-based), or None if no files found.
     """
-    home = flux-agent_home or get_flux-agent_home()
+    home = omniworker_home or get_omniworker_home()
     root = _quick_snapshot_root(home)
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -585,10 +585,10 @@ def create_quick_snapshot(
 
 def list_quick_snapshots(
     limit: int = 20,
-    flux-agent_home: Optional[Path] = None,
+    omniworker_home: Optional[Path] = None,
 ) -> List[Dict[str, Any]]:
     """List existing quick state snapshots, most recent first."""
-    root = _quick_snapshot_root(flux-agent_home)
+    root = _quick_snapshot_root(omniworker_home)
     if not root.exists():
         return []
 
@@ -611,14 +611,14 @@ def list_quick_snapshots(
 
 def restore_quick_snapshot(
     snapshot_id: str,
-    flux-agent_home: Optional[Path] = None,
+    omniworker_home: Optional[Path] = None,
 ) -> bool:
     """Restore state from a quick snapshot.
 
     Overwrites current state files with the snapshot's copies.
     Returns True if at least one file was restored.
     """
-    home = flux-agent_home or get_flux-agent_home()
+    home = omniworker_home or get_omniworker_home()
     root = _quick_snapshot_root(home)
     snap_dir = root / snapshot_id
 
@@ -682,10 +682,10 @@ def _prune_quick_snapshots(root: Path, keep: int = _QUICK_DEFAULT_KEEP) -> int:
 
 def prune_quick_snapshots(
     keep: int = _QUICK_DEFAULT_KEEP,
-    flux-agent_home: Optional[Path] = None,
+    omniworker_home: Optional[Path] = None,
 ) -> int:
     """Manually prune quick snapshots. Returns count deleted."""
-    return _prune_quick_snapshots(_quick_snapshot_root(flux-agent_home), keep=keep)
+    return _prune_quick_snapshots(_quick_snapshot_root(omniworker_home), keep=keep)
 
 
 def run_quick_backup(args) -> None:
@@ -695,7 +695,7 @@ def run_quick_backup(args) -> None:
     if snap_id:
         print(f"State snapshot created: {snap_id}")
         snaps = list_quick_snapshots()
-        print(f"  {len(snaps)} snapshot(s) stored in {display_flux-agent_home()}/state-snapshots/")
+        print(f"  {len(snaps)} snapshot(s) stored in {display_omniworker_home()}/state-snapshots/")
         print(f"  Restore with: /snapshot restore {snap_id}")
     else:
         print("No state files found to snapshot.")
@@ -782,8 +782,8 @@ _PRE_UPDATE_PREFIX = "pre-update-"
 _PRE_UPDATE_DEFAULT_KEEP = 5
 
 
-def _pre_update_backup_dir(flux-agent_home: Optional[Path] = None) -> Path:
-    home = flux-agent_home or get_flux-agent_home()
+def _pre_update_backup_dir(omniworker_home: Optional[Path] = None) -> Path:
+    home = omniworker_home or get_omniworker_home()
     return home / _PRE_UPDATE_BACKUPS_DIR
 
 
@@ -825,20 +825,20 @@ def _prune_pre_update_backups(backup_dir: Path, keep: int) -> int:
 
 
 def create_pre_update_backup(
-    flux-agent_home: Optional[Path] = None,
+    omniworker_home: Optional[Path] = None,
     keep: int = _PRE_UPDATE_DEFAULT_KEEP,
 ) -> Optional[Path]:
-    """Create a full zip backup of FLUX AGENT_HOME under ``backups/``.
+    """Create a full zip backup of OMNIWORKER_HOME under ``backups/``.
 
     Mirrors :func:`run_backup` (same exclusion rules, same SQLite safe-copy)
-    but writes to ``<FLUX AGENT_HOME>/backups/pre-update-<timestamp>.zip`` and
+    but writes to ``<OMNIWORKER_HOME>/backups/pre-update-<timestamp>.zip`` and
     auto-prunes old pre-update backups.
 
     Returns the path to the created zip, or ``None`` if no files were
     found or the backup could not be created.  Never raises — the caller
     (``hermes update``) should continue even if the backup fails.
     """
-    hermes_root = flux-agent_home or get_default_hermes_root()
+    hermes_root = omniworker_home or get_default_hermes_root()
     if not hermes_root.is_dir():
         return None
 
@@ -897,23 +897,23 @@ def _prune_pre_migration_backups(backup_dir: Path, keep: int) -> int:
 
 
 def create_pre_migration_backup(
-    flux-agent_home: Optional[Path] = None,
+    omniworker_home: Optional[Path] = None,
     keep: int = _PRE_MIGRATION_DEFAULT_KEEP,
 ) -> Optional[Path]:
-    """Create a full zip backup of FLUX AGENT_HOME under ``backups/`` before a
+    """Create a full zip backup of OMNIWORKER_HOME under ``backups/`` before a
     ``hermes claw migrate`` apply.
 
     Shares implementation with :func:`create_pre_update_backup` via
     ``_write_full_zip_backup`` — same exclusions, same SQLite safe-copy,
     restorable with ``hermes import <archive>``.  Writes to
-    ``<FLUX AGENT_HOME>/backups/pre-migration-<timestamp>.zip`` and auto-prunes
+    ``<OMNIWORKER_HOME>/backups/pre-migration-<timestamp>.zip`` and auto-prunes
     old pre-migration backups.
 
     Returns the path to the created zip, or ``None`` if nothing was found
     to back up (fresh install) or the write failed.  Never raises — the
     caller decides whether to abort or proceed.
     """
-    hermes_root = flux-agent_home or get_default_hermes_root()
+    hermes_root = omniworker_home or get_default_hermes_root()
     if not hermes_root.is_dir():
         return None
 

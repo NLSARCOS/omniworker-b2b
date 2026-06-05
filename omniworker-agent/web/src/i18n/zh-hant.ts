@@ -266,7 +266,7 @@ export const zhHant: Translations = {
     enableRuntime: "啟用",
     forceReinstall: "強制重新安裝（先刪除既有資料夾）",
     headline:
-      "探索、安裝、啟用並更新 OmniWorker 外掛（對齊 `flux-agent plugins` CLI）。",
+      "探索、安裝、啟用並更新 OmniWorker 外掛（對齊 `omniworker plugins` CLI）。",
     identifierLabel: "Git 網址或 owner/repo",
     inactive: "未啟用",
     installBtn: "從 Git 安裝",
@@ -283,8 +283,8 @@ export const zhHant: Translations = {
     providersHint:
       "會寫入 config.yaml：memory.provider（留空為內建）與 context.engine。下一個工作階段生效。",
     refreshDashboard: "重新掃描儀表板擴充功能",
-    removeConfirm: "從 ~/.flux-agent/plugins/ 移除此外掛？",
-    removeHint: "僅可移除位於 ~/.flux-agent/plugins 下使用者安裝的外掛。",
+    removeConfirm: "從 ~/.omniworker/plugins/ 移除此外掛？",
+    removeHint: "僅可移除位於 ~/.omniworker/plugins 下使用者安裝的外掛。",
     rescanHeading: "SPA 外掛註冊表",
     rescanHint: "在磁碟新增檔案後重新掃描，使儀表板側邊欄載入新的 manifest。",
     runtimeHeading: "閘道執行階段（YAML 外掛）",
@@ -306,7 +306,7 @@ export const zhHant: Translations = {
     all: "全部",
     categories: "分類",
     filters: "篩選",
-    noSkills: "找不到技能。技能由 ~/.flux-agent/skills/ 載入",
+    noSkills: "找不到技能。技能由 ~/.omniworker/skills/ 載入",
     noSkillsMatch: "沒有符合搜尋或篩選條件的技能。",
     skillCount: "{count} 個技能",
     resultCount: "{count} 個結果",
@@ -320,7 +320,7 @@ export const zhHant: Translations = {
   },
 
   config: {
-    configPath: "~/.flux-agent/config.yaml",
+    configPath: "~/.omniworker/config.yaml",
     filters: "篩選",
     sections: "分類",
     exportConfig: "匯出設定為 JSON",

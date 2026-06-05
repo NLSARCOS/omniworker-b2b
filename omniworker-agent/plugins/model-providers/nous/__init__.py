@@ -38,16 +38,16 @@ class NousProfile(ProviderProfile):
 
 nous = NousProfile(
     name="nous",
-    aliases=("nous-portal", "flux-agent"),
+    aliases=("nous-portal", "omniworker"),
     env_vars=("NOUS_API_KEY",),
     display_name="Nous Research",
     description="Nous Research — Flux Agent model family",
-    signup_url="https://flux-agent.com/",
+    signup_url="https://omniworker.com/",
     fallback_models=(
-        "flux-agent-3-405b",
-        "flux-agent-3-70b",
+        "omniworker-3-405b",
+        "omniworker-3-70b",
     ),
-    base_url="https://inference.flux-agent.com/v1",
+    base_url="https://inference.omniworker.com/v1",
     auth_type="oauth_device_code",
 )
 

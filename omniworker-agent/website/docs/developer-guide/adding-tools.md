@@ -14,7 +14,7 @@ If you want a personal, project-local, or otherwise custom tool without
 modifying Flux Agent core, use the plugin route instead:
 
 - [Plugins](/docs/user-guide/features/plugins)
-- [Build a Flux Agent Plugin](/docs/guides/build-a-flux-agent-plugin)
+- [Build a Flux Agent Plugin](/docs/guides/build-a-omniworker-plugin)
 
 Default to plugins for most custom tool creation. Only follow this page when
 you explicitly want to ship a new built-in tool in `tools/` and `toolsets.py`.
@@ -29,7 +29,7 @@ Make it a **Tool** when it requires end-to-end integration with API keys, custom
 Adding a tool touches **2 files**:
 
 1. **`tools/your_tool.py`** — handler, schema, check function, `registry.register()` call
-2. **`toolsets.py`** — add tool name to `_FLUX AGENT_CORE_TOOLS` (or a specific toolset)
+2. **`toolsets.py`** — add tool name to `_OMNIWORKER_CORE_TOOLS` (or a specific toolset)
 
 Any `tools/*.py` file with a top-level `registry.register()` call is auto-discovered at startup — no manual import list required.
 
@@ -124,7 +124,7 @@ In `toolsets.py`, add the tool name:
 
 ```python
 # If it should be available on all platforms (CLI + messaging):
-_FLUX AGENT_CORE_TOOLS = [
+_OMNIWORKER_CORE_TOOLS = [
     ...
     "weather",  # <-- add here
 ]
@@ -185,7 +185,7 @@ Some tools (`todo`, `memory`, `session_search`, `delegate_task`) need access to 
 
 ## Optional: Setup Wizard Integration
 
-If your tool requires an API key, add it to `flux-agent_cli/config.py`:
+If your tool requires an API key, add it to `omniworker_cli/config.py`:
 
 ```python
 OPTIONAL_ENV_VARS = {
@@ -206,6 +206,6 @@ OPTIONAL_ENV_VARS = {
 - [ ] Added to appropriate toolset in `toolsets.py`
 - [ ] Confirmed this really should be a built-in/core tool and not a plugin
 - [ ] Handler returns JSON strings, errors returned as `{"error": "..."}`
-- [ ] Optional: API key added to `OPTIONAL_ENV_VARS` in `flux-agent_cli/config.py`
+- [ ] Optional: API key added to `OPTIONAL_ENV_VARS` in `omniworker_cli/config.py`
 - [ ] Optional: Added to `toolset_distributions.py` for batch processing
-- [ ] Tested with `flux-agent chat -q "Use the weather tool for London"`
+- [ ] Tested with `omniworker chat -q "Use the weather tool for London"`

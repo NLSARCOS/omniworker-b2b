@@ -29,7 +29,7 @@ import urllib.request
 # Constants
 # ---------------------------------------------------------------------------
 
-USER_AGENT = "Flux AgentAgent/1.0 (contact: flux-agent@agent.ai)"
+USER_AGENT = "OmniWorkerAgent/1.0 (contact: omniworker@agent.ai)"
 DATA_SOURCE = "OpenStreetMap/Nominatim"
 
 NOMINATIM_SEARCH  = "https://nominatim.openstreetmap.org/search"

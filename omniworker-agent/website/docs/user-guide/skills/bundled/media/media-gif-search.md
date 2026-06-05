@@ -38,7 +38,7 @@ Useful for finding reaction GIFs, creating visual content, and sending GIFs in c
 
 ## Setup
 
-Set your Tenor API key in your environment (add to `~/.flux-agent/.env`):
+Set your Tenor API key in your environment (add to `~/.omniworker/.env`):
 
 ```bash
 TENOR_API_KEY=your_key_here
@@ -103,4 +103,4 @@ Each result has multiple formats under `.media_formats`:
 
 - URL-encode the query: spaces as `+`, special chars as `%XX`
 - For sending in chat, `tinygif` URLs are lighter weight
-- GIF URLs can be used directly in markdown: `![alt](https://github.com/Flux Agent/flux-agent-agent/blob/main/skills/media/gif-search/url)`
+- GIF URLs can be used directly in markdown: `![alt](https://github.com/Flux Agent/omniworker-agent/blob/main/skills/media/gif-search/url)`

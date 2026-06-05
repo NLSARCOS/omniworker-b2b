@@ -2,11 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
-from cli import Flux AgentCLI
+from cli import OmniWorkerCLI
 
 
-def _make_cli() -> Flux AgentCLI:
-    cli_obj = Flux AgentCLI.__new__(Flux AgentCLI)
+def _make_cli() -> OmniWorkerCLI:
+    cli_obj = OmniWorkerCLI.__new__(OmniWorkerCLI)
     cli_obj.config = {}
     cli_obj.console = MagicMock()
     cli_obj.agent = None

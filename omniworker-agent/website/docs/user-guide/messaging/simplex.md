@@ -33,14 +33,14 @@ The daemon listens on WebSocket at `ws://127.0.0.1:5225` by default.
 ### Via setup wizard
 
 ```bash
-flux-agent setup gateway
+omniworker setup gateway
 ```
 
 Select **SimpleX Chat** and follow the prompts.
 
 ### Via environment variables
 
-Add these to `~/.flux-agent/.env`:
+Add these to `~/.omniworker/.env`:
 
 ```
 SIMPLEX_WS_URL=ws://127.0.0.1:5225
@@ -58,14 +58,14 @@ SIMPLEX_HOME_CHANNEL=<contact-id>
 
 ## Find your contact ID
 
-After starting the daemon, open a conversation with your agent contact. The contact ID will appear in session logs or via `flux-agent send_message action=list`.
+After starting the daemon, open a conversation with your agent contact. The contact ID will appear in session logs or via `omniworker send_message action=list`.
 
 ## Authorization
 
 By default **all contacts are denied**. You must either:
 
 1. Set `SIMPLEX_ALLOWED_USERS` to a comma-separated list of contact IDs, or
-2. Use **DM pairing** — send any message to the bot and it will reply with a pairing code. Enter that code via `flux-agent gateway pair`.
+2. Use **DM pairing** — send any message to the bot and it will reply with a pairing code. Enter that code via `omniworker gateway pair`.
 
 ## Using SimpleX with cron jobs
 

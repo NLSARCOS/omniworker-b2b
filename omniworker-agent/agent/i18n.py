@@ -21,7 +21,7 @@ Usage::
 
 Language resolution order:
     1. Explicit ``lang=`` argument passed to :func:`t`
-    2. ``FLUX AGENT_LANGUAGE`` environment variable (for tests / quick override)
+    2. ``OMNIWORKER_LANGUAGE`` environment variable (for tests / quick override)
     3. ``display.language`` from config.yaml
     4. ``"en"`` (baseline)
 
@@ -173,7 +173,7 @@ def _config_language_cached() -> str | None:
     (e.g. after the setup wizard).
     """
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         cfg = load_config()
         lang = (cfg.get("display") or {}).get("language")
         if lang:
@@ -186,7 +186,7 @@ def _config_language_cached() -> str | None:
 def reset_language_cache() -> None:
     """Invalidate cached language resolution and catalogs.
 
-    Call after :func:`flux-agent_cli.config.save_config` if a running process
+    Call after :func:`omniworker_cli.config.save_config` if a running process
     needs to pick up a changed ``display.language`` without restart.
     """
     _config_language_cached.cache_clear()
@@ -196,7 +196,7 @@ def reset_language_cache() -> None:
 
 def get_language() -> str:
     """Resolve the active language using env > config > default order."""
-    env_lang = os.environ.get("FLUX AGENT_LANGUAGE")
+    env_lang = os.environ.get("OMNIWORKER_LANGUAGE")
     if env_lang:
         return _normalize_lang(env_lang)
     cfg_lang = _config_language_cached()

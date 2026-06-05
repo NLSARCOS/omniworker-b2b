@@ -6,7 +6,7 @@ author: arceus77-7, enhanced by Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [security, secrets, 1password, op, cli]
     category: security
 setup:
@@ -41,7 +41,7 @@ Use this skill when the user wants secrets managed through 1Password instead of 
 
 ### Service Account (recommended for Flux Agent)
 
-Set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.flux-agent/.env` (the skill will prompt for this on first load).
+Set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.omniworker/.env` (the skill will prompt for this on first load).
 No desktop app needed. Supports `op read`, `op inject`, `op run`.
 
 ```bash
@@ -93,9 +93,9 @@ For reliable `op` use with desktop app integration, run sign-in and secret opera
 Note: This is NOT needed when using `OP_SERVICE_ACCOUNT_TOKEN` — the token persists across terminal calls automatically.
 
 ```bash
-SOCKET_DIR="${TMPDIR:-/tmp}/flux-agent-tmux-sockets"
+SOCKET_DIR="${TMPDIR:-/tmp}/omniworker-tmux-sockets"
 mkdir -p "$SOCKET_DIR"
-SOCKET="$SOCKET_DIR/flux-agent-op.sock"
+SOCKET="$SOCKET_DIR/omniworker-op.sock"
 SESSION="op-auth-$(date +%Y%m%d-%H%M%S)"
 
 tmux -S "$SOCKET" new -d -s "$SESSION" -n shell

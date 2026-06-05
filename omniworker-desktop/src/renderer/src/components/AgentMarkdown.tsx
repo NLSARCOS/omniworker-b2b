@@ -147,7 +147,7 @@ const AgentMarkdown = memo(function AgentMarkdown({
               } catch {
                 return;
               }
-              window.flux-agentAPI.openExternal(href);
+              window.omniworkerAPI.openExternal(href);
             }}
           >
             {children}

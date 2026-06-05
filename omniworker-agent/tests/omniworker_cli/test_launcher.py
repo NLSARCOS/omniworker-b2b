@@ -1,4 +1,4 @@
-"""Tests for the top-level `./flux-agent` launcher script."""
+"""Tests for the top-level `./omniworker` launcher script."""
 
 import runpy
 import sys
@@ -7,17 +7,17 @@ from pathlib import Path
 
 
 def test_launcher_delegates_to_argparse_entrypoint(monkeypatch):
-    """`./flux-agent` should use `flux-agent_cli.main`, not the legacy Fire wrapper."""
-    launcher_path = Path(__file__).resolve().parents[2] / "flux-agent"
+    """`./omniworker` should use `omniworker_cli.main`, not the legacy Fire wrapper."""
+    launcher_path = Path(__file__).resolve().parents[2] / "omniworker"
     called = []
 
-    fake_main_module = types.ModuleType("flux-agent_cli.main")
+    fake_main_module = types.ModuleType("omniworker_cli.main")
 
     def fake_main():
-        called.append("flux-agent_cli.main")
+        called.append("omniworker_cli.main")
 
     fake_main_module.main = fake_main
-    monkeypatch.setitem(sys.modules, "flux-agent_cli.main", fake_main_module)
+    monkeypatch.setitem(sys.modules, "omniworker_cli.main", fake_main_module)
 
     fake_cli_module = types.ModuleType("cli")
 
@@ -39,4 +39,4 @@ def test_launcher_delegates_to_argparse_entrypoint(monkeypatch):
 
     runpy.run_path(str(launcher_path), run_name="__main__")
 
-    assert called == ["flux-agent_cli.main"]
+    assert called == ["omniworker_cli.main"]

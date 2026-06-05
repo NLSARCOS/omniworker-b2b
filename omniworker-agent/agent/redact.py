@@ -56,15 +56,15 @@ _SENSITIVE_BODY_KEYS = frozenset({
 })
 
 # Snapshot at import time so runtime env mutations (e.g. LLM-generated
-# `export FLUX AGENT_REDACT_SECRETS=false`) cannot disable redaction
+# `export OMNIWORKER_REDACT_SECRETS=false`) cannot disable redaction
 # mid-session.  ON by default — secure default per issue #17691. Users who
 # need raw credential values in tool output (e.g. working on the redactor
 # itself) can opt out via `security.redact_secrets: false` in config.yaml
-# (bridged to this env var in flux-agent_cli/main.py, gateway/run.py, and
-# cli.py) or `FLUX AGENT_REDACT_SECRETS=false` in ~/.hermes/.env. An opt-out
+# (bridged to this env var in omniworker_cli/main.py, gateway/run.py, and
+# cli.py) or `OMNIWORKER_REDACT_SECRETS=false` in ~/.hermes/.env. An opt-out
 # warning is logged at gateway and CLI startup so operators see the
 # downgrade — see `_log_redaction_status()` in gateway/run.py and cli.py.
-_REDACT_ENABLED = os.getenv("FLUX AGENT_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
+_REDACT_ENABLED = os.getenv("OMNIWORKER_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
 
 # Known API key prefixes -- match the prefix + contiguous token chars
 _PREFIX_PATTERNS = [

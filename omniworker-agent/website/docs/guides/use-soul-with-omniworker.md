@@ -44,13 +44,13 @@ A good rule:
 Flux Agent now uses only the global SOUL file for the current instance:
 
 ```text
-~/.flux-agent/SOUL.md
+~/.omniworker/SOUL.md
 ```
 
 If you run Flux Agent with a custom home directory, it becomes:
 
 ```text
-$FLUX AGENT_HOME/SOUL.md
+$OMNIWORKER_HOME/SOUL.md
 ```
 
 ## First-run behavior
@@ -65,7 +65,7 @@ Important:
 
 ## How Flux Agent uses it
 
-When Flux Agent starts a session, it reads `SOUL.md` from `FLUX AGENT_HOME`, scans it for prompt-injection patterns, truncates it if needed, and uses it as the **agent identity** — slot #1 in the system prompt. This means SOUL.md completely replaces the built-in default identity text.
+When Flux Agent starts a session, it reads `SOUL.md` from `OMNIWORKER_HOME`, scans it for prompt-injection patterns, truncates it if needed, and uses it as the **agent identity** — slot #1 in the system prompt. This means SOUL.md completely replaces the built-in default identity text.
 
 If SOUL.md is missing, empty, or cannot be loaded, Flux Agent falls back to a built-in default identity.
 
@@ -212,13 +212,13 @@ This is the most common mistake.
 ## How to edit it
 
 ```bash
-nano ~/.flux-agent/SOUL.md
+nano ~/.omniworker/SOUL.md
 ```
 
 or
 
 ```bash
-vim ~/.flux-agent/SOUL.md
+vim ~/.omniworker/SOUL.md
 ```
 
 Then restart Flux Agent or start a new session.
@@ -238,7 +238,7 @@ That iterative approach works better than trying to design the perfect personali
 ### I edited SOUL.md but Flux Agent still sounds the same
 
 Check:
-- you edited `~/.flux-agent/SOUL.md` or `$FLUX AGENT_HOME/SOUL.md`
+- you edited `~/.omniworker/SOUL.md` or `$OMNIWORKER_HOME/SOUL.md`
 - not some repo-local `SOUL.md`
 - the file is not empty
 - your session was restarted after the edit

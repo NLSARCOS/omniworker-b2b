@@ -7,10 +7,10 @@ import pytest
 
 # Parameterise over every CLI module that calls subprocess.run
 _CLI_MODULES = [
-    "flux-agent_cli/doctor.py",
-    "flux-agent_cli/status.py",
-    "flux-agent_cli/clipboard.py",
-    "flux-agent_cli/banner.py",
+    "omniworker_cli/doctor.py",
+    "omniworker_cli/status.py",
+    "omniworker_cli/clipboard.py",
+    "omniworker_cli/banner.py",
 ]
 
 

@@ -1,7 +1,7 @@
-"""Tests for flux-agent_bootstrap — Windows UTF-8 stdio shim.
+"""Tests for omniworker_bootstrap — Windows UTF-8 stdio shim.
 
 The bootstrap module is imported at the top of every Flux Agent entry point
-(flux-agent, flux-agent-agent, flux-agent-acp, gateway, batch_runner, cli.py).  It
+(omniworker, omniworker-agent, omniworker-acp, gateway, batch_runner, cli.py).  It
 fixes Python's Windows UTF-8 defaults so print("café") doesn't crash and
 subprocess children inherit UTF-8 mode.
 
@@ -12,7 +12,7 @@ Key invariants covered by these tests:
   3. Idempotent: safe to call multiple times
   4. Respects user opt-out: if the user explicitly sets PYTHONUTF8=0 or
      PYTHONIOENCODING=something-else, we leave those alone
-  5. Load order: every Flux Agent entry point imports flux-agent_bootstrap as its
+  5. Load order: every Flux Agent entry point imports omniworker_bootstrap as its
      first non-docstring import (before anything that might do file I/O
      or print to stdout)
 """
@@ -33,14 +33,14 @@ import pytest
 # We need to be able to reset its state between tests, so we import it
 # fresh in each test that manipulates _IS_WINDOWS.
 def _fresh_import():
-    """Return a freshly-imported flux-agent_bootstrap module.
+    """Return a freshly-imported omniworker_bootstrap module.
 
     Drops any cached copy from sys.modules first so module-level code
     runs again and the platform check re-evaluates.
     """
-    sys.modules.pop("flux-agent_bootstrap", None)
-    import flux-agent_bootstrap  # noqa: WPS433
-    return flux-agent_bootstrap
+    sys.modules.pop("omniworker_bootstrap", None)
+    import omniworker_bootstrap  # noqa: WPS433
+    return omniworker_bootstrap
 
 
 class TestWindowsBehavior:
@@ -233,17 +233,17 @@ class TestStdioReconfigureErrorHandling:
 
 
 class TestEntryPointsImportBootstrap:
-    """Every Flux Agent entry point must import flux-agent_bootstrap as its
+    """Every Flux Agent entry point must import omniworker_bootstrap as its
     first non-docstring import.  We check this by scanning source files
     rather than invoking the entry points (which would require a full
     agent context)."""
 
     # Entry points that invoke Flux Agent as a process.  Each one must
-    # import flux-agent_bootstrap before doing any file I/O or stdout writes.
+    # import omniworker_bootstrap before doing any file I/O or stdout writes.
     ENTRY_POINTS = [
-        "flux-agent_cli/main.py",   # flux-agent CLI (console_script)
-        "run_agent.py",          # flux-agent-agent (console_script)
-        "acp_adapter/entry.py",  # flux-agent-acp (console_script)
+        "omniworker_cli/main.py",   # omniworker CLI (console_script)
+        "run_agent.py",          # omniworker-agent (console_script)
+        "acp_adapter/entry.py",  # omniworker-acp (console_script)
         "gateway/run.py",        # gateway
         "batch_runner.py",       # batch mode
         "cli.py",                # legacy direct-launch CLI
@@ -251,7 +251,7 @@ class TestEntryPointsImportBootstrap:
 
     @pytest.mark.parametrize("path", ENTRY_POINTS)
     def test_entry_point_imports_bootstrap(self, path):
-        """The file must contain 'import flux-agent_bootstrap' and that
+        """The file must contain 'import omniworker_bootstrap' and that
         line must appear before the first 'import' of anything else.
 
         We're lenient about the docstring (can be arbitrarily long) and
@@ -260,15 +260,15 @@ class TestEntryPointsImportBootstrap:
 
         Also lenient about a try/except wrapper around the import: entry
         points may guard the import against ``ModuleNotFoundError`` so a
-        half-finished ``flux-agent update`` (git-reset landed new code but
+        half-finished ``omniworker update`` (git-reset landed new code but
         ``uv pip install -e .`` didn't finish re-registering
-        ``flux-agent_bootstrap`` as a top-level module) leaves flux-agent
+        ``omniworker_bootstrap`` as a top-level module) leaves omniworker
         recoverable instead of crashing on every invocation.  When the
         first top-level node is such a guarded-import block, we peek
         inside it to verify bootstrap is the imported module.
         """
-        # Resolve relative to the flux-agent-agent repo root.  Tests live
-        # at tests/test_flux-agent_bootstrap.py, so go up one dir.
+        # Resolve relative to the omniworker-agent repo root.  Tests live
+        # at tests/test_omniworker_bootstrap.py, so go up one dir.
         import pathlib
         here = pathlib.Path(__file__).resolve()
         repo_root = here.parent.parent  # tests/ -> repo root
@@ -289,7 +289,7 @@ class TestEntryPointsImportBootstrap:
                 break
             # Accept a guarded-import Try block where the body is a lone
             # Import node — this is the recovery-friendly form that lets
-            # flux-agent start even when flux-agent_bootstrap hasn't been
+            # omniworker start even when omniworker_bootstrap hasn't been
             # re-registered in the venv yet.
             if isinstance(node, ast.Try) and len(node.body) == 1 and isinstance(
                 node.body[0], (ast.Import, ast.ImportFrom)
@@ -306,9 +306,9 @@ class TestEntryPointsImportBootstrap:
         else:  # ImportFrom
             first_import_name = first_import_node.module or ""
 
-        assert first_import_name == "flux-agent_bootstrap", (
+        assert first_import_name == "omniworker_bootstrap", (
             f"{path}: first top-level import is {first_import_name!r}, "
-            f"but it must be 'flux-agent_bootstrap' so UTF-8 stdio is "
+            f"but it must be 'omniworker_bootstrap' so UTF-8 stdio is "
             f"configured before anything else initializes.  Move the "
-            f"'import flux-agent_bootstrap' line to be the first import."
+            f"'import omniworker_bootstrap' line to be the first import."
         )

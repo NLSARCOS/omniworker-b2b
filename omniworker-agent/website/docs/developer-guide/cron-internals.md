@@ -16,7 +16,7 @@ The cron subsystem provides scheduled task execution — from simple one-shot de
 | `cron/scheduler.py` | Scheduler loop — due-job detection, execution, repeat tracking |
 | `tools/cronjob_tools.py` | Model-facing `cronjob` tool registration and handler |
 | `gateway/run.py` | Gateway integration — cron ticking in the long-running loop |
-| `flux-agent_cli/cron.py` | CLI `flux-agent cron` subcommands |
+| `omniworker_cli/cron.py` | CLI `omniworker cron` subcommands |
 
 ## Scheduling Model
 
@@ -33,7 +33,7 @@ The model-facing surface is a single `cronjob` tool with action-style operations
 
 ## Job Storage
 
-Jobs are stored in `~/.flux-agent/cron/jobs.json` with atomic write semantics (write to temp file, then rename). Each job record contains:
+Jobs are stored in `~/.omniworker/cron/jobs.json` with atomic write semantics (write to temp file, then rename). Each job record contains:
 
 ```json
 {
@@ -104,7 +104,7 @@ tick()
 
 In gateway mode, the scheduler runs in a dedicated background thread (`_start_cron_ticker` in `gateway/run.py`) that calls `scheduler.tick()` every 60 seconds alongside message handling.
 
-In CLI mode, cron jobs only fire when `flux-agent cron` commands are run or during active CLI sessions.
+In CLI mode, cron jobs only fire when `omniworker cron` commands are run or during active CLI sessions.
 
 ### Fresh Session Isolation
 
@@ -135,7 +135,7 @@ Create a daily funding report → attach "ai-funding-daily-report" skill
 Jobs can also attach a Python script via the `script` field. The script runs *before* each agent turn, and its stdout is injected into the prompt as context. This enables data collection and change detection patterns:
 
 ```python
-# ~/.flux-agent/scripts/check_competitors.py
+# ~/.omniworker/scripts/check_competitors.py
 import requests, json
 # Fetch competitor release notes, diff against last run
 # Print summary to stdout — agent analyzes and reports
@@ -144,7 +144,7 @@ import requests, json
 The script timeout defaults to 120 seconds. `_get_script_timeout()` resolves the limit through a three-layer chain:
 
 1. **Module-level override** — `_SCRIPT_TIMEOUT` (for tests/monkeypatching). Only used when it differs from the default.
-2. **Environment variable** — `FLUX AGENT_CRON_SCRIPT_TIMEOUT`
+2. **Environment variable** — `OMNIWORKER_CRON_SCRIPT_TIMEOUT`
 3. **Config** — `cron.script_timeout_seconds` in `config.yaml` (read via `load_config()`)
 4. **Default** — 120 seconds
 
@@ -164,7 +164,7 @@ Cron job results can be delivered to any supported platform:
 | Target | Syntax | Example |
 |--------|--------|---------|
 | Origin chat | `origin` | Deliver to the chat where the job was created |
-| Local file | `local` | Save to `~/.flux-agent/cron/output/` |
+| Local file | `local` | Save to `~/.omniworker/cron/output/` |
 | Telegram | `telegram` or `telegram:<chat_id>` | `telegram:-1001234567890` |
 | Discord | `discord` or `discord:#channel` | `discord:#engineering` |
 | Slack | `slack` | Deliver to Slack home channel |
@@ -205,20 +205,20 @@ Cron-run sessions have the `cronjob` toolset disabled. This prevents:
 
 ## Locking
 
-The scheduler uses cross-process file-based locking (`fcntl.flock` on Unix, `msvcrt.locking` on Windows) to prevent overlapping ticks from executing the same due-job batch twice — even between the gateway's in-process ticker and a standalone `flux-agent cron` / manual `tick()` call. If the lock cannot be acquired, `tick()` returns 0 immediately.
+The scheduler uses cross-process file-based locking (`fcntl.flock` on Unix, `msvcrt.locking` on Windows) to prevent overlapping ticks from executing the same due-job batch twice — even between the gateway's in-process ticker and a standalone `omniworker cron` / manual `tick()` call. If the lock cannot be acquired, `tick()` returns 0 immediately.
 
 ## CLI Interface
 
-The `flux-agent cron` CLI provides direct job management:
+The `omniworker cron` CLI provides direct job management:
 
 ```bash
-flux-agent cron list                    # Show all jobs
-flux-agent cron create                  # Interactive job creation (alias: add)
-flux-agent cron edit <job_id>           # Edit job configuration
-flux-agent cron pause <job_id>          # Pause a running job
-flux-agent cron resume <job_id>         # Resume a paused job
-flux-agent cron run <job_id>            # Trigger immediate execution
-flux-agent cron remove <job_id>         # Delete a job
+omniworker cron list                    # Show all jobs
+omniworker cron create                  # Interactive job creation (alias: add)
+omniworker cron edit <job_id>           # Edit job configuration
+omniworker cron pause <job_id>          # Pause a running job
+omniworker cron resume <job_id>         # Resume a paused job
+omniworker cron run <job_id>            # Trigger immediate execution
+omniworker cron remove <job_id>         # Delete a job
 ```
 
 ## Related Docs

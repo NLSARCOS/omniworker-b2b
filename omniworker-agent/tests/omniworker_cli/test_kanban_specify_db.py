@@ -7,13 +7,13 @@ from pathlib import Path
 
 import pytest
 
-from flux-agent_cli import kanban_db as kb
+from omniworker_cli import kanban_db as kb
 
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
     """Isolated OMNIWORKER_HOME with an empty kanban DB."""
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)

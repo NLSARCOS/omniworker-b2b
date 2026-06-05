@@ -14,7 +14,7 @@ Optimizes transformer attention with Flash Attention for 2-4x speedup and 10-20x
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/mlops/flash-attention` |
+| Source | Optional — install with `omniworker skills install official/mlops/flash-attention` |
 | Path | `optional-skills/mlops/flash-attention` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |
@@ -359,9 +359,9 @@ Flash Attention uses float16/bfloat16 for speed. Float32 not supported.
 
 ## Advanced topics
 
-**Integration with HuggingFace Transformers**: See [references/transformers-integration.md](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/flash-attention/references/transformers-integration.md) for enabling Flash Attention in BERT, GPT, Llama models.
+**Integration with HuggingFace Transformers**: See [references/transformers-integration.md](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/flash-attention/references/transformers-integration.md) for enabling Flash Attention in BERT, GPT, Llama models.
 
-**Performance benchmarks**: See [references/benchmarks.md](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/flash-attention/references/benchmarks.md) for detailed speed and memory comparisons across GPUs and sequence lengths.
+**Performance benchmarks**: See [references/benchmarks.md](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/flash-attention/references/benchmarks.md) for detailed speed and memory comparisons across GPUs and sequence lengths.
 
 ## Hardware requirements
 

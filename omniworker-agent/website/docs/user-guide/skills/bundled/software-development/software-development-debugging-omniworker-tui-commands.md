@@ -15,12 +15,12 @@ Debug Flux Agent TUI slash commands: Python, gateway, Ink UI.
 | | |
 |---|---|
 | Source | Bundled (installed by default) |
-| Path | `skills/software-development/debugging-flux-agent-tui-commands` |
+| Path | `skills/software-development/debugging-omniworker-tui-commands` |
 | Version | `1.0.0` |
 | Author | Flux Agent Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
-| Tags | `debugging`, `flux-agent-agent`, `tui`, `slash-commands`, `typescript`, `python` |
+| Tags | `debugging`, `omniworker-agent`, `tui`, `slash-commands`, `typescript`, `python` |
 | Related skills | [`python-debugpy`](/docs/user-guide/skills/bundled/software-development/software-development-python-debugpy), [`node-inspect-debugger`](/docs/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger), [`systematic-debugging`](/docs/user-guide/skills/bundled/software-development/software-development-systematic-debugging) |
 
 ## Reference: full SKILL.md
@@ -49,7 +49,7 @@ Use this skill when you encounter issues with slash commands in the Flux Agent T
 
 <!-- ascii-guard-ignore -->
 ```
-Python backend (flux-agent_cli/commands.py)     <- canonical COMMAND_REGISTRY
+Python backend (omniworker_cli/commands.py)     <- canonical COMMAND_REGISTRY
        │
        ▼
 TUI gateway (tui_gateway/server.py)         <- slash.exec / command.dispatch
@@ -78,8 +78,8 @@ Command definitions must be registered consistently across Python and TypeScript
 
 3. **Check if the command exists in the Python backend:**
    ```bash
-   search_files --pattern "CommandDef" --file_glob "*.py" --path flux-agent_cli/
-   search_files --pattern "commandname" --path flux-agent_cli/commands.py --context 3
+   search_files --pattern "CommandDef" --file_glob "*.py" --path omniworker_cli/
+   search_files --pattern "commandname" --path omniworker_cli/commands.py --context 3
    ```
 
 4. **Examine the gateway implementation:**
@@ -91,7 +91,7 @@ Command definitions must be registered consistently across Python and TypeScript
 
 If a command exists in the TUI but doesn't show in autocomplete:
 
-1. Add a `CommandDef` entry to `COMMAND_REGISTRY` in `flux-agent_cli/commands.py`:
+1. Add a `CommandDef` entry to `COMMAND_REGISTRY` in `omniworker_cli/commands.py`:
    ```python
    CommandDef("commandname", "Description of the command", "Session",
               cli_only=True, aliases=("alias",),
@@ -107,7 +107,7 @@ If a command exists in the TUI but doesn't show in autocomplete:
 
 3. Ensure `subcommands` matches the expected tab-completion options shown by the TUI.
 
-4. If the command runs server-side, add a handler in `Flux AgentCLI.process_command()` in `cli.py`:
+4. If the command runs server-side, add a handler in `OmniWorkerCLI.process_command()` in `cli.py`:
    ```python
    elif canonical == "commandname":
        self._handle_commandname(cmd_original)
@@ -121,7 +121,7 @@ If a command exists in the TUI but doesn't show in autocomplete:
 
 ## Common Issues
 
-1. **Command shows in TUI but not in autocomplete.** The command is defined in the TUI codebase but missing from `COMMAND_REGISTRY` in `flux-agent_cli/commands.py`. Autocomplete data ships from Python.
+1. **Command shows in TUI but not in autocomplete.** The command is defined in the TUI codebase but missing from `COMMAND_REGISTRY` in `omniworker_cli/commands.py`. Autocomplete data ships from Python.
 
 2. **Command shows in autocomplete but doesn't work.** Check the command handler in `tui_gateway/server.py` and the frontend handler in `ui-tui/src/app/createSlashHandler.ts`. If the command is local-only in Ink, it must be handled in `app.tsx` built-in branch; otherwise it falls through to `slash.exec` and must have a Python handler.
 
@@ -154,19 +154,19 @@ After fixing:
 
 1. Rebuild the TUI:
    ```bash
-   cd /home/bb/flux-agent-agent && npm --prefix ui-tui run build
+   cd /home/bb/omniworker-agent && npm --prefix ui-tui run build
    ```
 
 2. Run the TUI and test the command:
    ```bash
-   flux-agent --tui
+   omniworker --tui
    ```
 
 3. Type `/` and verify the command appears in autocomplete suggestions with the expected description and args hint.
 
 4. Execute the command and confirm:
    - Expected behavior fires
-   - Any persisted config updates correctly (`read_file ~/.flux-agent/config.yaml`)
+   - Any persisted config updates correctly (`read_file ~/.omniworker/config.yaml`)
    - Live UI state reflects the change immediately (not just after restart)
 
 5. If the command is also gateway-available, test it from at least one messaging platform (or run the gateway tests: `scripts/run_tests.sh tests/gateway/`).

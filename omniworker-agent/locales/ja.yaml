@@ -97,7 +97,7 @@ gateway:
     upload_failed:         "✗ デバッグレポートのアップロードに失敗しました: {error}"
     header:                "**デバッグレポートをアップロードしました:**"
     auto_delete:           "⏱ ペーストは 6 時間後に自動削除されます。"
-    full_logs_hint:        "完全なログのアップロードには、CLI から `flux-agent debug share` を使用してください。"
+    full_logs_hint:        "完全なログのアップロードには、CLI から `omniworker debug share` を使用してください。"
     share_hint:            "サポートを受けるには、このリンクを Flux Agent チームに共有してください。"
 
   deny:
@@ -146,7 +146,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ kanban エラー: {error}"
     subscribed_suffix:     "(購読しました — {task_id} が完了またはブロックされたときに通知されます)"
-    truncated_suffix:      "… (切り詰めました; 完全な出力にはターミナルで `flux-agent kanban …` を使用してください)"
+    truncated_suffix:      "… (切り詰めました; 完全な出力にはターミナルで `omniworker kanban …` を使用してください)"
     no_output:             "(出力なし)"
 
   personality:
@@ -214,7 +214,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ ゲートウェイの再起動はすでに進行中です..."
-    restarting:            "♻ ゲートウェイを再起動しています。60 秒以内に通知が届かない場合は、コンソールで `flux-agent gateway restart` を実行してください。"
+    restarting:            "♻ ゲートウェイを再起動しています。60 秒以内に通知が届かない場合は、コンソールで `omniworker gateway restart` を実行してください。"
 
   resume:
     db_unavailable:        "セッションデータベースは利用できません。"
@@ -289,9 +289,9 @@ gateway:
     removed:               "↩️ {count} 件のメッセージを取り消しました。\n削除: 「{preview}」"
 
   update:
-    platform_not_messaging:  "✗ /update はメッセージングプラットフォームでのみ利用可能です。ターミナルで `flux-agent update` を実行してください。"
+    platform_not_messaging:  "✗ /update はメッセージングプラットフォームでのみ利用可能です。ターミナルで `omniworker update` を実行してください。"
     not_git_repo:            "✗ Git リポジトリではありません — 更新できません。"
-    flux-agent_cmd_not_found:    "✗ `flux-agent` コマンドが見つかりません。Flux Agent は実行中ですが、更新コマンドは PATH 上にも現在の Python インタープリタ経由でも実行可能ファイルを見つけられませんでした。ターミナルで `flux-agent update` を手動で実行してみてください。"
+    omniworker_cmd_not_found:    "✗ `omniworker` コマンドが見つかりません。Flux Agent は実行中ですが、更新コマンドは PATH 上にも現在の Python インタープリタ経由でも実行可能ファイルを見つけられませんでした。ターミナルで `omniworker update` を手動で実行してみてください。"
     start_failed:            "✗ 更新の開始に失敗しました: {error}"
     starting:                "⚕ Flux Agent の更新を開始しています… 進捗をここにストリーミングします。"
 

@@ -1,13 +1,13 @@
 declare global {
   interface Window {
-    /** Set true by the server only for `flux-agent dashboard --tui` (or OMNIWORKER_DASHBOARD_TUI=1). */
+    /** Set true by the server only for `omniworker dashboard --tui` (or OMNIWORKER_DASHBOARD_TUI=1). */
     __OMNIWORKER_DASHBOARD_EMBEDDED_CHAT__?: boolean;
     /** @deprecated Older injected name; treated as on when true. */
     __OMNIWORKER_DASHBOARD_TUI__?: boolean;
   }
 }
 
-/** True only when the dashboard was started with embedded TUI Chat (`flux-agent dashboard --tui`). */
+/** True only when the dashboard was started with embedded TUI Chat (`omniworker dashboard --tui`). */
 export function isDashboardEmbeddedChatEnabled(): boolean {
   if (typeof window === "undefined") return false;
   if (window.__OMNIWORKER_DASHBOARD_EMBEDDED_CHAT__ === true) return true;

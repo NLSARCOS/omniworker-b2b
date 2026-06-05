@@ -195,7 +195,7 @@ function parseEnabledToolsets(configContent: string): Set<string> {
 export function getToolsets(profile?: string): ToolsetInfo[] {
   const configFile = join(profileHome(profile), "config.yaml");
 
-  // If no config, assume all toolsets are enabled (flux-agent default behavior)
+  // If no config, assume all toolsets are enabled (omniworker default behavior)
   if (!existsSync(configFile)) {
     return localizeToolDefs(true);
   }

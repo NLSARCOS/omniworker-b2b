@@ -156,8 +156,8 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
       if (!silent) setLoading(true);
       try {
         const [boardsRes, tasksRes] = await Promise.all([
-          window.flux-agentAPI.kanbanListBoards(false, profile),
-          window.flux-agentAPI.kanbanListTasks({
+          window.omniworkerAPI.kanbanListBoards(false, profile),
+          window.omniworkerAPI.kanbanListTasks({
             includeArchived: false,
             profile,
           }),
@@ -196,7 +196,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
 
   useEffect(() => {
     if (!showCreate) return;
-    window.flux-agentAPI.listProfiles().then((profiles) => {
+    window.omniworkerAPI.listProfiles().then((profiles) => {
       setProfileOptions(profiles.map((p) => p.name));
     });
   }, [showCreate]);
@@ -217,7 +217,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
     }
     let cancelled = false;
     setDetailLoading(true);
-    window.flux-agentAPI.kanbanGetTask(detailTaskId, profile).then((res) => {
+    window.omniworkerAPI.kanbanGetTask(detailTaskId, profile).then((res) => {
       if (cancelled) return;
       if (res.success && res.data) setDetail(res.data);
       setDetailLoading(false);
@@ -258,7 +258,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
   }
 
   async function handlePickWorkspaceFolder(): Promise<void> {
-    const dir = await window.flux-agentAPI.selectFolder();
+    const dir = await window.omniworkerAPI.selectFolder();
     if (dir) setNewWorkspaceDir(dir);
   }
 
@@ -275,7 +275,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
       workspaceArg = newWorkspace || undefined;
     }
     setActionBusy("create");
-    const res = await window.flux-agentAPI.kanbanCreateTask(
+    const res = await window.omniworkerAPI.kanbanCreateTask(
       {
         title: newTitle.trim(),
         body: newBody.trim() || undefined,
@@ -299,7 +299,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
   async function handleBoardSwitch(slug: string): Promise<void> {
     if (currentBoard?.slug === slug) return;
     setActionBusy("board-switch");
-    const res = await window.flux-agentAPI.kanbanSwitchBoard(slug, profile);
+    const res = await window.omniworkerAPI.kanbanSwitchBoard(slug, profile);
     setActionBusy(null);
     if (!res.success) {
       setError(res.error || "Failed to switch board");
@@ -311,7 +311,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
   async function handleCreateBoard(): Promise<void> {
     if (!newBoardSlug.trim()) return;
     setActionBusy("board-create");
-    const res = await window.flux-agentAPI.kanbanCreateBoard(
+    const res = await window.omniworkerAPI.kanbanCreateBoard(
       newBoardSlug.trim(),
       newBoardName.trim() || undefined,
       true,
@@ -331,7 +331,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
   async function handleAddComment(): Promise<void> {
     if (!newCommentText.trim() || !detailTaskId) return;
     setActionBusy("add-comment");
-    const res = await window.flux-agentAPI.kanbanCommentTask(
+    const res = await window.omniworkerAPI.kanbanCommentTask(
       detailTaskId,
       newCommentText.trim(),
       profile,
@@ -342,7 +342,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
       return;
     }
     setNewCommentText("");
-    const detailRes = await window.flux-agentAPI.kanbanGetTask(
+    const detailRes = await window.omniworkerAPI.kanbanGetTask(
       detailTaskId,
       profile,
     );
@@ -355,20 +355,20 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
     setActionBusy(task.id);
     let res: { success: boolean; error?: string };
     if (target === "done") {
-      res = await window.flux-agentAPI.kanbanCompleteTask(
+      res = await window.omniworkerAPI.kanbanCompleteTask(
         task.id,
         undefined,
         profile,
       );
     } else if (target === "blocked") {
       const reason = window.prompt("Reason for blocking?") || "";
-      res = await window.flux-agentAPI.kanbanBlockTask(
+      res = await window.omniworkerAPI.kanbanBlockTask(
         task.id,
         reason || undefined,
         profile,
       );
     } else if (target === "ready" && task.status === "blocked") {
-      res = await window.flux-agentAPI.kanbanUnblockTask(task.id, profile);
+      res = await window.omniworkerAPI.kanbanUnblockTask(task.id, profile);
     } else {
       setActionBusy(null);
       setError(
@@ -386,7 +386,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
 
   async function handleSpecify(task: KanbanTask): Promise<void> {
     setActionBusy(task.id);
-    const res = await window.flux-agentAPI.kanbanSpecifyTask(task.id, profile);
+    const res = await window.omniworkerAPI.kanbanSpecifyTask(task.id, profile);
     setActionBusy(null);
     if (!res.success) {
       setError(res.error || "Failed to specify task");
@@ -418,7 +418,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
   async function handleArchive(task: KanbanTask): Promise<void> {
     if (!window.confirm(`Archive "${task.title}"?`)) return;
     setActionBusy(task.id);
-    const res = await window.flux-agentAPI.kanbanArchiveTask(task.id, profile);
+    const res = await window.omniworkerAPI.kanbanArchiveTask(task.id, profile);
     setActionBusy(null);
     if (!res.success) {
       setError(res.error || "Failed to archive task");
@@ -430,7 +430,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
 
   async function handleReclaim(task: KanbanTask): Promise<void> {
     setActionBusy(task.id);
-    const res = await window.flux-agentAPI.kanbanReclaimTask(
+    const res = await window.omniworkerAPI.kanbanReclaimTask(
       task.id,
       "reclaimed from desktop",
       profile,
@@ -442,7 +442,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
 
   async function handleDispatch(): Promise<void> {
     setActionBusy("dispatch");
-    const res = await window.flux-agentAPI.kanbanDispatchOnce(false, profile);
+    const res = await window.omniworkerAPI.kanbanDispatchOnce(false, profile);
     setActionBusy(null);
     if (!res.success) {
       setError(res.error || "Dispatch failed");
@@ -980,10 +980,10 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                             className="btn btn-secondary btn-sm"
                             onClick={async () => {
                               setActionBusy("unblock");
-                              const res = await window.flux-agentAPI.kanbanUnblockTask(detail.task.id, profile);
+                              const res = await window.omniworkerAPI.kanbanUnblockTask(detail.task.id, profile);
                               setActionBusy(null);
                               if (res.success) {
-                                const detailRes = await window.flux-agentAPI.kanbanGetTask(detail.task.id, profile);
+                                const detailRes = await window.omniworkerAPI.kanbanGetTask(detail.task.id, profile);
                                 if (detailRes.success && detailRes.data) setDetail(detailRes.data);
                                 loadAll(true);
                               } else {
@@ -999,7 +999,7 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                             onClick={async () => {
                               if (!newCommentText.trim()) return;
                               setActionBusy("unblock-comment");
-                              const commentRes = await window.flux-agentAPI.kanbanCommentTask(
+                              const commentRes = await window.omniworkerAPI.kanbanCommentTask(
                                 detail.task.id,
                                 newCommentText.trim(),
                                 profile,
@@ -1009,11 +1009,11 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                                 setActionBusy(null);
                                 return;
                               }
-                              const unblockRes = await window.flux-agentAPI.kanbanUnblockTask(detail.task.id, profile);
+                              const unblockRes = await window.omniworkerAPI.kanbanUnblockTask(detail.task.id, profile);
                               setActionBusy(null);
                               if (unblockRes.success) {
                                 setNewCommentText("");
-                                const detailRes = await window.flux-agentAPI.kanbanGetTask(detail.task.id, profile);
+                                const detailRes = await window.omniworkerAPI.kanbanGetTask(detail.task.id, profile);
                                 if (detailRes.success && detailRes.data) setDetail(detailRes.data);
                                 loadAll(true);
                               } else {

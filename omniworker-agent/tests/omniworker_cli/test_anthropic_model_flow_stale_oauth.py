@@ -1,7 +1,7 @@
-"""Tests for Bug #12905 fix — stale OAuth token detection in flux-agent model flow.
+"""Tests for Bug #12905 fix — stale OAuth token detection in omniworker model flow.
 
-Bug 3: `flux-agent model` with `provider=anthropic` skips OAuth re-authentication
-when a stale ANTHROPIC_TOKEN exists in ~/.flux-agent/.env but no valid
+Bug 3: `omniworker model` with `provider=anthropic` skips OAuth re-authentication
+when a stale ANTHROPIC_TOKEN exists in ~/.omniworker/.env but no valid
 Claude Code credentials are available. The fast-path silently proceeds to
 model selection with a broken token instead of offering re-auth.
 """
@@ -10,7 +10,7 @@ import json
 import pytest
 from unittest.mock import patch, MagicMock
 
-from flux-agent_cli.config import load_env, save_env_value
+from omniworker_cli.config import load_env, save_env_value
 
 
 class TestStaleOAuthTokenDetection:
@@ -56,7 +56,7 @@ class TestStaleOAuthTokenDetection:
         monkeypatch.setattr("builtins.input", lambda _: "3")
         monkeypatch.setattr("getpass.getpass", lambda _: "")
 
-        from flux-agent_cli.main import _model_flow_anthropic
+        from omniworker_cli.main import _model_flow_anthropic
         cfg = {}
 
         _model_flow_anthropic(cfg)
@@ -95,7 +95,7 @@ class TestStaleOAuthTokenDetection:
         # Simulate user picks "1" (use existing)
         monkeypatch.setattr("builtins.input", lambda _: "1")
 
-        from flux-agent_cli.main import _model_flow_anthropic
+        from omniworker_cli.main import _model_flow_anthropic
         cfg = {}
 
         _model_flow_anthropic(cfg)
@@ -139,7 +139,7 @@ class TestStaleOAuthTokenDetection:
         # Simulate user picks "1" (use existing)
         monkeypatch.setattr("builtins.input", lambda _: "1")
 
-        from flux-agent_cli.main import _model_flow_anthropic
+        from omniworker_cli.main import _model_flow_anthropic
         cfg = {}
 
         _model_flow_anthropic(cfg)

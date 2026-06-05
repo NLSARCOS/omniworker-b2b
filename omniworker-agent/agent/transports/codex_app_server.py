@@ -110,7 +110,7 @@ class CodexAppServerClient:
 
     def initialize(
         self,
-        client_name: str = "flux-agent",
+        client_name: str = "omniworker",
         client_title: str = "Flux Agent Agent",
         client_version: str = "0.1",
         capabilities: Optional[dict] = None,

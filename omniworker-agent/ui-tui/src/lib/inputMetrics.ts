@@ -1,4 +1,4 @@
-import { stringWidth } from '@flux-agent/ink'
+import { stringWidth } from '@omniworker/ink'
 
 import type { Role } from '../types.js'
 

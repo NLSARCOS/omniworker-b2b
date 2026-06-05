@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/")) {
     const allowedOriginsEnv = process.env.CORS_ALLOWED_ORIGINS || "";
     const ALLOWED_ORIGINS = new Set([
-      "https://app.flux-agent.com",
+      "https://app.omniworker.com",
       "https://flux.simplex.lat",
       ...(allowedOriginsEnv ? allowedOriginsEnv.split(",").map(o => o.trim()).filter(Boolean) : []),
       ...(process.env.NODE_ENV === "development" ? ["http://localhost:3000", "http://localhost:5173"] : []),

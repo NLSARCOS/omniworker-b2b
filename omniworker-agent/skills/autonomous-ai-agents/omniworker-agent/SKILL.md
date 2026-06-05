@@ -1,14 +1,14 @@
 ---
-name: flux-agent-agent
+name: omniworker-agent
 description: "Configure, extend, or contribute to Flux Agent Agent."
 version: 2.1.0
 author: Flux Agent Agent + Teknium
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
-    tags: [flux-agent, setup, configuration, multi-agent, spawning, cli, gateway, development]
-    homepage: https://github.com/Flux Agent/flux-agent-agent
+  omniworker:
+    tags: [omniworker, setup, configuration, multi-agent, spawning, cli, gateway, development]
+    homepage: https://github.com/Flux Agent/omniworker-agent
     related_skills: [claude-code, codex, opencode]
 ---
 
@@ -29,28 +29,28 @@ People use Flux Agent for software development, research, system administration,
 
 **This skill helps you work with Flux Agent Agent effectively** — setting it up, configuring features, spawning additional agent instances, troubleshooting issues, finding the right commands and settings, and understanding how the system works when you need to extend or contribute to it.
 
-**Docs:** https://flux-agent-agent.flux-agent.com/docs/
+**Docs:** https://omniworker-agent.omniworker.com/docs/
 
 ## Quick Start
 
 ```bash
 # Install
-curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Flux Agent/omniworker-agent/main/scripts/install.sh | bash
 
 # Interactive chat (default)
-flux-agent
+omniworker
 
 # Single query
-flux-agent chat -q "What is the capital of France?"
+omniworker chat -q "What is the capital of France?"
 
 # Setup wizard
-flux-agent setup
+omniworker setup
 
 # Change model/provider
-flux-agent model
+omniworker model
 
 # Check health
-flux-agent doctor
+omniworker doctor
 ```
 
 ---
@@ -60,7 +60,7 @@ flux-agent doctor
 ### Global Flags
 
 ```
-flux-agent [flags] [command]
+omniworker [flags] [command]
 
   --version, -V             Show version
   --resume, -r SESSION      Resume session by ID or title
@@ -77,7 +77,7 @@ No subcommand defaults to `chat`.
 ### Chat
 
 ```
-flux-agent chat [flags]
+omniworker chat [flags]
   -q, --query TEXT          Single query, non-interactive
   -m, --model MODEL         Model (e.g. anthropic/claude-sonnet-4)
   -t, --toolsets LIST       Comma-separated toolsets
@@ -91,137 +91,137 @@ flux-agent chat [flags]
 ### Configuration
 
 ```
-flux-agent setup [section]      Interactive wizard (model|terminal|gateway|tools|agent)
-flux-agent model                Interactive model/provider picker
-flux-agent config               View current config
-flux-agent config edit          Open config.yaml in $EDITOR
-flux-agent config set KEY VAL   Set a config value
-flux-agent config path          Print config.yaml path
-flux-agent config env-path      Print .env path
-flux-agent config check         Check for missing/outdated config
-flux-agent config migrate       Update config with new options
-flux-agent login [--provider P] OAuth login (nous, openai-codex)
-flux-agent logout               Clear stored auth
-flux-agent doctor [--fix]       Check dependencies and config
-flux-agent status [--all]       Show component status
+omniworker setup [section]      Interactive wizard (model|terminal|gateway|tools|agent)
+omniworker model                Interactive model/provider picker
+omniworker config               View current config
+omniworker config edit          Open config.yaml in $EDITOR
+omniworker config set KEY VAL   Set a config value
+omniworker config path          Print config.yaml path
+omniworker config env-path      Print .env path
+omniworker config check         Check for missing/outdated config
+omniworker config migrate       Update config with new options
+omniworker login [--provider P] OAuth login (nous, openai-codex)
+omniworker logout               Clear stored auth
+omniworker doctor [--fix]       Check dependencies and config
+omniworker status [--all]       Show component status
 ```
 
 ### Tools & Skills
 
 ```
-flux-agent tools                Interactive tool enable/disable (curses UI)
-flux-agent tools list           Show all tools and status
-flux-agent tools enable NAME    Enable a toolset
-flux-agent tools disable NAME   Disable a toolset
+omniworker tools                Interactive tool enable/disable (curses UI)
+omniworker tools list           Show all tools and status
+omniworker tools enable NAME    Enable a toolset
+omniworker tools disable NAME   Disable a toolset
 
-flux-agent skills list          List installed skills
-flux-agent skills search QUERY  Search the skills hub
-flux-agent skills install ID    Install a skill (ID can be a hub identifier OR a direct https://…/SKILL.md URL; pass --name to override when frontmatter has no name)
-flux-agent skills inspect ID    Preview without installing
-flux-agent skills config        Enable/disable skills per platform
-flux-agent skills check         Check for updates
-flux-agent skills update        Update outdated skills
-flux-agent skills uninstall N   Remove a hub skill
-flux-agent skills publish PATH  Publish to registry
-flux-agent skills browse        Browse all available skills
-flux-agent skills tap add REPO  Add a GitHub repo as skill source
+omniworker skills list          List installed skills
+omniworker skills search QUERY  Search the skills hub
+omniworker skills install ID    Install a skill (ID can be a hub identifier OR a direct https://…/SKILL.md URL; pass --name to override when frontmatter has no name)
+omniworker skills inspect ID    Preview without installing
+omniworker skills config        Enable/disable skills per platform
+omniworker skills check         Check for updates
+omniworker skills update        Update outdated skills
+omniworker skills uninstall N   Remove a hub skill
+omniworker skills publish PATH  Publish to registry
+omniworker skills browse        Browse all available skills
+omniworker skills tap add REPO  Add a GitHub repo as skill source
 ```
 
 ### MCP Servers
 
 ```
-flux-agent mcp serve            Run Flux Agent as an MCP server
-flux-agent mcp add NAME         Add an MCP server (--url or --command)
-flux-agent mcp remove NAME      Remove an MCP server
-flux-agent mcp list             List configured servers
-flux-agent mcp test NAME        Test connection
-flux-agent mcp configure NAME   Toggle tool selection
+omniworker mcp serve            Run Flux Agent as an MCP server
+omniworker mcp add NAME         Add an MCP server (--url or --command)
+omniworker mcp remove NAME      Remove an MCP server
+omniworker mcp list             List configured servers
+omniworker mcp test NAME        Test connection
+omniworker mcp configure NAME   Toggle tool selection
 ```
 
 ### Gateway (Messaging Platforms)
 
 ```
-flux-agent gateway run          Start gateway foreground
-flux-agent gateway install      Install as background service
-flux-agent gateway start/stop   Control the service
-flux-agent gateway restart      Restart the service
-flux-agent gateway status       Check status
-flux-agent gateway setup        Configure platforms
+omniworker gateway run          Start gateway foreground
+omniworker gateway install      Install as background service
+omniworker gateway start/stop   Control the service
+omniworker gateway restart      Restart the service
+omniworker gateway status       Check status
+omniworker gateway setup        Configure platforms
 ```
 
 Supported platforms: Telegram, Discord, Slack, WhatsApp, Signal, Email, SMS, Matrix, Mattermost, Home Assistant, DingTalk, Feishu, WeCom, BlueBubbles (iMessage), Weixin (WeChat), API Server, Webhooks. Open WebUI connects via the API Server adapter.
 
-Platform docs: https://flux-agent-agent.flux-agent.com/docs/user-guide/messaging/
+Platform docs: https://omniworker-agent.omniworker.com/docs/user-guide/messaging/
 
 ### Sessions
 
 ```
-flux-agent sessions list        List recent sessions
-flux-agent sessions browse      Interactive picker
-flux-agent sessions export OUT  Export to JSONL
-flux-agent sessions rename ID T Rename a session
-flux-agent sessions delete ID   Delete a session
-flux-agent sessions prune       Clean up old sessions (--older-than N days)
-flux-agent sessions stats       Session store statistics
+omniworker sessions list        List recent sessions
+omniworker sessions browse      Interactive picker
+omniworker sessions export OUT  Export to JSONL
+omniworker sessions rename ID T Rename a session
+omniworker sessions delete ID   Delete a session
+omniworker sessions prune       Clean up old sessions (--older-than N days)
+omniworker sessions stats       Session store statistics
 ```
 
 ### Cron Jobs
 
 ```
-flux-agent cron list            List jobs (--all for disabled)
-flux-agent cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
-flux-agent cron edit ID         Edit schedule, prompt, delivery
-flux-agent cron pause/resume ID Control job state
-flux-agent cron run ID          Trigger on next tick
-flux-agent cron remove ID       Delete a job
-flux-agent cron status          Scheduler status
+omniworker cron list            List jobs (--all for disabled)
+omniworker cron create SCHED    Create: '30m', 'every 2h', '0 9 * * *'
+omniworker cron edit ID         Edit schedule, prompt, delivery
+omniworker cron pause/resume ID Control job state
+omniworker cron run ID          Trigger on next tick
+omniworker cron remove ID       Delete a job
+omniworker cron status          Scheduler status
 ```
 
 ### Webhooks
 
 ```
-flux-agent webhook subscribe N  Create route at /webhooks/<name>
-flux-agent webhook list         List subscriptions
-flux-agent webhook remove NAME  Remove a subscription
-flux-agent webhook test NAME    Send a test POST
+omniworker webhook subscribe N  Create route at /webhooks/<name>
+omniworker webhook list         List subscriptions
+omniworker webhook remove NAME  Remove a subscription
+omniworker webhook test NAME    Send a test POST
 ```
 
 ### Profiles
 
 ```
-flux-agent profile list         List all profiles
-flux-agent profile create NAME  Create (--clone, --clone-all, --clone-from)
-flux-agent profile use NAME     Set sticky default
-flux-agent profile delete NAME  Delete a profile
-flux-agent profile show NAME    Show details
-flux-agent profile alias NAME   Manage wrapper scripts
-flux-agent profile rename A B   Rename a profile
-flux-agent profile export NAME  Export to tar.gz
-flux-agent profile import FILE  Import from archive
+omniworker profile list         List all profiles
+omniworker profile create NAME  Create (--clone, --clone-all, --clone-from)
+omniworker profile use NAME     Set sticky default
+omniworker profile delete NAME  Delete a profile
+omniworker profile show NAME    Show details
+omniworker profile alias NAME   Manage wrapper scripts
+omniworker profile rename A B   Rename a profile
+omniworker profile export NAME  Export to tar.gz
+omniworker profile import FILE  Import from archive
 ```
 
 ### Credential Pools
 
 ```
-flux-agent auth add             Interactive credential wizard
-flux-agent auth list [PROVIDER] List pooled credentials
-flux-agent auth remove P INDEX  Remove by provider + index
-flux-agent auth reset PROVIDER  Clear exhaustion status
+omniworker auth add             Interactive credential wizard
+omniworker auth list [PROVIDER] List pooled credentials
+omniworker auth remove P INDEX  Remove by provider + index
+omniworker auth reset PROVIDER  Clear exhaustion status
 ```
 
 ### Other
 
 ```
-flux-agent insights [--days N]  Usage analytics
-flux-agent update               Update to latest version
-flux-agent pairing list/approve/revoke  DM authorization
-flux-agent plugins list/install/remove  Plugin management
-flux-agent honcho setup/status  Honcho memory integration (requires honcho plugin)
-flux-agent memory setup/status/off  Memory provider config
-flux-agent completion bash|zsh  Shell completions
-flux-agent acp                  ACP server (IDE integration)
-flux-agent claw migrate         Migrate from Flux Agent
-flux-agent uninstall            Uninstall Flux Agent
+omniworker insights [--days N]  Usage analytics
+omniworker update               Update to latest version
+omniworker pairing list/approve/revoke  DM authorization
+omniworker plugins list/install/remove  Plugin management
+omniworker honcho setup/status  Honcho memory integration (requires honcho plugin)
+omniworker memory setup/status/off  Memory provider config
+omniworker completion bash|zsh  Shell completions
+omniworker acp                  ACP server (IDE integration)
+omniworker claw migrate         Migrate from Flux Agent
+omniworker uninstall            Uninstall Flux Agent
 ```
 
 ---
@@ -230,8 +230,8 @@ flux-agent uninstall            Uninstall Flux Agent
 
 Type these during an interactive chat session. New commands land fairly
 often; if something below looks stale, run `/help` in-session for the
-authoritative list or see the [live slash commands reference](https://flux-agent-agent.flux-agent.com/docs/reference/slash-commands).
-The registry of record is `flux-agent_cli/commands.py` — every consumer
+authoritative list or see the [live slash commands reference](https://omniworker-agent.omniworker.com/docs/reference/slash-commands).
+The registry of record is `omniworker_cli/commands.py` — every consumer
 (autocomplete, Telegram menu, Slack mapping, `/help`) derives from it.
 
 ### Session Control
@@ -279,7 +279,7 @@ The registry of record is `flux-agent_cli/commands.py` — every consumer
 /toolsets            List toolsets (CLI)
 /skills              Search/install skills (CLI)
 /skill <name>        Load a skill into session
-/reload-skills       Re-scan ~/.flux-agent/skills/ for added/removed skills
+/reload-skills       Re-scan ~/.omniworker/skills/ for added/removed skills
 /reload              Reload .env variables into the running session (CLI)
 /reload-mcp          Reload MCP servers
 /cron                Manage cron jobs (CLI)
@@ -333,20 +333,20 @@ The registry of record is `flux-agent_cli/commands.py` — every consumer
 ## Key Paths & Config
 
 ```
-~/.flux-agent/config.yaml       Main configuration
-~/.flux-agent/.env              API keys and secrets
-$FLUX AGENT_HOME/skills/        Installed skills
-~/.flux-agent/sessions/         Session transcripts
-~/.flux-agent/logs/             Gateway and error logs
-~/.flux-agent/auth.json         OAuth tokens and credential pools
-~/.flux-agent/flux-agent-agent/     Source code (if git-installed)
+~/.omniworker/config.yaml       Main configuration
+~/.omniworker/.env              API keys and secrets
+$OMNIWORKER_HOME/skills/        Installed skills
+~/.omniworker/sessions/         Session transcripts
+~/.omniworker/logs/             Gateway and error logs
+~/.omniworker/auth.json         OAuth tokens and credential pools
+~/.omniworker/omniworker-agent/     Source code (if git-installed)
 ```
 
-Profiles use `~/.flux-agent/profiles/<name>/` with the same layout.
+Profiles use `~/.omniworker/profiles/<name>/` with the same layout.
 
 ### Config Sections
 
-Edit with `flux-agent config edit` or `flux-agent config set section.key value`.
+Edit with `omniworker config edit` or `omniworker config set section.key value`.
 
 | Section | Key options |
 |---------|-------------|
@@ -362,18 +362,18 @@ Edit with `flux-agent config edit` or `flux-agent config set section.key value`.
 | `delegation` | `model`, `provider`, `base_url`, `api_key`, `max_iterations` (50), `reasoning_effort` |
 | `checkpoints` | `enabled`, `max_snapshots` (50) |
 
-Full config reference: https://flux-agent-agent.flux-agent.com/docs/user-guide/configuration
+Full config reference: https://omniworker-agent.omniworker.com/docs/user-guide/configuration
 
 ### Providers
 
-20+ providers supported. Set via `flux-agent model` or `flux-agent setup`.
+20+ providers supported. Set via `omniworker model` or `omniworker setup`.
 
 | Provider | Auth | Key env var |
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nous Portal | OAuth | `flux-agent auth` |
-| OpenAI Codex | OAuth | `flux-agent auth` |
+| Nous Portal | OAuth | `omniworker auth` |
+| OpenAI Codex | OAuth | `omniworker auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` or `GEMINI_API_KEY` |
 | DeepSeek | API key | `DEEPSEEK_API_KEY` |
@@ -389,15 +389,15 @@ Full config reference: https://flux-agent-agent.flux-agent.com/docs/user-guide/c
 | AI Gateway (Vercel) | API key | `AI_GATEWAY_API_KEY` |
 | OpenCode Zen | API key | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | API key | `OPENCODE_GO_API_KEY` |
-| Qwen OAuth | OAuth | `flux-agent login --provider qwen-oauth` |
+| Qwen OAuth | OAuth | `omniworker login --provider qwen-oauth` |
 | Custom endpoint | Config | `model.base_url` + `model.api_key` in config.yaml |
 | GitHub Copilot ACP | External | `COPILOT_CLI_PATH` or Copilot CLI |
 
-Full provider docs: https://flux-agent-agent.flux-agent.com/docs/integrations/providers
+Full provider docs: https://omniworker-agent.omniworker.com/docs/integrations/providers
 
 ### Toolsets
 
-Enable/disable via `flux-agent tools` (interactive) or `flux-agent tools enable/disable NAME`.
+Enable/disable via `omniworker tools` (interactive) or `omniworker tools enable/disable NAME`.
 
 | Toolset | What it provides |
 |---------|-----------------|
@@ -432,7 +432,7 @@ Enable/disable via `flux-agent tools` (interactive) or `flux-agent tools enable/
 | `rl` | Reinforcement learning tools (off by default) |
 | `moa` | Mixture of Agents (off by default) |
 
-Full enumeration lives in `toolsets.py` as the `TOOLSETS` dict; `_FLUX AGENT_CORE_TOOLS` is the default bundle most platforms inherit from.
+Full enumeration lives in `toolsets.py` as the `TOOLSETS` dict; `_OMNIWORKER_CORE_TOOLS` is the default bundle most platforms inherit from.
 
 Tool changes take effect on `/reset` (new session). They do NOT apply mid-conversation to preserve prompt caching.
 
@@ -440,21 +440,21 @@ Tool changes take effect on `/reset` (new session). They do NOT apply mid-conver
 
 ## Security & Privacy Toggles
 
-Common "why is Flux Agent doing X to my output / tool calls / commands?" toggles — and the exact commands to change them. Most of these need a fresh session (`/reset` in chat, or start a new `flux-agent` invocation) because they're read once at startup.
+Common "why is Flux Agent doing X to my output / tool calls / commands?" toggles — and the exact commands to change them. Most of these need a fresh session (`/reset` in chat, or start a new `omniworker` invocation) because they're read once at startup.
 
 ### Secret redaction in tool output
 
 Secret redaction is **off by default** — tool output (terminal stdout, `read_file`, web content, subagent summaries, etc.) passes through unmodified. If the user wants Flux Agent to auto-mask strings that look like API keys, tokens, and secrets before they enter the conversation context and logs:
 
 ```bash
-flux-agent config set security.redact_secrets true       # enable globally
+omniworker config set security.redact_secrets true       # enable globally
 ```
 
-**Restart required.** `security.redact_secrets` is snapshotted at import time — toggling it mid-session (e.g. via `export FLUX AGENT_REDACT_SECRETS=true` from a tool call) will NOT take effect for the running process. Tell the user to run `flux-agent config set security.redact_secrets true` in a terminal, then start a new session. This is deliberate — it prevents an LLM from flipping the toggle on itself mid-task.
+**Restart required.** `security.redact_secrets` is snapshotted at import time — toggling it mid-session (e.g. via `export OMNIWORKER_REDACT_SECRETS=true` from a tool call) will NOT take effect for the running process. Tell the user to run `omniworker config set security.redact_secrets true` in a terminal, then start a new session. This is deliberate — it prevents an LLM from flipping the toggle on itself mid-task.
 
 Disable again with:
 ```bash
-flux-agent config set security.redact_secrets false
+omniworker config set security.redact_secrets false
 ```
 
 ### PII redaction in gateway messages
@@ -462,8 +462,8 @@ flux-agent config set security.redact_secrets false
 Separate from secret redaction. When enabled, the gateway hashes user IDs and strips phone numbers from the session context before it reaches the model:
 
 ```bash
-flux-agent config set privacy.redact_pii true    # enable
-flux-agent config set privacy.redact_pii false   # disable (default)
+omniworker config set privacy.redact_pii true    # enable
+omniworker config set privacy.redact_pii false   # disable (default)
 ```
 
 ### Command approval prompts
@@ -475,23 +475,23 @@ By default (`approvals.mode: manual`), Flux Agent prompts the user before runnin
 - `off` — skip all approval prompts (equivalent to `--yolo`)
 
 ```bash
-flux-agent config set approvals.mode smart       # recommended middle ground
-flux-agent config set approvals.mode off         # bypass everything (not recommended)
+omniworker config set approvals.mode smart       # recommended middle ground
+omniworker config set approvals.mode off         # bypass everything (not recommended)
 ```
 
 Per-invocation bypass without changing config:
-- `flux-agent --yolo …`
-- `export FLUX AGENT_YOLO_MODE=1`
+- `omniworker --yolo …`
+- `export OMNIWORKER_YOLO_MODE=1`
 
 Note: YOLO / `approvals.mode: off` does NOT turn off secret redaction. They are independent.
 
 ### Shell hooks allowlist
 
-Some shell-hook integrations require explicit allowlisting before they fire. Managed via `~/.flux-agent/shell-hooks-allowlist.json` — prompted interactively the first time a hook wants to run.
+Some shell-hook integrations require explicit allowlisting before they fire. Managed via `~/.omniworker/shell-hooks-allowlist.json` — prompted interactively the first time a hook wants to run.
 
 ### Disabling the web/browser/image-gen tools
 
-To keep the model away from network or media tools entirely, open `flux-agent tools` and toggle per-platform. Takes effect on next session (`/reset`). See the Tools & Skills section above.
+To keep the model away from network or media tools entirely, open `omniworker tools` and toggle per-platform. Takes effect on next session (`/reset`). See the Tools & Skills section above.
 
 ---
 
@@ -537,7 +537,7 @@ Run additional Flux Agent processes as fully independent subprocesses — separa
 
 ### When to Use This vs delegate_task
 
-| | `delegate_task` | Spawning `flux-agent` process |
+| | `delegate_task` | Spawning `omniworker` process |
 |-|-----------------|--------------------------|
 | Isolation | Separate conversation, shared process | Fully independent process |
 | Duration | Minutes (bounded by parent loop) | Hours/days |
@@ -548,10 +548,10 @@ Run additional Flux Agent processes as fully independent subprocesses — separa
 ### One-Shot Mode
 
 ```
-terminal(command="flux-agent chat -q 'Research GRPO papers and write summary to ~/research/grpo.md'", timeout=300)
+terminal(command="omniworker chat -q 'Research GRPO papers and write summary to ~/research/grpo.md'", timeout=300)
 
 # Background for long tasks:
-terminal(command="flux-agent chat -q 'Set up CI/CD for ~/myapp'", background=true)
+terminal(command="omniworker chat -q 'Set up CI/CD for ~/myapp'", background=true)
 ```
 
 ### Interactive PTY Mode (via tmux)
@@ -560,7 +560,7 @@ Flux Agent uses prompt_toolkit, which requires a real terminal. Use tmux for int
 
 ```
 # Start
-terminal(command="tmux new-session -d -s agent1 -x 120 -y 40 'flux-agent'", timeout=10)
+terminal(command="tmux new-session -d -s agent1 -x 120 -y 40 'omniworker'", timeout=10)
 
 # Wait for startup, then send a message
 terminal(command="sleep 8 && tmux send-keys -t agent1 'Build a FastAPI auth service' Enter", timeout=15)
@@ -579,11 +579,11 @@ terminal(command="tmux send-keys -t agent1 '/exit' Enter && sleep 2 && tmux kill
 
 ```
 # Agent A: backend
-terminal(command="tmux new-session -d -s backend -x 120 -y 40 'flux-agent -w'", timeout=10)
+terminal(command="tmux new-session -d -s backend -x 120 -y 40 'omniworker -w'", timeout=10)
 terminal(command="sleep 8 && tmux send-keys -t backend 'Build REST API for user management' Enter", timeout=15)
 
 # Agent B: frontend
-terminal(command="tmux new-session -d -s frontend -x 120 -y 40 'flux-agent -w'", timeout=10)
+terminal(command="tmux new-session -d -s frontend -x 120 -y 40 'omniworker -w'", timeout=10)
 terminal(command="sleep 8 && tmux send-keys -t frontend 'Build React dashboard for user management' Enter", timeout=15)
 
 # Check progress, relay context between them
@@ -595,10 +595,10 @@ terminal(command="tmux send-keys -t frontend 'Here is the API schema from the ba
 
 ```
 # Resume most recent session
-terminal(command="tmux new-session -d -s resumed 'flux-agent --continue'", timeout=10)
+terminal(command="tmux new-session -d -s resumed 'omniworker --continue'", timeout=10)
 
 # Resume specific session
-terminal(command="tmux new-session -d -s resumed 'flux-agent --resume 20260225_143052_a1b2c3'", timeout=10)
+terminal(command="tmux new-session -d -s resumed 'omniworker --resume 20260225_143052_a1b2c3'", timeout=10)
 ```
 
 ### Tips
@@ -606,7 +606,7 @@ terminal(command="tmux new-session -d -s resumed 'flux-agent --resume 20260225_1
 - **Prefer `delegate_task` for quick subtasks** — less overhead than spawning a full process
 - **Use `-w` (worktree mode)** when spawning agents that edit code — prevents git conflicts
 - **Set timeouts** for one-shot mode — complex tasks can take 5-10 minutes
-- **Use `flux-agent chat -q` for fire-and-forget** — no PTY needed
+- **Use `omniworker chat -q` for fire-and-forget** — no PTY needed
 - **Use tmux for interactive sessions** — raw PTY mode has `\r` vs `\n` issues with prompt_toolkit
 - **For scheduled tasks**, use the `cronjob` tool instead of spawning — handles delivery and retry
 
@@ -637,7 +637,7 @@ Config: `delegation.*` in `config.yaml`.
 ### Cron (scheduled jobs)
 
 Durable scheduler — `cron/jobs.py` + `cron/scheduler.py`. Drive it via
-the `cronjob` tool, the `flux-agent cron` CLI (`list`, `add`, `edit`,
+the `cronjob` tool, the `omniworker cron` CLI (`list`, `add`, `edit`,
 `pause`, `resume`, `run`, `remove`), or the `/cron` slash command.
 
 - **Schedules:** duration (`"30m"`, `"2h"`), "every" phrase
@@ -653,7 +653,7 @@ the `cronjob` tool, the `flux-agent cron` CLI (`list`, `add`, `edit`,
   header/footer instead of being mirrored into the target gateway
   session (keeps role alternation intact).
 
-User docs: https://flux-agent-agent.flux-agent.com/docs/user-guide/features/cron
+User docs: https://omniworker-agent.omniworker.com/docs/user-guide/features/cron
 
 ### Curator (skill lifecycle)
 
@@ -661,26 +661,26 @@ Background maintenance for agent-created skills. Tracks usage, marks
 idle skills stale, archives stale ones, keeps a pre-run tar.gz backup
 so nothing is lost.
 
-- **CLI:** `flux-agent curator <verb>` — `status`, `run`, `pause`, `resume`,
+- **CLI:** `omniworker curator <verb>` — `status`, `run`, `pause`, `resume`,
   `pin`, `unpin`, `archive`, `restore`, `prune`, `backup`, `rollback`.
 - **Slash:** `/curator <subcommand>` mirrors the CLI.
 - **Scope:** only touches skills with `created_by: "agent"` provenance.
   Bundled + hub-installed skills are off-limits. **Never deletes** —
   max destructive action is archive. Pinned skills are exempt from
   every auto-transition and every LLM review pass.
-- **Telemetry:** sidecar at `~/.flux-agent/skills/.usage.json` holds
+- **Telemetry:** sidecar at `~/.omniworker/skills/.usage.json` holds
   per-skill `use_count`, `view_count`, `patch_count`,
   `last_activity_at`, `state`, `pinned`.
 
 Config: `curator.*` (`enabled`, `interval_hours`, `min_idle_hours`,
 `stale_after_days`, `archive_after_days`, `backup.*`).
-User docs: https://flux-agent-agent.flux-agent.com/docs/user-guide/features/curator
+User docs: https://omniworker-agent.omniworker.com/docs/user-guide/features/curator
 
 ### Kanban (multi-agent work queue)
 
 Durable SQLite board for multi-profile / multi-worker collaboration.
-Users drive it via `flux-agent kanban <verb>`; dispatcher-spawned workers
-see a focused `kanban_*` toolset gated by `FLUX AGENT_KANBAN_TASK` so the
+Users drive it via `omniworker kanban <verb>`; dispatcher-spawned workers
+see a focused `kanban_*` toolset gated by `OMNIWORKER_KANBAN_TASK` so the
 schema footprint is zero outside worker processes.
 
 - **CLI verbs (common):** `init`, `create`, `list` (alias `ls`),
@@ -694,10 +694,10 @@ schema footprint is zero outside worker processes.
   promotes ready tasks, atomically claims, spawns assigned profiles.
   Auto-blocks a task after ~5 consecutive spawn failures.
 - **Isolation:** board is the hard boundary (workers get
-  `FLUX AGENT_KANBAN_BOARD` pinned in env); tenant is a soft namespace
+  `OMNIWORKER_KANBAN_BOARD` pinned in env); tenant is a soft namespace
   within a board for workspace-path + memory-key isolation.
 
-User docs: https://flux-agent-agent.flux-agent.com/docs/user-guide/features/kanban
+User docs: https://omniworker-agent.omniworker.com/docs/user-guide/features/kanban
 
 ---
 
@@ -736,7 +736,7 @@ Ctrl+Enter?" This is how the Ctrl+Enter = c-j fact was established.
 
 **HTTP 400 "No models provided" on first run.** `config.yaml` was saved
 with a UTF-8 BOM (common when Windows apps write it). Re-save as UTF-8
-without BOM. `flux-agent config edit` writes without BOM; manual edits in
+without BOM. `omniworker config edit` writes without BOM; manual edits in
 Notepad are the usual culprit.
 
 ### `execute_code` / Sandbox
@@ -799,15 +799,15 @@ and logs — avoids shell-escaping backslashes in bash.
 3. In gateway: `/restart`. In CLI: exit and relaunch.
 
 ### Tool not available
-1. `flux-agent tools` — check if toolset is enabled for your platform
+1. `omniworker tools` — check if toolset is enabled for your platform
 2. Some tools need env vars (check `.env`)
 3. `/reset` after enabling tools
 
 ### Model/provider issues
-1. `flux-agent doctor` — check config and dependencies
-2. `flux-agent login` — re-authenticate OAuth providers
+1. `omniworker doctor` — check config and dependencies
+2. `omniworker login` — re-authenticate OAuth providers
 3. Check `.env` has the right API key
-4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `flux-agent model` → GitHub Copilot.
+4. **Copilot 403**: `gh auth login` tokens do NOT work for Copilot API. You must use the Copilot-specific OAuth device code flow via `omniworker model` → GitHub Copilot.
 
 ### Changes not taking effect
 - **Tools/skills:** `/reset` starts a new session with updated toolset
@@ -815,20 +815,20 @@ and logs — avoids shell-escaping backslashes in bash.
 - **Code changes:** Restart the CLI or gateway process
 
 ### Skills not showing
-1. `flux-agent skills list` — verify installed
-2. `flux-agent skills config` — check platform enablement
-3. Load explicitly: `/skill name` or `flux-agent -s name`
+1. `omniworker skills list` — verify installed
+2. `omniworker skills config` — check platform enablement
+3. Load explicitly: `/skill name` or `omniworker -s name`
 
 ### Gateway issues
 Check logs first:
 ```bash
-grep -i "failed to send\|error" ~/.flux-agent/logs/gateway.log | tail -20
+grep -i "failed to send\|error" ~/.omniworker/logs/gateway.log | tail -20
 ```
 
 Common gateway problems:
 - **Gateway dies on SSH logout**: Enable linger: `sudo loginctl enable-linger $USER`
 - **Gateway dies on WSL2 close**: WSL2 requires `systemd=true` in `/etc/wsl.conf` for systemd services to work. Without it, gateway falls back to `nohup` (dies when session closes).
-- **Gateway crash loop**: Reset the failed state: `systemctl --user reset-failed flux-agent-gateway`
+- **Gateway crash loop**: Reset the failed state: `systemctl --user reset-failed omniworker-gateway`
 
 ### Platform-specific issues
 - **Discord bot silent**: Must enable **Message Content Intent** in Bot → Privileged Gateway Intents.
@@ -838,8 +838,8 @@ Common gateway problems:
 ### Auxiliary models not working
 If `auxiliary` tasks (vision, compression, session_search) fail silently, the `auto` provider can't find a backend. Either set `OPENROUTER_API_KEY` or `GOOGLE_API_KEY`, or explicitly configure each auxiliary task's provider:
 ```bash
-flux-agent config set auxiliary.vision.provider <your_provider>
-flux-agent config set auxiliary.vision.model <model_name>
+omniworker config set auxiliary.vision.provider <your_provider>
+omniworker config set auxiliary.vision.model <model_name>
 ```
 
 ---
@@ -848,39 +848,39 @@ flux-agent config set auxiliary.vision.model <model_name>
 
 | Looking for... | Location |
 |----------------|----------|
-| Config options | `flux-agent config edit` or [Configuration docs](https://flux-agent-agent.flux-agent.com/docs/user-guide/configuration) |
-| Available tools | `flux-agent tools list` or [Tools reference](https://flux-agent-agent.flux-agent.com/docs/reference/tools-reference) |
-| Slash commands | `/help` in session or [Slash commands reference](https://flux-agent-agent.flux-agent.com/docs/reference/slash-commands) |
-| Skills catalog | `flux-agent skills browse` or [Skills catalog](https://flux-agent-agent.flux-agent.com/docs/reference/skills-catalog) |
-| Provider setup | `flux-agent model` or [Providers guide](https://flux-agent-agent.flux-agent.com/docs/integrations/providers) |
-| Platform setup | `flux-agent gateway setup` or [Messaging docs](https://flux-agent-agent.flux-agent.com/docs/user-guide/messaging/) |
-| MCP servers | `flux-agent mcp list` or [MCP guide](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/mcp) |
-| Profiles | `flux-agent profile list` or [Profiles docs](https://flux-agent-agent.flux-agent.com/docs/user-guide/profiles) |
-| Cron jobs | `flux-agent cron list` or [Cron docs](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/cron) |
-| Memory | `flux-agent memory status` or [Memory docs](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/memory) |
-| Env variables | `flux-agent config env-path` or [Env vars reference](https://flux-agent-agent.flux-agent.com/docs/reference/environment-variables) |
-| CLI commands | `flux-agent --help` or [CLI reference](https://flux-agent-agent.flux-agent.com/docs/reference/cli-commands) |
-| Gateway logs | `~/.flux-agent/logs/gateway.log` |
-| Session files | `~/.flux-agent/sessions/` or `flux-agent sessions browse` |
-| Source code | `~/.flux-agent/flux-agent-agent/` |
+| Config options | `omniworker config edit` or [Configuration docs](https://omniworker-agent.omniworker.com/docs/user-guide/configuration) |
+| Available tools | `omniworker tools list` or [Tools reference](https://omniworker-agent.omniworker.com/docs/reference/tools-reference) |
+| Slash commands | `/help` in session or [Slash commands reference](https://omniworker-agent.omniworker.com/docs/reference/slash-commands) |
+| Skills catalog | `omniworker skills browse` or [Skills catalog](https://omniworker-agent.omniworker.com/docs/reference/skills-catalog) |
+| Provider setup | `omniworker model` or [Providers guide](https://omniworker-agent.omniworker.com/docs/integrations/providers) |
+| Platform setup | `omniworker gateway setup` or [Messaging docs](https://omniworker-agent.omniworker.com/docs/user-guide/messaging/) |
+| MCP servers | `omniworker mcp list` or [MCP guide](https://omniworker-agent.omniworker.com/docs/user-guide/features/mcp) |
+| Profiles | `omniworker profile list` or [Profiles docs](https://omniworker-agent.omniworker.com/docs/user-guide/profiles) |
+| Cron jobs | `omniworker cron list` or [Cron docs](https://omniworker-agent.omniworker.com/docs/user-guide/features/cron) |
+| Memory | `omniworker memory status` or [Memory docs](https://omniworker-agent.omniworker.com/docs/user-guide/features/memory) |
+| Env variables | `omniworker config env-path` or [Env vars reference](https://omniworker-agent.omniworker.com/docs/reference/environment-variables) |
+| CLI commands | `omniworker --help` or [CLI reference](https://omniworker-agent.omniworker.com/docs/reference/cli-commands) |
+| Gateway logs | `~/.omniworker/logs/gateway.log` |
+| Session files | `~/.omniworker/sessions/` or `omniworker sessions browse` |
+| Source code | `~/.omniworker/omniworker-agent/` |
 
 ---
 
 ## Contributor Quick Reference
 
-For occasional contributors and PR authors. Full developer docs: https://flux-agent-agent.flux-agent.com/docs/developer-guide/
+For occasional contributors and PR authors. Full developer docs: https://omniworker-agent.omniworker.com/docs/developer-guide/
 
 ### Project Layout
 
 ```
-flux-agent-agent/
+omniworker-agent/
 ├── run_agent.py          # AIAgent — core conversation loop
 ├── model_tools.py        # Tool discovery and dispatch
 ├── toolsets.py           # Toolset definitions
-├── cli.py                # Interactive CLI (Flux AgentCLI)
-├── flux-agent_state.py       # SQLite session store
+├── cli.py                # Interactive CLI (OmniWorkerCLI)
+├── omniworker_state.py       # SQLite session store
 ├── agent/                # Prompt builder, context compression, memory, model routing, credential pooling, skill dispatch
-├── flux-agent_cli/           # CLI subcommands, config, setup, commands
+├── omniworker_cli/           # CLI subcommands, config, setup, commands
 │   ├── commands.py       # Slash command registry (CommandDef)
 │   ├── config.py         # DEFAULT_CONFIG, env var definitions
 │   └── main.py           # CLI entry point and argparse
@@ -893,7 +893,7 @@ flux-agent-agent/
 └── website/              # Docusaurus docs site
 ```
 
-Config: `~/.flux-agent/config.yaml` (settings), `~/.flux-agent/.env` (API keys).
+Config: `~/.omniworker/config.yaml` (settings), `~/.omniworker/.env` (API keys).
 
 ### Adding a Tool (3 files)
 
@@ -919,15 +919,15 @@ registry.register(
 )
 ```
 
-**2. Add to `toolsets.py`** → `_FLUX AGENT_CORE_TOOLS` list.
+**2. Add to `toolsets.py`** → `_OMNIWORKER_CORE_TOOLS` list.
 
 Auto-discovery: any `tools/*.py` file with a top-level `registry.register()` call is imported automatically — no manual list needed.
 
-All handlers must return JSON strings. Use `get_flux-agent_home()` for paths, never hardcode `~/.flux-agent`.
+All handlers must return JSON strings. Use `get_omniworker_home()` for paths, never hardcode `~/.omniworker`.
 
 ### Adding a Slash Command
 
-1. Add `CommandDef` to `COMMAND_REGISTRY` in `flux-agent_cli/commands.py`
+1. Add `CommandDef` to `COMMAND_REGISTRY` in `omniworker_cli/commands.py`
 2. Add handler in `cli.py` → `process_command()`
 3. (Optional) Add gateway handler in `gateway/run.py`
 
@@ -952,7 +952,7 @@ python -m pytest tests/ -o 'addopts=' -q   # Full suite
 python -m pytest tests/tools/ -q            # Specific area
 ```
 
-- Tests auto-redirect `FLUX AGENT_HOME` to temp dirs — never touch real `~/.flux-agent/`
+- Tests auto-redirect `OMNIWORKER_HOME` to temp dirs — never touch real `~/.omniworker/`
 - Run full suite before pushing any change
 - Use `-o 'addopts='` to clear any baked-in pytest flags
 
@@ -967,7 +967,7 @@ Use `-n 0` (not `-n 4`) because `pyproject.toml`'s default `addopts` already inc
 
 **Cross-platform test guards:** tests that use POSIX-only syscalls need a skip marker. Common ones already in the codebase:
 - Symlink creation → `@pytest.mark.skipif(sys.platform == "win32", reason="Symlinks require elevated privileges on Windows")` (see `tests/cron/test_cron_script.py`)
-- POSIX file modes (0o600, etc.) → `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")` (see `tests/flux-agent_cli/test_auth_toctou_file_modes.py`)
+- POSIX file modes (0o600, etc.) → `@pytest.mark.skipif(sys.platform.startswith("win"), reason="POSIX mode bits not enforced on Windows")` (see `tests/omniworker_cli/test_auth_toctou_file_modes.py`)
 - `signal.SIGALRM` → Unix-only (see `tests/conftest.py::_enforce_test_timeout`)
 - Live Winsock / Windows-specific regression tests → `@pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific regression")`
 
@@ -1008,6 +1008,6 @@ Types: `fix:`, `feat:`, `refactor:`, `docs:`, `chore:`
 
 - **Never break prompt caching** — don't change context, tools, or system prompt mid-conversation
 - **Message role alternation** — never two assistant or two user messages in a row
-- Use `get_flux-agent_home()` from `flux-agent_constants` for all paths (profile-safe)
+- Use `get_omniworker_home()` from `omniworker_constants` for all paths (profile-safe)
 - Config values go in `config.yaml`, secrets go in `.env`
 - New tools need a `check_fn` so they only appear when requirements are met

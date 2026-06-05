@@ -8,7 +8,7 @@ description: "Plan mode: write markdown plan to"
 
 # Plan
 
-Plan mode: write markdown plan to .flux-agent/plans/, no exec.
+Plan mode: write markdown plan to .omniworker/plans/, no exec.
 
 ## Skill metadata
 
@@ -41,7 +41,7 @@ For this turn, you are planning only.
 - Do not edit project files except the plan markdown file.
 - Do not run mutating terminal commands, commit, push, or perform external actions.
 - You may inspect the repo or other context with read-only commands/tools when needed.
-- Your deliverable is a markdown plan saved inside the active workspace under `.flux-agent/plans/`.
+- Your deliverable is a markdown plan saved inside the active workspace under `.omniworker/plans/`.
 
 ## Output requirements
 
@@ -61,12 +61,12 @@ If the task is code-related, include exact file paths, likely test targets, and 
 ## Save location
 
 Save the plan with `write_file` under:
-- `.flux-agent/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
+- `.omniworker/plans/YYYY-MM-DD_HHMMSS-<slug>.md`
 
 Treat that as relative to the active working directory / backend workspace. Flux Agent file tools are backend-aware, so using this relative path keeps the plan with the workspace on local, docker, ssh, modal, and daytona backends.
 
 If the runtime provides a specific target path, use that exact path.
-If not, create a sensible timestamped filename yourself under `.flux-agent/plans/`.
+If not, create a sensible timestamped filename yourself under `.omniworker/plans/`.
 
 ## Interaction style
 

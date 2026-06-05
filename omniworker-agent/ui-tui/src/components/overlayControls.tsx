@@ -1,4 +1,4 @@
-import { Text, useInput } from '@flux-agent/ink'
+import { Text, useInput } from '@omniworker/ink'
 
 import type { Theme } from '../theme.js'
 

@@ -31,7 +31,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from tools import skill_usage
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ DEFAULT_ARCHIVE_AFTER_DAYS = 90
 # ---------------------------------------------------------------------------
 
 def _state_file() -> Path:
-    return get_flux-agent_home() / "skills" / ".curator_state"
+    return get_omniworker_home() / "skills" / ".curator_state"
 
 
 def _default_state() -> Dict[str, Any]:
@@ -132,7 +132,7 @@ def is_paused() -> bool:
 def _load_config() -> Dict[str, Any]:
     """Read curator.* config from ~/.hermes/config.yaml. Tolerates missing file."""
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         cfg = load_config()
     except Exception as e:
         logger.debug("Failed to load config for curator: %s", e)
@@ -457,13 +457,13 @@ def _reports_root() -> Path:
     looking for operational telemetry, not mixed in with the user's
     authored skill data in ``~/.hermes/skills/``.
 
-    ``ensure_flux-agent_home()`` pre-creates this dir on every CLI launch and
+    ``ensure_omniworker_home()`` pre-creates this dir on every CLI launch and
     the v22→v23 migration backfills it for existing profiles, but we
     still mkdir here as a belt-and-suspenders so the curator works even
     from an odd entry path (e.g. gateway-only install, bare library use)
     that bypasses both.
     """
-    root = get_flux-agent_home() / "logs" / "curator"
+    root = get_omniworker_home() / "logs" / "curator"
     try:
         root.mkdir(parents=True, exist_ok=True)
     except OSError as e:
@@ -1665,8 +1665,8 @@ def _run_llm_review(prompt: str) -> Dict[str, Any]:
     _resolved_provider = None
     _model_name = ""
     try:
-        from flux-agent_cli.config import load_config
-        from flux-agent_cli.runtime_provider import resolve_runtime_provider
+        from omniworker_cli.config import load_config
+        from omniworker_cli.runtime_provider import resolve_runtime_provider
         _cfg = load_config()
         _binding = _resolve_review_runtime(_cfg)
         _provider, _model_name = _binding.provider, _binding.model

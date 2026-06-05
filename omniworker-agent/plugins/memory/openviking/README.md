@@ -11,13 +11,13 @@ Context database by Volcengine (ByteDance) with filesystem-style knowledge hiera
 ## Setup
 
 ```bash
-flux-agent memory setup    # select "openviking"
+omniworker memory setup    # select "openviking"
 ```
 
 Or manually:
 ```bash
-flux-agent config set memory.provider openviking
-echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.flux-agent/.env
+omniworker config set memory.provider openviking
+echo "OPENVIKING_ENDPOINT=http://localhost:1933" >> ~/.omniworker/.env
 ```
 
 ## Config

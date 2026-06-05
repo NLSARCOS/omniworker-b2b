@@ -122,8 +122,8 @@ def apply_windows_utf8_bootstrap() -> bool:
     return True
 
 
-# Apply on import — entry points just need ``import flux-agent_bootstrap``
-# (or ``from flux-agent_bootstrap import apply_windows_utf8_bootstrap``) at
+# Apply on import — entry points just need ``import omniworker_bootstrap``
+# (or ``from omniworker_bootstrap import apply_windows_utf8_bootstrap``) at
 # the very top of their module, before importing anything else.  The
 # import side effect does the right thing.
 apply_windows_utf8_bootstrap()

@@ -3,12 +3,12 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { execFile } from "child_process";
 import {
-  FLUX AGENT_HOME,
-  FLUX AGENT_PYTHON,
-  flux-agentCliArgs,
+  OMNIWORKER_HOME,
+  OMNIWORKER_PYTHON,
+  omniworkerCliArgs,
 } from "./installer";
 import { profileHome } from "./utils";
-import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./flux-agent";
+import { isRemoteMode, getApiUrl, getRemoteAuthHeader } from "./omniworker";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { PowerManager } from "./power";
 
@@ -142,13 +142,13 @@ export async function listCronJobs(
 }
 
 /**
- * Run a flux-agent cron CLI command and return the result.
+ * Run a omniworker cron CLI command and return the result.
  */
 export function runCronCommand(
   args: string[],
   profile?: string,
 ): Promise<{ success: boolean; output: string; error?: string }> {
-  const cliArgs = flux-agentCliArgs();
+  const cliArgs = omniworkerCliArgs();
   if (profile && profile !== "default") {
     cliArgs.push("-p", profile);
   }
@@ -163,10 +163,10 @@ export function runCronCommand(
 
   return new Promise((resolve) => {
     execFile(
-      FLUX AGENT_PYTHON,
+      OMNIWORKER_PYTHON,
       cliArgs,
       {
-        cwd: join(FLUX AGENT_HOME, "flux-agent-agent"),
+        cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
         timeout: 15000,
         ...HIDDEN_SUBPROCESS_OPTIONS,
       },

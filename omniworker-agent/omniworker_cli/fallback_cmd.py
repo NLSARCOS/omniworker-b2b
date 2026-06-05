@@ -85,7 +85,7 @@ def _extract_fallback_from_model_cfg(model_cfg: Any) -> Optional[Dict[str, Any]]
 def _snapshot_auth_active_provider() -> Any:
     """Return the current ``active_provider`` in auth.json, or a sentinel if unavailable."""
     try:
-        from flux-agent_cli.auth import _load_auth_store
+        from omniworker_cli.auth import _load_auth_store
         store = _load_auth_store()
         return store.get("active_provider")
     except Exception:
@@ -95,7 +95,7 @@ def _snapshot_auth_active_provider() -> Any:
 def _restore_auth_active_provider(value: Any) -> None:
     """Write back a previously snapshotted ``active_provider`` value."""
     try:
-        from flux-agent_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+        from omniworker_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
         with _auth_store_lock():
             store = _load_auth_store()
             store["active_provider"] = value
@@ -113,7 +113,7 @@ def _restore_auth_active_provider(value: Any) -> None:
 
 def cmd_fallback_list(args) -> None:  # noqa: ARG001
     """Print the current fallback chain."""
-    from flux-agent_cli.config import load_config
+    from omniworker_cli.config import load_config
 
     config = load_config()
     chain = _read_chain(config)
@@ -153,8 +153,8 @@ def _describe_primary(config: Dict[str, Any]) -> Optional[str]:
 
 def cmd_fallback_add(args) -> None:
     """Launch the same picker as `hermes model`, then append the selection to the chain."""
-    from flux-agent_cli.main import _require_tty, select_provider_and_model
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.main import _require_tty, select_provider_and_model
+    from omniworker_cli.config import load_config, save_config
 
     _require_tty("fallback add")
 
@@ -233,7 +233,7 @@ def cmd_fallback_add(args) -> None:
 
 def _restore_model_cfg(model_before: Any) -> None:
     """Restore ``config["model"]`` to a previously-captured snapshot."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     cfg = load_config()
     if model_before is None:
@@ -245,7 +245,7 @@ def _restore_model_cfg(model_before: Any) -> None:
 
 def cmd_fallback_remove(args) -> None:  # noqa: ARG001
     """Pick an entry from the chain and remove it."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     config = load_config()
     chain = _read_chain(config)
@@ -260,7 +260,7 @@ def cmd_fallback_remove(args) -> None:  # noqa: ARG001
     choices.append("Cancel")
 
     try:
-        from flux-agent_cli.setup import _curses_prompt_choice
+        from omniworker_cli.setup import _curses_prompt_choice
         idx = _curses_prompt_choice("Select a fallback to remove:", choices, 0)
     except Exception:
         idx = _numbered_pick("Select a fallback to remove:", choices)
@@ -285,7 +285,7 @@ def cmd_fallback_remove(args) -> None:  # noqa: ARG001
 
 def cmd_fallback_clear(args) -> None:  # noqa: ARG001
     """Remove all fallback entries (with confirmation)."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     config = load_config()
     chain = _read_chain(config)

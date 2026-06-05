@@ -14,7 +14,7 @@ and add more tasks if the work isn't done yet.
 Design notes
 ------------
 
-* Mirrors the shape of ``flux-agent_cli/kanban_specify.py``: lazy aux
+* Mirrors the shape of ``omniworker_cli/kanban_specify.py``: lazy aux
   client import inside the function, lenient response parse, never
   raises on expected failure modes.
 
@@ -43,8 +43,8 @@ import re
 from dataclasses import dataclass
 from typing import Optional
 
-from flux-agent_cli import kanban_db as kb
-from flux-agent_cli import profiles as profiles_mod
+from omniworker_cli import kanban_db as kb
+from omniworker_cli import profiles as profiles_mod
 
 logger = logging.getLogger(__name__)
 
@@ -158,9 +158,9 @@ def _extract_json_blob(raw: str) -> Optional[dict]:
 
 
 def _profile_author() -> str:
-    """Mirror of ``flux-agent_cli.kanban._profile_author``."""
+    """Mirror of ``omniworker_cli.kanban._profile_author``."""
     return (
-        os.environ.get("FLUX AGENT_PROFILE")
+        os.environ.get("OMNIWORKER_PROFILE")
         or os.environ.get("USER")
         or "decomposer"
     )
@@ -168,7 +168,7 @@ def _profile_author() -> str:
 
 def _load_config() -> dict:
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         return load_config() or {}
     except Exception:
         return {}

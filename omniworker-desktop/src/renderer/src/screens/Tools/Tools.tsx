@@ -313,9 +313,9 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
   const loadToolsets = useCallback(async (): Promise<void> => {
     setLoading(true);
     const [list, mcp, settings] = await Promise.all([
-      window.flux-agentAPI.getToolsets(profile),
-      window.flux-agentAPI.listMcpServers(profile),
-      window.flux-agentAPI.getSmtpSettings(profile),
+      window.omniworkerAPI.getToolsets(profile),
+      window.omniworkerAPI.listMcpServers(profile),
+      window.omniworkerAPI.getSmtpSettings(profile),
     ]);
     setToolsets(list);
     setMcpServers(mcp);
@@ -343,7 +343,7 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
     setTestingSmtp(true);
     setSmtpTestResult(null);
     try {
-      const res = await window.flux-agentAPI.testSmtpConnection(
+      const res = await window.omniworkerAPI.testSmtpConnection(
         smtpHost,
         smtpPort,
         smtpEncryption,
@@ -361,7 +361,7 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
     setTestingImap(true);
     setImapTestResult(null);
     try {
-      const res = await window.flux-agentAPI.testSmtpConnection(
+      const res = await window.omniworkerAPI.testSmtpConnection(
         imapHost,
         imapPort,
         imapEncryption,
@@ -378,7 +378,7 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
   const handleSaveSmtpSettings = async () => {
     setSaveStatus("saving");
     try {
-      await window.flux-agentAPI.saveSmtpSettings({
+      await window.omniworkerAPI.saveSmtpSettings({
         smtp_host: smtpHost,
         smtp_port: Number(smtpPort),
         smtp_user: smtpUser,
@@ -393,7 +393,7 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 3000);
       
-      const list = await window.flux-agentAPI.getToolsets(profile);
+      const list = await window.omniworkerAPI.getToolsets(profile);
       setToolsets(list);
 
       if (onToggleToolset) {
@@ -412,7 +412,7 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
     setToolsets((prev) =>
       prev.map((t) => (t.key === key ? { ...t, enabled: !currentEnabled } : t)),
     );
-    await window.flux-agentAPI.setToolsetEnabled(key, !currentEnabled, profile);
+    await window.omniworkerAPI.setToolsetEnabled(key, !currentEnabled, profile);
     if (onToggleToolset) {
       onToggleToolset(key, !currentEnabled);
     }

@@ -53,10 +53,10 @@ def test_empty_string_and_dot_removed_from_sys_path():
         sys.path = original
 
 
-def test_flux-agent_src_root_inserted_at_front():
+def test_omniworker_src_root_inserted_at_front():
     original = sys.path[:]
     try:
-        fake_root = "/fake/flux-agent/src"
+        fake_root = "/fake/omniworker/src"
         with patch.dict(os.environ, {"OMNIWORKER_PYTHON_SRC_ROOT": fake_root}):
             _src_root = os.environ.get("OMNIWORKER_PYTHON_SRC_ROOT", "")
             if _src_root and _src_root not in sys.path:

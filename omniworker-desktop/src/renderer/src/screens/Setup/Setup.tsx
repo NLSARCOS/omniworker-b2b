@@ -60,13 +60,13 @@ function Setup({
       }
 
       // Guardamos la apikey como CUSTOM_API_KEY
-      await window.flux-agentAPI.setEnv("CUSTOM_API_KEY", apiKey.trim());
+      await window.omniworkerAPI.setEnv("CUSTOM_API_KEY", apiKey.trim());
 
       // Configuramos el provider a "custom" apuntando al Smart Router local
       const routerUrl = `http://127.0.0.1:8341/v1`;
-      await window.flux-agentAPI.setModelConfig(
+      await window.omniworkerAPI.setModelConfig(
         "custom",
-        "flux-agent", // Modelo por defecto (Flux Agent Normal)
+        "omniworker", // Modelo por defecto (Flux Agent Normal)
         routerUrl,
       );
 

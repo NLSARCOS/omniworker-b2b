@@ -15,7 +15,7 @@ When a cron job isn't behaving as expected, work through these checks in order. 
 ### Check 1: Verify the job exists and is active
 
 ```bash
-flux-agent cron list
+omniworker cron list
 ```
 
 Look for the job and confirm its state is `[active]` (not `[paused]` or `[completed]`). If it shows `[completed]`, the repeat count may be exhausted — edit the job to reset it.
@@ -38,7 +38,7 @@ If the job fires once and then disappears from the list, it's a one-shot schedul
 
 Cron jobs are fired by the gateway's background ticker thread, which ticks every 60 seconds. A regular CLI chat session does **not** automatically fire cron jobs.
 
-If you're expecting jobs to fire automatically, you need a running gateway (`flux-agent gateway` for foreground, or `flux-agent gateway start` for the installed service). For one-off debugging, you can manually trigger a tick with `flux-agent cron tick`.
+If you're expecting jobs to fire automatically, you need a running gateway (`omniworker gateway` for foreground, or `omniworker gateway start` for the installed service). For one-off debugging, you can manually trigger a tick with `omniworker cron tick`.
 
 ### Check 4: Check the system clock and timezone
 
@@ -46,7 +46,7 @@ Jobs use the local timezone. If your machine's clock is wrong or in a different 
 
 ```bash
 date
-flux-agent cron list   # Compare next_run times with local time
+omniworker cron list   # Compare next_run times with local time
 ```
 
 ---
@@ -59,20 +59,20 @@ Delivery targets are case-sensitive and require the correct platform to be confi
 
 | Target | Requires |
 |--------|----------|
-| `telegram` | `TELEGRAM_BOT_TOKEN` in `~/.flux-agent/.env` |
-| `discord` | `DISCORD_BOT_TOKEN` in `~/.flux-agent/.env` |
-| `slack` | `SLACK_BOT_TOKEN` in `~/.flux-agent/.env` |
+| `telegram` | `TELEGRAM_BOT_TOKEN` in `~/.omniworker/.env` |
+| `discord` | `DISCORD_BOT_TOKEN` in `~/.omniworker/.env` |
+| `slack` | `SLACK_BOT_TOKEN` in `~/.omniworker/.env` |
 | `whatsapp` | WhatsApp gateway configured |
 | `signal` | Signal gateway configured |
 | `matrix` | Matrix homeserver configured |
 | `email` | SMTP configured in `config.yaml` |
 | `sms` | SMS provider configured |
-| `local` | Write access to `~/.flux-agent/cron/output/` |
+| `local` | Write access to `~/.omniworker/cron/output/` |
 | `origin` | Delivers to the chat where the job was created |
 
 Other supported platforms include `mattermost`, `homeassistant`, `dingtalk`, `feishu`, `wecom`, `weixin`, `bluebubbles`, `qqbot`, and `webhook`. You can also target a specific chat with `platform:chat_id` syntax (e.g., `telegram:-1001234567890`).
 
-If delivery fails, the job still runs — it just won't send anywhere. Check `flux-agent cron list` for updated `last_error` field (if available).
+If delivery fails, the job still runs — it just won't send anywhere. Check `omniworker cron list` for updated `last_error` field (if available).
 
 ### Check 2: Check `[SILENT]` usage
 
@@ -104,14 +104,14 @@ cron:
 ### Check 1: Verify skills are installed
 
 ```bash
-flux-agent skills list
+omniworker skills list
 ```
 
-Skills must be installed before they can be attached to cron jobs. If a skill is missing, install it first with `flux-agent skills install <skill-name>` or via `/skills` in the CLI.
+Skills must be installed before they can be attached to cron jobs. If a skill is missing, install it first with `omniworker skills install <skill-name>` or via `/skills` in the CLI.
 
 ### Check 2: Check skill name vs. skill folder name
 
-Skill names are case-sensitive and must match the installed skill's folder name. If your job specifies `ai-funding-daily-report` but the skill folder is `ai-funding-daily-report`, confirm the exact name from `flux-agent skills list`.
+Skill names are case-sensitive and must match the installed skill's folder name. If your job specifies `ai-funding-daily-report` but the skill folder is `ai-funding-daily-report`, confirm the exact name from `omniworker skills list`.
 
 ### Check 3: Skills that require interactive tools
 
@@ -138,26 +138,26 @@ In this example, `context-skill` loads before `target-skill`.
 If a job ran and failed, you may see error context in:
 
 1. The chat where the job delivers (if delivery succeeded)
-2. `~/.flux-agent/logs/agent.log` for scheduler messages (or `errors.log` for warnings)
-3. The job's `last_run` metadata via `flux-agent cron list`
+2. `~/.omniworker/logs/agent.log` for scheduler messages (or `errors.log` for warnings)
+3. The job's `last_run` metadata via `omniworker cron list`
 
 ### Check 2: Common error patterns
 
 **"No such file or directory" for scripts**
 The `script` path must be an absolute path (or relative to the Flux Agent config directory). Verify:
 ```bash
-ls ~/.flux-agent/scripts/your-script.py   # Must exist
-flux-agent cron edit <job_id> --script ~/.flux-agent/scripts/your-script.py
+ls ~/.omniworker/scripts/your-script.py   # Must exist
+omniworker cron edit <job_id> --script ~/.omniworker/scripts/your-script.py
 ```
 
 **"Skill not found" at job execution**
-The skill must be installed on the machine running the scheduler. If you move between machines, skills don't automatically sync — reinstall them with `flux-agent skills install <skill-name>`.
+The skill must be installed on the machine running the scheduler. If you move between machines, skills don't automatically sync — reinstall them with `omniworker skills install <skill-name>`.
 
 **Job runs but delivers nothing**
 Likely a delivery target issue (see Delivery Failures above) or a silently suppressed response (`[SILENT]`).
 
 **Job hangs or times out**
-The scheduler uses an inactivity-based timeout (default 600s, configurable via `FLUX AGENT_CRON_TIMEOUT` env var, `0` for unlimited). The agent can run as long as it's actively calling tools — the timer only fires after sustained inactivity. Long-running jobs should use scripts to handle data collection and deliver only the result.
+The scheduler uses an inactivity-based timeout (default 600s, configurable via `OMNIWORKER_CRON_TIMEOUT` env var, `0` for unlimited). The agent can run as long as it's actively calling tools — the timer only fires after sustained inactivity. Long-running jobs should use scripts to handle data collection and deliver only the result.
 
 ### Check 3: Lock contention
 
@@ -165,17 +165,17 @@ The scheduler uses file-based locking to prevent overlapping ticks. If two gatew
 
 Kill duplicate gateway processes:
 ```bash
-ps aux | grep flux-agent
+ps aux | grep omniworker
 # Kill duplicate processes, keep only one
 ```
 
 ### Check 4: Permissions on jobs.json
 
-Jobs are stored in `~/.flux-agent/cron/jobs.json`. If this file is not readable/writable by your user, the scheduler will fail silently:
+Jobs are stored in `~/.omniworker/cron/jobs.json`. If this file is not readable/writable by your user, the scheduler will fail silently:
 
 ```bash
-ls -la ~/.flux-agent/cron/jobs.json
-chmod 600 ~/.flux-agent/cron/jobs.json   # Your user should own it
+ls -la ~/.omniworker/cron/jobs.json
+chmod 600 ~/.omniworker/cron/jobs.json   # Your user should own it
 ```
 
 ---
@@ -199,11 +199,11 @@ Scripts that dump megabytes of output will slow down the agent and may hit token
 ## Diagnostic Commands
 
 ```bash
-flux-agent cron list                    # Show all jobs, states, next_run times
-flux-agent cron run <job_id>            # Schedule for next tick (for testing)
-flux-agent cron edit <job_id>           # Fix configuration issues
-flux-agent logs                         # View recent Flux Agent logs
-flux-agent skills list                  # Verify installed skills
+omniworker cron list                    # Show all jobs, states, next_run times
+omniworker cron run <job_id>            # Schedule for next tick (for testing)
+omniworker cron edit <job_id>           # Fix configuration issues
+omniworker logs                         # View recent Flux Agent logs
+omniworker skills list                  # Verify installed skills
 ```
 
 ---
@@ -212,9 +212,9 @@ flux-agent skills list                  # Verify installed skills
 
 If you've worked through this guide and the issue persists:
 
-1. Run the job with `flux-agent cron run <job_id>` (fires on next gateway tick) and watch for errors in the chat output
-2. Check `~/.flux-agent/logs/agent.log` for scheduler messages and `~/.flux-agent/logs/errors.log` for warnings
-3. Open an issue at [github.com/Flux Agent/flux-agent-agent](https://github.com/Flux Agent/flux-agent-agent) with:
+1. Run the job with `omniworker cron run <job_id>` (fires on next gateway tick) and watch for errors in the chat output
+2. Check `~/.omniworker/logs/agent.log` for scheduler messages and `~/.omniworker/logs/errors.log` for warnings
+3. Open an issue at [github.com/Flux Agent/omniworker-agent](https://github.com/Flux Agent/omniworker-agent) with:
    - The job ID and schedule
    - The delivery target
    - What you expected vs. what happened

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   try {
     // Obtenemos el latest release desde la API de GitHub
     const res = await fetch(
-      "https://api.github.com/repos/Simplex-lat/flux-agent-releases/releases/latest",
+      "https://api.github.com/repos/Simplex-lat/omniworker-releases/releases/latest",
       {
         headers: {
           "User-Agent": "Flux Agent-SaaS-AutoUpdater",
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
     if (!asset) {
       // Si no existe compilado para este OS todavía, mandamos al panel de releases por defecto
-      return NextResponse.redirect("https://github.com/Simplex-lat/flux-agent-releases/releases/latest");
+      return NextResponse.redirect("https://github.com/Simplex-lat/omniworker-releases/releases/latest");
     }
 
     // Redirigimos directamente al archivo .exe / .dmg
@@ -46,6 +46,6 @@ export async function GET(request: Request) {
 
   } catch (error) {
     console.error("Error fetching release:", error);
-    return NextResponse.redirect("https://github.com/Simplex-lat/flux-agent-releases/releases/latest");
+    return NextResponse.redirect("https://github.com/Simplex-lat/omniworker-releases/releases/latest");
   }
 }

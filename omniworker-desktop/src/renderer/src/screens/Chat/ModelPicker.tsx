@@ -1,25 +1,25 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
-interface Flux AgentModel {
+interface OmniWorkerModel {
   id: string;
   label: string;
   provider: string;
   model: string;
 }
 
-const FLUX AGENT_MODELS: Flux AgentModel[] = [
+const OMNIWORKER_MODELS: OmniWorkerModel[] = [
   {
     id: "normal",
     label: "Flux Agent Normal",
-    provider: "flux-agent",
-    model: "flux-agent",
+    provider: "omniworker",
+    model: "omniworker",
   },
   {
     id: "code",
     label: "Flux Agent Code",
-    provider: "flux-agent",
-    model: "flux-agent-code",
+    provider: "omniworker",
+    model: "omniworker-code",
   },
 ];
 
@@ -33,9 +33,9 @@ interface ModelPickerProps {
 }
 
 function getDisplayLabel(model: string): string {
-  const found = FLUX AGENT_MODELS.find((m) => m.model === model);
+  const found = OMNIWORKER_MODELS.find((m) => m.model === model);
   if (found) return found.label;
-  if (model === "flux-agent-code") return "Flux Agent Code";
+  if (model === "omniworker-code") return "Flux Agent Code";
   return "Flux Agent Normal";
 }
 
@@ -64,7 +64,7 @@ export const ModelPicker = memo(function ModelPicker({
     setIsOpen((v) => !v);
   }
 
-  function select(m: Flux AgentModel): void {
+  function select(m: OmniWorkerModel): void {
     onSelectModel(m.provider, m.model, currentBaseUrl);
     setIsOpen(false);
   }
@@ -82,7 +82,7 @@ export const ModelPicker = memo(function ModelPicker({
         <div className="chat-model-dropdown">
           <div className="chat-model-group">
             <div className="chat-model-group-label">Flux Agent</div>
-            {FLUX AGENT_MODELS.map((m) => {
+            {OMNIWORKER_MODELS.map((m) => {
               const active = currentModel === m.model;
               return (
                 <button

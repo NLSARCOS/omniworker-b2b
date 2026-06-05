@@ -26,12 +26,12 @@ import pytest
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def _isolate_flux-agent_home(tmp_path, monkeypatch):
-    """Redirect FLUX AGENT_HOME to a temp directory."""
-    monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
+def _isolate_omniworker_home(tmp_path, monkeypatch):
+    """Redirect OMNIWORKER_HOME to a temp directory."""
+    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
     try:
-        import flux-agent_constants
-        monkeypatch.setattr(flux-agent_constants, "get_flux-agent_home", lambda: tmp_path)
+        import omniworker_constants
+        monkeypatch.setattr(omniworker_constants, "get_omniworker_home", lambda: tmp_path)
     except (ImportError, AttributeError):
         pass
     return tmp_path
@@ -123,7 +123,7 @@ def populated_sessions_dir(sessions_dir, sample_sessions):
 
 
 def _create_test_db(db_path, session_id, messages):
-    """Create a minimal SQLite DB mimicking flux-agent_state schema."""
+    """Create a minimal SQLite DB mimicking omniworker_state schema."""
     conn = sqlite3.connect(str(db_path))
     conn.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
@@ -1005,13 +1005,13 @@ class TestCliIntegration:
         assert args.verbose is True
 
     def test_dispatcher_routes_serve(self, monkeypatch, tmp_path):
-        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
         mock_run = MagicMock()
         monkeypatch.setattr("mcp_serve.run_mcp_server", mock_run)
 
         import argparse
         args = argparse.Namespace(mcp_action="serve", verbose=True)
-        from flux-agent_cli.mcp_config import mcp_command
+        from omniworker_cli.mcp_config import mcp_command
         mcp_command(args)
         mock_run.assert_called_once_with(verbose=True)
 

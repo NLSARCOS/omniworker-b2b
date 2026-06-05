@@ -19,10 +19,10 @@ import pytest
 # ---------------------------------------------------------------------------
 
 def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
-    """Normal `flux-agent chat` sessions (no OMNIWORKER_KANBAN_TASK) must have
+    """Normal `omniworker chat` sessions (no OMNIWORKER_KANBAN_TASK) must have
     zero kanban_* tools in their schema."""
     monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
 
@@ -31,7 +31,7 @@ def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("flux-agent-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("omniworker-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     assert kanban == set(), (
@@ -42,7 +42,7 @@ def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
 def test_kanban_tools_visible_with_env_var(monkeypatch, tmp_path):
     """Worker sessions get task lifecycle tools, not board-routing tools."""
     monkeypatch.setenv("OMNIWORKER_KANBAN_TASK", "t_fake")
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
 
@@ -51,7 +51,7 @@ def test_kanban_tools_visible_with_env_var(monkeypatch, tmp_path):
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("flux-agent-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("omniworker-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     expected = {
@@ -69,7 +69,7 @@ def test_worker_with_kanban_toolset_still_hides_board_routing(monkeypatch, tmp_p
     worker and must not see kanban_list / kanban_unblock.
     """
     monkeypatch.setenv("OMNIWORKER_KANBAN_TASK", "t_fake")
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     (home / "config.yaml").write_text("toolsets:\n  - kanban\n")
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
@@ -79,7 +79,7 @@ def test_worker_with_kanban_toolset_still_hides_board_routing(monkeypatch, tmp_p
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("flux-agent-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("omniworker-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     assert {
@@ -94,7 +94,7 @@ def test_worker_with_kanban_toolset_still_hides_board_routing(monkeypatch, tmp_p
 def test_kanban_tools_visible_with_toolset_config(monkeypatch, tmp_path):
     """Orchestrator profiles with toolsets: [kanban] see all kanban tools."""
     monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     (home / "config.yaml").write_text("toolsets:\n  - kanban\n")
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
@@ -104,7 +104,7 @@ def test_kanban_tools_visible_with_toolset_config(monkeypatch, tmp_path):
     from toolsets import resolve_toolset
 
     invalidate_check_fn_cache()
-    schema = registry.get_definitions(set(resolve_toolset("flux-agent-cli")), quiet=True)
+    schema = registry.get_definitions(set(resolve_toolset("omniworker-cli")), quiet=True)
     names = {s["function"].get("name") for s in schema if "function" in s}
     kanban = {n for n in names if n and n.startswith("kanban_")}
     expected = {
@@ -124,14 +124,14 @@ def test_kanban_tools_visible_with_toolset_config(monkeypatch, tmp_path):
 def worker_env(monkeypatch, tmp_path):
     """Simulate being a worker: OMNIWORKER_HOME isolated, OMNIWORKER_KANBAN_TASK set
     after we've created the task."""
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     monkeypatch.setenv("OMNIWORKER_PROFILE", "test-worker")
     from pathlib import Path as _Path
     monkeypatch.setattr(_Path, "home", lambda: tmp_path)
 
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     kb._INITIALIZED_PATHS.clear()
     kb.init_db()
     conn = kb.connect()
@@ -157,7 +157,7 @@ def test_show_defaults_to_env_task_id(worker_env):
 
 def test_show_explicit_task_id(worker_env):
     """Peek at a different task than the one in env."""
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="other task", assignee="peer")
@@ -172,7 +172,7 @@ def test_show_explicit_task_id(worker_env):
 def test_list_filters_tasks(monkeypatch, worker_env):
     """kanban_list gives orchestrators filtered board discovery."""
     monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         a = kb.create_task(conn, title="alpha", assignee="factory", priority=5)
@@ -216,7 +216,7 @@ def test_list_rejects_bad_limit(monkeypatch, worker_env):
 
 def test_list_parses_include_archived_string_false(monkeypatch, worker_env):
     monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         live = kb.create_task(conn, title="live task", assignee="factory")
@@ -237,7 +237,7 @@ def test_list_parses_include_archived_string_false(monkeypatch, worker_env):
 
 def test_list_parses_include_archived_string_true(monkeypatch, worker_env):
     monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         live = kb.create_task(conn, title="live task", assignee="factory")
@@ -273,7 +273,7 @@ def test_complete_happy_path(worker_env):
     assert d["ok"] is True
     assert d["task_id"] == worker_env
     # Verify via kernel
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         run = kb.latest_run(conn, worker_env)
@@ -289,7 +289,7 @@ def test_complete_metadata_round_trips_through_show(worker_env):
     from tools import kanban_tools as kt
 
     handoff = {
-        "changed_files": ["flux-agent_cli/kanban.py"],
+        "changed_files": ["omniworker_cli/kanban.py"],
         "verification": ["pytest tests/tools/test_kanban_tools.py -q"],
         "dependencies": [],
         "blocked_reason": None,
@@ -337,7 +337,7 @@ def test_complete_phantom_card_message_advertises_retry(worker_env):
     where the previous wording read like a terminal failure and workers
     routinely abandoned the run instead of trying again.
     """
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     from tools import kanban_tools as kt
 
     out = kt._handle_complete({
@@ -369,7 +369,7 @@ def test_complete_retry_with_empty_created_cards_succeeds(worker_env):
     """After a phantom rejection, retrying kanban_complete with
     created_cards=[] (the documented escape hatch) must complete the
     task. Regression for #22923."""
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     from tools import kanban_tools as kt
 
     # Hit the gate first.
@@ -397,7 +397,7 @@ def test_complete_retry_with_corrected_created_cards_succeeds(worker_env):
     """After a phantom rejection, retrying kanban_complete with a
     corrected created_cards list (phantom ids removed) must complete the
     task. Regression for #22923."""
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     from tools import kanban_tools as kt
 
     # Create a real child via the tool so it gets the worker-profile
@@ -435,7 +435,7 @@ def test_block_happy_path(worker_env):
     out = kt._handle_block({"reason": "need clarification"})
     d = json.loads(out)
     assert d["ok"] is True
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         assert kb.get_task(conn, worker_env).status == "blocked"
@@ -476,7 +476,7 @@ def test_heartbeat_extends_claim_expires(worker_env):
     static while last_heartbeat_at advanced.
     """
     import time as _time
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     from tools import kanban_tools as kt
 
     # Rewind claim_expires into the past so any forward movement is
@@ -529,7 +529,7 @@ def test_comment_happy_path(worker_env):
     d = json.loads(out)
     assert d["ok"] is True
     assert d["comment_id"]
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         comments = kb.list_comments(conn, worker_env)
@@ -550,22 +550,22 @@ def test_comment_rejects_empty_body(worker_env):
 def test_comment_ignores_caller_supplied_author(worker_env):
     """``args["author"]`` is no longer honored — the author is always
     derived from ``OMNIWORKER_PROFILE`` so a worker can't forge a comment
-    under an authoritative-looking name like ``flux-agent-system`` and
+    under an authoritative-looking name like ``omniworker-system`` and
     poison the next worker's prompt context. Cross-task commenting
     itself remains unrestricted (see #19713); only the author override
     is removed.
     """
     from tools import kanban_tools as kt
     out = kt._handle_comment({
-        "task_id": worker_env, "body": "hi", "author": "flux-agent-system",
+        "task_id": worker_env, "body": "hi", "author": "omniworker-system",
     })
     assert json.loads(out)["ok"]
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         comments = kb.list_comments(conn, worker_env)
         # Author comes from OMNIWORKER_PROFILE in the fixture, not the
-        # caller-supplied "flux-agent-system" override.
+        # caller-supplied "omniworker-system" override.
         assert comments[0].author == "test-worker"
     finally:
         conn.close()
@@ -592,7 +592,7 @@ def test_create_happy_path(worker_env):
     assert d["ok"] is True
     assert d["task_id"]
     assert d["status"] == "todo"  # parent isn't done yet
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         child = kb.get_task(conn, d["task_id"])
@@ -621,7 +621,7 @@ def test_create_rejects_non_list_parents(worker_env):
 
 def test_create_parses_triage_string_false(worker_env):
     from tools import kanban_tools as kt
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     out = kt._handle_create({
         "title": "not triage",
         "assignee": "peer",
@@ -639,7 +639,7 @@ def test_create_parses_triage_string_false(worker_env):
 
 def test_create_parses_triage_string_true(worker_env):
     from tools import kanban_tools as kt
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     out = kt._handle_create({
         "title": "needs triage",
         "assignee": "peer",
@@ -677,7 +677,7 @@ def test_create_accepts_string_parent(worker_env):
 def test_create_accepts_skills_list(worker_env):
     """Tool writes the per-task skills through to the kernel."""
     from tools import kanban_tools as kt
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     out = kt._handle_create({
         "title": "skilled",
         "assignee": "linguist",
@@ -693,7 +693,7 @@ def test_create_accepts_skills_list(worker_env):
 def test_create_accepts_skills_string(worker_env):
     """Convenience: a single skill name as string is coerced to [name]."""
     from tools import kanban_tools as kt
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     out = kt._handle_create({
         "title": "one-skill",
         "assignee": "a",
@@ -716,7 +716,7 @@ def test_create_rejects_non_list_skills(worker_env):
 
 
 def test_link_happy_path(worker_env):
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         a = kb.create_task(conn, title="A", assignee="x")
@@ -743,7 +743,7 @@ def test_link_rejects_missing_args(worker_env):
 
 def test_link_rejects_cycle(worker_env):
     """A → B, then try to link B → A."""
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         a = kb.create_task(conn, title="A", assignee="x")
@@ -757,7 +757,7 @@ def test_link_rejects_cycle(worker_env):
 
 def test_unblock_happy_path(monkeypatch, worker_env):
     monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         tid = kb.create_task(conn, title="blocked", assignee="worker")
@@ -820,7 +820,7 @@ def test_worker_lifecycle_through_tools(worker_env):
     assert comp["ok"]
 
     # Verify final state
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         parent = kb.get_task(conn, worker_env)
@@ -852,7 +852,7 @@ def test_kanban_guidance_not_in_normal_prompt(monkeypatch, tmp_path):
     """A normal chat session (no OMNIWORKER_KANBAN_TASK) must NOT have
     KANBAN_GUIDANCE in its system prompt."""
     monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     from pathlib import Path as _P
@@ -875,7 +875,7 @@ def test_kanban_guidance_in_worker_prompt(monkeypatch, tmp_path):
     """A worker session (OMNIWORKER_KANBAN_TASK set) MUST have the full
     lifecycle guidance in its system prompt."""
     monkeypatch.setenv("OMNIWORKER_KANBAN_TASK", "t_fake")
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     from pathlib import Path as _P
@@ -905,7 +905,7 @@ def test_kanban_guidance_prompt_size_bounded(monkeypatch, tmp_path):
     """Sanity: the guidance block is under 4 KB so it doesn't blow
     up the cached prompt."""
     monkeypatch.setenv("OMNIWORKER_KANBAN_TASK", "t_fake")
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     from pathlib import Path as _P
@@ -936,7 +936,7 @@ def test_kanban_guidance_prompt_size_bounded(monkeypatch, tmp_path):
 
 def test_worker_complete_rejects_foreign_task_id(worker_env):
     """A worker cannot complete a task that isn't its own (#19534)."""
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="sibling")
@@ -961,7 +961,7 @@ def test_worker_complete_rejects_foreign_task_id(worker_env):
 
 def test_worker_block_rejects_foreign_task_id(worker_env):
     """A worker cannot block a task that isn't its own (#19534)."""
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="sibling")
@@ -984,7 +984,7 @@ def test_worker_block_rejects_foreign_task_id(worker_env):
 
 def test_worker_heartbeat_rejects_foreign_task_id(worker_env):
     """A worker cannot heartbeat a task that isn't its own (#19534)."""
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="sibling")
@@ -1009,7 +1009,7 @@ def test_worker_can_comment_on_foreign_task(worker_env):
     so a future change accidentally adding ``_enforce_worker_task_ownership``
     to ``_handle_comment`` would fail CI immediately.
     """
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="sibling")
@@ -1044,7 +1044,7 @@ def test_worker_unblock_rejects_foreign_task_id(worker_env):
     cross-task-ownership refusal. Either is fine — the property we're
     pinning is "worker cannot mutate foreign task via kanban_unblock".
     """
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     conn = kb.connect()
     try:
         other = kb.create_task(conn, title="blocked sibling", assignee="peer")
@@ -1078,8 +1078,8 @@ def test_worker_complete_own_task_still_works(worker_env):
 
 def test_worker_complete_rejects_stale_run_id(worker_env, monkeypatch):
     """A retried worker cannot complete the task using an old run token."""
-    from flux-agent_cli import kanban_db as kb
-    import flux-agent_cli.kanban_db as _kb
+    from omniworker_cli import kanban_db as kb
+    import omniworker_cli.kanban_db as _kb
 
     conn = kb.connect()
     try:
@@ -1118,13 +1118,13 @@ def test_orchestrator_complete_any_task_allowed(monkeypatch, tmp_path):
     """Orchestrator profiles (no OMNIWORKER_KANBAN_TASK) can still complete
     any task via explicit task_id. The check only applies to workers."""
     monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     from pathlib import Path as _P
     monkeypatch.setattr(_P, "home", lambda: tmp_path)
 
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
     kb._INITIALIZED_PATHS.clear()
     kb.init_db()
     conn = kb.connect()

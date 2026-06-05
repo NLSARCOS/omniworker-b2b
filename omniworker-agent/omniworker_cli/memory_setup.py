@@ -13,7 +13,7 @@ import sys
 import shlex
 from pathlib import Path
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 
 
 # ---------------------------------------------------------------------------
@@ -26,7 +26,7 @@ def _curses_select(title: str, items: list[tuple[str, str]], default: int = 0) -
     items: list of (label, description) tuples.
     Returns selected index, or default on escape/quit.
     """
-    from flux-agent_cli.curses_ui import curses_radiolist
+    from omniworker_cli.curses_ui import curses_radiolist
     # Format (label, desc) tuples into display strings
     display_items = [
         f"{label}  {desc}" if desc else label
@@ -185,7 +185,7 @@ def _get_available_providers() -> list:
 
 def cmd_setup_provider(provider_name: str) -> None:
     """Run memory setup for a specific provider, skipping the picker."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     providers = _get_available_providers()
     match = None
@@ -208,8 +208,8 @@ def cmd_setup_provider(provider_name: str) -> None:
         config["memory"] = {}
 
     if hasattr(provider, "post_setup"):
-        flux-agent_home = str(get_flux-agent_home())
-        provider.post_setup(flux-agent_home, config)
+        omniworker_home = str(get_omniworker_home())
+        provider.post_setup(omniworker_home, config)
         return
 
     # Fallback: generic schema-based setup (same as cmd_setup)
@@ -221,7 +221,7 @@ def cmd_setup_provider(provider_name: str) -> None:
 
 def cmd_setup(args) -> None:
     """Interactive memory provider setup wizard."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     providers = _get_available_providers()
 
@@ -259,8 +259,8 @@ def cmd_setup(args) -> None:
     # If the provider has a post_setup hook, delegate entirely to it.
     # The hook handles its own config, connection test, and activation.
     if hasattr(provider, "post_setup"):
-        flux-agent_home = str(get_flux-agent_home())
-        provider.post_setup(flux-agent_home, config)
+        omniworker_home = str(get_omniworker_home())
+        provider.post_setup(omniworker_home, config)
         return
 
     schema = provider.get_config_schema() if hasattr(provider, "get_config_schema") else []
@@ -269,7 +269,7 @@ def cmd_setup(args) -> None:
     if not isinstance(provider_config, dict):
         provider_config = {}
 
-    env_path = get_flux-agent_home() / ".env"
+    env_path = get_omniworker_home() / ".env"
     env_writes = {}
 
     if schema:
@@ -336,10 +336,10 @@ def cmd_setup(args) -> None:
     save_config(config)
 
     # Write non-secret config to provider's native location
-    flux-agent_home = str(get_flux-agent_home())
+    omniworker_home = str(get_omniworker_home())
     if provider_config and hasattr(provider, "save_config"):
         try:
-            provider.save_config(provider_config, flux-agent_home)
+            provider.save_config(provider_config, omniworker_home)
         except Exception as e:
             print(f"  Failed to write provider config: {e}")
 
@@ -393,7 +393,7 @@ def _write_env_vars(env_path: Path, env_writes: dict) -> None:
 
 def cmd_status(args) -> None:
     """Show current memory provider config."""
-    from flux-agent_cli.config import load_config
+    from omniworker_cli.config import load_config
 
     config = load_config()
     mem_config = config.get("memory", {})

@@ -21,7 +21,7 @@ Design notes / invariants:
   prompt and also pauses the goal loop for that turn (we still re-judge
   after, so if the user's message happens to complete the goal the judge
   will say ``done``).
-- This module has zero hard dependency on ``cli.Flux AgentCLI`` or the gateway
+- This module has zero hard dependency on ``cli.OmniWorkerCLI`` or the gateway
   runner — both wire the same ``GoalManager`` in.
 
 Nothing in this module touches the agent's system prompt or toolset.
@@ -207,19 +207,19 @@ _DB_CACHE: Dict[str, Any] = {}
 
 
 def _get_session_db() -> Optional[Any]:
-    """Return a SessionDB instance for the current FLUX AGENT_HOME.
+    """Return a SessionDB instance for the current OMNIWORKER_HOME.
 
     SessionDB has no built-in singleton, but opening a new connection per
     /goal call would thrash the file. We cache one instance per
-    ``flux-agent_home`` path so profile switches still pick up the right DB.
+    ``omniworker_home`` path so profile switches still pick up the right DB.
     Defensive against import/instantiation failures so tests and
     non-standard launchers can still use the GoalManager.
     """
     try:
-        from flux-agent_constants import get_flux-agent_home
-        from flux-agent_state import SessionDB
+        from omniworker_constants import get_omniworker_home
+        from omniworker_state import SessionDB
 
-        home = str(get_flux-agent_home())
+        home = str(get_omniworker_home())
     except Exception as exc:  # pragma: no cover
         logger.debug("GoalManager: SessionDB bootstrap failed (%s)", exc)
         return None
@@ -303,7 +303,7 @@ def _goal_judge_max_tokens() -> int:
     back to the default rather than crashing the goal loop.
     """
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
 
         cfg = load_config()
         value = (

@@ -25,7 +25,7 @@ import os
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Dict, List
-from flux-agent_cli.config import cfg_get
+from omniworker_cli.config import cfg_get
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +48,9 @@ def _get_registered() -> Dict[str, str]:
 _config_files: List[Dict[str, str]] | None = None
 
 
-def _resolve_flux-agent_home() -> Path:
-    from flux-agent_constants import get_flux-agent_home
-    return get_flux-agent_home()
+def _resolve_omniworker_home() -> Path:
+    from omniworker_constants import get_omniworker_home
+    return get_omniworker_home()
 
 
 def register_credential_file(
@@ -67,7 +67,7 @@ def register_credential_file(
     skill cannot declare ``required_credential_files: ['../../.ssh/id_rsa']``
     and exfiltrate sensitive host files into a container sandbox.
     """
-    flux-agent_home = _resolve_flux-agent_home()
+    omniworker_home = _resolve_omniworker_home()
 
     # Reject absolute paths — they bypass the OMNIWORKER_HOME sandbox entirely.
     if os.path.isabs(relative_path):
@@ -77,13 +77,13 @@ def register_credential_file(
         )
         return False
 
-    host_path = flux-agent_home / relative_path
+    host_path = omniworker_home / relative_path
 
     # Resolve symlinks and normalise ``..`` before the containment check so
     # that traversal like ``../. ssh/id_rsa`` cannot escape OMNIWORKER_HOME.
     from tools.path_security import validate_within_dir
 
-    containment_error = validate_within_dir(host_path, flux-agent_home)
+    containment_error = validate_within_dir(host_path, omniworker_home)
     if containment_error:
         logger.warning(
             "credential_files: rejected path traversal %r (%s)",
@@ -136,8 +136,8 @@ def _load_config_files() -> List[Dict[str, str]]:
 
     result: List[Dict[str, str]] = []
     try:
-        from flux-agent_cli.config import read_raw_config
-        flux-agent_home = _resolve_flux-agent_home()
+        from omniworker_cli.config import read_raw_config
+        omniworker_home = _resolve_omniworker_home()
         cfg = read_raw_config()
         cred_files = cfg_get(cfg, "terminal", "credential_files")
         if isinstance(cred_files, list):
@@ -151,8 +151,8 @@ def _load_config_files() -> List[Dict[str, str]]:
                             "credential_files: rejected absolute config path %r", rel,
                         )
                         continue
-                    host_path = flux-agent_home / rel
-                    containment_error = validate_within_dir(host_path, flux-agent_home)
+                    host_path = omniworker_home / rel
+                    containment_error = validate_within_dir(host_path, omniworker_home)
                     if containment_error:
                         logger.warning(
                             "credential_files: rejected config path traversal %r (%s)",
@@ -219,8 +219,8 @@ def get_skills_directory_mount(
     at ``<container_base>/external_skills/<index>``.
     """
     mounts = []
-    flux-agent_home = _resolve_flux-agent_home()
-    skills_dir = flux-agent_home / "skills"
+    omniworker_home = _resolve_omniworker_home()
+    skills_dir = omniworker_home / "skills"
     if skills_dir.is_dir():
         host_path = _safe_skills_path(skills_dir)
         mounts.append({
@@ -302,8 +302,8 @@ def iter_skills_files(
     """
     result: List[Dict[str, str]] = []
 
-    flux-agent_home = _resolve_flux-agent_home()
-    skills_dir = flux-agent_home / "skills"
+    omniworker_home = _resolve_omniworker_home()
+    skills_dir = omniworker_home / "skills"
     if skills_dir.is_dir():
         container_root = f"{container_base.rstrip('/')}/skills"
         for item in skills_dir.rglob("*"):
@@ -341,7 +341,7 @@ def iter_skills_files(
 # ---------------------------------------------------------------------------
 
 # The four cache subdirectories that should be mirrored into remote backends.
-# Each tuple is (new_subpath, old_name) matching flux-agent_constants.get_hermes_dir().
+# Each tuple is (new_subpath, old_name) matching omniworker_constants.get_hermes_dir().
 _CACHE_DIRS: list[tuple[str, str]] = [
     ("cache/documents", "document_cache"),
     ("cache/images", "image_cache"),
@@ -359,7 +359,7 @@ def get_cache_directory_mounts(
     ``container_path`` keys.  The host path is resolved via
     ``get_hermes_dir()`` for backward compatibility with old directory layouts.
     """
-    from flux-agent_constants import get_hermes_dir
+    from omniworker_constants import get_hermes_dir
 
     mounts: List[Dict[str, str]] = []
     for new_subpath, old_name in _CACHE_DIRS:
@@ -410,7 +410,7 @@ def iter_cache_files(
     Used by Modal to upload files individually and resync before each command.
     Skips symlinks.  The container paths use the new ``cache/<subdir>`` layout.
     """
-    from flux-agent_constants import get_hermes_dir
+    from omniworker_constants import get_hermes_dir
 
     result: List[Dict[str, str]] = []
     for new_subpath, old_name in _CACHE_DIRS:

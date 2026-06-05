@@ -256,7 +256,7 @@ class QQAdapter(BasePlatformAdapter):
 
         # Default interaction dispatcher: routes approval-button clicks to
         # tools.approval.resolve_gateway_approval() and update-prompt clicks
-        # to ~/.flux-agent/.update_response. Set here so the cross-adapter gateway
+        # to ~/.omniworker/.update_response. Set here so the cross-adapter gateway
         # contract (send_exec_approval / send_update_prompt) works out of the
         # box; callers can override with set_interaction_callback(None) or
         # register a custom handler.
@@ -711,8 +711,8 @@ class QQAdapter(BasePlatformAdapter):
                 "shard": [0, 1],
                 "properties": {
                     "$os": "macOS",
-                    "$browser": "flux-agent-agent",
-                    "$device": "flux-agent-agent",
+                    "$browser": "omniworker-agent",
+                    "$device": "omniworker-agent",
                 },
             },
         }
@@ -1017,8 +1017,8 @@ class QQAdapter(BasePlatformAdapter):
           :func:`tools.approval.resolve_gateway_approval`
           (unblocks the agent thread waiting on a dangerous-command approval).
         - ``update_prompt:<answer>`` →
-          writes the answer to ``~/.flux-agent/.update_response`` for the
-          detached ``flux-agent update --gateway`` process to consume.
+          writes the answer to ``~/.omniworker/.update_response`` for the
+          detached ``omniworker update --gateway`` process to consume.
         - Anything else is logged at DEBUG and ignored.
 
         Installed as the adapter's default interaction callback in
@@ -1073,13 +1073,13 @@ class QQAdapter(BasePlatformAdapter):
         """Atomically write the update-prompt answer to ``.update_response``.
 
         Mirrors the Discord / Telegram / Feishu adapters: the detached
-        ``flux-agent update --gateway`` watcher polls this file for a ``y``/``n``
+        ``omniworker update --gateway`` watcher polls this file for a ``y``/``n``
         response to its interactive prompts (stash-restore, config migration).
         Writes via ``tmp + rename`` so a partial write can't fool the reader.
         """
         try:
-            from flux-agent_constants import get_flux-agent_home
-            home = get_flux-agent_home()
+            from omniworker_constants import get_omniworker_home
+            home = get_omniworker_home()
             response_path = home / ".update_response"
             tmp = response_path.with_suffix(".tmp")
             tmp.write_text(answer)
@@ -2061,7 +2061,7 @@ class QQAdapter(BasePlatformAdapter):
                                  or ("glm-asr" if provider in {"zai", "glm"} else "whisper-1"),
                     }
 
-        # 2. QQ-specific env vars (set by `flux-agent setup gateway` / `flux-agent gateway`)
+        # 2. QQ-specific env vars (set by `omniworker setup gateway` / `omniworker gateway`)
         qq_stt_key = os.getenv("QQ_STT_API_KEY", "")
         if qq_stt_key:
             base_url = os.getenv(
@@ -2574,11 +2574,11 @@ class QQAdapter(BasePlatformAdapter):
         """Send a Yes/No update-confirmation prompt with inline buttons.
 
         Matches the cross-adapter contract used by
-        ``gateway/run.py``'s ``flux-agent update --gateway`` watcher. Button
+        ``gateway/run.py``'s ``omniworker update --gateway`` watcher. Button
         clicks surface as ``INTERACTION_CREATE`` with
         ``button_data = 'update_prompt:y'`` or ``'update_prompt:n'``;
         the adapter's interaction callback writes the answer to
-        ``~/.flux-agent/.update_response`` so the detached update process
+        ``~/.omniworker/.update_response`` so the detached update process
         can read it.
         """
         del session_key, metadata  # present for contract parity only.

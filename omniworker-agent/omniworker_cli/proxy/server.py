@@ -26,7 +26,7 @@ except ImportError:
     web = None  # type: ignore[assignment]
     AIOHTTP_AVAILABLE = False
 
-from flux-agent_cli.proxy.adapters.base import UpstreamAdapter
+from omniworker_cli.proxy.adapters.base import UpstreamAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +86,8 @@ def create_app(adapter: UpstreamAdapter) -> "web.Application":
     """Build the aiohttp application bound to a specific upstream adapter."""
     if not AIOHTTP_AVAILABLE:
         raise RuntimeError(
-            "aiohttp is required for `flux-agent proxy`. Install with: "
-            "pip install 'flux-agent-agent[messaging]' or `pip install aiohttp`."
+            "aiohttp is required for `omniworker proxy`. Install with: "
+            "pip install 'omniworker-agent[messaging]' or `pip install aiohttp`."
         )
 
     app = web.Application()
@@ -221,8 +221,8 @@ async def run_server(
     """
     if not AIOHTTP_AVAILABLE:
         raise RuntimeError(
-            "aiohttp is required for `flux-agent proxy`. Install with: "
-            "pip install 'flux-agent-agent[messaging]' or `pip install aiohttp`."
+            "aiohttp is required for `omniworker proxy`. Install with: "
+            "pip install 'omniworker-agent[messaging]' or `pip install aiohttp`."
         )
 
     app = create_app(adapter)

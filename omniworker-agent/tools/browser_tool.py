@@ -66,9 +66,9 @@ import requests
 from typing import Dict, Any, Optional, List, Tuple
 from pathlib import Path
 from agent.auxiliary_client import call_llm
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from utils import is_truthy_value
-from flux-agent_cli.config import cfg_get
+from omniworker_cli.config import cfg_get
 
 try:
     from tools.website_policy import check_website_access
@@ -163,10 +163,10 @@ def _discover_homebrew_node_dirs() -> tuple[str, ...]:
 
 def _browser_candidate_path_dirs() -> list[str]:
     """Return ordered browser CLI PATH candidates shared by discovery and execution."""
-    flux-agent_home = get_flux-agent_home()
-    hermes_node_bin = str(flux-agent_home / "node" / "bin")
-    hermes_node_root = str(flux-agent_home / "node")
-    hermes_nm_bin = str(flux-agent_home / "node_modules" / ".bin")
+    omniworker_home = get_omniworker_home()
+    hermes_node_bin = str(omniworker_home / "node" / "bin")
+    hermes_node_root = str(omniworker_home / "node")
+    hermes_nm_bin = str(omniworker_home / "node_modules" / ".bin")
     return [hermes_node_bin, hermes_node_root, hermes_nm_bin, *list(_discover_homebrew_node_dirs()), *_SANE_PATH_DIRS]
 
 
@@ -218,7 +218,7 @@ def _get_command_timeout() -> int:
     _command_timeout_resolved = True
     result = DEFAULT_COMMAND_TIMEOUT
     try:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
         cfg = read_raw_config()
         val = cfg_get(cfg, "browser", "command_timeout")
         if val is not None:
@@ -304,7 +304,7 @@ def _get_cdp_override() -> str:
         return _resolve_cdp_override(env_override)
 
     try:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
@@ -330,7 +330,7 @@ def _get_dialog_policy_config() -> Tuple[str, float]:
     )
 
     try:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
 
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {}) if isinstance(cfg, dict) else {}
@@ -486,7 +486,7 @@ def _ensure_browser_plugins_loaded() -> None:
     calls early-return inside `_ensure_plugins_discovered`.
     """
     try:
-        from flux-agent_cli.plugins import _ensure_plugins_discovered
+        from omniworker_cli.plugins import _ensure_plugins_discovered
 
         _ensure_plugins_discovered()
     except Exception as exc:
@@ -516,7 +516,7 @@ def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
 
     resolved: Optional[CloudBrowserProvider] = None
     try:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         provider_key = None
@@ -598,7 +598,7 @@ def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
     return _cached_cloud_provider
 
 
-from flux-agent_constants import is_termux as _is_termux_environment
+from omniworker_constants import is_termux as _is_termux_environment
 
 
 def _browser_install_hint() -> str:
@@ -664,7 +664,7 @@ def _get_browser_engine() -> str:
 
     # Config file takes priority
     try:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
         cfg = read_raw_config()
         val = cfg.get("browser", {}).get("engine")
         if val and str(val).strip():
@@ -992,7 +992,7 @@ def _auto_local_for_private_urls() -> bool:
 
     _auto_local_for_private_urls_resolved = True
     try:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         if isinstance(browser_cfg, dict) and "auto_local_for_private_urls" in browser_cfg:
@@ -1128,7 +1128,7 @@ def _allow_private_urls() -> bool:
     _allow_private_urls_resolved = True
     _cached_allow_private_urls = False  # safe default
     try:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
         cfg = read_raw_config()
         browser_cfg = cfg.get("browser", {})
         if isinstance(browser_cfg, dict):
@@ -1827,19 +1827,19 @@ def _find_agent_browser() -> str:
 
     # Nothing found — try lazy installation before giving up.
     try:
-        from flux-agent_cli.dep_ensure import ensure_dependency
+        from omniworker_cli.dep_ensure import ensure_dependency
         if ensure_dependency("browser"):
             recheck = shutil.which("agent-browser")
             if not recheck and extended_path:
                 recheck = shutil.which("agent-browser", path=extended_path)
             if not recheck:
-                hermes_nm = str(get_flux-agent_home() / "node_modules" / ".bin")
+                hermes_nm = str(get_omniworker_home() / "node_modules" / ".bin")
                 recheck = shutil.which("agent-browser", path=hermes_nm)
             if not recheck:
-                hermes_node_bin = str(get_flux-agent_home() / "node" / "bin")
+                hermes_node_bin = str(get_omniworker_home() / "node" / "bin")
                 recheck = shutil.which("agent-browser", path=hermes_node_bin)
             if not recheck:
-                hermes_node_root = str(get_flux-agent_home() / "node")
+                hermes_node_root = str(get_omniworker_home() / "node")
                 recheck = shutil.which("agent-browser", path=hermes_node_root)
             if recheck:
                 _cached_agent_browser = recheck
@@ -2946,15 +2946,15 @@ def _maybe_start_recording(task_id: str):
         if task_id in _recording_sessions:
             return
     try:
-        from flux-agent_cli.config import read_raw_config
-        flux-agent_home = get_flux-agent_home()
+        from omniworker_cli.config import read_raw_config
+        omniworker_home = get_omniworker_home()
         cfg = read_raw_config()
         record_enabled = cfg_get(cfg, "browser", "record_sessions", default=False)
 
         if not record_enabled:
             return
 
-        recordings_dir = flux-agent_home / "browser_recordings"
+        recordings_dir = omniworker_home / "browser_recordings"
         recordings_dir.mkdir(parents=True, exist_ok=True)
         _cleanup_old_recordings(max_age_hours=72)
 
@@ -3076,7 +3076,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
 
     import base64
     import uuid as uuid_mod
-    from flux-agent_constants import get_hermes_dir
+    from omniworker_constants import get_hermes_dir
     screenshots_dir = get_hermes_dir("cache/screenshots", "browser_screenshots")
     screenshot_path = screenshots_dir / f"browser_screenshot_{uuid_mod.uuid4().hex}.png"
     effective_task_id = _last_session_key(task_id or "default")
@@ -3104,7 +3104,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
             _lp_fallback_warning = fb_result.get("fallback_warning")
             fb_path = fb_result.get("data", {}).get("path", "")
             if fb_path and os.path.exists(fb_path):
-                from flux-agent_constants import get_hermes_dir
+                from omniworker_constants import get_hermes_dir
                 screenshots_dir = get_hermes_dir("cache/screenshots", "browser_screenshots")
                 screenshots_dir.mkdir(parents=True, exist_ok=True)
                 import shutil as _shutil_vision
@@ -3213,7 +3213,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
         vision_timeout = 120.0
         vision_temperature = 0.1
         try:
-            from flux-agent_cli.config import load_config
+            from omniworker_cli.config import load_config
             _cfg = load_config()
             _vision_cfg = cfg_get(_cfg, "auxiliary", "vision", default={})
             _vt = _vision_cfg.get("timeout")
@@ -3320,8 +3320,8 @@ def _cleanup_old_screenshots(screenshots_dir, max_age_hours=24):
 def _cleanup_old_recordings(max_age_hours=72):
     """Remove browser recordings older than max_age_hours to prevent disk bloat."""
     try:
-        flux-agent_home = get_flux-agent_home()
-        recordings_dir = flux-agent_home / "browser_recordings"
+        omniworker_home = get_omniworker_home()
+        recordings_dir = omniworker_home / "browser_recordings"
         if not recordings_dir.exists():
             return
         cutoff = time.time() - (max_age_hours * 3600)

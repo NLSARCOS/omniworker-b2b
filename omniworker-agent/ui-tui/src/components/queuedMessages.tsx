@@ -1,4 +1,4 @@
-import { Box, Text } from '@flux-agent/ink'
+import { Box, Text } from '@omniworker/ink'
 
 import { compactPreview } from '../lib/text.js'
 import type { Theme } from '../theme.js'

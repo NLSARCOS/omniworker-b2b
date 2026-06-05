@@ -34,7 +34,7 @@ function Chat({
   isPlanExpired,
 }: ChatProps): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
-  const [flux-agentSessionId, setFlux AgentSessionId] = useState<string | null>(
+  const [omniworkerSessionId, setOmniWorkerSessionId] = useState<string | null>(
     null,
   );
   const [toolProgress, setToolProgress] = useState<string | null>(null);
@@ -51,19 +51,19 @@ function Chat({
 
   useChatIPC({
     setMessages,
-    setFlux AgentSessionId,
+    setOmniWorkerSessionId,
     setToolProgress,
     setIsLoading,
     setUsage,
   });
 
-  // Reset flux-agent session when the parent clears messages (new chat).
+  // Reset omniworker session when the parent clears messages (new chat).
   // Effect-driven sync because `messages` is owned by the parent; a key-based
   // remount would discard unrelated local state (model picker, etc.).
   useEffect(() => {
     if (messages.length === 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFlux AgentSessionId(null);
+      setOmniWorkerSessionId(null);
     }
   }, [messages]);
 
@@ -91,11 +91,11 @@ function Chat({
 
   const handleClear = useCallback(() => {
     if (isLoading) {
-      window.flux-agentAPI.abortChat();
+      window.omniworkerAPI.abortChat();
       setIsLoading(false);
     }
     setMessages([]);
-    setFlux AgentSessionId(null);
+    setOmniWorkerSessionId(null);
     setUsage(null);
     setToolProgress(null);
   }, [isLoading, setMessages]);
@@ -111,7 +111,7 @@ function Chat({
 
   const actions = useChatActions({
     profile,
-    flux-agentSessionId,
+    omniworkerSessionId,
     messages,
     isLoading,
     setIsLoading,
@@ -158,7 +158,7 @@ function Chat({
         <ChatInput
           ref={chatInputRef}
           isLoading={isLoading}
-          hasSession={!!flux-agentSessionId}
+          hasSession={!!omniworkerSessionId}
           onSubmit={actions.handleSend}
           onQuickAsk={actions.handleQuickAsk}
           onAbort={actions.handleAbort}

@@ -1,6 +1,6 @@
 # Flux Agent Desktop
 
-<img width="100%" alt="FLUX AGENT DESKTOP" src="https://github.com/user-attachments/assets/80585955-3bae-4aee-af90-a1e61757ccb8" />
+<img width="100%" alt="OMNIWORKER DESKTOP" src="https://github.com/user-attachments/assets/80585955-3bae-4aee-af90-a1e61757ccb8" />
 
 ## 语言
 
@@ -9,13 +9,13 @@
 
 > **本项目仍在积极开发中。** 功能可能会变化，部分内容也可能出现问题。如果你遇到 bug 或有新的想法，欢迎在 GitHub 上提交 issue。
 
-Flux Agent Desktop 是一个桌面应用，用于通过原生桌面界面安装、配置并与 [Flux Agent Agent](https://github.com/Flux Agent/flux-agent-agent) 进行交互。
+Flux Agent Desktop 是一个桌面应用，用于通过原生桌面界面安装、配置并与 [Flux Agent Agent](https://github.com/Flux Agent/omniworker-agent) 进行交互。
 
-它把安装、提供商配置和日常使用整合到同一个图形界面中，而不是要求你手动维护 CLI。应用会调用官方 Flux Agent 安装脚本，将 Flux Agent 存储在 `~/.flux-agent` 中，并提供聊天、会话、档案、记忆、技能、工具和设置等 GUI 功能。
+它把安装、提供商配置和日常使用整合到同一个图形界面中，而不是要求你手动维护 CLI。应用会调用官方 Flux Agent 安装脚本，将 Flux Agent 存储在 `~/.omniworker` 中，并提供聊天、会话、档案、记忆、技能、工具和设置等 GUI 功能。
 
 ## 安装
 
-请从 [Releases](https://github.com/fathah/flux-agent-desktop/releases/) 页面下载最新构建版本。
+请从 [Releases](https://github.com/fathah/omniworker-desktop/releases/) 页面下载最新构建版本。
 
 | 平台  | 文件                  |
 | ----- | --------------------- |
@@ -45,7 +45,7 @@ Flux Agent Desktop 是一个桌面应用，用于通过原生桌面界面安装�
 
 首次启动时，应用会：
 
-1. 检查 `~/.flux-agent` 中是否已经安装 Flux Agent。
+1. 检查 `~/.omniworker` 中是否已经安装 Flux Agent。
 2. 如果尚未安装，则运行官方 Flux Agent 安装程序。
 3. 提示你选择 API 提供商或本地模型端点。
 4. 通过 Flux Agent 配置文件保存提供商配置和 API Key。
@@ -114,10 +114,10 @@ npm run build:linux
 
 Flux Agent 相关文件位于：
 
-- `~/.flux-agent`
-- `~/.flux-agent/.env`
-- `~/.flux-agent/config.yaml`
-- `~/.flux-agent/flux-agent-agent`
+- `~/.omniworker`
+- `~/.omniworker/.env`
+- `~/.omniworker/config.yaml`
+- `~/.omniworker/omniworker-agent`
 
 ## 主界面
 
@@ -138,10 +138,10 @@ Flux Agent 相关文件位于：
 
 ## 贡献
 
-欢迎贡献！请查看 [贡献指南](CONTRIBUTING.zh-CN.md) 开始参与。如果你不知道从哪里入手，可以先看看 [open issues](https://github.com/Flux Agent/flux-agent-desktop/issues)。如果你发现 bug 或希望提出功能请求，也欢迎 [提交 issue](https://github.com/Flux Agent/flux-agent-desktop/issues/new)。
+欢迎贡献！请查看 [贡献指南](CONTRIBUTING.zh-CN.md) 开始参与。如果你不知道从哪里入手，可以先看看 [open issues](https://github.com/Flux Agent/omniworker-desktop/issues)。如果你发现 bug 或希望提出功能请求，也欢迎 [提交 issue](https://github.com/Flux Agent/omniworker-desktop/issues/new)。
 
 ## 相关项目
 
 如需了解核心代理、文档和 CLI 工作流，请查看 Flux Agent Agent 主仓库：
 
-- https://github.com/Flux Agent/flux-agent-agent
+- https://github.com/Flux Agent/omniworker-agent

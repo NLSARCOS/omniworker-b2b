@@ -51,7 +51,7 @@ _STDERR_TAIL_LINES = 12
 # Permission profile mapping mirrors the docstring in PR proposal:
 # Flux Agent' tools.terminal.security_mode → Codex's permissions profile id.
 # Defaults if config is missing → workspace-write (matches Codex's own default).
-_FLUX AGENT_TO_CODEX_PERMISSION_PROFILE = {
+_OMNIWORKER_TO_CODEX_PERMISSION_PROFILE = {
     "auto": "workspace-write",
     "approval-required": "read-only-with-approval",
     "unrestricted": "full-access",
@@ -75,7 +75,7 @@ class TurnResult:
     # wedged (turn-level timeout fired, post-tool watchdog tripped, or
     # token-refresh failure killed the child). The caller should retire
     # the session so the next turn respawns codex from scratch instead
-    # of riding a CPU-spinning or auth-broken process. Mirrors flux-agent
+    # of riding a CPU-spinning or auth-broken process. Mirrors omniworker
     # beta.8's "retire timed-out app-server clients" fix.
     should_retire: bool = False
 
@@ -83,7 +83,7 @@ class TurnResult:
 # Markers we accept as terminal even when codex never emits turn/completed.
 # Some codex versions stream `<turn_aborted>` as raw text in agentMessage
 # items when an interrupt or upstream error tears the turn down before the
-# normal completion path fires. Mirrors flux-agent beta.8 fix.
+# normal completion path fires. Mirrors omniworker beta.8 fix.
 _TURN_ABORTED_MARKERS = ("<turn_aborted>", "<turn_aborted/>")
 
 
@@ -91,7 +91,7 @@ _TURN_ABORTED_MARKERS = ("<turn_aborted>", "<turn_aborted/>")
 # subprocess died because its OAuth credentials are no longer valid.
 # Kept conservative: we only redirect users to `codex login` when we're
 # reasonably sure that's the actual failure, otherwise we surface the
-# original error verbatim. Mirrors flux-agent beta.8's auth-refresh
+# original error verbatim. Mirrors omniworker beta.8's auth-refresh
 # classification.
 _OAUTH_REFRESH_FAILURE_HINTS = (
     "invalid_grant",
@@ -176,8 +176,8 @@ class CodexAppServerSession:
         self._codex_bin = codex_bin
         self._codex_home = codex_home
         self._permission_profile = (
-            permission_profile or _FLUX AGENT_TO_CODEX_PERMISSION_PROFILE.get(
-                os.environ.get("FLUX AGENT_TERMINAL_SECURITY_MODE", "auto"),
+            permission_profile or _OMNIWORKER_TO_CODEX_PERMISSION_PROFILE.get(
+                os.environ.get("OMNIWORKER_TERMINAL_SECURITY_MODE", "auto"),
                 "workspace-write",
             )
         )
@@ -210,9 +210,9 @@ class CodexAppServerSession:
                 codex_bin=self._codex_bin, codex_home=self._codex_home
             )
         self._client.initialize(
-            client_name="flux-agent",
+            client_name="omniworker",
             client_title="Flux Agent Agent",
-            client_version=_get_flux-agent_version(),
+            client_version=_get_omniworker_version(),
         )
         # Permission selection is intentionally NOT sent on thread/start.
         # Two reasons (live-tested against codex 0.130.0):
@@ -232,7 +232,7 @@ class CodexAppServerSession:
         params: dict[str, Any] = {"cwd": self._cwd}
         result = self._client.request("thread/start", params, timeout=15)
         # Cross-fill thread.id/sessionId — different codex versions have
-        # serialized this under either key. Mirrors flux-agent beta.8's
+        # serialized this under either key. Mirrors omniworker beta.8's
         # tolerance fix so future codex drops/renames don't KeyError us
         # at handshake time.
         thread_obj = result.get("thread") or {}
@@ -340,7 +340,7 @@ class CodexAppServerSession:
         post_tool_quiet_timeout: if codex emits a tool completion and then
         goes quiet for this many seconds without emitting another item or
         `turn/completed`, fast-fail and mark the session for retirement.
-        Mirrors flux-agent beta.8's post-tool completion watchdog (#81697)
+        Mirrors omniworker beta.8's post-tool completion watchdog (#81697)
         so a wedged codex doesn't burn the full turn deadline.
         """
         # Pre-create the result so startup failures (codex subprocess can't
@@ -627,14 +627,14 @@ class CodexAppServerSession:
         elif method == "mcpServer/elicitation/request":
             # Codex's MCP layer asks the user for structured input on
             # behalf of an MCP server (e.g. tool-call confirmation,
-            # OAuth, form data). For our own flux-agent-tools callback we
+            # OAuth, form data). For our own omniworker-tools callback we
             # auto-accept — the user already approved Flux Agent' tools
             # by enabling the runtime, and we never expose anything
             # codex's built-in shell can't already do. For other MCP
             # servers we decline so the user explicitly opts in via
             # codex's own auth flow.
             server_name = params.get("serverName") or ""
-            if server_name == "flux-agent-tools":
+            if server_name == "omniworker-tools":
                 self._client.respond(
                     rid,
                     {"action": "accept", "content": None, "_meta": None},
@@ -789,7 +789,7 @@ def _has_turn_aborted_marker(text: str) -> bool:
     Codex emits `<turn_aborted>` (and sometimes `<turn_aborted/>`) as raw
     text inside agentMessage items when an interrupt or upstream error
     tears the turn down before the normal completion path fires. Mirrors
-    flux-agent beta.8's terminal-marker fix so we don't burn the full turn
+    omniworker beta.8's terminal-marker fix so we don't burn the full turn
     deadline waiting for a turn/completed that never comes.
     """
     if not text:
@@ -800,11 +800,11 @@ def _has_turn_aborted_marker(text: str) -> bool:
     return False
 
 
-def _get_flux-agent_version() -> str:
+def _get_omniworker_version() -> str:
     """Best-effort Flux Agent version string for codex's userAgent line."""
     try:
         from importlib.metadata import version
 
-        return version("flux-agent-agent")
+        return version("omniworker-agent")
     except Exception:  # pragma: no cover
         return "0.0.0"

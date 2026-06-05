@@ -64,7 +64,7 @@ These two tools live in the `browser` toolset but only register when a Chrome De
 
 ## `feishu_doc` toolset
 
-Scoped to the Feishu document-comment intelligent-reply handler (`gateway/platforms/feishu_comment.py`). Not exposed on `flux-agent-cli` or the regular Feishu chat adapter.
+Scoped to the Feishu document-comment intelligent-reply handler (`gateway/platforms/feishu_comment.py`). Not exposed on `omniworker-cli` or the regular Feishu chat adapter.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
@@ -103,7 +103,7 @@ Scoped to the Feishu document-comment handler. Drives comment read/write operati
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
-| `computer_use` | Background macOS desktop control via cua-driver — screenshots (SOM / vision / AX), click / drag / scroll / type / key / wait, list_apps, focus_app. Does NOT steal the user's cursor or keyboard focus. Works with any tool-capable model. macOS only. | `cua-driver` on `$PATH` (install via `flux-agent tools`). |
+| `computer_use` | Background macOS desktop control via cua-driver — screenshots (SOM / vision / AX), click / drag / scroll / type / key / wait, list_apps, focus_app. Does NOT steal the user's cursor or keyboard focus. Works with any tool-capable model. macOS only. | `cua-driver` on `$PATH` (install via `omniworker tools`). |
 
 
 :::note
@@ -118,17 +118,17 @@ Scoped to the Feishu document-comment handler. Drives comment read/write operati
 
 ## `kanban` toolset
 
-Registered only when the agent is spawned by the kanban dispatcher (`FLUX AGENT_KANBAN_TASK` env set). Lets workers mark tasks done with structured handoffs, block for human input, heartbeat during long ops, comment on threads, and (for orchestrators) fan out into child tasks. See [Kanban Multi-Agent](/docs/user-guide/features/kanban) for the full workflow.
+Registered only when the agent is spawned by the kanban dispatcher (`OMNIWORKER_KANBAN_TASK` env set). Lets workers mark tasks done with structured handoffs, block for human input, heartbeat during long ops, comment on threads, and (for orchestrators) fan out into child tasks. See [Kanban Multi-Agent](/docs/user-guide/features/kanban) for the full workflow.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
-| `kanban_show` | Show the active kanban task assigned to this worker (title, description, comments, dependencies). | `FLUX AGENT_KANBAN_TASK` |
-| `kanban_complete` | Mark the current task done with a structured handoff payload (results, artifacts, follow-ups). | `FLUX AGENT_KANBAN_TASK` |
-| `kanban_block` | Block the current task on a question for the user — the dispatcher pauses, surfaces the question, and resumes once a human replies. | `FLUX AGENT_KANBAN_TASK` |
-| `kanban_heartbeat` | Send a progress heartbeat during a long-running operation so the dispatcher knows the worker is still alive. | `FLUX AGENT_KANBAN_TASK` |
-| `kanban_comment` | Add a comment to the task thread without changing its state — useful for surfacing intermediate findings. | `FLUX AGENT_KANBAN_TASK` |
-| `kanban_create` | (Orchestrator only) Fan out child tasks from the current task. | `FLUX AGENT_KANBAN_TASK` + orchestrator role |
-| `kanban_link` | (Orchestrator only) Link related tasks together (blocks/blocked-by/related). | `FLUX AGENT_KANBAN_TASK` + orchestrator role |
+| `kanban_show` | Show the active kanban task assigned to this worker (title, description, comments, dependencies). | `OMNIWORKER_KANBAN_TASK` |
+| `kanban_complete` | Mark the current task done with a structured handoff payload (results, artifacts, follow-ups). | `OMNIWORKER_KANBAN_TASK` |
+| `kanban_block` | Block the current task on a question for the user — the dispatcher pauses, surfaces the question, and resumes once a human replies. | `OMNIWORKER_KANBAN_TASK` |
+| `kanban_heartbeat` | Send a progress heartbeat during a long-running operation so the dispatcher knows the worker is still alive. | `OMNIWORKER_KANBAN_TASK` |
+| `kanban_comment` | Add a comment to the task thread without changing its state — useful for surfacing intermediate findings. | `OMNIWORKER_KANBAN_TASK` |
+| `kanban_create` | (Orchestrator only) Fan out child tasks from the current task. | `OMNIWORKER_KANBAN_TASK` + orchestrator role |
+| `kanban_link` | (Orchestrator only) Link related tasks together (blocks/blocked-by/related). | `OMNIWORKER_KANBAN_TASK` + orchestrator role |
 
 ## `memory` toolset
 
@@ -158,7 +158,7 @@ Registered only when the agent is spawned by the kanban dispatcher (`FLUX AGENT_
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
-| `skill_manage` | Manage skills (create, update, delete). Skills are your procedural memory — reusable approaches for recurring task types. New skills go to ~/.flux-agent/skills/; existing skills can be modified wherever they live. Actions: create (full SKILL.m… | — |
+| `skill_manage` | Manage skills (create, update, delete). Skills are your procedural memory — reusable approaches for recurring task types. New skills go to ~/.omniworker/skills/; existing skills can be modified wherever they live. Actions: create (full SKILL.m… | — |
 | `skill_view` | Skills allow for loading information about specific tasks and workflows, as well as scripts and templates. Load a skill's full content or access its linked files (references, templates, scripts). First call returns SKILL.md content plus a… | — |
 | `skills_list` | List available skills (name + description). Use skill_view(name) to load full content. | — |
 
@@ -183,7 +183,7 @@ Registered only when the agent is spawned by the kanban dispatcher (`FLUX AGENT_
 
 ## `video` toolset
 
-Opt-in toolset (not loaded in the default `flux-agent-cli` set). Add via `--toolsets video` or include `video` in your `toolsets:` config.
+Opt-in toolset (not loaded in the default `omniworker-cli` set). Add via `--toolsets video` or include `video` in your `toolsets:` config.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
@@ -204,7 +204,7 @@ Opt-in toolset (not loaded in the default `flux-agent-cli` set). Add via `--tool
 
 ## `discord` toolset
 
-Registered on the `flux-agent-discord` platform toolset (gateway only). Uses the same bot token as the messaging adapter.
+Registered on the `omniworker-discord` platform toolset (gateway only). Uses the same bot token as the messaging adapter.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
@@ -212,7 +212,7 @@ Registered on the `flux-agent-discord` platform toolset (gateway only). Uses the
 
 ## `discord_admin` toolset
 
-Registered on the `flux-agent-discord` platform toolset. Moderation actions require the bot to hold the matching Discord permissions.
+Registered on the `omniworker-discord` platform toolset. Moderation actions require the bot to hold the matching Discord permissions.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
@@ -220,7 +220,7 @@ Registered on the `flux-agent-discord` platform toolset. Moderation actions requ
 
 ## `spotify` toolset
 
-Registered by the bundled `spotify` plugin. Requires an OAuth token — run `flux-agent spotify setup` once to authorize.
+Registered by the bundled `spotify` plugin. Requires an OAuth token — run `omniworker spotify setup` once to authorize.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|
@@ -232,9 +232,9 @@ Registered by the bundled `spotify` plugin. Requires an OAuth token — run `flu
 | `spotify_albums` | Fetch Spotify album metadata or album tracks. | Spotify OAuth |
 | `spotify_library` | List, save, or remove the user's saved Spotify tracks or albums. | Spotify OAuth |
 
-## `flux-agent-yuanbao` toolset
+## `omniworker-yuanbao` toolset
 
-Registered only on the `flux-agent-yuanbao` platform toolset. Yuanbao is Tencent's chat app; these tools drive its DM/group/sticker APIs.
+Registered only on the `omniworker-yuanbao` platform toolset. Yuanbao is Tencent's chat app; these tools drive its DM/group/sticker APIs.
 
 | Tool | Description | Requires environment |
 |------|-------------|----------------------|

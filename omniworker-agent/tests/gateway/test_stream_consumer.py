@@ -22,14 +22,14 @@ class TestCleanForDisplay:
 
     def test_media_tag_stripped(self):
         """Basic MEDIA:<path> tag is removed."""
-        text = "Here is the image\nMEDIA:/tmp/flux-agent/image.png"
+        text = "Here is the image\nMEDIA:/tmp/omniworker/image.png"
         result = GatewayStreamConsumer._clean_for_display(text)
         assert "MEDIA:" not in result
         assert "Here is the image" in result
 
     def test_media_tag_with_space(self):
         """MEDIA: tag with space after colon is removed."""
-        text = "Audio generated\nMEDIA: /home/user/.flux-agent/audio_cache/voice.mp3"
+        text = "Audio generated\nMEDIA: /home/user/.omniworker/audio_cache/voice.mp3"
         result = GatewayStreamConsumer._clean_for_display(text)
         assert "MEDIA:" not in result
         assert "Audio generated" in result
@@ -343,7 +343,7 @@ class TestStreamRunMediaStripping:
 
         # Feed deltas
         consumer.on_delta("Here is your generated image\n")
-        consumer.on_delta("MEDIA:/home/user/.flux-agent/cache/images/abc123.png")
+        consumer.on_delta("MEDIA:/home/user/.omniworker/cache/images/abc123.png")
         consumer.finish()
 
         await consumer.run()
@@ -985,7 +985,7 @@ class TestEditOverflowSplitAndDeliver:
         # Skip-if-same cache reset so the next edit doesn't false-positive.
         assert consumer._last_sent_text == ""
         # on_new_message fired so the tool-progress bubble breaks below
-        # the new continuation (per the flux-agent #32535 lesson).
+        # the new continuation (per the omniworker #32535 lesson).
         assert new_msg_count[0] == 1
 
 

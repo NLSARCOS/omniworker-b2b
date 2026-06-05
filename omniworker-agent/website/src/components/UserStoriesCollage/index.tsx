@@ -295,7 +295,7 @@ export default function UserStoriesCollage(): JSX.Element {
       <div className={styles.footer}>
         Built something with OmniWorker?{' '}
         <a
-          href="https://github.com/OmniWorker/flux-agent-agent/edit/main/website/src/data/userStories.json"
+          href="https://github.com/OmniWorker/omniworker-agent/edit/main/website/src/data/userStories.json"
           target="_blank"
           rel="noopener noreferrer"
         >

@@ -22,7 +22,7 @@ The setup wizard probes your endpoint and auto-detects which transport it uses, 
 ## Quick Start
 
 ```bash
-flux-agent model
+omniworker model
 # → Select "Azure Foundry"
 # → Enter your endpoint URL
 # → Enter your API key
@@ -52,7 +52,7 @@ model:
   context_length: 400000             # auto-detected
 ```
 
-And in `~/.flux-agent/.env`:
+And in `~/.omniworker/.env`:
 
 ```
 AZURE_FOUNDRY_API_KEY=<your-azure-key>
@@ -106,7 +106,7 @@ model:
   default: claude-sonnet-4-6
 ```
 
-With `AZURE_ANTHROPIC_KEY` set in `~/.flux-agent/.env`. Flux Agent detects `azure.com` in the base URL and short-circuits around the Claude Code OAuth token chain so the Azure key is used directly with `x-api-key` auth.
+With `AZURE_ANTHROPIC_KEY` set in `~/.omniworker/.env`. Flux Agent detects `azure.com` in the base URL and short-circuits around the Claude Code OAuth token chain so the Azure key is used directly with `x-api-key` auth.
 
 `key_env` is the canonical snake_case field name; `api_key_env` (and the camelCase `keyEnv` / `apiKeyEnv`) are accepted as aliases. If both `key_env` and `AZURE_ANTHROPIC_KEY`/`ANTHROPIC_API_KEY` are set, the `key_env`-named env var wins.
 
@@ -127,7 +127,7 @@ You can always type a deployment name directly — Flux Agent does not validate 
 | Variable | Purpose |
 |----------|---------|
 | `AZURE_FOUNDRY_API_KEY` | Primary API key for Azure AI Foundry / Azure OpenAI |
-| `AZURE_FOUNDRY_BASE_URL` | Endpoint URL (set via `flux-agent model`; env var is used as a fallback) |
+| `AZURE_FOUNDRY_BASE_URL` | Endpoint URL (set via `omniworker model`; env var is used as a fallback) |
 | `AZURE_ANTHROPIC_KEY` | Used by `provider: anthropic` + Azure base URL (alternative to `ANTHROPIC_API_KEY`) |
 
 ## Troubleshooting
@@ -142,7 +142,7 @@ This is the malformed-URL bug from pre-fix Azure Anthropic setups. Upgrade Flux 
 The endpoint rejected both the `/models` probe and the Anthropic Messages probe. This is normal for private endpoints behind a firewall or with an IP allow-list. Fall back to manual API mode selection and type your deployment name — everything still works, Flux Agent just can't prefill the picker.
 
 **Wrong transport picked.**
-Run `flux-agent model` again and the wizard will re-probe. If the probe still picks the wrong mode, you can edit `config.yaml` directly:
+Run `omniworker model` again and the wizard will re-probe. If the probe still picks the wrong mode, you can edit `config.yaml` directly:
 
 ```yaml
 model:

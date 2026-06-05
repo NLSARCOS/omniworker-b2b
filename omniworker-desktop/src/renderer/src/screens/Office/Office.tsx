@@ -52,7 +52,7 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
 
   const checkStatus = useCallback(async (): Promise<void> => {
     setState("checking");
-    const status = await window.flux-agentAPI.claw3dStatus();
+    const status = await window.omniworkerAPI.claw3dStatus();
     setRunning(status.running);
     setPort(status.port);
     setPortInput(String(status.port));
@@ -74,7 +74,7 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
   useEffect(() => {
     if (state !== "ready" || !visible) return;
     const interval = setInterval(async () => {
-      const status = await window.flux-agentAPI.claw3dStatus();
+      const status = await window.omniworkerAPI.claw3dStatus();
       setRunning(status.running);
       setPort(status.port);
       setPortInUse(status.portInUse);
@@ -144,12 +144,12 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
     setState("installing");
     setError("");
 
-    const cleanup = window.flux-agentAPI.onClaw3dSetupProgress((p) => {
+    const cleanup = window.omniworkerAPI.onClaw3dSetupProgress((p) => {
       setProgress(p);
     });
 
     try {
-      const result = await window.flux-agentAPI.claw3dSetup();
+      const result = await window.omniworkerAPI.claw3dSetup();
       cleanup();
       if (result.success) {
         setState("ready");
@@ -166,7 +166,7 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
 
   async function handleStartStop(): Promise<void> {
     if (running) {
-      await window.flux-agentAPI.claw3dStopAll();
+      await window.omniworkerAPI.claw3dStopAll();
       setRunning(false);
       setWebviewReady(false);
       setWebviewError("");
@@ -175,7 +175,7 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
       setError("");
       setWebviewError("");
       setStarting(true);
-      const result = await window.flux-agentAPI.claw3dStartAll();
+      const result = await window.omniworkerAPI.claw3dStartAll();
       if (!result.success) {
         setError(result.error || "Failed to start Claw3D");
         setStarting(false);
@@ -191,20 +191,20 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
   async function handlePortSave(): Promise<void> {
     const newPort = parseInt(portInput, 10);
     if (isNaN(newPort) || newPort < 1024 || newPort > 65535) return;
-    await window.flux-agentAPI.claw3dSetPort(newPort);
+    await window.omniworkerAPI.claw3dSetPort(newPort);
     setPort(newPort);
-    const status = await window.flux-agentAPI.claw3dStatus();
+    const status = await window.omniworkerAPI.claw3dStatus();
     setPortInUse(status.portInUse);
   }
 
   async function handleWsUrlSave(): Promise<void> {
     const trimmed = wsUrlInput.trim();
     if (!trimmed) return;
-    await window.flux-agentAPI.claw3dSetWsUrl(trimmed);
+    await window.omniworkerAPI.claw3dSetWsUrl(trimmed);
   }
 
   async function loadLogs(): Promise<void> {
-    const l = await window.flux-agentAPI.claw3dGetLogs();
+    const l = await window.omniworkerAPI.claw3dGetLogs();
     setLogs(l);
     setShowLogs(true);
   }
@@ -253,7 +253,7 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
               <button
                 className="btn btn-secondary"
                 onClick={() =>
-                  window.flux-agentAPI.openExternal(
+                  window.omniworkerAPI.openExternal(
                     "https://github.com/iamlukethedev/Claw3D",
                   )
                 }
@@ -338,7 +338,7 @@ function Office({ visible }: { visible?: boolean }): React.JSX.Element {
               </button>
               <button
                 className="btn-ghost office-toolbar-btn"
-                onClick={() => window.flux-agentAPI.openExternal(claw3dUrl)}
+                onClick={() => window.omniworkerAPI.openExternal(claw3dUrl)}
                 title={t("office.openInBrowser")}
               >
                 <ExternalLink size={16} />

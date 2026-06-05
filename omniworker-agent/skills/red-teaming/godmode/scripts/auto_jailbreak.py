@@ -7,7 +7,7 @@ finds what works, and locks it in by writing config.yaml + prefill.json.
 
 Usage in execute_code:
     exec(open(os.path.expanduser(
-        os.path.join(os.environ.get("FLUX AGENT_HOME", os.path.expanduser("~/.flux-agent")), "skills/red-teaming/godmode/scripts/auto_jailbreak.py")
+        os.path.join(os.environ.get("OMNIWORKER_HOME", os.path.expanduser("~/.omniworker")), "skills/red-teaming/godmode/scripts/auto_jailbreak.py")
     )).read())
     
     result = auto_jailbreak()  # Uses current model from config
@@ -35,7 +35,7 @@ try:
     _SKILL_DIR = Path(__file__).resolve().parent.parent
 except NameError:
     # __file__ not defined when loaded via exec() — search standard paths
-    _SKILL_DIR = Path(os.getenv("FLUX AGENT_HOME", Path.home() / ".flux-agent")) / "skills" / "red-teaming" / "godmode"
+    _SKILL_DIR = Path(os.getenv("OMNIWORKER_HOME", Path.home() / ".omniworker")) / "skills" / "red-teaming" / "godmode"
 
 _SCRIPTS_DIR = _SKILL_DIR / "scripts"
 _TEMPLATES_DIR = _SKILL_DIR / "templates"
@@ -57,9 +57,9 @@ if _race_path.exists():
 # Flux Agent config paths
 # ═══════════════════════════════════════════════════════════════════
 
-FLUX AGENT_HOME = Path(os.getenv("FLUX AGENT_HOME", Path.home() / ".flux-agent"))
-CONFIG_PATH = FLUX AGENT_HOME / "config.yaml"
-PREFILL_PATH = FLUX AGENT_HOME / "prefill.json"
+OMNIWORKER_HOME = Path(os.getenv("OMNIWORKER_HOME", Path.home() / ".omniworker"))
+CONFIG_PATH = OMNIWORKER_HOME / "config.yaml"
+PREFILL_PATH = OMNIWORKER_HOME / "prefill.json"
 
 # ═══════════════════════════════════════════════════════════════════
 # Canary queries — questions that typically trigger safety filters
@@ -179,7 +179,7 @@ MODEL_STRATEGIES = {
         },
     },
     # Nous/Flux Agent models — already uncensored, just needs clean prompt
-    "flux-agent": {
+    "omniworker": {
         "order": ["prefill_only"],
         "system_templates": {},
     },
@@ -305,8 +305,8 @@ def _detect_model_family(model: str) -> str:
         return "gemini"
     if "grok" in model_lower or "x-ai" in model_lower:
         return "grok"
-    if "flux-agent" in model_lower or "nous" in model_lower:
-        return "flux-agent"
+    if "omniworker" in model_lower or "nous" in model_lower:
+        return "omniworker"
     if "deepseek" in model_lower:
         return "deepseek"
     if "llama" in model_lower or "meta" in model_lower:
@@ -407,7 +407,7 @@ def _write_config(system_prompt: str = None, prefill_file: str = None):
 
 
 def _write_prefill(prefill_messages: list):
-    """Write prefill messages to ~/.flux-agent/prefill.json."""
+    """Write prefill messages to ~/.omniworker/prefill.json."""
     with open(PREFILL_PATH, "w") as f:
         json.dump(prefill_messages, f, indent=2, ensure_ascii=False)
     return str(PREFILL_PATH)

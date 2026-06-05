@@ -266,7 +266,7 @@ export const ru: Translations = {
     enableRuntime: "Включить",
     forceReinstall: "Принудительная переустановка (сначала удалить существующую папку)",
     headline:
-      "Поиск, установка, включение и обновление плагинов OmniWorker (аналог `flux-agent plugins`).",
+      "Поиск, установка, включение и обновление плагинов OmniWorker (аналог `omniworker plugins`).",
     identifierLabel: "Git URL или owner/repo",
     inactive: "неактивно",
     installBtn: "Установить из Git",
@@ -283,8 +283,8 @@ export const ru: Translations = {
     providersHint:
       "Записывает memory.provider (пусто = встроенный) и context.engine в config.yaml. Применяется со следующей сессии.",
     refreshDashboard: "Пересканировать расширения панели",
-    removeConfirm: "Удалить этот плагин из ~/.flux-agent/plugins/?",
-    removeHint: "Удалять можно только плагины, установленные пользователем в ~/.flux-agent/plugins.",
+    removeConfirm: "Удалить этот плагин из ~/.omniworker/plugins/?",
+    removeHint: "Удалять можно только плагины, установленные пользователем в ~/.omniworker/plugins.",
     rescanHeading: "Реестр SPA-плагинов",
     rescanHint: "Пересканируйте после добавления файлов на диск, чтобы боковая панель подхватила новые манифесты.",
     runtimeHeading: "Рантайм шлюза (YAML-плагины)",
@@ -306,7 +306,7 @@ export const ru: Translations = {
     all: "Все",
     categories: "Категории",
     filters: "Фильтры",
-    noSkills: "Навыки не найдены. Навыки загружаются из ~/.flux-agent/skills/",
+    noSkills: "Навыки не найдены. Навыки загружаются из ~/.omniworker/skills/",
     noSkillsMatch: "Нет навыков, соответствующих запросу или фильтру.",
     skillCount: "{count} навык{s}",
     resultCount: "{count} результат{s}",
@@ -320,7 +320,7 @@ export const ru: Translations = {
   },
 
   config: {
-    configPath: "~/.flux-agent/config.yaml",
+    configPath: "~/.omniworker/config.yaml",
     filters: "Фильтры",
     sections: "Разделы",
     exportConfig: "Экспортировать конфигурацию в JSON",

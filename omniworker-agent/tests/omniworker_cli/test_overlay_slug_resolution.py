@@ -1,6 +1,6 @@
 """Test that overlay providers with mismatched models.dev keys resolve correctly.
 
-FLUX AGENT_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot") while
+OMNIWORKER_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot") while
 _PROVIDER_MODELS and config.yaml use Flux Agent IDs ("copilot").  The slug
 resolution in list_authenticated_providers() Section 2 must bridge this gap.
 
@@ -13,13 +13,13 @@ from unittest.mock import patch
 
 import pytest
 
-from flux-agent_cli.model_switch import list_authenticated_providers
+from omniworker_cli.model_switch import list_authenticated_providers
 
 
 # -- Copilot slug resolution (env var path) ----------------------------------
 
 @patch.dict(os.environ, {"COPILOT_GITHUB_TOKEN": "fake-ghu"}, clear=False)
-def test_copilot_uses_flux-agent_slug():
+def test_copilot_uses_omniworker_slug():
     """github-copilot overlay should resolve to slug='copilot' with curated models."""
     providers = list_authenticated_providers(current_provider="copilot")
 
@@ -48,7 +48,7 @@ def test_copilot_no_duplicate_entries():
 
 def test_kimi_for_coding_alias():
     """resolve_provider('kimi-for-coding') should return 'kimi-coding'."""
-    from flux-agent_cli.auth import resolve_provider
+    from omniworker_cli.auth import resolve_provider
 
     result = resolve_provider("kimi-for-coding")
     assert result == "kimi-coding"
@@ -57,7 +57,7 @@ def test_kimi_for_coding_alias():
 # -- Generic slug mismatch providers -----------------------------------------
 
 @patch.dict(os.environ, {"KIMI_API_KEY": "fake-key"}, clear=False)
-def test_kimi_for_coding_overlay_uses_flux-agent_slug():
+def test_kimi_for_coding_overlay_uses_omniworker_slug():
     """kimi-for-coding overlay should resolve to slug='kimi-coding'."""
     providers = list_authenticated_providers(current_provider="kimi-coding")
 
@@ -71,7 +71,7 @@ def test_kimi_for_coding_overlay_uses_flux-agent_slug():
 
 
 @patch.dict(os.environ, {"KILOCODE_API_KEY": "fake-key"}, clear=False)
-def test_kilo_overlay_uses_flux-agent_slug():
+def test_kilo_overlay_uses_omniworker_slug():
     """kilo overlay should resolve to slug='kilocode'."""
     providers = list_authenticated_providers(current_provider="kilocode")
 
@@ -89,7 +89,7 @@ def test_mapped_provider_credential_pool_visibility(monkeypatch):
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {"google-ai-studio": {"env": ["GEMINI_API_KEY"]}})
     monkeypatch.setattr("agent.models_dev.PROVIDER_TO_MODELS_DEV", {"gemini": "google-ai-studio"})
     monkeypatch.setattr(
-        "flux-agent_cli.auth._load_auth_store",
+        "omniworker_cli.auth._load_auth_store",
         lambda: {"providers": {}, "credential_pool": {"gemini": {"token": "fake"}}},
     )
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)

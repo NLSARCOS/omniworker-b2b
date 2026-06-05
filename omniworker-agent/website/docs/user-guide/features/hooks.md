@@ -10,9 +10,9 @@ Flux Agent has three hook systems that run custom code at key lifecycle points:
 
 | System | Registered via | Runs in | Use case |
 |--------|---------------|---------|----------|
-| **[Gateway hooks](#gateway-event-hooks)** | `HOOK.yaml` + `handler.py` in `~/.flux-agent/hooks/` | Gateway only | Logging, alerts, webhooks |
+| **[Gateway hooks](#gateway-event-hooks)** | `HOOK.yaml` + `handler.py` in `~/.omniworker/hooks/` | Gateway only | Logging, alerts, webhooks |
 | **[Plugin hooks](#plugin-hooks)** | `ctx.register_hook()` in a [plugin](/docs/user-guide/features/plugins) | CLI + Gateway | Tool interception, metrics, guardrails |
-| **[Shell hooks](#shell-hooks)** | `hooks:` block in `~/.flux-agent/config.yaml` pointing at shell scripts | CLI + Gateway | Drop-in scripts for blocking, auto-formatting, context injection |
+| **[Shell hooks](#shell-hooks)** | `hooks:` block in `~/.omniworker/config.yaml` pointing at shell scripts | CLI + Gateway | Drop-in scripts for blocking, auto-formatting, context injection |
 
 All three systems are non-blocking — errors in any hook are caught and logged, never crashing the agent.
 
@@ -22,10 +22,10 @@ Gateway hooks fire automatically during gateway operation (Telegram, Discord, Sl
 
 ### Creating a Hook
 
-Each hook is a directory under `~/.flux-agent/hooks/` containing two files:
+Each hook is a directory under `~/.omniworker/hooks/` containing two files:
 
 ```text
-~/.flux-agent/hooks/
+~/.omniworker/hooks/
 └── my-hook/
     ├── HOOK.yaml      # Declares which events to listen for
     └── handler.py     # Python handler function
@@ -51,7 +51,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-LOG_FILE = Path.home() / ".flux-agent" / "hooks" / "my-hook" / "activity.log"
+LOG_FILE = Path.home() / ".omniworker" / "hooks" / "my-hook" / "activity.log"
 
 async def handle(event_type: str, context: dict):
     """Called for each subscribed event. Must be named 'handle'."""
@@ -94,7 +94,7 @@ Handlers registered for `command:*` fire for any `command:` event (`command:mode
 Send yourself a message when the agent takes more than 10 steps:
 
 ```yaml
-# ~/.flux-agent/hooks/long-task-alert/HOOK.yaml
+# ~/.omniworker/hooks/long-task-alert/HOOK.yaml
 name: long-task-alert
 description: Alert when agent is taking many steps
 events:
@@ -102,7 +102,7 @@ events:
 ```
 
 ```python
-# ~/.flux-agent/hooks/long-task-alert/handler.py
+# ~/.omniworker/hooks/long-task-alert/handler.py
 import os
 import httpx
 
@@ -127,7 +127,7 @@ async def handle(event_type: str, context: dict):
 Track which slash commands are used:
 
 ```yaml
-# ~/.flux-agent/hooks/command-logger/HOOK.yaml
+# ~/.omniworker/hooks/command-logger/HOOK.yaml
 name: command-logger
 description: Log slash command usage
 events:
@@ -135,12 +135,12 @@ events:
 ```
 
 ```python
-# ~/.flux-agent/hooks/command-logger/handler.py
+# ~/.omniworker/hooks/command-logger/handler.py
 import json
 from datetime import datetime
 from pathlib import Path
 
-LOG = Path.home() / ".flux-agent" / "logs" / "command_usage.jsonl"
+LOG = Path.home() / ".omniworker" / "logs" / "command_usage.jsonl"
 
 def handle(event_type: str, context: dict):
     LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -160,7 +160,7 @@ def handle(event_type: str, context: dict):
 POST to an external service on new sessions:
 
 ```yaml
-# ~/.flux-agent/hooks/session-webhook/HOOK.yaml
+# ~/.omniworker/hooks/session-webhook/HOOK.yaml
 name: session-webhook
 description: Notify external service on new sessions
 events:
@@ -169,10 +169,10 @@ events:
 ```
 
 ```python
-# ~/.flux-agent/hooks/session-webhook/handler.py
+# ~/.omniworker/hooks/session-webhook/handler.py
 import httpx
 
-WEBHOOK_URL = "https://your-service.example.com/flux-agent-events"
+WEBHOOK_URL = "https://your-service.example.com/omniworker-events"
 
 async def handle(event_type: str, context: dict):
     async with httpx.AsyncClient() as client:
@@ -184,24 +184,24 @@ async def handle(event_type: str, context: dict):
 
 ### Tutorial: BOOT.md — Run a Startup Checklist on Every Gateway Boot
 
-A popular pattern from the community: drop a Markdown checklist at `~/.flux-agent/BOOT.md`, and have the agent run it once every time the gateway starts. Useful for "on every boot, check overnight cron failures and ping me on Discord if anything failed," or "summarize the last 24h of deploy.log and post it to Slack #ops."
+A popular pattern from the community: drop a Markdown checklist at `~/.omniworker/BOOT.md`, and have the agent run it once every time the gateway starts. Useful for "on every boot, check overnight cron failures and ping me on Discord if anything failed," or "summarize the last 24h of deploy.log and post it to Slack #ops."
 
 This tutorial shows how to build it yourself as a user-defined hook. Flux Agent does not ship a built-in BOOT.md hook — you wire up exactly the behavior you want.
 
 #### What we're building
 
-1. A file at `~/.flux-agent/BOOT.md` with natural-language startup instructions.
+1. A file at `~/.omniworker/BOOT.md` with natural-language startup instructions.
 2. A gateway hook that fires on `gateway:startup`, spawns a one-shot agent with your gateway's resolved model/credentials, and runs the BOOT.md instructions.
 3. A `[SILENT]` convention so the agent can opt out of sending a message when there's nothing to report.
 
 #### Step 1: Write your checklist
 
-Create `~/.flux-agent/BOOT.md`. Write it as if you were giving instructions to a human assistant:
+Create `~/.omniworker/BOOT.md`. Write it as if you were giving instructions to a human assistant:
 
 ```markdown
 # Startup Checklist
 
-1. Run `flux-agent cron list` and check if any scheduled jobs failed overnight.
+1. Run `omniworker cron list` and check if any scheduled jobs failed overnight.
 2. If any failed, send a summary to Discord #ops using the `send_message` tool.
 3. Check if `/opt/app/deploy.log` has any ERROR lines from the last 24 hours. If yes, summarize them and include in the same Discord message.
 4. If nothing went wrong, reply with only `[SILENT]` so no message is sent.
@@ -212,24 +212,24 @@ The agent sees this as part of its prompt, so anything you can describe in plain
 #### Step 2: Create the hook
 
 ```text
-~/.flux-agent/hooks/boot-md/
+~/.omniworker/hooks/boot-md/
 ├── HOOK.yaml
 └── handler.py
 ```
 
-**`~/.flux-agent/hooks/boot-md/HOOK.yaml`**
+**`~/.omniworker/hooks/boot-md/HOOK.yaml`**
 
 ```yaml
 name: boot-md
-description: Run ~/.flux-agent/BOOT.md on gateway startup
+description: Run ~/.omniworker/BOOT.md on gateway startup
 events:
   - gateway:startup
 ```
 
-**`~/.flux-agent/hooks/boot-md/handler.py`**
+**`~/.omniworker/hooks/boot-md/handler.py`**
 
 ```python
-"""Run ~/.flux-agent/BOOT.md on every gateway startup."""
+"""Run ~/.omniworker/BOOT.md on every gateway startup."""
 
 import logging
 import threading
@@ -237,7 +237,7 @@ from pathlib import Path
 
 logger = logging.getLogger("hooks.boot-md")
 
-BOOT_FILE = Path.home() / ".flux-agent" / "BOOT.md"
+BOOT_FILE = Path.home() / ".omniworker" / "BOOT.md"
 
 
 def _build_prompt(content: str) -> str:
@@ -314,18 +314,18 @@ Without these, a bare `AIAgent()` falls back to built-in defaults and will 401 a
 Restart the gateway:
 
 ```bash
-flux-agent gateway restart
+omniworker gateway restart
 ```
 
 Watch the logs:
 
 ```bash
-flux-agent logs --follow --level INFO | grep boot-md
+omniworker logs --follow --level INFO | grep boot-md
 ```
 
 You should see `Running BOOT.md (N chars)` followed by either `boot-md completed: ...` (summary of what the agent did) or `boot-md completed (nothing to report)` when the agent replied `[SILENT]`.
 
-Delete `~/.flux-agent/BOOT.md` to disable the checklist — the hook stays loaded but silently skips when the file isn't there.
+Delete `~/.omniworker/BOOT.md` to disable the checklist — the hook stays loaded but silently skips when the file isn't there.
 
 #### Extending the pattern
 
@@ -339,7 +339,7 @@ An earlier version of Flux Agent shipped this as a built-in hook and silently sp
 
 ### How It Works
 
-1. On gateway startup, `HookRegistry.discover_and_load()` scans `~/.flux-agent/hooks/`
+1. On gateway startup, `HookRegistry.discover_and_load()` scans `~/.omniworker/hooks/`
 2. Each subdirectory with `HOOK.yaml` + `handler.py` is loaded dynamically
 3. Handlers are registered for their declared events
 4. At each lifecycle point, `hooks.emit()` fires all matching handlers
@@ -527,7 +527,7 @@ def my_callback(session_id: str, user_message: str, conversation_history: list,
 
 ```python
 # Inject context
-return {"context": "Recalled memories:\n- User likes Python\n- Working on flux-agent-agent"}
+return {"context": "Recalled memories:\n- User likes Python\n- Working on omniworker-agent"}
 
 # Plain string (equivalent)
 return "Recalled memories:\n- User likes Python"
@@ -801,7 +801,7 @@ def my_callback(session_id: str, platform: str, **kwargs):
 
 ---
 
-See the **[Build a Plugin guide](/docs/guides/build-a-flux-agent-plugin)** for the full walkthrough including tool schemas, handlers, and advanced hook patterns.
+See the **[Build a Plugin guide](/docs/guides/build-a-omniworker-plugin)** for the full walkthrough including tool schemas, handlers, and advanced hook patterns.
 
 ---
 
@@ -1148,14 +1148,14 @@ Use shell hooks when you want a drop-in, single-file script (Bash, Python, anyth
 - **Inject context into the next LLM turn** — prepend `git status` output, the current weekday, or retrieved documents to the user message (see [`pre_llm_call`](#pre_llm_call)).
 - **Observe lifecycle events** — write a log line when a subagent completes (`subagent_stop`) or a session starts (`on_session_start`).
 
-Shell hooks are registered by calling `agent.shell_hooks.register_from_config(cfg)` at both CLI startup (`flux-agent_cli/main.py`) and gateway startup (`gateway/run.py`). They compose naturally with Python plugin hooks — both flow through the same dispatcher.
+Shell hooks are registered by calling `agent.shell_hooks.register_from_config(cfg)` at both CLI startup (`omniworker_cli/main.py`) and gateway startup (`gateway/run.py`). They compose naturally with Python plugin hooks — both flow through the same dispatcher.
 
 ### Comparison at a glance
 
 | Dimension | Shell hooks | [Plugin hooks](#plugin-hooks) | [Gateway hooks](#gateway-event-hooks) |
 |-----------|-------------|-------------------------------|---------------------------------------|
-| Declared in | `hooks:` block in `~/.flux-agent/config.yaml` | `register()` in a `plugin.yaml` plugin | `HOOK.yaml` + `handler.py` directory |
-| Lives under | `~/.flux-agent/agent-hooks/` (by convention) | `~/.flux-agent/plugins/<name>/` | `~/.flux-agent/hooks/<name>/` |
+| Declared in | `hooks:` block in `~/.omniworker/config.yaml` | `register()` in a `plugin.yaml` plugin | `HOOK.yaml` + `handler.py` directory |
+| Lives under | `~/.omniworker/agent-hooks/` (by convention) | `~/.omniworker/plugins/<name>/` | `~/.omniworker/hooks/<name>/` |
 | Language | Any (Bash, Python, Go binary, …) | Python only | Python only |
 | Runs in | CLI + Gateway | CLI + Gateway | Gateway only |
 | Events | `VALID_HOOKS` (incl. `subagent_stop`) | `VALID_HOOKS` | Gateway lifecycle (`gateway:startup`, `agent:*`, `command:*`) |
@@ -1217,16 +1217,16 @@ Malformed JSON, non-zero exit codes, and timeouts log a warning but never abort 
 #### 1. Auto-format Python files after every write
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 hooks:
   post_tool_call:
     - matcher: "write_file|patch"
-      command: "~/.flux-agent/agent-hooks/auto-format.sh"
+      command: "~/.omniworker/agent-hooks/auto-format.sh"
 ```
 
 ```bash
 #!/usr/bin/env bash
-# ~/.flux-agent/agent-hooks/auto-format.sh
+# ~/.omniworker/agent-hooks/auto-format.sh
 payload="$(cat -)"
 path=$(echo "$payload" | jq -r '.tool_input.path // empty')
 [[ "$path" == *.py ]] && command -v black >/dev/null && black "$path" 2>/dev/null
@@ -1241,13 +1241,13 @@ The agent's in-context view of the file is **not** re-read automatically — the
 hooks:
   pre_tool_call:
     - matcher: "terminal"
-      command: "~/.flux-agent/agent-hooks/block-rm-rf.sh"
+      command: "~/.omniworker/agent-hooks/block-rm-rf.sh"
       timeout: 5
 ```
 
 ```bash
 #!/usr/bin/env bash
-# ~/.flux-agent/agent-hooks/block-rm-rf.sh
+# ~/.omniworker/agent-hooks/block-rm-rf.sh
 payload="$(cat -)"
 cmd=$(echo "$payload" | jq -r '.tool_input.command // empty')
 if echo "$cmd" | grep -qE 'rm[[:space:]]+-rf?[[:space:]]+/'; then
@@ -1262,12 +1262,12 @@ fi
 ```yaml
 hooks:
   pre_llm_call:
-    - command: "~/.flux-agent/agent-hooks/inject-cwd-context.sh"
+    - command: "~/.omniworker/agent-hooks/inject-cwd-context.sh"
 ```
 
 ```bash
 #!/usr/bin/env bash
-# ~/.flux-agent/agent-hooks/inject-cwd-context.sh
+# ~/.omniworker/agent-hooks/inject-cwd-context.sh
 cat - >/dev/null   # discard stdin payload
 if status=$(git status --porcelain 2>/dev/null) && [[ -n "$status" ]]; then
   jq --null-input --arg s "$status" \
@@ -1284,47 +1284,47 @@ Claude Code's `UserPromptSubmit` event is intentionally not a separate Flux Agen
 ```yaml
 hooks:
   subagent_stop:
-    - command: "~/.flux-agent/agent-hooks/log-orchestration.sh"
+    - command: "~/.omniworker/agent-hooks/log-orchestration.sh"
 ```
 
 ```bash
 #!/usr/bin/env bash
-# ~/.flux-agent/agent-hooks/log-orchestration.sh
-log=~/.flux-agent/logs/orchestration.log
+# ~/.omniworker/agent-hooks/log-orchestration.sh
+log=~/.omniworker/logs/orchestration.log
 jq -c '{ts: now, parent: .session_id, extra: .extra}' < /dev/stdin >> "$log"
 printf '{}\n'
 ```
 
 ### Consent model
 
-Each unique `(event, command)` pair prompts the user for approval the first time Flux Agent sees it, then persists the decision to `~/.flux-agent/shell-hooks-allowlist.json`. Subsequent runs (CLI or gateway) skip the prompt.
+Each unique `(event, command)` pair prompts the user for approval the first time Flux Agent sees it, then persists the decision to `~/.omniworker/shell-hooks-allowlist.json`. Subsequent runs (CLI or gateway) skip the prompt.
 
 Three escape hatches bypass the interactive prompt — any one is sufficient:
 
-1. `--accept-hooks` flag on the CLI (e.g. `flux-agent --accept-hooks chat`)
-2. `FLUX AGENT_ACCEPT_HOOKS=1` environment variable
+1. `--accept-hooks` flag on the CLI (e.g. `omniworker --accept-hooks chat`)
+2. `OMNIWORKER_ACCEPT_HOOKS=1` environment variable
 3. `hooks_auto_accept: true` in `cli-config.yaml`
 
 Non-TTY runs (gateway, cron, CI) need one of these three — otherwise any newly-added hook silently stays un-registered and logs a warning.
 
-**Script edits are silently trusted.** The allowlist keys on the exact command string, not the script's hash, so editing the script on disk does not invalidate consent. `flux-agent hooks doctor` flags mtime drift so you can spot edits and decide whether to re-approve.
+**Script edits are silently trusted.** The allowlist keys on the exact command string, not the script's hash, so editing the script on disk does not invalidate consent. `omniworker hooks doctor` flags mtime drift so you can spot edits and decide whether to re-approve.
 
-### The `flux-agent hooks` CLI
+### The `omniworker hooks` CLI
 
 | Command | What it does |
 |---------|--------------|
-| `flux-agent hooks list` | Dump configured hooks with matcher, timeout, and consent status |
-| `flux-agent hooks test <event> [--for-tool X] [--payload-file F]` | Fire every matching hook against a synthetic payload and print the parsed response |
-| `flux-agent hooks revoke <command>` | Remove every allowlist entry matching `<command>` (takes effect on next restart) |
-| `flux-agent hooks doctor` | For every configured hook: check exec bit, allowlist status, mtime drift, JSON output validity, and rough execution time |
+| `omniworker hooks list` | Dump configured hooks with matcher, timeout, and consent status |
+| `omniworker hooks test <event> [--for-tool X] [--payload-file F]` | Fire every matching hook against a synthetic payload and print the parsed response |
+| `omniworker hooks revoke <command>` | Remove every allowlist entry matching `<command>` (takes effect on next restart) |
+| `omniworker hooks doctor` | For every configured hook: check exec bit, allowlist status, mtime drift, JSON output validity, and rough execution time |
 
 ### Security
 
 Shell hooks run with **your full user credentials** — same trust boundary as a cron entry or a shell alias. Treat the `hooks:` block in `config.yaml` as privileged configuration:
 
 - Only reference scripts you wrote or fully reviewed.
-- Keep scripts inside `~/.flux-agent/agent-hooks/` so the path is easy to audit.
-- Re-run `flux-agent hooks doctor` after you pull a shared config to spot newly-added hooks before they register.
+- Keep scripts inside `~/.omniworker/agent-hooks/` so the path is easy to audit.
+- Re-run `omniworker hooks doctor` after you pull a shared config to spot newly-added hooks before they register.
 - If your config.yaml is version-controlled across a team, review PRs that change the `hooks:` section the same way you'd review CI config.
 
 ### Ordering and precedence

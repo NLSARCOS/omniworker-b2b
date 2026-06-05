@@ -8,7 +8,7 @@ Ported from [JimLiu/baoyu-skills](https://github.com/JimLiu/baoyu-skills) v1.56.
 
 | Change | Upstream | Flux Agent |
 |--------|----------|--------|
-| Metadata namespace | `flux-agent` | `flux-agent` (with `tags` + `homepage`) |
+| Metadata namespace | `omniworker` | `omniworker` (with `tags` + `homepage`) |
 | Trigger | Slash commands / CLI flags | Natural language skill matching |
 | User config | EXTEND.md file (project/user/XDG paths) | Removed — not part of Flux Agent infra |
 | User prompts | `AskUserQuestion` (batched) | `clarify` tool (one question at a time) |

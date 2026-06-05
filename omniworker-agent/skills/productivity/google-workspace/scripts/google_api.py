@@ -31,16 +31,16 @@ from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
 
-# Ensure sibling modules (_flux-agent_home) are importable when run standalone.
+# Ensure sibling modules (_omniworker_home) are importable when run standalone.
 _SCRIPTS_DIR = str(Path(__file__).resolve().parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from _flux-agent_home import get_flux-agent_home
+from _omniworker_home import get_omniworker_home
 
-FLUX AGENT_HOME = get_flux-agent_home()
-TOKEN_PATH = FLUX AGENT_HOME / "google_token.json"
-CLIENT_SECRET_PATH = FLUX AGENT_HOME / "google_client_secret.json"
+OMNIWORKER_HOME = get_omniworker_home()
+TOKEN_PATH = OMNIWORKER_HOME / "google_token.json"
+CLIENT_SECRET_PATH = OMNIWORKER_HOME / "google_client_secret.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -80,7 +80,7 @@ def _stored_token_scopes() -> list[str]:
 
 
 def _gws_binary() -> str | None:
-    override = os.getenv("FLUX AGENT_GWS_BIN")
+    override = os.getenv("OMNIWORKER_GWS_BIN")
     if override:
         return override
     return shutil.which("gws")

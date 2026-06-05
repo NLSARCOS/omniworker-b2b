@@ -48,7 +48,7 @@ Signal-cli works as a **linked device** — like WhatsApp Web, but for Signal. Y
 
 ```bash
 # Generate a linking URI (displays a QR code or link)
-signal-cli link -n "Flux AgentAgent"
+signal-cli link -n "OmniWorkerAgent"
 ```
 
 1. Open **Signal** on your phone
@@ -83,7 +83,7 @@ curl http://127.0.0.1:8080/api/v1/check
 The easiest way:
 
 ```bash
-flux-agent gateway setup
+omniworker gateway setup
 ```
 
 Select **Signal** from the platform menu. The wizard will:
@@ -96,7 +96,7 @@ Select **Signal** from the platform menu. The wizard will:
 
 ### Manual Configuration
 
-Add to `~/.flux-agent/.env`:
+Add to `~/.omniworker/.env`:
 
 ```bash
 # Required
@@ -114,9 +114,9 @@ SIGNAL_HOME_CHANNEL=+1234567890                  # Default delivery target for c
 Then start the gateway:
 
 ```bash
-flux-agent gateway              # Foreground
-flux-agent gateway install      # Install as a user service
-sudo flux-agent gateway install --system   # Linux only: boot-time system service
+omniworker gateway              # Foreground
+omniworker gateway install      # Install as a user service
+sudo omniworker gateway install --system   # Linux only: boot-time system service
 ```
 
 ---
@@ -128,7 +128,7 @@ sudo flux-agent gateway install --system   # Linux only: boot-time system servic
 DM access follows the same pattern as all other Flux Agent platforms:
 
 1. **`SIGNAL_ALLOWED_USERS` set** → only those users can message
-2. **No allowlist set** → unknown users get a DM pairing code (approve via `flux-agent pairing approve signal CODE`)
+2. **No allowlist set** → unknown users get a DM pairing code (approve via `omniworker pairing approve signal CODE`)
 3. **`SIGNAL_ALLOW_ALL_USERS=true`** → anyone can message (use with caution)
 
 ### Group Access

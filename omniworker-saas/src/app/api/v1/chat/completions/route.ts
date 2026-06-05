@@ -104,7 +104,7 @@ function trimSystemPrompt(systemContent: string): string {
 
 // Flux Agent virtual models → role-based system prompts
 const FLUX_AGENT_ROLES: Record<string, string> = {
-  "flux-agent-code": `You are Flux Agent Code, an expert software engineer and coding assistant.
+  "omniworker-code": `You are Flux Agent Code, an expert software engineer and coding assistant.
 You write clean, efficient, well-documented code.
 Always prefer production-quality solutions with proper error handling.
 When fixing bugs, explain the root cause. When suggesting code, include complete examples.
@@ -260,7 +260,7 @@ async function reconcileStreamBilling(
         promptTokens: actual.promptTokens,
         completionTks: actual.completionTokens,
         modelUsed: requestedModel,
-        taskType: requestedModel === "flux-agent-code" ? "code_generation" : "cloud_reasoning",
+        taskType: requestedModel === "omniworker-code" ? "code_generation" : "cloud_reasoning",
         status: "completed",
       },
     });
@@ -566,7 +566,7 @@ function detectProvider(model: string): string {
 }
 
 function isFluxAgentVirtualModel(model: string): boolean {
-  return model.startsWith("flux-agent");
+  return model.startsWith("omniworker");
 }
 
 export async function POST(request: Request) {
@@ -1073,7 +1073,7 @@ export async function POST(request: Request) {
           promptTokens: promptTokens,
           completionTks: completionTokens,
           modelUsed: requestedModel,
-          taskType: requestedModel === "flux-agent-code" ? "code_generation" : "cloud_reasoning",
+          taskType: requestedModel === "omniworker-code" ? "code_generation" : "cloud_reasoning",
           status: "completed",
         },
       });

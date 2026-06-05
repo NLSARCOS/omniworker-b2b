@@ -9,42 +9,42 @@ description: "Master the Flux Agent Agent terminal interface — commands, keybi
 Flux Agent Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip
-Flux Agent also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `flux-agent --tui` — see the [TUI](tui.md) guide.
+Flux Agent also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `omniworker --tui` — see the [TUI](tui.md) guide.
 :::
 
 ## Running the CLI
 
 ```bash
 # Start an interactive session (default)
-flux-agent
+omniworker
 
 # Single query mode (non-interactive)
-flux-agent chat -q "Hello"
+omniworker chat -q "Hello"
 
 # With a specific model
-flux-agent chat --model "anthropic/claude-sonnet-4"
+omniworker chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-flux-agent chat --provider nous        # Use Nous Portal
-flux-agent chat --provider openrouter  # Force OpenRouter
+omniworker chat --provider nous        # Use Nous Portal
+omniworker chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
-flux-agent chat --toolsets "web,terminal,skills"
+omniworker chat --toolsets "web,terminal,skills"
 
 # Start with one or more skills preloaded
-flux-agent -s flux-agent-agent-dev,github-auth
-flux-agent chat -s github-pr-workflow -q "open a draft PR"
+omniworker -s omniworker-agent-dev,github-auth
+omniworker chat -s github-pr-workflow -q "open a draft PR"
 
 # Resume previous sessions
-flux-agent --continue             # Resume the most recent CLI session (-c)
-flux-agent --resume <session_id>  # Resume a specific session by ID (-r)
+omniworker --continue             # Resume the most recent CLI session (-c)
+omniworker --resume <session_id>  # Resume a specific session by ID (-r)
 
 # Verbose mode (debug output)
-flux-agent chat --verbose
+omniworker chat --verbose
 
 # Isolated git worktree (for running multiple agents in parallel)
-flux-agent -w                         # Interactive mode in worktree
-flux-agent -w -q "Fix issue #123"     # Single query in worktree
+omniworker -w                         # Interactive mode in worktree
+omniworker -w -q "Fix issue #123"     # Single query in worktree
 ```
 
 ## Interface Layout
@@ -85,7 +85,7 @@ Use `/usage` for a detailed breakdown including per-category costs (input vs out
 
 ### Session Resume Display
 
-When resuming a previous session (`flux-agent -c` or `flux-agent --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
+When resuming a previous session (`omniworker -c` or `omniworker --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
 
 ## Keybindings
 
@@ -139,11 +139,11 @@ Commands are case-insensitive — `/HELP` works the same as `/help`. Installed s
 You can define custom commands that run shell commands instantly without invoking the LLM. These work in both the CLI and messaging platforms (Telegram, Discord, etc.).
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 quick_commands:
   status:
     type: exec
-    command: systemctl status flux-agent-agent
+    command: systemctl status omniworker-agent
   gpu:
     type: exec
     command: nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader
@@ -159,15 +159,15 @@ Then type `/status`, `/gpu`, or `/restart` in any chat. See the [Configuration g
 If you already know which skills you want active for the session, pass them at launch time:
 
 ```bash
-flux-agent -s flux-agent-agent-dev,github-auth
-flux-agent chat -s github-pr-workflow -s github-auth
+omniworker -s omniworker-agent-dev,github-auth
+omniworker chat -s github-pr-workflow -s github-auth
 ```
 
 Flux Agent loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
 
 ## Skill Slash Commands
 
-Every installed skill in `~/.flux-agent/skills/` is automatically registered as a slash command. The skill name becomes the command:
+Every installed skill in `~/.omniworker/skills/` is automatically registered as a slash command. The skill name becomes the command:
 
 ```
 /gif-search funny cats
@@ -190,7 +190,7 @@ Set a predefined personality to change the agent's tone:
 
 Built-in personalities include: `helpful`, `concise`, `technical`, `creative`, `teacher`, `kawaii`, `catgirl`, `pirate`, `shakespeare`, `surfer`, `noir`, `uwu`, `philosopher`, `hype`.
 
-You can also define custom personalities in `~/.flux-agent/config.yaml`:
+You can also define custom personalities in `~/.omniworker/config.yaml`:
 
 ```yaml
 personalities:
@@ -250,7 +250,7 @@ The `display.busy_input_mode` config key controls what happens when you press En
 | `"steer"` | Your message is injected into the current run via `/steer`, arriving at the agent after the next tool call — no interrupt, no new turn |
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 display:
   busy_input_mode: "steer"   # or "queue" or "interrupt" (default)
 ```
@@ -307,7 +307,7 @@ Cycle through display modes with `/verbose`: `off → new → all → verbose`. 
 The `display.tool_preview_length` config key controls the maximum number of characters shown in tool call preview lines (e.g. file paths, terminal commands). The default is `0`, which means no limit — full paths and commands are shown.
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 display:
   tool_preview_length: 80   # Truncate tool previews to 80 chars (0 = no limit)
 ```
@@ -322,7 +322,7 @@ When you exit a CLI session, a resume command is printed:
 
 ```
 Resume this session with:
-  flux-agent --resume 20260225_143052_a1b2c3
+  omniworker --resume 20260225_143052_a1b2c3
 
 Session:        20260225_143052_a1b2c3
 Duration:       12m 34s
@@ -332,21 +332,21 @@ Messages:       28 (5 user, 18 tool calls)
 Resume options:
 
 ```bash
-flux-agent --continue                          # Resume the most recent CLI session
-flux-agent -c                                  # Short form
-flux-agent -c "my project"                     # Resume a named session (latest in lineage)
-flux-agent --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
-flux-agent --resume "refactoring auth"         # Resume by title
-flux-agent -r 20260225_143052_a1b2c3           # Short form
+omniworker --continue                          # Resume the most recent CLI session
+omniworker -c                                  # Short form
+omniworker -c "my project"                     # Resume a named session (latest in lineage)
+omniworker --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
+omniworker --resume "refactoring auth"         # Resume by title
+omniworker -r 20260225_143052_a1b2c3           # Short form
 ```
 
 Resuming restores the full conversation history from SQLite. The agent sees all previous messages, tool calls, and responses — just as if you never left.
 
-Use `/title My Session Name` inside a chat to name the current session, or `flux-agent sessions rename <id> <title>` from the command line. Use `flux-agent sessions list` to browse past sessions.
+Use `/title My Session Name` inside a chat to name the current session, or `omniworker sessions rename <id> <title>` from the command line. Use `omniworker sessions list` to browse past sessions.
 
 ### Session Storage
 
-CLI sessions are stored in Flux Agent's SQLite state database under `~/.flux-agent/state.db`. The database keeps:
+CLI sessions are stored in Flux Agent's SQLite state database under `~/.omniworker/state.db`. The database keeps:
 
 - session metadata (ID, title, timestamps, token counters)
 - message history
@@ -360,7 +360,7 @@ Some messaging adapters also keep per-platform transcript files alongside the da
 Long conversations are automatically summarized when approaching context limits:
 
 ```yaml
-# In ~/.flux-agent/config.yaml
+# In ~/.omniworker/config.yaml
 compression:
   enabled: true
   threshold: 0.50    # Compress at 50% of context limit by default
@@ -431,5 +431,5 @@ By default, the CLI runs in quiet mode which:
 
 For debug output:
 ```bash
-flux-agent chat --verbose
+omniworker chat --verbose
 ```

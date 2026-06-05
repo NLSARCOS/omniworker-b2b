@@ -130,7 +130,7 @@ def get_cloud_connection(use_https, host, port, verify=True):
     return CLOUD_CONN
 
 def resolve_env_path() -> str:
-    home_env = os.environ.get("FLUX AGENT_HOME", "").strip()
+    home_env = os.environ.get("OMNIWORKER_HOME", "").strip()
     if home_env:
         resolved_home = os.path.abspath(home_env)
         parent_dir = os.path.basename(os.path.dirname(resolved_home))
@@ -138,7 +138,7 @@ def resolve_env_path() -> str:
             return os.path.join(resolved_home, ".env")
         root_dir = resolved_home
     else:
-        dot_omni = os.path.expanduser("~/.flux-agent")
+        dot_omni = os.path.expanduser("~/.omniworker")
         dot_hermes = os.path.expanduser("~/.hermes")
         if os.path.exists(dot_omni):
             root_dir = dot_omni

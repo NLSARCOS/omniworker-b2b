@@ -474,7 +474,7 @@ def _cmd_list_archived(args) -> int:
 
 
 # ---------------------------------------------------------------------------
-# argparse wiring (called from flux-agent_cli.main)
+# argparse wiring (called from omniworker_cli.main)
 # ---------------------------------------------------------------------------
 
 def register_cli(parent: argparse.ArgumentParser) -> None:
@@ -583,7 +583,7 @@ def register_cli(parent: argparse.ArgumentParser) -> None:
 
 
 def cli_main(argv=None) -> int:
-    """Standalone entry (also usable by flux-agent_cli.main fallthrough)."""
+    """Standalone entry (also usable by omniworker_cli.main fallthrough)."""
     parser = argparse.ArgumentParser(prog="hermes curator")
     register_cli(parser)
     args = parser.parse_args(argv)

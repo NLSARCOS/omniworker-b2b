@@ -14,7 +14,7 @@ Parameter-efficient fine-tuning for LLMs using LoRA, QLoRA, and 25+ methods. Use
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/mlops/peft` |
+| Source | Optional — install with `omniworker skills install official/mlops/peft` |
 | Path | `optional-skills/mlops/peft` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |
@@ -440,8 +440,8 @@ TrainingArguments(learning_rate=1e-4)
 
 ## References
 
-- **[Advanced Usage](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/peft/references/advanced-usage.md)** - DoRA, LoftQ, rank stabilization, custom modules
-- **[Troubleshooting](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/peft/references/troubleshooting.md)** - Common errors, debugging, optimization
+- **[Advanced Usage](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/peft/references/advanced-usage.md)** - DoRA, LoftQ, rank stabilization, custom modules
+- **[Troubleshooting](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/peft/references/troubleshooting.md)** - Common errors, debugging, optimization
 
 ## Resources
 

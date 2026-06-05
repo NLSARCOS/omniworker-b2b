@@ -19,7 +19,7 @@ ACP is a good fit when you want Flux Agent to behave like an editor-native codin
 
 ## What Flux Agent exposes in ACP mode
 
-Flux Agent runs with a curated `flux-agent-acp` toolset designed for editor workflows. It includes:
+Flux Agent runs with a curated `omniworker-acp` toolset designed for editor workflows. It includes:
 
 - file tools: `read_file`, `write_file`, `patch`, `search_files`
 - terminal tools: `terminal`, `process`
@@ -41,14 +41,14 @@ pip install -e '.[acp]'
 
 This installs the `agent-client-protocol` dependency and enables:
 
-- `flux-agent acp`
-- `flux-agent-acp`
+- `omniworker acp`
+- `omniworker-acp`
 - `python -m acp_adapter`
 
 For Zed registry installs, Zed launches Flux Agent through the official ACP Registry entry. That entry uses a `uvx` distribution that runs:
 
 ```bash
-uvx --from 'flux-agent-agent[acp]==<version>' flux-agent-acp
+uvx --from 'omniworker-agent[acp]==<version>' omniworker-acp
 ```
 
 Make sure `uv` is available on `PATH` before using the registry install path.
@@ -58,11 +58,11 @@ Make sure `uv` is available on `PATH` before using the registry install path.
 Any of the following starts Flux Agent in ACP mode:
 
 ```bash
-flux-agent acp
+omniworker acp
 ```
 
 ```bash
-flux-agent-acp
+omniworker-acp
 ```
 
 ```bash
@@ -74,8 +74,8 @@ Flux Agent logs to stderr so stdout remains reserved for ACP JSON-RPC traffic.
 For non-interactive checks:
 
 ```bash
-flux-agent acp --version
-flux-agent acp --check
+omniworker acp --version
+omniworker acp --check
 ```
 
 ### Browser tools (optional)
@@ -85,15 +85,15 @@ Browser tools (`browser_navigate`, `browser_click`, etc.) depend on the
 wheel. Install them with:
 
 ```bash
-flux-agent acp --setup-browser           # interactive (prompts before ~400 MB download)
-flux-agent acp --setup-browser --yes     # accept the download non-interactively
+omniworker acp --setup-browser           # interactive (prompts before ~400 MB download)
+omniworker acp --setup-browser --yes     # accept the download non-interactively
 ```
 
-This is the standalone command. The Zed registry's terminal-auth flow (`flux-agent acp --setup`) also offers the browser bootstrap as a follow-up question after model selection, so most users never need to run `--setup-browser` directly.
+This is the standalone command. The Zed registry's terminal-auth flow (`omniworker acp --setup`) also offers the browser bootstrap as a follow-up question after model selection, so most users never need to run `--setup-browser` directly.
 
 What it does:
 
-- Installs Node.js 22 LTS into `~/.flux-agent/node/` if missing
+- Installs Node.js 22 LTS into `~/.omniworker/node/` if missing
 - `npm install -g agent-browser @askjo/camofox-browser` into that prefix (no sudo needed — `npm`'s `--prefix` points at the user-writable Flux Agent-managed Node)
 - Installs Playwright Chromium, or uses a detected system Chrome/Chromium when available
 
@@ -117,7 +117,7 @@ If you want to define Flux Agent manually, add it through VS Code settings under
 {
   "acp.agents": {
     "Flux Agent Agent": {
-      "command": "flux-agent",
+      "command": "omniworker",
       "args": ["acp"]
     }
   }
@@ -135,17 +135,17 @@ Zed v0.221.x and newer installs external agents through the official ACP Registr
 
 Prerequisites:
 
-- Configure Flux Agent provider credentials first with `flux-agent model`, or set them in `~/.flux-agent/.env` / `~/.flux-agent/config.yaml`.
-- Install `uv` so the registry launcher can run `uvx --from 'flux-agent-agent[acp]==<version>' flux-agent-acp`.
+- Configure Flux Agent provider credentials first with `omniworker model`, or set them in `~/.omniworker/.env` / `~/.omniworker/config.yaml`.
+- Install `uv` so the registry launcher can run `uvx --from 'omniworker-agent[acp]==<version>' omniworker-acp`.
 
 For local development before the registry entry is available, use a custom agent server in Zed settings:
 
 ```json
 {
   "agent_servers": {
-    "flux-agent-agent": {
+    "omniworker-agent": {
       "type": "custom",
-      "command": "flux-agent",
+      "command": "omniworker",
       "args": ["acp"]
     }
   }
@@ -157,7 +157,7 @@ For local development before the registry entry is available, use a custom agent
 Use an ACP-compatible plugin and point it at:
 
 ```text
-/path/to/flux-agent-agent/acp_registry
+/path/to/omniworker-agent/acp_registry
 ```
 
 ## Registry manifest
@@ -169,12 +169,12 @@ acp_registry/agent.json
 acp_registry/icon.svg
 ```
 
-The upstream registry PR copies those files into the top-level `flux-agent-agent/` directory in `agentclientprotocol/registry`.
+The upstream registry PR copies those files into the top-level `omniworker-agent/` directory in `agentclientprotocol/registry`.
 
-The registry entry uses a `uvx` distribution that points directly at the `flux-agent-agent` PyPI release:
+The registry entry uses a `uvx` distribution that points directly at the `omniworker-agent` PyPI release:
 
 ```text
-uvx --from 'flux-agent-agent[acp]==<version>' flux-agent-acp
+uvx --from 'omniworker-agent[acp]==<version>' omniworker-acp
 ```
 
 The registry CI verifies that the pinned version exists on PyPI, so the manifest's `version` and uvx `package` pin must always match `pyproject.toml`. `scripts/release.py` keeps them in lockstep automatically.
@@ -183,10 +183,10 @@ The registry CI verifies that the pinned version exists on PyPI, so the manifest
 
 ACP mode uses the same Flux Agent configuration as the CLI:
 
-- `~/.flux-agent/.env`
-- `~/.flux-agent/config.yaml`
-- `~/.flux-agent/skills/`
-- `~/.flux-agent/state.db`
+- `~/.omniworker/.env`
+- `~/.omniworker/config.yaml`
+- `~/.omniworker/skills/`
+- `~/.omniworker/state.db`
 
 Provider resolution uses Flux Agent' normal runtime resolver, so ACP inherits the currently configured provider and credentials. Flux Agent also advertises a terminal auth method (`--setup`) for first-run registry clients; this opens Flux Agent' interactive model/provider setup.
 
@@ -225,7 +225,7 @@ On timeout or error, the approval bridge denies the request.
 Check:
 
 - In Zed, open the ACP Registry with `zed: acp registry` and search for **Flux Agent Agent**.
-- For manual/local development, verify the custom `agent_servers` command points to `flux-agent acp`.
+- For manual/local development, verify the custom `agent_servers` command points to `omniworker acp`.
 - Flux Agent is installed and on your PATH.
 - The ACP extra is installed (`pip install -e '.[acp]'`).
 - `uv` is installed if launching from the official Zed registry entry.
@@ -235,10 +235,10 @@ Check:
 Try these checks:
 
 ```bash
-flux-agent acp --version
-flux-agent acp --check
-flux-agent doctor
-flux-agent status
+omniworker acp --version
+omniworker acp --check
+omniworker doctor
+omniworker status
 ```
 
 ### Missing credentials
@@ -246,10 +246,10 @@ flux-agent status
 ACP mode uses Flux Agent' existing provider setup. Configure credentials with:
 
 ```bash
-flux-agent model
+omniworker model
 ```
 
-or by editing `~/.flux-agent/.env`. Registry clients can also trigger Flux Agent' terminal auth flow, which runs the same interactive provider/model setup.
+or by editing `~/.omniworker/.env`. Registry clients can also trigger Flux Agent' terminal auth flow, which runs the same interactive provider/model setup.
 
 ### Zed registry launcher cannot find uv
 

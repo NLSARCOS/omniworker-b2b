@@ -34,18 +34,18 @@ WORKER_TIMEOUT_S = 60
 WT = str(Path(__file__).resolve().parents[2])
 
 
-def worker_loop(worker_id: int, flux-agent_home: str, result_file: str) -> None:
+def worker_loop(worker_id: int, omniworker_home: str, result_file: str) -> None:
     """One worker's inner loop. Runs in a fresh Python process.
 
     Tries to claim a ready task, marks it done with a per-worker summary,
     repeats until the ready pool is empty. Records every claim + complete
     into its own JSON result file for later aggregation.
     """
-    os.environ["OMNIWORKER_HOME"] = flux-agent_home
-    os.environ["HOME"] = flux-agent_home
+    os.environ["OMNIWORKER_HOME"] = omniworker_home
+    os.environ["HOME"] = omniworker_home
     sys.path.insert(0, WT)
 
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
 
     events = []
     empty_polls = 0
@@ -118,14 +118,14 @@ def worker_loop(worker_id: int, flux-agent_home: str, result_file: str) -> None:
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="flux-agent_concurrency_")
+    home = tempfile.mkdtemp(prefix="omniworker_concurrency_")
     print(f"OMNIWORKER_HOME = {home}")
 
     # Seed.
     os.environ["OMNIWORKER_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
 
     kb.init_db()
     conn = kb.connect()

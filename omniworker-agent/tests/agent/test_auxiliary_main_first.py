@@ -290,14 +290,14 @@ class TestResolveVisionMainFirst:
         ), patch(
             "agent.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "flux-agent_cli.auth.resolve_api_key_provider_credentials",
+            "omniworker_cli.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "flux-agent_cli.copilot_auth.copilot_request_headers",
+            "omniworker_cli.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()
@@ -327,14 +327,14 @@ class TestResolveVisionMainFirst:
         with patch(
             "agent.auxiliary_client.OpenAI",
         ) as mock_openai, patch(
-            "flux-agent_cli.auth.resolve_api_key_provider_credentials",
+            "omniworker_cli.auth.resolve_api_key_provider_credentials",
             return_value={
                 "provider": "copilot",
                 "api_key": "copilot-api-token",
                 "base_url": "https://api.githubcopilot.com",
             },
         ), patch(
-            "flux-agent_cli.copilot_auth.copilot_request_headers",
+            "omniworker_cli.copilot_auth.copilot_request_headers",
             side_effect=fake_headers,
         ):
             mock_client = MagicMock()

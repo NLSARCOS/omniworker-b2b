@@ -20,11 +20,11 @@ def test_install_script_unsets_pythonpath_and_pythonhome_early() -> None:
     assert 'unset PYTHONHOME' in text
 
 
-def test_flux-agent_launcher_wrapper_clears_python_env_before_exec() -> None:
+def test_omniworker_launcher_wrapper_clears_python_env_before_exec() -> None:
     text = INSTALL_SH.read_text()
 
     # Wrapper should clear env and forward args untouched to the venv entrypoint.
-    assert 'cat > "$command_link_dir/flux-agent" <<EOF' in text
+    assert 'cat > "$command_link_dir/omniworker" <<EOF' in text
     assert 'unset PYTHONPATH' in text
     assert 'unset PYTHONHOME' in text
     assert 'exec "$OMNIWORKER_BIN" "\\$@"' in text

@@ -32,25 +32,25 @@ High-level categories:
 For the authoritative code-derived registry, see [Built-in Tools Reference](/docs/reference/tools-reference) and [Toolsets Reference](/docs/reference/toolsets-reference).
 
 :::tip Nous Tool Gateway
-Paid [Nous Portal](https://portal.flux-agent.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `flux-agent model` to enable it, or configure individual tools with `flux-agent tools`.
+Paid [Nous Portal](https://portal.omniworker.com) subscribers can use web search, image generation, TTS, and browser automation through the **[Tool Gateway](tool-gateway.md)** — no separate API keys needed. Run `omniworker model` to enable it, or configure individual tools with `omniworker tools`.
 :::
 
 ## Using Toolsets
 
 ```bash
 # Use specific toolsets
-flux-agent chat --toolsets "web,terminal"
+omniworker chat --toolsets "web,terminal"
 
 # See all available tools
-flux-agent tools
+omniworker tools
 
 # Configure tools per platform (interactive)
-flux-agent tools
+omniworker tools
 ```
 
 Common toolsets include `web`, `search`, `terminal`, `file`, `browser`, `vision`, `image_gen`, `moa`, `skills`, `tts`, `todo`, `memory`, `session_search`, `cronjob`, `code_execution`, `delegation`, `clarify`, `homeassistant`, `messaging`, `spotify`, `discord`, `discord_admin`, `debugging`, `safe`, and `rl`.
 
-See [Toolsets Reference](/docs/reference/toolsets-reference) for the full set, including platform presets such as `flux-agent-cli`, `flux-agent-telegram`, and dynamic MCP toolsets like `mcp-<server>`.
+See [Toolsets Reference](/docs/reference/toolsets-reference) for the full set, including platform presets such as `omniworker-cli`, `omniworker-telegram`, and dynamic MCP toolsets like `mcp-<server>`.
 
 ## Terminal Backends
 
@@ -69,7 +69,7 @@ The terminal tool can execute commands in different environments:
 ### Configuration
 
 ```yaml
-# In ~/.flux-agent/config.yaml
+# In ~/.omniworker/config.yaml
 terminal:
   backend: local    # or: docker, ssh, singularity, modal, daytona, vercel_sandbox
   cwd: "."          # Working directory
@@ -97,7 +97,7 @@ terminal:
   backend: ssh
 ```
 ```bash
-# Set credentials in ~/.flux-agent/.env
+# Set credentials in ~/.omniworker/.env
 TERMINAL_SSH_HOST=my-server.example.com
 TERMINAL_SSH_USER=myuser
 TERMINAL_SSH_KEY=~/.ssh/id_rsa
@@ -110,8 +110,8 @@ TERMINAL_SSH_KEY=~/.ssh/id_rsa
 apptainer build ~/python.sif docker://python:3.11-slim
 
 # Configure
-flux-agent config set terminal.backend singularity
-flux-agent config set terminal.singularity_image ~/python.sif
+omniworker config set terminal.backend singularity
+omniworker config set terminal.singularity_image ~/python.sif
 ```
 
 ### Modal (Serverless Cloud)
@@ -119,15 +119,15 @@ flux-agent config set terminal.singularity_image ~/python.sif
 ```bash
 uv pip install modal
 modal setup
-flux-agent config set terminal.backend modal
+omniworker config set terminal.backend modal
 ```
 
 ### Vercel Sandbox
 
 ```bash
-pip install 'flux-agent-agent[vercel]'
-flux-agent config set terminal.backend vercel_sandbox
-flux-agent config set terminal.vercel_runtime node24
+pip install 'omniworker-agent[vercel]'
+omniworker config set terminal.backend vercel_sandbox
+omniworker config set terminal.vercel_runtime node24
 ```
 
 Authenticate with all three of `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, and `VERCEL_TEAM_ID`. This access-token setup is the supported path for deployments and normal long-running Flux Agent processes on Render, Railway, Docker, and similar hosts. Supported runtimes are `node24`, `node22`, and `python3.13`; Flux Agent defaults to `/vercel/sandbox` as the remote workspace root.
@@ -135,13 +135,13 @@ Authenticate with all three of `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, and `VERCEL_
 For one-off local development, Flux Agent also accepts short-lived Vercel OIDC tokens:
 
 ```bash
-VERCEL_OIDC_TOKEN="$(vc project token <project-name>)" flux-agent chat
+VERCEL_OIDC_TOKEN="$(vc project token <project-name>)" omniworker chat
 ```
 
 From a linked Vercel project directory:
 
 ```bash
-VERCEL_OIDC_TOKEN="$(vc project token)" flux-agent chat
+VERCEL_OIDC_TOKEN="$(vc project token)" omniworker chat
 ```
 
 With `container_persistent: true`, Flux Agent uses Vercel snapshots to preserve filesystem state across sandbox recreation for the same task. This can include Flux Agent-synced credentials, skills, and cache files inside the sandbox. Snapshots do not preserve live processes, PID space, or the same live sandbox identity.
@@ -199,8 +199,8 @@ PTY mode (`pty=true`) enables interactive CLI tools like Codex and Claude Code.
 
 ## Sudo Support
 
-If a command needs sudo, you'll be prompted for your password (cached for the session). Or set `SUDO_PASSWORD` in `~/.flux-agent/.env`.
+If a command needs sudo, you'll be prompted for your password (cached for the session). Or set `SUDO_PASSWORD` in `~/.omniworker/.env`.
 
 :::warning
-On messaging platforms, if sudo fails, the output includes a tip to add `SUDO_PASSWORD` to `~/.flux-agent/.env`.
+On messaging platforms, if sudo fails, the output includes a tip to add `SUDO_PASSWORD` to `~/.omniworker/.env`.
 :::

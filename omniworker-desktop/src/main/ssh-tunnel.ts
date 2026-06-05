@@ -174,7 +174,7 @@ export async function ensureSshTunnel(config: SshConfig): Promise<void> {
   await startSshTunnel(config);
 }
 
-// Test SSH reachability + flux-agent health endpoint through a temporary tunnel
+// Test SSH reachability + omniworker health endpoint through a temporary tunnel
 export function testSshConnection(config: SshConfig): Promise<boolean> {
   return findFreePort(config.localPort || 19642)
     .then(
@@ -223,7 +223,7 @@ export function testSshConnection(config: SshConfig): Promise<boolean> {
               return;
             }
 
-            // Port is open — hit flux-agent /health
+            // Port is open — hit omniworker /health
             const req = http.request(
               `http://127.0.0.1:${localPort}/health`,
               { method: "GET", timeout: 3000 },

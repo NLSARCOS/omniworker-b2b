@@ -97,7 +97,7 @@ gateway:
     upload_failed:         "✗ Hata ayıklama raporu yüklenemedi: {error}"
     header:                "**Hata ayıklama raporu yüklendi:**"
     auto_delete:           "⏱ Paste'ler 6 saat içinde otomatik olarak silinecek."
-    full_logs_hint:        "Tam günlük yüklemeleri için CLI'dan `flux-agent debug share` kullanın."
+    full_logs_hint:        "Tam günlük yüklemeleri için CLI'dan `omniworker debug share` kullanın."
     share_hint:            "Destek için bu bağlantıları Flux Agent ekibiyle paylaşın."
 
   deny:
@@ -146,7 +146,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ kanban hatası: {error}"
     subscribed_suffix:     "(abone olundu — {task_id} tamamlandığında veya engellendiğinde bildirim alacaksınız)"
-    truncated_suffix:      "… (kısaltıldı; tam çıktı için terminalinizde `flux-agent kanban …` komutunu kullanın)"
+    truncated_suffix:      "… (kısaltıldı; tam çıktı için terminalinizde `omniworker kanban …` komutunu kullanın)"
     no_output:             "(çıktı yok)"
 
   personality:
@@ -214,7 +214,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ Gateway yeniden başlatma zaten sürüyor..."
-    restarting:            "♻ Gateway yeniden başlatılıyor. 60 saniye içinde bildirim almazsanız konsoldan `flux-agent gateway restart` ile yeniden başlatın."
+    restarting:            "♻ Gateway yeniden başlatılıyor. 60 saniye içinde bildirim almazsanız konsoldan `omniworker gateway restart` ile yeniden başlatın."
 
   resume:
     db_unavailable:        "Oturum veritabanı kullanılamıyor."
@@ -289,9 +289,9 @@ gateway:
     removed:               "↩️ {count} mesaj geri alındı.\nKaldırıldı: \"{preview}\""
 
   update:
-    platform_not_messaging:  "✗ /update yalnızca mesajlaşma platformlarında kullanılabilir. Terminalden `flux-agent update` komutunu çalıştırın."
+    platform_not_messaging:  "✗ /update yalnızca mesajlaşma platformlarında kullanılabilir. Terminalden `omniworker update` komutunu çalıştırın."
     not_git_repo:            "✗ Git deposu değil — güncellenemiyor."
-    flux-agent_cmd_not_found:    "✗ `flux-agent` komutu bulunamadı. Flux Agent çalışıyor, ancak güncelleme komutu yürütülebilir dosyayı PATH'te veya mevcut Python yorumlayıcısı aracılığıyla bulamadı. Terminalde `flux-agent update` komutunu manuel olarak çalıştırmayı deneyin."
+    omniworker_cmd_not_found:    "✗ `omniworker` komutu bulunamadı. Flux Agent çalışıyor, ancak güncelleme komutu yürütülebilir dosyayı PATH'te veya mevcut Python yorumlayıcısı aracılığıyla bulamadı. Terminalde `omniworker update` komutunu manuel olarak çalıştırmayı deneyin."
     start_failed:            "✗ Güncelleme başlatılamadı: {error}"
     starting:                "⚕ Flux Agent güncellemesi başlatılıyor… İlerlemeyi buraya akıtacağım."
 

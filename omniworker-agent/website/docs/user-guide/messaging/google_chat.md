@@ -58,13 +58,13 @@ Both are free for the volumes a personal bot generates.
 
 **IAM & Admin → Service Accounts → Create Service Account.**
 
-- Name: `flux-agent-chat-bot`
+- Name: `omniworker-chat-bot`
 - Skip the "Grant this service account access to project" step. IAM on the specific
   subscription is all you need — do **NOT** grant project-level Pub/Sub roles.
 
 After creation, open the SA, go to **Keys → Add Key → Create new key → JSON** and
 download the file. Save it somewhere only Flux Agent can read (e.g.,
-`~/.flux-agent/google-chat-sa.json`, `chmod 600`).
+`~/.omniworker/google-chat-sa.json`, `chmod 600`).
 
 :::caution There is NO "Chat Bot Caller" role
 A common mistake is to search for a Chat-specific IAM role and grant it at the
@@ -79,14 +79,14 @@ the subscription you create in the next step.
 
 **Pub/Sub → Topics → Create topic.**
 
-- Topic ID: `flux-agent-chat-events`
+- Topic ID: `omniworker-chat-events`
 - Leave the defaults for everything else.
 
 After creation, the topic's detail page has a **Subscriptions** tab. Create one:
 
-- Subscription ID: `flux-agent-chat-events-sub`
+- Subscription ID: `omniworker-chat-events-sub`
 - Delivery type: **Pull**
-- Message retention: **7 days** (so backlog survives a flux-agent restart)
+- Message retention: **7 days** (so backlog survives a omniworker restart)
 - Leave the rest default.
 
 ---
@@ -107,7 +107,7 @@ never receive anything.
 
 On the **subscription**, add your own Service Account as a principal:
 
-- Principal: `flux-agent-chat-bot@<your-project>.iam.gserviceaccount.com`
+- Principal: `omniworker-chat-bot@<your-project>.iam.gserviceaccount.com`
 - Role: `Pub/Sub Subscriber`
 
 Also grant `Pub/Sub Viewer` on the same subscription — Flux Agent calls
@@ -125,7 +125,7 @@ Go to **APIs & Services → Google Chat API → Configuration**.
 - **Functionality**: enable **Receive 1:1 messages** and **Join spaces and group
   conversations**.
 - **Connection settings**: select **Cloud Pub/Sub**, enter the topic name
-  `projects/<your-project>/topics/flux-agent-chat-events`.
+  `projects/<your-project>/topics/omniworker-chat-events`.
 - **Visibility**: restrict to your workspace (or specific users) — do not publish
   to everyone while you're testing.
 
@@ -144,13 +144,13 @@ self-message filtering.
 
 ## Step 9: Configure Flux Agent
 
-Add the Google Chat section to `~/.flux-agent/.env`:
+Add the Google Chat section to `~/.omniworker/.env`:
 
 ```bash
 # Required
 GOOGLE_CHAT_PROJECT_ID=my-chat-bot-123
-GOOGLE_CHAT_SUBSCRIPTION_NAME=projects/my-chat-bot-123/subscriptions/flux-agent-chat-events-sub
-GOOGLE_CHAT_SERVICE_ACCOUNT_JSON=/home/you/.flux-agent/google-chat-sa.json
+GOOGLE_CHAT_SUBSCRIPTION_NAME=projects/my-chat-bot-123/subscriptions/omniworker-chat-events-sub
+GOOGLE_CHAT_SERVICE_ACCOUNT_JSON=/home/you/.omniworker/google-chat-sa.json
 
 # Authorization — paste the emails of people allowed to talk to the bot
 GOOGLE_CHAT_ALLOWED_USERS=you@yourdomain.com,coworker@yourdomain.com
@@ -173,7 +173,7 @@ pip install google-cloud-pubsub google-api-python-client google-auth google-auth
 Start the gateway:
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 You should see a log line like:
@@ -241,7 +241,7 @@ python -m gateway.platforms.google_chat_user_oauth \
     --client-secret /path/to/client_secret.json
 ```
 
-That writes `~/.flux-agent/google_chat_user_client_secret.json`. This is shared
+That writes `~/.omniworker/google_chat_user_client_secret.json`. This is shared
 infrastructure — it identifies the OAuth *app*, not any individual user. One
 file per host is enough no matter how many users authorize later.
 
@@ -259,7 +259,7 @@ Each user runs the flow once, in their own DM with the bot:
    into chat as `/setup-files <PASTED_URL>`. The bot exchanges it for a
    refresh token.
 
-The token lands at `~/.flux-agent/google_chat_user_tokens/<sanitized_email>.json`.
+The token lands at `~/.omniworker/google_chat_user_tokens/<sanitized_email>.json`.
 Subsequent file requests in that user's DM use *their* token, so the bot
 uploads as them and the message lands in their space.
 
@@ -276,7 +276,7 @@ on purpose.
 ### Multi-user behavior
 
 When the asker has no per-user token yet, the bot falls back to a legacy
-single-user token at `~/.flux-agent/google_chat_user_token.json` (if present from
+single-user token at `~/.omniworker/google_chat_user_token.json` (if present from
 a pre-multi-user install). When neither is available, the bot posts a clear
 text notice telling the asker to run `/setup-files`.
 
@@ -295,7 +295,7 @@ evicts only that user's cache. Users don't disrupt each other.
 2. If the subscription has zero messages, Google Chat isn't publishing.
    Double-check the IAM binding on the **topic**:
    `chat-api-push@system.gserviceaccount.com` must have `Pub/Sub Publisher`.
-3. Check `flux-agent gateway` logs for `[GoogleChat] Connected`. If you see
+3. Check `omniworker gateway` logs for `[GoogleChat] Connected`. If you see
    `[GoogleChat] Config validation failed`, the error message tells you which
    env var to fix.
 
@@ -365,6 +365,6 @@ The auth code is single-use and short-lived (typically a few minutes). Send
 - **User OAuth scope**: the per-user attachment flow requests *only*
   `chat.messages.create` — the minimum that covers `media.upload` plus the
   follow-up `messages.create`. Tokens are persisted as plain JSON at
-  `~/.flux-agent/google_chat_user_tokens/<sanitized_email>.json` (filesystem
+  `~/.omniworker/google_chat_user_tokens/<sanitized_email>.json` (filesystem
   permissions are the protection — same model as the SA key file). Each
   token is owned by exactly one user; revoke is scoped to that user.

@@ -6,7 +6,7 @@ description: "Build wrapper CLIs that extend the Flux Agent TUI with custom widg
 
 # Extending the CLI
 
-Flux Agent exposes protected extension hooks on `Flux AgentCLI` so wrapper CLIs can add widgets, keybindings, and layout customizations without overriding the 1000+ line `run()` method. This keeps your extension decoupled from internal changes.
+Flux Agent exposes protected extension hooks on `OmniWorkerCLI` so wrapper CLIs can add widgets, keybindings, and layout customizations without overriding the 1000+ line `run()` method. This keeps your extension decoupled from internal changes.
 
 ## Extension points
 
@@ -28,12 +28,12 @@ The first three are new protected hooks. The last two already existed.
 #!/usr/bin/env python3
 """my_cli.py — Example wrapper CLI that extends Flux Agent."""
 
-from cli import Flux AgentCLI
+from cli import OmniWorkerCLI
 from prompt_toolkit.layout import FormattedTextControl, Window
 from prompt_toolkit.filters import Condition
 
 
-class MyCLI(Flux AgentCLI):
+class MyCLI(OmniWorkerCLI):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 Run it:
 
 ```bash
-cd ~/.flux-agent/flux-agent-agent
+cd ~/.omniworker/omniworker-agent
 source .venv/bin/activate
 python my_cli.py
 ```

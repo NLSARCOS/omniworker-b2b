@@ -12,7 +12,7 @@ import threading
 from collections import OrderedDict
 from pathlib import Path
 
-from flux-agent_constants import get_flux-agent_home, get_skills_dir, is_wsl
+from omniworker_constants import get_omniworker_home, get_skills_dir, is_wsl
 from typing import Optional
 
 from agent.skill_utils import (
@@ -86,11 +86,11 @@ def _find_git_root(start: Path) -> Optional[Path]:
     return None
 
 
-_FLUX AGENT_MD_NAMES = (".flux-agent.md", "FLUX AGENT.md")
+_OMNIWORKER_MD_NAMES = (".omniworker.md", "OMNIWORKER.md")
 
 
-def _find_flux-agent_md(cwd: Path) -> Optional[Path]:
-    """Discover the nearest ``.flux-agent.md`` or ``FLUX AGENT.md``.
+def _find_omniworker_md(cwd: Path) -> Optional[Path]:
+    """Discover the nearest ``.omniworker.md`` or ``OMNIWORKER.md``.
 
     Search order: *cwd* first, then each parent directory up to (and
     including) the git repository root.  Returns the first match, or
@@ -100,7 +100,7 @@ def _find_flux-agent_md(cwd: Path) -> Optional[Path]:
     current = cwd.resolve()
 
     for directory in [current, *current.parents]:
-        for name in _FLUX AGENT_MD_NAMES:
+        for name in _OMNIWORKER_MD_NAMES:
             candidate = directory / name
             if candidate.is_file():
                 return candidate
@@ -141,10 +141,10 @@ DEFAULT_AGENT_IDENTITY = (
     "Be targeted and efficient in your exploration and investigations."
 )
 
-FLUX AGENT_AGENT_HELP_GUIDANCE = (
+OMNIWORKER_AGENT_HELP_GUIDANCE = (
     "If the user asks about configuring, setting up, or using Flux Agent Agent "
-    "itself, load the `flux-agent-agent` skill with skill_view(name='flux-agent-agent') "
-    "before answering. Docs: https://flux-agent-agent.flux-agent.com/docs"
+    "itself, load the `omniworker-agent` skill with skill_view(name='omniworker-agent') "
+    "before answering. Docs: https://omniworker-agent.omniworker.com/docs"
 )
 
 MEMORY_GUIDANCE = (
@@ -188,8 +188,8 @@ SKILLS_GUIDANCE = (
 KANBAN_GUIDANCE = (
     "# Kanban task execution protocol\n"
     "You have been assigned ONE task from "
-    "the shared board at `~/.flux-agent/kanban.db`. Your task id is in "
-    "`$FLUX AGENT_KANBAN_TASK`; your workspace is `$FLUX AGENT_KANBAN_WORKSPACE`. "
+    "the shared board at `~/.omniworker/kanban.db`. Your task id is in "
+    "`$OMNIWORKER_KANBAN_TASK`; your workspace is `$OMNIWORKER_KANBAN_WORKSPACE`. "
     "The `kanban_*` tools in your schema are your primary coordination surface — "
     "they write directly to the shared SQLite DB and work regardless of terminal "
     "backend (local/docker/modal/ssh).\n"
@@ -201,7 +201,7 @@ KANBAN_GUIDANCE = (
     "metadata), any prior attempts on this task if you're a retry, the full "
     "comment thread, and a pre-formatted `worker_context` you can treat as "
     "ground truth.\n"
-    "2. **Work inside the workspace.** `cd $FLUX AGENT_KANBAN_WORKSPACE` before "
+    "2. **Work inside the workspace.** `cd $OMNIWORKER_KANBAN_WORKSPACE` before "
     "any file operations. The workspace is yours for this run. Don't modify "
     "files outside it unless the task explicitly asks.\n"
     "3. **Heartbeat on long operations.** Call `kanban_heartbeat(note=...)` "
@@ -241,7 +241,7 @@ KANBAN_GUIDANCE = (
     "\n"
     "## Do NOT\n"
     "\n"
-    "- Do not shell out to `flux-agent kanban <verb>` for board operations. Use "
+    "- Do not shell out to `omniworker kanban <verb>` for board operations. Use "
     "the `kanban_*` tools — they work across all terminal backends.\n"
     "- Do not complete a task you didn't actually finish. Block it.\n"
     "- Do not assign follow-up work to yourself. Assign it to the right "
@@ -837,7 +837,7 @@ _SKILLS_SNAPSHOT_VERSION = 1
 
 
 def _skills_prompt_snapshot_path() -> Path:
-    return get_flux-agent_home() / ".skills_prompt_snapshot.json"
+    return get_omniworker_home() / ".skills_prompt_snapshot.json"
 
 
 def clear_skills_system_prompt_cache(*, clear_snapshot: bool = False) -> None:
@@ -999,7 +999,7 @@ def build_skills_system_prompt(
     Falls back to a full filesystem scan when both layers miss.
 
     External skill directories (``skills.external_dirs`` in config.yaml) are
-    scanned alongside the local ``~/.flux-agent/skills/`` directory.  External dirs
+    scanned alongside the local ``~/.omniworker/skills/`` directory.  External dirs
     are read-only — they appear in the index but new skills are always created
     in the local dir.  Local skills take precedence when names collide.
     """
@@ -1014,8 +1014,8 @@ def build_skills_system_prompt(
     # produce distinct cache entries (gateway serves multiple platforms).
     from gateway.session_context import get_session_env
     _platform_hint = (
-        os.environ.get("FLUX AGENT_PLATFORM")
-        or get_session_env("FLUX AGENT_SESSION_PLATFORM")
+        os.environ.get("OMNIWORKER_PLATFORM")
+        or get_session_env("OMNIWORKER_SESSION_PLATFORM")
         or ""
     )
     disabled = get_disabled_skill_names()
@@ -1195,7 +1195,7 @@ def build_skills_system_prompt(
         result = (
             "## Skills\n"
             "Scan the index below. If a skill matches your task, load it with skill_view(name) "
-            "and follow its instructions. For Flux Agent config/setup always load `flux-agent-agent` first.\n"
+            "and follow its instructions. For Flux Agent config/setup always load `omniworker-agent` first.\n"
             "\n"
             "<available_skills>\n"
             + "\n".join(index_lines) + "\n"
@@ -1215,7 +1215,7 @@ def build_skills_system_prompt(
 def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -> str:
     """Build a compact Nous subscription capability block for the system prompt."""
     try:
-        from flux-agent_cli.nous_subscription import get_nous_subscription_features
+        from omniworker_cli.nous_subscription import get_nous_subscription_features
         from tools.tool_backend_helpers import managed_nous_tools_enabled
     except Exception as exc:
         logger.debug("Failed to import Nous subscription helper: %s", exc)
@@ -1272,7 +1272,7 @@ def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -
             "When a Nous-managed feature is active, do not ask the user for Firecrawl, FAL, OpenAI TTS, or Browser-Use API keys.",
             "If the user is not subscribed and asks for a capability that Nous subscription would unlock or simplify, suggest Nous subscription as one option alongside direct setup or local alternatives.",
             "Do not mention subscription unless the user asks about it or it directly solves the current missing capability.",
-            "Useful commands: flux-agent setup, flux-agent setup tools, flux-agent setup terminal, flux-agent status.",
+            "Useful commands: omniworker setup, omniworker setup tools, omniworker setup terminal, omniworker status.",
         ]
     )
     return "\n".join(lines)
@@ -1295,19 +1295,19 @@ def _truncate_content(content: str, filename: str, max_chars: int = CONTEXT_FILE
 
 
 def load_soul_md() -> Optional[str]:
-    """Load SOUL.md from FLUX AGENT_HOME and return its content, or None.
+    """Load SOUL.md from OMNIWORKER_HOME and return its content, or None.
 
     Used as the agent identity (slot #1 in the system prompt).  When this
     returns content, ``build_context_files_prompt`` should be called with
     ``skip_soul=True`` so SOUL.md isn't injected twice.
     """
     try:
-        from flux-agent_cli.config import ensure_flux-agent_home
-        ensure_flux-agent_home()
+        from omniworker_cli.config import ensure_omniworker_home
+        ensure_omniworker_home()
     except Exception as e:
-        logger.debug("Could not ensure FLUX AGENT_HOME before loading SOUL.md: %s", e)
+        logger.debug("Could not ensure OMNIWORKER_HOME before loading SOUL.md: %s", e)
 
-    soul_path = get_flux-agent_home() / "SOUL.md"
+    soul_path = get_omniworker_home() / "SOUL.md"
     if not soul_path.exists():
         return None
     try:
@@ -1322,26 +1322,26 @@ def load_soul_md() -> Optional[str]:
         return None
 
 
-def _load_flux-agent_md(cwd_path: Path) -> str:
-    """.flux-agent.md / FLUX AGENT.md — walk to git root."""
-    flux-agent_md_path = _find_flux-agent_md(cwd_path)
-    if not flux-agent_md_path:
+def _load_omniworker_md(cwd_path: Path) -> str:
+    """.omniworker.md / OMNIWORKER.md — walk to git root."""
+    omniworker_md_path = _find_omniworker_md(cwd_path)
+    if not omniworker_md_path:
         return ""
     try:
-        content = flux-agent_md_path.read_text(encoding="utf-8").strip()
+        content = omniworker_md_path.read_text(encoding="utf-8").strip()
         if not content:
             return ""
         content = _strip_yaml_frontmatter(content)
-        rel = flux-agent_md_path.name
+        rel = omniworker_md_path.name
         try:
-            rel = str(flux-agent_md_path.relative_to(cwd_path))
+            rel = str(omniworker_md_path.relative_to(cwd_path))
         except ValueError:
             pass
         content = _scan_context_content(content, rel)
         result = f"## {rel}\n\n{content}"
-        return _truncate_content(result, ".flux-agent.md")
+        return _truncate_content(result, ".omniworker.md")
     except Exception as e:
-        logger.debug("Could not read %s: %s", flux-agent_md_path, e)
+        logger.debug("Could not read %s: %s", omniworker_md_path, e)
         return ""
 
 
@@ -1412,12 +1412,12 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
     """Discover and load context files for the system prompt.
 
     Priority (first found wins — only ONE project context type is loaded):
-      1. .flux-agent.md / FLUX AGENT.md  (walk to git root)
+      1. .omniworker.md / OMNIWORKER.md  (walk to git root)
       2. AGENTS.md / agents.md   (cwd only)
       3. CLAUDE.md / claude.md   (cwd only)
       4. .cursorrules / .cursor/rules/*.mdc  (cwd only)
 
-    SOUL.md from FLUX AGENT_HOME is independent and always included when present.
+    SOUL.md from OMNIWORKER_HOME is independent and always included when present.
     Each context source is capped at 20,000 chars.
 
     When *skip_soul* is True, SOUL.md is not included here (it was already
@@ -1431,7 +1431,7 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
 
     # Priority-based project context: first match wins
     project_context = (
-        _load_flux-agent_md(cwd_path)
+        _load_omniworker_md(cwd_path)
         or _load_agents_md(cwd_path)
         or _load_claude_md(cwd_path)
         or _load_cursorrules(cwd_path)
@@ -1439,7 +1439,7 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
     if project_context:
         sections.append(project_context)
 
-    # SOUL.md from FLUX AGENT_HOME only — skip when already loaded as identity
+    # SOUL.md from OMNIWORKER_HOME only — skip when already loaded as identity
     if not skip_soul:
         soul_content = load_soul_md()
         if soul_content:
@@ -1519,7 +1519,7 @@ def build_relevant_skills_prompt(
 
     Strategy:
       - Score each skill by keyword matches in name, description, and category.
-      - Always retain ``flux-agent-agent`` (critical for self-reference).
+      - Always retain ``omniworker-agent`` (critical for self-reference).
       - Cap output at roughly *max_tokens* (~4 chars/token estimate).
     """
     full_prompt = build_skills_system_prompt(available_tools, available_toolsets)
@@ -1579,11 +1579,11 @@ def build_relevant_skills_prompt(
 
     selected: list[tuple[int, str, str]] = []
     for score, line, category in scored_skills:
-        is_flux-agent = "flux-agent-agent" in line.lower()
-        if not is_flux-agent and score <= 0:
+        is_omniworker = "omniworker-agent" in line.lower()
+        if not is_omniworker and score <= 0:
             continue
         line_chars = len(line) + 1  # +1 for newline
-        if used_chars + line_chars > max_chars and not is_flux-agent:
+        if used_chars + line_chars > max_chars and not is_omniworker:
             break
         selected.append((score, line, category))
         used_chars += line_chars
@@ -1617,7 +1617,7 @@ def build_relevant_context_prompt(
     roughly *max_tokens*.
 
     Strategy:
-      - Score each candidate file (AGENTS.md, .flux-agent.md, CLAUDE.md,
+      - Score each candidate file (AGENTS.md, .omniworker.md, CLAUDE.md,
         .cursorrules, SOUL.md) by keyword matches.
       - Pick the single best-scoring **project context** file.
       - Include SOUL.md only if it scores well (>= 50% of top score) and
@@ -1639,7 +1639,7 @@ def build_relevant_context_prompt(
 
     for loader, label in [
         (_load_agents_md, "agents"),
-        (_load_flux-agent_md, "flux-agent"),
+        (_load_omniworker_md, "omniworker"),
         (_load_claude_md, "claude"),
         (_load_cursorrules, "cursorrules"),
     ]:

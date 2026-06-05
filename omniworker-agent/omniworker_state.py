@@ -24,14 +24,14 @@ import time
 from pathlib import Path
 
 from agent.memory_manager import sanitize_context
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-DEFAULT_DB_PATH = get_flux-agent_home() / "state.db"
+DEFAULT_DB_PATH = get_omniworker_home() / "state.db"
 
 SCHEMA_VERSION = 12
 
@@ -68,7 +68,7 @@ _last_init_error_lock = threading.Lock()
 
 # Paths for which we've already logged a WAL-fallback WARNING.  Without
 # this, kanban_db.connect() (called on every kanban operation — see
-# flux-agent_cli/kanban_db.py for ~30 call sites) would re-log the same
+# omniworker_cli/kanban_db.py for ~30 call sites) would re-log the same
 # filesystem-incompat warning on every connection, filling errors.log.
 _wal_fallback_warned_paths: set[str] = set()
 _wal_fallback_warned_lock = threading.Lock()
@@ -145,7 +145,7 @@ def apply_wal_with_fallback(
     Different db_labels log independently, so state.db and kanban.db
     each get one warning on the same NFS mount.
 
-    Shared by :class:`SessionDB` and ``flux-agent_cli.kanban_db.connect`` so
+    Shared by :class:`SessionDB` and ``omniworker_cli.kanban_db.connect`` so
     both databases get identical fallback behavior.
     """
     try:
@@ -165,7 +165,7 @@ def _log_wal_fallback_once(db_label: str, exc: Exception) -> None:
     """Log a single WARNING per (process, db_label) about WAL fallback.
 
     Without this dedup, NFS users running kanban (which opens a fresh
-    connection on every operation — see flux-agent_cli/kanban_db.py) would
+    connection on every operation — see omniworker_cli/kanban_db.py) would
     fill errors.log with hundreds of identical warnings per hour.
     """
     with _wal_fallback_warned_lock:
@@ -398,7 +398,7 @@ class SessionDB:
             # successful open racing past this failure would erase the
             # cause that another thread's /resume is about to format.
             # Tests that need to reset the state can call
-            # ``flux-agent_state._set_last_init_error(None)`` explicitly.
+            # ``omniworker_state._set_last_init_error(None)`` explicitly.
             _set_last_init_error(f"{type(exc).__name__}: {exc}")
             raise
 

@@ -6,9 +6,9 @@ author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Coding-Agent, Codex, OpenAI, Code-Review, Refactoring]
-    related_skills: [claude-code, flux-agent-agent]
+    related_skills: [claude-code, omniworker-agent]
 ---
 
 # Codex CLI
@@ -33,7 +33,7 @@ Requires the codex CLI and a git repository.
 - Use `pty=true` in terminal calls — Codex is an interactive terminal app
 
 For Flux Agent itself, `model.provider: openai-codex` uses Flux Agent-managed Codex
-OAuth from `~/.flux-agent/auth.json` after `flux-agent auth add openai-codex`. For the
+OAuth from `~/.omniworker/auth.json` after `omniworker auth add openai-codex`. For the
 standalone Codex CLI, a valid CLI OAuth session may live under
 `~/.codex/auth.json`; do not treat a missing `OPENAI_API_KEY` alone as proof
 that Codex auth is missing.

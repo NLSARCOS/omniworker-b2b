@@ -26,8 +26,8 @@ The agent processes the event and can respond by posting comments on PRs, sendin
 
 ## Quick Start
 
-1. Enable via `flux-agent gateway setup` or environment variables
-2. Define routes in `config.yaml` **or** create them dynamically with `flux-agent webhook subscribe`
+1. Enable via `omniworker gateway setup` or environment variables
+2. Define routes in `config.yaml` **or** create them dynamically with `omniworker webhook subscribe`
 3. Point your service at `http://your-server:8644/webhooks/<route-name>`
 
 ---
@@ -39,14 +39,14 @@ There are two ways to enable the webhook adapter.
 ### Via setup wizard
 
 ```bash
-flux-agent gateway setup
+omniworker gateway setup
 ```
 
 Follow the prompts to enable webhooks, set the port, and set a global HMAC secret.
 
 ### Via environment variables
 
-Add to `~/.flux-agent/.env`:
+Add to `~/.omniworker/.env`:
 
 ```bash
 WEBHOOK_ENABLED=true
@@ -174,7 +174,7 @@ This walkthrough sets up automatic code review on every pull request.
 
 ### 2. Add the route config
 
-Add the `github-pr` route to your `~/.flux-agent/config.yaml` as shown in the example above.
+Add the `github-pr` route to your `~/.omniworker/config.yaml` as shown in the example above.
 
 ### 3. Ensure `gh` CLI is authenticated
 
@@ -297,7 +297,7 @@ Your Supabase edge function signs the payload with HMAC-SHA256 and POSTs to `htt
 ### Example: Dynamic subscription via CLI
 
 ```bash
-flux-agent webhook subscribe antenna-matches \
+omniworker webhook subscribe antenna-matches \
   --deliver telegram \
   --deliver-chat-id "123456789" \
   --deliver-only \
@@ -329,12 +329,12 @@ flux-agent webhook subscribe antenna-matches \
 
 ## Dynamic Subscriptions (CLI) {#dynamic-subscriptions}
 
-In addition to static routes in `config.yaml`, you can create webhook subscriptions dynamically using the `flux-agent webhook` CLI command. This is especially useful when the agent itself needs to set up event-driven triggers.
+In addition to static routes in `config.yaml`, you can create webhook subscriptions dynamically using the `omniworker webhook` CLI command. This is especially useful when the agent itself needs to set up event-driven triggers.
 
 ### Create a subscription
 
 ```bash
-flux-agent webhook subscribe github-issues \
+omniworker webhook subscribe github-issues \
   --events "issues" \
   --prompt "New issue #{issue.number}: {issue.title}\nBy: {issue.user.login}\n\n{issue.body}" \
   --deliver telegram \
@@ -347,25 +347,25 @@ This returns the webhook URL and an auto-generated HMAC secret. Configure your s
 ### List subscriptions
 
 ```bash
-flux-agent webhook list
+omniworker webhook list
 ```
 
 ### Remove a subscription
 
 ```bash
-flux-agent webhook remove github-issues
+omniworker webhook remove github-issues
 ```
 
 ### Test a subscription
 
 ```bash
-flux-agent webhook test github-issues
-flux-agent webhook test github-issues --payload '{"issue": {"number": 42, "title": "Test"}}'
+omniworker webhook test github-issues
+omniworker webhook test github-issues --payload '{"issue": {"number": 42, "title": "Test"}}'
 ```
 
 ### How dynamic subscriptions work
 
-- Subscriptions are stored in `~/.flux-agent/webhook_subscriptions.json`
+- Subscriptions are stored in `~/.omniworker/webhook_subscriptions.json`
 - The webhook adapter hot-reloads this file on each incoming request (mtime-gated, negligible overhead)
 - Static routes from `config.yaml` always take precedence over dynamic ones with the same name
 - Dynamic subscriptions use the same route format and capabilities as static routes (events, prompt templates, skills, delivery)
@@ -373,7 +373,7 @@ flux-agent webhook test github-issues --payload '{"issue": {"number": 42, "title
 
 ### Agent-driven subscriptions
 
-The agent can create subscriptions via the terminal tool when guided by the `webhook-subscriptions` skill. Ask the agent to "set up a webhook for GitHub issues" and it will run the appropriate `flux-agent webhook subscribe` command.
+The agent can create subscriptions via the terminal tool when guided by the `webhook-subscriptions` skill. Ask the agent to "set up a webhook for GitHub issues" and it will run the appropriate `omniworker webhook subscribe` command.
 
 ---
 
@@ -458,7 +458,7 @@ Webhook payloads contain attacker-controlled data — PR titles, commit messages
 
 ### Agent not responding
 
-- Run the gateway in foreground to see logs: `flux-agent gateway run`
+- Run the gateway in foreground to see logs: `omniworker gateway run`
 - Check that the prompt template is rendering correctly
 - Verify the delivery target is configured and connected
 

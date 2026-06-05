@@ -32,13 +32,13 @@ class TestWriteDenyExactPaths:
         path = os.path.join(str(Path.home()), ".netrc")
         assert _is_write_denied(path) is True
 
-    def test_flux-agent_env(self):
+    def test_omniworker_env(self):
         # ``.env`` under the active OMNIWORKER_HOME (profile-aware, not just
-        # ``~/.flux-agent``) must be write-denied. The hermetic test conftest
-        # points OMNIWORKER_HOME at a tempdir — resolve via get_flux-agent_home()
+        # ``~/.omniworker``) must be write-denied. The hermetic test conftest
+        # points OMNIWORKER_HOME at a tempdir — resolve via get_omniworker_home()
         # to match the denylist.
-        from flux-agent_constants import get_flux-agent_home
-        path = str(get_flux-agent_home() / ".env")
+        from omniworker_constants import get_omniworker_home
+        path = str(get_omniworker_home() / ".env")
         assert _is_write_denied(path) is True
 
     def test_shell_profiles(self):
@@ -83,6 +83,6 @@ class TestWriteAllowed:
     def test_project_file(self):
         assert _is_write_denied("/home/user/project/main.py") is False
 
-    def test_flux-agent_config_not_env(self):
-        path = os.path.join(str(Path.home()), ".flux-agent", "config.yaml")
+    def test_omniworker_config_not_env(self):
+        path = os.path.join(str(Path.home()), ".omniworker", "config.yaml")
         assert _is_write_denied(path) is False

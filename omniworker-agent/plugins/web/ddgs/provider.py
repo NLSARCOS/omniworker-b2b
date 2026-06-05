@@ -7,7 +7,7 @@ canonical implementation.
 
 The ``ddgs`` package is an optional dependency. ``is_available()`` reflects
 whether the package is importable; the plugin still registers either way so
-``flux-agent tools`` can prompt the user to install it.
+``omniworker tools`` can prompt the user to install it.
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ class DDGSWebSearchProvider(WebSearchProvider):
 
         Probes the import once; cheap because Python caches the import. Must
         NOT perform network I/O — runs at tool-registration time and on every
-        ``flux-agent tools`` paint.
+        ``omniworker tools`` paint.
         """
         try:
             import ddgs  # noqa: F401

@@ -1,11 +1,11 @@
 """Tests for `_print_curator_recent_run_notice`.
 
-The notice prints the most recent curator run summary on `flux-agent update`,
+The notice prints the most recent curator run summary on `omniworker update`,
 exactly once per run. Show-once is enforced by stamping
 `last_run_summary_shown_at` in curator state after printing.
 
 Why this matters: the curator runs in the background (gateway tick + CLI
-session start) so users normally never see the rename map. `flux-agent update`
+session start) so users normally never see the rename map. `omniworker update`
 is the high-attention surface where consolidations should land.
 """
 
@@ -20,23 +20,23 @@ import pytest
 
 @pytest.fixture
 def curator_env(tmp_path, monkeypatch, capsys):
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     (home / "skills").mkdir()
     (home / "logs").mkdir()
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-    import flux-agent_constants
-    importlib.reload(flux-agent_constants)
+    import omniworker_constants
+    importlib.reload(omniworker_constants)
     from agent import curator
     importlib.reload(curator)
-    from flux-agent_cli import main as flux-agent_main
-    importlib.reload(flux-agent_main)
+    from omniworker_cli import main as omniworker_main
+    importlib.reload(omniworker_main)
 
     yield {
         "curator": curator,
-        "main": flux-agent_main,
+        "main": omniworker_main,
         "capsys": capsys,
     }
 
@@ -78,7 +78,7 @@ def test_prints_multiline_summary_with_rename_map(curator_env):
         "archived 2 skill(s):\n"
         "  • pdf-extraction → document-tools\n"
         "  • docx-extraction → document-tools\n"
-        "full report: flux-agent curator status"
+        "full report: omniworker curator status"
     )
     _set_state(
         curator_env["curator"],
@@ -100,7 +100,7 @@ def test_show_once_semantics(curator_env):
         "auto: no changes; llm: consolidated 1 into 1\n"
         "archived 1 skill(s):\n"
         "  • old → new\n"
-        "full report: flux-agent curator status"
+        "full report: omniworker curator status"
     )
     _set_state(
         curator_env["curator"],
@@ -127,7 +127,7 @@ def test_new_run_resets_show_once(curator_env):
             "auto: no changes; llm: consolidated 1 into 1\n"
             "archived 1 skill(s):\n"
             "  • thing-a → umbrella\n"
-            "full report: flux-agent curator status"
+            "full report: omniworker curator status"
         ),
     )
     curator_env["main"]._print_curator_recent_run_notice()
@@ -142,7 +142,7 @@ def test_new_run_resets_show_once(curator_env):
             "auto: no changes; llm: consolidated 1 into 1\n"
             "archived 1 skill(s):\n"
             "  • thing-b → umbrella\n"
-            "full report: flux-agent curator status"
+            "full report: omniworker curator status"
         ),
     )
     curator_env["main"]._print_curator_recent_run_notice()

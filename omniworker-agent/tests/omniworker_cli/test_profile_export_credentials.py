@@ -8,7 +8,7 @@ profiles; leaking credentials in the archive is a security issue.
 import tarfile
 from pathlib import Path
 
-from flux-agent_cli.profiles import export_profile, _DEFAULT_EXPORT_EXCLUDE_ROOT
+from omniworker_cli.profiles import export_profile, _DEFAULT_EXPORT_EXCLUDE_ROOT
 
 
 class TestCredentialExclusion:
@@ -35,9 +35,9 @@ class TestCredentialExclusion:
         (profile_dir / "memories").mkdir()
         (profile_dir / "memories" / "MEMORY.md").write_text("# Memories\n")
 
-        monkeypatch.setattr("flux-agent_cli.profiles._get_profiles_root", lambda: profiles_root)
-        monkeypatch.setattr("flux-agent_cli.profiles.get_profile_dir", lambda n: profile_dir)
-        monkeypatch.setattr("flux-agent_cli.profiles.validate_profile_name", lambda n: None)
+        monkeypatch.setattr("omniworker_cli.profiles._get_profiles_root", lambda: profiles_root)
+        monkeypatch.setattr("omniworker_cli.profiles.get_profile_dir", lambda n: profile_dir)
+        monkeypatch.setattr("omniworker_cli.profiles.validate_profile_name", lambda n: None)
 
         output = tmp_path / "export.tar.gz"
         result = export_profile("testprofile", str(output))

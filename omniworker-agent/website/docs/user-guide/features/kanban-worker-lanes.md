@@ -7,7 +7,7 @@ This page is the contract. It exists for two audiences:
 - **Operators** picking which lanes to wire into a board (which profiles to create, which assignees to use).
 - **Plugin / integration authors** wanting to add a new lane shape (a CLI worker that wraps Codex / Claude Code / OpenCode, a containerised review worker, a non-Flux Agent service that pulls tasks via the API).
 
-If you're writing the worker code itself — the agent that runs *inside* a lane — the [`kanban-worker`](https://github.com/Flux Agent/flux-agent-agent/blob/main/skills/devops/kanban-worker/SKILL.md) skill is the deeper procedural detail.
+If you're writing the worker code itself — the agent that runs *inside* a lane — the [`kanban-worker`](https://github.com/Flux Agent/omniworker-agent/blob/main/skills/devops/kanban-worker/SKILL.md) skill is the deeper procedural detail.
 
 ## The hierarchy
 
@@ -30,19 +30,19 @@ The dispatcher matches `task.assignee` against either a Flux Agent profile name 
 
 ### 2. A spawn mechanism
 
-For Flux Agent profile lanes, the dispatcher's `_default_spawn` runs `flux-agent -p <assignee> chat -q <prompt>` (or the equivalent module form when the `flux-agent` shim isn't on `$PATH`) inside the task's pinned workspace, with these env vars set:
+For Flux Agent profile lanes, the dispatcher's `_default_spawn` runs `omniworker -p <assignee> chat -q <prompt>` (or the equivalent module form when the `omniworker` shim isn't on `$PATH`) inside the task's pinned workspace, with these env vars set:
 
 | Variable | Carries |
 |---|---|
-| `FLUX AGENT_KANBAN_TASK` | the task id the worker is operating on |
-| `FLUX AGENT_KANBAN_DB` | absolute path to the per-board SQLite file |
-| `FLUX AGENT_KANBAN_BOARD` | board slug |
-| `FLUX AGENT_KANBAN_WORKSPACES_ROOT` | root of the board's workspace tree |
-| `FLUX AGENT_KANBAN_WORKSPACE` | absolute path to *this* task's workspace |
-| `FLUX AGENT_KANBAN_RUN_ID` | the current run's id (for the lifecycle gate) |
-| `FLUX AGENT_KANBAN_CLAIM_LOCK` | the claim lock string (`<host>:<pid>:<uuid>`) |
-| `FLUX AGENT_PROFILE` | the worker's own profile name (for `kanban_comment` author attribution) |
-| `FLUX AGENT_TENANT` | tenant namespace, if the task has one |
+| `OMNIWORKER_KANBAN_TASK` | the task id the worker is operating on |
+| `OMNIWORKER_KANBAN_DB` | absolute path to the per-board SQLite file |
+| `OMNIWORKER_KANBAN_BOARD` | board slug |
+| `OMNIWORKER_KANBAN_WORKSPACES_ROOT` | root of the board's workspace tree |
+| `OMNIWORKER_KANBAN_WORKSPACE` | absolute path to *this* task's workspace |
+| `OMNIWORKER_KANBAN_RUN_ID` | the current run's id (for the lifecycle gate) |
+| `OMNIWORKER_KANBAN_CLAIM_LOCK` | the claim lock string (`<host>:<pid>:<uuid>`) |
+| `OMNIWORKER_PROFILE` | the worker's own profile name (for `kanban_comment` author attribution) |
+| `OMNIWORKER_TENANT` | tenant namespace, if the task has one |
 
 For non-Flux Agent lanes (registered via a plugin), the plugin supplies its own `spawn_fn` callable that gets `task`, `workspace`, and `board` and returns an optional pid for crash detection.
 
@@ -60,11 +60,11 @@ The kanban kernel enforces that exactly one of these terminates each run. A work
 
 For most code-changing tasks, the work isn't truly *done* the moment the worker finishes — it needs a human reviewer. The kanban kernel doesn't enforce this distinction (a "code-changing task" is fuzzy and forcing block-instead-of-complete on every code worker would break flows where no review is wanted). It's a convention layered on top:
 
-- **Block instead of complete**, with `reason` prefixed `review-required: ` so the dashboard / `flux-agent kanban show` surfaces the row as awaiting review.
+- **Block instead of complete**, with `reason` prefixed `review-required: ` so the dashboard / `omniworker kanban show` surfaces the row as awaiting review.
 - **Drop structured metadata into a `kanban_comment` first** since `kanban_block` only carries the human-readable `reason`. Comments are the durable annotation channel — every audit-relevant field (changed_files, tests_run, diff_path or PR url, decisions) belongs there.
 - **Reviewer either approves and unblocks**, which respawns the worker with the comment thread for follow-ups; or asks for changes via another comment, which the next worker run sees as part of `kanban_show`'s context.
 
-The [`kanban-worker`](https://github.com/Flux Agent/flux-agent-agent/blob/main/skills/devops/kanban-worker/SKILL.md) skill has worked examples for both `kanban_complete` (truly terminal tasks — typo fixes, docs changes, research writeups) and the `review-required` block pattern.
+The [`kanban-worker`](https://github.com/Flux Agent/omniworker-agent/blob/main/skills/devops/kanban-worker/SKILL.md) skill has worked examples for both `kanban_complete` (truly terminal tasks — typo fixes, docs changes, research writeups) and the `review-required` block pattern.
 
 ## Logs and audit trail
 
@@ -74,15 +74,15 @@ The dispatcher writes per-task worker stdout/stderr to `<board-root>/logs/<task_
 - `task_events` rows carry every state transition (`promoted`, `claimed`, `heartbeat`, `completed`, `blocked`, `gave_up`, `crashed`, `timed_out`, `reclaimed`, `claim_extended`).
 - `kanban_show` returns both, so a reviewer (or a follow-up worker) reading the task gets the full history without needing dashboard access.
 
-The dashboard renders run history with summaries, metadata blocks, and exit-status badges. CLI users can run `flux-agent kanban tail <task_id>` to follow live, or `flux-agent kanban runs <task_id>` for the historical attempt list.
+The dashboard renders run history with summaries, metadata blocks, and exit-status badges. CLI users can run `omniworker kanban tail <task_id>` to follow live, or `omniworker kanban runs <task_id>` for the historical attempt list.
 
 ## Existing lane shapes
 
 ### Flux Agent profile lane (default)
 
-The shape every kanban worker takes today: the assignee is a profile name, the dispatcher spawns `flux-agent -p <profile>`, the worker auto-loads the [`kanban-worker`](https://github.com/Flux Agent/flux-agent-agent/blob/main/skills/devops/kanban-worker/SKILL.md) skill plus the `KANBAN_GUIDANCE` system-prompt block, and uses the `kanban_*` tools to terminate the run. No setup beyond defining the profile.
+The shape every kanban worker takes today: the assignee is a profile name, the dispatcher spawns `omniworker -p <profile>`, the worker auto-loads the [`kanban-worker`](https://github.com/Flux Agent/omniworker-agent/blob/main/skills/devops/kanban-worker/SKILL.md) skill plus the `KANBAN_GUIDANCE` system-prompt block, and uses the `kanban_*` tools to terminate the run. No setup beyond defining the profile.
 
-When you create profiles for your fleet, choose names that match the *role* you want the orchestrator to route to. The orchestrator (when there is one) discovers your profile names via `flux-agent profile list` — there's no fixed roster the system assumes (see the [`kanban-orchestrator`](https://github.com/Flux Agent/flux-agent-agent/blob/main/skills/devops/kanban-orchestrator/SKILL.md) skill for the orchestrator side of the contract).
+When you create profiles for your fleet, choose names that match the *role* you want the orchestrator to route to. The orchestrator (when there is one) discovers your profile names via `omniworker profile list` — there's no fixed roster the system assumes (see the [`kanban-orchestrator`](https://github.com/Flux Agent/omniworker-agent/blob/main/skills/devops/kanban-orchestrator/SKILL.md) skill for the orchestrator side of the contract).
 
 ### Orchestrator profile lane
 
@@ -90,11 +90,11 @@ A specialisation of the profile lane: an orchestrator is a Flux Agent profile wh
 
 ## Adding an external CLI worker lane
 
-Wiring a non-Flux Agent CLI tool (Codex CLI, Claude Code CLI, OpenCode CLI, a local coding-model runner, etc.) as a kanban worker lane is *not yet a paved path*. The dispatcher's spawn function is pluggable (`spawn_fn` is a parameter on `dispatch_once`), and a plugin could register its own `spawn_fn` for a non-Flux Agent assignee, but the surrounding integration work — wrapping the CLI's exit code into `kanban_complete` / `kanban_block` calls, mapping the CLI's workspace/sandbox conventions onto the dispatcher's `FLUX AGENT_KANBAN_WORKSPACE` env, handling auth and per-CLI policy — is still per-integration design work.
+Wiring a non-Flux Agent CLI tool (Codex CLI, Claude Code CLI, OpenCode CLI, a local coding-model runner, etc.) as a kanban worker lane is *not yet a paved path*. The dispatcher's spawn function is pluggable (`spawn_fn` is a parameter on `dispatch_once`), and a plugin could register its own `spawn_fn` for a non-Flux Agent assignee, but the surrounding integration work — wrapping the CLI's exit code into `kanban_complete` / `kanban_block` calls, mapping the CLI's workspace/sandbox conventions onto the dispatcher's `OMNIWORKER_KANBAN_WORKSPACE` env, handling auth and per-CLI policy — is still per-integration design work.
 
 If you're considering adding a CLI lane, open an issue describing the specific CLI and the workflow you're trying to enable. The contract above is the constraints any such lane must satisfy; the implementation shape (one plugin per CLI vs a generic CLI-runner plugin parameterised by config) is open.
 
-The historical issue for this is [#19931](https://github.com/Flux Agent/flux-agent-agent/issues/19931) and the closed-not-merged Codex-specific PR [#19924](https://github.com/Flux Agent/flux-agent-agent/pull/19924) — those describe the original architecture proposal but didn't land a runner.
+The historical issue for this is [#19931](https://github.com/Flux Agent/omniworker-agent/issues/19931) and the closed-not-merged Codex-specific PR [#19924](https://github.com/Flux Agent/omniworker-agent/pull/19924) — those describe the original architecture proposal but didn't land a runner.
 
 ## Failure modes the dispatcher handles
 
@@ -104,11 +104,11 @@ So lane authors don't have to reimplement these:
 - **Crashed worker** — a worker whose host-local PID has vanished is detected by `detect_crashed_workers` and reaped; the task increments `consecutive_failures` and may auto-block when the breaker trips.
 - **Run-level retry** — when a task is retried (post-block, post-crash, post-reclaim), the worker can use the `expected_run_id` parameter on terminating tools to fail fast if its own run was already superseded.
 - **Per-task max runtime** — `task.max_runtime_seconds` hard-caps wall-clock time per run, regardless of PID liveness. Catches genuinely-deadlocked workers that the live-PID extension would otherwise keep running.
-- **Stranded-task detection** — a ready task whose assignee never produces a claim within `kanban.stranded_threshold_seconds` (default 30 min) shows up in `flux-agent kanban diagnostics` as a `stranded_in_ready` warning. Severity escalates to error at 2x the threshold and critical at 6x. Catches typo'd assignees, deleted profiles, and down external worker pools in one signal — identity-agnostic, no per-board allowlist to curate.
+- **Stranded-task detection** — a ready task whose assignee never produces a claim within `kanban.stranded_threshold_seconds` (default 30 min) shows up in `omniworker kanban diagnostics` as a `stranded_in_ready` warning. Severity escalates to error at 2x the threshold and critical at 6x. Catches typo'd assignees, deleted profiles, and down external worker pools in one signal — identity-agnostic, no per-board allowlist to curate.
 
 ## Related
 
 - [Kanban overview](./kanban) — the user-facing intro.
 - [Kanban tutorial](./kanban-tutorial) — walkthrough with the dashboard open.
-- [`kanban-worker`](https://github.com/Flux Agent/flux-agent-agent/blob/main/skills/devops/kanban-worker/SKILL.md) — the skill the worker process loads.
-- [`kanban-orchestrator`](https://github.com/Flux Agent/flux-agent-agent/blob/main/skills/devops/kanban-orchestrator/SKILL.md) — the orchestrator side.
+- [`kanban-worker`](https://github.com/Flux Agent/omniworker-agent/blob/main/skills/devops/kanban-worker/SKILL.md) — the skill the worker process loads.
+- [`kanban-orchestrator`](https://github.com/Flux Agent/omniworker-agent/blob/main/skills/devops/kanban-orchestrator/SKILL.md) — the orchestrator side.

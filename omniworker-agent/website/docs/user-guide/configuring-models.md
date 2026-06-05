@@ -35,7 +35,7 @@ The picker has two columns:
 
 Type in the filter box to narrow by provider name, slug, or model ID.
 
-Pick a model, hit **Switch**, and Flux Agent writes it to `~/.flux-agent/config.yaml` under the `model` section. **This applies to new sessions only** — any chat tab you already have open keeps running whatever model it started with. To hot-swap the current chat, use the `/model` slash command inside it.
+Pick a model, hit **Switch**, and Flux Agent writes it to `~/.omniworker/config.yaml` under the `model` section. **This applies to new sessions only** — any chat tab you already have open keeps running whatever model it started with. To hot-swap the current chat, use the `/model` slash command inside it.
 
 ## Setting auxiliary models
 
@@ -55,7 +55,7 @@ Every auxiliary task defaults to `auto` — meaning Flux Agent uses your main mo
 | **Session Search** | When recall queries fan out — default max_concurrency is 3. A cheap model keeps the bill predictable. |
 | **Approval** | For `approval_mode: smart` — a fast/cheap model (haiku, flash, gpt-5-mini) decides whether to auto-approve low-risk commands. Expensive models here are waste. |
 | **Web Extract** | When you use `web_extract` heavily. Same logic as compression — summarization doesn't need reasoning. |
-| **Skills Hub** | `flux-agent skills search` uses this. Usually fine at `auto`. |
+| **Skills Hub** | `omniworker skills search` uses this. Usually fine at `auto`. |
 | **MCP** | MCP tool routing. Usually fine at `auto`. |
 
 ### Per-task override
@@ -82,7 +82,7 @@ Cards are badged with `main` or `aux · <task>` when they're currently assigned 
 
 ## What gets written to `config.yaml`
 
-When you save via the dashboard, Flux Agent writes to `~/.flux-agent/config.yaml`:
+When you save via the dashboard, Flux Agent writes to `~/.omniworker/config.yaml`:
 
 **Main model:**
 ```yaml
@@ -120,8 +120,8 @@ auxiliary:
 
 ## When does it take effect?
 
-- **CLI** (`flux-agent chat`): next `flux-agent chat` invocation.
-- **Gateway** (Telegram, Discord, Slack, etc.): next *new* session. Existing sessions keep their model. Restart the gateway (`flux-agent gateway restart`) if you want to force all sessions to pick up the change.
+- **CLI** (`omniworker chat`): next `omniworker chat` invocation.
+- **Gateway** (Telegram, Discord, Slack, etc.): next *new* session. Existing sessions keep their model. Restart the gateway (`omniworker gateway restart`) if you want to force all sessions to pick up the change.
 - **Dashboard chat tab** (`/chat`): next new PTY. The currently-open chat keeps its model — use `/model` inside it to hot-swap.
 
 Changes never invalidate prompt caches on running sessions. That's deliberate: swapping the main model inside a session requires a cache reset (the system prompt contains model-specific content), and we reserve that for the explicit `/model` slash command inside chat.
@@ -130,7 +130,7 @@ Changes never invalidate prompt caches on running sessions. That's deliberate: s
 
 ### "No authenticated providers" in the picker
 
-Flux Agent lists a provider only if it has a working credential. Check **Keys** in the sidebar — you should see one of: an API key, a successful OAuth, or a custom endpoint URL. If the provider you want isn't there, run `flux-agent setup` to wire it up, or go to **Keys** and add the env var.
+Flux Agent lists a provider only if it has a working credential. Check **Keys** in the sidebar — you should see one of: an API key, a successful OAuth, or a custom endpoint URL. If the provider you want isn't there, run `omniworker setup` to wire it up, or go to **Keys** and add the env var.
 
 ### Main model didn't change in my running chat
 
@@ -152,7 +152,7 @@ On OpenRouter (or any aggregator), bare model names resolve *within* the aggrega
 
 ### CLI slash command
 
-Inside any `flux-agent chat` session:
+Inside any `omniworker chat` session:
 
 ```
 /model gpt-5.4 --provider openrouter             # session-only
@@ -166,7 +166,7 @@ Inside any `flux-agent chat` session:
 Define your own short names for models you reach for often, then use `/model <alias>` in the CLI or any messaging platform:
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 model_aliases:
   fav:
     model: claude-sonnet-4.6
@@ -179,25 +179,25 @@ model_aliases:
 Or from the shell (short form, `provider/model`):
 
 ```bash
-flux-agent config set model.aliases.fav anthropic/claude-opus-4.6
-flux-agent config set model.aliases.grok x-ai/grok-4
+omniworker config set model.aliases.fav anthropic/claude-opus-4.6
+omniworker config set model.aliases.grok x-ai/grok-4
 ```
 
 Then `/model fav` or `/model grok` in chat. User aliases shadow built-in short names (`sonnet`, `kimi`, `opus`, etc.). See [Custom model aliases](/docs/reference/slash-commands#custom-model-aliases) for the full reference.
 
-### `flux-agent model` subcommand
+### `omniworker model` subcommand
 
 ```bash
-flux-agent model            # Interactive provider + model picker (the canonical way to switch defaults)
+omniworker model            # Interactive provider + model picker (the canonical way to switch defaults)
 ```
 
-`flux-agent model` walks you through picking a provider, authenticating (OAuth flows open a browser; API-key providers prompt for the key), and then choosing a specific model from that provider's curated catalog. The choice is written to `model.provider` and `model.model` in `~/.flux-agent/config.yaml`.
+`omniworker model` walks you through picking a provider, authenticating (OAuth flows open a browser; API-key providers prompt for the key), and then choosing a specific model from that provider's curated catalog. The choice is written to `model.provider` and `model.model` in `~/.omniworker/config.yaml`.
 
-To list providers/models without launching the picker, use the dashboard or the REST endpoints below. To inspect what the CLI will actually use right now: `flux-agent config get model` and `flux-agent status`.
+To list providers/models without launching the picker, use the dashboard or the REST endpoints below. To inspect what the CLI will actually use right now: `omniworker config get model` and `omniworker status`.
 
 ### Direct config edit
 
-Edit `~/.flux-agent/config.yaml` and restart whatever reads it. See the [Configuration reference](./configuration.md) for the full schema.
+Edit `~/.omniworker/config.yaml` and restart whatever reads it. See the [Configuration reference](./configuration.md) for the full schema.
 
 ### REST API
 
@@ -231,4 +231,4 @@ curl -X POST -H "Content-Type: application/json" -H "X-Flux Agent-Session-Token:
   http://localhost:PORT/api/model/set
 ```
 
-The session token is injected into the dashboard HTML at startup and rotates on every server restart. Grab it from the browser devtools (`window.__FLUX AGENT_SESSION_TOKEN__`) if you're scripting against a running dashboard.
+The session token is injected into the dashboard HTML at startup and rotates on every server restart. Grab it from the browser devtools (`window.__OMNIWORKER_SESSION_TOKEN__`) if you're scripting against a running dashboard.

@@ -14,14 +14,14 @@ Configure and use Honcho memory with Flux Agent -- cross-session user modeling, 
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/autonomous-ai-agents/honcho` |
+| Source | Optional — install with `omniworker skills install official/autonomous-ai-agents/honcho` |
 | Path | `optional-skills/autonomous-ai-agents/honcho` |
 | Version | `2.0.0` |
 | Author | Flux Agent Agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Honcho`, `Memory`, `Profiles`, `Observation`, `Dialectic`, `User-Modeling`, `Session-Summary` |
-| Related skills | [`flux-agent-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-flux-agent-agent) |
+| Related skills | [`omniworker-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-omniworker-agent) |
 
 ## Reference: full SKILL.md
 
@@ -47,23 +47,23 @@ Honcho provides AI-native cross-session user modeling. It learns who the user is
 ### Cloud (app.honcho.dev)
 
 ```bash
-flux-agent honcho setup
+omniworker honcho setup
 # select "cloud", paste API key from https://app.honcho.dev
 ```
 
 ### Self-hosted
 
 ```bash
-flux-agent honcho setup
+omniworker honcho setup
 # select "local", enter base URL (e.g. http://localhost:8000)
 ```
 
-See: https://docs.honcho.dev/v3/guides/integrations/flux-agent#running-honcho-locally-with-flux-agent
+See: https://docs.honcho.dev/v3/guides/integrations/omniworker#running-honcho-locally-with-omniworker
 
 ### Verify
 
 ```bash
-flux-agent honcho status    # shows resolved config, connection test, peer info
+omniworker honcho status    # shows resolved config, connection test, peer info
 ```
 
 ## Architecture
@@ -138,7 +138,7 @@ Honcho sessions scope where messages and observations land. Strategy options:
 | `per-session` | New Honcho session each Flux Agent run |
 | `global` | Single session across all directories |
 
-Manual override: `flux-agent honcho map my-project-name`
+Manual override: `omniworker honcho map my-project-name`
 
 ### Recall Modes
 
@@ -220,12 +220,12 @@ Each Flux Agent profile gets its own Honcho AI peer while sharing the same works
 ### Create a profile with Honcho peer
 
 ```bash
-flux-agent profile create coder --clone
-# creates host block flux-agent.coder, AI peer "coder", inherits config from default
+omniworker profile create coder --clone
+# creates host block omniworker.coder, AI peer "coder", inherits config from default
 ```
 
 What `--clone` does for Honcho:
-1. Creates a `flux-agent.coder` host block in `honcho.json`
+1. Creates a `omniworker.coder` host block in `honcho.json`
 2. Sets `aiPeer: "coder"` (the profile name)
 3. Inherits `workspace`, `peerName`, `writeFrequency`, `recallMode`, etc. from default
 4. Eagerly creates the peer in Honcho so it exists before first message
@@ -233,7 +233,7 @@ What `--clone` does for Honcho:
 ### Backfill existing profiles
 
 ```bash
-flux-agent honcho sync    # creates host blocks for all profiles that don't have one yet
+omniworker honcho sync    # creates host blocks for all profiles that don't have one yet
 ```
 
 ### Per-profile config
@@ -243,7 +243,7 @@ Override any setting in the host block:
 ```json
 {
   "hosts": {
-    "flux-agent.coder": {
+    "omniworker.coder": {
       "aiPeer": "coder",
       "recallMode": "tools",
       "dialecticDepth": 2,
@@ -352,7 +352,7 @@ In `hybrid` and `context` modes, base context (user representation + card + sess
 
 ## Config Reference
 
-Config file: `$FLUX AGENT_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global).
+Config file: `$OMNIWORKER_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global).
 
 ### Key settings
 
@@ -404,13 +404,13 @@ This fix addresses edge cases where raw user conclusions containing markup or sp
 ## Troubleshooting
 
 ### "Honcho not configured"
-Run `flux-agent honcho setup`. Ensure `memory.provider: honcho` is in `~/.flux-agent/config.yaml`.
+Run `omniworker honcho setup`. Ensure `memory.provider: honcho` is in `~/.omniworker/config.yaml`.
 
 ### Memory not persisting across sessions
-Check `flux-agent honcho status` -- verify `saveMessages: true` and `writeFrequency` isn't `session` (which only writes on exit).
+Check `omniworker honcho status` -- verify `saveMessages: true` and `writeFrequency` isn't `session` (which only writes on exit).
 
 ### Profile not getting its own peer
-Use `--clone` when creating: `flux-agent profile create <name> --clone`. For existing profiles: `flux-agent honcho sync`.
+Use `--clone` when creating: `omniworker profile create <name> --clone`. For existing profiles: `omniworker honcho sync`.
 
 ### Observation changes in dashboard not reflected
 Observation config is synced from the server on each session init. Start a new session after changing settings in the Honcho UI.
@@ -428,19 +428,19 @@ Session summary requires at least one prior turn in the current Honcho session. 
 
 | Command | Description |
 |---------|-------------|
-| `flux-agent honcho setup` | Interactive setup wizard (cloud/local, identity, observation, recall, sessions) |
-| `flux-agent honcho status` | Show resolved config, connection test, peer info for active profile |
-| `flux-agent honcho enable` | Enable Honcho for the active profile (creates host block if needed) |
-| `flux-agent honcho disable` | Disable Honcho for the active profile |
-| `flux-agent honcho peer` | Show or update peer names (`--user <name>`, `--ai <name>`, `--reasoning <level>`) |
-| `flux-agent honcho peers` | Show peer identities across all profiles |
-| `flux-agent honcho mode` | Show or set recall mode (`hybrid`, `context`, `tools`) |
-| `flux-agent honcho tokens` | Show or set token budgets (`--context <N>`, `--dialectic <N>`) |
-| `flux-agent honcho sessions` | List known directory-to-session-name mappings |
-| `flux-agent honcho map <name>` | Map current working directory to a Honcho session name |
-| `flux-agent honcho identity` | Seed AI peer identity or show both peer representations |
-| `flux-agent honcho sync` | Create host blocks for all Flux Agent profiles that don't have one yet |
-| `flux-agent honcho migrate` | Step-by-step migration guide from Flux Agent native memory to Flux Agent + Honcho |
-| `flux-agent memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
-| `flux-agent memory status` | Show active memory provider and config |
-| `flux-agent memory off` | Disable external memory provider |
+| `omniworker honcho setup` | Interactive setup wizard (cloud/local, identity, observation, recall, sessions) |
+| `omniworker honcho status` | Show resolved config, connection test, peer info for active profile |
+| `omniworker honcho enable` | Enable Honcho for the active profile (creates host block if needed) |
+| `omniworker honcho disable` | Disable Honcho for the active profile |
+| `omniworker honcho peer` | Show or update peer names (`--user <name>`, `--ai <name>`, `--reasoning <level>`) |
+| `omniworker honcho peers` | Show peer identities across all profiles |
+| `omniworker honcho mode` | Show or set recall mode (`hybrid`, `context`, `tools`) |
+| `omniworker honcho tokens` | Show or set token budgets (`--context <N>`, `--dialectic <N>`) |
+| `omniworker honcho sessions` | List known directory-to-session-name mappings |
+| `omniworker honcho map <name>` | Map current working directory to a Honcho session name |
+| `omniworker honcho identity` | Seed AI peer identity or show both peer representations |
+| `omniworker honcho sync` | Create host blocks for all Flux Agent profiles that don't have one yet |
+| `omniworker honcho migrate` | Step-by-step migration guide from Flux Agent native memory to Flux Agent + Honcho |
+| `omniworker memory setup` | Generic memory provider picker (selecting "honcho" runs the same wizard) |
+| `omniworker memory status` | Show active memory provider and config |
+| `omniworker memory off` | Disable external memory provider |

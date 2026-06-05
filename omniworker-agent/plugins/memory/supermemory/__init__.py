@@ -22,7 +22,7 @@ from tools.registry import tool_error
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_CONTAINER_TAG = "flux-agent"
+_DEFAULT_CONTAINER_TAG = "omniworker"
 _DEFAULT_MAX_RECALL_RESULTS = 10
 _DEFAULT_PROFILE_FREQUENCY = 50
 _DEFAULT_CAPTURE_MODE = "all"
@@ -95,9 +95,9 @@ def _as_bool(value: Any, default: bool) -> bool:
     return default
 
 
-def _load_supermemory_config(flux-agent_home: str) -> dict:
+def _load_supermemory_config(omniworker_home: str) -> dict:
     config = _default_config()
-    config_path = Path(flux-agent_home) / "supermemory.json"
+    config_path = Path(omniworker_home) / "supermemory.json"
     if config_path.exists():
         try:
             raw = json.loads(config_path.read_text(encoding="utf-8"))
@@ -141,8 +141,8 @@ def _load_supermemory_config(flux-agent_home: str) -> dict:
     return config
 
 
-def _save_supermemory_config(values: dict, flux-agent_home: str) -> None:
-    config_path = Path(flux-agent_home) / "supermemory.json"
+def _save_supermemory_config(values: dict, omniworker_home: str) -> None:
+    config_path = Path(omniworker_home) / "supermemory.json"
     existing = {}
     if config_path.exists():
         try:
@@ -438,7 +438,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
         self._search_mode = _DEFAULT_SEARCH_MODE
         self._entity_context = _DEFAULT_ENTITY_CONTEXT
         self._api_timeout = _DEFAULT_API_TIMEOUT
-        self._flux-agent_home = ""
+        self._omniworker_home = ""
         self._write_enabled = True
         self._active = False
         # Multi-container support
@@ -462,27 +462,27 @@ class SupermemoryMemoryProvider(MemoryProvider):
             return False
 
     def get_config_schema(self):
-        # Only prompt for the API key during `flux-agent memory setup`.
+        # Only prompt for the API key during `omniworker memory setup`.
         # All other options are documented for $OMNIWORKER_HOME/supermemory.json
         # or the SUPERMEMORY_CONTAINER_TAG env var.
         return [
             {"key": "api_key", "description": "Supermemory API key", "secret": True, "required": True, "env_var": "SUPERMEMORY_API_KEY", "url": "https://supermemory.ai"},
         ]
 
-    def save_config(self, values, flux-agent_home):
+    def save_config(self, values, omniworker_home):
         sanitized = dict(values or {})
         if "container_tag" in sanitized:
             sanitized["container_tag"] = _sanitize_tag(str(sanitized["container_tag"]))
         if "entity_context" in sanitized:
             sanitized["entity_context"] = _clamp_entity_context(str(sanitized["entity_context"]))
-        _save_supermemory_config(sanitized, flux-agent_home)
+        _save_supermemory_config(sanitized, omniworker_home)
 
     def initialize(self, session_id: str, **kwargs) -> None:
-        from flux-agent_constants import get_flux-agent_home
-        self._flux-agent_home = kwargs.get("flux-agent_home") or str(get_flux-agent_home())
+        from omniworker_constants import get_omniworker_home
+        self._omniworker_home = kwargs.get("omniworker_home") or str(get_omniworker_home())
         self._session_id = session_id
         self._turn_count = 0
-        self._config = _load_supermemory_config(self._flux-agent_home)
+        self._config = _load_supermemory_config(self._omniworker_home)
         self._api_key = os.environ.get("SUPERMEMORY_API_KEY", "")
 
         # Resolve container tag: env var > config > default.
@@ -578,7 +578,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
             f"[role: user]\n{clean_user}\n[user:end]\n\n"
             f"[role: assistant]\n{clean_assistant}\n[assistant:end]"
         )
-        metadata = {"source": "flux-agent", "type": "conversation_turn"}
+        metadata = {"source": "omniworker", "type": "conversation_turn"}
 
         def _run():
             try:
@@ -624,7 +624,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
             try:
                 self._client.add_memory(
                     content.strip(),
-                    metadata={"source": "flux-agent_memory", "target": target, "type": "explicit_memory"},
+                    metadata={"source": "omniworker_memory", "target": target, "type": "explicit_memory"},
                     entity_context=self._entity_context,
                 )
             except Exception:
@@ -691,7 +691,7 @@ class SupermemoryMemoryProvider(MemoryProvider):
         if not isinstance(metadata, dict):
             metadata = {}
         metadata.setdefault("type", _detect_category(content))
-        metadata["source"] = "flux-agent_tool"
+        metadata["source"] = "omniworker_tool"
         try:
             result = self._client.add_memory(content, metadata=metadata, entity_context=self._entity_context, container_tag=tag)
             preview = content[:80] + ("..." if len(content) > 80 else "")

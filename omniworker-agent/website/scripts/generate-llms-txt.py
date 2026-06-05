@@ -9,8 +9,8 @@ Outputs:
                                     comments separating files.
 
 Both publish at:
-  https://flux-agent-agent.flux-agent.com/docs/llms.txt
-  https://flux-agent-agent.flux-agent.com/docs/llms-full.txt
+  https://omniworker-agent.omniworker.com/docs/llms.txt
+  https://omniworker-agent.omniworker.com/docs/llms-full.txt
 
 The `/docs/` prefix is not a mistake — Docusaurus serves `website/static/`
 at the `docs/` base path. Clients and IDE plugins that probe the classic
@@ -31,7 +31,7 @@ WEBSITE = SCRIPT_DIR.parent
 DOCS = WEBSITE / "docs"
 STATIC = WEBSITE / "static"
 
-SITE_BASE = "https://flux-agent-agent.flux-agent.com/docs"
+SITE_BASE = "https://omniworker-agent.omniworker.com/docs"
 
 # Curated sections for llms.txt — mirrors the product story, not the filesystem.
 # Each entry: (docs-relative path without .md, display title, optional short desc).
@@ -118,10 +118,10 @@ SECTIONS: list[tuple[str, list[tuple[str, str, str | None]]]] = [
         ("guides/daily-briefing-bot", "Daily Briefing Bot", None),
         ("guides/team-telegram-assistant", "Team Telegram Assistant", None),
         ("guides/python-library", "Use Flux Agent as a Python Library", None),
-        ("guides/use-mcp-with-flux-agent", "Use MCP with Flux Agent", None),
-        ("guides/use-voice-mode-with-flux-agent", "Use Voice Mode with Flux Agent", None),
-        ("guides/use-soul-with-flux-agent", "Use SOUL.md with Flux Agent", None),
-        ("guides/build-a-flux-agent-plugin", "Build a Flux Agent Plugin", None),
+        ("guides/use-mcp-with-omniworker", "Use MCP with Flux Agent", None),
+        ("guides/use-voice-mode-with-omniworker", "Use Voice Mode with Flux Agent", None),
+        ("guides/use-soul-with-omniworker", "Use SOUL.md with Flux Agent", None),
+        ("guides/build-a-omniworker-plugin", "Build a Flux Agent Plugin", None),
         ("guides/automate-with-cron", "Automate with Cron", None),
         ("guides/work-with-skills", "Work with Skills", None),
         ("guides/delegation-patterns", "Delegation Patterns", None),
@@ -211,11 +211,11 @@ def emit_llms_index() -> str:
     lines.append("")
     lines.append(
         "Install: `curl -fsSL https://raw.githubusercontent.com/Flux Agent/"
-        "flux-agent-agent/main/scripts/install.sh | bash`  "
+        "omniworker-agent/main/scripts/install.sh | bash`  "
         "(Linux, macOS, WSL2, Termux)"
     )
     lines.append("")
-    lines.append("Repo: https://github.com/Flux Agent/flux-agent-agent")
+    lines.append("Repo: https://github.com/Flux Agent/omniworker-agent")
     lines.append("")
 
     for section, items in SECTIONS:
@@ -248,8 +248,8 @@ def emit_llms_full() -> str:
             "Started, Using Flux Agent, Features, Messaging, Integrations, Guides, "
             "Developer Guide, Reference, then everything else.\n"
         ),
-        "Canonical site: https://flux-agent-agent.flux-agent.com/docs\n",
-        "Short index: https://flux-agent-agent.flux-agent.com/docs/llms.txt\n",
+        "Canonical site: https://omniworker-agent.omniworker.com/docs\n",
+        "Short index: https://omniworker-agent.omniworker.com/docs/llms.txt\n",
         "\n---\n\n",
     ]
 

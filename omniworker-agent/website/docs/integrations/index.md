@@ -10,7 +10,7 @@ Flux Agent Agent connects to external systems for AI inference, tool servers, ID
 
 ## AI Providers & Routing
 
-Flux Agent supports multiple AI inference providers out of the box. Use `flux-agent model` to configure interactively, or set them in `config.yaml`.
+Flux Agent supports multiple AI inference providers out of the box. Use `omniworker model` to configure interactively, or set them in `config.yaml`.
 
 - **[AI Providers](/docs/user-guide/features/provider-routing)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. Flux Agent auto-detects capabilities like vision, streaming, and tool use per provider.
 - **[Provider Routing](/docs/user-guide/features/provider-routing)** — Fine-grained control over which underlying providers handle your OpenRouter requests. Optimize for cost, speed, or quality with sorting, whitelists, blacklists, and explicit priority ordering.
@@ -22,7 +22,7 @@ Flux Agent supports multiple AI inference providers out of the box. Use `flux-ag
 
 ## Web Search Backends
 
-The `web_search` and `web_extract` tools support four backend providers, configured via `config.yaml` or `flux-agent tools`:
+The `web_search` and `web_extract` tools support four backend providers, configured via `config.yaml` or `omniworker tools`:
 
 | Backend | Env Var | Search | Extract | Crawl |
 |---------|---------|--------|---------|-------|
@@ -92,8 +92,8 @@ See the [Messaging Gateway overview](/docs/user-guide/messaging) for the platfor
 
 ## Plugins
 
-- **[Plugin System](/docs/user-guide/features/plugins)** — Extend Flux Agent with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.flux-agent/plugins/`, project-local `.flux-agent/plugins/`, and pip-installed entry points.
-- **[Build a Plugin](/docs/guides/build-a-flux-agent-plugin)** — Step-by-step guide for creating Flux Agent plugins with tools, hooks, and CLI commands.
+- **[Plugin System](/docs/user-guide/features/plugins)** — Extend Flux Agent with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.omniworker/plugins/`, project-local `.omniworker/plugins/`, and pip-installed entry points.
+- **[Build a Plugin](/docs/guides/build-a-omniworker-plugin)** — Step-by-step guide for creating Flux Agent plugins with tools, hooks, and CLI commands.
 
 ## Training & Evaluation
 

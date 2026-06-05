@@ -291,9 +291,9 @@ class WebhookAdapter(BasePlatformAdapter):
 
     def _reload_dynamic_routes(self) -> None:
         """Reload agent-created subscriptions from disk if the file changed."""
-        from flux-agent_constants import get_flux-agent_home
-        flux-agent_home = get_flux-agent_home()
-        subs_path = flux-agent_home / _DYNAMIC_ROUTES_FILENAME
+        from omniworker_constants import get_omniworker_home
+        omniworker_home = get_omniworker_home()
+        subs_path = omniworker_home / _DYNAMIC_ROUTES_FILENAME
         if not subs_path.exists():
             if self._dynamic_routes:
                 self._dynamic_routes = {}

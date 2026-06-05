@@ -48,8 +48,8 @@ def _restore_tool_and_agent_modules():
 def _enable_managed_nous_tools(monkeypatch):
     """Patch the source modules so managed_nous_tools_enabled() returns True
     even after tool modules are dynamically reloaded."""
-    monkeypatch.setattr("flux-agent_cli.auth.get_nous_auth_status", lambda: {"logged_in": True})
-    monkeypatch.setattr("flux-agent_cli.models.check_nous_free_tier", lambda: False)
+    monkeypatch.setattr("omniworker_cli.auth.get_nous_auth_status", lambda: {"logged_in": True})
+    monkeypatch.setattr("omniworker_cli.models.check_nous_free_tier", lambda: False)
 
 
 def _install_fake_tools_package():
@@ -219,7 +219,7 @@ def test_openai_tts_uses_managed_audio_gateway_when_direct_key_absent(monkeypatc
     _install_fake_openai_module(captured)
     monkeypatch.delenv("VOICE_TOOLS_OPENAI_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "flux-agent.com")
+    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "omniworker.com")
     monkeypatch.setenv("TOOL_GATEWAY_USER_TOKEN", "nous-token")
 
     tts_tool = _load_tool_module("tools.tts_tool", "tts_tool.py")
@@ -228,7 +228,7 @@ def test_openai_tts_uses_managed_audio_gateway_when_direct_key_absent(monkeypatc
     tts_tool._generate_openai_tts("hello world", str(output_path), {"openai": {}})
 
     assert captured["api_key"] == "nous-token"
-    assert captured["base_url"] == "https://openai-audio-gateway.flux-agent.com/v1"
+    assert captured["base_url"] == "https://openai-audio-gateway.omniworker.com/v1"
     assert captured["speech_kwargs"]["model"] == "gpt-4o-mini-tts"
     assert captured["speech_kwargs"]["extra_headers"] == {"x-idempotency-key": "tts-call-123"}
     assert captured["stream_to_file"] == str(output_path)
@@ -241,7 +241,7 @@ def test_openai_tts_accepts_openai_api_key_as_direct_fallback(monkeypatch, tmp_p
     _install_fake_openai_module(captured)
     monkeypatch.delenv("VOICE_TOOLS_OPENAI_KEY", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "openai-direct-key")
-    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "flux-agent.com")
+    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "omniworker.com")
     monkeypatch.setenv("TOOL_GATEWAY_USER_TOKEN", "nous-token")
 
     tts_tool = _load_tool_module("tools.tts_tool", "tts_tool.py")
@@ -261,7 +261,7 @@ def test_transcription_uses_model_specific_response_formats(monkeypatch, tmp_pat
     (tmp_path / "config.yaml").write_text("stt:\n  provider: openai\n")
     monkeypatch.delenv("VOICE_TOOLS_OPENAI_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "flux-agent.com")
+    monkeypatch.setenv("TOOL_GATEWAY_DOMAIN", "omniworker.com")
     monkeypatch.setenv("TOOL_GATEWAY_USER_TOKEN", "nous-token")
 
     transcription_tools = _load_tool_module(
@@ -274,7 +274,7 @@ def test_transcription_uses_model_specific_response_formats(monkeypatch, tmp_pat
 
     whisper_result = transcription_tools.transcribe_audio(str(audio_path), model="whisper-1")
     assert whisper_result["success"] is True
-    assert whisper_capture["base_url"] == "https://openai-audio-gateway.flux-agent.com/v1"
+    assert whisper_capture["base_url"] == "https://openai-audio-gateway.omniworker.com/v1"
     assert whisper_capture["transcription_kwargs"]["response_format"] == "text"
     assert whisper_capture["close_calls"] == 1
 

@@ -1,6 +1,6 @@
 """Welcome banner, ASCII art, skills summary, and update check for the CLI.
 
-Pure display functions with no Flux AgentCLI state dependency.
+Pure display functions with no OmniWorkerCLI state dependency.
 """
 
 import json
@@ -11,7 +11,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from typing import Dict, List, Optional
 
 from rich.console import Console
@@ -46,7 +46,7 @@ def cprint(text: str):
 def _skin_color(key: str, fallback: str) -> str:
     """Get a color from the active skin, or return fallback."""
     try:
-        from flux-agent_cli.skin_engine import get_active_skin
+        from omniworker_cli.skin_engine import get_active_skin
         return get_active_skin().get_color(key, fallback)
     except Exception:
         return fallback
@@ -55,7 +55,7 @@ def _skin_color(key: str, fallback: str) -> str:
 def _skin_branding(key: str, fallback: str) -> str:
     """Get a branding string from the active skin, or return fallback."""
     try:
-        from flux-agent_cli.skin_engine import get_active_skin
+        from omniworker_cli.skin_engine import get_active_skin
         return get_active_skin().get_branding(key, fallback)
     except Exception:
         return fallback
@@ -65,16 +65,16 @@ def _skin_branding(key: str, fallback: str) -> str:
 # ASCII Art & Branding
 # =========================================================================
 
-from flux-agent_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
+from omniworker_cli import __version__ as VERSION, __release_date__ as RELEASE_DATE
 
-FLUX AGENT_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+OMNIWORKER_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
 [bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
 [#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
 [#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
 [#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
 [#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
 
-FLUX AGENT_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+OMNIWORKER_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
 [#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
 [#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
 [#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
@@ -220,7 +220,7 @@ def check_via_pypi() -> Optional[int]:
 def check_for_updates() -> Optional[int]:
     """Check whether a Flux Agent update is available.
 
-    Two paths: if ``FLUX AGENT_REVISION`` is set (nix builds embed it), compare
+    Two paths: if ``OMNIWORKER_REVISION`` is set (nix builds embed it), compare
     it to upstream main via ``git ls-remote``. Otherwise look for a local
     git checkout and count commits behind ``origin/main``.
 
@@ -228,9 +228,9 @@ def check_for_updates() -> Optional[int]:
     if behind but the count is unknown, ``0`` if up-to-date, or ``None`` if
     the check failed or doesn't apply. Cached for 6 hours.
     """
-    flux-agent_home = get_flux-agent_home()
-    cache_file = flux-agent_home / ".update_check"
-    embedded_rev = os.environ.get("FLUX AGENT_REVISION") or None
+    omniworker_home = get_omniworker_home()
+    cache_file = omniworker_home / ".update_check"
+    embedded_rev = os.environ.get("OMNIWORKER_REVISION") or None
 
     # Read cache — invalidate if the embedded rev has changed since last check
     now = time.time()
@@ -249,11 +249,11 @@ def check_for_updates() -> Optional[int]:
         behind = _check_via_rev(embedded_rev)
     else:
         # Prefer the running code's location over the profile-scoped path.
-        # $FLUX AGENT_HOME/hermes-agent/ may be a stale copy from --clone-all;
+        # $OMNIWORKER_HOME/hermes-agent/ may be a stale copy from --clone-all;
         # Path(__file__) always resolves to the actual installed checkout.
         repo_dir = Path(__file__).parent.parent.resolve()
         if not (repo_dir / ".git").exists():
-            repo_dir = flux-agent_home / "hermes-agent"
+            repo_dir = omniworker_home / "hermes-agent"
         if not (repo_dir / ".git").exists():
             behind = check_via_pypi()
         else:
@@ -271,13 +271,13 @@ def _resolve_repo_dir() -> Optional[Path]:
     """Return the active Flux Agent git checkout, or None if this isn't a git install.
 
     Prefers the running code's location over the profile-scoped path
-    because ``$FLUX AGENT_HOME/hermes-agent/`` may be a stale copy carried
+    because ``$OMNIWORKER_HOME/hermes-agent/`` may be a stale copy carried
     over by ``--clone-all``.
     """
     repo_dir = Path(__file__).parent.parent.resolve()
     if not (repo_dir / ".git").exists():
-        flux-agent_home = get_flux-agent_home()
-        repo_dir = flux-agent_home / "hermes-agent"
+        omniworker_home = get_omniworker_home()
+        repo_dir = omniworker_home / "hermes-agent"
     return repo_dir if (repo_dir / ".git").exists() else None
 
 
@@ -499,12 +499,12 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
 
     # Use skin's custom caduceus art if provided
     try:
-        from flux-agent_cli.skin_engine import get_active_skin
+        from omniworker_cli.skin_engine import get_active_skin
         _bskin = get_active_skin()
-        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else FLUX AGENT_CADUCEUS
+        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else OMNIWORKER_CADUCEUS
     except Exception:
         _bskin = None
-        _hero = FLUX AGENT_CADUCEUS
+        _hero = OMNIWORKER_CADUCEUS
     left_lines = ["", _hero, ""]
     model_short = model.split("/")[-1] if "/" in model else model
     if model_short.endswith(".gguf"):
@@ -514,7 +514,7 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
     ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
     left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
 
-    if os.getenv("FLUX AGENT_YOLO_MODE"):
+    if os.getenv("OMNIWORKER_YOLO_MODE"):
         left_lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
     left_lines.append(f"[dim {dim}]{cwd}[/]")
     if session_id:
@@ -631,8 +631,8 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
     # understand why tool counts may not match what's actually reachable
     # (codex builds its own tool list inside the spawned subprocess).
     try:
-        from flux-agent_cli.codex_runtime_switch import get_current_runtime
-        from flux-agent_cli.config import load_config as _load_cfg
+        from omniworker_cli.codex_runtime_switch import get_current_runtime
+        from omniworker_cli.config import load_config as _load_cfg
         if get_current_runtime(_load_cfg()) == "codex_app_server":
             right_lines.append(
                 f"[bold {accent}]Runtime:[/] [{text}]codex app-server[/] "
@@ -642,7 +642,7 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
         pass
     # Show active profile name when not 'default'
     try:
-        from flux-agent_cli.profiles import get_active_profile_name
+        from omniworker_cli.profiles import get_active_profile_name
         _profile_name = get_active_profile_name()
         if _profile_name and _profile_name != "default":
             right_lines.append(f"[bold {accent}]Profile:[/] [{text}]{_profile_name}[/]")
@@ -655,7 +655,7 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
     try:
         behind = get_update_result(timeout=0.5)
         if behind is not None and behind != 0:
-            from flux-agent_cli.config import get_managed_update_command, recommended_update_command
+            from omniworker_cli.config import get_managed_update_command, recommended_update_command
             if behind > 0:
                 commits_word = "commit" if behind == 1 else "commits"
                 right_lines.append(
@@ -696,7 +696,7 @@ def build_welcome_banner(console: Console, model: str, cwd: str,
     console.print()
     term_width = shutil.get_terminal_size().columns
     if term_width >= 95:
-        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else FLUX AGENT_AGENT_LOGO
+        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else OMNIWORKER_AGENT_LOGO
         console.print(_logo)
         console.print()
     console.print(outer_panel)

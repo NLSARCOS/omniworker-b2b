@@ -6,7 +6,7 @@ author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [GitHub, Code-Review, Pull-Requests, Git, Quality]
     related_skills: [github-auth, github-pr-workflow]
 ---
@@ -28,8 +28,8 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 else
   AUTH="git"
   if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ~/.flux-agent/.env ] && grep -q "^GITHUB_TOKEN=" ~/.flux-agent/.env; then
-      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.flux-agent/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+    if [ -f ~/.omniworker/.env ] && grep -q "^GITHUB_TOKEN=" ~/.omniworker/.env; then
+      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.omniworker/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi
@@ -335,7 +335,7 @@ When the user asks you to "review PR #N", "look at this PR", or gives you a PR U
 ### Step 1: Set up environment
 
 ```bash
-source "${FLUX AGENT_HOME:-$HOME/.flux-agent}/skills/github/github-auth/scripts/gh-env.sh"
+source "${OMNIWORKER_HOME:-$HOME/.omniworker}/skills/github/github-auth/scripts/gh-env.sh"
 # Or run the inline setup block from the top of this skill
 ```
 

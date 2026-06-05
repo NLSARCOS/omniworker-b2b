@@ -11,7 +11,7 @@ The web dashboard is a browser-based UI for managing your Flux Agent Agent insta
 ## Quick Start
 
 ```bash
-flux-agent dashboard
+omniworker dashboard
 ```
 
 This starts a local web server and opens `http://127.0.0.1:9119` in your browser. The dashboard runs entirely on your machine — no data leaves localhost.
@@ -24,30 +24,30 @@ This starts a local web server and opens `http://127.0.0.1:9119` in your browser
 | `--host` | `127.0.0.1` | Bind address |
 | `--no-open` | — | Don't auto-open the browser |
 | `--insecure` | off | Allow binding to non-localhost hosts (**DANGEROUS** — exposes API keys on the network; pair with a firewall and strong auth) |
-| `--tui` | off | Expose the in-browser Chat tab (embedded `flux-agent --tui` via PTY/WebSocket). Alternatively set `FLUX AGENT_DASHBOARD_TUI=1`. |
+| `--tui` | off | Expose the in-browser Chat tab (embedded `omniworker --tui` via PTY/WebSocket). Alternatively set `OMNIWORKER_DASHBOARD_TUI=1`. |
 
 ```bash
 # Custom port
-flux-agent dashboard --port 8080
+omniworker dashboard --port 8080
 
 # Bind to all interfaces (use with caution on shared networks)
-flux-agent dashboard --host 0.0.0.0
+omniworker dashboard --host 0.0.0.0
 
 # Start without opening browser
-flux-agent dashboard --no-open
+omniworker dashboard --no-open
 ```
 
 ## Prerequisites
 
-The default `flux-agent-agent` install does not ship the HTTP stack or PTY helper — those are optional extras. The **web dashboard** needs FastAPI and Uvicorn (`web` extra). The **Chat** tab also needs `ptyprocess` to spawn the embedded TUI behind a pseudo-terminal (`pty` extra on POSIX). Install both with:
+The default `omniworker-agent` install does not ship the HTTP stack or PTY helper — those are optional extras. The **web dashboard** needs FastAPI and Uvicorn (`web` extra). The **Chat** tab also needs `ptyprocess` to spawn the embedded TUI behind a pseudo-terminal (`pty` extra on POSIX). Install both with:
 
 ```bash
-pip install 'flux-agent-agent[web,pty]'
+pip install 'omniworker-agent[web,pty]'
 ```
 
-The `web` extra pulls in FastAPI/Uvicorn; `pty` pulls in `ptyprocess` (POSIX) or `pywinpty` (native Windows — note that the embedded TUI itself still requires WSL). `pip install flux-agent-agent[all]` includes both extras and is the easiest path if you also want messaging/voice/etc.
+The `web` extra pulls in FastAPI/Uvicorn; `pty` pulls in `ptyprocess` (POSIX) or `pywinpty` (native Windows — note that the embedded TUI itself still requires WSL). `pip install omniworker-agent[all]` includes both extras and is the easiest path if you also want messaging/voice/etc.
 
-When you run `flux-agent dashboard` without the dependencies, it will tell you what to install. If the frontend hasn't been built yet and `npm` is available, it builds automatically on first launch.
+When you run `omniworker dashboard` without the dependencies, it will tell you what to install. If the frontend hasn't been built yet and `npm` is available, it builds automatically on first launch.
 
 ## Pages
 
@@ -64,12 +64,12 @@ The status page auto-refreshes every 5 seconds.
 
 ### Chat
 
-The **Chat** tab embeds the full Flux Agent TUI (the same interface you get from `flux-agent --tui`) directly in the browser. Everything you can do in the terminal TUI — slash commands, model picker, tool-call cards, markdown streaming, clarify/sudo/approval prompts, skin theming — works identically here, because the dashboard is running the real TUI binary and rendering its ANSI output through [xterm.js](https://xtermjs.org/) with its WebGL renderer for pixel-perfect cell layout.
+The **Chat** tab embeds the full Flux Agent TUI (the same interface you get from `omniworker --tui`) directly in the browser. Everything you can do in the terminal TUI — slash commands, model picker, tool-call cards, markdown streaming, clarify/sudo/approval prompts, skin theming — works identically here, because the dashboard is running the real TUI binary and rendering its ANSI output through [xterm.js](https://xtermjs.org/) with its WebGL renderer for pixel-perfect cell layout.
 
 **How it works:**
 
 - `/api/pty` opens a WebSocket authenticated with the dashboard's session token
-- The server spawns `flux-agent --tui` behind a POSIX pseudo-terminal
+- The server spawns `omniworker --tui` behind a POSIX pseudo-terminal
 - Keystrokes travel to the PTY; ANSI output streams back to the browser
 - xterm.js's WebGL renderer paints each cell to an integer-pixel grid; mouse tracking (SGR 1006), wide characters (Unicode 11), and box-drawing glyphs all render natively
 - Resizing the browser window resizes the TUI via the `@xterm/addon-fit` addon
@@ -78,8 +78,8 @@ The **Chat** tab embeds the full Flux Agent TUI (the same interface you get from
 
 **Prerequisites:**
 
-- Node.js (same requirement as `flux-agent --tui`; the TUI bundle is built on first launch)
-- `ptyprocess` — installed by the `pty` extra (`pip install 'flux-agent-agent[web,pty]'`, or `[all]` covers both)
+- Node.js (same requirement as `omniworker --tui`; the TUI bundle is built on first launch)
+- `ptyprocess` — installed by the `pty` extra (`pip install 'omniworker-agent[web,pty]'`, or `[all]` covers both)
 - POSIX kernel (Linux, macOS, or WSL2).  The `/chat` terminal pane specifically needs a POSIX PTY — native Windows Python has no equivalent, so on a native Windows install the rest of the dashboard (sessions, jobs, metrics, config editor) works but the `/chat` tab will show a banner telling you to use WSL2 for that feature.
 
 Close the browser tab and the PTY is reaped cleanly on the server. Re-opening spawns a fresh session.
@@ -107,7 +107,7 @@ Fields with known valid values (terminal backend, skin, approval mode, etc.) ren
 - **Import** — uploads a JSON config file to replace the current values
 
 :::tip
-Config changes take effect on the next agent session or gateway restart. The web dashboard edits the same `config.yaml` file that `flux-agent config set` and the gateway read from.
+Config changes take effect on the next agent session or gateway restart. The web dashboard edits the same `config.yaml` file that `omniworker config set` and the gateway read from.
 :::
 
 ### API Keys
@@ -169,7 +169,7 @@ Create and manage scheduled cron jobs that run agent prompts on a recurring sche
 
 ### Skills
 
-Browse, search, and toggle skills and toolsets. Skills are loaded from `~/.flux-agent/skills/` and grouped by category.
+Browse, search, and toggle skills and toolsets. Skills are loaded from `~/.omniworker/skills/` and grouped by category.
 
 - **Search** — filter skills and toolsets by name, description, or category
 - **Category filter** — click category pills to narrow the list (e.g. MLOps, MCP, Red Teaming, AI)
@@ -189,7 +189,7 @@ You → /reload
   Reloaded .env (3 var(s) updated)
 ```
 
-This re-reads `~/.flux-agent/.env` into the running process's environment. Useful when you've added a new provider key via the dashboard and want to use it immediately.
+This re-reads `~/.omniworker/.env` into the running process's environment. Useful when you've added a new provider key via the dashboard and want to use it immediately.
 
 ## REST API
 
@@ -307,7 +307,7 @@ If you're contributing to the web dashboard frontend:
 
 ```bash
 # Terminal 1: start the backend API
-flux-agent dashboard --no-open
+omniworker dashboard --no-open
 
 # Terminal 2: start the Vite dev server with HMR
 cd web/
@@ -317,11 +317,11 @@ npm run dev
 
 The Vite dev server at `http://localhost:5173` proxies `/api` requests to the FastAPI backend at `http://127.0.0.1:9119`.
 
-The frontend is built with React 19, TypeScript, Tailwind CSS v4, and shadcn/ui-style components. Production builds output to `flux-agent_cli/web_dist/` which the FastAPI server serves as a static SPA.
+The frontend is built with React 19, TypeScript, Tailwind CSS v4, and shadcn/ui-style components. Production builds output to `omniworker_cli/web_dist/` which the FastAPI server serves as a static SPA.
 
 ## Automatic Build on Update
 
-When you run `flux-agent update`, the web frontend is automatically rebuilt if `npm` is available. This keeps the dashboard in sync with code updates. If `npm` isn't installed, the update skips the frontend build and `flux-agent dashboard` will build it on first launch.
+When you run `omniworker update`, the web frontend is automatically rebuilt if `npm` is available. This keeps the dashboard in sync with code updates. If `npm` isn't installed, the update skips the frontend build and `omniworker dashboard` will build it on first launch.
 
 ## Themes & plugins
 

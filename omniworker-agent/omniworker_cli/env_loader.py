@@ -102,14 +102,14 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
     This produces mangled values — e.g. a bot token duplicated 8×
     (see #8908).
 
-    We delegate to ``flux-agent_cli.config._sanitize_env_lines`` which
+    We delegate to ``omniworker_cli.config._sanitize_env_lines`` which
     already knows all valid Flux Agent env-var names and can split
     concatenated lines correctly.
     """
     if not path.exists():
         return
     try:
-        from flux-agent_cli.config import _sanitize_env_lines
+        from omniworker_cli.config import _sanitize_env_lines
     except ImportError:
         return  # early bootstrap — config module not available yet
 
@@ -139,9 +139,9 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
         pass  # best-effort — don't block gateway startup
 
 
-def load_flux-agent_dotenv(
+def load_omniworker_dotenv(
     *,
-    flux-agent_home: str | os.PathLike | None = None,
+    omniworker_home: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,
 ) -> list[Path]:
     """Load Flux Agent environment files with user config taking precedence.
@@ -154,7 +154,7 @@ def load_flux-agent_dotenv(
     """
     loaded: list[Path] = []
 
-    home_path = Path(flux-agent_home or os.getenv("FLUX AGENT_HOME", Path.home() / ".hermes"))
+    home_path = Path(omniworker_home or os.getenv("OMNIWORKER_HOME", Path.home() / ".hermes"))
     user_env = home_path / ".env"
     project_env_path = Path(project_env) if project_env else None
 
@@ -176,4 +176,4 @@ def load_flux-agent_dotenv(
 
 
 # Backward-compatible alias while the Hermes -> Flux Agent rename is in flight.
-load_hermes_dotenv = load_flux-agent_dotenv
+load_hermes_dotenv = load_omniworker_dotenv

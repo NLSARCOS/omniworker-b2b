@@ -25,9 +25,9 @@ API_PATH = (
 
 @pytest.fixture
 def bridge_module(monkeypatch, tmp_path):
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     spec = importlib.util.spec_from_file_location("gws_bridge_test", BRIDGE_PATH)
     module = importlib.util.module_from_spec(spec)
@@ -38,9 +38,9 @@ def bridge_module(monkeypatch, tmp_path):
 
 @pytest.fixture
 def api_module(monkeypatch, tmp_path):
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     spec = importlib.util.spec_from_file_location("gws_api_test", API_PATH)
     module = importlib.util.module_from_spec(spec)

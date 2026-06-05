@@ -8,7 +8,7 @@ import shlex
 import shutil
 import subprocess
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 
 
 DEFAULT_BROWSER_CDP_PORT = 9222
@@ -80,7 +80,7 @@ def get_chrome_debug_candidates(system: str) -> list[str]:
 
 
 def chrome_debug_data_dir() -> str:
-    return str(get_flux-agent_home() / "chrome-debug")
+    return str(get_omniworker_home() / "chrome-debug")
 
 
 def _chrome_debug_args(port: int) -> list[str]:

@@ -14,7 +14,7 @@ Reserved and on-demand GPU cloud instances for ML training and inference. Use wh
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/mlops/lambda-labs` |
+| Source | Optional — install with `omniworker skills install official/mlops/lambda-labs` |
 | Path | `optional-skills/mlops/lambda-labs` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |
@@ -556,8 +556,8 @@ python inference.py \
 
 ## References
 
-- **[Advanced Usage](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/lambda-labs/references/advanced-usage.md)** - Multi-node training, API automation
-- **[Troubleshooting](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/lambda-labs/references/troubleshooting.md)** - Common issues and solutions
+- **[Advanced Usage](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/lambda-labs/references/advanced-usage.md)** - Multi-node training, API automation
+- **[Troubleshooting](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/lambda-labs/references/troubleshooting.md)** - Common issues and solutions
 
 ## Resources
 

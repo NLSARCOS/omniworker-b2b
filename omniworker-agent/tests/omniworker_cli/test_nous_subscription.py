@@ -1,6 +1,6 @@
 """Tests for Nous subscription feature detection."""
 
-from flux-agent_cli import nous_subscription as ns
+from omniworker_cli import nous_subscription as ns
 
 
 def test_get_nous_subscription_features_recognizes_direct_exa_backend(monkeypatch):

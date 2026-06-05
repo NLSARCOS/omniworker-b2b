@@ -14,7 +14,7 @@ Free web search via DuckDuckGo — text, news, images, videos. No API key needed
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/research/duckduckgo-search` |
+| Source | Optional — install with `omniworker skills install official/research/duckduckgo-search` |
 | Path | `optional-skills/research/duckduckgo-search` |
 | Version | `1.3.0` |
 | Author | gamedevCloudy |

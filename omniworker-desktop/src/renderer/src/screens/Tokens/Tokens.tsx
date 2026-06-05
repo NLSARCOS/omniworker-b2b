@@ -54,7 +54,7 @@ export default function Tokens({ profile }: TokensProps): React.JSX.Element {
     try {
       setLoading(true);
       setError(null);
-      const data = await window.flux-agentAPI.getTokenMetrics();
+      const data = await window.omniworkerAPI.getTokenMetrics();
       setMetrics(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

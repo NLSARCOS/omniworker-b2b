@@ -14,7 +14,7 @@ Build accretion/dilution (merger) models in Excel — pro-forma P&L, synergies, 
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/finance/merger-model` |
+| Source | Optional — install with `omniworker skills install official/finance/merger-model` |
 | Path | `optional-skills/finance/merger-model` |
 | Version | `1.0.0` |
 | Author | Anthropic (adapted by Nous Research) |

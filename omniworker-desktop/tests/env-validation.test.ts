@@ -19,7 +19,7 @@ function readEnvFile(): string {
 
 describe("environment variable write validation", () => {
   beforeEach(() => {
-    testHome = mkdtempSync(join(tmpdir(), "flux-agent-env-validation-"));
+    testHome = mkdtempSync(join(tmpdir(), "omniworker-env-validation-"));
   });
 
   afterEach(() => {

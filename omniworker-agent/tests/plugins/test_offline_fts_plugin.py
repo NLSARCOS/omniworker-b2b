@@ -12,7 +12,7 @@ def test_offline_fts_lifecycle():
 
         # Initialize provider
         session_id = "test-session-fts"
-        provider.initialize(session_id, flux-agent_home=tmpdir)
+        provider.initialize(session_id, omniworker_home=tmpdir)
 
         db = provider._session_db
         assert db is not None

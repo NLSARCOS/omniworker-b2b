@@ -10,11 +10,11 @@ upstream credential to the forwarded request. The credential is refreshed
 automatically when it approaches expiry.
 
 First-class adapter:
-  - ``nous`` — Nous Portal (https://inference-api.flux-agent.com/v1)
+  - ``nous`` — Nous Portal (https://inference-api.omniworker.com/v1)
 
 Future adapters can plug in by implementing ``UpstreamAdapter``.
 """
 
-from flux-agent_cli.proxy.adapters.base import UpstreamAdapter
+from omniworker_cli.proxy.adapters.base import UpstreamAdapter
 
 __all__ = ["UpstreamAdapter"]

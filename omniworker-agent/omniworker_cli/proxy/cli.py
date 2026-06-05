@@ -1,4 +1,4 @@
-"""CLI handlers for the ``flux-agent proxy`` subcommand."""
+"""CLI handlers for the ``omniworker proxy`` subcommand."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import logging
 import sys
 from typing import Any
 
-from flux-agent_cli.proxy.adapters import ADAPTERS, get_adapter
-from flux-agent_cli.proxy.server import (
+from omniworker_cli.proxy.adapters import ADAPTERS, get_adapter
+from omniworker_cli.proxy.server import (
     AIOHTTP_AVAILABLE,
     DEFAULT_HOST,
     DEFAULT_PORT,
@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 def _print_aiohttp_missing() -> None:
     print(
-        "flux-agent proxy requires aiohttp. Install one of:\n"
-        "  pip install 'flux-agent-agent[messaging]'\n"
+        "omniworker proxy requires aiohttp. Install one of:\n"
+        "  pip install 'omniworker-agent[messaging]'\n"
         "  pip install aiohttp",
         file=sys.stderr,
     )
@@ -46,7 +46,7 @@ def cmd_proxy_start(args: Any) -> int:
     if not adapter.is_authenticated():
         print(
             f"Not logged into {adapter.display_name}. "
-            f"Run `flux-agent login {adapter.name}` first.",
+            f"Run `omniworker login {adapter.name}` first.",
             file=sys.stderr,
         )
         return 2
@@ -93,7 +93,7 @@ def cmd_proxy_status(args: Any) -> int:
         expires = f" (bearer expires {cred.expires_at})" if cred.expires_at else ""
         print(f"  [{name:8s}] {adapter.display_name} — ready{expires}")
     print(
-        "\nStart the proxy with: flux-agent proxy start [--provider <name>]"
+        "\nStart the proxy with: omniworker proxy start [--provider <name>]"
     )
     return 0
 
@@ -108,7 +108,7 @@ def cmd_proxy_list_providers(args: Any) -> int:
 
 
 def cmd_proxy(args: Any) -> int:
-    """Dispatch ``flux-agent proxy <subcommand>``."""
+    """Dispatch ``omniworker proxy <subcommand>``."""
     sub = getattr(args, "proxy_command", None)
     if sub == "start":
         return cmd_proxy_start(args)
@@ -118,15 +118,15 @@ def cmd_proxy(args: Any) -> int:
         return cmd_proxy_list_providers(args)
     # No subcommand → print short help.
     print(
-        "flux-agent proxy — local OpenAI-compatible proxy that attaches your\n"
+        "omniworker proxy — local OpenAI-compatible proxy that attaches your\n"
         "OAuth-authenticated provider credentials to outbound requests.\n"
         "\n"
         "Subcommands:\n"
-        "  flux-agent proxy start [--provider nous] [--host 127.0.0.1] [--port 8645]\n"
+        "  omniworker proxy start [--provider nous] [--host 127.0.0.1] [--port 8645]\n"
         "      Run the proxy in the foreground.\n"
-        "  flux-agent proxy status\n"
+        "  omniworker proxy status\n"
         "      Show which upstream adapters are ready.\n"
-        "  flux-agent proxy providers\n"
+        "  omniworker proxy providers\n"
         "      List available upstream providers.\n",
         file=sys.stderr,
     )

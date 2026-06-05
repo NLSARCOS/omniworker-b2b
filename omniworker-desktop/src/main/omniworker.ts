@@ -15,10 +15,10 @@ import { homedir } from "os";
 import http from "http";
 import https from "https";
 import {
-  FLUX AGENT_HOME,
-  FLUX AGENT_REPO,
-  FLUX AGENT_PYTHON,
-  flux-agentCliArgs,
+  OMNIWORKER_HOME,
+  OMNIWORKER_REPO,
+  OMNIWORKER_PYTHON,
+  omniworkerCliArgs,
   getEnhancedPath,
   SAAS_BASE_URL,
 } from "./installer";
@@ -35,7 +35,7 @@ import { readModels } from "./models";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { PowerManager } from "./power";
 import { HistoryCache } from "./history-cache";
-const pidsFile = join(FLUX AGENT_HOME, "pids.json");
+const pidsFile = join(OMNIWORKER_HOME, "pids.json");
 
 interface PidEntry {
   pid: number;
@@ -310,7 +310,7 @@ function isApiServerReady(): Promise<boolean> {
 
 function ensureApiServerConfig(): void {
   try {
-    const configPath = join(FLUX AGENT_HOME, "config.yaml");
+    const configPath = join(OMNIWORKER_HOME, "config.yaml");
     if (!existsSync(configPath)) return;
     const content = readFileSync(configPath, "utf-8");
     // If api_server is already configured, skip
@@ -385,7 +385,7 @@ function sendMessageViaApi(
   const messages = rawMessages;
 
   const body = JSON.stringify({
-    model: mc.model || "flux-agent-agent",
+    model: mc.model || "omniworker-agent",
     messages,
     stream: true,
     // Keep session_id in body for backward-compat with older gateway
@@ -442,7 +442,7 @@ function sendMessageViaApi(
   function probeRealError(): void {
     // When streaming returns empty, make a non-streaming request to surface the real error
     const probeBody = JSON.stringify({
-      model: mc.model || "flux-agent-agent",
+      model: mc.model || "omniworker-agent",
       messages: [{ role: "user", content: message }],
       stream: false,
     });
@@ -491,7 +491,7 @@ function sendMessageViaApi(
 
   /** Handle a custom SSE event (non-data lines with `event:` prefix). */
   function processCustomEvent(eventType: string, data: string): void {
-    if (eventType === "flux-agent.tool.progress" && cb.onToolProgress) {
+    if (eventType === "omniworker.tool.progress" && cb.onToolProgress) {
       try {
         const payload = JSON.parse(data);
         const label = payload.label || payload.tool || "";
@@ -567,7 +567,7 @@ function sendMessageViaApi(
       timeout: 120000,
     },
     (res) => {
-      const sid = res.headers["x-flux-agent-session-id"];
+      const sid = res.headers["x-omniworker-session-id"];
       if (sid && typeof sid === "string") sessionId = sid;
 
       if (res.statusCode !== 200) {
@@ -603,7 +603,7 @@ function sendMessageViaApi(
         }
         if (!dataLine) return false;
         if (eventType) {
-          // Custom event (e.g. flux-agent.tool.progress) — never signals [DONE]
+          // Custom event (e.g. omniworker.tool.progress) — never signals [DONE]
           processCustomEvent(eventType, dataLine);
           return false;
         }
@@ -682,7 +682,7 @@ function sendMessageViaCli(
   const mc = getModelConfig(profile);
   const profileEnv = readEnv(profile);
 
-  const args = flux-agentCliArgs();
+  const args = omniworkerCliArgs();
   if (profile && profile !== "default") {
     args.push("-p", profile);
   }
@@ -700,11 +700,11 @@ function sendMessageViaCli(
     ...(process.env as Record<string, string>),
     PATH: getEnhancedPath(),
     HOME: homedir(),
-    FLUX AGENT_HOME: FLUX AGENT_HOME,
-    FLUX AGENT_SAAS_BASE_URL:
-      process.env.FLUX AGENT_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
+    OMNIWORKER_HOME: OMNIWORKER_HOME,
+    OMNIWORKER_SAAS_BASE_URL:
+      process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     PYTHONUNBUFFERED: "1",
-    FLUX AGENT_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
+    OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
   };
 
   const secureTokens = getSecureTokens();
@@ -713,12 +713,12 @@ function sendMessageViaCli(
     env.CUSTOM_API_KEY = secureTokens.accessToken;
   }
   if (secureTokens.refreshToken) {
-    env.FLUX AGENT_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
+    env.OMNIWORKER_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
   }
   try {
     const fingerprint = getDeviceFingerprint();
     if (fingerprint) {
-      env.FLUX AGENT_DEVICE_FINGERPRINT = fingerprint;
+      env.OMNIWORKER_DEVICE_FINGERPRINT = fingerprint;
     }
   } catch (err) {
     /* ignore */
@@ -767,10 +767,10 @@ function sendMessageViaCli(
     }
     const isAnthropicProtocol = modelApiMode === "anthropic_messages";
     if (isAnthropicProtocol) {
-      env.FLUX AGENT_INFERENCE_PROVIDER = "anthropic";
+      env.OMNIWORKER_INFERENCE_PROVIDER = "anthropic";
       env.ANTHROPIC_BASE_URL = mc.baseUrl.replace(/\/+$/, "");
     } else {
-      env.FLUX AGENT_INFERENCE_PROVIDER = "custom";
+      env.OMNIWORKER_INFERENCE_PROVIDER = "custom";
       env.OPENAI_BASE_URL = mc.baseUrl.replace(/\/+$/, "");
     }
 
@@ -839,8 +839,8 @@ function sendMessageViaCli(
     }
   };
 
-  const proc = spawn(FLUX AGENT_PYTHON, args, {
-    cwd: FLUX AGENT_REPO,
+  const proc = spawn(OMNIWORKER_PYTHON, args, {
+    cwd: OMNIWORKER_REPO,
     env,
     stdio: ["ignore", "pipe", "pipe"],
     ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -996,7 +996,7 @@ function sendSimpleGreeting(
     : `http://127.0.0.1:${SMART_ROUTER_PORT}/v1/chat/completions`;
 
   const body = JSON.stringify({
-    model: "flux-agent-agent",
+    model: "omniworker-agent",
     messages: [
       {
         role: "system",
@@ -1099,7 +1099,7 @@ function sendSimpleGreeting(
     const mc = getModelConfig(profile);
     const fallbackUrl = `${cleanBaseUrl(getApiUrl())}/v1/chat/completions`;
     const fallbackBody = JSON.stringify({
-      model: mc.model || "flux-agent-agent",
+      model: mc.model || "omniworker-agent",
       messages: [{ role: "user", content: message }],
       stream: true,
     });
@@ -1159,7 +1159,7 @@ function sendSimpleGreeting(
 // ────────────────────────────────────────────────────
 
 const LOCAL_SLM_PORT = parseInt(
-  process.env.FLUX AGENT_LOCAL_SLM_PORT ?? "8080",
+  process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
   10,
 );
 
@@ -1431,7 +1431,7 @@ function ensureInitialized(): void {
 
 /**
  * Copy bundled local-llm startup scripts from app resources into
- * FLUX AGENT_HOME/local-llm/ so startLocalLlmServer() can find them.
+ * OMNIWORKER_HOME/local-llm/ so startLocalLlmServer() can find them.
  * Safe to call multiple times — only copies if destination is missing.
  */
 function ensureLocalLlmScripts(): void {
@@ -1440,8 +1440,8 @@ function ensureLocalLlmScripts(): void {
     const { app } = require("electron");
     const srcDir = join(app.getAppPath(), "resources", "local-llm-scripts");
     const engineSrcDir = join(app.getAppPath(), "resources", "engine");
-    const destScriptsDir = join(FLUX AGENT_HOME, "local-llm", "scripts");
-    const destEngineDir = join(FLUX AGENT_HOME, "local-llm", "engine");
+    const destScriptsDir = join(OMNIWORKER_HOME, "local-llm", "scripts");
+    const destEngineDir = join(OMNIWORKER_HOME, "local-llm", "engine");
 
     if (!existsSync(srcDir)) return; // not packaged yet (dev mode)
 
@@ -1475,7 +1475,7 @@ function ensureLocalLlmScripts(): void {
     }
 
     // Symlink engine dir so scripts can reference ../engine relative to scripts/
-    const engineLink = join(FLUX AGENT_HOME, "local-llm", "engine");
+    const engineLink = join(OMNIWORKER_HOME, "local-llm", "engine");
     if (existsSync(engineSrcDir) && !existsSync(engineLink)) {
       symlinkSync(engineSrcDir, engineLink);
     }
@@ -1510,7 +1510,7 @@ export function stopHealthPolling(): void {
 let localLlmProcess: ChildProcess | null = null;
 
 const _LOCAL_LLM_PORT_ORIG = parseInt(
-  process.env.FLUX AGENT_LOCAL_SLM_PORT ?? "8080",
+  process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
   10,
 );
 
@@ -1549,13 +1549,13 @@ export async function startLocalLlmServer(): Promise<boolean> {
   }
 
   const scriptPath = join(
-    FLUX AGENT_HOME,
+    OMNIWORKER_HOME,
     "local-llm",
     "scripts",
     "start-local-llm.sh",
   );
   const winScriptPath = join(
-    FLUX AGENT_HOME,
+    OMNIWORKER_HOME,
     "local-llm",
     "scripts",
     "start-local-llm.bat",
@@ -1589,7 +1589,7 @@ export async function startLocalLlmServer(): Promise<boolean> {
     process.platform === "win32" ? ["/c", startScript] : [startScript];
 
   localLlmProcess = spawn(command, args, {
-    cwd: FLUX AGENT_HOME,
+    cwd: OMNIWORKER_HOME,
     env,
     stdio: "ignore",
     ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -1709,7 +1709,7 @@ export async function startSmartRouter(): Promise<boolean> {
     await new Promise((r) => setTimeout(r, 500));
   }
 
-  const routerScript = join(FLUX AGENT_REPO, "smart_router.py");
+  const routerScript = join(OMNIWORKER_REPO, "smart_router.py");
   let shouldWriteScript = false;
   if (!existsSync(routerScript)) {
     shouldWriteScript = true;
@@ -1728,7 +1728,7 @@ export async function startSmartRouter(): Promise<boolean> {
     console.log(
       "[SmartRouter] Writing updated/bundled version of smart_router.py...",
     );
-    mkdirSync(FLUX AGENT_REPO, { recursive: true });
+    mkdirSync(OMNIWORKER_REPO, { recursive: true });
     writeFileSync(routerScript, SMART_ROUTER_SCRIPT);
   }
 
@@ -1758,11 +1758,11 @@ export async function startSmartRouter(): Promise<boolean> {
 
   const routerEnv: Record<string, string> = {
     ...(process.env as Record<string, string>),
-    FLUX AGENT_HOME: FLUX AGENT_HOME,
+    OMNIWORKER_HOME: OMNIWORKER_HOME,
     PATH: getEnhancedPath(),
     HOME: homedir(),
     SMART_ROUTER_PORT: String(SMART_ROUTER_PORT),
-    LOCAL_SLM_PORT: process.env.FLUX AGENT_LOCAL_SLM_PORT ?? "8080",
+    LOCAL_SLM_PORT: process.env.OMNIWORKER_LOCAL_SLM_PORT ?? "8080",
     CLOUD_API_URL: cloudApiUrl,
     SMART_ROUTER_LOG: "1", // Enable logging
     FORCE_IPV4: forceIpv4 ? "true" : "false",
@@ -1786,10 +1786,10 @@ export async function startSmartRouter(): Promise<boolean> {
     routerEnv.OPENAI_API_KEY = apiKey;
   }
 
-  const args = [FLUX AGENT_PYTHON, routerScript];
+  const args = [OMNIWORKER_PYTHON, routerScript];
 
   smartRouterProcess = spawn(args[0], args.slice(1), {
-    cwd: FLUX AGENT_REPO,
+    cwd: OMNIWORKER_REPO,
     env: routerEnv,
     stdio: "ignore",
     ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -1894,13 +1894,13 @@ export async function startGateway(profile?: string): Promise<boolean> {
     ...(process.env as Record<string, string>),
     PATH: getEnhancedPath(),
     HOME: homedir(),
-    FLUX AGENT_HOME: FLUX AGENT_HOME,
+    OMNIWORKER_HOME: OMNIWORKER_HOME,
     API_SERVER_ENABLED: "true", // Ensure API server starts with gateway
-    FLUX AGENT_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
-    FLUX AGENT_SAAS_BASE_URL:
-      process.env.FLUX AGENT_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
+    OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
+    OMNIWORKER_SAAS_BASE_URL:
+      process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     // Prevent loading AGENTS.md (~51K chars / ~12K tokens) from the agent repo.
-    // Without this the agent discovers FLUX AGENT_REPO/AGENTS.md via os.getcwd()
+    // Without this the agent discovers OMNIWORKER_REPO/AGENTS.md via os.getcwd()
     // and injects the entire dev guide into every conversation — wasting ~12K tokens.
     // Desktop users aren't coding the agent itself; context files are not needed.
     TERMINAL_CWD: homedir(),
@@ -1920,12 +1920,12 @@ export async function startGateway(profile?: string): Promise<boolean> {
     gatewayEnv.CUSTOM_API_KEY = secureTokens.accessToken;
   }
   if (secureTokens.refreshToken) {
-    gatewayEnv.FLUX AGENT_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
+    gatewayEnv.OMNIWORKER_SAAS_REFRESH_TOKEN = secureTokens.refreshToken;
   }
   try {
     const fingerprint = getDeviceFingerprint();
     if (fingerprint) {
-      gatewayEnv.FLUX AGENT_DEVICE_FINGERPRINT = fingerprint;
+      gatewayEnv.OMNIWORKER_DEVICE_FINGERPRINT = fingerprint;
     }
   } catch (err) {
     /* ignore */
@@ -1968,10 +1968,10 @@ export async function startGateway(profile?: string): Promise<boolean> {
   }
 
   const fs = require("fs");
-  const logFd = fs.openSync(join(FLUX AGENT_HOME, "gateway.log"), "a");
+  const logFd = fs.openSync(join(OMNIWORKER_HOME, "gateway.log"), "a");
 
-  gatewayProcess = spawn(FLUX AGENT_PYTHON, flux-agentCliArgs(["gateway"]), {
-    cwd: FLUX AGENT_REPO,
+  gatewayProcess = spawn(OMNIWORKER_PYTHON, omniworkerCliArgs(["gateway"]), {
+    cwd: OMNIWORKER_REPO,
     env: gatewayEnv,
     stdio: ["ignore", logFd, logFd],
     ...HIDDEN_SUBPROCESS_OPTIONS,
@@ -1980,7 +1980,7 @@ export async function startGateway(profile?: string): Promise<boolean> {
   if (gatewayProcess && gatewayProcess.pid) {
     recordPid(gatewayProcess.pid);
     try {
-      const pidFile = join(FLUX AGENT_HOME, "gateway.pid");
+      const pidFile = join(OMNIWORKER_HOME, "gateway.pid");
       fs.writeFileSync(pidFile, gatewayProcess.pid.toString(), "utf-8");
       console.log(`[Gateway] Wrote spawned PID ${gatewayProcess.pid} to ${pidFile}`);
     } catch (err) {
@@ -2020,7 +2020,7 @@ export async function startGateway(profile?: string): Promise<boolean> {
 }
 
 function readPidFile(): number | null {
-  const pidFile = join(FLUX AGENT_HOME, "gateway.pid");
+  const pidFile = join(OMNIWORKER_HOME, "gateway.pid");
   if (!existsSync(pidFile)) return null;
   try {
     const raw = readFileSync(pidFile, "utf-8").trim();
@@ -2052,7 +2052,7 @@ export function stopGateway(force = false): void {
   // Always clear the PID file once we've signalled it. Leaving a stale PID
   // around means the next isGatewayRunning() / stopGateway() call can hit
   // an unrelated process that the OS has since assigned the same PID.
-  const pidFile = join(FLUX AGENT_HOME, "gateway.pid");
+  const pidFile = join(OMNIWORKER_HOME, "gateway.pid");
   if (existsSync(pidFile)) {
     try {
       unlinkSync(pidFile);

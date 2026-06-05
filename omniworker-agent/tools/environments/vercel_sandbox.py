@@ -2,7 +2,7 @@
 
 Uses the Vercel Python SDK to run commands in cloud sandboxes through Flux Agent'
 shared ``BaseEnvironment`` shell contract. When persistence is enabled, the
-backend stores task-scoped snapshot metadata under ``FLUX AGENT_HOME`` and restores
+backend stores task-scoped snapshot metadata under ``OMNIWORKER_HOME`` and restores
 new sandboxes from those snapshots on later task reuse.
 """
 
@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from tools.environments.base import (
     BaseEnvironment,
     _ThreadedProcessHandle,
@@ -153,7 +153,7 @@ def _extract_result_returncode(result: Any) -> int:
 
 
 def _snapshot_store_path() -> Path:
-    return get_flux-agent_home() / _SNAPSHOT_STORE_NAME
+    return get_omniworker_home() / _SNAPSHOT_STORE_NAME
 
 
 def _load_snapshots() -> dict:
@@ -339,9 +339,9 @@ class VercelSandboxEnvironment(BaseEnvironment):
         self._remote_home = self._detect_remote_home()
 
         if self._remote_home == "/":
-            container_base = "/.flux-agent"
+            container_base = "/.omniworker"
         else:
-            container_base = f"{self._remote_home.rstrip('/')}/.flux-agent"
+            container_base = f"{self._remote_home.rstrip('/')}/.omniworker"
         self._sync_manager = FileSyncManager(
             get_files_fn=lambda: iter_sync_files(container_base),
             upload_fn=self._vercel_upload,
@@ -544,13 +544,13 @@ class VercelSandboxEnvironment(BaseEnvironment):
             )
 
     def _vercel_bulk_download(self, dest_tar_path: Path) -> None:
-        remote_flux-agent = (
-            "/.flux-agent"
+        remote_omniworker = (
+            "/.omniworker"
             if self._remote_home == "/"
-            else f"{self._remote_home.rstrip('/')}/.flux-agent"
+            else f"{self._remote_home.rstrip('/')}/.omniworker"
         )
-        archive_member = remote_flux-agent.lstrip("/")
-        remote_tar = f"/tmp/.flux-agent_sync.{os.getpid()}.tar"
+        archive_member = remote_omniworker.lstrip("/")
+        remote_tar = f"/tmp/.omniworker_sync.{os.getpid()}.tar"
         sandbox = self._sandbox
         if sandbox is None:
             raise RuntimeError("Vercel sandbox is not attached")

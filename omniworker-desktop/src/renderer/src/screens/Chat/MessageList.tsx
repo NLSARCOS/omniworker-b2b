@@ -1,7 +1,7 @@
 import { memo, useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { VariableSizeList } from "react-window";
 const List = VariableSizeList as any;
-import { Flux AgentAvatar, MessageRow } from "./MessageRow";
+import { OmniWorkerAvatar, MessageRow } from "./MessageRow";
 import type { ChatMessage } from "./types";
 
 interface MessageListProps {
@@ -25,7 +25,7 @@ function TypingIndicator({
 }): React.JSX.Element {
   return (
     <div className="chat-message chat-message-agent">
-      <Flux AgentAvatar />
+      <OmniWorkerAvatar />
       <div className="chat-bubble chat-bubble-agent">
         {toolProgress ? (
           <div className="chat-tool-progress">{toolProgress}</div>

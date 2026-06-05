@@ -156,7 +156,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   // Load Main Data
   const loadData = useCallback(async () => {
     try {
-      const d = await window.flux-agentAPI.readMemory(profile);
+      const d = await window.omniworkerAPI.readMemory(profile);
       setData(d as MemoryData);
       setUserContent(d.user.content);
       setLoading(false);
@@ -170,7 +170,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   const loadConflicts = useCallback(async () => {
     setLoadingConflicts(true);
     try {
-      const res = await window.flux-agentAPI.getConflicts();
+      const res = await window.omniworkerAPI.getConflicts();
       setConflictsData(res as ConflictsData);
     } catch (err) {
       console.error("Failed to load conflicts:", err);
@@ -183,7 +183,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   const loadSyncStatus = useCallback(async () => {
     setLoadingSync(true);
     try {
-      const res = await window.flux-agentAPI.getSyncStatus();
+      const res = await window.omniworkerAPI.getSyncStatus();
       setSyncStatus(res as SyncStatusData);
     } catch (err) {
       console.error("Failed to load sync status:", err);
@@ -215,7 +215,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
 
   // Subscribe to real-time engram changes
   useEffect(() => {
-    return window.flux-agentAPI.subscribeMemoryChanges(profile, () => {
+    return window.omniworkerAPI.subscribeMemoryChanges(profile, () => {
       if (isEditingRef.current) return;
       void loadData();
       if (tab === "conflicts") void loadConflicts();
@@ -232,7 +232,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const results = await window.flux-agentAPI.searchObservations(searchQuery);
+        const results = await window.omniworkerAPI.searchObservations(searchQuery);
         setSearchResults(results || []);
       } catch (err) {
         console.error("Search failed:", err);
@@ -247,7 +247,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   async function handleAddEntry(): Promise<void> {
     if (!newEntry.trim()) return;
     setError("");
-    const result = await window.flux-agentAPI.addMemoryEntry(
+    const result = await window.omniworkerAPI.addMemoryEntry(
       newEntry.trim(),
       profile
     );
@@ -265,7 +265,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
     if (editingIndex === null) return;
     setError("");
 
-    const latest = (await window.flux-agentAPI.readMemory(profile)) as MemoryData;
+    const latest = (await window.omniworkerAPI.readMemory(profile)) as MemoryData;
     const currentEntry = latest.memory.entries.find(
       (entry) => entry.index === editingIndex
     );
@@ -279,7 +279,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
       return;
     }
 
-    const result = await window.flux-agentAPI.updateMemoryEntry(
+    const result = await window.omniworkerAPI.updateMemoryEntry(
       editingIndex,
       editContent.trim(),
       profile
@@ -296,7 +296,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
 
   // Legacy Delete Entry
   async function handleDeleteEntry(index: number): Promise<void> {
-    await window.flux-agentAPI.removeMemoryEntry(index, profile);
+    await window.omniworkerAPI.removeMemoryEntry(index, profile);
     setConfirmDelete(null);
     await loadData();
   }
@@ -304,7 +304,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   // Legacy Save User Profile
   async function handleSaveUserProfile(): Promise<void> {
     setError("");
-    const result = await window.flux-agentAPI.writeUserProfile(
+    const result = await window.omniworkerAPI.writeUserProfile(
       userContent,
       profile
     );
@@ -324,7 +324,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
     setLoadingTimeline(true);
     setTimelineData(null);
     try {
-      const res = await window.flux-agentAPI.getTimeline(id, 5, 5);
+      const res = await window.omniworkerAPI.getTimeline(id, 5, 5);
       setTimelineData(res as TimelineResult);
     } catch (err) {
       console.error("Failed to load timeline:", err);
@@ -342,7 +342,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
     setError("");
     try {
       const reason = conflictReason[syncId] || "User resolved conflict in dashboard";
-      const res = await window.flux-agentAPI.judgeConflict(syncId, relation, reason, 1.0);
+      const res = await window.omniworkerAPI.judgeConflict(syncId, relation, reason, 1.0);
       if (res && res.success !== false) {
         // Success
         setConflictReason((prev) => {
@@ -367,7 +367,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
     setSyncActionMsg("Initiating synchronization network...");
     setSyncActionError("");
     try {
-      const res = await window.flux-agentAPI.triggerSync();
+      const res = await window.omniworkerAPI.triggerSync();
       if (res && res.success !== false) {
         setSyncActionMsg("Sync finalized! All deferred transactions and conflict mutations replayed.");
         await loadSyncStatus();

@@ -13,8 +13,8 @@ description: >
   a fresh reply token (free) once it's ready.
 author: Flux Agent Agent contributors
 # ``requires_env`` and ``optional_env`` entries are surfaced in the
-# ``flux-agent config`` UI via the platform-plugin env var injector in
-# ``flux-agent_cli/config.py``.
+# ``omniworker config`` UI via the platform-plugin env var injector in
+# ``omniworker_cli/config.py``.
 requires_env:
   - name: LINE_CHANNEL_ACCESS_TOKEN
     description: "LINE channel long-lived access token (LINE Developers Console > Messaging API > Channel access token)"

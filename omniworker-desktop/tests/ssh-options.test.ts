@@ -18,7 +18,7 @@ describe("ssh control options", () => {
       "-o",
       "ControlMaster=auto",
       "-o",
-      "ControlPath=~/.ssh/cm-flux-agent-%r@%h:%p",
+      "ControlPath=~/.ssh/cm-omniworker-%r@%h:%p",
       "-o",
       "ControlPersist=60s",
     ]);

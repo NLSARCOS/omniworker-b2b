@@ -4,7 +4,7 @@ from types import ModuleType, SimpleNamespace
 import pytest
 from acp.schema import TextContentBlock
 
-from acp_adapter.server import Flux AgentACPAgent
+from acp_adapter.server import OmniWorkerACPAgent
 from acp_adapter.session import SessionManager
 
 
@@ -12,7 +12,7 @@ class FakeAgent:
     def __init__(self):
         self.model = "fake-model"
         self.provider = "fake-provider"
-        self.enabled_toolsets = ["flux-agent-acp"]
+        self.enabled_toolsets = ["omniworker-acp"]
         self.disabled_toolsets = []
         self.tools = []
         self.valid_tool_names = set()
@@ -60,7 +60,7 @@ class NoopDb:
 def make_agent_and_state():
     fake = FakeAgent()
     manager = SessionManager(agent_factory=lambda **kwargs: fake, db=NoopDb())
-    acp_agent = Flux AgentACPAgent(session_manager=manager)
+    acp_agent = OmniWorkerACPAgent(session_manager=manager)
     state = manager.create_session(cwd=".")
     conn = CaptureConn()
     acp_agent.on_connect(conn)
@@ -86,14 +86,14 @@ def test_acp_real_agent_gets_session_db_for_recall(monkeypatch):
     monkeypatch.setitem(sys.modules, "run_agent", mod("run_agent", AIAgent=CapturingAgent))
     monkeypatch.setitem(
         sys.modules,
-        "flux-agent_cli.config",
-        mod("flux-agent_cli.config", load_config=lambda: {"model": {"default": "m", "provider": "p"}}),
+        "omniworker_cli.config",
+        mod("omniworker_cli.config", load_config=lambda: {"model": {"default": "m", "provider": "p"}}),
     )
     monkeypatch.setitem(
         sys.modules,
-        "flux-agent_cli.runtime_provider",
+        "omniworker_cli.runtime_provider",
         mod(
-            "flux-agent_cli.runtime_provider",
+            "omniworker_cli.runtime_provider",
             resolve_runtime_provider=lambda **_kwargs: {
                 "provider": "p",
                 "api_mode": "chat_completions",

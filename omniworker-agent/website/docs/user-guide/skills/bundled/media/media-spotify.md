@@ -31,7 +31,7 @@ The following is the complete skill definition that Flux Agent loads when this s
 
 # Spotify
 
-Control the user's Spotify account via the Flux Agent Spotify toolset (7 tools). Setup guide: https://flux-agent-agent.flux-agent.com/docs/user-guide/features/spotify
+Control the user's Spotify account via the Flux Agent Spotify toolset (7 tools). Setup guide: https://omniworker-agent.omniworker.com/docs/user-guide/features/spotify
 
 ## When to use this skill
 
@@ -128,7 +128,7 @@ spotify_devices({"action": "transfer", "device_id": "<id>", "play": true})
 
 **`429 Too Many Requests`** = rate limit. Wait and retry once. If it keeps happening, you're looping — stop.
 
-**`401 Unauthorized` after a retry** — refresh token revoked. Tell the user to run `flux-agent auth spotify` again.
+**`401 Unauthorized` after a retry** — refresh token revoked. Tell the user to run `omniworker auth spotify` again.
 
 ## URI and ID formats
 

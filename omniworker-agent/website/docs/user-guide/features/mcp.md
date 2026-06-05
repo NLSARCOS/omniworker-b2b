@@ -23,11 +23,11 @@ If you have ever wanted Flux Agent to use a tool that already exists somewhere e
 1. Install MCP support (already included if you used the standard install script):
 
 ```bash
-cd ~/.flux-agent/flux-agent-agent
+cd ~/.omniworker/omniworker-agent
 uv pip install -e ".[mcp]"
 ```
 
-2. Add an MCP server to `~/.flux-agent/config.yaml`:
+2. Add an MCP server to `~/.omniworker/config.yaml`:
 
 ```yaml
 mcp_servers:
@@ -39,7 +39,7 @@ mcp_servers:
 3. Start Flux Agent:
 
 ```bash
-flux-agent chat
+omniworker chat
 ```
 
 4. Ask Flux Agent to use the MCP-backed capability.
@@ -91,7 +91,7 @@ Use HTTP servers when:
 
 ## Basic configuration reference
 
-Flux Agent reads MCP config from `~/.flux-agent/config.yaml` under `mcp_servers`.
+Flux Agent reads MCP config from `~/.omniworker/config.yaml` under `mcp_servers`.
 
 ### Common keys
 
@@ -382,7 +382,7 @@ Check:
 
 ```bash
 # Verify MCP deps are installed (already included in standard install)
-cd ~/.flux-agent/flux-agent-agent && uv pip install -e ".[mcp]"
+cd ~/.omniworker/omniworker-agent && uv pip install -e ".[mcp]"
 
 node --version
 npx --version
@@ -455,7 +455,7 @@ In addition to connecting **to** MCP servers, Flux Agent can also **be** an MCP 
 ### Quick start
 
 ```bash
-flux-agent mcp serve
+omniworker mcp serve
 ```
 
 This starts a stdio MCP server. The MCP client (not you) manages the process lifecycle.
@@ -467,8 +467,8 @@ Add Flux Agent to your MCP client config. For example, in Claude Code's `~/.clau
 ```json
 {
   "mcpServers": {
-    "flux-agent": {
-      "command": "flux-agent",
+    "omniworker": {
+      "command": "omniworker",
       "args": ["mcp", "serve"]
     }
   }
@@ -480,8 +480,8 @@ Or if you installed Flux Agent in a specific location:
 ```json
 {
   "mcpServers": {
-    "flux-agent": {
-      "command": "/home/user/.flux-agent/flux-agent-agent/venv/bin/flux-agent",
+    "omniworker": {
+      "command": "/home/user/.omniworker/omniworker-agent/venv/bin/omniworker",
       "args": ["mcp", "serve"]
     }
   }
@@ -524,13 +524,13 @@ The event queue is in-memory and starts when the bridge connects. Older messages
 ### Options
 
 ```bash
-flux-agent mcp serve              # Normal mode
-flux-agent mcp serve --verbose    # Debug logging on stderr
+omniworker mcp serve              # Normal mode
+omniworker mcp serve --verbose    # Debug logging on stderr
 ```
 
 ### How it works
 
-The MCP server reads conversation data directly from Flux Agent's session store (`~/.flux-agent/sessions/sessions.json` and the SQLite database). A background thread polls the database for new messages and maintains an in-memory event queue. For sending messages, it uses the same `send_message` infrastructure as the Flux Agent agent itself.
+The MCP server reads conversation data directly from Flux Agent's session store (`~/.omniworker/sessions/sessions.json` and the SQLite database). A background thread polls the database for new messages and maintains an in-memory event queue. For sending messages, it uses the same `send_message` infrastructure as the Flux Agent agent itself.
 
 The gateway does NOT need to be running for read operations (listing conversations, reading history, polling events). It DOES need to be running for send operations, since the platform adapters need active connections.
 
@@ -543,7 +543,7 @@ The gateway does NOT need to be running for read operations (listing conversatio
 
 ## Related docs
 
-- [Use MCP with Flux Agent](/docs/guides/use-mcp-with-flux-agent)
+- [Use MCP with Flux Agent](/docs/guides/use-mcp-with-omniworker)
 - [CLI Commands](/docs/reference/cli-commands)
 - [Slash Commands](/docs/reference/slash-commands)
 - [FAQ](/docs/reference/faq)

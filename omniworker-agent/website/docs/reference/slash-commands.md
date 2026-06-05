@@ -6,12 +6,12 @@ description: "Complete reference for interactive CLI and messaging slash command
 
 # Slash Commands Reference
 
-Flux Agent has two slash-command surfaces, both driven by a central `COMMAND_REGISTRY` in `flux-agent_cli/commands.py`:
+Flux Agent has two slash-command surfaces, both driven by a central `COMMAND_REGISTRY` in `omniworker_cli/commands.py`:
 
 - **Interactive CLI slash commands** — dispatched by `cli.py`, with autocomplete from the registry
 - **Messaging slash commands** — dispatched by `gateway/run.py`, with help text and platform menus generated from the registry
 
-Installed skills are also exposed as dynamic slash commands on both surfaces. That includes bundled skills like `/plan`, which opens plan mode and saves markdown plans under `.flux-agent/plans/` relative to the active workspace/backend working directory.
+Installed skills are also exposed as dynamic slash commands on both surfaces. That includes bundled skills like `/plan`, which opens plan mode and saves markdown plans under `.omniworker/plans/` relative to the active workspace/backend working directory.
 
 ## Interactive CLI slash commands
 
@@ -49,7 +49,7 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | Command | Description |
 |---------|-------------|
 | `/config` | Show current configuration |
-| `/model [model-name]` | Show or change the current model. Supports: `/model claude-sonnet-4`, `/model provider:model` (switch providers), `/model custom:model` (custom endpoint), `/model custom:name:model` (named custom provider), `/model custom` (auto-detect from endpoint), and user-defined aliases (`/model fav`, `/model grok` — see [Custom model aliases](#custom-model-aliases)). Use `--global` to persist the change to config.yaml. **Note:** `/model` can only switch between already-configured providers. To add a new provider, exit the session and run `flux-agent model` from your terminal. |
+| `/model [model-name]` | Show or change the current model. Supports: `/model claude-sonnet-4`, `/model provider:model` (switch providers), `/model custom:model` (custom endpoint), `/model custom:name:model` (named custom provider), `/model custom` (auto-detect from endpoint), and user-defined aliases (`/model fav`, `/model grok` — see [Custom model aliases](#custom-model-aliases)). Use `--global` to persist the change to config.yaml. **Note:** `/model` can only switch between already-configured providers. To add a new provider, exit the session and run `omniworker model` from your terminal. |
 | `/codex-runtime [auto\|codex_app_server\|on\|off]` | Toggle the optional [Codex app-server runtime](../user-guide/features/codex-app-server-runtime) for OpenAI/Codex models. `auto` (default) uses Flux Agent' standard chat completions; `codex_app_server` hands turns to a `codex app-server` subprocess for native shell, apply_patch, ChatGPT subscription auth, and migrated Codex plugins. Effective on next session. |
 | `/personality` | Set a predefined personality |
 | `/verbose` | Cycle tool progress display: off → new → all → verbose. Can be [enabled for messaging](#notes) via config. |
@@ -73,9 +73,9 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/skills` | Search, install, inspect, or manage skills from online registries |
 | `/cron` | Manage scheduled tasks (list, add/create, edit, pause, resume, run, remove) |
 | `/curator` | Background skill maintenance — `status`, `run`, `pin`, `archive`. See [Curator](/docs/user-guide/features/curator). |
-| `/kanban <action>` | Drive the multi-profile, multi-project collaboration board without leaving chat. Full `flux-agent kanban` surface is available: `/kanban list`, `/kanban show t_abc`, `/kanban create "title" --assignee X`, `/kanban comment t_abc "text"`, `/kanban unblock t_abc`, `/kanban dispatch`, etc. Multi-board support included: `/kanban boards list`, `/kanban boards create <slug>`, `/kanban boards switch <slug>`, `/kanban --board <slug> <action>`. See [Kanban slash command](/docs/user-guide/features/kanban#kanban-slash-command). |
+| `/kanban <action>` | Drive the multi-profile, multi-project collaboration board without leaving chat. Full `omniworker kanban` surface is available: `/kanban list`, `/kanban show t_abc`, `/kanban create "title" --assignee X`, `/kanban comment t_abc "text"`, `/kanban unblock t_abc`, `/kanban dispatch`, etc. Multi-board support included: `/kanban boards list`, `/kanban boards create <slug>`, `/kanban boards switch <slug>`, `/kanban --board <slug> <action>`. See [Kanban slash command](/docs/user-guide/features/kanban#kanban-slash-command). |
 | `/reload-mcp` (alias: `/reload_mcp`) | Reload MCP servers from config.yaml |
-| `/reload-skills` (alias: `/reload_skills`) | Re-scan `~/.flux-agent/skills/` for newly installed or removed skills |
+| `/reload-skills` (alias: `/reload_skills`) | Re-scan `~/.omniworker/skills/` for newly installed or removed skills |
 | `/reload` | Reload `.env` variables into the running session (picks up new API keys without restarting) |
 | `/plugins` | List installed plugins and their status |
 
@@ -109,13 +109,13 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 
 ### Quick Commands
 
-User-defined quick commands map a short slash command to either a shell command or another slash command. Configure them in `~/.flux-agent/config.yaml`:
+User-defined quick commands map a short slash command to either a shell command or another slash command. Configure them in `~/.omniworker/config.yaml`:
 
 ```yaml
 quick_commands:
   status:
     type: exec
-    command: systemctl status flux-agent-agent
+    command: systemctl status omniworker-agent
   deploy:
     type: exec
     command: scripts/deploy.sh
@@ -134,7 +134,7 @@ Define your own short names for models you use often, then reach them with `/mod
 
 Two config formats are supported:
 
-**Full form** — pin an exact model, provider, and optionally a base URL. Put this in `~/.flux-agent/config.yaml`:
+**Full form** — pin an exact model, provider, and optionally a base URL. Put this in `~/.omniworker/config.yaml`:
 
 ```yaml
 model_aliases:
@@ -153,8 +153,8 @@ model_aliases:
 **Short form** — `provider/model` in one string. Set from the shell without editing YAML:
 
 ```bash
-flux-agent config set model.aliases.fav anthropic/claude-opus-4.6
-flux-agent config set model.aliases.grok x-ai/grok-4
+omniworker config set model.aliases.fav anthropic/claude-opus-4.6
+omniworker config set model.aliases.grok x-ai/grok-4
 ```
 
 Then in chat:
@@ -180,7 +180,7 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 | `/reset` | Reset conversation history. |
 | `/status` | Show session info. |
 | `/stop` | Kill all running background processes and interrupt the running agent. |
-| `/model [provider:model]` | Show or change the model. Supports provider switches (`/model zai:glm-5`), custom endpoints (`/model custom:model`), named custom providers (`/model custom:local:qwen`), auto-detect (`/model custom`), and user-defined aliases (`/model fav`, `/model grok` — see [Custom model aliases](#custom-model-aliases)). Use `--global` to persist the change to config.yaml. **Note:** `/model` can only switch between already-configured providers. To add a new provider or set up API keys, use `flux-agent model` from your terminal (outside the chat session). |
+| `/model [provider:model]` | Show or change the model. Supports provider switches (`/model zai:glm-5`), custom endpoints (`/model custom:model`), named custom providers (`/model custom:local:qwen`), auto-detect (`/model custom`), and user-defined aliases (`/model fav`, `/model grok` — see [Custom model aliases](#custom-model-aliases)). Use `--global` to persist the change to config.yaml. **Note:** `/model` can only switch between already-configured providers. To add a new provider or set up API keys, use `omniworker model` from your terminal (outside the chat session). |
 | `/codex-runtime [auto\|codex_app_server\|on\|off]` | Toggle the optional [Codex app-server runtime](../user-guide/features/codex-app-server-runtime). Persists to `model.openai_runtime` in config.yaml and evicts the cached agent so the next message picks up the new runtime. Effective on next session. |
 | `/personality [name]` | Set a personality overlay for the session. |
 | `/fast [normal\|fast\|status]` | Toggle fast mode — OpenAI Priority Processing / Anthropic Fast Mode. |

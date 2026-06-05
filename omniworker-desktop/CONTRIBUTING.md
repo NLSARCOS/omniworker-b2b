@@ -61,7 +61,7 @@ A maintainer will review your PR and may request changes. Once approved, it will
 
 ## Reporting Bugs
 
-Found a bug? [Open an issue](https://github.com/Flux Agent/flux-agent-desktop/issues/new) with:
+Found a bug? [Open an issue](https://github.com/Flux Agent/omniworker-desktop/issues/new) with:
 
 - A clear title and description.
 - Steps to reproduce the issue.
@@ -70,7 +70,7 @@ Found a bug? [Open an issue](https://github.com/Flux Agent/flux-agent-desktop/is
 
 ## Requesting Features
 
-Have an idea? [Open an issue](https://github.com/Flux Agent/flux-agent-desktop/issues/new) and describe:
+Have an idea? [Open an issue](https://github.com/Flux Agent/omniworker-desktop/issues/new) and describe:
 
 - The problem you're trying to solve.
 - How you'd like it to work.
@@ -96,7 +96,7 @@ build/                   Packaging resources
 ## Community
 
 - Join the [Nous Research Discord](https://discord.gg/Flux Agent) to chat with other contributors.
-- Check the [documentation](https://flux-agent-agent.flux-agent.com/docs/) for more context on how Flux Agent works.
+- Check the [documentation](https://omniworker-agent.omniworker.com/docs/) for more context on how Flux Agent works.
 
 ## License
 

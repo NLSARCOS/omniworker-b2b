@@ -2,7 +2,7 @@ import sys
 
 
 def test_top_level_skills_flag_defaults_to_chat(monkeypatch):
-    import flux-agent_cli.main as main_mod
+    import omniworker_cli.main as main_mod
 
     captured = {}
 
@@ -14,19 +14,19 @@ def test_top_level_skills_flag_defaults_to_chat(monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["flux-agent", "-s", "flux-agent-agent-dev,github-auth"],
+        ["omniworker", "-s", "omniworker-agent-dev,github-auth"],
     )
 
     main_mod.main()
 
     assert captured == {
-        "skills": ["flux-agent-agent-dev,github-auth"],
+        "skills": ["omniworker-agent-dev,github-auth"],
         "command": None,
     }
 
 
 def test_chat_subcommand_accepts_skills_flag(monkeypatch):
-    import flux-agent_cli.main as main_mod
+    import omniworker_cli.main as main_mod
 
     captured = {}
 
@@ -38,7 +38,7 @@ def test_chat_subcommand_accepts_skills_flag(monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["flux-agent", "chat", "-s", "github-auth", "-q", "hello"],
+        ["omniworker", "chat", "-s", "github-auth", "-q", "hello"],
     )
 
     main_mod.main()
@@ -50,7 +50,7 @@ def test_chat_subcommand_accepts_skills_flag(monkeypatch):
 
 
 def test_chat_subcommand_accepts_image_flag(monkeypatch):
-    import flux-agent_cli.main as main_mod
+    import omniworker_cli.main as main_mod
 
     captured = {}
 
@@ -62,7 +62,7 @@ def test_chat_subcommand_accepts_image_flag(monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["flux-agent", "chat", "-q", "hello", "--image", "~/storage/shared/Pictures/cat.png"],
+        ["omniworker", "chat", "-q", "hello", "--image", "~/storage/shared/Pictures/cat.png"],
     )
 
     main_mod.main()
@@ -74,7 +74,7 @@ def test_chat_subcommand_accepts_image_flag(monkeypatch):
 
 
 def test_continue_worktree_and_skills_flags_work_together(monkeypatch):
-    import flux-agent_cli.main as main_mod
+    import omniworker_cli.main as main_mod
 
     captured = {}
 
@@ -88,7 +88,7 @@ def test_continue_worktree_and_skills_flags_work_together(monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["flux-agent", "-c", "-w", "-s", "flux-agent-agent-dev"],
+        ["omniworker", "-c", "-w", "-s", "omniworker-agent-dev"],
     )
 
     main_mod.main()
@@ -96,6 +96,6 @@ def test_continue_worktree_and_skills_flags_work_together(monkeypatch):
     assert captured == {
         "continue_last": True,
         "worktree": True,
-        "skills": ["flux-agent-agent-dev"],
+        "skills": ["omniworker-agent-dev"],
         "command": "chat",
     }

@@ -12,7 +12,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 
 
 DEFAULT_TEAMS_PIPELINE_STORE_FILENAME = "teams_pipeline_store.json"
@@ -32,7 +32,7 @@ def resolve_teams_pipeline_store_path(path: str | Path | None = None) -> Path:
     if env_path:
         return Path(env_path)
 
-    return get_flux-agent_home() / DEFAULT_TEAMS_PIPELINE_STORE_FILENAME
+    return get_omniworker_home() / DEFAULT_TEAMS_PIPELINE_STORE_FILENAME
 
 
 class TeamsPipelineStore:

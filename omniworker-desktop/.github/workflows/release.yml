@@ -258,7 +258,7 @@ jobs:
             .readdirSync(artifactsDir)
             .filter(
               (name) =>
-                name.startsWith(`flux-agent-desktop-${version}-`) &&
+                name.startsWith(`omniworker-desktop-${version}-`) &&
                 name.endsWith("-mac.zip"),
             )
             .sort((a, b) => {

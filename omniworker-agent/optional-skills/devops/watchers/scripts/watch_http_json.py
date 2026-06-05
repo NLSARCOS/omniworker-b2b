@@ -3,9 +3,9 @@
 
 Usage (via cron with --no-agent):
 
-    flux-agent cron create api-events \\
+    omniworker cron create api-events \\
       --schedule "*/1 * * * *" --no-agent \\
-      --script "$FLUX AGENT_HOME/skills/devops/watchers/scripts/watch_http_json.py" \\
+      --script "$OMNIWORKER_HOME/skills/devops/watchers/scripts/watch_http_json.py" \\
       --script-args "--name api --url https://api.example.com/events \\
                      --id-field event_id --items-path data.events"
 

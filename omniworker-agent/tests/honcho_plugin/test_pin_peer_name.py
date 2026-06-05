@@ -46,7 +46,7 @@ class TestPinPeerNameConfigParsing:
             "peerName": "Igor",
             "pinPeerName": True,
         }))
-        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is True
@@ -59,10 +59,10 @@ class TestPinPeerNameConfigParsing:
             "apiKey": "k",
             "peerName": "Igor",
             "hosts": {
-                "flux-agent": {"pinPeerName": True},
+                "omniworker": {"pinPeerName": True},
             },
         }))
-        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is True
@@ -75,10 +75,10 @@ class TestPinPeerNameConfigParsing:
             "peerName": "Igor",
             "pinPeerName": True,
             "hosts": {
-                "flux-agent": {"pinPeerName": False},
+                "omniworker": {"pinPeerName": False},
             },
         }))
-        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is False, (
@@ -93,7 +93,7 @@ class TestPinPeerNameConfigParsing:
             "peerName": "Igor",
             "pinPeerName": False,
         }))
-        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path / "isolated"))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / "isolated"))
 
         config = HonchoClientConfig.from_global_config(config_path=config_file)
         assert config.pin_peer_name is False
@@ -216,7 +216,7 @@ class TestPeerResolutionOrder:
             api_key="k",
             peer_name="Igor",
             pin_peer_name=True,
-            ai_peer="flux-agent-assistant",
+            ai_peer="omniworker-assistant",
             enabled=False,
             write_frequency="turn",
         )
@@ -229,7 +229,7 @@ class TestPeerResolutionOrder:
 
         session = mgr.get_or_create("telegram:86701400")
         assert session.user_peer_id == "Igor"
-        assert session.assistant_peer_id == "flux-agent-assistant"
+        assert session.assistant_peer_id == "omniworker-assistant"
 
 
 class TestCrossPlatformMemoryUnification:

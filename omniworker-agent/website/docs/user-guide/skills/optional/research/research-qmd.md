@@ -14,7 +14,7 @@ Search personal knowledge bases, notes, docs, and meeting transcripts locally us
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/research/qmd` |
+| Source | Optional — install with `omniworker skills install official/research/qmd` |
 | Path | `optional-skills/research/qmd` |
 | Version | `1.0.0` |
 | Author | Flux Agent Agent + Teknium |
@@ -244,7 +244,7 @@ without needing to load this skill.
 
 ### Option A: Stdio Mode (Simple)
 
-Add to `~/.flux-agent/config.yaml`:
+Add to `~/.omniworker/config.yaml`:
 
 ```yaml
 mcp_servers:

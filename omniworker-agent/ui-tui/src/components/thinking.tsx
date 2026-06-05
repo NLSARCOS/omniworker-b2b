@@ -1,4 +1,4 @@
-import { Box, NoSelect, Text } from '@flux-agent/ink'
+import { Box, NoSelect, Text } from '@omniworker/ink'
 import { memo, type ReactNode, useEffect, useMemo, useState } from 'react'
 import spinners, { type BrailleSpinnerName } from 'unicode-animations'
 

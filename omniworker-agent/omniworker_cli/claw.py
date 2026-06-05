@@ -18,9 +18,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from flux-agent_cli.config import get_flux-agent_home, get_config_path, load_config, save_config
-from flux-agent_constants import get_optional_skills_dir
-from flux-agent_cli.setup import (
+from omniworker_cli.config import get_omniworker_home, get_config_path, load_config, save_config
+from omniworker_constants import get_optional_skills_dir
+from omniworker_cli.setup import (
     Colors,
     color,
     print_header,
@@ -44,7 +44,7 @@ _OPENCLAW_SCRIPT = (
 
 # Fallback: user may have installed the skill from the Hub
 _OPENCLAW_SCRIPT_INSTALLED = (
-    get_flux-agent_home()
+    get_omniworker_home()
     / "skills"
     / "migration"
     / "openclaw-migration"
@@ -379,12 +379,12 @@ def _cmd_migrate(args):
         return
 
     # Show what we're doing
-    flux-agent_home = get_flux-agent_home()
+    omniworker_home = get_omniworker_home()
     auto_yes = getattr(args, "yes", False)
     print()
     print_header("Migration Settings")
     print_info(f"Source:      {source_dir}")
-    print_info(f"Target:      {flux-agent_home}")
+    print_info(f"Target:      {omniworker_home}")
     print_info(f"Preset:      {preset}")
     print_info(f"Overwrite:   {'yes' if overwrite else 'no (skip conflicts)'}")
     print_info(f"Secrets:     {'yes (allowlisted only)' if migrate_secrets else 'no'}")
@@ -425,7 +425,7 @@ def _cmd_migrate(args):
     try:
         preview = mod.Migrator(
             source_root=source_dir.resolve(),
-            target_root=flux-agent_home.resolve(),
+            target_root=omniworker_home.resolve(),
             execute=False,
             workspace_target=ws_target,
             overwrite=overwrite,
@@ -499,7 +499,7 @@ def _cmd_migrate(args):
             return
 
     # ── Phase 2b: Pre-apply backup of the Flux Agent home ─────────
-    # Delegates to flux-agent_cli.backup.create_pre_migration_backup(), which
+    # Delegates to omniworker_cli.backup.create_pre_migration_backup(), which
     # shares implementation with the pre-update backup (same exclusion
     # rules, same SQLite safe-copy, zip format) so the archive is
     # restorable with `hermes import`.  Mirrors OpenClaw's
@@ -508,8 +508,8 @@ def _cmd_migrate(args):
     backup_archive: Optional[Path] = None
     if not no_backup:
         try:
-            from flux-agent_cli.backup import create_pre_migration_backup, _format_size
-            backup_archive = create_pre_migration_backup(flux-agent_home=flux-agent_home)
+            from omniworker_cli.backup import create_pre_migration_backup, _format_size
+            backup_archive = create_pre_migration_backup(omniworker_home=omniworker_home)
             if backup_archive:
                 size_str = _format_size(backup_archive.stat().st_size)
                 print()
@@ -527,7 +527,7 @@ def _cmd_migrate(args):
     try:
         migrator = mod.Migrator(
             source_root=source_dir.resolve(),
-            target_root=flux-agent_home.resolve(),
+            target_root=omniworker_home.resolve(),
             execute=True,
             workspace_target=ws_target,
             overwrite=overwrite,

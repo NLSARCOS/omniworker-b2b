@@ -10,14 +10,14 @@ SCRIPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "optional-skills"
     / "migration"
-    / "flux-agent-migration"
+    / "omniworker-migration"
     / "scripts"
-    / "flux-agent_to_flux-agent.py"
+    / "omniworker_to_omniworker.py"
 )
 
 
 def load_module():
-    spec = importlib.util.spec_from_file_location("flux-agent_to_flux-agent", SCRIPT_PATH)
+    spec = importlib.util.spec_from_file_location("omniworker_to_omniworker", SCRIPT_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     sys.modules[spec.name] = module
@@ -104,8 +104,8 @@ def test_resolve_selected_options_rejects_unknown_preset():
 
 def test_migrator_copies_skill_and_merges_allowlist(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
 
     (source / "workspace" / "skills" / "demo-skill").mkdir(parents=True)
@@ -149,14 +149,14 @@ def test_migrator_copies_skill_and_merges_allowlist(tmp_path: Path):
 
 def test_migrator_optionally_imports_supported_secrets_and_messaging_settings(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
 
     (source / "credentials").mkdir(parents=True)
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps(
             {
-                "agents": {"defaults": {"workspace": "/tmp/flux-agent-workspace"}},
+                "agents": {"defaults": {"workspace": "/tmp/omniworker-workspace"}},
                 "channels": {"telegram": {"botToken": "123:abc"}},
             }
         ),
@@ -180,7 +180,7 @@ def test_migrator_optionally_imports_supported_secrets_and_messaging_settings(tm
     migrator.migrate()
 
     env_text = (target / ".env").read_text(encoding="utf-8")
-    assert "MESSAGING_CWD=/tmp/flux-agent-workspace" in env_text
+    assert "MESSAGING_CWD=/tmp/omniworker-workspace" in env_text
     assert "TELEGRAM_ALLOWED_USERS=111,222" in env_text
     assert "TELEGRAM_BOT_TOKEN=123:abc" in env_text
 
@@ -188,14 +188,14 @@ def test_migrator_optionally_imports_supported_secrets_and_messaging_settings(tm
 def test_messaging_cwd_skipped_when_inside_source(tmp_path: Path):
     """MESSAGING_CWD pointing inside the Flux Agent source dir should be skipped."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
 
     # Workspace path is inside the source directory
     ws_path = str(source / "workspace")
     (source / "credentials").mkdir(parents=True)
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({"agents": {"defaults": {"workspace": ws_path}}}),
         encoding="utf-8",
     )
@@ -219,8 +219,8 @@ def test_messaging_cwd_skipped_when_inside_source(tmp_path: Path):
 
 def test_migrator_can_execute_only_selected_categories(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
 
     (source / "workspace" / "skills" / "demo-skill").mkdir(parents=True)
@@ -256,8 +256,8 @@ def test_migrator_can_execute_only_selected_categories(tmp_path: Path):
 
 def test_migrator_records_preset_in_report(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     (target / "config.yaml").write_text("command_allowlist: []\n", encoding="utf-8")
 
@@ -281,18 +281,18 @@ def test_migrator_records_preset_in_report(tmp_path: Path):
 
 
 def test_source_candidate_finds_files_in_custom_workspace(tmp_path: Path):
-    """When agents.defaults.workspace points outside ~/.flux-agent, files should
+    """When agents.defaults.workspace points outside ~/.omniworker, files should
     be discovered there as a fallback."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     custom_ws = tmp_path / "my-custom-workspace"
 
     target.mkdir()
     source.mkdir()
     custom_ws.mkdir()
 
-    # No workspace/ directory inside .flux-agent — files live in custom workspace
+    # No workspace/ directory inside .omniworker — files live in custom workspace
     (custom_ws / "MEMORY.md").write_text("# Memory\n\n- custom workspace entry\n", encoding="utf-8")
     (custom_ws / "SOUL.md").write_text("# Soul\n\nI am me.\n", encoding="utf-8")
     (custom_ws / "skills" / "my-skill").mkdir(parents=True)
@@ -303,7 +303,7 @@ def test_source_candidate_finds_files_in_custom_workspace(tmp_path: Path):
     (custom_ws / "memory").mkdir()
     (custom_ws / "memory" / "2026-01-01.md").write_text("- daily note\n", encoding="utf-8")
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({"agents": {"defaults": {"workspace": str(custom_ws)}}}),
         encoding="utf-8",
     )
@@ -339,11 +339,11 @@ def test_source_candidate_finds_files_in_custom_workspace(tmp_path: Path):
 
 
 def test_source_candidate_prefers_standard_workspace_over_custom(tmp_path: Path):
-    """When files exist in both ~/.flux-agent/workspace/ and the custom workspace,
+    """When files exist in both ~/.omniworker/workspace/ and the custom workspace,
     the standard location should win (custom is a fallback only)."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     custom_ws = tmp_path / "my-custom-workspace"
 
     target.mkdir()
@@ -354,7 +354,7 @@ def test_source_candidate_prefers_standard_workspace_over_custom(tmp_path: Path)
     (source / "workspace" / "SOUL.md").write_text("# Standard soul\n", encoding="utf-8")
     (custom_ws / "SOUL.md").write_text("# Custom soul\n", encoding="utf-8")
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({"agents": {"defaults": {"workspace": str(custom_ws)}}}),
         encoding="utf-8",
     )
@@ -378,8 +378,8 @@ def test_source_candidate_prefers_standard_workspace_over_custom(tmp_path: Path)
 
 def test_migrator_exports_full_overflow_entries(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     (target / "config.yaml").write_text("memory:\n  memory_char_limit: 10\n  user_char_limit: 10\n", encoding="utf-8")
     (source / "workspace").mkdir(parents=True)
@@ -409,8 +409,8 @@ def test_migrator_exports_full_overflow_entries(tmp_path: Path):
 
 def test_migrator_can_rename_conflicting_imported_skill(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
 
     source_skill = source / "workspace" / "skills" / "demo-skill"
@@ -448,8 +448,8 @@ def test_migrator_can_rename_conflicting_imported_skill(tmp_path: Path):
 
 def test_migrator_can_overwrite_conflicting_imported_skill_with_backup(tmp_path: Path):
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
 
     source_skill = source / "workspace" / "skills" / "demo-skill"
@@ -486,12 +486,12 @@ def test_migrator_can_overwrite_conflicting_imported_skill_with_backup(tmp_path:
 def test_discord_settings_migrated(tmp_path: Path):
     """Discord bot token and allowlist migrate to .env."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "channels": {
                 "discord": {
@@ -517,12 +517,12 @@ def test_discord_settings_migrated(tmp_path: Path):
 def test_slack_settings_migrated(tmp_path: Path):
     """Slack bot/app tokens and allowlist migrate to .env."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "channels": {
                 "slack": {
@@ -550,12 +550,12 @@ def test_slack_settings_migrated(tmp_path: Path):
 def test_signal_settings_migrated(tmp_path: Path):
     """Signal account, HTTP URL, and allowlist migrate to .env."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "channels": {
                 "signal": {
@@ -583,12 +583,12 @@ def test_signal_settings_migrated(tmp_path: Path):
 def test_model_config_migrated(tmp_path: Path):
     """Default model setting migrates to config.yaml."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "agents": {"defaults": {"model": "anthropic/claude-sonnet-4"}}
         }),
@@ -610,12 +610,12 @@ def test_model_config_migrated(tmp_path: Path):
 def test_model_config_object_format(tmp_path: Path):
     """Model config handles {primary: ...} object format."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "agents": {"defaults": {"model": {"primary": "openai/gpt-4o"}}}
         }),
@@ -636,12 +636,12 @@ def test_model_config_object_format(tmp_path: Path):
 def test_tts_config_migrated(tmp_path: Path):
     """TTS provider and voice settings migrate to config.yaml."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "messages": {
                 "tts": {
@@ -669,10 +669,10 @@ def test_tts_config_migrated(tmp_path: Path):
 
 
 def test_shared_skills_migrated(tmp_path: Path):
-    """Shared skills from ~/.flux-agent/skills/ are migrated."""
+    """Shared skills from ~/.omniworker/skills/ are migrated."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
 
     # Create a shared skill (not in workspace/skills/)
@@ -695,8 +695,8 @@ def test_shared_skills_migrated(tmp_path: Path):
 def test_daily_memory_merged(tmp_path: Path):
     """Daily memory notes from workspace/memory/*.md are merged into MEMORY.md."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
 
     mem_dir = source / "workspace" / "memory"
@@ -726,12 +726,12 @@ def test_daily_memory_merged(tmp_path: Path):
 def test_provider_keys_require_migrate_secrets_flag(tmp_path: Path):
     """Provider keys migration is double-gated: needs option + --migrate-secrets."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     target.mkdir()
     source.mkdir()
 
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({
             "models": {
                 "providers": {
@@ -770,8 +770,8 @@ def test_provider_keys_require_migrate_secrets_flag(tmp_path: Path):
 def test_workspace_agents_records_skip_when_missing(tmp_path: Path):
     """Bug fix: workspace-agents records 'skipped' when source is missing."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     source.mkdir()
     target.mkdir()
 
@@ -787,15 +787,15 @@ def test_workspace_agents_records_skip_when_missing(tmp_path: Path):
 
 
 def test_cron_store_is_archived_without_config_cron_section(tmp_path: Path):
-    """Bug fix: archive cron store even when flux-agent.json has no top-level cron config."""
+    """Bug fix: archive cron store even when omniworker.json has no top-level cron config."""
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     output_dir = target / "migration-report"
     source.mkdir()
     target.mkdir()
 
-    (source / "flux-agent.json").write_text(json.dumps({"channels": {}}), encoding="utf-8")
+    (source / "omniworker.json").write_text(json.dumps({"channels": {}}), encoding="utf-8")
     (source / "cron").mkdir(parents=True)
     (source / "cron" / "jobs.json").write_text(
         json.dumps({"version": 1, "jobs": [{"id": "job-1", "name": "demo"}]}),
@@ -823,7 +823,7 @@ def test_cron_store_is_archived_without_config_cron_section(tmp_path: Path):
     assert Path(archived_store["destination"]).joinpath("jobs.json").exists()
 
     notes_text = (output_dir / "MIGRATION_NOTES.md").read_text(encoding="utf-8")
-    assert "Run `flux-agent cron` to recreate scheduled tasks" in notes_text
+    assert "Run `omniworker cron` to recreate scheduled tasks" in notes_text
     assert "archive/cron-config.json" not in notes_text
 
 
@@ -831,7 +831,7 @@ def test_skill_installs_cleanly_under_skills_guard():
     skills_guard = load_skills_guard()
     result = skills_guard.scan_skill(
         SCRIPT_PATH.parents[1],
-        source="official/migration/flux-agent-migration",
+        source="official/migration/omniworker-migration",
     )
 
     # The migration script has several known false-positive findings from the
@@ -841,13 +841,13 @@ def test_skill_installs_cleanly_under_skills_guard():
     # agent_config_mod   — references AGENTS.md to migrate workspace instructions
     # python_os_environ  — reads MIGRATION_JSON_OUTPUT to enable JSON output mode
     #                      (feature flag, not an env dump)
-    # flux-agent_config_mod  — print statements in the post-migration summary that
-    #                      tell the user to *review* ~/.flux-agent/config.yaml;
+    # omniworker_config_mod  — print statements in the post-migration summary that
+    #                      tell the user to *review* ~/.omniworker/config.yaml;
     #                      the script never writes to that file
     #
     # Accept "caution" or "safe" — just not "dangerous" from a *real* threat.
     assert result.verdict in ("safe", "caution", "dangerous"), f"Unexpected verdict: {result.verdict}"
-    KNOWN_FALSE_POSITIVES = {"agent_config_mod", "python_os_environ", "flux-agent_config_mod"}
+    KNOWN_FALSE_POSITIVES = {"agent_config_mod", "python_os_environ", "omniworker_config_mod"}
     for f in result.findings:
         assert f.pattern_id in KNOWN_FALSE_POSITIVES, f"Unexpected finding: {f}"
 
@@ -855,26 +855,26 @@ def test_skill_installs_cleanly_under_skills_guard():
 # ── rebrand_text tests ────────────────────────────────────────
 
 
-def test_rebrand_text_replaces_flux-agent_variants():
+def test_rebrand_text_replaces_omniworker_variants():
     mod = load_module()
     # Mixed-case / capitalized matches → capital-H ``Flux Agent``.
     assert mod.rebrand_text("Flux Agent prefers Python 3.11") == "Flux Agent prefers Python 3.11"
     assert mod.rebrand_text("I told Open Claw to use dark mode") == "I told Flux Agent to use dark mode"
     assert mod.rebrand_text("Open-Claw config is great") == "Flux Agent config is great"
     assert mod.rebrand_text("OPENCLAW uses tools well") == "Flux Agent uses tools well"
-    # All-lowercase matches → lowercase ``flux-agent``; this preserves the
-    # real filesystem path ``~/.flux-agent`` (Flux Agent home) when rebranding
-    # memory entries that reference ``~/.flux-agent`` or ``flux-agent`` prose.
-    assert mod.rebrand_text("flux-agent should always respond concisely") == "flux-agent should always respond concisely"
+    # All-lowercase matches → lowercase ``omniworker``; this preserves the
+    # real filesystem path ``~/.omniworker`` (Flux Agent home) when rebranding
+    # memory entries that reference ``~/.omniworker`` or ``omniworker`` prose.
+    assert mod.rebrand_text("omniworker should always respond concisely") == "omniworker should always respond concisely"
 
 
 def test_rebrand_text_replaces_legacy_bot_names():
     mod = load_module()
     # Same case-preservation rule as above.
     assert mod.rebrand_text("ClawdBot remembers my timezone") == "Flux Agent remembers my timezone"
-    assert mod.rebrand_text("clawdbot prefers tabs") == "flux-agent prefers tabs"
+    assert mod.rebrand_text("clawdbot prefers tabs") == "omniworker prefers tabs"
     assert mod.rebrand_text("MoltBot was configured for Spanish") == "Flux Agent was configured for Spanish"
-    assert mod.rebrand_text("moltbot uses Python") == "flux-agent uses Python"
+    assert mod.rebrand_text("moltbot uses Python") == "omniworker uses Python"
 
 
 def test_rebrand_text_preserves_unrelated_content():
@@ -890,28 +890,28 @@ def test_rebrand_text_handles_multiple_replacements():
 
 
 def test_rebrand_text_preserves_filesystem_path_casing():
-    """Lowercase matches — especially ``.flux-agent`` filesystem paths — must
-    rewrite to lowercase ``.flux-agent`` (the real Flux Agent home), not the broken
+    """Lowercase matches — especially ``.omniworker`` filesystem paths — must
+    rewrite to lowercase ``.omniworker`` (the real Flux Agent home), not the broken
     ``.Flux Agent``.
 
     Regression test for @versun's Flux Agent-residue feedback: after migration,
-    memory entries that referenced ``~/.flux-agent/config.yaml`` were being
+    memory entries that referenced ``~/.omniworker/config.yaml`` were being
     rewritten to ``~/.Flux Agent/config.yaml`` — a path that doesn't exist —
     and the agent kept trying to read it.
     """
     mod = load_module()
-    assert mod.rebrand_text("config is at ~/.flux-agent/config.yaml") == \
-        "config is at ~/.flux-agent/config.yaml"
-    assert mod.rebrand_text("use .flux-agent directory") == "use .flux-agent directory"
-    assert mod.rebrand_text("Path.home() / '.flux-agent'") == "Path.home() / '.flux-agent'"
+    assert mod.rebrand_text("config is at ~/.omniworker/config.yaml") == \
+        "config is at ~/.omniworker/config.yaml"
+    assert mod.rebrand_text("use .omniworker directory") == "use .omniworker directory"
+    assert mod.rebrand_text("Path.home() / '.omniworker'") == "Path.home() / '.omniworker'"
     # Sentence with both lowercase path and capitalized prose.
-    assert mod.rebrand_text("flux-agent config path: ~/.flux-agent/") == \
-        "flux-agent config path: ~/.flux-agent/"
+    assert mod.rebrand_text("omniworker config path: ~/.omniworker/") == \
+        "omniworker config path: ~/.omniworker/"
 
 
 def test_migrate_memory_rebrands_entries(tmp_path):
     mod = load_module()
-    source_root = tmp_path / "flux-agent"
+    source_root = tmp_path / "omniworker"
     source_root.mkdir()
     workspace = source_root / "workspace"
     workspace.mkdir()
@@ -921,7 +921,7 @@ def test_migrate_memory_rebrands_entries(tmp_path):
         encoding="utf-8",
     )
 
-    target_root = tmp_path / "flux-agent"
+    target_root = tmp_path / "omniworker"
     target_root.mkdir()
     (target_root / "memories").mkdir()
 
@@ -945,14 +945,14 @@ def test_migrate_memory_rebrands_entries(tmp_path):
 
 def test_migrate_soul_rebrands_content(tmp_path):
     mod = load_module()
-    source_root = tmp_path / "flux-agent"
+    source_root = tmp_path / "omniworker"
     source_root.mkdir()
     workspace = source_root / "workspace"
     workspace.mkdir()
     soul_md = workspace / "SOUL.md"
     soul_md.write_text("You are Flux Agent, an AI assistant made by SparkLab.", encoding="utf-8")
 
-    target_root = tmp_path / "flux-agent"
+    target_root = tmp_path / "omniworker"
     target_root.mkdir()
 
     migrator = mod.Migrator(
@@ -974,17 +974,17 @@ def test_migrate_soul_rebrands_content(tmp_path):
 
 # ── migrate_model_config: alias resolution (issue #16745) ──────────────────
 
-def _run_model_migration(tmp_path: Path, flux-agent_json: dict) -> dict:
-    """Helper: run just migrate_model_config on an flux-agent.json and return
+def _run_model_migration(tmp_path: Path, omniworker_json: dict) -> dict:
+    """Helper: run just migrate_model_config on an omniworker.json and return
     the parsed destination config.yaml."""
     import yaml
 
     mod = load_module()
-    source = tmp_path / ".flux-agent"
-    target = tmp_path / ".flux-agent"
+    source = tmp_path / ".omniworker"
+    target = tmp_path / ".omniworker"
     source.mkdir(parents=True)
     target.mkdir(parents=True)
-    (source / "flux-agent.json").write_text(json.dumps(flux-agent_json), encoding="utf-8")
+    (source / "omniworker.json").write_text(json.dumps(omniworker_json), encoding="utf-8")
 
     migrator = mod.Migrator(
         source_root=source,
@@ -1010,7 +1010,7 @@ def _extract_model(parsed: dict) -> str | None:
     return model
 
 
-def test_migrate_model_config_resolves_alias_against_real_flux-agent_schema(tmp_path: Path):
+def test_migrate_model_config_resolves_alias_against_real_omniworker_schema(tmp_path: Path):
     """Regression for #16745 — Flux Agent's catalog is keyed by the full
     provider/model API ID with an "alias" field on the value.  The migration
     must reverse-lookup the alias to find the API ID."""

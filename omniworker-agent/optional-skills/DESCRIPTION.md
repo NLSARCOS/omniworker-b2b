@@ -2,14 +2,14 @@
 
 Official skills maintained by Nous Research that are **not activated by default**.
 
-These skills ship with the flux-agent-agent repository but are not copied to
-`~/.flux-agent/skills/` during setup. They are discoverable via the Skills Hub:
+These skills ship with the omniworker-agent repository but are not copied to
+`~/.omniworker/skills/` during setup. They are discoverable via the Skills Hub:
 
 ```bash
-flux-agent skills browse               # browse all skills, official shown first
-flux-agent skills browse --source official  # browse only official optional skills
-flux-agent skills search <query>       # finds optional skills labeled "official"
-flux-agent skills install <identifier> # copies to ~/.flux-agent/skills/ and activates
+omniworker skills browse               # browse all skills, official shown first
+omniworker skills browse --source official  # browse only official optional skills
+omniworker skills search <query>       # finds optional skills labeled "official"
+omniworker skills install <identifier> # copies to ~/.omniworker/skills/ and activates
 ```
 
 ## Why optional?

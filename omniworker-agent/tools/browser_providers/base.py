@@ -9,7 +9,7 @@ class CloudBrowserProvider(ABC):
 
     Implementations live in sibling modules and are registered in
     ``browser_tool._PROVIDER_REGISTRY``.  The user selects a provider via
-    ``flux-agent setup`` / ``flux-agent tools``; the choice is persisted as
+    ``omniworker setup`` / ``omniworker tools``; the choice is persisted as
     ``config["browser"]["cloud_provider"]``.
     """
 

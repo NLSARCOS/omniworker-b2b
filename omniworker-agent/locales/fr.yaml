@@ -97,7 +97,7 @@ gateway:
     upload_failed:         "✗ Échec de l'envoi du rapport de débogage : {error}"
     header:                "**Rapport de débogage envoyé :**"
     auto_delete:           "⏱ Les pastes s'effaceront automatiquement dans 6 heures."
-    full_logs_hint:        "Pour envoyer les journaux complets, utilisez `flux-agent debug share` depuis la CLI."
+    full_logs_hint:        "Pour envoyer les journaux complets, utilisez `omniworker debug share` depuis la CLI."
     share_hint:            "Partagez ces liens avec l'équipe Flux Agent pour obtenir de l'aide."
 
   deny:
@@ -146,7 +146,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ erreur kanban : {error}"
     subscribed_suffix:     "(abonné — vous serez notifié lorsque {task_id} se terminera ou sera bloqué)"
-    truncated_suffix:      "… (tronqué ; utilisez `flux-agent kanban …` dans votre terminal pour la sortie complète)"
+    truncated_suffix:      "… (tronqué ; utilisez `omniworker kanban …` dans votre terminal pour la sortie complète)"
     no_output:             "(aucune sortie)"
 
   personality:
@@ -214,7 +214,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ Redémarrage du gateway déjà en cours..."
-    restarting:            "♻ Redémarrage du gateway. Si vous n'êtes pas notifié dans les 60 secondes, redémarrez depuis la console avec `flux-agent gateway restart`."
+    restarting:            "♻ Redémarrage du gateway. Si vous n'êtes pas notifié dans les 60 secondes, redémarrez depuis la console avec `omniworker gateway restart`."
 
   resume:
     db_unavailable:        "Base de données des sessions indisponible."
@@ -289,9 +289,9 @@ gateway:
     removed:               "↩️ {count} message(s) annulé(s).\nSupprimé : « {preview} »"
 
   update:
-    platform_not_messaging:  "✗ /update n'est disponible que depuis les plateformes de messagerie. Exécutez `flux-agent update` depuis le terminal."
+    platform_not_messaging:  "✗ /update n'est disponible que depuis les plateformes de messagerie. Exécutez `omniworker update` depuis le terminal."
     not_git_repo:            "✗ Pas un dépôt git — impossible de mettre à jour."
-    flux-agent_cmd_not_found:    "✗ Impossible de localiser la commande `flux-agent`. Flux Agent est en cours d'exécution, mais la commande de mise à jour n'a pas pu trouver l'exécutable dans le PATH ni via l'interpréteur Python actuel. Essayez d'exécuter `flux-agent update` manuellement dans votre terminal."
+    omniworker_cmd_not_found:    "✗ Impossible de localiser la commande `omniworker`. Flux Agent est en cours d'exécution, mais la commande de mise à jour n'a pas pu trouver l'exécutable dans le PATH ni via l'interpréteur Python actuel. Essayez d'exécuter `omniworker update` manuellement dans votre terminal."
     start_failed:            "✗ Échec du démarrage de la mise à jour : {error}"
     starting:                "⚕ Démarrage de la mise à jour Flux Agent… Je diffuserai la progression ici."
 

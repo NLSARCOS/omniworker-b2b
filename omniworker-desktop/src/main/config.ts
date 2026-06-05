@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { randomUUID, createCipheriv, createDecipheriv, scryptSync } from "crypto";
 import { hostname, platform, userInfo } from "os";
-import { FLUX AGENT_HOME } from "./installer";
+import { OMNIWORKER_HOME } from "./installer";
 import { profilePaths, escapeRegex, safeWriteFile } from "./utils";
 import { safeStorage } from "electron";
 
@@ -12,8 +12,8 @@ import { safeStorage } from "electron";
 const FALLBACK_PREFIX = "aes:";
 
 function getMachineKey(): Buffer {
-  const salt = `flux-agent-${hostname()}-${userInfo().username}`;
-  return scryptSync(`flux-agent-${platform()}`, salt, 32);
+  const salt = `omniworker-${hostname()}-${userInfo().username}`;
+  return scryptSync(`omniworker-${platform()}`, salt, 32);
 }
 
 function fallbackEncrypt(plainText: string): string {
@@ -56,9 +56,9 @@ export interface ConnectionConfig {
 }
 
 // Lazy getter — avoids circular dependency with installer.ts
-// (FLUX AGENT_HOME may not be assigned yet when this module first loads)
+// (OMNIWORKER_HOME may not be assigned yet when this module first loads)
 function desktopConfigFile(): string {
-  return join(FLUX AGENT_HOME, "desktop.json");
+  return join(OMNIWORKER_HOME, "desktop.json");
 }
 
 function readDesktopConfig(): Record<string, unknown> {
@@ -72,8 +72,8 @@ function readDesktopConfig(): Record<string, unknown> {
 }
 
 function writeDesktopConfig(data: Record<string, unknown>): void {
-  if (!existsSync(FLUX AGENT_HOME)) {
-    mkdirSync(FLUX AGENT_HOME, { recursive: true });
+  if (!existsSync(OMNIWORKER_HOME)) {
+    mkdirSync(OMNIWORKER_HOME, { recursive: true });
   }
   writeFileSync(desktopConfigFile(), JSON.stringify(data, null, 2), "utf-8");
 }
@@ -260,7 +260,7 @@ export function getModelConfig(profile?: string): {
   if (cached) return cached;
 
   const { configFile } = profilePaths(profile);
-  const defaults = { provider: "custom", model: "flux-agent", baseUrl: "" };
+  const defaults = { provider: "custom", model: "omniworker", baseUrl: "" };
   if (!existsSync(configFile)) return defaults;
 
   const content = readFileSync(configFile, "utf-8");
@@ -407,7 +407,7 @@ export function setModelConfig(
   safeWriteFile(configFile, content);
 }
 
-export function getFlux AgentHome(profile?: string): string {
+export function getOmniWorkerHome(profile?: string): string {
   return profilePaths(profile).home;
 }
 
@@ -503,7 +503,7 @@ export function setPlatformEnabled(
 // ── Credential Pool (auth.json) ──────────────────────────
 
 function authFilePath(): string {
-  return join(FLUX AGENT_HOME, "auth.json");
+  return join(OMNIWORKER_HOME, "auth.json");
 }
 
 interface CredentialEntry {

@@ -10,8 +10,8 @@ description: >
   file attachments are delivered via per-user OAuth (each user runs
   /setup-files once in their own DM).
 author: Ramón Fernández
-# ``requires_env`` entries are surfaced in ``flux-agent config`` UI via the
-# platform-plugin env var injector in ``flux-agent_cli/config.py``.  Using the
+# ``requires_env`` entries are surfaced in ``omniworker config`` UI via the
+# platform-plugin env var injector in ``omniworker_cli/config.py``.  Using the
 # rich-dict form lets us contribute description/url/prompt metadata so users
 # see helpful guidance instead of the auto-generated fallback text.
 requires_env:

@@ -101,7 +101,7 @@ gateway:
     upload_failed:         "✗ Theip ar uaslódáil tuairisce dífhabhtaithe: {error}"
     header:                "**Tuairisc dhífhabhtaithe uaslódáilte:**"
     auto_delete:           "⏱ Scriosfar na pastes go huathoibríoch i 6 huaire."
-    full_logs_hint:        "Le haghaidh uaslódálacha logála iomlána, úsáid `flux-agent debug share` ón CLI."
+    full_logs_hint:        "Le haghaidh uaslódálacha logála iomlána, úsáid `omniworker debug share` ón CLI."
     share_hint:            "Roinn na naisc seo le foireann Flux Agent le haghaidh tacaíochta."
 
   deny:
@@ -150,7 +150,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ earráid kanban: {error}"
     subscribed_suffix:     "(síntiúsaithe — cuirfear in iúl duit nuair a chríochnóidh nó a stopfaidh {task_id})"
-    truncated_suffix:      "… (giorraithe; úsáid `flux-agent kanban …` i do theirminéal le haghaidh aschur iomláin)"
+    truncated_suffix:      "… (giorraithe; úsáid `omniworker kanban …` i do theirminéal le haghaidh aschur iomláin)"
     no_output:             "(gan aschur)"
 
   personality:
@@ -218,7 +218,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ Tá atosú gateway ar siúl cheana féin..."
-    restarting:            "♻ Ag atosú gateway. Mura gcuirfear in iúl duit laistigh de 60 soicind, atosaigh ón gconsól le `flux-agent gateway restart`."
+    restarting:            "♻ Ag atosú gateway. Mura gcuirfear in iúl duit laistigh de 60 soicind, atosaigh ón gconsól le `omniworker gateway restart`."
 
   resume:
     db_unavailable:        "Níl bunachar sonraí na seisiún ar fáil."
@@ -293,9 +293,9 @@ gateway:
     removed:               "↩️ Cealaíodh {count} teachtaireacht.\nBaineadh: \"{preview}\""
 
   update:
-    platform_not_messaging:  "✗ Tá /update ar fáil amháin ó ardáin teachtaireachtaí. Rith `flux-agent update` ón teirminéal."
+    platform_not_messaging:  "✗ Tá /update ar fáil amháin ó ardáin teachtaireachtaí. Rith `omniworker update` ón teirminéal."
     not_git_repo:            "✗ Ní stór git é seo — ní féidir nuashonrú."
-    flux-agent_cmd_not_found:    "✗ Níorbh fhéidir an t-ordú `flux-agent` a aimsiú. Tá Flux Agent ag rith, ach níorbh fhéidir leis an ordú nuashonraithe an inrite a aimsiú ar PATH ná tríd an léirmhínitheoir Python reatha. Bain triail as `flux-agent update` a rith de láimh i do theirminéal."
+    omniworker_cmd_not_found:    "✗ Níorbh fhéidir an t-ordú `omniworker` a aimsiú. Tá Flux Agent ag rith, ach níorbh fhéidir leis an ordú nuashonraithe an inrite a aimsiú ar PATH ná tríd an léirmhínitheoir Python reatha. Bain triail as `omniworker update` a rith de láimh i do theirminéal."
     start_failed:            "✗ Theip ar nuashonrú a thosú: {error}"
     starting:                "⚕ Ag tosú nuashonrú Flux Agent… Cuirfidh mé an dul chun cinn ar shruth anseo."
 

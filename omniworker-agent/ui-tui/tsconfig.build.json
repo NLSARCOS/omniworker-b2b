@@ -3,7 +3,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@flux-agent/ink": ["src/types/flux-agent-ink.d.ts"]
+      "@omniworker/ink": ["src/types/omniworker-ink.d.ts"]
     }
   }
 }

@@ -54,7 +54,7 @@ platforms: [macos, linux]          # Optional — restrict to specific OS platfo
                                    #   Valid: macos, linux, windows
                                    #   Omit to load on all platforms (default)
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Category, Subcategory, Keywords]
     related_skills: [other-skill-name]
     requires_toolsets: [web]            # Optional — only show when these toolsets are active
@@ -111,7 +111,7 @@ Skills can declare dependencies on specific tools or toolsets. This controls whe
 
 ```yaml
 metadata:
-  flux-agent:
+  omniworker:
     requires_toolsets: [web]           # Hide if the web toolset is NOT active
     requires_tools: [web_search]       # Hide if web_search tool is NOT available
     fallback_for_toolsets: [browser]   # Hide if the browser toolset IS active
@@ -184,7 +184,7 @@ Skills can declare non-secret settings that are stored in `config.yaml` under th
 
 ```yaml
 metadata:
-  flux-agent:
+  omniworker:
     config:
       - key: myplugin.path
         description: Path to the plugin data directory
@@ -200,7 +200,7 @@ Each entry supports:
 - `key` (required) — dotpath for the setting (e.g., `myplugin.path`)
 - `description` (required) — explains what the setting controls
 - `default` (optional) — default value if the user doesn't configure it
-- `prompt` (optional) — prompt text shown during `flux-agent config migrate`; falls back to `description`
+- `prompt` (optional) — prompt text shown during `omniworker config migrate`; falls back to `description`
 
 **How it works:**
 
@@ -212,11 +212,11 @@ Each entry supports:
          path: ~/my-data
    ```
 
-2. **Discovery:** `flux-agent config migrate` scans all enabled skills, finds unconfigured settings, and prompts the user. Settings also appear in `flux-agent config show` under "Skill Settings."
+2. **Discovery:** `omniworker config migrate` scans all enabled skills, finds unconfigured settings, and prompts the user. Settings also appear in `omniworker config show` under "Skill Settings."
 
 3. **Runtime injection:** When a skill loads, its config values are resolved and appended to the skill message:
    ```
-   [Skill config (from ~/.flux-agent/config.yaml):
+   [Skill config (from ~/.omniworker/config.yaml):
      myplugin.path = /home/user/my-data
    ]
    ```
@@ -224,11 +224,11 @@ Each entry supports:
 
 4. **Manual setup:** Users can also set values directly:
    ```bash
-   flux-agent config set skills.config.myplugin.path ~/my-data
+   omniworker config set skills.config.myplugin.path ~/my-data
    ```
 
 :::tip When to use which
-Use `required_environment_variables` for API keys, tokens, and other **secrets** (stored in `~/.flux-agent/.env`, never shown to the model). Use `config` for **paths, preferences, and non-sensitive settings** (stored in `config.yaml`, visible in config show).
+Use `required_environment_variables` for API keys, tokens, and other **secrets** (stored in `~/.omniworker/.env`, never shown to the model). Use `config` for **paths, preferences, and non-sensitive settings** (stored in `config.yaml`, visible in config show).
 :::
 
 ### Credential File Requirements (OAuth tokens, etc.)
@@ -244,7 +244,7 @@ required_credential_files:
 ```
 
 Each entry supports:
-- `path` (required) — file path relative to `~/.flux-agent/`
+- `path` (required) — file path relative to `~/.omniworker/`
 - `description` (optional) — explains what the file is and how it's created
 
 When loaded, Flux Agent checks if these files exist. Missing files trigger `setup_needed`. Existing files are automatically:
@@ -253,7 +253,7 @@ When loaded, Flux Agent checks if these files exist. Missing files trigger `setu
 - Available on **local** backend without any special handling
 
 :::tip When to use which
-Use `required_environment_variables` for simple API keys and tokens (strings stored in `~/.flux-agent/.env`). Use `required_credential_files` for OAuth token files, client secrets, service account JSON, certificates, or any credential that's a file on disk.
+Use `required_environment_variables` for simple API keys and tokens (strings stored in `~/.omniworker/.env`). Use `required_credential_files` for OAuth token files, client secrets, service account JSON, certificates, or any credential that's a file on disk.
 :::
 
 See the `skills/productivity/google-workspace/SKILL.md` for a complete example using both.
@@ -278,15 +278,15 @@ When a skill is loaded, the activation message exposes the absolute skill direct
 
 | Token | Replaced with |
 |---|---|
-| `${FLUX AGENT_SKILL_DIR}` | Absolute path to the skill's directory |
-| `${FLUX AGENT_SESSION_ID}` | The active session id (left in place if there is no session) |
+| `${OMNIWORKER_SKILL_DIR}` | Absolute path to the skill's directory |
+| `${OMNIWORKER_SESSION_ID}` | The active session id (left in place if there is no session) |
 
 So a SKILL.md can tell the agent to run a bundled script directly with:
 
 ```markdown
 To analyse the input, run:
 
-    node ${FLUX AGENT_SKILL_DIR}/scripts/analyse.js <input>
+    node ${OMNIWORKER_SKILL_DIR}/scripts/analyse.js <input>
 ```
 
 The agent sees the substituted absolute path and invokes the `terminal` tool with a ready-to-run command — no path math, no extra `skill_view` round-trip. Disable substitution globally with `skills.template_vars: false` in `config.yaml`.
@@ -297,7 +297,7 @@ Skills can also embed inline shell snippets written as `` !`cmd` `` in the SKILL
 
 ```markdown
 Current date: !`date -u +%Y-%m-%d`
-Git branch: !`git -C ${FLUX AGENT_SKILL_DIR} rev-parse --abbrev-ref HEAD`
+Git branch: !`git -C ${OMNIWORKER_SKILL_DIR} rev-parse --abbrev-ref HEAD`
 ```
 
 This is **off by default** — any snippet in a SKILL.md runs on the host without approval, so only enable it for skill sources you trust:
@@ -316,7 +316,7 @@ Snippets run with the skill directory as their working directory, and output is 
 Run the skill and verify the agent follows the instructions correctly:
 
 ```bash
-flux-agent chat --toolsets skills -q "Use the X skill to do Y"
+omniworker chat --toolsets skills -q "Use the X skill to do Y"
 ```
 
 ## Where Should the Skill Live?
@@ -326,16 +326,16 @@ Bundled skills (in `skills/`) ship with every Flux Agent install. They should be
 - Document handling, web research, common dev workflows, system administration
 - Used regularly by a wide range of people
 
-If your skill is official and useful but not universally needed (e.g., a paid service integration, a heavyweight dependency), put it in **`optional-skills/`** — it ships with the repo, is discoverable via `flux-agent skills browse` (labeled "official"), and installs with builtin trust.
+If your skill is official and useful but not universally needed (e.g., a paid service integration, a heavyweight dependency), put it in **`optional-skills/`** — it ships with the repo, is discoverable via `omniworker skills browse` (labeled "official"), and installs with builtin trust.
 
-If your skill is specialized, community-contributed, or niche, it's better suited for a **Skills Hub** — upload it to a registry and share it via `flux-agent skills install`.
+If your skill is specialized, community-contributed, or niche, it's better suited for a **Skills Hub** — upload it to a registry and share it via `omniworker skills install`.
 
 ## Publishing Skills
 
 ### To the Skills Hub
 
 ```bash
-flux-agent skills publish skills/my-skill --to github --repo owner/repo
+omniworker skills publish skills/my-skill --to github --repo owner/repo
 ```
 
 ### To a Custom Repository
@@ -343,7 +343,7 @@ flux-agent skills publish skills/my-skill --to github --repo owner/repo
 Add your repo as a tap:
 
 ```bash
-flux-agent skills tap add owner/repo
+omniworker skills tap add owner/repo
 ```
 
 Users can then search and install from your repository.

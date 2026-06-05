@@ -30,7 +30,7 @@ def _check_config():
     if missing:
         print(
             f"Missing required environment variables: {', '.join(missing)}\n"
-            "Set them in ~/.flux-agent/.env or export them in your shell.\n"
+            "Set them in ~/.omniworker/.env or export them in your shell.\n"
             "See the canvas skill SKILL.md for setup instructions.",
             file=sys.stderr,
         )

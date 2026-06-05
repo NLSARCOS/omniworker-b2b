@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { ArrowRight, Copy, Send } from "../../assets/icons";
 
-const TELEGRAM_COMMUNITY_URL = "https://t.me/flux-agent_agent_desktop";
+const TELEGRAM_COMMUNITY_URL = "https://t.me/omniworker_agent_desktop";
 import { useI18n } from "../../components/useI18n";
 
 interface InstallProgress {
@@ -38,11 +38,11 @@ function Install({
 
   useEffect(() => {
     let isMounted = true;
-    const cleanup = window.flux-agentAPI.onInstallProgress((p) => {
+    const cleanup = window.omniworkerAPI.onInstallProgress((p) => {
       if (isMounted) setProgress(p);
     });
 
-    window.flux-agentAPI
+    window.omniworkerAPI
       .startInstall(authToken || undefined)
       .then(async (result) => {
         if (!isMounted) return;
@@ -55,7 +55,7 @@ function Install({
               detail: "Iniciando instalación del motor de memoria...",
               log: p.log + "\n[Installer] Iniciando instalación de Engram..."
             }));
-            const engramResult = await window.flux-agentAPI.downloadAndInstallEngram();
+            const engramResult = await window.omniworkerAPI.downloadAndInstallEngram();
             if (!isMounted) return;
             if (engramResult.success) {
               setProgress((p) => ({
@@ -167,7 +167,7 @@ function Install({
             <button
               className="btn btn-secondary btn-sm"
               onClick={() =>
-                window.flux-agentAPI.openExternal(TELEGRAM_COMMUNITY_URL)
+                window.omniworkerAPI.openExternal(TELEGRAM_COMMUNITY_URL)
               }
               title={TELEGRAM_COMMUNITY_URL}
             >

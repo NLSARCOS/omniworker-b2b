@@ -11,8 +11,8 @@ description: >
   time, making it one of the most private messengers available.
 author: Mibayy
 # ``requires_env`` and ``optional_env`` entries are surfaced in the
-# ``flux-agent config`` UI via the platform-plugin env var injector in
-# ``flux-agent_cli/config.py``.
+# ``omniworker config`` UI via the platform-plugin env var injector in
+# ``omniworker_cli/config.py``.
 requires_env:
   - name: SIMPLEX_WS_URL
     description: "WebSocket URL of the simplex-chat daemon (e.g. ws://127.0.0.1:5225)"

@@ -14,7 +14,7 @@ SiYuan Note API for searching, reading, creating, and managing blocks and docume
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/productivity/siyuan` |
+| Source | Optional — install with `omniworker skills install official/productivity/siyuan` |
 | Path | `optional-skills/productivity/siyuan` |
 | Version | `1.0.0` |
 | Author | FEUAZUR |
@@ -37,7 +37,7 @@ Use the [SiYuan](https://github.com/siyuan-note/siyuan) kernel API via curl to s
 
 1. Install and run SiYuan (desktop or Docker)
 2. Get your API token: **Settings > About > API token**
-3. Store it in `~/.flux-agent/.env`:
+3. Store it in `~/.omniworker/.env`:
    ```
    SIYUAN_TOKEN=your_token_here
    SIYUAN_URL=http://127.0.0.1:6806
@@ -294,7 +294,7 @@ Common `type` values in SQL queries:
 If you prefer a native integration instead of curl, install the SiYuan MCP server:
 
 ```yaml
-# In ~/.flux-agent/config.yaml under mcp_servers:
+# In ~/.omniworker/config.yaml under mcp_servers:
 mcp_servers:
   siyuan:
     command: npx

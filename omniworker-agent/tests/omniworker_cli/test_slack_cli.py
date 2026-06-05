@@ -1,10 +1,10 @@
 """Tests for Slack CLI helpers."""
 
-from flux-agent_cli.slack_cli import _build_full_manifest
+from omniworker_cli.slack_cli import _build_full_manifest
 
 
 class TestSlackFullManifest:
-    """Generated full Slack app manifest used by `flux-agent slack manifest`."""
+    """Generated full Slack app manifest used by `omniworker slack manifest`."""
 
     def test_app_home_messages_are_writable(self):
         manifest = _build_full_manifest("Flux Agent", "Your Flux Agent agent on Slack")

@@ -7,7 +7,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from flux-agent_cli.auth import AuthError, get_provider_auth_state, resolve_nous_runtime_credentials
+from omniworker_cli.auth import AuthError, get_provider_auth_state, resolve_nous_runtime_credentials
 
 
 # =============================================================================
@@ -25,7 +25,7 @@ class TestResolveVerifyFallback:
         monkeypatch.setattr("sys.platform", "linux")
 
     def test_missing_ca_bundle_in_auth_state_falls_back(self):
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
         result = _resolve_verify(auth_state={
             "tls": {"insecure": False, "ca_bundle": "/nonexistent/ca-bundle.pem"},
@@ -34,7 +34,7 @@ class TestResolveVerifyFallback:
 
     def test_valid_ca_bundle_in_auth_state_is_returned(self, tmp_path, monkeypatch):
         import ssl
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
         ca_file = tmp_path / "ca-bundle.pem"
         ca_file.write_text("fake cert")
@@ -51,23 +51,23 @@ class TestResolveVerifyFallback:
         )
 
     def test_missing_ssl_cert_file_env_falls_back(self, monkeypatch):
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
         monkeypatch.setenv("SSL_CERT_FILE", "/nonexistent/ssl-cert.pem")
-        monkeypatch.delenv("FLUX AGENT_CA_BUNDLE", raising=False)
+        monkeypatch.delenv("OMNIWORKER_CA_BUNDLE", raising=False)
         result = _resolve_verify(auth_state={"tls": {}})
         assert result is True
 
-    def test_missing_flux-agent_ca_bundle_env_falls_back(self, monkeypatch):
-        from flux-agent_cli.auth import _resolve_verify
+    def test_missing_omniworker_ca_bundle_env_falls_back(self, monkeypatch):
+        from omniworker_cli.auth import _resolve_verify
 
-        monkeypatch.setenv("FLUX AGENT_CA_BUNDLE", "/nonexistent/flux-agent-ca.pem")
+        monkeypatch.setenv("OMNIWORKER_CA_BUNDLE", "/nonexistent/omniworker-ca.pem")
         monkeypatch.delenv("SSL_CERT_FILE", raising=False)
         result = _resolve_verify(auth_state={"tls": {}})
         assert result is True
 
     def test_insecure_takes_precedence_over_missing_ca(self):
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
         result = _resolve_verify(
             insecure=True,
@@ -77,35 +77,35 @@ class TestResolveVerifyFallback:
 
     def test_string_false_in_auth_state_does_not_disable_tls_verify(self):
         import ssl
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
         result = _resolve_verify(auth_state={"tls": {"insecure": "false"}})
         assert result is not False
         assert result is True or isinstance(result, ssl.SSLContext)
 
     def test_string_true_in_auth_state_disables_tls_verify(self):
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
         result = _resolve_verify(auth_state={"tls": {"insecure": "true"}})
         assert result is False
 
     def test_no_ca_bundle_returns_true(self, monkeypatch):
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
-        monkeypatch.delenv("FLUX AGENT_CA_BUNDLE", raising=False)
+        monkeypatch.delenv("OMNIWORKER_CA_BUNDLE", raising=False)
         monkeypatch.delenv("SSL_CERT_FILE", raising=False)
         result = _resolve_verify(auth_state={"tls": {}})
         assert result is True
 
     def test_explicit_ca_bundle_param_missing_falls_back(self):
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
         result = _resolve_verify(ca_bundle="/nonexistent/explicit-ca.pem")
         assert result is True
 
     def test_explicit_ca_bundle_param_valid_is_returned(self, tmp_path, monkeypatch):
         import ssl
-        from flux-agent_cli.auth import _resolve_verify
+        from omniworker_cli.auth import _resolve_verify
 
         ca_file = tmp_path / "explicit-ca.pem"
         ca_file.write_text("fake cert")
@@ -121,12 +121,12 @@ class TestResolveVerifyFallback:
 
 
 def _setup_nous_auth(
-    flux-agent_home: Path,
+    omniworker_home: Path,
     *,
     access_token: str = "access-old",
     refresh_token: str = "refresh-old",
 ) -> None:
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
+    omniworker_home.mkdir(parents=True, exist_ok=True)
     auth_store = {
         "version": 1,
         "active_provider": "nous",
@@ -134,7 +134,7 @@ def _setup_nous_auth(
             "nous": {
                 "portal_base_url": "https://portal.example.com",
                 "inference_base_url": "https://inference.example.com/v1",
-                "client_id": "flux-agent-cli",
+                "client_id": "omniworker-cli",
                 "token_type": "Bearer",
                 "scope": "inference:mint_agent_key",
                 "access_token": access_token,
@@ -151,7 +151,7 @@ def _setup_nous_auth(
             }
         },
     }
-    (flux-agent_home / "auth.json").write_text(json.dumps(auth_store, indent=2))
+    (omniworker_home / "auth.json").write_text(json.dumps(auth_store, indent=2))
 
 
 def _mint_payload(api_key: str = "agent-key") -> dict:
@@ -170,15 +170,15 @@ def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
     case when login happened via the dashboard device-code flow which
     saves to the pool only.
     """
-    from flux-agent_cli.auth import get_nous_auth_status
+    from omniworker_cli.auth import get_nous_auth_status
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
     # Empty auth store — no Nous provider entry
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     # Seed the credential pool with a Nous entry
     from agent.credential_pool import PooledCredential, load_pool
@@ -206,13 +206,13 @@ def test_get_nous_auth_status_auth_store_fallback(tmp_path, monkeypatch):
     """get_nous_auth_status() falls back to auth store when credential
     pool is empty.
     """
-    from flux-agent_cli.auth import get_nous_auth_status
+    from omniworker_cli.auth import get_nous_auth_status
 
-    flux-agent_home = tmp_path / "flux-agent"
-    _setup_nous_auth(flux-agent_home, access_token="at-123")
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / "omniworker"
+    _setup_nous_auth(omniworker_home, access_token="at-123")
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
     monkeypatch.setattr(
-        "flux-agent_cli.auth.resolve_nous_runtime_credentials",
+        "omniworker_cli.auth.resolve_nous_runtime_credentials",
         lambda min_key_ttl_seconds=60: {
             "base_url": "https://inference.example.com/v1",
             "expires_at": "2099-01-01T00:00:00+00:00",
@@ -227,12 +227,12 @@ def test_get_nous_auth_status_auth_store_fallback(tmp_path, monkeypatch):
 
 
 def test_get_nous_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_path, monkeypatch):
-    from flux-agent_cli.auth import get_nous_auth_status
+    from omniworker_cli.auth import get_nous_auth_status
     from agent.credential_pool import PooledCredential, load_pool
 
-    flux-agent_home = tmp_path / "flux-agent"
-    _setup_nous_auth(flux-agent_home, access_token="at-fresh")
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / "omniworker"
+    _setup_nous_auth(omniworker_home, access_token="at-fresh")
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     pool = load_pool("nous")
     stale = PooledCredential.from_dict("nous", {
@@ -252,7 +252,7 @@ def test_get_nous_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_pat
     pool.add_entry(stale)
 
     monkeypatch.setattr(
-        "flux-agent_cli.auth.resolve_nous_runtime_credentials",
+        "omniworker_cli.auth.resolve_nous_runtime_credentials",
         lambda min_key_ttl_seconds=60: {
             "base_url": "https://inference.example.com/v1",
             "expires_at": "2099-01-01T00:00:00+00:00",
@@ -269,16 +269,16 @@ def test_get_nous_auth_status_prefers_runtime_auth_store_over_stale_pool(tmp_pat
 
 
 def test_get_nous_auth_status_reports_revoked_refresh_session(tmp_path, monkeypatch):
-    from flux-agent_cli.auth import get_nous_auth_status
+    from omniworker_cli.auth import get_nous_auth_status
 
-    flux-agent_home = tmp_path / "flux-agent"
-    _setup_nous_auth(flux-agent_home, access_token="at-123")
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / "omniworker"
+    _setup_nous_auth(omniworker_home, access_token="at-123")
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     def _boom(min_key_ttl_seconds=60):
         raise AuthError("Refresh session has been revoked", provider="nous", relogin_required=True)
 
-    monkeypatch.setattr("flux-agent_cli.auth.resolve_nous_runtime_credentials", _boom)
+    monkeypatch.setattr("omniworker_cli.auth.resolve_nous_runtime_credentials", _boom)
 
     status = get_nous_auth_status()
     assert status["logged_in"] is False
@@ -291,23 +291,23 @@ def test_get_nous_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch)
     """get_nous_auth_status() returns logged_in=False when both pool
     and auth store are empty.
     """
-    from flux-agent_cli.auth import get_nous_auth_status
+    from omniworker_cli.auth import get_nous_auth_status
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     status = get_nous_auth_status()
     assert status["logged_in"] is False
 
 
 def test_refresh_token_persisted_when_mint_returns_insufficient_credits(tmp_path, monkeypatch):
-    flux-agent_home = tmp_path / "flux-agent"
-    _setup_nous_auth(flux-agent_home, refresh_token="refresh-old")
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / "omniworker"
+    _setup_nous_auth(omniworker_home, refresh_token="refresh-old")
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     refresh_calls = []
     mint_calls = {"count": 0}
@@ -328,8 +328,8 @@ def test_refresh_token_persisted_when_mint_returns_insufficient_credits(tmp_path
             raise AuthError("credits exhausted", provider="nous", code="insufficient_credits")
         return _mint_payload(api_key="agent-key-2")
 
-    monkeypatch.setattr("flux-agent_cli.auth._refresh_access_token", _fake_refresh_access_token)
-    monkeypatch.setattr("flux-agent_cli.auth._mint_agent_key", _fake_mint_agent_key)
+    monkeypatch.setattr("omniworker_cli.auth._refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr("omniworker_cli.auth._mint_agent_key", _fake_mint_agent_key)
 
     with pytest.raises(AuthError) as exc:
         resolve_nous_runtime_credentials(min_key_ttl_seconds=300)
@@ -346,9 +346,9 @@ def test_refresh_token_persisted_when_mint_returns_insufficient_credits(tmp_path
 
 
 def test_refresh_token_persisted_when_mint_times_out(tmp_path, monkeypatch):
-    flux-agent_home = tmp_path / "flux-agent"
-    _setup_nous_auth(flux-agent_home, refresh_token="refresh-old")
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / "omniworker"
+    _setup_nous_auth(omniworker_home, refresh_token="refresh-old")
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
         return {
@@ -361,8 +361,8 @@ def test_refresh_token_persisted_when_mint_times_out(tmp_path, monkeypatch):
     def _fake_mint_agent_key(*, client, portal_base_url, access_token, min_ttl_seconds):
         raise httpx.ReadTimeout("mint timeout")
 
-    monkeypatch.setattr("flux-agent_cli.auth._refresh_access_token", _fake_refresh_access_token)
-    monkeypatch.setattr("flux-agent_cli.auth._mint_agent_key", _fake_mint_agent_key)
+    monkeypatch.setattr("omniworker_cli.auth._refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr("omniworker_cli.auth._mint_agent_key", _fake_mint_agent_key)
 
     with pytest.raises(httpx.ReadTimeout):
         resolve_nous_runtime_credentials(min_key_ttl_seconds=300)
@@ -374,9 +374,9 @@ def test_refresh_token_persisted_when_mint_times_out(tmp_path, monkeypatch):
 
 
 def test_mint_retry_uses_latest_rotated_refresh_token(tmp_path, monkeypatch):
-    flux-agent_home = tmp_path / "flux-agent"
-    _setup_nous_auth(flux-agent_home, refresh_token="refresh-old")
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / "omniworker"
+    _setup_nous_auth(omniworker_home, refresh_token="refresh-old")
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     refresh_calls = []
     mint_calls = {"count": 0}
@@ -397,8 +397,8 @@ def test_mint_retry_uses_latest_rotated_refresh_token(tmp_path, monkeypatch):
             raise AuthError("stale access token", provider="nous", code="invalid_token")
         return _mint_payload(api_key="agent-key")
 
-    monkeypatch.setattr("flux-agent_cli.auth._refresh_access_token", _fake_refresh_access_token)
-    monkeypatch.setattr("flux-agent_cli.auth._mint_agent_key", _fake_mint_agent_key)
+    monkeypatch.setattr("omniworker_cli.auth._refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr("omniworker_cli.auth._mint_agent_key", _fake_mint_agent_key)
 
     creds = resolve_nous_runtime_credentials(min_key_ttl_seconds=300)
     assert creds["api_key"] == "agent-key"
@@ -411,7 +411,7 @@ def test_mint_retry_uses_latest_rotated_refresh_token(tmp_path, monkeypatch):
 
 
 class TestLoginNousSkipKeepsCurrent:
-    """When a user runs `flux-agent model` → Nous Portal → Skip (keep current) after
+    """When a user runs `omniworker model` → Nous Portal → Skip (keep current) after
     a successful OAuth login, the prior provider and model MUST be preserved.
 
     Regression: previously, _update_config_for_provider was called
@@ -422,11 +422,11 @@ class TestLoginNousSkipKeepsCurrent:
 
     def _setup_home_with_openrouter(self, tmp_path, monkeypatch):
         import yaml
-        flux-agent_home = tmp_path / "flux-agent"
-        flux-agent_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / "omniworker"
+        omniworker_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
-        config_path = flux-agent_home / "config.yaml"
+        config_path = omniworker_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "model": {
                 "provider": "openrouter",
@@ -434,25 +434,25 @@ class TestLoginNousSkipKeepsCurrent:
             },
         }, sort_keys=False))
 
-        auth_path = flux-agent_home / "auth.json"
+        auth_path = omniworker_home / "auth.json"
         auth_path.write_text(json.dumps({
             "version": 1,
             "active_provider": "openrouter",
             "providers": {"openrouter": {"api_key": "sk-or-fake"}},
         }))
-        return flux-agent_home, config_path, auth_path
+        return omniworker_home, config_path, auth_path
 
     def _patch_login_internals(self, monkeypatch, *, prompt_returns):
         """Patch OAuth + model-list + prompt so _login_nous doesn't hit network."""
-        import flux-agent_cli.auth as auth_mod
-        import flux-agent_cli.models as models_mod
-        import flux-agent_cli.nous_subscription as ns
+        import omniworker_cli.auth as auth_mod
+        import omniworker_cli.models as models_mod
+        import omniworker_cli.nous_subscription as ns
 
         fake_auth_state = {
             "access_token": "fake-nous-token",
             "agent_key": "fake-agent-key",
-            "inference_base_url": "https://inference-api.flux-agent.com",
-            "portal_base_url": "https://portal.flux-agent.com",
+            "inference_base_url": "https://inference-api.omniworker.com",
+            "portal_base_url": "https://portal.omniworker.com",
             "refresh_token": "fake-refresh",
             "token_expires_at": 9999999999,
         }
@@ -476,9 +476,9 @@ class TestLoginNousSkipKeepsCurrent:
         """User picks Skip → config.yaml untouched, Nous creds still saved."""
         import argparse
         import yaml
-        from flux-agent_cli.auth import PROVIDER_REGISTRY, _login_nous
+        from omniworker_cli.auth import PROVIDER_REGISTRY, _login_nous
 
-        flux-agent_home, config_path, auth_path = self._setup_home_with_openrouter(
+        omniworker_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
         )
         self._patch_login_internals(monkeypatch, prompt_returns=None)
@@ -507,9 +507,9 @@ class TestLoginNousSkipKeepsCurrent:
         """User picks a Nous model → provider flips to nous with that model."""
         import argparse
         import yaml
-        from flux-agent_cli.auth import PROVIDER_REGISTRY, _login_nous
+        from omniworker_cli.auth import PROVIDER_REGISTRY, _login_nous
 
-        flux-agent_home, config_path, auth_path = self._setup_home_with_openrouter(
+        omniworker_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
         )
         self._patch_login_internals(
@@ -534,13 +534,13 @@ class TestLoginNousSkipKeepsCurrent:
         instead of leaving it as nous."""
         import argparse
         import yaml
-        from flux-agent_cli.auth import PROVIDER_REGISTRY, _login_nous
+        from omniworker_cli.auth import PROVIDER_REGISTRY, _login_nous
 
-        flux-agent_home = tmp_path / "flux-agent"
-        flux-agent_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / "omniworker"
+        omniworker_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
-        config_path = flux-agent_home / "config.yaml"
+        config_path = omniworker_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({"model": {}}, sort_keys=False))
 
         # No auth.json yet — simulates first-run before any OAuth
@@ -552,7 +552,7 @@ class TestLoginNousSkipKeepsCurrent:
         )
         _login_nous(args, PROVIDER_REGISTRY["nous"])
 
-        auth_path = flux-agent_home / "auth.json"
+        auth_path = omniworker_home / "auth.json"
         auth_after = json.loads(auth_path.read_text())
         # active_provider should NOT be set to "nous" after Skip
         assert auth_after.get("active_provider") in (None, "")
@@ -571,7 +571,7 @@ def _full_state_fixture() -> dict:
     return {
         "portal_base_url": "https://portal.example.com",
         "inference_base_url": "https://inference.example.com/v1",
-        "client_id": "flux-agent-cli",
+        "client_id": "omniworker-cli",
         "scope": "inference:mint_agent_key",
         "token_type": "Bearer",
         "access_token": "access-tok",
@@ -592,21 +592,21 @@ def _full_state_fixture() -> dict:
 def test_persist_nous_credentials_writes_both_pool_and_providers(tmp_path, monkeypatch):
     """Helper must populate BOTH credential_pool.nous AND providers.nous.
 
-    Regression guard: before this helper existed, `flux-agent auth add nous`
+    Regression guard: before this helper existed, `omniworker auth add nous`
     wrote only the pool. After the Nous agent_key's 24h TTL expired, the
     401-recovery path in run_agent.py called resolve_nous_runtime_credentials
     which reads providers.nous, found it empty, raised AuthError, and the
     agent failed with "Non-retryable client error". Both stores must stay
     in sync at write time.
     """
-    from flux-agent_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
+    from omniworker_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     entry = persist_nous_credentials(_full_state_fixture())
 
@@ -614,7 +614,7 @@ def test_persist_nous_credentials_writes_both_pool_and_providers(tmp_path, monke
     assert entry.provider == "nous"
     assert entry.source == NOUS_DEVICE_CODE_SOURCE
 
-    payload = json.loads((flux-agent_home / "auth.json").read_text())
+    payload = json.loads((omniworker_home / "auth.json").read_text())
 
     # providers.nous populated with the full state (new behaviour)
     singleton = payload["providers"]["nous"]
@@ -640,14 +640,14 @@ def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch
     calls after a Nous 401 — before the fix it would raise AuthError because
     providers.nous was empty.
     """
-    from flux-agent_cli.auth import persist_nous_credentials, resolve_nous_runtime_credentials
+    from omniworker_cli.auth import persist_nous_credentials, resolve_nous_runtime_credentials
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     persist_nous_credentials(_full_state_fixture())
 
@@ -665,8 +665,8 @@ def test_persist_nous_credentials_allows_recovery_from_401(tmp_path, monkeypatch
     def _fake_mint_agent_key(*, client, portal_base_url, access_token, min_ttl_seconds):
         return _mint_payload(api_key="new-agent-key")
 
-    monkeypatch.setattr("flux-agent_cli.auth._refresh_access_token", _fake_refresh_access_token)
-    monkeypatch.setattr("flux-agent_cli.auth._mint_agent_key", _fake_mint_agent_key)
+    monkeypatch.setattr("omniworker_cli.auth._refresh_access_token", _fake_refresh_access_token)
+    monkeypatch.setattr("omniworker_cli.auth._mint_agent_key", _fake_mint_agent_key)
 
     creds = resolve_nous_runtime_credentials(min_key_ttl_seconds=300, force_mint=True)
     assert creds["api_key"] == "new-agent-key"
@@ -682,14 +682,14 @@ def test_persist_nous_credentials_idempotent_no_duplicate_pool_entries(tmp_path,
     materialise the pool entry under the canonical ``device_code`` source, so
     two persists still leave the pool with exactly one row.
     """
-    from flux-agent_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
+    from omniworker_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     first = _full_state_fixture()
     persist_nous_credentials(first)
@@ -699,7 +699,7 @@ def test_persist_nous_credentials_idempotent_no_duplicate_pool_entries(tmp_path,
     second["agent_key"] = "agent-key-second"
     persist_nous_credentials(second)
 
-    payload = json.loads((flux-agent_home / "auth.json").read_text())
+    payload = json.loads((omniworker_home / "auth.json").read_text())
 
     # providers.nous reflects the latest write (singleton semantics)
     assert payload["providers"]["nous"]["access_token"] == "access-second"
@@ -721,14 +721,14 @@ def test_persist_nous_credentials_reloads_pool_after_singleton_write(tmp_path, m
     callers observe the canonical seeded state, including any legacy entries
     that ``_seed_from_singletons`` pruned or upserted.
     """
-    from flux-agent_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
+    from omniworker_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     entry = persist_nous_credentials(_full_state_fixture())
     assert entry is not None
@@ -742,19 +742,19 @@ def test_persist_nous_credentials_reloads_pool_after_singleton_write(tmp_path, m
 def test_persist_nous_credentials_embeds_custom_label(tmp_path, monkeypatch):
     """User-supplied ``--label`` round-trips through providers.nous and the pool.
 
-    Previously `flux-agent auth add nous --type oauth --label <name>` silently
+    Previously `omniworker auth add nous --type oauth --label <name>` silently
     dropped the label because persist_nous_credentials() ignored it and
     _seed_from_singletons always auto-derived via label_from_token().  The
     fix stashes the label inside providers.nous so seeding prefers it.
     """
-    from flux-agent_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
+    from omniworker_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     entry = persist_nous_credentials(_full_state_fixture(), label="my-personal")
     assert entry is not None
@@ -763,7 +763,7 @@ def test_persist_nous_credentials_embeds_custom_label(tmp_path, monkeypatch):
 
     # providers.nous carries the label so re-seeding on the next load_pool
     # doesn't overwrite it with the auto-derived fingerprint.
-    payload = json.loads((flux-agent_home / "auth.json").read_text())
+    payload = json.loads((omniworker_home / "auth.json").read_text())
     assert payload["providers"]["nous"]["label"] == "my-personal"
 
 
@@ -771,15 +771,15 @@ def test_persist_nous_credentials_custom_label_survives_reseed(tmp_path, monkeyp
     """Reopening the pool (which re-runs _seed_from_singletons) must keep the
     user-chosen label instead of clobbering it with label_from_token output.
     """
-    from flux-agent_cli.auth import persist_nous_credentials
+    from omniworker_cli.auth import persist_nous_credentials
     from agent.credential_pool import load_pool
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     persist_nous_credentials(_full_state_fixture(), label="work-acct")
 
@@ -795,14 +795,14 @@ def test_persist_nous_credentials_no_label_uses_auto_derived(tmp_path, monkeypat
     """When the caller doesn't pass ``label``, the auto-derived fingerprint
     is used (unchanged default behaviour — regression guard).
     """
-    from flux-agent_cli.auth import persist_nous_credentials
+    from omniworker_cli.auth import persist_nous_credentials
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(json.dumps({
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     entry = persist_nous_credentials(_full_state_fixture())
     assert entry is not None
@@ -813,7 +813,7 @@ def test_persist_nous_credentials_no_label_uses_auto_derived(tmp_path, monkeypat
     assert entry.label != "my-personal"
 
     # No "label" key embedded in providers.nous when the caller didn't supply one.
-    payload = json.loads((flux-agent_home / "auth.json").read_text())
+    payload = json.loads((omniworker_home / "auth.json").read_text())
     assert "label" not in payload["providers"]["nous"]
 
 
@@ -828,7 +828,7 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     bug when the true cause is external RT consumption (monitoring scripts,
     custom self-heal hooks).
     """
-    from flux-agent_cli.auth import _refresh_access_token
+    from omniworker_cli.auth import _refresh_access_token
 
     class _FakeResponse:
         status_code = 400
@@ -846,8 +846,8 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     with pytest.raises(AuthError) as exc_info:
         _refresh_access_token(
             client=_FakeClient(),
-            portal_base_url="https://portal.flux-agent.com",
-            client_id="flux-agent-cli",
+            portal_base_url="https://portal.omniworker.com",
+            client_id="omniworker-cli",
             refresh_token="rt_consumed_elsewhere",
         )
 
@@ -855,7 +855,7 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     assert "refresh-token reuse" in message.lower() or "refresh token reuse" in message.lower()
     # The message must mention the external-process cause and give next steps.
     assert "external process" in message.lower() or "monitoring script" in message.lower()
-    assert "flux-agent auth add nous" in message.lower()
+    assert "omniworker auth add nous" in message.lower()
     # Must still be classified as invalid_grant + relogin_required.
     assert exc_info.value.code == "invalid_grant"
     assert exc_info.value.relogin_required is True
@@ -865,7 +865,7 @@ def test_refresh_token_exchange_sends_refresh_token_header():
     """Nous refresh tokens must be sent in a header so sandbox proxies can
     substitute placeholder credentials without parsing form bodies.
     """
-    from flux-agent_cli.auth import _refresh_access_token
+    from omniworker_cli.auth import _refresh_access_token
 
     class _FakeResponse:
         status_code = 200
@@ -886,8 +886,8 @@ def test_refresh_token_exchange_sends_refresh_token_header():
 
     payload = _refresh_access_token(
         client=client,
-        portal_base_url="https://portal.flux-agent.com",
-        client_id="flux-agent-cli",
+        portal_base_url="https://portal.omniworker.com",
+        client_id="omniworker-cli",
         refresh_token="refresh-1",
     )
 
@@ -897,7 +897,7 @@ def test_refresh_token_exchange_sends_refresh_token_header():
     assert client.kwargs["headers"]["x-nous-refresh-token"] == "refresh-1"
     assert client.kwargs["data"] == {
         "grant_type": "refresh_token",
-        "client_id": "flux-agent-cli",
+        "client_id": "omniworker-cli",
     }
 
 
@@ -909,7 +909,7 @@ def test_refresh_non_reuse_error_keeps_original_description():
     downstream consequence) keeps its original text so we don't overwrite
     useful server context for unrelated failure modes.
     """
-    from flux-agent_cli.auth import _refresh_access_token
+    from omniworker_cli.auth import _refresh_access_token
 
     class _FakeResponse:
         status_code = 400
@@ -927,8 +927,8 @@ def test_refresh_non_reuse_error_keeps_original_description():
     with pytest.raises(AuthError) as exc_info:
         _refresh_access_token(
             client=_FakeClient(),
-            portal_base_url="https://portal.flux-agent.com",
-            client_id="flux-agent-cli",
+            portal_base_url="https://portal.omniworker.com",
+            client_id="omniworker-cli",
             refresh_token="rt_anything",
         )
 
@@ -944,7 +944,7 @@ def test_refresh_non_reuse_error_keeps_original_description():
 
 @pytest.fixture
 def shared_store_env(tmp_path, monkeypatch):
-    """Redirect FLUX AGENT_SHARED_AUTH_DIR to a tmp_path.
+    """Redirect OMNIWORKER_SHARED_AUTH_DIR to a tmp_path.
 
     Required for every test that exercises the shared Nous store — the
     in-auth.py seat belt refuses to touch the real user's shared store
@@ -952,31 +952,31 @@ def shared_store_env(tmp_path, monkeypatch):
     of corrupting real state.
     """
     shared_dir = tmp_path / "shared"
-    monkeypatch.setenv("FLUX AGENT_SHARED_AUTH_DIR", str(shared_dir))
+    monkeypatch.setenv("OMNIWORKER_SHARED_AUTH_DIR", str(shared_dir))
     return shared_dir
 
 
 def test_shared_store_seat_belt_refuses_real_home_under_pytest(monkeypatch):
-    """Without FLUX AGENT_SHARED_AUTH_DIR override, the seat belt must trip.
+    """Without OMNIWORKER_SHARED_AUTH_DIR override, the seat belt must trip.
 
     Mirrors the existing ``_auth_file_path`` seat belt: forgetting to
     redirect this store in a test must fail loudly instead of silently
-    writing to the user's real ``~/.flux-agent/shared/`` across CI runs.
+    writing to the user's real ``~/.omniworker/shared/`` across CI runs.
     """
-    from flux-agent_cli.auth import _nous_shared_store_path
+    from omniworker_cli.auth import _nous_shared_store_path
 
-    monkeypatch.delenv("FLUX AGENT_SHARED_AUTH_DIR", raising=False)
+    monkeypatch.delenv("OMNIWORKER_SHARED_AUTH_DIR", raising=False)
 
     with pytest.raises(RuntimeError, match="shared Nous auth store"):
         _nous_shared_store_path()
 
 
 def test_shared_store_honors_env_override(tmp_path, monkeypatch):
-    """FLUX AGENT_SHARED_AUTH_DIR must redirect the path."""
-    from flux-agent_cli.auth import _nous_shared_store_path, NOUS_SHARED_STORE_FILENAME
+    """OMNIWORKER_SHARED_AUTH_DIR must redirect the path."""
+    from omniworker_cli.auth import _nous_shared_store_path, NOUS_SHARED_STORE_FILENAME
 
     custom_dir = tmp_path / "custom_shared"
-    monkeypatch.setenv("FLUX AGENT_SHARED_AUTH_DIR", str(custom_dir))
+    monkeypatch.setenv("OMNIWORKER_SHARED_AUTH_DIR", str(custom_dir))
 
     path = _nous_shared_store_path()
     assert path == custom_dir / NOUS_SHARED_STORE_FILENAME
@@ -984,14 +984,14 @@ def test_shared_store_honors_env_override(tmp_path, monkeypatch):
 
 def test_shared_store_read_missing_returns_none(shared_store_env):
     """Missing file → ``_read_shared_nous_state()`` returns None."""
-    from flux-agent_cli.auth import _read_shared_nous_state
+    from omniworker_cli.auth import _read_shared_nous_state
 
     assert _read_shared_nous_state() is None
 
 
 def test_shared_store_read_malformed_returns_none(shared_store_env):
     """Unreadable / non-JSON file → None, not an exception."""
-    from flux-agent_cli.auth import _nous_shared_store_path, _read_shared_nous_state
+    from omniworker_cli.auth import _nous_shared_store_path, _read_shared_nous_state
 
     path = _nous_shared_store_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1002,7 +1002,7 @@ def test_shared_store_read_malformed_returns_none(shared_store_env):
 
 def test_shared_store_read_missing_required_fields_returns_none(shared_store_env):
     """Payload without refresh_token → None (nothing worth importing)."""
-    from flux-agent_cli.auth import _nous_shared_store_path, _read_shared_nous_state
+    from omniworker_cli.auth import _nous_shared_store_path, _read_shared_nous_state
 
     path = _nous_shared_store_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1013,7 +1013,7 @@ def test_shared_store_read_missing_required_fields_returns_none(shared_store_env
 
 def test_shared_store_write_and_read_roundtrip(shared_store_env):
     """Write → read must preserve refresh_token + OAuth URLs."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         _nous_shared_store_path,
         _read_shared_nous_state,
         _write_shared_nous_state,
@@ -1042,7 +1042,7 @@ def test_shared_store_write_and_read_roundtrip(shared_store_env):
 
 def test_shared_store_write_skips_when_refresh_token_missing(shared_store_env):
     """Write is a no-op when refresh_token is absent (nothing to share)."""
-    from flux-agent_cli.auth import _nous_shared_store_path, _write_shared_nous_state
+    from omniworker_cli.auth import _nous_shared_store_path, _write_shared_nous_state
 
     state = dict(_full_state_fixture())
     state["refresh_token"] = ""
@@ -1056,26 +1056,26 @@ def test_persist_nous_credentials_mirrors_to_shared_store(
     tmp_path, monkeypatch, shared_store_env,
 ):
     """persist_nous_credentials must populate BOTH per-profile auth.json
-    AND the shared store, so a future profile's `flux-agent auth add nous
+    AND the shared store, so a future profile's `omniworker auth add nous
     --type oauth` can one-tap import instead of redoing device-code.
     """
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         _nous_shared_store_path,
         _read_shared_nous_state,
         persist_nous_credentials,
     )
 
-    flux-agent_home = tmp_path / "flux-agent"
-    flux-agent_home.mkdir(parents=True, exist_ok=True)
-    (flux-agent_home / "auth.json").write_text(
+    omniworker_home = tmp_path / "omniworker"
+    omniworker_home.mkdir(parents=True, exist_ok=True)
+    (omniworker_home / "auth.json").write_text(
         json.dumps({"version": 1, "providers": {}})
     )
-    monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     persist_nous_credentials(_full_state_fixture())
 
     # Per-profile auth.json populated
-    payload = json.loads((flux-agent_home / "auth.json").read_text())
+    payload = json.loads((omniworker_home / "auth.json").read_text())
     assert "nous" in payload.get("providers", {})
 
     # Shared store populated with the same refresh_token
@@ -1089,7 +1089,7 @@ def test_persist_nous_credentials_mirrors_to_shared_store(
 
 def test_try_import_shared_returns_none_when_store_missing(shared_store_env):
     """No shared store → no rehydrate (fall through to device-code)."""
-    from flux-agent_cli.auth import _try_import_shared_nous_state
+    from omniworker_cli.auth import _try_import_shared_nous_state
 
     assert _try_import_shared_nous_state() is None
 
@@ -1101,7 +1101,7 @@ def test_try_import_shared_returns_none_on_refresh_failure(
     portal down), _try_import_shared_nous_state must return None so the
     login flow falls back to a fresh device-code run.
     """
-    from flux-agent_cli import auth as auth_mod
+    from omniworker_cli import auth as auth_mod
 
     # Seed the shared store
     auth_mod._write_shared_nous_state(_full_state_fixture())
@@ -1125,7 +1125,7 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
     returns a fresh access_token + agent_key, and the returned dict has
     every field persist_nous_credentials() needs.
     """
-    from flux-agent_cli import auth as auth_mod
+    from omniworker_cli import auth as auth_mod
 
     auth_mod._write_shared_nous_state(_full_state_fixture())
 
@@ -1151,17 +1151,17 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
     assert result["agent_key"] == "new-agent-key"
     # Preserved from shared state
     assert result["portal_base_url"] == "https://portal.example.com"
-    assert result["client_id"] == "flux-agent-cli"
+    assert result["client_id"] == "omniworker-cli"
 
 
 def test_shared_store_survives_across_profile_switch(
     tmp_path, monkeypatch, shared_store_env,
 ):
     """End-to-end: profile A logs in → shared store populated → profile B
-    (different FLUX AGENT_HOME) sees the same shared state and can rehydrate
+    (different OMNIWORKER_HOME) sees the same shared state and can rehydrate
     without re-running device-code.
     """
-    from flux-agent_cli import auth as auth_mod
+    from omniworker_cli import auth as auth_mod
 
     # Profile A: login, which mirrors to shared store
     profile_a = tmp_path / "profile_a"
@@ -1169,21 +1169,21 @@ def test_shared_store_survives_across_profile_switch(
     (profile_a / "auth.json").write_text(
         json.dumps({"version": 1, "providers": {}})
     )
-    monkeypatch.setenv("FLUX AGENT_HOME", str(profile_a))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(profile_a))
     auth_mod.persist_nous_credentials(_full_state_fixture())
 
     # Profile A's auth.json has nous
     a_payload = json.loads((profile_a / "auth.json").read_text())
     assert "nous" in a_payload.get("providers", {})
 
-    # Profile B: fresh FLUX AGENT_HOME, no auth yet, but the shared store
+    # Profile B: fresh OMNIWORKER_HOME, no auth yet, but the shared store
     # persists — _read_shared_nous_state() must still return the tokens.
     profile_b = tmp_path / "profile_b"
     profile_b.mkdir(parents=True, exist_ok=True)
     (profile_b / "auth.json").write_text(
         json.dumps({"version": 1, "providers": {}})
     )
-    monkeypatch.setenv("FLUX AGENT_HOME", str(profile_b))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(profile_b))
 
     # B's own auth.json has no nous
     b_payload = json.loads((profile_b / "auth.json").read_text())
@@ -1230,7 +1230,7 @@ def test_runtime_refresh_uses_newer_shared_token_before_local_stale_token(
     can submit the stale local refresh token and trigger portal reuse
     revocation for the whole shared session.
     """
-    from flux-agent_cli import auth as auth_mod
+    from omniworker_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
     _setup_nous_auth(
@@ -1238,7 +1238,7 @@ def test_runtime_refresh_uses_newer_shared_token_before_local_stale_token(
         access_token="local-expired-access",
         refresh_token="local-stale-refresh",
     )
-    monkeypatch.setenv("FLUX AGENT_HOME", str(profile_b))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(profile_b))
 
     shared_state = _full_state_fixture()
     shared_state["access_token"] = "shared-fresh-access"
@@ -1276,7 +1276,7 @@ def test_managed_gateway_access_token_uses_newer_shared_token(
     tmp_path, monkeypatch, shared_store_env,
 ):
     """Managed-tool token reads share the same stale-refresh-token hazard."""
-    from flux-agent_cli import auth as auth_mod
+    from omniworker_cli import auth as auth_mod
 
     profile_b = tmp_path / "profile_b"
     _setup_nous_auth(
@@ -1284,7 +1284,7 @@ def test_managed_gateway_access_token_uses_newer_shared_token(
         access_token="local-expired-access",
         refresh_token="local-stale-refresh",
     )
-    monkeypatch.setenv("FLUX AGENT_HOME", str(profile_b))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(profile_b))
 
     shared_state = _full_state_fixture()
     shared_state["access_token"] = "shared-fresh-access"

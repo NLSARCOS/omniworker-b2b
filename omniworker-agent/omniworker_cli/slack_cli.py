@@ -32,7 +32,7 @@ def _build_full_manifest(bot_name: str, bot_description: str) -> dict:
     for a Flux Agent deployment — users can tweak them in the Slack UI after
     pasting.
     """
-    from flux-agent_cli.commands import slack_app_manifest
+    from omniworker_cli.commands import slack_app_manifest
 
     partial = slack_app_manifest()
     slashes = partial["features"]["slash_commands"]
@@ -106,9 +106,9 @@ def _build_full_manifest(bot_name: str, bot_description: str) -> dict:
 def slack_manifest_command(args) -> int:
     """Print or write a Slack app manifest JSON.
 
-    Flags (all parsed in ``flux-agent_cli/main.py``):
+    Flags (all parsed in ``omniworker_cli/main.py``):
       --write [PATH]  Write to file instead of stdout (default path:
-                      ``$FLUX AGENT_HOME/slack-manifest.json``)
+                      ``$OMNIWORKER_HOME/slack-manifest.json``)
       --name NAME     Override the bot display name (default: "Flux Agent")
       --description DESC  Override the bot description
       --slashes-only  Emit only the ``features.slash_commands`` array (for
@@ -118,7 +118,7 @@ def slack_manifest_command(args) -> int:
     description = getattr(args, "description", None) or "Your Flux Agent agent on Slack"
 
     if getattr(args, "slashes_only", False):
-        from flux-agent_cli.commands import slack_app_manifest
+        from omniworker_cli.commands import slack_app_manifest
 
         manifest = slack_app_manifest()["features"]["slash_commands"]
     else:
@@ -131,11 +131,11 @@ def slack_manifest_command(args) -> int:
         if isinstance(write_target, bool) and write_target:
             # --write with no value → default location
             try:
-                from flux-agent_constants import get_flux-agent_home
+                from omniworker_constants import get_omniworker_home
 
-                target = Path(get_flux-agent_home()) / "slack-manifest.json"
+                target = Path(get_omniworker_home()) / "slack-manifest.json"
             except Exception:
-                target = Path(os.environ.get("FLUX AGENT_HOME") or str(Path.home() / ".hermes")) / "slack-manifest.json"
+                target = Path(os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".hermes")) / "slack-manifest.json"
         else:
             target = Path(write_target).expanduser()
         target.parent.mkdir(parents=True, exist_ok=True)

@@ -14,7 +14,7 @@ Connect to a running NeuroSkill instance and incorporate the user's real-time co
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/health/neuroskill-bci` |
+| Source | Optional — install with `omniworker skills install official/health/neuroskill-bci` |
 | Path | `optional-skills/health/neuroskill-bci` |
 | Version | `1.0.0` |
 | Author | Flux Agent Agent + Nous Research |

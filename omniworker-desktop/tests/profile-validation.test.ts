@@ -9,7 +9,7 @@ const { TEST_HOME } = vi.hoisted(() => {
   return {
     TEST_HOME: path.join(
       os.tmpdir(),
-      `flux-agent-profile-validation-${Date.now()}`,
+      `omniworker-profile-validation-${Date.now()}`,
     ),
   };
 });

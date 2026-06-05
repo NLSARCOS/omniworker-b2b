@@ -54,11 +54,11 @@ def seed_tasks(conn, kb, n, assignee="bench-worker", with_parents=False):
 
 
 def main():
-    home = tempfile.mkdtemp(prefix="flux-agent_bench_")
+    home = tempfile.mkdtemp(prefix="omniworker_bench_")
     os.environ["OMNIWORKER_HOME"] = home
     os.environ["HOME"] = home
     sys.path.insert(0, WT)
-    from flux-agent_cli import kanban_db as kb
+    from omniworker_cli import kanban_db as kb
 
     kb.init_db()
 

@@ -78,7 +78,7 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
 
   const loadJobs = useCallback(async (): Promise<void> => {
     try {
-      const list = await window.flux-agentAPI.listCronJobs(true, profile);
+      const list = await window.omniworkerAPI.listCronJobs(true, profile);
       setJobs(list);
     } catch {
       setError(t("schedules.loadFailed"));
@@ -153,7 +153,7 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
     setActionInProgress("creating");
     setError("");
     try {
-      const result = await window.flux-agentAPI.createCronJob(
+      const result = await window.omniworkerAPI.createCronJob(
         buildSchedule(),
         newPrompt.trim() || undefined,
         newName.trim() || undefined,
@@ -177,7 +177,7 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
     setActionInProgress(jobId);
     setError("");
     try {
-      const result = await window.flux-agentAPI.removeCronJob(jobId, profile);
+      const result = await window.omniworkerAPI.removeCronJob(jobId, profile);
       setConfirmDelete(null);
       if (result.success) {
         await loadJobs();
@@ -197,8 +197,8 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
     try {
       const result =
         job.state === "paused"
-          ? await window.flux-agentAPI.resumeCronJob(job.id, profile)
-          : await window.flux-agentAPI.pauseCronJob(job.id, profile);
+          ? await window.omniworkerAPI.resumeCronJob(job.id, profile)
+          : await window.omniworkerAPI.pauseCronJob(job.id, profile);
       if (result.success) {
         await loadJobs();
       } else {
@@ -215,7 +215,7 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
     setActionInProgress(jobId);
     setError("");
     try {
-      const result = await window.flux-agentAPI.triggerCronJob(jobId, profile);
+      const result = await window.omniworkerAPI.triggerCronJob(jobId, profile);
       if (result.success) {
         await loadJobs();
       } else {

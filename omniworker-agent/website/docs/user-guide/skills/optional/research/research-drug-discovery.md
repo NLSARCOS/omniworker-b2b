@@ -14,7 +14,7 @@ Pharmaceutical research assistant for drug discovery workflows. Search bioactive
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/research/drug-discovery` |
+| Source | Optional — install with `omniworker skills install official/research/drug-discovery` |
 | Path | `optional-skills/research/drug-discovery` |
 | Version | `1.0.0` |
 | Author | bennytimz |

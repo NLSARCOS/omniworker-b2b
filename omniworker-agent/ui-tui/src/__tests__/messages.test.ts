@@ -1,4 +1,4 @@
-import { renderSync } from '@flux-agent/ink'
+import { renderSync } from '@omniworker/ink'
 import React from 'react'
 import { PassThrough } from 'stream'
 import { describe, expect, it } from 'vitest'

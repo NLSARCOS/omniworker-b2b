@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Sequence
 
-from flux-agent_constants import get_flux-agent_home, display_flux-agent_home
+from omniworker_constants import get_omniworker_home, display_omniworker_home
 
 # Known log files (name → filename)
 LOG_FILES = {
@@ -169,7 +169,7 @@ def tail_log(
         print(f"Unknown log: {log_name!r}. Available: {', '.join(sorted(LOG_FILES))}")
         sys.exit(1)
 
-    log_path = get_flux-agent_home() / "logs" / filename
+    log_path = get_omniworker_home() / "logs" / filename
     if not log_path.exists():
         print(f"Log file not found: {log_path}")
         print(f"(Logs are created when Flux Agent runs — try 'hermes chat' first)")
@@ -191,7 +191,7 @@ def tail_log(
     # Resolve component to logger name prefixes
     component_prefixes = None
     if component:
-        from flux-agent_logging import COMPONENT_PREFIXES
+        from omniworker_logging import COMPONENT_PREFIXES
         component_lower = component.lower()
         if component_lower not in COMPONENT_PREFIXES:
             available = ", ".join(sorted(COMPONENT_PREFIXES))
@@ -228,9 +228,9 @@ def tail_log(
     filter_desc = f" [{', '.join(filter_parts)}]" if filter_parts else ""
 
     if follow:
-        print(f"--- {display_flux-agent_home()}/logs/{filename}{filter_desc} (Ctrl+C to stop) ---")
+        print(f"--- {display_omniworker_home()}/logs/{filename}{filter_desc} (Ctrl+C to stop) ---")
     else:
-        print(f"--- {display_flux-agent_home()}/logs/{filename}{filter_desc} (last {num_lines}) ---")
+        print(f"--- {display_omniworker_home()}/logs/{filename}{filter_desc} (last {num_lines}) ---")
 
     for line in lines:
         print(line, end="")
@@ -357,12 +357,12 @@ def _follow_log(
 
 def list_logs() -> None:
     """Print available log files with sizes."""
-    log_dir = get_flux-agent_home() / "logs"
+    log_dir = get_omniworker_home() / "logs"
     if not log_dir.exists():
-        print(f"No logs directory at {display_flux-agent_home()}/logs/")
+        print(f"No logs directory at {display_omniworker_home()}/logs/")
         return
 
-    print(f"Log files in {display_flux-agent_home()}/logs/:\n")
+    print(f"Log files in {display_omniworker_home()}/logs/:\n")
     found = False
     for entry in sorted(log_dir.iterdir()):
         if entry.is_file() and entry.suffix == ".log":

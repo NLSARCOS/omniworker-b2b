@@ -14,7 +14,7 @@ Optimizes LLM inference with NVIDIA TensorRT for maximum throughput and lowest l
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/mlops/tensorrt-llm` |
+| Source | Optional — install with `omniworker skills install official/mlops/tensorrt-llm` |
 | Path | `optional-skills/mlops/tensorrt-llm` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |
@@ -195,9 +195,9 @@ outputs = llm.generate(
 
 ## References
 
-- **[Optimization Guide](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/optimization.md)** - Quantization, batching, KV cache tuning
-- **[Multi-GPU Setup](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/multi-gpu.md)** - Tensor/pipeline parallelism, multi-node
-- **[Serving Guide](https://github.com/Flux Agent/flux-agent-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/serving.md)** - Production deployment, monitoring, autoscaling
+- **[Optimization Guide](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/optimization.md)** - Quantization, batching, KV cache tuning
+- **[Multi-GPU Setup](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/multi-gpu.md)** - Tensor/pipeline parallelism, multi-node
+- **[Serving Guide](https://github.com/Flux Agent/omniworker-agent/blob/main/optional-skills/mlops/tensorrt-llm/references/serving.md)** - Production deployment, monitoring, autoscaling
 
 ## Resources
 

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Maps ACP permission option ids to Flux Agent approval result strings.
 # Option ids are stable across both the ``allow_permanent=True`` and
 # ``allow_permanent=False`` paths even though the option list differs.
-_OPTION_ID_TO_FLUX AGENT = {
+_OPTION_ID_TO_OMNIWORKER = {
     "allow_once": "once",
     "allow_session": "session",
     "allow_always": "always",
@@ -72,7 +72,7 @@ def _build_permission_tool_call(command: str, description: str):
     )
 
 
-def _map_outcome_to_flux-agent(outcome: object, *, allowed_option_ids: set[str]) -> str:
+def _map_outcome_to_omniworker(outcome: object, *, allowed_option_ids: set[str]) -> str:
     """Map an ACP permission outcome into Flux Agent approval strings."""
     if not isinstance(outcome, AllowedOutcome):
         return "deny"
@@ -81,7 +81,7 @@ def _map_outcome_to_flux-agent(outcome: object, *, allowed_option_ids: set[str])
     if option_id not in allowed_option_ids:
         logger.warning("Permission request returned unknown option_id: %s", option_id)
         return "deny"
-    return _OPTION_ID_TO_FLUX AGENT.get(option_id, "deny")
+    return _OPTION_ID_TO_OMNIWORKER.get(option_id, "deny")
 
 
 def make_approval_callback(
@@ -133,7 +133,7 @@ def make_approval_callback(
             return "deny"
 
         allowed_option_ids = {option.option_id for option in options}
-        return _map_outcome_to_flux-agent(
+        return _map_outcome_to_omniworker(
             response.outcome,
             allowed_option_ids=allowed_option_ids,
         )

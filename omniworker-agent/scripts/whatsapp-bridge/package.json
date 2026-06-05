@@ -1,5 +1,5 @@
 {
-  "name": "flux-agent-whatsapp-bridge",
+  "name": "omniworker-whatsapp-bridge",
   "version": "1.0.0",
   "description": "WhatsApp bridge for Flux Agent Agent using Baileys",
   "private": true,
