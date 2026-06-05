@@ -230,6 +230,19 @@ try:
 except ImportError:
     logger.debug("mcp package not installed -- MCP tool support disabled")
 
+# Ensure the MCP sampling/notification type names always exist at module level
+# so callers (and tests) can ``from tools.mcp_tool import X`` regardless of
+# whether the ``mcp`` package — or a given SDK version — is installed. Any name
+# not bound above falls back to ``None`` (callers already guard for that).
+for _mcp_type_name in (
+    "CreateMessageResult", "CreateMessageResultWithTools", "ErrorData",
+    "SamplingCapability", "SamplingToolsCapability", "TextContent",
+    "ToolUseContent", "ServerNotification", "ToolListChangedNotification",
+    "PromptListChangedNotification", "ResourceListChangedNotification",
+):
+    globals().setdefault(_mcp_type_name, None)
+del _mcp_type_name
+
 
 def _check_message_handler_support() -> bool:
     """Check if ClientSession accepts ``message_handler`` kwarg.

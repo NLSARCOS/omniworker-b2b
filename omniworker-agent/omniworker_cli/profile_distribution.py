@@ -700,3 +700,7 @@ def describe_distribution(profile_name: str) -> Dict[str, Any]:
     if manifest is None:
         return {}
     return manifest.to_dict()
+
+
+# Back-compat alias — migración hermes/openclaw → omniworker (tests usan el nombre nuevo).
+check_omniworker_requires = check_hermes_requires

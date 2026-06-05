@@ -379,3 +379,7 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_MODELS_URL = f"{OPENROUTER_BASE_URL}/models"
 
 AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
+
+
+# Back-compat alias — migración hermes/openclaw → omniworker (tests usan el nombre nuevo).
+get_default_omniworker_root = get_default_hermes_root

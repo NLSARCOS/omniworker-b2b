@@ -1781,3 +1781,7 @@ registry.register(
     emoji="🐍",
     max_result_size_chars=100_000,
 )
+
+
+# Back-compat alias — migración hermes/openclaw → omniworker (tests usan el nombre nuevo).
+generate_omniworker_tools_module = generate_hermes_tools_module
