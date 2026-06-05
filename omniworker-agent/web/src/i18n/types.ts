@@ -450,7 +450,7 @@ export interface Translations {
     switchTheme: string;
   };
 
-  // ── Achievements plugin (plugins/flux-agent-achievements) ──
+  // ── Achievements plugin (plugins/omniworker-achievements) ──
   achievements: {
     hero: {
       kicker: string;

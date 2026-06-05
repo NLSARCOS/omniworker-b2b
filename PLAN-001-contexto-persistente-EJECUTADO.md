@@ -252,7 +252,7 @@ Implementado en `api_server.py` como `_handle_get_session_workspace`.
 ## 8. Notas técnicas
 
 - **Python 3.14:** No hay wheels de `onnxruntime`, por lo que las embeddings locales no están disponibles. El fallback es BM25 (siempre funciona) + sqlite-vec (si está instalado) + provider API embeddings (configurable).
-- **Rebrand Flux Agent:** Algunos archivos del desktop y SaaS tienen errores de TypeScript preexistentes por el rebrand (`flux-agent` con espacio en nombres de variables/imports). Estos no fueron introducidos por este plan.
+- **Rebrand Flux Agent:** Algunos archivos del desktop y SaaS tienen errores de TypeScript preexistentes por el rebrand (`omniworker` con espacio en nombres de variables/imports). Estos no fueron introducidos por este plan.
 - **ContextCompressor:** No se modificó. Sigue existiendo, pero ahora el historial que le llega al agente es **completo** (no truncado por el desktop), por lo que la compresión solo activa cuando realmente se acerca al límite de contexto del modelo.
 
 ---

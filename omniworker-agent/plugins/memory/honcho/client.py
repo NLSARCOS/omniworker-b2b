@@ -1,7 +1,7 @@
 """Honcho client initialization and configuration.
 
 Resolution order for config file:
-  1. $FLUX AGENT_HOME/honcho.json  (instance-local, enables isolated Flux Agent instances)
+  1. $OMNIWORKER_HOME/honcho.json  (instance-local, enables isolated Flux Agent instances)
   2. ~/.honcho/config.json     (global, shared across all Honcho-enabled apps)
   3. Environment variables     (HONCHO_API_KEY, HONCHO_ENVIRONMENT)
 
@@ -20,8 +20,8 @@ import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from flux-agent_constants import get_flux-agent_home
-from flux-agent_cli.profiles import _get_default_flux-agent_home
+from omniworker_constants import get_omniworker_home
+from omniworker_cli.profiles import _get_default_omniworker_home
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -29,23 +29,23 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-HOST = "flux-agent"
+HOST = "omniworker"
 
 
 def resolve_active_host() -> str:
     """Derive the Honcho host key from the active Flux Agent profile.
 
     Resolution order:
-      1. FLUX AGENT_HONCHO_HOST env var (explicit override)
-      2. Active profile name via profiles system -> ``flux-agent.<profile>``
-      3. Fallback: ``"flux-agent"`` (default profile)
+      1. OMNIWORKER_HONCHO_HOST env var (explicit override)
+      2. Active profile name via profiles system -> ``omniworker.<profile>``
+      3. Fallback: ``"omniworker"`` (default profile)
     """
-    explicit = os.environ.get("FLUX AGENT_HONCHO_HOST", "").strip()
+    explicit = os.environ.get("OMNIWORKER_HONCHO_HOST", "").strip()
     if explicit:
         return explicit
 
     try:
-        from flux-agent_cli.profiles import get_active_profile_name
+        from omniworker_cli.profiles import get_active_profile_name
         profile = get_active_profile_name()
         if profile and profile not in ("default", "custom"):
             return f"{HOST}.{profile}"
@@ -63,18 +63,18 @@ def resolve_config_path() -> Path:
     """Return the active Honcho config path.
 
     Resolution order:
-      1. $FLUX AGENT_HOME/honcho.json      (profile-local, if it exists)
-      2. ~/.flux-agent/honcho.json          (default profile — shared host blocks live here)
+      1. $OMNIWORKER_HOME/honcho.json      (profile-local, if it exists)
+      2. ~/.omniworker/honcho.json          (default profile — shared host blocks live here)
       3. ~/.honcho/config.json          (global, cross-app interop)
 
     Returns the global path if none exist (for first-time setup writes).
     """
-    local_path = get_flux-agent_home() / "honcho.json"
+    local_path = get_omniworker_home() / "honcho.json"
     if local_path.exists():
         return local_path
 
     # Default profile's config — host blocks accumulate here via setup/clone
-    default_path = _get_default_flux-agent_home() / "honcho.json"
+    default_path = _get_default_omniworker_home() / "honcho.json"
     if default_path != local_path and default_path.exists():
         return default_path
 
@@ -242,7 +242,7 @@ class HonchoClientConfig:
     """Configuration for Honcho client, resolved for a specific host."""
 
     host: str = HOST
-    workspace_id: str = "flux-agent"
+    workspace_id: str = "omniworker"
     api_key: str | None = None
     environment: str = "production"
     # Optional base URL for self-hosted Honcho (overrides environment mapping)
@@ -251,7 +251,7 @@ class HonchoClientConfig:
     timeout: float | None = None
     # Identity
     peer_name: str | None = None
-    ai_peer: str = "flux-agent"
+    ai_peer: str = "omniworker"
     # When True, ``peer_name`` wins over any gateway-supplied runtime
     # identity (Telegram UID, Discord ID, …) when resolving the user peer.
     # This keeps memory unified across platforms for single-user deployments
@@ -317,7 +317,7 @@ class HonchoClientConfig:
     sessions: dict[str, str] = field(default_factory=dict)
     # Raw global config for anything else consumers need
     raw: dict[str, Any] = field(default_factory=dict)
-    # True when Honcho was explicitly configured for this host (hosts.flux-agent
+    # True when Honcho was explicitly configured for this host (hosts.omniworker
     # block exists or enabled was set explicitly), vs auto-enabled from a
     # stray HONCHO_API_KEY env var.
     explicitly_configured: bool = False
@@ -325,7 +325,7 @@ class HonchoClientConfig:
     @classmethod
     def from_env(
         cls,
-        workspace_id: str = "flux-agent",
+        workspace_id: str = "omniworker",
         host: str | None = None,
     ) -> HonchoClientConfig:
         """Create config from environment variables (fallback)."""
@@ -352,7 +352,7 @@ class HonchoClientConfig:
     ) -> HonchoClientConfig:
         """Create config from the resolved Honcho config path.
 
-        Resolution: $FLUX AGENT_HOME/honcho.json -> ~/.honcho/config.json -> env vars.
+        Resolution: $OMNIWORKER_HOME/honcho.json -> ~/.honcho/config.json -> env vars.
         When host is None, derives it from the active Flux Agent profile.
         """
         resolved_host = host or resolve_active_host()
@@ -368,7 +368,7 @@ class HonchoClientConfig:
             return cls.from_env(host=resolved_host)
 
         host_block = (raw.get("hosts") or {}).get(resolved_host, {})
-        # A hosts.flux-agent block or explicit enabled flag means the user
+        # A hosts.omniworker block or explicit enabled flag means the user
         # intentionally configured Honcho for this host.
         _explicitly_configured = bool(host_block) or raw.get("enabled") is True
 
@@ -684,14 +684,14 @@ def get_honcho_client(config: HonchoClientConfig | None = None) -> Honcho:
         raise ValueError(
             "Honcho API key not found. "
             "Get your API key at https://app.honcho.dev, "
-            "then run 'flux-agent honcho setup' or set HONCHO_API_KEY. "
+            "then run 'omniworker honcho setup' or set HONCHO_API_KEY. "
             "For local instances, set HONCHO_BASE_URL instead."
         )
 
     # Lazy-install the honcho SDK on demand. ensure() honors
     # security.allow_lazy_installs (default true). On failure we surface
     # the original ImportError-shape message so existing callers still get
-    # the "go run flux-agent honcho setup" hint they used to.
+    # the "go run omniworker honcho setup" hint they used to.
     try:
         from tools.lazy_deps import FeatureUnavailable, ensure as _lazy_ensure
         _lazy_ensure("memory.honcho", prompt=False)
@@ -709,7 +709,7 @@ def get_honcho_client(config: HonchoClientConfig | None = None) -> Honcho:
         raise ImportError(
             "honcho-ai is required for Honcho integration. "
             "Install it with: pip install honcho-ai  "
-            "(or run `flux-agent honcho setup` to configure)."
+            "(or run `omniworker honcho setup` to configure)."
         )
 
     # Allow config.yaml honcho.base_url to override the SDK's environment
@@ -719,9 +719,9 @@ def get_honcho_client(config: HonchoClientConfig | None = None) -> Honcho:
     resolved_timeout = config.timeout
     if not resolved_base_url or resolved_timeout is None:
         try:
-            from flux-agent_cli.config import load_config
-            flux-agent_cfg = load_config()
-            honcho_cfg = flux-agent_cfg.get("honcho", {})
+            from omniworker_cli.config import load_config
+            omniworker_cfg = load_config()
+            honcho_cfg = omniworker_cfg.get("honcho", {})
             if isinstance(honcho_cfg, dict):
                 if not resolved_base_url:
                     resolved_base_url = honcho_cfg.get("base_url", "").strip() or None

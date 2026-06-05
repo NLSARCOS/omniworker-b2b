@@ -203,7 +203,7 @@ class TestMcpToolCallProjection:
             "server": "obsidian",
             "tool": "search_notes",
             "status": "completed",
-            "arguments": {"query": "flux-agent"},
+            "arguments": {"query": "omniworker"},
             "result": {"content": [{"text": "found"}]},
             "error": None,
         }

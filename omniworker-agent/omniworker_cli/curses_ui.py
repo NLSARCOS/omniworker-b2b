@@ -7,7 +7,7 @@ text-based numbered fallback for terminals without curses support.
 import sys
 from typing import Callable, List, Optional, Set
 
-from flux-agent_cli.colors import Colors, color
+from omniworker_cli.colors import Colors, color
 
 
 def flush_stdin() -> None:

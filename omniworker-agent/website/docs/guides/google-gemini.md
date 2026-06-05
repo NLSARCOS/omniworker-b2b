@@ -24,16 +24,16 @@ Set `GOOGLE_API_KEY` or `GEMINI_API_KEY`. Flux Agent checks both names for the `
 
 ```bash
 # Add your Gemini API key
-echo "GOOGLE_API_KEY=..." >> ~/.flux-agent/.env
+echo "GOOGLE_API_KEY=..." >> ~/.omniworker/.env
 
 # Select Gemini as your provider
-flux-agent model
+omniworker model
 # → Choose "More providers..." → "Google AI Studio"
 # → Flux Agent checks your key tier and shows Gemini models
 # → Select a model
 
 # Start chatting
-flux-agent chat
+omniworker chat
 ```
 
 If you prefer direct config editing, use the native Gemini API base URL:
@@ -47,7 +47,7 @@ model:
 
 ## Configuration
 
-After running `flux-agent model`, your `~/.flux-agent/config.yaml` will contain:
+After running `omniworker model`, your `~/.omniworker/config.yaml` will contain:
 
 ```yaml
 model:
@@ -56,7 +56,7 @@ model:
   base_url: https://generativelanguage.googleapis.com/v1beta
 ```
 
-And in `~/.flux-agent/.env`:
+And in `~/.omniworker/.env`:
 
 ```bash
 GOOGLE_API_KEY=...
@@ -105,7 +105,7 @@ GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 Flux Agent also has a `google-gemini-cli` provider:
 
 ```bash
-flux-agent model
+omniworker model
 # → Choose "Google Gemini (OAuth)"
 ```
 
@@ -113,7 +113,7 @@ This uses browser PKCE login and the Cloud Code Assist backend. It can be useful
 
 ## Available Models
 
-The `flux-agent model` picker shows Gemini models maintained in Flux Agent' provider registry. Common choices include:
+The `omniworker model` picker shows Gemini models maintained in Flux Agent' provider registry. Common choices include:
 
 | Model | ID | Notes |
 |-------|----|-------|
@@ -122,7 +122,7 @@ The `flux-agent model` picker shows Gemini models maintained in Flux Agent' prov
 | Gemini 3 Flash Preview | `gemini-3-flash-preview` | Recommended default balance of speed and capability |
 | Gemini 3.1 Flash Lite Preview | `gemini-3.1-flash-lite-preview` | Fastest / lowest-cost option when available |
 
-Model availability changes over time. If a model disappears or is not enabled for your key, run `flux-agent model` again and pick one from the current list.
+Model availability changes over time. If a model disappears or is not enabled for your key, run `omniworker model` again and pick one from the current list.
 
 :::info Model IDs
 Use Gemini's native model IDs such as `gemini-3-flash-preview`, not OpenRouter-style IDs like `google/gemini-3-flash-preview`, when `provider: gemini`.
@@ -181,12 +181,12 @@ Use the `/model` command during a conversation:
 /model gemini-3.1-flash-lite-preview
 ```
 
-If you have not configured Gemini yet, exit the session and run `flux-agent model` first. `/model` switches among already-configured providers and models; it does not collect new API keys.
+If you have not configured Gemini yet, exit the session and run `omniworker model` first. `/model` switches among already-configured providers and models; it does not collect new API keys.
 
 ## Diagnostics
 
 ```bash
-flux-agent doctor
+omniworker doctor
 ```
 
 The doctor checks:
@@ -208,8 +208,8 @@ For OAuth quota usage, run this inside a Flux Agent session:
 Gemini works with all Flux Agent gateway platforms (Telegram, Discord, Slack, WhatsApp, LINE, Feishu, etc.). Configure Gemini as your provider, then start the gateway normally:
 
 ```bash
-flux-agent gateway setup
-flux-agent gateway start
+omniworker gateway setup
+omniworker gateway start
 ```
 
 The gateway reads `config.yaml` and uses the same Gemini provider configuration.
@@ -218,7 +218,7 @@ The gateway reads `config.yaml` and uses the same Gemini provider configuration.
 
 ### "Gemini native client requires an API key"
 
-Flux Agent could not find a usable API key. Add one of these to `~/.flux-agent/.env`:
+Flux Agent could not find a usable API key. Add one of these to `~/.omniworker/.env`:
 
 ```bash
 GOOGLE_API_KEY=...
@@ -226,7 +226,7 @@ GOOGLE_API_KEY=...
 GEMINI_API_KEY=...
 ```
 
-Then run `flux-agent model` again.
+Then run `omniworker model` again.
 
 ### "This Google API key is on the free tier"
 
@@ -235,16 +235,16 @@ Flux Agent probes Gemini API keys during setup. Free-tier quotas can be exhauste
 Enable billing on the Google Cloud project attached to your key, regenerate the key if needed, then run:
 
 ```bash
-flux-agent model
+omniworker model
 ```
 
 ### "404 model not found"
 
-The selected model is not available for your account, region, or key. Run `flux-agent model` again and pick another Gemini model from the current list.
+The selected model is not available for your account, region, or key. Run `omniworker model` again and pick another Gemini model from the current list.
 
-### Gemma model is not shown in `flux-agent model`
+### Gemma model is not shown in `omniworker model`
 
-Flux Agent may hide low-throughput Gemma models from the picker by default. If you intentionally want to evaluate one, set the model ID directly in `~/.flux-agent/config.yaml`.
+Flux Agent may hide low-throughput Gemma models from the picker by default. If you intentionally want to evaluate one, set the model ID directly in `~/.omniworker/config.yaml`.
 
 ### "429 quota exceeded" on Gemma
 
@@ -252,7 +252,7 @@ Gemma models exposed through the Gemini API are useful for evaluation, but their
 
 ### OpenAI-compatible endpoint is configured
 
-Check `~/.flux-agent/.env` for:
+Check `~/.omniworker/.env` for:
 
 ```bash
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
@@ -270,7 +270,7 @@ The `google-gemini-cli` provider uses a Gemini CLI / Cloud Code Assist OAuth flo
 
 ### Tool calling fails with schema errors
 
-Upgrade Flux Agent and rerun `flux-agent model`. The native Gemini adapter sanitizes tool schemas for Gemini's stricter function-declaration format; older builds or custom endpoints may not.
+Upgrade Flux Agent and rerun `omniworker model`. The native Gemini adapter sanitizes tool schemas for Gemini's stricter function-declaration format; older builds or custom endpoints may not.
 
 ## Related
 

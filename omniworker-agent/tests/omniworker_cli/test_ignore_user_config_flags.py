@@ -1,17 +1,17 @@
-"""Tests for --ignore-user-config and --ignore-rules flags on `flux-agent chat`.
+"""Tests for --ignore-user-config and --ignore-rules flags on `omniworker chat`.
 
 Ported from openai/codex#18646 (`feat: add --ignore-user-config and --ignore-rules`).
 Codex's flags fully isolate a run from user-level config and exec-policy .rules
 files. In Flux Agent the equivalent isolation is:
 
-* ``--ignore-user-config`` → skip ``~/.flux-agent/config.yaml`` in ``load_cli_config()``
+* ``--ignore-user-config`` → skip ``~/.omniworker/config.yaml`` in ``load_cli_config()``
   (credentials in ``.env`` are still loaded).
 * ``--ignore-rules`` → skip AGENTS.md / SOUL.md / .cursorrules auto-injection
   and persistent memory (maps to ``AIAgent(skip_context_files=True,
   skip_memory=True)``).
 
 Both flags are wired via env vars so they work cleanly across the
-argparse → cmd_chat → cli.main() → Flux AgentCLI → AIAgent call chain.
+argparse → cmd_chat → cli.main() → OmniWorkerCLI → AIAgent call chain.
 """
 
 from __future__ import annotations
@@ -32,17 +32,17 @@ def _clean_env(monkeypatch):
     those writes aren't tracked by monkeypatch and won't be undone by it.
     We add explicit cleanup on yield to prevent cross-test pollution.
     """
-    for var in ("FLUX AGENT_IGNORE_USER_CONFIG", "FLUX AGENT_IGNORE_RULES"):
+    for var in ("OMNIWORKER_IGNORE_USER_CONFIG", "OMNIWORKER_IGNORE_RULES"):
         monkeypatch.delenv(var, raising=False)
     yield
-    for var in ("FLUX AGENT_IGNORE_USER_CONFIG", "FLUX AGENT_IGNORE_RULES"):
+    for var in ("OMNIWORKER_IGNORE_USER_CONFIG", "OMNIWORKER_IGNORE_RULES"):
         os.environ.pop(var, None)
 
 
 class TestIgnoreUserConfigEnvGate:
-    """``load_cli_config()`` must honour ``FLUX AGENT_IGNORE_USER_CONFIG=1``.
+    """``load_cli_config()`` must honour ``OMNIWORKER_IGNORE_USER_CONFIG=1``.
 
-    When the env var is set, user config at ``<flux-agent_home>/config.yaml`` is
+    When the env var is set, user config at ``<omniworker_home>/config.yaml`` is
     skipped even if present — the function returns only the built-in defaults
     (merged with the project-level ``cli-config.yaml`` fallback).
     """
@@ -60,9 +60,9 @@ class TestIgnoreUserConfigEnvGate:
         (tmp_path / "config.yaml").write_text(config_yaml)
 
     def _reload_cli(self, monkeypatch, tmp_path):
-        """Point cli._flux-agent_home at tmp_path and return a fresh load_cli_config."""
+        """Point cli._omniworker_home at tmp_path and return a fresh load_cli_config."""
         import cli
-        monkeypatch.setattr(cli, "_flux-agent_home", tmp_path)
+        monkeypatch.setattr(cli, "_omniworker_home", tmp_path)
         return cli.load_cli_config
 
     def test_user_config_loaded_when_flag_unset(self, tmp_path, monkeypatch):
@@ -76,13 +76,13 @@ class TestIgnoreUserConfigEnvGate:
         assert cfg["agent"]["system_prompt"] == "from user config"
 
     def test_user_config_skipped_when_flag_set(self, tmp_path, monkeypatch):
-        """With FLUX AGENT_IGNORE_USER_CONFIG=1, user config.yaml is ignored.
+        """With OMNIWORKER_IGNORE_USER_CONFIG=1, user config.yaml is ignored.
 
         The built-in default ``model.default`` is empty string (no user override),
         and the user's ``agent.system_prompt`` is not seen.
         """
         self._write_user_config(tmp_path, "anthropic/claude-sonnet-4.6")
-        monkeypatch.setenv("FLUX AGENT_IGNORE_USER_CONFIG", "1")
+        monkeypatch.setenv("OMNIWORKER_IGNORE_USER_CONFIG", "1")
 
         load_cli_config = self._reload_cli(monkeypatch, tmp_path)
         cfg = load_cli_config()
@@ -98,7 +98,7 @@ class TestIgnoreUserConfigEnvGate:
     def test_flag_ignored_when_set_to_other_value(self, tmp_path, monkeypatch):
         """Only the literal value "1" activates the bypass, matching the yolo pattern."""
         self._write_user_config(tmp_path, "anthropic/claude-sonnet-4.6")
-        monkeypatch.setenv("FLUX AGENT_IGNORE_USER_CONFIG", "true")  # not "1"
+        monkeypatch.setenv("OMNIWORKER_IGNORE_USER_CONFIG", "true")  # not "1"
 
         load_cli_config = self._reload_cli(monkeypatch, tmp_path)
         cfg = load_cli_config()
@@ -108,50 +108,50 @@ class TestIgnoreUserConfigEnvGate:
 
 
 class TestIgnoreRulesEnvGate:
-    """The constructor / env var must propagate to ``Flux AgentCLI.ignore_rules``
+    """The constructor / env var must propagate to ``OmniWorkerCLI.ignore_rules``
     so ``AIAgent`` is built with ``skip_context_files=True`` and
     ``skip_memory=True``.
     """
 
     def test_env_var_enables_ignore_rules(self, monkeypatch):
-        """Setting FLUX AGENT_IGNORE_RULES=1 flips Flux AgentCLI.ignore_rules True."""
-        monkeypatch.setenv("FLUX AGENT_IGNORE_RULES", "1")
+        """Setting OMNIWORKER_IGNORE_RULES=1 flips OmniWorkerCLI.ignore_rules True."""
+        monkeypatch.setenv("OMNIWORKER_IGNORE_RULES", "1")
 
-        # Import Flux AgentCLI lazily — cli.py has heavy module-init side effects
+        # Import OmniWorkerCLI lazily — cli.py has heavy module-init side effects
         # that we don't want to run at test collection time.
         import cli
         importlib.reload(cli)
 
-        # Build only enough of Flux AgentCLI to reach the ignore_rules assignment.
+        # Build only enough of OmniWorkerCLI to reach the ignore_rules assignment.
         # The full __init__ pulls in provider/auth/session DB, so we cheat:
         # create the object via object.__new__ and manually run the assignment
         # the same way the real constructor does.
-        obj = object.__new__(cli.Flux AgentCLI)
-        # Replicate the exact logic from cli.py Flux AgentCLI.__init__:
+        obj = object.__new__(cli.OmniWorkerCLI)
+        # Replicate the exact logic from cli.py OmniWorkerCLI.__init__:
         ignore_rules = False  # constructor default
-        obj.ignore_rules = ignore_rules or os.environ.get("FLUX AGENT_IGNORE_RULES") == "1"
+        obj.ignore_rules = ignore_rules or os.environ.get("OMNIWORKER_IGNORE_RULES") == "1"
 
         assert obj.ignore_rules is True
 
     def test_constructor_flag_alone_enables_ignore_rules(self, monkeypatch):
-        monkeypatch.delenv("FLUX AGENT_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("OMNIWORKER_IGNORE_RULES", raising=False)
         import cli
-        obj = object.__new__(cli.Flux AgentCLI)
+        obj = object.__new__(cli.OmniWorkerCLI)
         ignore_rules = True  # constructor argument
-        obj.ignore_rules = ignore_rules or os.environ.get("FLUX AGENT_IGNORE_RULES") == "1"
+        obj.ignore_rules = ignore_rules or os.environ.get("OMNIWORKER_IGNORE_RULES") == "1"
         assert obj.ignore_rules is True
 
     def test_neither_flag_nor_env_leaves_rules_enabled(self, monkeypatch):
-        monkeypatch.delenv("FLUX AGENT_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("OMNIWORKER_IGNORE_RULES", raising=False)
         import cli
-        obj = object.__new__(cli.Flux AgentCLI)
+        obj = object.__new__(cli.OmniWorkerCLI)
         ignore_rules = False
-        obj.ignore_rules = ignore_rules or os.environ.get("FLUX AGENT_IGNORE_RULES") == "1"
+        obj.ignore_rules = ignore_rules or os.environ.get("OMNIWORKER_IGNORE_RULES") == "1"
         assert obj.ignore_rules is False
 
 
 class TestCmdChatWiring:
-    """The wiring inside ``cmd_chat()`` in ``flux-agent_cli/main.py`` must set
+    """The wiring inside ``cmd_chat()`` in ``omniworker_cli/main.py`` must set
     both env vars before importing ``cli`` (which evaluates
     ``load_cli_config()`` at module import).
     """
@@ -159,13 +159,13 @@ class TestCmdChatWiring:
     def _simulate_cmd_chat_env_setup(self, args):
         """Replicate the exact snippet from cmd_chat in main.py."""
         if getattr(args, "ignore_user_config", False):
-            os.environ["FLUX AGENT_IGNORE_USER_CONFIG"] = "1"
+            os.environ["OMNIWORKER_IGNORE_USER_CONFIG"] = "1"
         if getattr(args, "ignore_rules", False):
-            os.environ["FLUX AGENT_IGNORE_RULES"] = "1"
+            os.environ["OMNIWORKER_IGNORE_RULES"] = "1"
 
     def test_both_flags_set_both_env_vars(self, monkeypatch):
-        monkeypatch.delenv("FLUX AGENT_IGNORE_USER_CONFIG", raising=False)
-        monkeypatch.delenv("FLUX AGENT_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("OMNIWORKER_IGNORE_USER_CONFIG", raising=False)
+        monkeypatch.delenv("OMNIWORKER_IGNORE_RULES", raising=False)
 
         class FakeArgs:
             ignore_user_config = True
@@ -173,12 +173,12 @@ class TestCmdChatWiring:
 
         self._simulate_cmd_chat_env_setup(FakeArgs())
 
-        assert os.environ.get("FLUX AGENT_IGNORE_USER_CONFIG") == "1"
-        assert os.environ.get("FLUX AGENT_IGNORE_RULES") == "1"
+        assert os.environ.get("OMNIWORKER_IGNORE_USER_CONFIG") == "1"
+        assert os.environ.get("OMNIWORKER_IGNORE_RULES") == "1"
 
     def test_only_ignore_user_config(self, monkeypatch):
-        monkeypatch.delenv("FLUX AGENT_IGNORE_USER_CONFIG", raising=False)
-        monkeypatch.delenv("FLUX AGENT_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("OMNIWORKER_IGNORE_USER_CONFIG", raising=False)
+        monkeypatch.delenv("OMNIWORKER_IGNORE_RULES", raising=False)
 
         class FakeArgs:
             ignore_user_config = True
@@ -186,20 +186,20 @@ class TestCmdChatWiring:
 
         self._simulate_cmd_chat_env_setup(FakeArgs())
 
-        assert os.environ.get("FLUX AGENT_IGNORE_USER_CONFIG") == "1"
-        assert "FLUX AGENT_IGNORE_RULES" not in os.environ
+        assert os.environ.get("OMNIWORKER_IGNORE_USER_CONFIG") == "1"
+        assert "OMNIWORKER_IGNORE_RULES" not in os.environ
 
     def test_flags_absent_sets_nothing(self, monkeypatch):
-        monkeypatch.delenv("FLUX AGENT_IGNORE_USER_CONFIG", raising=False)
-        monkeypatch.delenv("FLUX AGENT_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("OMNIWORKER_IGNORE_USER_CONFIG", raising=False)
+        monkeypatch.delenv("OMNIWORKER_IGNORE_RULES", raising=False)
 
         class FakeArgs:
             pass  # no attributes at all — getattr fallback must handle
 
         self._simulate_cmd_chat_env_setup(FakeArgs())
 
-        assert "FLUX AGENT_IGNORE_USER_CONFIG" not in os.environ
-        assert "FLUX AGENT_IGNORE_RULES" not in os.environ
+        assert "OMNIWORKER_IGNORE_USER_CONFIG" not in os.environ
+        assert "OMNIWORKER_IGNORE_RULES" not in os.environ
 
 
 class TestArgparseFlagsRegistered:
@@ -213,7 +213,7 @@ class TestArgparseFlagsRegistered:
         # two flags under test. If someone removes the flag from main.py, this
         # test keeps passing in isolation — but the E2E test below catches it.
         import argparse
-        parser = argparse.ArgumentParser(prog="flux-agent")
+        parser = argparse.ArgumentParser(prog="omniworker")
         subs = parser.add_subparsers(dest="command")
         chat = subs.add_parser("chat")
         chat.add_argument("--ignore-user-config", action="store_true", default=False)
@@ -224,8 +224,8 @@ class TestArgparseFlagsRegistered:
         assert args.ignore_rules is True
 
     def test_main_py_registers_both_flags(self):
-        """E2E: the real flux-agent parser accepts both flags."""
-        from flux-agent_cli._parser import build_top_level_parser
+        """E2E: the real omniworker parser accepts both flags."""
+        from omniworker_cli._parser import build_top_level_parser
 
         parser, _subparsers, chat_parser = build_top_level_parser()
 
@@ -238,7 +238,7 @@ class TestArgparseFlagsRegistered:
 
         # And the cmd_chat env-var wiring must be present
         import inspect
-        import flux-agent_cli.main as hm
+        import omniworker_cli.main as hm
         src = inspect.getsource(hm)
-        assert "FLUX AGENT_IGNORE_USER_CONFIG" in src
-        assert "FLUX AGENT_IGNORE_RULES" in src
+        assert "OMNIWORKER_IGNORE_USER_CONFIG" in src
+        assert "OMNIWORKER_IGNORE_RULES" in src

@@ -19,7 +19,7 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from typing import Any, Dict, List, Optional, Tuple
 from utils import base_url_host_matches, normalize_proxy_env_vars
 
@@ -1178,7 +1178,7 @@ _OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 _OAUTH_TOKEN_URL = "https://console.anthropic.com/v1/oauth/token"
 _OAUTH_REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback"
 _OAUTH_SCOPES = "org:create_api_key user:profile user:inference"
-_FLUX AGENT_OAUTH_FILE = get_flux-agent_home() / ".anthropic_oauth.json"
+_OMNIWORKER_OAUTH_FILE = get_omniworker_home() / ".anthropic_oauth.json"
 
 
 def _generate_pkce() -> tuple:
@@ -1301,9 +1301,9 @@ def run_hermes_oauth_login_pure() -> Optional[Dict[str, Any]]:
 
 def read_hermes_oauth_credentials() -> Optional[Dict[str, Any]]:
     """Read Flux Agent-managed OAuth credentials from ~/.hermes/.anthropic_oauth.json."""
-    if _FLUX AGENT_OAUTH_FILE.exists():
+    if _OMNIWORKER_OAUTH_FILE.exists():
         try:
-            data = json.loads(_FLUX AGENT_OAUTH_FILE.read_text(encoding="utf-8"))
+            data = json.loads(_OMNIWORKER_OAUTH_FILE.read_text(encoding="utf-8"))
             if data.get("accessToken"):
                 return data
         except (json.JSONDecodeError, OSError, IOError) as e:

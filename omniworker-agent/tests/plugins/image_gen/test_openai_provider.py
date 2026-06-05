@@ -30,7 +30,7 @@ def _fake_response(*, b64=None, url=None, revised_prompt=None):
 
 
 @pytest.fixture(autouse=True)
-def _tmp_flux-agent_home(tmp_path, monkeypatch):
+def _tmp_omniworker_home(tmp_path, monkeypatch):
     monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path))
     yield tmp_path
 

@@ -48,7 +48,7 @@ Press **Ctrl+C** once to interrupt the agent mid-response. You can then type a n
 
 ### Resume Sessions with `-c`
 
-Forgot something from your last session? Run `flux-agent -c` to resume exactly where you left off, with full conversation history restored. You can also resume by title: `flux-agent -r "my research project"`.
+Forgot something from your last session? Run `omniworker -c` to resume exactly where you left off, with full conversation history restored. You can also resume by title: `omniworker -r "my research project"`.
 
 ### Clipboard Image Paste
 
@@ -78,9 +78,9 @@ Create an `AGENTS.md` in your project root with architecture decisions, coding c
 
 ### SOUL.md: Customize Personality
 
-Want Flux Agent to have a stable default voice? Edit `~/.flux-agent/SOUL.md` (or `$FLUX AGENT_HOME/SOUL.md` if you use a custom Flux Agent home). Flux Agent now seeds a starter SOUL automatically and uses that global file as the instance-wide personality source.
+Want Flux Agent to have a stable default voice? Edit `~/.omniworker/SOUL.md` (or `$OMNIWORKER_HOME/SOUL.md` if you use a custom Flux Agent home). Flux Agent now seeds a starter SOUL automatically and uses that global file as the instance-wide personality source.
 
-For a full walkthrough, see [Use SOUL.md with Flux Agent](/docs/guides/use-soul-with-flux-agent).
+For a full walkthrough, see [Use SOUL.md with Flux Agent](/docs/guides/use-soul-with-omniworker).
 
 ```markdown
 # Soul
@@ -159,18 +159,18 @@ Use `/sethome` in your preferred Telegram or Discord chat to designate it as the
 
 ### Use /title to Organize Sessions
 
-Name your sessions with `/title auth-refactor` or `/title research-llm-quantization`. Named sessions are easy to find with `flux-agent sessions list` and resume with `flux-agent -r "auth-refactor"`. Unnamed sessions pile up and become impossible to distinguish.
+Name your sessions with `/title auth-refactor` or `/title research-llm-quantization`. Named sessions are easy to find with `omniworker sessions list` and resume with `omniworker -r "auth-refactor"`. Unnamed sessions pile up and become impossible to distinguish.
 
 ### DM Pairing for Team Access
 
-Instead of manually collecting user IDs for allowlists, enable DM pairing. When a teammate DMs the bot, they get a one-time pairing code. You approve it with `flux-agent pairing approve telegram XKGH5N7P` — simple and secure.
+Instead of manually collecting user IDs for allowlists, enable DM pairing. When a teammate DMs the bot, they get a one-time pairing code. You approve it with `omniworker pairing approve telegram XKGH5N7P` — simple and secure.
 
 ### Tool Progress Display Modes
 
 Use `/verbose` to control how much tool activity you see. In messaging platforms, less is usually more — keep it on "new" to see just new tool calls. In the CLI, "all" gives you a satisfying live view of everything the agent does.
 
 :::tip
-On messaging platforms, sessions auto-reset after idle time (default: 24 hours) or daily at 4 AM. Adjust per-platform in `~/.flux-agent/config.yaml` if you need longer sessions.
+On messaging platforms, sessions auto-reset after idle time (default: 24 hours) or daily at 4 AM. Adjust per-platform in `~/.omniworker/config.yaml` if you need longer sessions.
 :::
 
 ## Security
@@ -182,7 +182,7 @@ When working with untrusted repositories or running unfamiliar code, use Docker 
 ```bash
 # In your .env:
 TERMINAL_BACKEND=docker
-TERMINAL_DOCKER_IMAGE=flux-agent-sandbox:latest
+TERMINAL_DOCKER_IMAGE=omniworker-sandbox:latest
 ```
 
 ### Avoid Windows Encoding Pitfalls

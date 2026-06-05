@@ -6,9 +6,9 @@ author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Coding-Agent, OpenCode, Autonomous, Refactoring, Code-Review]
-    related_skills: [claude-code, codex, flux-agent-agent]
+    related_skills: [claude-code, codex, omniworker-agent]
 ---
 
 # OpenCode CLI

@@ -12,7 +12,7 @@ Features:
 - Shared file store tools (upload, list, read, ingest, delete)
 - Explicit memory tools (profile, search, context, remember, forget)
 
-Config (env vars or flux-agent config.yaml under retaindb:):
+Config (env vars or omniworker config.yaml under retaindb:):
   RETAINDB_API_KEY     — API key (required)
   RETAINDB_BASE_URL    — API endpoint (default: https://api.retaindb.com)
   RETAINDB_PROJECT     — Project identifier (optional — defaults to "default")
@@ -187,7 +187,7 @@ class _Client:
         h = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
-            "x-sdk-runtime": "flux-agent-plugin",
+            "x-sdk-runtime": "omniworker-plugin",
         }
         if path.startswith(("/v1/memory", "/v1/context")):
             h["X-API-Key"] = token
@@ -286,7 +286,7 @@ class _Client:
         import requests
         url = f"{self.base_url}/v1/files"
         token = self.api_key.replace("Bearer ", "").strip()
-        headers = {"Authorization": f"Bearer {token}", "x-sdk-runtime": "flux-agent-plugin"}
+        headers = {"Authorization": f"Bearer {token}", "x-sdk-runtime": "omniworker-plugin"}
         fields = {"path": remote_path, "scope": scope.upper()}
         if project_id:
             fields["project_id"] = project_id
@@ -307,7 +307,7 @@ class _Client:
         import requests
         token = self.api_key.replace("Bearer ", "").strip()
         url = f"{self.base_url}/v1/files/{quote(file_id, safe='')}/content"
-        resp = requests.get(url, headers={"Authorization": f"Bearer {token}", "x-sdk-runtime": "flux-agent-plugin"}, timeout=30, allow_redirects=True)
+        resp = requests.get(url, headers={"Authorization": f"Bearer {token}", "x-sdk-runtime": "omniworker-plugin"}, timeout=30, allow_redirects=True)
         resp.raise_for_status()
         return resp.content
 
@@ -457,7 +457,7 @@ class RetainDBMemoryProvider(MemoryProvider):
         self._queue: _WriteQueue | None = None
         self._user_id = "default"
         self._session_id = ""
-        self._agent_id = "flux-agent"
+        self._agent_id = "omniworker"
         self._lock = threading.Lock()
 
         # Prefetch caches
@@ -490,28 +490,28 @@ class RetainDBMemoryProvider(MemoryProvider):
         api_key = os.environ.get("RETAINDB_API_KEY", "")
         base_url = re.sub(r"/+$", "", os.environ.get("RETAINDB_BASE_URL", _DEFAULT_BASE_URL))
 
-        # Project resolution: RETAINDB_PROJECT > flux-agent-<profile> > "default"
+        # Project resolution: RETAINDB_PROJECT > omniworker-<profile> > "default"
         # If unset, the API auto-creates and uses the "default" project — no config required.
         explicit = os.environ.get("RETAINDB_PROJECT")
         if explicit:
             project = explicit
         else:
-            flux-agent_home = str(kwargs.get("flux-agent_home", ""))
-            profile_name = os.path.basename(flux-agent_home) if flux-agent_home else ""
-            project = f"flux-agent-{profile_name}" if (profile_name and profile_name not in {"", ".flux-agent"}) else "default"
+            omniworker_home = str(kwargs.get("omniworker_home", ""))
+            profile_name = os.path.basename(omniworker_home) if omniworker_home else ""
+            project = f"omniworker-{profile_name}" if (profile_name and profile_name not in {"", ".omniworker"}) else "default"
 
         self._client = _Client(api_key, base_url, project)
         self._session_id = session_id
         self._user_id = kwargs.get("user_id", "default") or "default"
-        self._agent_id = kwargs.get("agent_id", "flux-agent") or "flux-agent"
+        self._agent_id = kwargs.get("agent_id", "omniworker") or "omniworker"
 
-        from flux-agent_constants import get_flux-agent_home
-        flux-agent_home_path = get_flux-agent_home()
-        db_path = flux-agent_home_path / "retaindb_queue.db"
+        from omniworker_constants import get_omniworker_home
+        omniworker_home_path = get_omniworker_home()
+        db_path = omniworker_home_path / "retaindb_queue.db"
         self._queue = _WriteQueue(self._client, db_path)
 
         # Seed agent identity from SOUL.md in background
-        soul_path = flux-agent_home_path / "SOUL.md"
+        soul_path = omniworker_home_path / "SOUL.md"
         if soul_path.exists():
             soul_content = soul_path.read_text(encoding="utf-8", errors="replace").strip()
             if soul_content:

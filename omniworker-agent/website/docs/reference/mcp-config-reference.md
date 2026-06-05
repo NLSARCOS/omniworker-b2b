@@ -10,7 +10,7 @@ This page is the compact reference companion to the main MCP docs.
 
 For conceptual guidance, see:
 - [MCP (Model Context Protocol)](/docs/user-guide/features/mcp)
-- [Use MCP with Flux Agent](/docs/guides/use-mcp-with-flux-agent)
+- [Use MCP with Flux Agent](/docs/guides/use-mcp-with-omniworker)
 
 ## Root config shape
 
@@ -242,6 +242,6 @@ mcp_servers:
 Behavior:
 - Flux Agent uses the MCP SDK's OAuth 2.1 PKCE flow (metadata discovery, dynamic client registration, token exchange, and refresh)
 - On first connect, a browser window opens for authorization
-- Tokens are persisted to `~/.flux-agent/mcp-tokens/<server>.json` and reused across sessions
+- Tokens are persisted to `~/.omniworker/mcp-tokens/<server>.json` and reused across sessions
 - Token refresh is automatic; re-authorization only happens when refresh fails
 - Only applies to HTTP/StreamableHTTP transport (`url`-based servers)

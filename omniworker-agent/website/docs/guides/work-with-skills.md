@@ -21,7 +21,7 @@ Every Flux Agent installation ships with bundled skills. See what's available:
 /skills
 
 # Or from the CLI:
-flux-agent skills list
+omniworker skills list
 ```
 
 This shows a compact list with names and descriptions:
@@ -90,18 +90,18 @@ Official optional skills ship with Flux Agent but aren't active by default. Inst
 
 ```bash
 # Install an official optional skill
-flux-agent skills install official/research/arxiv
+omniworker skills install official/research/arxiv
 
 # Install from the hub in a chat session
 /skills install official/creative/songwriting-and-ai-music
 
 # Install a single-file SKILL.md directly from any HTTP(S) URL
-flux-agent skills install https://sharethis.chat/SKILL.md
+omniworker skills install https://sharethis.chat/SKILL.md
 /skills install https://example.com/SKILL.md --name my-skill
 ```
 
 What happens:
-1. The skill directory is copied to `~/.flux-agent/skills/`
+1. The skill directory is copied to `~/.omniworker/skills/`
 2. It appears in your `skills_list` output
 3. It becomes available as a slash command
 
@@ -113,7 +113,7 @@ Installed skills take effect in new sessions. If you want it available in the cu
 
 ```bash
 # Check it's there
-flux-agent skills list | grep arxiv
+omniworker skills list | grep arxiv
 
 # Or in chat
 /skills search arxiv
@@ -135,7 +135,7 @@ skill_view("writing-plans")
 
 Plugin skills are **not** listed in the system prompt and don't appear in `skills_list`. They're opt-in — load them explicitly when you know a plugin provides one. When loaded, the agent sees a banner listing sibling skills from the same plugin.
 
-For how to ship skills in your own plugin, see [Build a Flux Agent Plugin → Bundle skills](/docs/guides/build-a-flux-agent-plugin#bundle-skills).
+For how to ship skills in your own plugin, see [Build a Flux Agent Plugin → Bundle skills](/docs/guides/build-a-omniworker-plugin#bundle-skills).
 
 ---
 
@@ -145,7 +145,7 @@ Some skills declare configuration they need in their frontmatter:
 
 ```yaml
 metadata:
-  flux-agent:
+  omniworker:
     config:
       - key: tenor.api_key
         description: "Tenor API key for GIF search"
@@ -159,10 +159,10 @@ Manage skill config from the CLI:
 
 ```bash
 # Interactive config for a specific skill
-flux-agent skills config gif-search
+omniworker skills config gif-search
 
 # View all skill config
-flux-agent config get skills.config
+omniworker config get skills.config
 ```
 
 ---
@@ -174,18 +174,18 @@ Skills are just markdown files with YAML frontmatter. Creating one takes under f
 ### 1. Create the Directory
 
 ```bash
-mkdir -p ~/.flux-agent/skills/my-category/my-skill
+mkdir -p ~/.omniworker/skills/my-category/my-skill
 ```
 
 ### 2. Write SKILL.md
 
-```markdown title="~/.flux-agent/skills/my-category/my-skill/SKILL.md"
+```markdown title="~/.omniworker/skills/my-category/my-skill/SKILL.md"
 ---
 name: my-skill
 description: Brief description of what this skill does
 version: 1.0.0
 metadata:
-  flux-agent:
+  omniworker:
     tags: [my-tag, automation]
     category: my-category
 ---
@@ -235,10 +235,10 @@ For API details, load the reference: `skill_view("my-skill", "references/api-doc
 Start a new session and try your skill:
 
 ```bash
-flux-agent chat -q "/my-skill help me with the thing"
+omniworker chat -q "/my-skill help me with the thing"
 ```
 
-The skill appears automatically — no registration needed. Drop it in `~/.flux-agent/skills/` and it's live.
+The skill appears automatically — no registration needed. Drop it in `~/.omniworker/skills/` and it's live.
 
 :::info
 The agent can also create and update skills itself using `skill_manage`. After solving a complex problem, Flux Agent may offer to save the approach as a skill for next time.
@@ -251,7 +251,7 @@ The agent can also create and update skills itself using `skill_manage`. After s
 Control which skills are available on which platforms:
 
 ```bash
-flux-agent skills
+omniworker skills
 ```
 
 This opens an interactive TUI where you can enable or disable skills per platform (CLI, Telegram, Discord, etc.). Useful when you want certain skills only available in specific contexts — for example, keeping development skills off Telegram.
@@ -281,7 +281,7 @@ Both are persistent across sessions, but they serve different purposes:
 
 **Let the agent create skills.** After a complex multi-step task, Flux Agent will often offer to save the approach as a skill. Say yes — these agent-authored skills capture the exact workflow including pitfalls that were discovered along the way.
 
-**Use categories.** Organize skills into subdirectories (`~/.flux-agent/skills/devops/`, `~/.flux-agent/skills/research/`, etc.). This keeps the list manageable and helps the agent find relevant skills faster.
+**Use categories.** Organize skills into subdirectories (`~/.omniworker/skills/devops/`, `~/.omniworker/skills/research/`, etc.). This keeps the list manageable and helps the agent find relevant skills faster.
 
 **Update skills when they go stale.** If you use a skill and hit issues not covered by it, tell Flux Agent to update the skill with what you learned. Skills that aren't maintained become liabilities.
 

@@ -1,4 +1,4 @@
-import { Box, Text } from '@flux-agent/ink'
+import { Box, Text } from '@omniworker/ink'
 import { useState } from 'react'
 
 import type { Theme } from '../theme.js'

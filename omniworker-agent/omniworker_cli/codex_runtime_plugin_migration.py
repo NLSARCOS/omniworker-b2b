@@ -106,7 +106,7 @@ class MigrationReport:
 # Flux Agent keys that codex's MCP schema doesn't support — dropped during
 # migration with a warning. Anything not on the keep list AND not the
 # transport keys is added to skipped.
-_KNOWN_FLUX AGENT_KEYS = {
+_KNOWN_OMNIWORKER_KEYS = {
     # transport — stdio
     "command", "args", "env", "cwd",
     # transport — http
@@ -190,7 +190,7 @@ def _translate_one_server(
     for key in hermes_cfg:
         if key in _KEYS_DROPPED_WITH_WARNING:
             skipped.append(f"{key} (no codex equivalent)")
-        elif key not in _KNOWN_FLUX AGENT_KEYS:
+        elif key not in _KNOWN_OMNIWORKER_KEYS:
             skipped.append(f"{key} (unknown Flux Agent key)")
 
     return out, skipped
@@ -212,7 +212,7 @@ def _format_toml_value(value: Any) -> str:
         # because TOML basic strings don't allow literal control chars
         # — passing them through would produce invalid TOML that codex
         # would refuse to load. Paths usually don't contain control
-        # chars but env-var passthrough (FLUX AGENT_HOME, PYTHONPATH) could
+        # chars but env-var passthrough (OMNIWORKER_HOME, PYTHONPATH) could
         # in pathological cases.
         escaped = (
             value
@@ -534,7 +534,7 @@ def _looks_like_test_tempdir(path: str) -> bool:
     pytest tempdirs live under ``pytest-of-<user>/pytest-<n>/`` (created via
     ``tmp_path`` / ``tmp_path_factory``) and are reaped between sessions.
     macOS routes ``/tmp`` through ``/private/var/folders/<…>/T`` which is
-    what pytest's tempdir factory uses by default. If a FLUX AGENT_HOME pointing
+    what pytest's tempdir factory uses by default. If a OMNIWORKER_HOME pointing
     at one of those paths is burned into ``~/.codex/config.toml``, every
     codex-routed hermes-tools call fails silently once the directory is GC'd.
 
@@ -561,37 +561,37 @@ def _build_hermes_tools_mcp_entry() -> dict:
 
     The command runs the worktree's Python via the current sys.executable
     so a hermes installed under /opt/, /usr/local/, or a venv all work.
-    FLUX AGENT_HOME and PYTHONPATH are passed through so the spawned process
+    OMNIWORKER_HOME and PYTHONPATH are passed through so the spawned process
     sees the same config + module layout the user is running."""
     import sys
 
     env: dict[str, str] = {}
-    # FLUX AGENT_HOME passes through IF SET so the MCP subprocess sees the same
+    # OMNIWORKER_HOME passes through IF SET so the MCP subprocess sees the same
     # config / auth / sessions DB as the parent CLI. Read from os.environ
-    # (not get_flux-agent_home()) on purpose: when the env var is unset we want
-    # codex's subprocess to inherit whatever FLUX AGENT_HOME its launcher sets
+    # (not get_omniworker_home()) on purpose: when the env var is unset we want
+    # codex's subprocess to inherit whatever OMNIWORKER_HOME its launcher sets
     # at runtime (systemd unit, gateway, kanban dispatcher, custom shell),
     # rather than burning the migrate-time resolved default into config.toml
-    # — that would override the launcher's FLUX AGENT_HOME and pin the subprocess
+    # — that would override the launcher's OMNIWORKER_HOME and pin the subprocess
     # to the wrong profile.
     #
     # The pytest-tempdir guard below catches the issue #26250 Bug C scenario:
-    # a sibling test's monkeypatch.setenv("FLUX AGENT_HOME", tmp_path) would
+    # a sibling test's monkeypatch.setenv("OMNIWORKER_HOME", tmp_path) would
     # otherwise leak a transient pytest tempdir into the user's real
     # ~/.codex/config.toml and silently brick codex once the tempdir is GC'd.
-    flux-agent_home = os.environ.get("FLUX AGENT_HOME") or ""
-    if flux-agent_home and _looks_like_test_tempdir(flux-agent_home):
-        flux-agent_home = ""
-    if flux-agent_home:
-        env["FLUX AGENT_HOME"] = flux-agent_home
+    omniworker_home = os.environ.get("OMNIWORKER_HOME") or ""
+    if omniworker_home and _looks_like_test_tempdir(omniworker_home):
+        omniworker_home = ""
+    if omniworker_home:
+        env["OMNIWORKER_HOME"] = omniworker_home
     # PYTHONPATH passes through so a worktree-launched hermes finds the
     # branch's modules instead of the installed package.
     pythonpath = os.environ.get("PYTHONPATH")
     if pythonpath:
         env["PYTHONPATH"] = pythonpath
     # Quiet mode + redaction defaults so the MCP wire stays clean.
-    env["FLUX AGENT_QUIET"] = "1"
-    env["FLUX AGENT_REDACT_SECRETS"] = env.get("FLUX AGENT_REDACT_SECRETS", "true")
+    env["OMNIWORKER_QUIET"] = "1"
+    env["OMNIWORKER_REDACT_SECRETS"] = env.get("OMNIWORKER_REDACT_SECRETS", "true")
 
     out: dict[str, Any] = {
         "command": sys.executable,

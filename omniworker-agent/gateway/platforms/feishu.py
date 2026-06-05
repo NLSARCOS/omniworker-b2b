@@ -7,13 +7,13 @@ Supports:
 - Inbound image/file/audio/media caching
 - Gateway allowlist integration via FEISHU_ALLOWED_USERS
 - Persistent dedup state across restarts
-- Per-chat serial message processing (matches flux-agent createChatQueue)
+- Per-chat serial message processing (matches omniworker createChatQueue)
 - Processing status reactions: Typing while working, removed on success,
   swapped for CrossMark on failure
-- Reaction events routed as synthetic text events (matches flux-agent)
+- Reaction events routed as synthetic text events (matches omniworker)
 - Interactive card button-click events routed as synthetic COMMAND events
-- Webhook anomaly tracking (matches flux-agent createWebhookAnomalyTracker)
-- Verification token validation as second auth layer (matches flux-agent)
+- Webhook anomaly tracking (matches omniworker createWebhookAnomalyTracker)
+- Verification token validation as second auth layer (matches omniworker)
 
 Feishu identity model
 ---------------------
@@ -140,7 +140,7 @@ from gateway.platforms.base import (
     cache_image_from_bytes,
 )
 from gateway.status import acquire_scoped_lock, release_scoped_lock
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -203,15 +203,15 @@ _DEFAULT_WEBHOOK_PATH = "/feishu/webhook"
 # TTL, rate-limit and webhook security constants
 # ---------------------------------------------------------------------------
 
-_FEISHU_DEDUP_TTL_SECONDS = 24 * 60 * 60          # 24 hours — matches flux-agent
+_FEISHU_DEDUP_TTL_SECONDS = 24 * 60 * 60          # 24 hours — matches omniworker
 _FEISHU_SENDER_NAME_TTL_SECONDS = 10 * 60          # 10 minutes sender-name cache
 _FEISHU_WEBHOOK_MAX_BODY_BYTES = 1 * 1024 * 1024   # 1 MB body limit
 _FEISHU_WEBHOOK_RATE_WINDOW_SECONDS = 60            # sliding window for rate limiter
-_FEISHU_WEBHOOK_RATE_LIMIT_MAX = 120               # max requests per window per IP — matches flux-agent
+_FEISHU_WEBHOOK_RATE_LIMIT_MAX = 120               # max requests per window per IP — matches omniworker
 _FEISHU_WEBHOOK_RATE_MAX_KEYS = 4096               # max tracked keys (prevents unbounded growth)
 _FEISHU_WEBHOOK_BODY_TIMEOUT_SECONDS = 30          # max seconds to read request body
 _FEISHU_WEBHOOK_ANOMALY_THRESHOLD = 25             # consecutive error responses before WARNING log
-_FEISHU_WEBHOOK_ANOMALY_TTL_SECONDS = 6 * 60 * 60  # anomaly tracker TTL (6 hours) — matches flux-agent
+_FEISHU_WEBHOOK_ANOMALY_TTL_SECONDS = 6 * 60 * 60  # anomaly tracker TTL (6 hours) — matches omniworker
 _FEISHU_CARD_ACTION_DEDUP_TTL_SECONDS = 15 * 60    # card action token dedup window (15 min)
 
 _APPROVAL_CHOICE_MAP: Dict[str, str] = {
@@ -1432,7 +1432,7 @@ class FeishuAdapter(BasePlatformAdapter):
         self._event_handler: Optional[Any] = None
         self._seen_message_ids: Dict[str, float] = {}  # message_id → seen_at (time.time())
         self._seen_message_order: List[str] = []
-        self._dedup_state_path = get_flux-agent_home() / "feishu_seen_message_ids.json"
+        self._dedup_state_path = get_omniworker_home() / "feishu_seen_message_ids.json"
         self._dedup_lock = threading.Lock()
         self._sender_name_cache: Dict[str, tuple[str, float]] = {}  # sender_id → (name, expire_at)
         self._webhook_rate_counts: Dict[str, tuple[int, float]] = {}  # rate_key → (count, window_start)
@@ -1527,24 +1527,24 @@ class FeishuAdapter(BasePlatformAdapter):
             bot_name=os.getenv("FEISHU_BOT_NAME", "").strip(),
             dedup_cache_size=max(
                 32,
-                int(os.getenv("FLUX AGENT_FEISHU_DEDUP_CACHE_SIZE", str(_DEFAULT_DEDUP_CACHE_SIZE))),
+                int(os.getenv("OMNIWORKER_FEISHU_DEDUP_CACHE_SIZE", str(_DEFAULT_DEDUP_CACHE_SIZE))),
             ),
             text_batch_delay_seconds=float(
-                os.getenv("FLUX AGENT_FEISHU_TEXT_BATCH_DELAY_SECONDS", str(_DEFAULT_TEXT_BATCH_DELAY_SECONDS))
+                os.getenv("OMNIWORKER_FEISHU_TEXT_BATCH_DELAY_SECONDS", str(_DEFAULT_TEXT_BATCH_DELAY_SECONDS))
             ),
             text_batch_split_delay_seconds=float(
-                os.getenv("FLUX AGENT_FEISHU_TEXT_BATCH_SPLIT_DELAY_SECONDS", "2.0")
+                os.getenv("OMNIWORKER_FEISHU_TEXT_BATCH_SPLIT_DELAY_SECONDS", "2.0")
             ),
             text_batch_max_messages=max(
                 1,
-                int(os.getenv("FLUX AGENT_FEISHU_TEXT_BATCH_MAX_MESSAGES", str(_DEFAULT_TEXT_BATCH_MAX_MESSAGES))),
+                int(os.getenv("OMNIWORKER_FEISHU_TEXT_BATCH_MAX_MESSAGES", str(_DEFAULT_TEXT_BATCH_MAX_MESSAGES))),
             ),
             text_batch_max_chars=max(
                 1,
-                int(os.getenv("FLUX AGENT_FEISHU_TEXT_BATCH_MAX_CHARS", str(_DEFAULT_TEXT_BATCH_MAX_CHARS))),
+                int(os.getenv("OMNIWORKER_FEISHU_TEXT_BATCH_MAX_CHARS", str(_DEFAULT_TEXT_BATCH_MAX_CHARS))),
             ),
             media_batch_delay_seconds=float(
-                os.getenv("FLUX AGENT_FEISHU_MEDIA_BATCH_DELAY_SECONDS", str(_DEFAULT_MEDIA_BATCH_DELAY_SECONDS))
+                os.getenv("OMNIWORKER_FEISHU_MEDIA_BATCH_DELAY_SECONDS", str(_DEFAULT_MEDIA_BATCH_DELAY_SECONDS))
             ),
             webhook_host=str(
                 extra.get("webhook_host") or os.getenv("FEISHU_WEBHOOK_HOST", _DEFAULT_WEBHOOK_HOST)
@@ -1853,7 +1853,7 @@ class FeishuAdapter(BasePlatformAdapter):
     ) -> SendResult:
         """Send an interactive card with approval buttons.
 
-        The buttons carry ``flux-agent_action`` in their value dict so that
+        The buttons carry ``omniworker_action`` in their value dict so that
         ``_handle_card_action_event`` can intercept them and call
         ``resolve_gateway_approval()`` to unblock the waiting agent thread.
         """
@@ -1869,7 +1869,7 @@ class FeishuAdapter(BasePlatformAdapter):
                     "tag": "button",
                     "text": {"tag": "plain_text", "content": label},
                     "type": btn_type,
-                    "value": {"flux-agent_action": action_name, "approval_id": approval_id},
+                    "value": {"omniworker_action": action_name, "approval_id": approval_id},
                 }
 
             card = {
@@ -1926,7 +1926,7 @@ class FeishuAdapter(BasePlatformAdapter):
                 "text": {"tag": "plain_text", "content": label},
                 "type": btn_type,
                 "value": {
-                    "flux-agent_update_prompt_action": answer,
+                    "omniworker_update_prompt_action": answer,
                     "update_prompt_id": prompt_id,
                 },
             }
@@ -2020,7 +2020,7 @@ class FeishuAdapter(BasePlatformAdapter):
 
     @staticmethod
     def _write_update_prompt_response(answer: str) -> None:
-        response_path = get_flux-agent_home() / ".update_response"
+        response_path = get_omniworker_home() / ".update_response"
         tmp_path = response_path.with_suffix(".tmp")
         tmp_path.write_text(answer)
         tmp_path.replace(response_path)
@@ -2521,13 +2521,13 @@ class FeishuAdapter(BasePlatformAdapter):
         event = getattr(data, "event", None)
         action = getattr(event, "action", None)
         action_value = getattr(action, "value", {}) or {}
-        flux-agent_action = action_value.get("flux-agent_action") if isinstance(action_value, dict) else None
+        omniworker_action = action_value.get("omniworker_action") if isinstance(action_value, dict) else None
         update_prompt_action = (
-            action_value.get("flux-agent_update_prompt_action")
+            action_value.get("omniworker_update_prompt_action")
             if isinstance(action_value, dict) else None
         )
 
-        if flux-agent_action:
+        if omniworker_action:
             return self._handle_approval_card_action(event=event, action_value=action_value, loop=loop)
         if update_prompt_action:
             return self._handle_update_prompt_card_action(
@@ -2573,7 +2573,7 @@ class FeishuAdapter(BasePlatformAdapter):
         if approval_id is None:
             logger.debug("[Feishu] Card action missing approval_id, ignoring")
             return P2CardActionTriggerResponse() if P2CardActionTriggerResponse else None
-        choice = _APPROVAL_CHOICE_MAP.get(action_value.get("flux-agent_action"), "deny")
+        choice = _APPROVAL_CHOICE_MAP.get(action_value.get("omniworker_action"), "deny")
 
         operator = getattr(event, "operator", None)
         open_id = str(getattr(operator, "open_id", "") or "")
@@ -2602,7 +2602,7 @@ class FeishuAdapter(BasePlatformAdapter):
             logger.debug("[Feishu] Update prompt %s already resolved or unknown", prompt_id)
             return P2CardActionTriggerResponse() if P2CardActionTriggerResponse else None
 
-        answer = str(action_value.get("flux-agent_update_prompt_action", "") or "").strip().lower()
+        answer = str(action_value.get("omniworker_update_prompt_action", "") or "").strip().lower()
         if answer not in {"y", "n"}:
             logger.debug("[Feishu] Card action has invalid update prompt answer=%r", answer)
             return P2CardActionTriggerResponse() if P2CardActionTriggerResponse else None
@@ -2797,7 +2797,7 @@ class FeishuAdapter(BasePlatformAdapter):
         before handing the event off to the agent.
 
         Per-chat lock ensures messages in the same chat are processed one at a
-        time (matches flux-agent's createChatQueue serial queue behaviour).
+        time (matches omniworker's createChatQueue serial queue behaviour).
         """
         chat_id = getattr(event.source, "chat_id", "") or "" if event.source else ""
         chat_lock = self._get_chat_lock(chat_id)
@@ -2929,7 +2929,7 @@ class FeishuAdapter(BasePlatformAdapter):
     def _record_webhook_anomaly(self, remote_ip: str, status: str) -> None:
         """Increment the anomaly counter for remote_ip and emit a WARNING every threshold hits.
 
-        Mirrors flux-agent's createWebhookAnomalyTracker: TTL 6 hours, log every 25 consecutive
+        Mirrors omniworker's createWebhookAnomalyTracker: TTL 6 hours, log every 25 consecutive
         error responses from the same IP.
         """
         now = time.time()
@@ -3149,7 +3149,7 @@ class FeishuAdapter(BasePlatformAdapter):
             response = await client.get(
                 file_url,
                 headers={
-                    "User-Agent": "Mozilla/5.0 (compatible; Flux AgentAgent/1.0)",
+                    "User-Agent": "Mozilla/5.0 (compatible; OmniWorkerAgent/1.0)",
                     "Accept": "*/*",
                 },
             )
@@ -3193,7 +3193,7 @@ class FeishuAdapter(BasePlatformAdapter):
     async def _handle_webhook_request(self, request: Any) -> Any:
         remote_ip = (getattr(request, "remote", None) or "unknown")
 
-        # Rate limiting — composite key: app_id:path:remote_ip (matches flux-agent key structure).
+        # Rate limiting — composite key: app_id:path:remote_ip (matches omniworker key structure).
         rate_key = f"{self._app_id}:{self._webhook_path}:{remote_ip}"
         if not self._check_webhook_rate_limit(rate_key):
             logger.warning("[Feishu] Webhook rate limit exceeded for %s", remote_ip)
@@ -3244,7 +3244,7 @@ class FeishuAdapter(BasePlatformAdapter):
         if payload.get("type") == "url_verification":
             return web.json_response({"challenge": payload.get("challenge", "")})
 
-        # Verification token check — second layer of defence beyond signature (matches flux-agent).
+        # Verification token check — second layer of defence beyond signature (matches omniworker).
         if self._verification_token:
             header = payload.get("header") or {}
             incoming_token = str(header.get("token") or payload.get("token") or "")
@@ -3310,7 +3310,7 @@ class FeishuAdapter(BasePlatformAdapter):
     def _check_webhook_rate_limit(self, rate_key: str) -> bool:
         """Return False when the composite rate_key has exceeded _FEISHU_WEBHOOK_RATE_LIMIT_MAX.
 
-        The rate_key is composed as "{app_id}:{path}:{remote_ip}" — matching flux-agent's key
+        The rate_key is composed as "{app_id}:{path}:{remote_ip}" — matching omniworker's key
         structure so the limit is scoped to a specific (account, endpoint, IP) triple rather
         than a bare IP, which causes fewer false-positive denials in multi-tenant setups.
 
@@ -4740,7 +4740,7 @@ class FeishuAdapter(BasePlatformAdapter):
 #
 # Device-code flow: user scans a QR code with Feishu/Lark mobile app and the
 # platform creates a fully configured bot application automatically.
-# Called by `flux-agent gateway setup` via _setup_feishu() in flux-agent_cli/gateway.py.
+# Called by `omniworker gateway setup` via _setup_feishu() in omniworker_cli/gateway.py.
 # =============================================================================
 
 
@@ -4804,9 +4804,9 @@ def _begin_registration(domain: str = "feishu") -> dict:
         raise RuntimeError("Feishu / Lark registration did not return a device_code")
     qr_url = res.get("verification_uri_complete", "")
     if "?" in qr_url:
-        qr_url += "&from=flux-agent&tp=flux-agent"
+        qr_url += "&from=omniworker&tp=omniworker"
     else:
-        qr_url += "?from=flux-agent&tp=flux-agent"
+        qr_url += "?from=omniworker&tp=omniworker"
     return {
         "device_code": device_code,
         "qr_url": qr_url,

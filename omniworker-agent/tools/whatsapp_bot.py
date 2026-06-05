@@ -22,9 +22,9 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-BOT_DIR = Path.home() / ".flux-agent" / "whatsapp-bot"
+BOT_DIR = Path.home() / ".omniworker" / "whatsapp-bot"
 SETTINGS_FILE = BOT_DIR / "settings.json"
-PID_FILE = Path.home() / ".flux-agent" / "whatsapp-bot.pid"
+PID_FILE = Path.home() / ".omniworker" / "whatsapp-bot.pid"
 TEMPLATE_DIR = Path(__file__).resolve().parent / "whatsapp_bot_templates"
 
 # ---------------------------------------------------------------------------
@@ -94,7 +94,7 @@ async def _handle_create_bot(args: dict, **kw) -> str:
     """Generate a new WhatsApp bot project from templates."""
     if _bot_exists():
         return _tool_error(
-            "WhatsApp bot already exists at ~/.flux-agent/whatsapp-bot/. "
+            "WhatsApp bot already exists at ~/.omniworker/whatsapp-bot/. "
             "Use whatsapp_bot_configure to update it, or delete the directory first."
         )
 

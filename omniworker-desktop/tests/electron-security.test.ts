@@ -51,9 +51,9 @@ describe("Electron main process hardening", () => {
     expect(preloadSrc).not.toContain("@electron-toolkit/preload");
   });
 
-  it("runs flux-agent doctor without a shell-built command string", () => {
+  it("runs omniworker doctor without a shell-built command string", () => {
     expect(installerSrc).toMatch(
-      /execFileSync\(\s*OMNIWORKER_PYTHON,\s*flux-agentCliArgs\(\["doctor"\]\)/,
+      /execFileSync\(\s*OMNIWORKER_PYTHON,\s*omniworkerCliArgs\(\["doctor"\]\)/,
     );
     expect(installerSrc).not.toContain("execSync(`");
   });

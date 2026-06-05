@@ -1,4 +1,4 @@
-import { AlternateScreen, Box, NoSelect, ScrollBox, Text } from '@flux-agent/ink'
+import { AlternateScreen, Box, NoSelect, ScrollBox, Text } from '@omniworker/ink'
 import { useStore } from '@nanostores/react'
 import { Fragment, memo, useMemo, useRef } from 'react'
 

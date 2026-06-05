@@ -1,13 +1,13 @@
 ---
 title: Image Generation
-description: Generate images via FAL.ai — 9 models including FLUX 2, GPT Image (1.5 & 2), Nano Banana Pro, Ideogram, Recraft V4 Pro, and more, selectable via `flux-agent tools`.
+description: Generate images via FAL.ai — 9 models including FLUX 2, GPT Image (1.5 & 2), Nano Banana Pro, Ideogram, Recraft V4 Pro, and more, selectable via `omniworker tools`.
 sidebar_label: Image Generation
 sidebar_position: 6
 ---
 
 # Image Generation
 
-Flux Agent Agent generates images from text prompts via FAL.ai. Nine models are supported out of the box, each with different speed, quality, and cost tradeoffs. The active model is user-configurable via `flux-agent tools` and persists in `config.yaml`.
+Flux Agent Agent generates images from text prompts via FAL.ai. Nine models are supported out of the box, each with different speed, quality, and cost tradeoffs. The active model is user-configurable via `omniworker tools` and persists in `config.yaml`.
 
 ## Supported Models
 
@@ -28,7 +28,7 @@ Prices are FAL's pricing at time of writing; check [fal.ai](https://fal.ai/) for
 ## Setup
 
 :::tip Nous Subscribers
-If you have a paid [Nous Portal](https://portal.flux-agent.com) subscription, you can use image generation through the **[Tool Gateway](tool-gateway.md)** without a FAL API key. Your model selection persists across both paths.
+If you have a paid [Nous Portal](https://portal.omniworker.com) subscription, you can use image generation through the **[Tool Gateway](tool-gateway.md)** without a FAL API key. Your model selection persists across both paths.
 
 If the managed gateway returns `HTTP 4xx` for a specific model, that model isn't yet proxied on the portal side — the agent will tell you so, with remediation steps (set `FAL_KEY` for direct access, or pick a different model).
 :::
@@ -43,7 +43,7 @@ If the managed gateway returns `HTTP 4xx` for a specific model, that model isn't
 Run the tools command:
 
 ```bash
-flux-agent tools
+omniworker tools
 ```
 
 Navigate to **🎨 Image Generation**, pick your backend (Nous Subscription or FAL.ai), then the picker shows all supported models in a column-aligned table — arrow keys to navigate, Enter to select:

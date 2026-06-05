@@ -14,7 +14,7 @@ Build comparable company analysis in Excel — operating metrics, valuation mult
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/finance/comps-analysis` |
+| Source | Optional — install with `omniworker skills install official/finance/comps-analysis` |
 | Path | `optional-skills/finance/comps-analysis` |
 | Version | `1.0.0` |
 | Author | Anthropic (adapted by Nous Research) |

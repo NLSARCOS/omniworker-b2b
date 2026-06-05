@@ -8,11 +8,11 @@ description: "Background maintenance for agent-created skills — usage tracking
 
 The curator is a background maintenance pass for **agent-created skills**. It tracks how often each skill is viewed, used, and patched, moves long-unused skills through `active → stale → archived` states, and periodically spawns a short auxiliary-model review that proposes consolidations or patches drift.
 
-It exists so that skills created via the [self-improvement loop](/docs/user-guide/features/skills#agent-managed-skills-skill_manage-tool) don't pile up forever. Every time the agent solves a novel problem and saves a skill, that skill lands in `~/.flux-agent/skills/`. Without maintenance, you end up with dozens of narrow near-duplicates that pollute the catalog and waste tokens.
+It exists so that skills created via the [self-improvement loop](/docs/user-guide/features/skills#agent-managed-skills-skill_manage-tool) don't pile up forever. Every time the agent solves a novel problem and saves a skill, that skill lands in `~/.omniworker/skills/`. Without maintenance, you end up with dozens of narrow near-duplicates that pollute the catalog and waste tokens.
 
-The curator **never touches** bundled skills (shipped with the repo) or hub-installed skills (from [agentskills.io](https://agentskills.io)). It only reviews skills the agent itself authored. It also **never auto-deletes** — the worst outcome is archival into `~/.flux-agent/skills/.archive/`, which is recoverable.
+The curator **never touches** bundled skills (shipped with the repo) or hub-installed skills (from [agentskills.io](https://agentskills.io)). It only reviews skills the agent itself authored. It also **never auto-deletes** — the worst outcome is archival into `~/.omniworker/skills/.archive/`, which is recoverable.
 
-Tracks [issue #7816](https://github.com/Flux Agent/flux-agent-agent/issues/7816).
+Tracks [issue #7816](https://github.com/Flux Agent/omniworker-agent/issues/7816).
 
 ## How it runs
 
@@ -24,14 +24,14 @@ The curator is triggered by an inactivity check, not a cron daemon. On CLI sessi
 If both are true, it spawns a background fork of `AIAgent` — the same pattern used by the memory/skill self-improvement nudges. The fork runs in its own prompt cache and never touches the active conversation.
 
 :::info First-run behavior
-On a brand-new install (or the first time a pre-curator install ticks after `flux-agent update`), the curator **does not run immediately**. The first observation seeds `last_run_at` to "now" and defers the first real pass by one full `interval_hours`. This gives you a full interval to review your skill library, pin anything important, or opt out entirely before the curator ever touches it.
+On a brand-new install (or the first time a pre-curator install ticks after `omniworker update`), the curator **does not run immediately**. The first observation seeds `last_run_at` to "now" and defers the first real pass by one full `interval_hours`. This gives you a full interval to review your skill library, pin anything important, or opt out entirely before the curator ever touches it.
 
-If you want to see what the curator *would* do before it runs for real, run `flux-agent curator run --dry-run` — it produces the same review report without mutating the library.
+If you want to see what the curator *would* do before it runs for real, run `omniworker curator run --dry-run` — it produces the same review report without mutating the library.
 :::
 
 A run has two phases:
 
-1. **Automatic transitions** (deterministic, no LLM). Skills unused for `stale_after_days` (30) become `stale`; skills unused for `archive_after_days` (90) are moved to `~/.flux-agent/skills/.archive/`.
+1. **Automatic transitions** (deterministic, no LLM). Skills unused for `stale_after_days` (30) become `stale`; skills unused for `archive_after_days` (90) are moved to `~/.omniworker/skills/.archive/`.
 2. **LLM review** (single aux-model pass, `max_iterations=8`). The forked agent surveys the agent-created skills, can read any of them with `skill_view`, and decides per-skill whether to keep, patch (via `skill_manage`), consolidate overlapping ones, or archive via the terminal tool.
 
 Pinned skills are off-limits to both the curator's auto-transitions and the agent's own `skill_manage` tool. See [Pinning a skill](#pinning-a-skill) below.
@@ -55,10 +55,10 @@ To disable entirely, set `curator.enabled: false`.
 
 The curator's LLM review pass is a regular auxiliary task slot — `auxiliary.curator` — alongside Vision, Compression, Session Search, etc. "Auto" means "use my main chat model"; override the slot to pin a specific provider + model for the review pass instead.
 
-**Easiest — `flux-agent model`:**
+**Easiest — `omniworker model`:**
 
 ```bash
-flux-agent model                   # → "Auxiliary models — side-task routing"
+omniworker model                   # → "Auxiliary models — side-task routing"
                                # → pick "Curator" → pick provider → pick model
 ```
 
@@ -77,41 +77,41 @@ auxiliary:
 Leaving `provider: auto` (the default) routes the review pass through whatever your main chat model is, matching the behavior of every other auxiliary task.
 
 :::note Legacy config
-Earlier releases used a one-off `curator.auxiliary.{provider,model}` block. That path still works but emits a deprecation log line — please migrate to `auxiliary.curator` above so the curator shares the same plumbing (`flux-agent model`, dashboard Models tab, `base_url`, `api_key`, `timeout`, `extra_body`) as every other aux task.
+Earlier releases used a one-off `curator.auxiliary.{provider,model}` block. That path still works but emits a deprecation log line — please migrate to `auxiliary.curator` above so the curator shares the same plumbing (`omniworker model`, dashboard Models tab, `base_url`, `api_key`, `timeout`, `extra_body`) as every other aux task.
 :::
 
 ## CLI
 
 ```bash
-flux-agent curator status         # last run, counts, pinned list, LRU top 5
-flux-agent curator run            # trigger a review now (blocks until the LLM pass finishes)
-flux-agent curator run --background  # fire-and-forget: start the LLM pass in a background thread
-flux-agent curator run --dry-run  # preview only — report without any mutations
-flux-agent curator backup         # take a manual snapshot of ~/.flux-agent/skills/
-flux-agent curator rollback       # restore from the newest snapshot
-flux-agent curator rollback --list     # list available snapshots
-flux-agent curator rollback --id <ts>  # restore a specific snapshot
-flux-agent curator rollback -y         # skip the confirmation prompt
-flux-agent curator pause          # stop runs until resumed
-flux-agent curator resume
-flux-agent curator pin <skill>    # never auto-transition this skill
-flux-agent curator unpin <skill>
-flux-agent curator restore <skill>  # move an archived skill back to active
+omniworker curator status         # last run, counts, pinned list, LRU top 5
+omniworker curator run            # trigger a review now (blocks until the LLM pass finishes)
+omniworker curator run --background  # fire-and-forget: start the LLM pass in a background thread
+omniworker curator run --dry-run  # preview only — report without any mutations
+omniworker curator backup         # take a manual snapshot of ~/.omniworker/skills/
+omniworker curator rollback       # restore from the newest snapshot
+omniworker curator rollback --list     # list available snapshots
+omniworker curator rollback --id <ts>  # restore a specific snapshot
+omniworker curator rollback -y         # skip the confirmation prompt
+omniworker curator pause          # stop runs until resumed
+omniworker curator resume
+omniworker curator pin <skill>    # never auto-transition this skill
+omniworker curator unpin <skill>
+omniworker curator restore <skill>  # move an archived skill back to active
 ```
 
 ## Backups and rollback
 
-Before every real curator pass, Flux Agent takes a tar.gz snapshot of `~/.flux-agent/skills/` at `~/.flux-agent/skills/.curator_backups/<utc-iso>/skills.tar.gz`. If a pass archives or consolidates something you didn't want touched, you can undo the whole run with one command:
+Before every real curator pass, Flux Agent takes a tar.gz snapshot of `~/.omniworker/skills/` at `~/.omniworker/skills/.curator_backups/<utc-iso>/skills.tar.gz`. If a pass archives or consolidates something you didn't want touched, you can undo the whole run with one command:
 
 ```bash
-flux-agent curator rollback        # restore newest snapshot (with confirmation)
-flux-agent curator rollback -y     # skip the prompt
-flux-agent curator rollback --list # see all snapshots with reason + size
+omniworker curator rollback        # restore newest snapshot (with confirmation)
+omniworker curator rollback -y     # skip the prompt
+omniworker curator rollback --list # see all snapshots with reason + size
 ```
 
 The rollback itself is reversible: before replacing the skills tree, Flux Agent takes another snapshot tagged `pre-rollback to <target-id>`, so a mistaken rollback can be undone by rolling forward to that one with `--id`.
 
-You can also take manual snapshots at any time with `flux-agent curator backup --reason "before-refactor"`. The `--reason` string lands in the snapshot's `manifest.json` and is shown in `--list`.
+You can also take manual snapshots at any time with `omniworker curator backup --reason "before-refactor"`. The `--reason` string lands in the snapshot's `manifest.json` and is shown in `--list`.
 
 Snapshots are pruned to `curator.backup.keep` (default 5) to keep disk usage bounded:
 
@@ -122,9 +122,9 @@ curator:
     keep: 5
 ```
 
-Set `curator.backup.enabled: false` to disable automatic snapshotting. The manual `flux-agent curator backup` command still works when backups are disabled only if you set `enabled: true` first — the flag gates both paths symmetrically so there's no way to accidentally skip the pre-run snapshot on mutating runs.
+Set `curator.backup.enabled: false` to disable automatic snapshotting. The manual `omniworker curator backup` command still works when backups are disabled only if you set `enabled: true` first — the flag gates both paths symmetrically so there's no way to accidentally skip the pre-run snapshot on mutating runs.
 
-`flux-agent curator status` also lists the five least-recently-used skills — a quick way to see what's likely to become stale next.
+`omniworker curator status` also lists the five least-recently-used skills — a quick way to see what's likely to become stale next.
 
 The same subcommands are available as the `/curator` slash command inside a running session (CLI or gateway platforms).
 
@@ -132,10 +132,10 @@ The same subcommands are available as the `/curator` slash command inside a runn
 
 A skill is considered agent-created if its name is **not** in:
 
-- `~/.flux-agent/skills/.bundled_manifest` (skills copied from the repo on install), and
-- `~/.flux-agent/skills/.hub/lock.json` (skills installed via `flux-agent skills install`).
+- `~/.omniworker/skills/.bundled_manifest` (skills copied from the repo on install), and
+- `~/.omniworker/skills/.hub/lock.json` (skills installed via `omniworker skills install`).
 
-Everything else in `~/.flux-agent/skills/` is fair game for the curator. This includes:
+Everything else in `~/.omniworker/skills/` is fair game for the curator. This includes:
 
 - Skills the agent saved via `skill_manage(action="create")` during a conversation.
 - Skills you created manually with a hand-written `SKILL.md`.
@@ -146,38 +146,38 @@ Provenance here is **binary** (bundled/hub vs. everything else). The curator can
 
 Before the first real pass (7 days after installation by default), take a moment to:
 
-1. Run `flux-agent curator run --dry-run` to see exactly what the curator would propose.
-2. Use `flux-agent curator pin <name>` to fence off anything you don't want touched.
+1. Run `omniworker curator run --dry-run` to see exactly what the curator would propose.
+2. Use `omniworker curator pin <name>` to fence off anything you don't want touched.
 3. Or set `curator.enabled: false` in `config.yaml` if you'd rather manage the library yourself.
 
-Archives are always recoverable via `flux-agent curator restore <name>`, but it's easier to pin up-front than to chase down a consolidation after the fact.
+Archives are always recoverable via `omniworker curator restore <name>`, but it's easier to pin up-front than to chase down a consolidation after the fact.
 :::
 
-If you want to protect a specific skill from ever being touched — for example a hand-authored skill you rely on — use `flux-agent curator pin <name>`. See the next section.
+If you want to protect a specific skill from ever being touched — for example a hand-authored skill you rely on — use `omniworker curator pin <name>`. See the next section.
 
 ## Pinning a skill
 
 Pinning protects a skill from deletion — both the curator's automated archive passes and the agent's `skill_manage(action="delete")` tool call. Once a skill is pinned:
 
 - The **curator** skips it during auto-transitions (`active → stale → archived`), and its LLM review pass is instructed to leave it alone.
-- The **agent's `skill_manage` tool** refuses `delete` on it, pointing the user at `flux-agent curator unpin <name>`. Patches and edits still go through, so the agent can improve a pinned skill's content as pitfalls come up without a pin/unpin/re-pin dance.
+- The **agent's `skill_manage` tool** refuses `delete` on it, pointing the user at `omniworker curator unpin <name>`. Patches and edits still go through, so the agent can improve a pinned skill's content as pitfalls come up without a pin/unpin/re-pin dance.
 
 Pin and unpin with:
 
 ```bash
-flux-agent curator pin <skill>
-flux-agent curator unpin <skill>
+omniworker curator pin <skill>
+omniworker curator unpin <skill>
 ```
 
-The flag is stored as `"pinned": true` on the skill's entry in `~/.flux-agent/skills/.usage.json`, so it survives across sessions.
+The flag is stored as `"pinned": true` on the skill's entry in `~/.omniworker/skills/.usage.json`, so it survives across sessions.
 
-Only **agent-created** skills can be pinned — bundled and hub-installed skills are never subject to curator mutation in the first place, and `flux-agent curator pin` will refuse with an explanatory message if you try.
+Only **agent-created** skills can be pinned — bundled and hub-installed skills are never subject to curator mutation in the first place, and `omniworker curator pin` will refuse with an explanatory message if you try.
 
-If you want a stronger guarantee than "no deletion" — for instance, freezing a skill's content entirely while the agent still reads it — edit `~/.flux-agent/skills/<name>/SKILL.md` directly with your editor. The pin guards tool-driven deletion, not your own filesystem access.
+If you want a stronger guarantee than "no deletion" — for instance, freezing a skill's content entirely while the agent still reads it — edit `~/.omniworker/skills/<name>/SKILL.md` directly with your editor. The pin guards tool-driven deletion, not your own filesystem access.
 
 ## Usage telemetry
 
-The curator maintains a sidecar at `~/.flux-agent/skills/.usage.json` with one entry per skill:
+The curator maintains a sidecar at `~/.omniworker/skills/.usage.json` with one entry per skill:
 
 ```json
 {
@@ -206,10 +206,10 @@ Bundled and hub-installed skills are explicitly excluded from telemetry writes.
 
 ## Per-run reports
 
-Every curator run writes a timestamped directory under `~/.flux-agent/logs/curator/`:
+Every curator run writes a timestamped directory under `~/.omniworker/logs/curator/`:
 
 ```
-~/.flux-agent/logs/curator/
+~/.omniworker/logs/curator/
 └── 20260429-111512/
     ├── run.json      # machine-readable: full fidelity, stats, LLM output
     └── REPORT.md     # human-readable summary
@@ -222,17 +222,17 @@ Every curator run writes a timestamped directory under `~/.flux-agent/logs/curat
 If the curator archived something you still want:
 
 ```bash
-flux-agent curator restore <skill-name>
+omniworker curator restore <skill-name>
 ```
 
-This moves the skill back from `~/.flux-agent/skills/.archive/` to the active tree and resets its state to `active`. The restore refuses if a bundled or hub-installed skill has since been installed under the same name (would shadow upstream).
+This moves the skill back from `~/.omniworker/skills/.archive/` to the active tree and resets its state to `active`. The restore refuses if a bundled or hub-installed skill has since been installed under the same name (would shadow upstream).
 
 ## Disabling per environment
 
 The curator is on by default. To turn it off:
 
-- **For one profile only:** edit `~/.flux-agent/config.yaml` (or the active profile's config) and set `curator.enabled: false`.
-- **For just one run:** `flux-agent curator pause` — the pause persists across sessions; use `resume` to re-enable.
+- **For one profile only:** edit `~/.omniworker/config.yaml` (or the active profile's config) and set `curator.enabled: false`.
+- **For just one run:** `omniworker curator pause` — the pause persists across sessions; use `resume` to re-enable.
 
 The curator also refuses to run if `min_idle_hours` hasn't elapsed, so on an active dev machine it naturally only runs during quiet stretches.
 
@@ -241,4 +241,4 @@ The curator also refuses to run if `min_idle_hours` hasn't elapsed, so on an act
 - [Skills System](/docs/user-guide/features/skills) — how skills work in general and the self-improvement loop that creates them
 - [Memory](/docs/user-guide/features/memory) — a parallel background review that maintains long-term memory
 - [Bundled Skills Catalog](/docs/reference/skills-catalog)
-- [Issue #7816](https://github.com/Flux Agent/flux-agent-agent/issues/7816) — original proposal and design discussion
+- [Issue #7816](https://github.com/Flux Agent/omniworker-agent/issues/7816) — original proposal and design discussion

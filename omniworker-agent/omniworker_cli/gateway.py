@@ -23,21 +23,21 @@ from gateway.restart import (
     GATEWAY_SERVICE_RESTART_EXIT_CODE,
     parse_restart_drain_timeout,
 )
-from flux-agent_cli.config import (
+from omniworker_cli.config import (
     get_env_value,
-    get_flux-agent_home,
+    get_omniworker_home,
     is_managed,
     managed_error,
     read_raw_config,
     save_env_value,
 )
-# display_flux-agent_home is imported lazily at call sites to avoid ImportError
-# when flux-agent_constants is cached from a pre-update version during `hermes update`.
-from flux-agent_cli.setup import (
+# display_omniworker_home is imported lazily at call sites to avoid ImportError
+# when omniworker_constants is cached from a pre-update version during `hermes update`.
+from omniworker_cli.setup import (
     print_header, print_info, print_success, print_warning, print_error,
     prompt, prompt_choice, prompt_yes_no,
 )
-from flux-agent_cli.colors import Colors, color
+from omniworker_cli.colors import Colors, color
 
 logger = logging.getLogger(__name__)
 
@@ -298,16 +298,16 @@ def _scan_gateway_pids(exclude_pids: set[int], all_profiles: bool = False) -> li
     exclude_pids = exclude_pids | _get_ancestor_pids()
     pids: list[int] = []
     patterns = [
-        "flux-agent_cli.main gateway",
-        "flux-agent_cli.main --profile",
-        "flux-agent_cli.main -p",
-        "flux-agent_cli/main.py gateway",
-        "flux-agent_cli/main.py --profile",
-        "flux-agent_cli/main.py -p",
+        "omniworker_cli.main gateway",
+        "omniworker_cli.main --profile",
+        "omniworker_cli.main -p",
+        "omniworker_cli/main.py gateway",
+        "omniworker_cli/main.py --profile",
+        "omniworker_cli/main.py -p",
         "hermes gateway",
         "gateway/run.py",
     ]
-    current_home = str(get_flux-agent_home().resolve())
+    current_home = str(get_omniworker_home().resolve())
     current_profile_arg = _profile_arg(current_home)
     current_profile_name = current_profile_arg.split()[-1] if current_profile_arg else ""
 
@@ -316,17 +316,17 @@ def _scan_gateway_pids(exclude_pids: set[int], all_profiles: bool = False) -> li
             return (
                 f"--profile {current_profile_name}" in command
                 or f"-p {current_profile_name}" in command
-                or f"FLUX AGENT_HOME={current_home}" in command
+                or f"OMNIWORKER_HOME={current_home}" in command
             )
 
         # Default-profile case: no profile flag in argv. Accept as long as
-        # the command doesn't advertise *some other* profile. FLUX AGENT_HOME
+        # the command doesn't advertise *some other* profile. OMNIWORKER_HOME
         # may be passed via env (not visible in wmic/CIM command line) so
         # its absence is NOT disqualifying — only a non-matching explicit
-        # FLUX AGENT_HOME= in argv is.
+        # OMNIWORKER_HOME= in argv is.
         if "--profile " in command or " -p " in command:
             return False
-        if "FLUX AGENT_HOME=" in command and f"FLUX AGENT_HOME={current_home}" not in command:
+        if "OMNIWORKER_HOME=" in command and f"OMNIWORKER_HOME={current_home}" not in command:
             return False
         return True
 
@@ -544,7 +544,7 @@ def find_profile_gateway_processes(
     processes: list[ProfileGatewayProcess] = []
     try:
         from gateway.status import get_running_pid
-        from flux-agent_cli.profiles import list_profiles
+        from omniworker_cli.profiles import list_profiles
     except Exception:
         return processes
 
@@ -562,7 +562,7 @@ def find_profile_gateway_processes(
 
 
 def _gateway_run_args_for_profile(profile: str) -> list[str]:
-    args = [get_python_path(), "-m", "flux-agent_cli.main"]
+    args = [get_python_path(), "-m", "omniworker_cli.main"]
     if profile != "default":
         args.extend(["--profile", profile])
     args.extend(["gateway", "run", "--replace"])
@@ -591,7 +591,7 @@ def launch_detached_profile_gateway_restart(profile: str, old_pid: int) -> bool:
     #
     # ``windows_detach_popen_kwargs()`` returns the right kwargs for the
     # host platform and is a no-op on POSIX (just ``start_new_session=True``).
-    from flux-agent_cli._subprocess_compat import windows_detach_popen_kwargs
+    from omniworker_cli._subprocess_compat import windows_detach_popen_kwargs
 
     watcher = textwrap.dedent(
         """
@@ -702,25 +702,25 @@ def _read_systemd_unit_environment(system: bool = False) -> dict[str, str]:
     return parsed
 
 
-def _sync_flux-agent_home_from_systemd_unit(system: bool) -> None:
-    """When acting on a system-scope unit, adopt its ``FLUX AGENT_HOME``.
+def _sync_omniworker_home_from_systemd_unit(system: bool) -> None:
+    """When acting on a system-scope unit, adopt its ``OMNIWORKER_HOME``.
 
-    Under ``sudo``, ``FLUX AGENT_HOME`` is stripped and ``HOME=/root``, so
-    :func:`get_flux-agent_home` falls back to ``/root/.hermes`` — the wrong
-    profile. The unit file pins ``FLUX AGENT_HOME`` for the actual gateway
+    Under ``sudo``, ``OMNIWORKER_HOME`` is stripped and ``HOME=/root``, so
+    :func:`get_omniworker_home` falls back to ``/root/.hermes`` — the wrong
+    profile. The unit file pins ``OMNIWORKER_HOME`` for the actual gateway
     process, so we mirror that into our own environment to make
     ``read_runtime_status`` / ``get_running_pid`` read the correct files.
     """
     if not system:
         return
     env = _read_systemd_unit_environment(system=True)
-    unit_home = env.get("FLUX AGENT_HOME", "").strip()
+    unit_home = env.get("OMNIWORKER_HOME", "").strip()
     if not unit_home:
         return
-    current = os.environ.get("FLUX AGENT_HOME", "").strip()
+    current = os.environ.get("OMNIWORKER_HOME", "").strip()
     if current == unit_home:
         return
-    os.environ["FLUX AGENT_HOME"] = unit_home
+    os.environ["OMNIWORKER_HOME"] = unit_home
 
 
 def _read_systemd_unit_properties(
@@ -978,7 +978,7 @@ def get_gateway_runtime_snapshot(system: bool = False) -> GatewayRuntimeSnapshot
             gateway_pids=gateway_pids,
         )
 
-    from flux-agent_constants import is_container
+    from omniworker_constants import is_container
 
     if is_linux() and is_container():
         return GatewayRuntimeSnapshot(
@@ -1037,7 +1037,7 @@ def _print_other_profiles_gateway_status() -> None:
     avoid confusing another profile's process with the current one.
     """
     try:
-        from flux-agent_cli.profiles import get_active_profile_name
+        from omniworker_cli.profiles import get_active_profile_name
 
         current = get_active_profile_name()
         other_processes = [
@@ -1063,7 +1063,7 @@ def _gateway_list() -> None:
     check each profile individually.
     """
     try:
-        from flux-agent_cli.profiles import list_profiles, get_active_profile_name
+        from omniworker_cli.profiles import list_profiles, get_active_profile_name
     except Exception:
         print("Unable to list profiles.")
         return
@@ -1125,7 +1125,7 @@ def kill_gateway_processes(force: bool = False, exclude_pids: set | None = None,
 
 
 def stop_profile_gateway() -> bool:
-    """Stop only the gateway for the current profile (FLUX AGENT_HOME-scoped).
+    """Stop only the gateway for the current profile (OMNIWORKER_HOME-scoped).
 
     Uses the PID file written by start_gateway(), so it only kills the
     gateway belonging to this profile — not gateways from other profiles.
@@ -1172,7 +1172,7 @@ def is_linux() -> bool:
     return sys.platform.startswith('linux')
 
 
-from flux-agent_constants import is_container, is_termux, is_wsl
+from omniworker_constants import is_container, is_termux, is_wsl
 
 
 def _wsl_systemd_operational() -> bool:
@@ -1234,13 +1234,13 @@ def _windows_gateway_should_absorb_console_controls() -> bool:
 
     Foreground ``hermes gateway run`` must remain interruptible from
     PowerShell/CMD. Detached service-style launches opt in via
-    ``FLUX AGENT_GATEWAY_DETACHED=1``; older wrappers without the env marker are
+    ``OMNIWORKER_GATEWAY_DETACHED=1``; older wrappers without the env marker are
     treated as detached when no interactive stdin is attached.
     """
     if not is_windows():
         return False
 
-    detached = os.getenv("FLUX AGENT_GATEWAY_DETACHED", "").strip().lower()
+    detached = os.getenv("OMNIWORKER_GATEWAY_DETACHED", "").strip().lower()
     if detached in {"1", "true", "yes", "on"}:
         return True
 
@@ -1259,16 +1259,16 @@ SERVICE_DESCRIPTION = "Flux Agent Agent Gateway - Messaging Platform Integration
 
 
 def _profile_suffix() -> str:
-    """Derive a service-name suffix from the current FLUX AGENT_HOME.
+    """Derive a service-name suffix from the current OMNIWORKER_HOME.
 
     Returns ``""`` for the default root, the profile name for
     ``<root>/profiles/<name>``, or a short hash for any other path.
-    Works correctly in Docker (FLUX AGENT_HOME=/opt/data) and standard deployments.
+    Works correctly in Docker (OMNIWORKER_HOME=/opt/data) and standard deployments.
     """
     import hashlib
     import re
-    from flux-agent_constants import get_default_hermes_root
-    home = get_flux-agent_home().resolve()
+    from omniworker_constants import get_default_hermes_root
+    home = get_omniworker_home().resolve()
     default = get_default_hermes_root().resolve()
     if home == default:
         return ""
@@ -1281,24 +1281,24 @@ def _profile_suffix() -> str:
             return parts[0]
     except ValueError:
         pass
-    # Fallback: short hash for arbitrary FLUX AGENT_HOME paths
+    # Fallback: short hash for arbitrary OMNIWORKER_HOME paths
     return hashlib.sha256(str(home).encode()).hexdigest()[:8]
 
 
-def _profile_arg(flux-agent_home: str | None = None) -> str:
-    """Return ``--profile <name>`` only when FLUX AGENT_HOME is a named profile.
+def _profile_arg(omniworker_home: str | None = None) -> str:
+    """Return ``--profile <name>`` only when OMNIWORKER_HOME is a named profile.
 
     For ``~/.hermes/profiles/<name>``, returns ``"--profile <name>"``.
     For the default profile or hash-based custom paths, returns the empty string.
 
     Args:
-        flux-agent_home: Optional explicit FLUX AGENT_HOME path. Defaults to the current
-            ``get_flux-agent_home()`` value. Should be passed when generating a
+        omniworker_home: Optional explicit OMNIWORKER_HOME path. Defaults to the current
+            ``get_omniworker_home()`` value. Should be passed when generating a
             service definition for a different user (e.g. system service).
     """
     import re
-    from flux-agent_constants import get_default_hermes_root
-    home = Path(flux-agent_home or str(get_flux-agent_home())).resolve()
+    from omniworker_constants import get_default_hermes_root
+    home = Path(omniworker_home or str(get_omniworker_home())).resolve()
     default = get_default_hermes_root().resolve()
     if home == default:
         return ""
@@ -1314,11 +1314,11 @@ def _profile_arg(flux-agent_home: str | None = None) -> str:
 
 
 def get_service_name() -> str:
-    """Derive a systemd service name scoped to this FLUX AGENT_HOME.
+    """Derive a systemd service name scoped to this OMNIWORKER_HOME.
 
     Default ``~/.hermes`` returns ``hermes-gateway`` (backward compatible).
     Profile ``~/.hermes/profiles/coder`` returns ``hermes-gateway-coder``.
-    Any other FLUX AGENT_HOME appends a short hash for uniqueness.
+    Any other OMNIWORKER_HOME appends a short hash for uniqueness.
     """
     suffix = _profile_suffix()
     if not suffix:
@@ -1583,8 +1583,8 @@ _LEGACY_SERVICE_NAMES: tuple[str, ...] = ("hermes.service",)
 # ExecStart content markers that identify a unit as running our gateway.
 # A legacy unit is only flagged when its file contains one of these.
 _LEGACY_UNIT_EXECSTART_MARKERS: tuple[str, ...] = (
-    "flux-agent_cli.main gateway",
-    "flux-agent_cli/main.py gateway",
+    "omniworker_cli.main gateway",
+    "omniworker_cli/main.py gateway",
     "gateway/run.py",
     " hermes gateway ",
     "/hermes gateway ",
@@ -2079,16 +2079,16 @@ def _remap_path_for_user(path: str, target_home_dir: str) -> str:
         return str(p)
 
 
-def _flux-agent_home_for_target_user(target_home_dir: str) -> str:
-    """Remap the current FLUX AGENT_HOME to the equivalent under a target user's home.
+def _omniworker_home_for_target_user(target_home_dir: str) -> str:
+    """Remap the current OMNIWORKER_HOME to the equivalent under a target user's home.
 
-    When installing a system service via sudo, get_flux-agent_home() resolves to
+    When installing a system service via sudo, get_omniworker_home() resolves to
     root's home.  This translates it to the target user's equivalent path:
       /root/.hermes                    → /home/alice/.hermes
       /root/.hermes/profiles/coder     → /home/alice/.hermes/profiles/coder
       /opt/custom-hermes               → /opt/custom-hermes  (kept as-is)
     """
-    current_hermes = get_flux-agent_home().resolve()
+    current_hermes = get_omniworker_home().resolve()
     current_default = (Path.home() / ".hermes").resolve()
     target_default = Path(target_home_dir) / ".hermes"
 
@@ -2128,11 +2128,11 @@ def _build_service_path_dirs(project_root: Path | None = None) -> list[str]:
     if _is_dir(node_bin):
         candidates.append(str(node_bin))
 
-    flux-agent_home = get_flux-agent_home()
-    hermes_node = flux-agent_home / "node" / "bin"
+    omniworker_home = get_omniworker_home()
+    hermes_node = omniworker_home / "node" / "bin"
     if _is_dir(hermes_node):
         candidates.append(str(hermes_node))
-    hermes_nm = flux-agent_home / "node_modules" / ".bin"
+    hermes_nm = omniworker_home / "node_modules" / ".bin"
     if _is_dir(hermes_nm):
         candidates.append(str(hermes_nm))
 
@@ -2164,8 +2164,8 @@ def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) 
 
     if system:
         username, group_name, home_dir = _system_service_identity(run_as_user)
-        flux-agent_home = _flux-agent_home_for_target_user(home_dir)
-        profile_arg = _profile_arg(flux-agent_home)
+        omniworker_home = _omniworker_home_for_target_user(home_dir)
+        profile_arg = _profile_arg(omniworker_home)
         # Remap all paths that may resolve under the calling user's home
         # (e.g. /root/) to the target user's home so the service can
         # actually access them.
@@ -2187,14 +2187,14 @@ StartLimitIntervalSec=0
 Type=simple
 User={username}
 Group={group_name}
-ExecStart={python_path} -m flux-agent_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run --replace
+ExecStart={python_path} -m omniworker_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run --replace
 WorkingDirectory={working_dir}
 Environment="HOME={home_dir}"
 Environment="USER={username}"
 Environment="LOGNAME={username}"
 Environment="PATH={sane_path}"
 Environment="VIRTUAL_ENV={venv_dir}"
-Environment="FLUX AGENT_HOME={flux-agent_home}"
+Environment="OMNIWORKER_HOME={omniworker_home}"
 Restart=always
 RestartSec=5
 RestartMaxDelaySec=300
@@ -2211,8 +2211,8 @@ StandardError=journal
 WantedBy=multi-user.target
 """
 
-    flux-agent_home = str(get_flux-agent_home().resolve())
-    profile_arg = _profile_arg(flux-agent_home)
+    omniworker_home = str(get_omniworker_home().resolve())
+    profile_arg = _profile_arg(omniworker_home)
     path_entries.extend(_build_user_local_paths(Path.home(), path_entries))
     path_entries.extend(_build_wsl_interop_paths(path_entries))
     path_entries.extend(common_bin_paths)
@@ -2225,11 +2225,11 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart={python_path} -m flux-agent_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run --replace
+ExecStart={python_path} -m omniworker_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run --replace
 WorkingDirectory={working_dir}
 Environment="PATH={sane_path}"
 Environment="VIRTUAL_ENV={venv_dir}"
-Environment="FLUX AGENT_HOME={flux-agent_home}"
+Environment="OMNIWORKER_HOME={omniworker_home}"
 Restart=always
 RestartSec=5
 RestartMaxDelaySec=300
@@ -2263,7 +2263,7 @@ def _normalize_launchd_plist_for_comparison(text: str) -> str:
     normalized = _normalize_service_definition(text)
     return re.sub(
         r'(<key>PATH</key>\s*<string>)(.*?)(</string>)',
-        r'\1__FLUX AGENT_PATH__\3',
+        r'\1__OMNIWORKER_PATH__\3',
         normalized,
         flags=re.S,
     )
@@ -2292,10 +2292,10 @@ def refresh_systemd_unit_if_needed(system: bool = False) -> bool:
 
     # ── Test-environment safety belt ─────────────────────────────────────
     # The user-scope unit path resolves under ``Path.home()``, which is NOT
-    # sandboxed by the test conftest (only FLUX AGENT_HOME is). If a test
-    # exercises ``run_gateway()`` with a pytest-tmp FLUX AGENT_HOME, the freshly
+    # sandboxed by the test conftest (only OMNIWORKER_HOME is). If a test
+    # exercises ``run_gateway()`` with a pytest-tmp OMNIWORKER_HOME, the freshly
     # generated unit bakes that ``/tmp/pytest-of-.../hermes_test`` path into
-    # ``Environment="FLUX AGENT_HOME=..."``. Writing that to the developer's
+    # ``Environment="OMNIWORKER_HOME=..."``. Writing that to the developer's
     # real user systemd unit file silently breaks their gateway on the next
     # reboot (systemd loads the polluted env, the gateway looks at an empty
     # tmp dir, and Telegram/Discord/etc. all show as "not configured").
@@ -2425,7 +2425,7 @@ def _print_system_scope_remediation(action: str) -> None:
 
 def _get_restart_drain_timeout() -> float:
     """Return the configured gateway restart drain timeout in seconds."""
-    raw = os.getenv("FLUX AGENT_RESTART_DRAIN_TIMEOUT", "").strip()
+    raw = os.getenv("OMNIWORKER_RESTART_DRAIN_TIMEOUT", "").strip()
     if not raw:
         cfg = read_raw_config()
         agent_cfg = cfg.get("agent", {}) if isinstance(cfg, dict) else {}
@@ -2542,7 +2542,7 @@ def systemd_stop(system: bool = False):
     if system:
         _require_root_for_system_service("stop")
     _require_service_installed("stop", system=system)
-    _sync_flux-agent_home_from_systemd_unit(system=system)
+    _sync_omniworker_home_from_systemd_unit(system=system)
     try:
         from gateway.status import get_running_pid, write_planned_stop_marker
         pid = get_running_pid(cleanup_stale=False)
@@ -2571,7 +2571,7 @@ def systemd_restart(system: bool = False):
         _preflight_user_systemd()
     _require_service_installed("restart", system=system)
     refresh_systemd_unit_if_needed(system=system)
-    _sync_flux-agent_home_from_systemd_unit(system=system)
+    _sync_omniworker_home_from_systemd_unit(system=system)
     from gateway.status import get_running_pid
 
     pid = get_running_pid() or _systemd_main_pid(system=system)
@@ -2667,7 +2667,7 @@ def systemd_status(deep: bool = False, system: bool = False, full: bool = False)
         print(f"  Run: {'sudo ' if system else ''}hermes gateway install{scope_flag}")
         return
 
-    _sync_flux-agent_home_from_systemd_unit(system=system)
+    _sync_omniworker_home_from_systemd_unit(system=system)
 
     if has_conflicting_systemd_units():
         print_systemd_scope_conflict_warning()
@@ -2775,11 +2775,11 @@ def _launchd_domain() -> str:
 def generate_launchd_plist() -> str:
     python_path = get_python_path()
     working_dir = str(PROJECT_ROOT)
-    flux-agent_home = str(get_flux-agent_home().resolve())
-    log_dir = get_flux-agent_home() / "logs"
+    omniworker_home = str(get_omniworker_home().resolve())
+    log_dir = get_omniworker_home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     label = get_launchd_label()
-    profile_arg = _profile_arg(flux-agent_home)
+    profile_arg = _profile_arg(omniworker_home)
     # Build a sane PATH for the launchd plist.  launchd provides only a
     # minimal default (/usr/bin:/bin:/usr/sbin:/sbin) which misses Homebrew,
     # nvm, cargo, etc.  We prepend venv/bin and node_modules/.bin (matching
@@ -2803,7 +2803,7 @@ def generate_launchd_plist() -> str:
     prog_args = [
         f"<string>{python_path}</string>",
         "<string>-m</string>",
-        "<string>flux-agent_cli.main</string>",
+        "<string>omniworker_cli.main</string>",
     ]
     if profile_arg:
         for part in profile_arg.split():
@@ -2836,8 +2836,8 @@ def generate_launchd_plist() -> str:
         <string>{sane_path}</string>
         <key>VIRTUAL_ENV</key>
         <string>{venv_dir}</string>
-        <key>FLUX AGENT_HOME</key>
-        <string>{flux-agent_home}</string>
+        <key>OMNIWORKER_HOME</key>
+        <string>{omniworker_home}</string>
     </dict>
     
     <key>RunAtLoad</key>
@@ -2913,7 +2913,7 @@ def launchd_install(force: bool = False):
     print()
     print("Next steps:")
     print("  hermes gateway status             # Check status")
-    from flux-agent_constants import display_flux-agent_home as _dhh
+    from omniworker_constants import display_omniworker_home as _dhh
     print(f"  tail -f {_dhh()}/logs/gateway.log  # View logs")
 
 def launchd_uninstall():
@@ -2981,7 +2981,7 @@ def _wait_for_gateway_exit(timeout: float = 10.0, force_after: float | None = 5.
 
     Uses the PID from the gateway.pid file — not launchd labels — so this
     works correctly when multiple gateway instances run under separate
-    FLUX AGENT_HOME directories.
+    OMNIWORKER_HOME directories.
 
     Args:
         timeout: Total seconds to wait before giving up.
@@ -3082,7 +3082,7 @@ def launchd_status(deep: bool = False):
         print("  Run: hermes gateway start")
     
     if deep:
-        log_file = get_flux-agent_home() / "logs" / "gateway.log"
+        log_file = get_omniworker_home() / "logs" / "gateway.log"
         if log_file.exists():
             print()
             print("Recent logs:")
@@ -3108,7 +3108,7 @@ def _guard_official_docker_root_gateway() -> None:
     """Refuse gateway startup when the official Docker privilege drop was bypassed."""
     if not hasattr(os, "geteuid") or os.geteuid() != 0:
         return
-    if _truthy_env(os.getenv("FLUX AGENT_ALLOW_ROOT_GATEWAY")):
+    if _truthy_env(os.getenv("OMNIWORKER_ALLOW_ROOT_GATEWAY")):
         return
     if not _is_official_docker_checkout():
         return
@@ -3123,9 +3123,9 @@ def _guard_official_docker_root_gateway() -> None:
     )
     print(
         "  Running the gateway as root can leave root-owned files in "
-        "$FLUX AGENT_HOME and break later non-root dashboard/gateway runs."
+        "$OMNIWORKER_HOME and break later non-root dashboard/gateway runs."
     )
-    print("  Set FLUX AGENT_ALLOW_ROOT_GATEWAY=1 only if you intentionally accept this risk.")
+    print("  Set OMNIWORKER_ALLOW_ROOT_GATEWAY=1 only if you intentionally accept this risk.")
     sys.exit(1)
 
 
@@ -3145,7 +3145,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False):
     # Detached Windows gateway runs must ignore console-control broadcasts
     # from sibling CLI processes, but foreground `hermes gateway run` still
     # needs to obey the banner's "Press Ctrl+C to stop" contract.
-    # Service-style launchers set FLUX AGENT_GATEWAY_DETACHED=1; older wrappers
+    # Service-style launchers set OMNIWORKER_GATEWAY_DETACHED=1; older wrappers
     # without the marker are handled by the non-TTY fallback.
     try:
         _stdin_is_tty = bool(sys.stdin and sys.stdin.isatty())
@@ -3217,17 +3217,17 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False):
     # the next silent death yields evidence instead of a mystery. This
     # is diagnostic scaffolding; cheap to keep on, costs nothing during
     # normal operation, and the emitted lines are opt-in via the
-    # FLUX AGENT_GATEWAY_EXIT_DIAG env var (default: on while we're still
+    # OMNIWORKER_GATEWAY_EXIT_DIAG env var (default: on while we're still
     # chasing the Windows lifecycle bug).
     import atexit as _atexit
     import traceback as _traceback
     from datetime import datetime as _dt, timezone as _tz
 
     def _exit_diag(tag: str, **extra: object) -> None:
-        if os.environ.get("FLUX AGENT_GATEWAY_EXIT_DIAG", "1") != "1":
+        if os.environ.get("OMNIWORKER_GATEWAY_EXIT_DIAG", "1") != "1":
             return
         try:
-            from flux-agent_constants import get_flux-agent_home as _ghh
+            from omniworker_constants import get_omniworker_home as _ghh
             log_dir = _ghh() / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             ts = _dt.now(_tz.utc).isoformat()
@@ -3704,7 +3704,7 @@ def _all_platforms() -> list[dict]:
     # User-installed platform plugins under ~/.hermes/plugins/ still require
     # opt-in via ``plugins.enabled`` (untrusted code).
     try:
-        from flux-agent_cli.plugins import discover_plugins
+        from omniworker_cli.plugins import discover_plugins
         discover_plugins()
     except Exception as e:
         logger.debug("plugin discovery failed during platform enumeration: %s", e)
@@ -3767,7 +3767,7 @@ def _platform_status(platform: dict) -> str:
     val = get_env_value(token_var)
     if token_var == "WHATSAPP_ENABLED":
         if val and val.lower() == "true":
-            session_file = get_flux-agent_home() / "whatsapp" / "session" / "creds.json"
+            session_file = get_omniworker_home() / "whatsapp" / "session" / "creds.json"
             if session_file.exists():
                 return "configured + paired"
             return "enabled, not paired"
@@ -3945,7 +3945,7 @@ def _setup_standard_platform(platform: dict):
 
 def _setup_whatsapp():
     """Delegate to the existing WhatsApp setup flow."""
-    from flux-agent_cli.main import cmd_whatsapp
+    from omniworker_cli.main import cmd_whatsapp
     import argparse
     cmd_whatsapp(argparse.Namespace())
 
@@ -3964,7 +3964,7 @@ def _setup_sms():
 
 def _setup_dingtalk():
     """Configure DingTalk — QR scan (recommended) or manual credential entry."""
-    from flux-agent_cli.setup import (
+    from omniworker_cli.setup import (
         prompt_choice, prompt_yes_no, print_success, print_warning,
     )
 
@@ -3995,7 +3995,7 @@ def _setup_dingtalk():
     if method == 0:
         # ── QR-code device-flow authorization ──
         try:
-            from flux-agent_cli.dingtalk_auth import dingtalk_qr_auth
+            from omniworker_cli.dingtalk_auth import dingtalk_qr_auth
         except ImportError as exc:
             print_warning(f"  QR auth module failed to load ({exc}), falling back to manual input.")
             _setup_standard_platform(dingtalk_platform)
@@ -4151,7 +4151,7 @@ def _is_service_installed() -> bool:
     elif is_macos():
         return get_launchd_plist_path().exists()
     elif is_windows():
-        from flux-agent_cli import gateway_windows
+        from omniworker_cli import gateway_windows
         return gateway_windows.is_installed()
     return False
 
@@ -4195,7 +4195,7 @@ def _is_service_running() -> bool:
         except subprocess.TimeoutExpired:
             return False
     elif is_windows():
-        from flux-agent_cli import gateway_windows
+        from omniworker_cli import gateway_windows
         if gateway_windows.is_installed():
             # "installed" doesn't necessarily mean "running" on Windows. The
             # canonical check is whether a gateway process actually exists.
@@ -4241,7 +4241,7 @@ def _setup_weixin():
 
     import asyncio
     try:
-        credentials = asyncio.run(qr_login(str(get_flux-agent_home())))
+        credentials = asyncio.run(qr_login(str(get_omniworker_home())))
     except KeyboardInterrupt:
         print()
         print_warning("  Weixin setup cancelled.")
@@ -4644,7 +4644,7 @@ def _setup_signal():
         print_info("    Docker: bbernhard/signal-cli-rest-api")
         print()
         print_info("  After installing, link your account and start the daemon:")
-        print_info("    signal-cli link -n \"Flux AgentAgent\"")
+        print_info("    signal-cli link -n \"OmniWorkerAgent\"")
         print_info("    signal-cli --account +YOURNUMBER daemon --http 127.0.0.1:8080")
         print()
 
@@ -4733,10 +4733,10 @@ def _setup_signal():
 def _builtin_setup_fn(key: str):
     """Resolve the interactive setup function for a built-in platform key.
 
-    Late-bound to avoid a circular import with ``flux-agent_cli.setup`` (which
+    Late-bound to avoid a circular import with ``omniworker_cli.setup`` (which
     imports from this module for the remaining bespoke flows).
     """
-    from flux-agent_cli import setup as _s
+    from omniworker_cli import setup as _s
     return {
         "telegram": _s._setup_telegram,
         "discord": _s._setup_discord,
@@ -4902,7 +4902,7 @@ def gateway_setup():
                     elif is_macos():
                         launchd_restart()
                     elif is_windows():
-                        from flux-agent_cli import gateway_windows
+                        from omniworker_cli import gateway_windows
                         gateway_windows.restart()
                     else:
                         stop_profile_gateway()
@@ -4926,7 +4926,7 @@ def gateway_setup():
                     elif is_macos():
                         launchd_start()
                     elif is_windows():
-                        from flux-agent_cli import gateway_windows
+                        from omniworker_cli import gateway_windows
                         gateway_windows.start()
                 except UserSystemdUnavailableError as e:
                     print_error("  Start failed — user systemd not reachable:")
@@ -4961,7 +4961,7 @@ def gateway_setup():
                             # gateway_windows.install() registers the Scheduled
                             # Task AND starts it (schtasks /Run or direct-spawn
                             # fallback), so no separate start prompt is needed.
-                            from flux-agent_cli import gateway_windows
+                            from omniworker_cli import gateway_windows
                             gateway_windows.install(force=False)
                             did_install = True
                             started_inline = True
@@ -4992,7 +4992,7 @@ def gateway_setup():
                 print_info("  For persistence:   tmux new -s hermes 'hermes gateway run'")
                 print_info("  To enable systemd: add systemd=true to /etc/wsl.conf, then 'wsl --shutdown'")
             elif is_termux():
-                from flux-agent_constants import display_flux-agent_home as _dhh
+                from omniworker_constants import display_omniworker_home as _dhh
                 print_info("  Termux does not use systemd/launchd services.")
                 print_info("  Run in foreground: hermes gateway run")
                 print_info(f"  Or start it manually in the background (best effort): nohup hermes gateway run >{_dhh()}/logs/gateway.log 2>&1 &")
@@ -5068,7 +5068,7 @@ def _gateway_command_inner(args):
         elif is_macos():
             launchd_install(force)
         elif is_windows():
-            from flux-agent_cli import gateway_windows
+            from omniworker_cli import gateway_windows
             gateway_windows.install(force=force)
         elif is_wsl():
             print("WSL detected but systemd is not running.")
@@ -5107,7 +5107,7 @@ def _gateway_command_inner(args):
         elif is_macos():
             launchd_uninstall()
         elif is_windows():
-            from flux-agent_cli import gateway_windows
+            from omniworker_cli import gateway_windows
             gateway_windows.uninstall()
         elif is_container():
             print("Service uninstall is not applicable inside a Docker container.")
@@ -5140,7 +5140,7 @@ def _gateway_command_inner(args):
         elif is_macos():
             launchd_start()
         elif is_windows():
-            from flux-agent_cli import gateway_windows
+            from omniworker_cli import gateway_windows
             gateway_windows.start()
         elif is_wsl():
             print("WSL detected but systemd is not available.")
@@ -5185,7 +5185,7 @@ def _gateway_command_inner(args):
                 except subprocess.CalledProcessError:
                     pass
             elif is_windows():
-                from flux-agent_cli import gateway_windows
+                from omniworker_cli import gateway_windows
                 if gateway_windows.is_installed():
                     try:
                         gateway_windows.stop()
@@ -5214,7 +5214,7 @@ def _gateway_command_inner(args):
                 except subprocess.CalledProcessError:
                     pass
             elif is_windows():
-                from flux-agent_cli import gateway_windows
+                from omniworker_cli import gateway_windows
                 if gateway_windows.is_installed():
                     try:
                         gateway_windows.stop()
@@ -5254,7 +5254,7 @@ def _gateway_command_inner(args):
                 except subprocess.CalledProcessError:
                     pass
             elif is_windows():
-                from flux-agent_cli import gateway_windows
+                from omniworker_cli import gateway_windows
                 if gateway_windows.is_installed():
                     try:
                         gateway_windows.stop()
@@ -5274,7 +5274,7 @@ def _gateway_command_inner(args):
             elif is_macos() and get_launchd_plist_path().exists():
                 launchd_start()
             elif is_windows():
-                from flux-agent_cli import gateway_windows
+                from omniworker_cli import gateway_windows
                 if gateway_windows.is_installed():
                     gateway_windows.start()
                 else:
@@ -5298,7 +5298,7 @@ def _gateway_command_inner(args):
             except subprocess.CalledProcessError:
                 pass
         elif is_windows():
-            from flux-agent_cli import gateway_windows
+            from omniworker_cli import gateway_windows
             if gateway_windows.is_installed():
                 service_configured = True
                 try:
@@ -5350,7 +5350,7 @@ def _gateway_command_inner(args):
         # Check for service first
         _windows_service_installed = False
         if is_windows():
-            from flux-agent_cli import gateway_windows
+            from omniworker_cli import gateway_windows
             _windows_service_installed = gateway_windows.is_installed()
         if supports_systemd_services() and (get_systemd_unit_path(system=False).exists() or get_systemd_unit_path(system=True).exists()):
             systemd_status(deep, system=system, full=full)
@@ -5359,7 +5359,7 @@ def _gateway_command_inner(args):
             launchd_status(deep)
             _print_gateway_process_mismatch(snapshot)
         elif _windows_service_installed:
-            from flux-agent_cli import gateway_windows
+            from omniworker_cli import gateway_windows
             gateway_windows.status(deep=deep)
             _print_gateway_process_mismatch(snapshot)
         else:

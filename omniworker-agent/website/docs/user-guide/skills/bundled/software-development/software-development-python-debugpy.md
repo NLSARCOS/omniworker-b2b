@@ -21,7 +21,7 @@ Debug Python: pdb REPL + debugpy remote (DAP).
 | License | MIT |
 | Platforms | linux, macos |
 | Tags | `debugging`, `python`, `pdb`, `debugpy`, `breakpoints`, `dap`, `post-mortem` |
-| Related skills | [`systematic-debugging`](/docs/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`node-inspect-debugger`](/docs/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger), [`debugging-flux-agent-tui-commands`](/docs/user-guide/skills/bundled/software-development/software-development-debugging-flux-agent-tui-commands) |
+| Related skills | [`systematic-debugging`](/docs/user-guide/skills/bundled/software-development/software-development-systematic-debugging), [`node-inspect-debugger`](/docs/user-guide/skills/bundled/software-development/software-development-node-inspect-debugger), [`debugging-omniworker-tui-commands`](/docs/user-guide/skills/bundled/software-development/software-development-debugging-omniworker-tui-commands) |
 
 ## Reference: full SKILL.md
 
@@ -47,7 +47,7 @@ Three tools, picked by situation:
 
 - A test fails and the traceback doesn't reveal why a value is wrong
 - You need to step through a function and watch a collection mutate
-- A long-running process (flux-agent gateway, tui_gateway) misbehaves and you can't restart it
+- A long-running process (omniworker gateway, tui_gateway) misbehaves and you can't restart it
 - Post-mortem: an exception fired in prod-ish code and you want to inspect locals at the crash site
 - A subprocess / child (Python `_SlashWorker`, PTY bridge worker) is the actual bug site
 
@@ -112,7 +112,7 @@ python -m pdb path/to/script.py arg1 arg2
 
 ## Recipe 3: Debug a pytest test
 
-The flux-agent test runner and pytest both support this:
+The omniworker test runner and pytest both support this:
 
 ```bash
 # Drop to pdb on failure (or on any raised exception):
@@ -169,7 +169,7 @@ For long-lived processes: Flux Agent gateway, tui_gateway, a daemon, a process t
 ### Setup
 
 ```bash
-source /home/bb/flux-agent-agent/.venv/bin/activate
+source /home/bb/omniworker-agent/.venv/bin/activate
 pip install debugpy
 ```
 
@@ -266,7 +266,7 @@ This is fine for one-off automation but painful as an interactive UX.
   "connect": { "host": "127.0.0.1", "port": 5678 },
   "justMyCode": false,
   "pathMappings": [
-    { "localRoot": "${workspaceFolder}", "remoteRoot": "/home/bb/flux-agent-agent" }
+    { "localRoot": "${workspaceFolder}", "remoteRoot": "/home/bb/omniworker-agent" }
   ]
 }
 ```
@@ -297,9 +297,9 @@ nc 127.0.0.1 4444
 See Recipe 3. Always add `-p no:xdist` or run single tests without xdist.
 
 ### `run_agent.py` / CLI — one-shot
-Easiest: add `breakpoint()` near the suspect line, then run `flux-agent` normally. Control returns to your terminal at the pause point.
+Easiest: add `breakpoint()` near the suspect line, then run `omniworker` normally. Control returns to your terminal at the pause point.
 
-### `tui_gateway` subprocess (spawned by `flux-agent --tui`)
+### `tui_gateway` subprocess (spawned by `omniworker --tui`)
 The gateway runs as a child of the Node TUI. Options:
 
 **A. Source-edit the gateway:**
@@ -309,7 +309,7 @@ import debugpy
 debugpy.listen(("127.0.0.1", 5678))
 debugpy.wait_for_client()
 ```
-Start `flux-agent --tui`. The TUI will appear frozen (its backend is waiting). Attach a client; execution resumes when you `continue`.
+Start `omniworker --tui`. The TUI will appear frozen (its backend is waiting). Attach a client; execution resumes when you `continue`.
 
 **B. Use `remote-pdb` at a specific handler:**
 ```python

@@ -1,6 +1,6 @@
-"""CLI entry point for the flux-agent-agent ACP adapter.
+"""CLI entry point for the omniworker-agent ACP adapter.
 
-Loads environment variables from ``~/.flux-agent/.env``, configures logging
+Loads environment variables from ``~/.omniworker/.env``, configures logging
 to write to stderr (so stdout is reserved for ACP JSON-RPC transport),
 and starts the ACP agent server.
 
@@ -8,18 +8,18 @@ Usage::
 
     python -m acp_adapter.entry
     # or
-    flux-agent acp
+    omniworker acp
     # or
-    flux-agent-acp
+    omniworker-acp
 """
 
-# IMPORTANT: flux-agent_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See flux-agent_bootstrap.py for full rationale.
+# IMPORTANT: omniworker_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See omniworker_bootstrap.py for full rationale.
 try:
-    import flux-agent_bootstrap  # noqa: F401
+    import omniworker_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    # Graceful fallback when flux-agent_bootstrap isn't registered in the venv
-    # yet — happens during partial ``flux-agent update`` where git-reset landed
+    # Graceful fallback when omniworker_bootstrap isn't registered in the venv
+    # yet — happens during partial ``omniworker update`` where git-reset landed
     # new code but ``uv pip install -e .`` didn't finish.  Missing bootstrap
     # means UTF-8 stdio setup is skipped on Windows; POSIX is unaffected.
     pass
@@ -29,7 +29,7 @@ import asyncio
 import logging
 import sys
 from pathlib import Path
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 
 
 # Methods clients send as periodic liveness probes. They are not part of the
@@ -94,23 +94,23 @@ def _setup_logging() -> None:
 
 
 def _load_env() -> None:
-    """Load .env from FLUX AGENT_HOME (default ``~/.flux-agent``)."""
-    from flux-agent_cli.env_loader import load_flux-agent_dotenv
+    """Load .env from OMNIWORKER_HOME (default ``~/.omniworker``)."""
+    from omniworker_cli.env_loader import load_omniworker_dotenv
 
-    flux-agent_home = get_flux-agent_home()
-    loaded = load_flux-agent_dotenv(flux-agent_home=flux-agent_home)
+    omniworker_home = get_omniworker_home()
+    loaded = load_omniworker_dotenv(omniworker_home=omniworker_home)
     if loaded:
         for env_file in loaded:
             logging.getLogger(__name__).info("Loaded env from %s", env_file)
     else:
         logging.getLogger(__name__).info(
-            "No .env found at %s, using system env", flux-agent_home / ".env"
+            "No .env found at %s, using system env", omniworker_home / ".env"
         )
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="flux-agent-acp",
+        prog="omniworker-acp",
         description="Run Flux Agent Agent as an ACP stdio server.",
     )
     parser.add_argument("--version", action="store_true", help="Print Flux Agent version and exit")
@@ -127,7 +127,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--setup-browser",
         action="store_true",
-        help="Install agent-browser + Playwright Chromium into ~/.flux-agent/node/ "
+        help="Install agent-browser + Playwright Chromium into ~/.omniworker/node/ "
              "for browser tool support. Idempotent.",
     )
     parser.add_argument(
@@ -142,25 +142,25 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _print_version() -> None:
-    from flux-agent_cli import __version__ as flux-agent_version
+    from omniworker_cli import __version__ as omniworker_version
 
-    print(flux-agent_version)
+    print(omniworker_version)
 
 
 def _run_check() -> None:
     import acp  # noqa: F401
-    from acp_adapter.server import Flux AgentACPAgent  # noqa: F401
+    from acp_adapter.server import OmniWorkerACPAgent  # noqa: F401
 
     print("Flux Agent ACP check OK")
 
 
 def _run_setup() -> None:
-    from flux-agent_cli.main import main as flux-agent_main
+    from omniworker_cli.main import main as omniworker_main
 
     old_argv = sys.argv[:]
     try:
-        sys.argv = [old_argv[0] if old_argv else "flux-agent", "model"]
-        flux-agent_main()
+        sys.argv = [old_argv[0] if old_argv else "omniworker", "model"]
+        omniworker_main()
     finally:
         sys.argv = old_argv
 
@@ -256,7 +256,7 @@ def main(argv: list[str] | None = None) -> None:
     _load_env()
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting flux-agent-agent ACP adapter")
+    logger.info("Starting omniworker-agent ACP adapter")
 
     # Ensure the project root is on sys.path so ``from run_agent import AIAgent`` works
     project_root = str(Path(__file__).resolve().parent.parent)
@@ -264,7 +264,7 @@ def main(argv: list[str] | None = None) -> None:
         sys.path.insert(0, project_root)
 
     import acp
-    from .server import Flux AgentACPAgent
+    from .server import OmniWorkerACPAgent
 
     # MCP tool discovery from config.yaml — run before asyncio.run() so
     # it's safe to use blocking waits.  (ACP also registers per-session
@@ -277,7 +277,7 @@ def main(argv: list[str] | None = None) -> None:
     except Exception:
         logger.debug("MCP tool discovery failed at ACP startup", exc_info=True)
 
-    agent = Flux AgentACPAgent()
+    agent = OmniWorkerACPAgent()
     try:
         asyncio.run(acp.run_agent(agent, use_unstable_protocol=True))
     except KeyboardInterrupt:

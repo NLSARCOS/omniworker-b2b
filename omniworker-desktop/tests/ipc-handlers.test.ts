@@ -59,10 +59,10 @@ describe("IPC Handler ↔ Preload Consistency", () => {
 
 describe("New IPC handlers from v0.8/v0.9 features", () => {
   const newChannels = [
-    "run-flux-agent-backup",
-    "run-flux-agent-import",
+    "run-omniworker-backup",
+    "run-omniworker-import",
     "read-logs",
-    "run-flux-agent-dump",
+    "run-omniworker-dump",
     "list-mcp-servers",
     "discover-memory-providers",
   ];
@@ -84,9 +84,9 @@ describe("Legacy IPC handlers preserved", () => {
   const legacyChannels = [
     "check-install",
     "start-install",
-    "get-flux-agent-version",
-    "run-flux-agent-doctor",
-    "run-flux-agent-update",
+    "get-omniworker-version",
+    "run-omniworker-doctor",
+    "run-omniworker-update",
     "get-env",
     "set-env",
     "get-config",

@@ -6,7 +6,7 @@ author: Flux Agent Agent
 license: MIT
 platforms: [macos]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Reminders, tasks, todo, macOS, Apple]
 prerequisites:
   commands: [remindctl]

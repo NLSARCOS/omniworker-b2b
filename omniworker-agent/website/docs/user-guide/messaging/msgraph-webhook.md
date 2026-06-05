@@ -14,11 +14,11 @@ Right now the primary consumer is the Teams meeting summary pipeline: Graph noti
 
 - Microsoft Graph application credentials — [Register a Microsoft Graph Application](/docs/guides/microsoft-graph-app-registration)
 - A **public HTTPS URL** that Microsoft Graph can reach (Graph does not call private endpoints). A dev tunnel works for testing; production needs a real domain with a valid certificate.
-- A strong shared secret to use as the `clientState` value. Generate with `openssl rand -hex 32` and put it in `~/.flux-agent/.env` as `MSGRAPH_WEBHOOK_CLIENT_STATE`.
+- A strong shared secret to use as the `clientState` value. Generate with `openssl rand -hex 32` and put it in `~/.omniworker/.env` as `MSGRAPH_WEBHOOK_CLIENT_STATE`.
 
 ## Quick Start
 
-Minimum `~/.flux-agent/config.yaml`:
+Minimum `~/.omniworker/config.yaml`:
 
 ```yaml
 platforms:
@@ -31,7 +31,7 @@ platforms:
         - "communications/onlineMeetings"
 ```
 
-Or via env vars in `~/.flux-agent/.env` (auto-merged on startup):
+Or via env vars in `~/.omniworker/.env` (auto-merged on startup):
 
 ```bash
 MSGRAPH_WEBHOOK_ENABLED=true
@@ -40,7 +40,7 @@ MSGRAPH_WEBHOOK_CLIENT_STATE=<generate-with-openssl-rand-hex-32>
 MSGRAPH_WEBHOOK_ACCEPTED_RESOURCES=communications/onlineMeetings
 ```
 
-Start the gateway: `flux-agent gateway run`. The listener exposes:
+Start the gateway: `omniworker gateway run`. The listener exposes:
 
 - `POST /msgraph/webhook` — change notifications from Graph
 - `GET /msgraph/webhook?validationToken=...` — Graph subscription validation handshake
@@ -126,7 +126,7 @@ Status code table:
 |---------|---------------|
 | Graph subscription validation fails | Public URL is reachable, `/msgraph/webhook` path matches, GET with `validationToken` echoes the token verbatim as `text/plain` within 10 seconds. |
 | Notifications POST but nothing ingests | `client_state` matches what you registered the subscription with. Re-run `openssl rand -hex 32` and create a new subscription if the value drifted. Check `accepted_resources` includes the resource path Graph is sending. |
-| Every notification 403s | `clientState` mismatch (forged, or subscription registered with a different value). Re-create the subscription with `flux-agent teams-pipeline subscribe --client-state "$MSGRAPH_WEBHOOK_CLIENT_STATE" ...` (ships with the pipeline runtime PR). |
+| Every notification 403s | `clientState` mismatch (forged, or subscription registered with a different value). Re-create the subscription with `omniworker teams-pipeline subscribe --client-state "$MSGRAPH_WEBHOOK_CLIENT_STATE" ...` (ships with the pipeline runtime PR). |
 | Listener starts but `curl http://localhost:8646/health` hangs | Port binding collision. Check `ss -tlnp \| grep 8646` and change `port:` if needed. |
 | Real Graph requests from Microsoft get 403'd | Source IP allowlist is too narrow. Remove `allowed_source_cidrs` temporarily, confirm traffic flows, then widen the list to include the current Microsoft egress ranges. |
 

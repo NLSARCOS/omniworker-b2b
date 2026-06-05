@@ -12,7 +12,7 @@ badge. User can edit afterward to confirm.
 
 Design notes
 ------------
-- Mirrors the shape of ``flux-agent_cli/kanban_specify.py``: lazy aux
+- Mirrors the shape of ``omniworker_cli/kanban_specify.py``: lazy aux
   client import inside the function, lenient response parse, never
   raises on expected failure modes.
 - Reads at most ``MAX_SKILLS_FOR_PROMPT`` skill names to keep the
@@ -34,7 +34,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from flux-agent_cli import profiles as profiles_mod
+from omniworker_cli import profiles as profiles_mod
 
 logger = logging.getLogger(__name__)
 
@@ -180,8 +180,8 @@ def describe_profile(
 
     try:
         if canon == "default":
-            from flux-agent_constants import get_flux-agent_home  # type: ignore
-            profile_dir = Path(get_flux-agent_home())
+            from omniworker_constants import get_omniworker_home  # type: ignore
+            profile_dir = Path(get_omniworker_home())
         else:
             profile_dir = profiles_mod.get_profile_dir(canon)
     except Exception as exc:

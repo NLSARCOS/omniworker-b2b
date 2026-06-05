@@ -1,16 +1,16 @@
 {
-  "id": "flux-agent-agent",
+  "id": "omniworker-agent",
   "name": "Flux Agent Agent",
   "version": "0.13.0",
   "description": "Self-improving open-source AI agent by Nous Research with ACP editor integration, persistent memory, skills, and rich tool support.",
-  "repository": "https://github.com/Flux Agent/flux-agent-agent",
-  "website": "https://flux-agent-agent.flux-agent.com/docs/user-guide/features/acp",
+  "repository": "https://github.com/Flux Agent/omniworker-agent",
+  "website": "https://omniworker-agent.omniworker.com/docs/user-guide/features/acp",
   "authors": ["Nous Research"],
   "license": "MIT",
   "distribution": {
     "uvx": {
-      "package": "flux-agent-agent[acp]==0.13.0",
-      "args": ["flux-agent-acp"]
+      "package": "omniworker-agent[acp]==0.13.0",
+      "args": ["omniworker-acp"]
     }
   }
 }

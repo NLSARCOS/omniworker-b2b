@@ -18,7 +18,7 @@ def _write_skill(skills_dir: Path, name: str) -> None:
 
 @pytest.fixture
 def curator_modules(tmp_path, monkeypatch):
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     (home / "skills").mkdir(parents=True)
     monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)

@@ -9,17 +9,17 @@ import pytest
 @pytest.fixture(autouse=True)
 def _isolate(tmp_path, monkeypatch):
     """Redirect OMNIWORKER_HOME and clear module caches."""
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
     # Write a minimal config so load_config doesn't fail
-    (flux-agent_home / "config.yaml").write_text("model:\n  default: test-model\n")
+    (omniworker_home / "config.yaml").write_text("model:\n  default: test-model\n")
 
 
 def _write_config(tmp_path, config_dict):
     """Write a config.yaml to the test OMNIWORKER_HOME."""
     import yaml
-    config_path = tmp_path / ".flux-agent" / "config.yaml"
+    config_path = tmp_path / ".omniworker" / "config.yaml"
     config_path.write_text(yaml.dump(config_dict))
 
 
@@ -105,7 +105,7 @@ class TestResolveProviderClientMainAlias:
             "model": {"default": "gpt-5.4", "provider": "github-copilot"},
         })
         with (
-            patch("flux-agent_cli.auth.resolve_api_key_provider_credentials", return_value={
+            patch("omniworker_cli.auth.resolve_api_key_provider_credentials", return_value={
                 "api_key": "ghu_test_token",
                 "base_url": "https://api.githubcopilot.com",
             }),
@@ -183,7 +183,7 @@ class TestResolveProviderClientModelNormalization:
             "model": {"default": "zai/glm-5.1", "provider": "zai"},
         })
         with (
-            patch("flux-agent_cli.auth.resolve_api_key_provider_credentials", return_value={
+            patch("omniworker_cli.auth.resolve_api_key_provider_credentials", return_value={
                 "api_key": "glm-key",
                 "base_url": "https://api.z.ai/api/paas/v4",
             }),
@@ -202,7 +202,7 @@ class TestResolveProviderClientModelNormalization:
             "model": {"default": "zai/glm-5.1", "provider": "zai"},
         })
         with (
-            patch("flux-agent_cli.auth.resolve_api_key_provider_credentials", return_value={
+            patch("omniworker_cli.auth.resolve_api_key_provider_credentials", return_value={
                 "api_key": "glm-key",
                 "base_url": "https://api.z.ai/api/paas/v4",
             }),
@@ -239,7 +239,7 @@ class TestResolveVisionProviderClientModelNormalization:
         })
         with (
             patch("agent.auxiliary_client._read_nous_auth", return_value=None),
-            patch("flux-agent_cli.auth.resolve_api_key_provider_credentials", return_value={
+            patch("omniworker_cli.auth.resolve_api_key_provider_credentials", return_value={
                 "api_key": "glm-key",
                 "base_url": "https://api.z.ai/api/paas/v4",
             }),
@@ -300,7 +300,7 @@ class TestProvidersDictApiModeAnthropicMessages:
                 },
             },
         })
-        from flux-agent_cli.runtime_provider import _get_named_custom_provider
+        from omniworker_cli.runtime_provider import _get_named_custom_provider
         entry = _get_named_custom_provider("myrelay")
         assert entry is not None
         assert entry.get("api_mode") == "anthropic_messages"
@@ -318,7 +318,7 @@ class TestProvidersDictApiModeAnthropicMessages:
                 },
             },
         })
-        from flux-agent_cli.runtime_provider import _get_named_custom_provider
+        from omniworker_cli.runtime_provider import _get_named_custom_provider
         entry = _get_named_custom_provider("weird")
         assert entry is not None
         assert "api_mode" not in entry
@@ -334,7 +334,7 @@ class TestProvidersDictApiModeAnthropicMessages:
                 },
             },
         })
-        from flux-agent_cli.runtime_provider import _get_named_custom_provider
+        from omniworker_cli.runtime_provider import _get_named_custom_provider
         entry = _get_named_custom_provider("localchat")
         assert entry is not None
         assert "api_mode" not in entry

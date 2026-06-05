@@ -15,7 +15,7 @@ Every Telegram bot requires an API token issued by [@BotFather](https://t.me/Bot
 1. Open Telegram and search for **@BotFather**, or visit [t.me/BotFather](https://t.me/BotFather)
 2. Send `/newbot`
 3. Choose a **display name** (e.g., "Flux Agent Agent") — this can be anything
-4. Choose a **username** — this must be unique and end in `bot` (e.g., `my_flux-agent_bot`)
+4. Choose a **username** — this must be unique and end in `bot` (e.g., `my_omniworker_bot`)
 5. BotFather replies with your **API token**. It looks like this:
 
 ```
@@ -90,14 +90,14 @@ Save this number; you'll need it for the next step.
 ### Option A: Interactive Setup (Recommended)
 
 ```bash
-flux-agent gateway setup
+omniworker gateway setup
 ```
 
 Select **Telegram** when prompted. The wizard asks for your bot token and allowed user IDs, then writes the configuration for you.
 
 ### Option B: Manual Configuration
 
-Add the following to `~/.flux-agent/.env`:
+Add the following to `~/.omniworker/.env`:
 
 ```bash
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
@@ -107,7 +107,7 @@ TELEGRAM_ALLOWED_USERS=123456789    # Comma-separated for multiple users
 ### Start the Gateway
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 The bot should come online within seconds. Send it a message on Telegram to verify.
@@ -132,14 +132,14 @@ Recommended pattern:
 terminal:
   backend: docker
   docker_volumes:
-    - "/home/user/.flux-agent/cache/documents:/output"
+    - "/home/user/.omniworker/cache/documents:/output"
 ```
 
 Then:
 
 - write files inside Docker to `/output/...`
 - emit the **host-visible** path in `MEDIA:`, for example:
-  `MEDIA:/home/user/.flux-agent/cache/documents/report.txt`
+  `MEDIA:/home/user/.omniworker/cache/documents/report.txt`
 
 If you already have a `docker_volumes:` section, add the new mount to the same
 list. YAML duplicate keys silently override earlier ones.
@@ -175,7 +175,7 @@ For **cloud deployments** (Fly.io, Railway, Render, etc.), **webhook mode** is m
 
 ### Configuration
 
-Add the following to `~/.flux-agent/.env`:
+Add the following to `~/.omniworker/.env`:
 
 ```bash
 TELEGRAM_WEBHOOK_URL=https://my-app.fly.dev/telegram
@@ -186,7 +186,7 @@ TELEGRAM_WEBHOOK_SECRET="$(openssl rand -hex 32)"  # required
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `TELEGRAM_WEBHOOK_URL` | Yes | Public HTTPS URL where Telegram will send updates. The URL path is auto-extracted (e.g., `/telegram` from the example above). |
-| `TELEGRAM_WEBHOOK_SECRET` | **Yes** (when `TELEGRAM_WEBHOOK_URL` is set) | Secret token that Telegram echoes in every webhook request for verification. The gateway refuses to start without it — see [GHSA-3vpc-7q5r-276h](https://github.com/Flux Agent/flux-agent-agent/security/advisories/GHSA-3vpc-7q5r-276h). Generate with `openssl rand -hex 32`. |
+| `TELEGRAM_WEBHOOK_SECRET` | **Yes** (when `TELEGRAM_WEBHOOK_URL` is set) | Secret token that Telegram echoes in every webhook request for verification. The gateway refuses to start without it — see [GHSA-3vpc-7q5r-276h](https://github.com/Flux Agent/omniworker-agent/security/advisories/GHSA-3vpc-7q5r-276h). Generate with `openssl rand -hex 32`. |
 | `TELEGRAM_WEBHOOK_PORT` | No | Local port the webhook server listens on (default: `8443`). |
 
 When `TELEGRAM_WEBHOOK_URL` is set, the gateway starts an HTTP webhook server instead of polling. When unset, polling mode is used — no behavior change from previous versions.
@@ -245,7 +245,7 @@ The proxy applies to both the main Telegram connection and the fallback IP trans
 
 Use the `/sethome` command in any Telegram chat (DM or group) to designate it as the **home channel**. Scheduled tasks (cron jobs) deliver their results to this channel.
 
-You can also set it manually in `~/.flux-agent/.env`:
+You can also set it manually in `~/.omniworker/.env`:
 
 ```bash
 TELEGRAM_HOME_CHANNEL=-1001234567890
@@ -324,7 +324,7 @@ the sender-user allowlist.
 
 ### Example group trigger configuration
 
-Add this to `~/.flux-agent/config.yaml`:
+Add this to `~/.omniworker/config.yaml`:
 
 ```yaml
 telegram:
@@ -373,7 +373,7 @@ Before adding topics to your config, the user must **enable Topics mode** in the
 Without this, Flux Agent will log `The chat is not a forum` on startup and skip topic creation. This is a Telegram client-side setting — the bot cannot enable it programmatically.
 :::
 
-Add topics under `platforms.telegram.extra.dm_topics` in `~/.flux-agent/config.yaml`:
+Add topics under `platforms.telegram.extra.dm_topics` in `~/.omniworker/config.yaml`:
 
 ```yaml
 platforms:
@@ -533,7 +533,7 @@ Send `/topic off` in the root DM. Flux Agent flips the row off, clears the chat'
 If you need to clean up by hand (e.g. a bulk reset across many chats), remove the rows directly:
 
 ```bash
-sqlite3 ~/.flux-agent/state.db \
+sqlite3 ~/.omniworker/state.db \
   "UPDATE telegram_dm_topic_mode SET enabled = 0 WHERE chat_id = '<your_chat_id>'; \
    DELETE FROM telegram_dm_topic_bindings WHERE chat_id = '<your_chat_id>';"
 ```
@@ -556,7 +556,7 @@ A team supergroup with forum topics for different workstreams:
 
 ### Configuration
 
-Add topic bindings under `platforms.telegram.extra.group_topics` in `~/.flux-agent/config.yaml`:
+Add topic bindings under `platforms.telegram.extra.group_topics` in `~/.omniworker/config.yaml`:
 
 ```yaml
 platforms:
@@ -624,7 +624,7 @@ When streaming is enabled (`gateway.streaming.enabled: true`), Flux Agent picks 
 | `edit` | Legacy progressive `editMessageText` polling for every chat type. |
 | `off` | Disable streaming entirely (final reply only, no progressive updates). |
 
-In `~/.flux-agent/config.yaml`:
+In `~/.omniworker/config.yaml`:
 
 ```yaml
 gateway:
@@ -787,7 +787,7 @@ In some restricted networks, `api.telegram.org` may resolve to an IP that is unr
 TELEGRAM_FALLBACK_IPS=149.154.167.220,149.154.167.221
 ```
 
-Or in `~/.flux-agent/config.yaml`:
+Or in `~/.omniworker/config.yaml`:
 
 ```yaml
 platforms:
@@ -820,10 +820,10 @@ Set the proxy in your environment before starting the gateway:
 
 ```bash
 export HTTPS_PROXY=http://proxy.example.com:8080
-flux-agent gateway
+omniworker gateway
 ```
 
-Or add it to `~/.flux-agent/.env`:
+Or add it to `~/.omniworker/.env`:
 
 ```bash
 HTTPS_PROXY=http://proxy.example.com:8080
@@ -891,10 +891,10 @@ Numeric YAML keys are automatically normalized to strings.
 
 | Problem | Solution |
 |---------|----------|
-| Bot not responding at all | Verify `TELEGRAM_BOT_TOKEN` is correct. Check `flux-agent gateway` logs for errors. |
+| Bot not responding at all | Verify `TELEGRAM_BOT_TOKEN` is correct. Check `omniworker gateway` logs for errors. |
 | Bot responds with "unauthorized" | Your user ID is not in `TELEGRAM_ALLOWED_USERS`. Double-check with @userinfobot. |
 | Bot ignores group messages | Privacy mode is likely on. Disable it (Step 3) or make the bot a group admin. **Remember to remove and re-add the bot after changing privacy.** |
-| Voice messages not transcribed | Verify STT is available: install `faster-whisper` for local transcription, or set `GROQ_API_KEY` / `VOICE_TOOLS_OPENAI_KEY` in `~/.flux-agent/.env`. |
+| Voice messages not transcribed | Verify STT is available: install `faster-whisper` for local transcription, or set `GROQ_API_KEY` / `VOICE_TOOLS_OPENAI_KEY` in `~/.omniworker/.env`. |
 | Voice replies are files, not bubbles | Install `ffmpeg` (needed for Edge TTS Opus conversion). |
 | Bot token revoked/invalid | Generate a new token via `/revoke` then `/newbot` or `/token` in BotFather. Update your `.env` file. |
 | Webhook not receiving updates | Verify `TELEGRAM_WEBHOOK_URL` is publicly reachable (test with `curl`). Ensure your platform/reverse proxy routes inbound HTTPS traffic from the URL's port to the local listen port configured by `TELEGRAM_WEBHOOK_PORT` (they do not need to be the same number). Ensure SSL/TLS is active — Telegram only sends to HTTPS URLs. Check firewall rules. |
@@ -918,7 +918,7 @@ When the agent calls the `clarify` tool — to ask which approach you prefer, ge
 
 Tap a button to answer, or tap **Other** to type a free-form response (the next message you send becomes the answer). Open-ended `clarify` calls (no preset choices) skip the buttons and just capture your next message.
 
-Configure the response timeout via `agent.clarify_timeout` in `~/.flux-agent/config.yaml` (default `600` seconds). If you don't respond within the timeout, the agent unblocks with a sentinel message and adapts rather than hanging.
+Configure the response timeout via `agent.clarify_timeout` in `~/.omniworker/config.yaml` (default `600` seconds). If you don't respond within the timeout, the agent unblocks with a sentinel message and adapts rather than hanging.
 
 ## Security
 

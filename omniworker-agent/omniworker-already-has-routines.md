@@ -15,7 +15,7 @@ Claude Code Routines offers three ways to trigger an automation:
 
 Flux Agent equivalent — works today:
 ```bash
-flux-agent cron create "0 2 * * *" \
+omniworker cron create "0 2 * * *" \
   "Pull the top bug from the issue tracker, attempt a fix, and open a draft PR." \
   --name "Nightly bug fix" \
   --deliver telegram
@@ -26,7 +26,7 @@ flux-agent cron create "0 2 * * *" \
 
 Flux Agent equivalent — works today:
 ```bash
-flux-agent webhook subscribe auth-watch \
+omniworker webhook subscribe auth-watch \
   --events "pull_request" \
   --prompt "PR #{pull_request.number}: {pull_request.title} by {pull_request.user.login}. Check if it touches the auth-provider module. If yes, summarize the changes." \
   --deliver slack
@@ -37,7 +37,7 @@ flux-agent webhook subscribe auth-watch \
 
 Flux Agent equivalent — works today:
 ```bash
-flux-agent webhook subscribe alert-triage \
+omniworker webhook subscribe alert-triage \
   --prompt "Alert: {alert.name} — Severity: {alert.severity}. Find the owning service, investigate, and post a triage summary with proposed first steps." \
   --deliver slack
 ```
@@ -73,9 +73,9 @@ Every use case in their blog post — backlog triage, docs drift, deploy verific
 Run a Python script *before* the agent. The script's stdout becomes context. The script handles mechanical work (fetching, diffing, computing); the agent handles reasoning.
 
 ```bash
-flux-agent cron create "every 1h" \
+omniworker cron create "every 1h" \
   "If CHANGE DETECTED, summarize what changed. If NO_CHANGE, respond with [SILENT]." \
-  --script ~/.flux-agent/scripts/watch-site.py \
+  --script ~/.omniworker/scripts/watch-site.py \
   --name "Pricing monitor" \
   --deliver telegram
 ```
@@ -87,7 +87,7 @@ The `[SILENT]` pattern means you only get notified when something actually happe
 Chain specialized skills together. Each skill teaches the agent a specific capability, and the prompt ties them together.
 
 ```bash
-flux-agent cron create "0 8 * * *" \
+omniworker cron create "0 8 * * *" \
   "Search arXiv for papers on language model reasoning. Save the top 3 as Obsidian notes." \
   --skills "arxiv,obsidian" \
   --name "Paper digest"
@@ -127,13 +127,13 @@ A nightly backlog triage on Sonnet costs roughly $0.02-0.05. A monitoring check 
 Flux Agent Agent is open source and free. The automation infrastructure — cron scheduler, webhook platform, skill system, multi-platform delivery — is built in.
 
 ```bash
-pip install flux-agent-agent
-flux-agent setup
+pip install omniworker-agent
+omniworker setup
 ```
 
 Set up a scheduled task in 30 seconds:
 ```bash
-flux-agent cron create "0 9 * * 1" \
+omniworker cron create "0 9 * * 1" \
   "Generate a weekly AI news digest. Search the web for major announcements, trending repos, and notable papers. Keep it under 500 words with links." \
   --name "Weekly digest" \
   --deliver telegram
@@ -141,20 +141,20 @@ flux-agent cron create "0 9 * * 1" \
 
 Set up a GitHub webhook in 60 seconds:
 ```bash
-flux-agent gateway setup    # enable webhooks
-flux-agent webhook subscribe pr-review \
+omniworker gateway setup    # enable webhooks
+omniworker webhook subscribe pr-review \
   --events "pull_request" \
   --prompt "Review PR #{pull_request.number}: {pull_request.title}" \
   --skills "github-code-review" \
   --deliver github_comment
 ```
 
-Full automation templates gallery: [flux-agent-agent.flux-agent.com/docs/guides/automation-templates](https://flux-agent-agent.flux-agent.com/docs/guides/automation-templates)
+Full automation templates gallery: [omniworker-agent.omniworker.com/docs/guides/automation-templates](https://omniworker-agent.omniworker.com/docs/guides/automation-templates)
 
-Documentation: [flux-agent-agent.flux-agent.com](https://flux-agent-agent.flux-agent.com)
+Documentation: [omniworker-agent.omniworker.com](https://omniworker-agent.omniworker.com)
 
-GitHub: [github.com/Flux Agent/flux-agent-agent](https://github.com/Flux Agent/flux-agent-agent)
+GitHub: [github.com/Flux Agent/omniworker-agent](https://github.com/Flux Agent/omniworker-agent)
 
 ---
 
-*Flux Agent Agent is built by [Nous Research](https://flux-agent.com). Open source, model-agnostic, runs on your infrastructure.*
+*Flux Agent Agent is built by [Nous Research](https://omniworker.com). Open source, model-agnostic, runs on your infrastructure.*

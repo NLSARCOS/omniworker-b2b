@@ -266,7 +266,7 @@ export const pt: Translations = {
     enableRuntime: "Ativar",
     forceReinstall: "Forçar reinstalação (eliminar pasta existente primeiro)",
     headline:
-      "Descobrir, instalar, ativar e atualizar plugins OmniWorker (paridade com `flux-agent plugins`).",
+      "Descobrir, instalar, ativar e atualizar plugins OmniWorker (paridade com `omniworker plugins`).",
     identifierLabel: "URL Git ou owner/repo",
     inactive: "inativo",
     installBtn: "Instalar a partir do Git",
@@ -283,8 +283,8 @@ export const pt: Translations = {
     providersHint:
       "Escreve memory.provider (vazio = incorporado) e context.engine no config.yaml. Aplicado na próxima sessão.",
     refreshDashboard: "Re-analisar extensões do dashboard",
-    removeConfirm: "Remover este plugin de ~/.flux-agent/plugins/?",
-    removeHint: "Apenas plugins instalados pelo utilizador em ~/.flux-agent/plugins podem ser removidos.",
+    removeConfirm: "Remover este plugin de ~/.omniworker/plugins/?",
+    removeHint: "Apenas plugins instalados pelo utilizador em ~/.omniworker/plugins podem ser removidos.",
     rescanHeading: "Registo de plugins SPA",
     rescanHint: "Re-analise depois de adicionar ficheiros em disco para que a barra lateral detete novos manifestos.",
     runtimeHeading: "Runtime do gateway (plugins YAML)",
@@ -306,7 +306,7 @@ export const pt: Translations = {
     all: "Todas",
     categories: "Categorias",
     filters: "Filtros",
-    noSkills: "Nenhuma competência encontrada. As competências são carregadas de ~/.flux-agent/skills/",
+    noSkills: "Nenhuma competência encontrada. As competências são carregadas de ~/.omniworker/skills/",
     noSkillsMatch: "Nenhuma competência corresponde à pesquisa ou filtro.",
     skillCount: "{count} competência{s}",
     resultCount: "{count} resultado{s}",
@@ -320,7 +320,7 @@ export const pt: Translations = {
   },
 
   config: {
-    configPath: "~/.flux-agent/config.yaml",
+    configPath: "~/.omniworker/config.yaml",
     filters: "Filtros",
     sections: "Secções",
     exportConfig: "Exportar configuração como JSON",

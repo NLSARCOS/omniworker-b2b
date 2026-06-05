@@ -1,4 +1,4 @@
-import { withInkSuspended } from '@flux-agent/ink'
+import { withInkSuspended } from '@omniworker/ink'
 
 import { launchOmniWorkerCommand } from '../../../lib/externalCli.js'
 import { runExternalSetup } from '../../setupHandoff.js'
@@ -6,7 +6,7 @@ import type { SlashCommand } from '../types.js'
 
 export const setupCommands: SlashCommand[] = [
   {
-    help: 'run full setup wizard (launches `flux-agent setup`)',
+    help: 'run full setup wizard (launches `omniworker setup`)',
     name: 'setup',
     run: (arg, ctx) =>
       void runExternalSetup({

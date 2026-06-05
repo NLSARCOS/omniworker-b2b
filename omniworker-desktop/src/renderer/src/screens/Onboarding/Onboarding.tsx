@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Flux AgentLogo from "../../components/common/Flux AgentLogo";
+import OmniWorkerLogo from "../../components/common/OmniWorkerLogo";
 import { ArrowRight, ArrowLeft, Spinner } from "../../assets/icons";
 
 interface OnboardingProps {
@@ -47,7 +47,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
     setSaving(true);
     setError(null);
     try {
-      const res = await window.flux-agentAPI.saveOnboardingData({
+      const res = await window.omniworkerAPI.saveOnboardingData({
         userName: userName.trim(),
         language,
         role,
@@ -63,7 +63,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
       if (res.success) {
         if (gatewayEnabled) {
           try {
-            await window.flux-agentAPI.startGateway();
+            await window.omniworkerAPI.startGateway();
           } catch (e) {
             console.error("Failed to start gateway:", e);
           }
@@ -86,7 +86,7 @@ export function Onboarding({ onComplete }: OnboardingProps): React.JSX.Element {
       <div className="onboarding-container">
         {/* Header with logo & title */}
         <div className="onboarding-header">
-          <Flux AgentLogo size={42} />
+          <OmniWorkerLogo size={42} />
           {step > 0 && (
             <div className="onboarding-progress-container">
               <div className="onboarding-steps-text">

@@ -29,16 +29,16 @@ Before starting, make sure you have:
 - **Flux Agent Agent installed** — see the [Installation guide](/docs/getting-started/installation)
 - **Gateway running** — the gateway daemon handles cron execution:
   ```bash
-  flux-agent gateway install   # Install as a user service
-  sudo flux-agent gateway install --system   # Linux servers: boot-time system service
+  omniworker gateway install   # Install as a user service
+  sudo omniworker gateway install --system   # Linux servers: boot-time system service
   # or
-  flux-agent gateway           # Run in foreground
+  omniworker gateway           # Run in foreground
   ```
 - **Firecrawl API key** — set `FIRECRAWL_API_KEY` in your environment for web search
 - **Messaging configured** (optional but recommended) — [Telegram](/docs/user-guide/messaging/telegram) or Discord set up with a home channel
 
 :::tip No messaging? No problem
-You can still follow this tutorial using `deliver: "local"`. Briefings will be saved to `~/.flux-agent/cron/output/` and you can read them anytime.
+You can still follow this tutorial using `deliver: "local"`. Briefings will be saved to `~/.omniworker/cron/output/` and you can read them anytime.
 :::
 
 ## Step 1: Test the Workflow Manually
@@ -46,7 +46,7 @@ You can still follow this tutorial using `deliver: "local"`. Briefings will be s
 Before automating anything, let's make sure the briefing works. Start a chat session:
 
 ```bash
-flux-agent
+omniworker
 ```
 
 Then enter this prompt:
@@ -211,7 +211,7 @@ In chat:
 
 Or from the terminal:
 ```bash
-flux-agent cron list
+omniworker cron list
 ```
 
 You'll see output like:
@@ -242,15 +242,15 @@ Flux Agent will use `cronjob(action="list")` to find it and `cronjob(action="rem
 Make sure the scheduler is actually running:
 
 ```bash
-flux-agent cron status
+omniworker cron status
 ```
 
 If the gateway isn't running, your jobs won't execute. Install it as a background service for reliability:
 
 ```bash
-flux-agent gateway install
+omniworker gateway install
 # or on Linux servers
-sudo flux-agent gateway install --system
+sudo omniworker gateway install --system
 ```
 
 ## Going Further

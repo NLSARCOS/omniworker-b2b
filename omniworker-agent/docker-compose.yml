@@ -2,11 +2,11 @@
 # docker-compose.yml for Flux Agent Agent
 #
 # Usage:
-#   FLUX AGENT_UID=$(id -u) FLUX AGENT_GID=$(id -g) docker compose up -d
+#   OMNIWORKER_UID=$(id -u) OMNIWORKER_GID=$(id -g) docker compose up -d
 #
-# Set FLUX AGENT_UID / FLUX AGENT_GID to the host user that owns ~/.flux-agent so
+# Set OMNIWORKER_UID / OMNIWORKER_GID to the host user that owns ~/.omniworker so
 # files created inside the container stay readable/writable on the host.
-# The entrypoint remaps the internal `flux-agent` user to these values via
+# The entrypoint remaps the internal `omniworker` user to these values via
 # usermod/groupmod + gosu.
 #
 # Security notes:
@@ -14,8 +14,8 @@
 #     keys; exposing it on LAN without auth is unsafe. If you want remote
 #     access, use an SSH tunnel or put it behind a reverse proxy that
 #     adds authentication — do NOT pass --insecure --host 0.0.0.0.
-#   - If you override entrypoint, keep /opt/flux-agent/docker/entrypoint.sh in
-#     the command chain. It drops root to the flux-agent user before gateway
+#   - If you override entrypoint, keep /opt/omniworker/docker/entrypoint.sh in
+#     the command chain. It drops root to the omniworker user before gateway
 #     files such as gateway.lock are created.
 #   - The gateway's API server is off unless you uncomment API_SERVER_KEY
 #     and API_SERVER_HOST. See docs/user-guide/api-server.md before doing
@@ -24,15 +24,15 @@
 services:
   gateway:
     build: .
-    image: flux-agent-agent
-    container_name: flux-agent
+    image: omniworker-agent
+    container_name: omniworker
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ~/.flux-agent:/opt/data
+      - ~/.omniworker:/opt/data
     environment:
-      - FLUX AGENT_UID=${FLUX AGENT_UID:-10000}
-      - FLUX AGENT_GID=${FLUX AGENT_GID:-10000}
+      - OMNIWORKER_UID=${OMNIWORKER_UID:-10000}
+      - OMNIWORKER_GID=${OMNIWORKER_GID:-10000}
       # To expose the OpenAI-compatible API server beyond localhost,
       # uncomment BOTH lines (API_SERVER_KEY is mandatory for auth):
       # - API_SERVER_HOST=0.0.0.0
@@ -47,7 +47,7 @@ services:
       # Google Chat — uncomment and fill in to enable the Google Chat gateway.
       # See website/docs/user-guide/messaging/google_chat.md for the full setup.
       # The SA JSON path must point to a file mounted into the container —
-      # add a volume entry above (e.g. ``- ~/.flux-agent/google-chat-sa.json:/secrets/google-chat-sa.json:ro``)
+      # add a volume entry above (e.g. ``- ~/.omniworker/google-chat-sa.json:/secrets/google-chat-sa.json:ro``)
       # then set GOOGLE_CHAT_SERVICE_ACCOUNT_JSON to that mount path.
       # - GOOGLE_CHAT_PROJECT_ID=${GOOGLE_CHAT_PROJECT_ID}
       # - GOOGLE_CHAT_SUBSCRIPTION_NAME=${GOOGLE_CHAT_SUBSCRIPTION_NAME}
@@ -56,16 +56,16 @@ services:
     command: ["gateway", "run"]
 
   dashboard:
-    image: flux-agent-agent
-    container_name: flux-agent-dashboard
+    image: omniworker-agent
+    container_name: omniworker-dashboard
     restart: unless-stopped
     network_mode: host
     depends_on:
       - gateway
     volumes:
-      - ~/.flux-agent:/opt/data
+      - ~/.omniworker:/opt/data
     environment:
-      - FLUX AGENT_UID=${FLUX AGENT_UID:-10000}
-      - FLUX AGENT_GID=${FLUX AGENT_GID:-10000}
+      - OMNIWORKER_UID=${OMNIWORKER_UID:-10000}
+      - OMNIWORKER_GID=${OMNIWORKER_GID:-10000}
     # Localhost-only. For remote access, tunnel via `ssh -L 9119:localhost:9119`.
     command: ["dashboard", "--host", "127.0.0.1", "--no-open"]

@@ -6,9 +6,9 @@ author: Flux Agent Agent + Teknium
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Coding-Agent, Claude, Anthropic, Code-Review, Refactoring, PTY, Automation]
-    related_skills: [codex, flux-agent-agent, opencode]
+    related_skills: [codex, omniworker-agent, opencode]
 ---
 
 # Claude Code — Flux Agent Orchestration Guide

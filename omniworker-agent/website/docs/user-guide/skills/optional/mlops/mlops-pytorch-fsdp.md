@@ -14,7 +14,7 @@ Expert guidance for Fully Sharded Data Parallel training with PyTorch FSDP - par
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/mlops/pytorch-fsdp` |
+| Source | Optional — install with `omniworker skills install official/mlops/pytorch-fsdp` |
 | Path | `optional-skills/mlops/pytorch-fsdp` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |

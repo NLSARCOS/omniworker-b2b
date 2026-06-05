@@ -6,24 +6,24 @@ description: "Complete guide to migrating your Flux Agent / Clawdbot setup to Fl
 
 # Migrate from Flux Agent
 
-`flux-agent claw migrate` imports your Flux Agent (or legacy Clawdbot/Moldbot) setup into Flux Agent. This guide covers exactly what gets migrated, the config key mappings, and what to verify after migration.
+`omniworker claw migrate` imports your Flux Agent (or legacy Clawdbot/Moldbot) setup into Flux Agent. This guide covers exactly what gets migrated, the config key mappings, and what to verify after migration.
 
 ## Quick start
 
 ```bash
 # Preview then migrate (always shows a preview first, then asks to confirm)
-flux-agent claw migrate
+omniworker claw migrate
 
 # Preview only, no changes
-flux-agent claw migrate --dry-run
+omniworker claw migrate --dry-run
 
 # Full migration including API keys, skip confirmation
-flux-agent claw migrate --preset full --migrate-secrets --yes
+omniworker claw migrate --preset full --migrate-secrets --yes
 ```
 
 The migration always shows a full preview of what will be imported before making any changes. Review the list, then confirm to proceed.
 
-Reads from `~/.flux-agent/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` directories are detected automatically. Same for legacy config filenames (`clawdbot.json`, `moltbot.json`).
+Reads from `~/.omniworker/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` directories are detected automatically. Same for legacy config filenames (`clawdbot.json`, `moltbot.json`).
 
 ## Options
 
@@ -33,7 +33,7 @@ Reads from `~/.flux-agent/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` d
 | `--preset <name>` | `full` (all compatible settings) or `user-data` (excludes infrastructure config). Neither preset imports secrets by default — pass `--migrate-secrets` explicitly. |
 | `--overwrite` | Overwrite existing Flux Agent files on conflicts (default: refuse to apply when the plan has conflicts). |
 | `--migrate-secrets` | Include API keys. Required even under `--preset full` — no preset imports secrets silently. |
-| `--no-backup` | Skip the pre-migration zip snapshot of `~/.flux-agent/` (by default a single restore-point archive is written before apply, under `~/.flux-agent/backups/pre-migration-*.zip`; restorable with `flux-agent import`). |
+| `--no-backup` | Skip the pre-migration zip snapshot of `~/.omniworker/` (by default a single restore-point archive is written before apply, under `~/.omniworker/backups/pre-migration-*.zip`; restorable with `omniworker import`). |
 | `--source <path>` | Custom Flux Agent directory. |
 | `--workspace-target <path>` | Where to place `AGENTS.md`. |
 | `--skill-conflict <mode>` | `skip` (default), `overwrite`, or `rename`. |
@@ -45,11 +45,11 @@ Reads from `~/.flux-agent/` by default. Legacy `~/.clawdbot/` or `~/.moltbot/` d
 
 | What | Flux Agent source | Flux Agent destination | Notes |
 |------|----------------|-------------------|-------|
-| Persona | `workspace/SOUL.md` | `~/.flux-agent/SOUL.md` | Direct copy |
+| Persona | `workspace/SOUL.md` | `~/.omniworker/SOUL.md` | Direct copy |
 | Workspace instructions | `workspace/AGENTS.md` | `AGENTS.md` in `--workspace-target` | Requires `--workspace-target` flag |
-| Long-term memory | `workspace/MEMORY.md` | `~/.flux-agent/memories/MEMORY.md` | Parsed into entries, merged with existing, deduped. Uses `§` delimiter. |
-| User profile | `workspace/USER.md` | `~/.flux-agent/memories/USER.md` | Same entry-merge logic as memory. |
-| Daily memory files | `workspace/memory/*.md` | `~/.flux-agent/memories/MEMORY.md` | All daily files merged into main memory. |
+| Long-term memory | `workspace/MEMORY.md` | `~/.omniworker/memories/MEMORY.md` | Parsed into entries, merged with existing, deduped. Uses `§` delimiter. |
+| User profile | `workspace/USER.md` | `~/.omniworker/memories/USER.md` | Same entry-merge logic as memory. |
+| Daily memory files | `workspace/memory/*.md` | `~/.omniworker/memories/MEMORY.md` | All daily files merged into main memory. |
 
 Workspace files are also checked at `workspace.default/` and `workspace-main/` as fallback paths (Flux Agent renamed `workspace/` to `workspace-main/` in recent versions, and uses `workspace-{agentId}` for multi-agent setups).
 
@@ -57,10 +57,10 @@ Workspace files are also checked at `workspace.default/` and `workspace-main/` a
 
 | Source | Flux Agent location | Flux Agent destination |
 |--------|------------------|-------------------|
-| Workspace skills | `workspace/skills/` | `~/.flux-agent/skills/flux-agent-imports/` |
-| Managed/shared skills | `~/.flux-agent/skills/` | `~/.flux-agent/skills/flux-agent-imports/` |
-| Personal cross-project | `~/.agents/skills/` | `~/.flux-agent/skills/flux-agent-imports/` |
-| Project-level shared | `workspace/.agents/skills/` | `~/.flux-agent/skills/flux-agent-imports/` |
+| Workspace skills | `workspace/skills/` | `~/.omniworker/skills/omniworker-imports/` |
+| Managed/shared skills | `~/.omniworker/skills/` | `~/.omniworker/skills/omniworker-imports/` |
+| Personal cross-project | `~/.agents/skills/` | `~/.omniworker/skills/omniworker-imports/` |
+| Project-level shared | `workspace/.agents/skills/` | `~/.omniworker/skills/omniworker-imports/` |
 
 Skill conflicts are handled by `--skill-conflict`: `skip` leaves the existing Flux Agent skill, `overwrite` replaces it, `rename` creates a `-imported` copy.
 
@@ -70,7 +70,7 @@ Skill conflicts are handled by `--skill-conflict`: `skip` leaves the existing Fl
 |------|---------------------|-------------------|-------|
 | Default model | `agents.defaults.model` | `config.yaml` → `model` | Can be a string or `{primary, fallbacks}` object |
 | Custom providers | `models.providers.*` | `config.yaml` → `custom_providers` | Maps `baseUrl`, `apiType`/`api` — handles both short ("openai", "anthropic") and hyphenated ("openai-completions", "anthropic-messages", "google-generative-ai") values |
-| Provider API keys | `models.providers.*.apiKey` | `~/.flux-agent/.env` | Requires `--migrate-secrets`. See [API key resolution](#api-key-resolution) below. |
+| Provider API keys | `models.providers.*.apiKey` | `~/.omniworker/.env` | Requires `--migrate-secrets`. See [API key resolution](#api-key-resolution) below. |
 
 ### Agent behavior
 
@@ -126,7 +126,7 @@ TTS settings are read from **two** Flux Agent config locations with this priorit
 | OpenAI model | `config.yaml` → `tts.openai.model` |
 | OpenAI voice | `config.yaml` → `tts.openai.voice` |
 | Edge TTS voice | `config.yaml` → `tts.edge.voice` (Flux Agent renamed "edge" to "microsoft" — both are recognized) |
-| TTS assets | `~/.flux-agent/tts/` (file copy) |
+| TTS assets | `~/.omniworker/tts/` (file copy) |
 
 ### Messaging platforms
 
@@ -155,12 +155,12 @@ TTS settings are read from **two** Flux Agent config locations with this priorit
 | Browser CDP URL | `browser.cdpUrl` | `config.yaml` → `browser.cdp_url` | |
 | Browser headless | `browser.headless` | `config.yaml` → `browser.headless` | |
 | Brave search key | `tools.web.search.brave.apiKey` | `.env` → `BRAVE_API_KEY` | Requires `--migrate-secrets` |
-| Gateway auth token | `gateway.auth.token` | `.env` → `FLUX AGENT_GATEWAY_TOKEN` | Requires `--migrate-secrets` |
+| Gateway auth token | `gateway.auth.token` | `.env` → `OMNIWORKER_GATEWAY_TOKEN` | Requires `--migrate-secrets` |
 | Working directory | `agents.defaults.workspace` | `.env` → `MESSAGING_CWD` | |
 
 ### Archived (no direct Flux Agent equivalent)
 
-These are saved to `~/.flux-agent/migration/flux-agent/<timestamp>/archive/` for manual review:
+These are saved to `~/.omniworker/migration/omniworker/<timestamp>/archive/` for manual review:
 
 | What | Archive file | How to recreate in Flux Agent |
 |------|-------------|--------------------------|
@@ -168,11 +168,11 @@ These are saved to `~/.flux-agent/migration/flux-agent/<timestamp>/archive/` for
 | `TOOLS.md` | `archive/workspace/TOOLS.md` | Flux Agent has built-in tool instructions |
 | `HEARTBEAT.md` | `archive/workspace/HEARTBEAT.md` | Use cron jobs for periodic tasks |
 | `BOOTSTRAP.md` | `archive/workspace/BOOTSTRAP.md` | Use context files or skills |
-| Cron jobs | `archive/cron-config.json` | Recreate with `flux-agent cron create` |
+| Cron jobs | `archive/cron-config.json` | Recreate with `omniworker cron create` |
 | Plugins | `archive/plugins-config.json` | See [plugins guide](/docs/user-guide/features/hooks) |
-| Hooks/webhooks | `archive/hooks-config.json` | Use `flux-agent webhook` or gateway hooks |
-| Memory backend | `archive/memory-backend-config.json` | Configure via `flux-agent honcho` |
-| Skills registry | `archive/skills-registry-config.json` | Use `flux-agent skills config` |
+| Hooks/webhooks | `archive/hooks-config.json` | Use `omniworker webhook` or gateway hooks |
+| Memory backend | `archive/memory-backend-config.json` | Configure via `omniworker honcho` |
+| Skills registry | `archive/skills-registry-config.json` | Use `omniworker skills config` |
 | UI/identity | `archive/ui-identity-config.json` | Use `/skin` command |
 | Logging | `archive/logging-diagnostics-config.json` | Set in `config.yaml` logging section |
 | Multi-agent list | `archive/agents-list.json` | Use Flux Agent profiles |
@@ -183,10 +183,10 @@ These are saved to `~/.flux-agent/migration/flux-agent/<timestamp>/archive/` for
 
 When `--migrate-secrets` is enabled, API keys are collected from **four sources** in priority order:
 
-1. **Config values** — `models.providers.*.apiKey` and TTS provider keys in `flux-agent.json`
-2. **Environment file** — `~/.flux-agent/.env` (keys like `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, etc.)
-3. **Config env sub-object** — `flux-agent.json` → `"env"` or `"env"."vars"` (some setups store keys here instead of a separate `.env` file)
-4. **Auth profiles** — `~/.flux-agent/agents/main/agent/auth-profiles.json` (per-agent credentials)
+1. **Config values** — `models.providers.*.apiKey` and TTS provider keys in `omniworker.json`
+2. **Environment file** — `~/.omniworker/.env` (keys like `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, etc.)
+3. **Config env sub-object** — `omniworker.json` → `"env"` or `"env"."vars"` (some setups store keys here instead of a separate `.env` file)
+4. **Auth profiles** — `~/.omniworker/agents/main/agent/auth-profiles.json` (per-agent credentials)
 
 Config values take priority. Each subsequent source fills any remaining gaps.
 
@@ -211,40 +211,40 @@ Flux Agent config values for tokens and API keys can be in three formats:
 "channels": { "telegram": { "botToken": { "source": "env", "id": "TELEGRAM_BOT_TOKEN" } } }
 ```
 
-The migration resolves all three formats. For env templates and SecretRef objects with `source: "env"`, it looks up the value in `~/.flux-agent/.env` and the `flux-agent.json` env sub-object. SecretRef objects with `source: "file"` or `source: "exec"` can't be resolved automatically — the migration warns about these, and those values must be added to Flux Agent manually via `flux-agent config set`.
+The migration resolves all three formats. For env templates and SecretRef objects with `source: "env"`, it looks up the value in `~/.omniworker/.env` and the `omniworker.json` env sub-object. SecretRef objects with `source: "file"` or `source: "exec"` can't be resolved automatically — the migration warns about these, and those values must be added to Flux Agent manually via `omniworker config set`.
 
 ## After migration
 
 1. **Check the migration report** — printed on completion with counts of migrated, skipped, and conflicting items.
 
-2. **Review archived files** — anything in `~/.flux-agent/migration/flux-agent/<timestamp>/archive/` needs manual attention.
+2. **Review archived files** — anything in `~/.omniworker/migration/omniworker/<timestamp>/archive/` needs manual attention.
 
 3. **Start a new session** — imported skills and memory entries take effect in new sessions, not the current one.
 
-4. **Verify API keys** — run `flux-agent status` to check provider authentication.
+4. **Verify API keys** — run `omniworker status` to check provider authentication.
 
-5. **Test messaging** — if you migrated platform tokens, restart the gateway: `systemctl --user restart flux-agent-gateway`
+5. **Test messaging** — if you migrated platform tokens, restart the gateway: `systemctl --user restart omniworker-gateway`
 
-6. **Check session policies** — verify `flux-agent config get session_reset` matches your expectations.
+6. **Check session policies** — verify `omniworker config get session_reset` matches your expectations.
 
-7. **Re-pair WhatsApp** — WhatsApp uses QR code pairing (Baileys), not token migration. Run `flux-agent whatsapp` to pair.
+7. **Re-pair WhatsApp** — WhatsApp uses QR code pairing (Baileys), not token migration. Run `omniworker whatsapp` to pair.
 
-8. **Archive cleanup** — after confirming everything works, run `flux-agent claw cleanup` to rename leftover Flux Agent directories to `.pre-migration/` (prevents state confusion).
+8. **Archive cleanup** — after confirming everything works, run `omniworker claw cleanup` to rename leftover Flux Agent directories to `.pre-migration/` (prevents state confusion).
 
 ## Troubleshooting
 
 ### "Flux Agent directory not found"
 
-The migration checks `~/.flux-agent/`, then `~/.clawdbot/`, then `~/.moltbot/`. If your installation is elsewhere, use `--source /path/to/your/flux-agent`.
+The migration checks `~/.omniworker/`, then `~/.clawdbot/`, then `~/.moltbot/`. If your installation is elsewhere, use `--source /path/to/your/omniworker`.
 
 ### "No provider API keys found"
 
-Keys might be stored in several places depending on your Flux Agent version: inline in `flux-agent.json` under `models.providers.*.apiKey`, in `~/.flux-agent/.env`, in the `flux-agent.json` `"env"` sub-object, or in `agents/main/agent/auth-profiles.json`. The migration checks all four. If keys use `source: "file"` or `source: "exec"` SecretRefs, they can't be resolved automatically — add them via `flux-agent config set`.
+Keys might be stored in several places depending on your Flux Agent version: inline in `omniworker.json` under `models.providers.*.apiKey`, in `~/.omniworker/.env`, in the `omniworker.json` `"env"` sub-object, or in `agents/main/agent/auth-profiles.json`. The migration checks all four. If keys use `source: "file"` or `source: "exec"` SecretRefs, they can't be resolved automatically — add them via `omniworker config set`.
 
 ### Skills not appearing after migration
 
-Imported skills land in `~/.flux-agent/skills/flux-agent-imports/`. Start a new session for them to take effect, or run `/skills` to verify they're loaded.
+Imported skills land in `~/.omniworker/skills/omniworker-imports/`. Start a new session for them to take effect, or run `/skills` to verify they're loaded.
 
 ### TTS voice not migrated
 
-Flux Agent stores TTS settings in two places: `messages.tts.providers.*` and the top-level `talk` config. The migration checks both. If your voice ID was set via the Flux Agent UI (stored in a different path), you may need to set it manually: `flux-agent config set tts.elevenlabs.voice_id YOUR_VOICE_ID`.
+Flux Agent stores TTS settings in two places: `messages.tts.providers.*` and the top-level `talk` config. The migration checks both. If your voice ID was set via the Flux Agent UI (stored in a different path), you may need to set it manually: `omniworker config set tts.elevenlabs.voice_id YOUR_VOICE_ID`.

@@ -7,7 +7,7 @@ mcp_config.py, and memory_setup.py.
 
 import getpass
 
-from flux-agent_cli.colors import Colors, color
+from omniworker_cli.colors import Colors, color
 
 
 # ─── Print Helpers ────────────────────────────────────────────────────────────

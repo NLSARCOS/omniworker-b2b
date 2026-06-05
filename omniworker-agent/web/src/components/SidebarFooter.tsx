@@ -23,7 +23,7 @@ export function SidebarFooter() {
       </Typography>
 
       <a
-        href="https://flux-agent.com"
+        href="https://omniworker.com"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(

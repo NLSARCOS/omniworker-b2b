@@ -22,13 +22,13 @@ def managed_nous_tools_enabled() -> bool:
     False — never block the agent startup path.
     """
     try:
-        from flux-agent_cli.auth import get_nous_auth_status
+        from omniworker_cli.auth import get_nous_auth_status
 
         status = get_nous_auth_status()
         if not status.get("logged_in"):
             return False
 
-        from flux-agent_cli.models import check_nous_free_tier
+        from omniworker_cli.models import check_nous_free_tier
 
         if check_nous_free_tier():
             return False  # free-tier users don't get gateway access
@@ -114,7 +114,7 @@ def prefers_gateway(config_section: str) -> bool:
     Reads ``<section>.use_gateway`` from config.yaml.  Never raises.
     """
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         section = (load_config() or {}).get(config_section)
         if isinstance(section, dict):
             return is_truthy_value(section.get("use_gateway"), default=False)
@@ -126,8 +126,8 @@ def prefers_gateway(config_section: str) -> bool:
 def fal_key_is_configured() -> bool:
     """Return True when FAL_KEY is set to a non-whitespace value.
 
-    Consults both ``os.environ`` and ``~/.flux-agent/.env`` (via
-    ``flux-agent_cli.config.get_env_value`` when available) so tool-side
+    Consults both ``os.environ`` and ``~/.omniworker/.env`` (via
+    ``omniworker_cli.config.get_env_value`` when available) so tool-side
     checks and CLI setup-time checks agree.  A whitespace-only value
     is treated as unset everywhere.
     """
@@ -136,7 +136,7 @@ def fal_key_is_configured() -> bool:
         # Fall back to the .env file for CLI paths that may run before
         # dotenv is loaded into os.environ.
         try:
-            from flux-agent_cli.config import get_env_value
+            from omniworker_cli.config import get_env_value
 
             value = get_env_value("FAL_KEY")
         except Exception:

@@ -27,7 +27,7 @@ function buildInvoicePDF(invoice: any): Promise<Buffer> {
     });
 
     // ── Header ──
-    doc.fontSize(24).font("Helvetica-Bold").text("FLUX AGENT", 50, 50);
+    doc.fontSize(24).font("Helvetica-Bold").text("OMNIWORKER", 50, 50);
     doc.fontSize(10).font("Helvetica").fillColor("#666").text("Factura de Suscripción B2B", 50, 78);
 
     doc.fontSize(10).fillColor("#999").text("Factura #", 400, 50, { align: "right" });

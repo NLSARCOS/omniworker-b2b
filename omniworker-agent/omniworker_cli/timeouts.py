@@ -19,7 +19,7 @@ def get_provider_request_timeout(
         return None
 
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         config = load_config()
     except Exception:
         return None
@@ -48,7 +48,7 @@ def get_provider_stale_timeout(
         return None
 
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         config = load_config()
     except Exception:
         return None

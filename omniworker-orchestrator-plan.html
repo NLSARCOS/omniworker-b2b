@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniWorker — Plan: Orquestador Real + Ejército de Agentes</title>
+<style>
+  :root {
+    --bg: #080a0f;
+    --s1: #0e1118;
+    --s2: #141820;
+    --s3: #1c2130;
+    --border: #1f2535;
+    --border2: #2a3347;
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.12);
+    --purple: #8b5cf6;
+    --purple-dim: rgba(139,92,246,0.12);
+    --green: #10b981;
+    --green-dim: rgba(16,185,129,0.12);
+    --orange: #f59e0b;
+    --orange-dim: rgba(245,158,11,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --cyan: #06b6d4;
+    --cyan-dim: rgba(6,182,212,0.12);
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --dim: #94a3b8;
+    --mono: 'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:100;background:rgba(8,10,15,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 40px;}
+  .nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:32px;height:52px;}
+  .nav-logo{font-size:13px;font-weight:700;letter-spacing:1px;color:var(--blue);text-transform:uppercase;}
+  .nav-links{display:flex;gap:4px;margin-left:auto;}
+  .nav-links a{font-size:12px;color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:6px;transition:all .15s;}
+  .nav-links a:hover{color:var(--text);background:var(--s2);}
+
+  /* HERO */
+  .hero{background:linear-gradient(160deg,#080a0f 0%,#0d1020 50%,#0a0d1a 100%);padding:72px 40px 64px;position:relative;overflow:hidden;border-bottom:1px solid var(--border);}
+  .hero::before{content:'';position:absolute;top:-100px;right:-100px;width:600px;height:600px;background:radial-gradient(circle,rgba(59,130,246,0.06) 0%,transparent 65%);border-radius:50%;}
+  .hero::after{content:'';position:absolute;bottom:-80px;left:200px;width:400px;height:400px;background:radial-gradient(circle,rgba(139,92,246,0.05) 0%,transparent 65%);border-radius:50%;}
+  .hero-inner{max-width:1280px;margin:0 auto;position:relative;}
+  .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:var(--blue);padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:20px;}
+  .hero-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 8px var(--blue);}
+  h1{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1.1;margin-bottom:16px;}
+  h1 .hl{background:linear-gradient(135deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .hero-sub{color:var(--dim);font-size:16px;max-width:640px;margin-bottom:32px;line-height:1.7;}
+  .hero-stats{display:flex;gap:32px;flex-wrap:wrap;}
+  .hstat{text-align:center;}
+  .hstat-n{font-size:28px;font-weight:800;letter-spacing:-1px;color:var(--blue);}
+  .hstat-l{font-size:11px;color:var(--muted);margin-top:2px;}
+  .source-note{margin-top:12px;font-size:11px;color:var(--muted);font-style:italic;}
+
+  /* LAYOUT */
+  .wrap{max-width:1280px;margin:0 auto;padding:48px 40px;}
+
+  /* SECTION */
+  .sec{margin-bottom:72px;}
+  .sec-head{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+  .sec-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .ic-b{background:var(--blue-dim);border:1px solid rgba(59,130,246,0.2);}
+  .ic-p{background:var(--purple-dim);border:1px solid rgba(139,92,246,0.2);}
+  .ic-g{background:var(--green-dim);border:1px solid rgba(16,185,129,0.2);}
+  .ic-o{background:var(--orange-dim);border:1px solid rgba(245,158,11,0.2);}
+  .ic-c{background:var(--cyan-dim);border:1px solid rgba(6,182,212,0.2);}
+  .sec-title{font-size:22px;font-weight:700;letter-spacing:-0.3px;}
+  .sec-badge{margin-left:auto;font-size:11px;color:var(--muted);background:var(--s2);border:1px solid var(--border);padding:4px 10px;border-radius:6px;}
+
+  /* SIGNAL CARDS */
+  .signals{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .sig{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;}
+  .sig:hover{border-color:var(--border2);}
+  .sig-source{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+  .sig-source.blue{color:var(--blue);}
+  .sig-source.purple{color:var(--purple);}
+  .sig-source.green{color:var(--green);}
+  .sig-source.orange{color:var(--orange);}
+  .sig-source.cyan{color:var(--cyan);}
+  .sig-title{font-size:14px;font-weight:600;margin-bottom:8px;}
+  .sig-text{font-size:13px;color:var(--dim);line-height:1.65;}
+  .sig-quote{font-size:12px;color:var(--muted);font-style:italic;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.6;}
+
+  /* TWO OBJECTIVES */
+  .obj-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .obj{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:28px;position:relative;overflow:hidden;}
+  .obj::before{content:attr(data-n);position:absolute;right:20px;top:16px;font-size:80px;font-weight:900;color:rgba(255,255,255,0.02);line-height:1;}
+  .obj-num{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;}
+  .obj-num.b{color:var(--blue);}
+  .obj-num.p{color:var(--purple);}
+  .obj-title{font-size:18px;font-weight:700;margin-bottom:12px;letter-spacing:-0.3px;}
+  .obj-desc{font-size:13px;color:var(--dim);line-height:1.7;}
+  .obj-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  .obj-tag{font-size:11px;padding:3px 10px;border-radius:5px;font-weight:500;}
+  .tag-b{background:var(--blue-dim);color:#93c5fd;border:1px solid rgba(59,130,246,0.2);}
+  .tag-p{background:var(--purple-dim);color:#c4b5fd;border:1px solid rgba(139,92,246,0.2);}
+  .tag-g{background:var(--green-dim);color:#6ee7b7;border:1px solid rgba(16,185,129,0.2);}
+  .tag-o{background:var(--orange-dim);color:#fde68a;border:1px solid rgba(245,158,11,0.2);}
+  .tag-r{background:var(--red-dim);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);}
+  .tag-c{background:var(--cyan-dim);color:#a5f3fc;border:1px solid rgba(6,182,212,0.2);}
+
+  /* PHASE TIMELINE */
+  .phases{display:flex;flex-direction:column;gap:0;}
+  .phase{display:grid;grid-template-columns:auto 1fr;gap:24px;padding-bottom:48px;position:relative;}
+  .phase:not(:last-child)::before{content:'';position:absolute;left:19px;top:42px;width:2px;bottom:0;background:linear-gradient(to bottom,var(--border2),transparent);}
+  .phase-left{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:4px;}
+  .phase-circle{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;position:relative;z-index:1;}
+  .pc-critical{background:rgba(239,68,68,0.15);border:2px solid var(--red);color:var(--red);}
+  .pc-high{background:rgba(245,158,11,0.15);border:2px solid var(--orange);color:var(--orange);}
+  .pc-medium{background:rgba(59,130,246,0.15);border:2px solid var(--blue);color:var(--blue);}
+  .pc-low{background:rgba(16,185,129,0.15);border:2px solid var(--green);color:var(--green);}
+  .phase-time{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;writing-mode:horizontal-tb;color:var(--muted);white-space:nowrap;}
+  .phase-right{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:24px;}
+  .phase-right:hover{border-color:var(--border2);}
+  .phase-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .phase-tag{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border-radius:5px;}
+  .pt-r{background:var(--red-dim);color:#fca5a5;}
+  .pt-o{background:var(--orange-dim);color:#fde68a;}
+  .pt-b{background:var(--blue-dim);color:#93c5fd;}
+  .pt-g{background:var(--green-dim);color:#6ee7b7;}
+  .phase-title{font-size:17px;font-weight:700;letter-spacing:-0.2px;}
+  .phase-body{font-size:13px;color:var(--dim);line-height:1.7;margin-bottom:16px;}
+  .impl-list{list-style:none;display:flex;flex-direction:column;gap:6px;}
+  .impl-list li{font-size:12px;color:var(--dim);display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
+  .impl-list li::before{content:'→';color:var(--blue);flex-shrink:0;margin-top:1px;}
+  .impl-list li.done::before{content:'✓';color:var(--green);}
+  .impl-list li.warn::before{content:'⚠';color:var(--orange);}
+  .impl-list li strong{color:var(--text);}
+
+  /* CODE */
+  pre{background:#050709;border:1px solid var(--border);border-radius:10px;padding:20px;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;margin:16px 0;}
+  .ck{color:#7dd3fc;} /* keyword blue */
+  .cs{color:#86efac;} /* string green */
+  .cm{color:#475569;} /* comment gray */
+  .cv{color:#c4b5fd;} /* var purple */
+  .cf{color:#fde68a;} /* function yellow */
+  .co{color:#f97316;} /* orange */
+
+  /* AGENT ARMY TABLE */
+  .army-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .army-table th{background:var(--s2);color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:10px 16px;text-align:left;border:1px solid var(--border);}
+  .army-table td{padding:13px 16px;border:1px solid var(--border);vertical-align:top;}
+  .army-table tr:hover td{background:var(--s2);}
+  .agent-name{font-weight:700;color:var(--text);font-family:var(--mono);font-size:12px;}
+  .model-pill{font-size:11px;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-weight:600;}
+  .mp-claude{background:rgba(139,92,246,0.15);color:#c4b5fd;}
+  .mp-deepseek{background:rgba(59,130,246,0.15);color:#93c5fd;}
+  .mp-gemini{background:rgba(16,185,129,0.15);color:#6ee7b7;}
+  .mp-openai{background:rgba(6,182,212,0.15);color:#a5f3fc;}
+  .mp-kimi{background:rgba(59,130,246,0.18);color:#7dd3fc;border:1px solid rgba(59,130,246,0.25);}
+  .mp-glm{background:rgba(168,85,247,0.18);color:#d8b4fe;border:1px solid rgba(168,85,247,0.25);}
+  .mp-opencode{background:rgba(20,184,166,0.18);color:#5eead4;border:1px solid rgba(20,184,166,0.25);}
+  .mp-local{background:rgba(245,158,11,0.15);color:#fde68a;}
+  .mp-mix{background:rgba(239,68,68,0.15);color:#fca5a5;}
+  .tools-list{display:flex;flex-wrap:wrap;gap:4px;}
+  .tool-tag{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--s3);color:var(--dim);border:1px solid var(--border);}
+
+  /* DIAGRAM */
+  .diagram{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:32px;margin:20px 0;font-family:var(--mono);font-size:13px;color:var(--dim);line-height:1.8;}
+  .diagram .hl{color:var(--blue);}
+  .diagram .hlp{color:var(--purple);}
+  .diagram .hlg{color:var(--green);}
+  .diagram .hlo{color:var(--orange);}
+  .diagram .hlc{color:var(--cyan);}
+  .diagram .hlr{color:var(--red);}
+
+  /* INSIGHT BOXES */
+  .insight{background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:16px 20px;margin:16px 0;}
+  .insight.g{border-left-color:var(--green);}
+  .insight.p{border-left-color:var(--purple);}
+  .insight.o{border-left-color:var(--orange);}
+  .insight.r{border-left-color:var(--red);}
+  .insight.c{border-left-color:var(--cyan);}
+  .ilabel{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .itext{font-size:13px;color:var(--dim);line-height:1.65;}
+  .itext strong{color:var(--text);}
+
+  /* COMPARISON vs COMPETITORS */
+  .comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .comp-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px;}
+  .comp-name{font-size:13px;font-weight:700;margin-bottom:4px;}
+  .comp-model{font-size:11px;color:var(--muted);margin-bottom:12px;}
+  .comp-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);margin-bottom:5px;}
+  .comp-row .ck{font-size:11px;}
+
+  @media(max-width:900px){
+    .signals{grid-template-columns:1fr;}
+    .obj-grid{grid-template-columns:1fr;}
+    .comp-grid{grid-template-columns:1fr 1fr;}
+    h1{font-size:30px;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">OmniWorker</div>
+    <div class="nav-links">
+      <a href="#signals">Señales 2026</a>
+      <a href="#objectives">Objetivos</a>
+      <a href="#architecture">Arquitectura</a>
+      <a href="#phases">Fases</a>
+      <a href="#army">Ejército</a>
+      <a href="#foundation">Foundation ✅</a>
+      <a href="#model-mgmt">Modelos</a>
+      <a href="#saas-opacity">SaaS</a>
+      <a href="#vs">vs Competidores</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Plan de Implementación · Jun 2026</div>
+    <h1>De asistente reactivo<br>a <span class="hl">orquestador autónomo</span></h1>
+    <p class="hero-sub">Plan técnico para convertir OmniWorker en un orquestador real con iniciativa propia, delegación proactiva, y un ejército de agentes especializados con modelos LLM predefinidos por rol.</p>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hstat-n">2</div><div class="hstat-l">Objetivos core</div></div>
+      <div class="hstat"><div class="hstat-n">4</div><div class="hstat-l">Fases de ejecución</div></div>
+      <div class="hstat"><div class="hstat-n">10</div><div class="hstat-l">Tipos de agente definidos</div></div>
+      <div class="hstat"><div class="hstat-n">0</div><div class="hstat-l">Tocar memoria/contexto</div></div>
+    </div>
+    <div class="source-note">Investigación basada en: HN 2026 · GitHub repos activos · Patrones de Praktor, Mission Control, CORE, Zenflow, Tuplet, metaswarm</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ===== SEÑALES 2026 ===== -->
+<section class="sec" id="signals">
+  <div class="sec-head">
+    <div class="sec-icon ic-b">📡</div>
+    <h2 class="sec-title">Lo que está pasando en 2026</h2>
+    <span class="sec-badge">HN · GitHub · WebSearch · Feb–Jun 2026</span>
+  </div>
+
+  <div class="signals">
+    <div class="sig">
+      <div class="sig-source blue">HN 2026 · Praktor (Feb 2026)</div>
+      <div class="sig-title">Modelo fijo por agente — el estándar emergente</div>
+      <div class="sig-text">Praktor implementa agentes con "each with its own role, model, and config". Cada agente tiene su propio SQLite + MCP tools para memoria persistente. Named agents con smart routing (@agent_name o AI-powered). Swarms: fan-out, pipeline, collaborative patterns.</div>
+      <div class="sig-quote">"No dynamic model switching mid-conversation — each agent knows what model it is from creation time."</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source purple">HN 2026 · Mission Control</div>
+      <div class="sig-title">Daemon autónomo: el agente que trabaja solo</div>
+      <div class="sig-text">Daemon Node.js que corre en background, pollea la task queue, spawna sesiones de Claude Code, enforcea concurrencia, reintenta tasks fallidas, y corre scheduled commands. 6 roles predefinidos en agents.json. Skills como markdown inyectado en prompts (~650 tokens vs 10K raw).</div>
+      <div class="sig-quote">"One click: your entire work queue activates. The daemon handles the rest while you sleep."</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source green">HN 2026 · CORE AI Butler</div>
+      <div class="sig-title">El orquestador decide qué corre — no el humano</div>
+      <div class="sig-text">CORE convierte checkbox items en tasks automáticamente, spawnea Claude Code con contexto pre-cargado de Linear/Gmail/GitHub. Se autodefine como "the layer above that decides what should run." Open-source, Docker Compose, multi-model.</div>
+      <div class="sig-quote">"CORE picks it up, pulls context, drafts a plan, and spins up a session. You just wrote the checkbox."</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source orange">HN 2026 · metaswarm</div>
+      <div class="sig-title">18 agentes — 127 PRs mergeados autónomamente</div>
+      <div class="sig-text">Orchestrator con specialist swarm assignments, deterministic gates que persisten entre sesiones, design review multi-agente antes de ejecutar código, 5 approvals paralelos requeridos. El sistema nunca ejecuta sin validación multi-agente previa.</div>
+      <div class="sig-quote">"Deterministic gates survive session restarts. A specialist swarm reviews before any code runs."</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source cyan">HN 2026 · Zenflow + Tuplet</div>
+      <div class="sig-title">Cross-model verification + definición minimal de agentes</div>
+      <div class="sig-text">Zenflow: un agente escribe, otro de diferente proveedor revisa, un tercero audita. Tuplet: new Tuplet({role, tools, llm}) — 3 campos, agente completo. Sub-agentes custom con LLM provider diferente al principal. Stateless para serverless.</div>
+      <div class="sig-quote">"One agent writes code. A second agent from a different model provider reviews it. A third audits."</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source blue">HN 2026 · AI Station Navigator</div>
+      <div class="sig-title">El modelo mental correcto: LLM=CPU, Agente=Proceso, Skill=App</div>
+      <div class="sig-text">Sub-agentes como procesos aislados que protegen el contexto del agente principal. Skills como apps instalables vía GitHub. El kernel (CLAUDE.md) hace intent recognition y task decomposition. El orquestador no ejecuta — rutea.</div>
+      <div class="sig-quote">"Sub-agents isolate running of single applications, reducing context pollution for the main agent."</div>
+    </div>
+  </div>
+
+  <div class="insight c" style="margin-top:24px;">
+    <div class="ilabel">Patrón unificado de 2026</div>
+    <div class="itext">
+      Todos los proyectos que están funcionando en 2026 convergen en lo mismo: <strong>agentes definidos como datos (JSON/YAML), modelo fijo por rol, daemon autónomo con task queue, skills como contexto comprimido inyectado, y el orquestador como capa de routing — no de ejecución.</strong> Ninguno usa routing dinámico de modelos mid-conversación. Todos tienen loop detection (máx 3 fallos → escalar).
+    </div>
+  </div>
+</section>
+
+<!-- ===== OBJETIVOS ===== -->
+<section class="sec" id="objectives">
+  <div class="sec-head">
+    <div class="sec-icon ic-p">🎯</div>
+    <h2 class="sec-title">Los dos objetivos</h2>
+  </div>
+
+  <div class="obj-grid">
+    <div class="obj" data-n="1">
+      <div class="obj-num b">Objetivo 01</div>
+      <div class="obj-title">El agente como orquestador real</div>
+      <div class="obj-desc">
+        El agente deja de ser un chat reactivo y pasa a ser un director de operaciones autónomo. Tiene iniciativa propia, detecta qué hay que hacer sin que el humano se lo diga, descompone tareas, delega a agentes especializados, y aprende de cada ciclo. El humano interactúa para dar dirección estratégica — no para activar cada tarea.
+      </div>
+      <div class="obj-tags">
+        <span class="obj-tag tag-b">Iniciativa propia</span>
+        <span class="obj-tag tag-p">Delegación real</span>
+        <span class="obj-tag tag-g">Autolearning</span>
+        <span class="obj-tag tag-o">Daemon autónomo</span>
+        <span class="obj-tag tag-b">Task decomposition</span>
+      </div>
+    </div>
+    <div class="obj" data-n="2">
+      <div class="obj-num p">Objetivo 02</div>
+      <div class="obj-title">Ejército de agentes con LLM predefinido por rol</div>
+      <div class="obj-desc">
+        Un registry de tipos de agente donde cada uno tiene: rol, modelo LLM fijo, toolset específico, system prompt propio, y skills pre-cargados. El orquestador consulta el registry y lanza el agente correcto para cada tarea. No hay routing dinámico — el modelo está determinado por el tipo de tarea desde el inicio.
+      </div>
+      <div class="obj-tags">
+        <span class="obj-tag tag-p">Model per role</span>
+        <span class="obj-tag tag-b">agent_types.yaml</span>
+        <span class="obj-tag tag-g">Toolset fijo</span>
+        <span class="obj-tag tag-c">Skills pre-cargados</span>
+        <span class="obj-tag tag-o">Instancia aislada</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ARQUITECTURA ===== -->
+<section class="sec" id="architecture">
+  <div class="sec-head">
+    <div class="sec-icon ic-c">🏛️</div>
+    <h2 class="sec-title">Arquitectura target</h2>
+  </div>
+
+  <div class="diagram">
+<span class="hlc">┌──────────────────────────────────────────────────────────────────────┐</span>
+<span class="hlc">│                     ENTRADA (cualquier plataforma)                   │</span>
+<span class="hlc">│     Telegram · WhatsApp · Discord · API · TUI · Web · Cron           │</span>
+<span class="hlc">└─────────────────────────────┬────────────────────────────────────────┘</span>
+                              <span class="hlc">↓</span>
+<span class="hl">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="hl">│                    ORCHESTRATOR AGENT                                │</span>
+<span class="hl">│  Modelo: claude-opus-4 · Contexto: PROTEGIDO (nunca comprimido)      │</span>
+<span class="hl">│  System prompt: "Director de operaciones — decide y delega"          │</span>
+<span class="hl">│                                                                      │</span>
+<span class="hl">│  ① classify_intent(input)   → qué tipo de tarea es esto?            │</span>
+<span class="hl">│  ② decompose_task(intent)   → kanban: crear subtareas               │</span>
+<span class="hl">│  ③ lookup_agent_registry()  → qué agente maneja este tipo?          │</span>
+<span class="hl">│  ④ delegate(agent_type, brief)  → lanza worker con briefing         │</span>
+<span class="hl">│  ⑤ integrate_result(summary)   → agrega resumen (no raw output)     │</span>
+<span class="hl">│  ⑥ update_plan()               → actualiza kanban                   │</span>
+<span class="hl">│  ⑦ check_autolearning()        → ¿crear skill de esto?              │</span>
+<span class="hl">└────────────────┬───────────────────────────────┬────────────────────┘</span>
+                 <span class="hlc">↓ delegate_tool()</span>              <span class="hlo">↓ background daemon</span>
+<span class="hlp">┌───────────────────────────────┐</span>  <span class="hlo">┌────────────────────────────┐</span>
+<span class="hlp">│    AGENT REGISTRY             │</span>  <span class="hlo">│   AUTONOMOUS META-LOOP     │</span>
+<span class="hlp">│    agent_types.yaml           │</span>  <span class="hlo">│   cron / event-driven      │</span>
+<span class="hlp">│                               │</span>  <span class="hlo">│   → poll kanban            │</span>
+<span class="hlp">│  orchestrator  claude-opus    │</span>  <span class="hlo">│   → detect pending tasks   │</span>
+<span class="hlp">│  planner       deepseek-r1    │</span>  <span class="hlo">│   → auto-delegate          │</span>
+<span class="hlp">│  researcher    gemini-2.5     │</span>  <span class="hlo">│   → no human needed        │</span>
+<span class="hlp">│  developer     claude-sonnet  │</span>  <span class="hlo">└────────────────────────────┘</span>
+<span class="hlp">│  reviewer      claude-haiku   │</span>
+<span class="hlp">│  marketer      gpt-4o         │</span>
+<span class="hlp">│  data_analyst  deepseek-v3    │</span>
+<span class="hlp">│  browser_agent gemini-flash   │</span>
+<span class="hlp">│  code_runner   claude-sonnet  │</span>
+<span class="hlp">└───────────────────────────────┘</span>
+         <span class="hlc">↓ AIAgent(base_url, model, toolset, system_prompt)</span>
+<span class="hlg">┌──────────────────────────────────────────────────────────────────────┐</span>
+<span class="hlg">│                    WORKER AGENTS (instancias aisladas)               │</span>
+<span class="hlg">│  Cada uno recibe: brief de tarea (no historial completo)             │</span>
+<span class="hlg">│  Cada uno devuelve: summary estructurado (no raw output)             │</span>
+<span class="hlg">│  Cada uno tiene: su propio contexto aislado                          │</span>
+<span class="hlg">│  Fallo > 3 veces → escalar al orquestador → loop detection          │</span>
+<span class="hlg">└──────────────────────────────────────────────────────────────────────┘</span>
+         <span class="hlc">↓ results flow up as structured summaries</span>
+<span class="hlo">┌──────────────────────────────────────────────────────────────────────┐</span>
+<span class="hlo">│                    SKILLS ENGINE (ya existe, hay que conectar)       │</span>
+<span class="hlo">│  Cada tarea completada → ¿patrón repetible? → proponer skill        │</span>
+<span class="hlo">│  Skills = markdown comprimido (~50-650 tokens) inyectado en prompts  │</span>
+<span class="hlo">│  Autolearning interval: 30 tareas → propuesta automática de skill   │</span>
+<span class="hlo">└──────────────────────────────────────────────────────────────────────┘</span>
+  </div>
+</section>
+
+<!-- ===== FASES ===== -->
+<section class="sec" id="phases">
+  <div class="sec-head">
+    <div class="sec-icon ic-o">🗺️</div>
+    <h2 class="sec-title">Plan de ejecución — 4 fases</h2>
+  </div>
+
+  <div class="phases">
+
+    <!-- FASE 1 -->
+    <div class="phase">
+      <div class="phase-left">
+        <div class="phase-circle pc-critical">1</div>
+        <div class="phase-time">1–2 días</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-header">
+          <span class="phase-tag pt-r">CRÍTICO</span>
+          <div class="phase-title">Agent Registry — agent_types.yaml</div>
+        </div>
+        <div class="phase-body">
+          Crear el archivo de definición de todos los tipos de agente. Este es el "database" del ejército. Cada agente tiene: nombre, rol, descripción, provider, model, toolset[], skills[], system_prompt_file, max_tokens, y flags de comportamiento. El orquestador lo consulta en cada delegación.
+          <br><br>
+          Esto resuelve el 100% del problema de "routing dinámico imprevisible". El modelo ya no se decide mid-conversación — se lee del registry en el momento de delegar.
+        </div>
+
+        <pre><span class="cm"># omniworker-agent/agent_types.yaml</span>
+<span class="cm"># Fuente de verdad del ejército de agentes</span>
+<span class="cm"># REGLA: model + fallback_model son FIJOS desde creación. Solo el router los puede actualizar vía model_overrides.yaml</span>
+
+<span class="cv">agents</span>:
+
+  <span class="cv">orchestrator</span>:
+    <span class="cs">role</span>: <span class="cs">"Director de Operaciones"</span>
+    <span class="cs">provider</span>: <span class="cs">kimi-coding</span>
+    <span class="cs">model</span>: <span class="cs">kimi-k2</span>                    <span class="cm"># 262K context — decide y delega, ve todo el historial</span>
+    <span class="cs">fallback_model</span>: <span class="cs">kimi-k2-turbo-preview</span>
+    <span class="cs">model_family</span>: <span class="cs">kimi</span>
+    <span class="cs">context_protection</span>: <span class="ck">true</span>          <span class="cm"># NUNCA simplify_chitchat_payload()</span>
+    <span class="cs">toolset</span>: [<span class="cs">kanban</span>, <span class="cs">todo</span>, <span class="cs">delegate</span>, <span class="cs">skills</span>]
+    <span class="cs">system_prompt</span>: <span class="cs">prompts/orchestrator.md</span>
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Orquestador"</span>
+      <span class="cs">visible_to_user</span>: <span class="ck">false</span>           <span class="cm"># infra interna — el usuario no lo ve directamente</span>
+
+  <span class="cv">planner</span>:
+    <span class="cs">role</span>: <span class="cs">"Arquitecto de Soluciones"</span>
+    <span class="cs">provider</span>: <span class="cs">kimi-coding</span>
+    <span class="cs">model</span>: <span class="cs">kimi-k2-thinking</span>           <span class="cm"># thinking mode = razonamiento profundo como deepseek-r1</span>
+    <span class="cs">fallback_model</span>: <span class="cs">kimi-k2</span>
+    <span class="cs">model_family</span>: <span class="cs">kimi</span>
+    <span class="cs">toolset</span>: [<span class="cs">file</span>, <span class="cs">kanban</span>, <span class="cs">web</span>]
+    <span class="cs">output_format</span>: <span class="cs">structured_summary</span>
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Agente Planificador"</span>
+
+  <span class="cv">researcher</span>:
+    <span class="cs">role</span>: <span class="cs">"Investigador Web"</span>
+    <span class="cs">provider</span>: <span class="cs">kimi-coding</span>
+    <span class="cs">model</span>: <span class="cs">kimi-k2</span>                    <span class="cm"># 262K context — investigación profunda, mejor window disponible</span>
+    <span class="cs">fallback_model</span>: <span class="cs">kimi-k2-turbo-preview</span>
+    <span class="cs">model_family</span>: <span class="cs">kimi</span>
+    <span class="cs">toolset</span>: [<span class="cs">web</span>, <span class="cs">browser</span>, <span class="cs">vision</span>]
+    <span class="cs">output_format</span>: <span class="cs">structured_summary</span>
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Agente de Investigación"</span>
+
+  <span class="cv">developer</span>:
+    <span class="cs">role</span>: <span class="cs">"Ingeniero de Software"</span>
+    <span class="cs">provider</span>: <span class="cs">zai</span>
+    <span class="cs">model</span>: <span class="cs">glm-5</span>                      <span class="cm"># provider diferente al orchestrator — cross-model diversity</span>
+    <span class="cs">fallback_model</span>: <span class="cs">glm-4-9b</span>
+    <span class="cs">model_family</span>: <span class="cs">glm</span>
+    <span class="cs">toolset</span>: [<span class="cs">terminal</span>, <span class="cs">file</span>, <span class="cs">code_exec</span>]
+    <span class="cs">output_format</span>: <span class="cs">structured_summary</span>
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Agente de Desarrollo"</span>
+
+  <span class="cv">reviewer</span>:
+    <span class="cs">role</span>: <span class="cs">"Auditor Adversarial"</span>
+    <span class="cs">provider</span>: <span class="cs">zai</span>
+    <span class="cs">model</span>: <span class="cs">glm-4.5-flash</span>              <span class="cm"># rápido y barato — 2 instancias paralelas asequibles</span>
+    <span class="cs">fallback_model</span>: <span class="cs">glm-4-9b</span>
+    <span class="cs">model_family</span>: <span class="cs">glm</span>
+    <span class="cs">toolset</span>: [<span class="cs">file</span>, <span class="cs">terminal</span>]
+    <span class="cs">parallel_instances</span>: 2             <span class="cm"># judgment-day: dos ciegos en paralelo</span>
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Agente de Revisión"</span>
+
+  <span class="cv">browser_agent</span>:
+    <span class="cs">role</span>: <span class="cs">"Operador Web"</span>
+    <span class="cs">provider</span>: <span class="cs">opencode-go</span>              <span class="cm"># aggregator — menor latencia para loops de automation</span>
+    <span class="cs">model</span>: <span class="cs">glm-4.5-flash</span>
+    <span class="cs">fallback_model</span>: <span class="cs">glm-4-9b</span>
+    <span class="cs">model_family</span>: <span class="cs">glm</span>
+    <span class="cs">toolset</span>: [<span class="cs">browser</span>, <span class="cs">vision</span>, <span class="cs">web</span>]
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Agente Web"</span>
+
+  <span class="cv">data_analyst</span>:
+    <span class="cs">role</span>: <span class="cs">"Analista de Datos"</span>
+    <span class="cs">provider</span>: <span class="cs">kimi-coding</span>
+    <span class="cs">model</span>: <span class="cs">kimi-k2-thinking</span>           <span class="cm"># thinking mode para análisis matemático profundo</span>
+    <span class="cs">fallback_model</span>: <span class="cs">kimi-k2</span>
+    <span class="cs">model_family</span>: <span class="cs">kimi</span>
+    <span class="cs">toolset</span>: [<span class="cs">code_exec</span>, <span class="cs">file</span>, <span class="cs">web</span>]
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Agente de Análisis"</span>
+
+  <span class="cv">marketer</span>:
+    <span class="cs">role</span>: <span class="cs">"Estratega de Marketing"</span>
+    <span class="cs">provider</span>: <span class="cs">opencode-go</span>
+    <span class="cs">model</span>: <span class="cs">glm-5</span>                      <span class="cm"># creativo y capaz — via aggregator</span>
+    <span class="cs">fallback_model</span>: <span class="cs">glm-4.5-flash</span>
+    <span class="cs">model_family</span>: <span class="cs">glm</span>
+    <span class="cs">toolset</span>: [<span class="cs">web</span>, <span class="cs">file</span>, <span class="cs">image_gen</span>]
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Agente de Marketing"</span>
+
+  <span class="cv">code_runner</span>:
+    <span class="cs">role</span>: <span class="cs">"Ejecutor Seguro"</span>
+    <span class="cs">provider</span>: <span class="cs">zai</span>
+    <span class="cs">model</span>: <span class="cs">glm-5</span>
+    <span class="cs">fallback_model</span>: <span class="cs">glm-4-9b</span>
+    <span class="cs">model_family</span>: <span class="cs">glm</span>
+    <span class="cs">toolset</span>: [<span class="cs">terminal</span>, <span class="cs">code_exec</span>, <span class="cs">file</span>]
+    <span class="cs">sandbox</span>: <span class="ck">true</span>
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Agente Ejecutor"</span>
+
+  <span class="cv">general_agent</span>:
+    <span class="cs">role</span>: <span class="cs">"Agente General"</span>
+    <span class="cm"># ÚNICO agente sin modelo fijo en el registry. El orquestador analiza la</span>
+    <span class="cm"># complejidad de la tarea UNA VEZ y le asigna el modelo AL SPAWN. Una vez</span>
+    <span class="cm"># spawneado el modelo queda FIJO toda la ejecución — no hay switch mid-task.</span>
+    <span class="cs">model_selection</span>: <span class="cs">orchestrator_by_complexity</span>
+    <span class="cs">complexity_tiers</span>:
+      <span class="cs">simple</span>:  { <span class="cs">provider</span>: <span class="cs">zai</span>,         <span class="cs">model</span>: <span class="cs">glm-4.5-flash</span> }   <span class="cm"># email, resumen, respuesta corta</span>
+      <span class="cs">medium</span>:  { <span class="cs">provider</span>: <span class="cs">zai</span>,         <span class="cs">model</span>: <span class="cs">glm-5</span> }           <span class="cm"># análisis de doc, extracción</span>
+      <span class="cs">complex</span>: { <span class="cs">provider</span>: <span class="cs">kimi-coding</span>, <span class="cs">model</span>: <span class="cs">kimi-k2</span> }         <span class="cm"># investigación + redacción larga</span>
+    <span class="cs">fallback_model</span>: <span class="cs">glm-4-9b</span>          <span class="cm"># si el tier asignado no está disponible</span>
+    <span class="cs">toolset</span>: [<span class="cs">terminal</span>, <span class="cs">file</span>, <span class="cs">code_exec</span>, <span class="cs">web</span>, <span class="cs">browser</span>, <span class="cs">kanban</span>]
+    <span class="cs">nudge_after_uses</span>: 5               <span class="cm"># 5 usos del mismo tipo → proponer agente especializado</span>
+    <span class="cs">display</span>:
+      <span class="cs">name</span>: <span class="cs">"Asistente"</span>
+      <span class="cs">visible_to_user</span>: <span class="ck">false</span>           <span class="cm"># fallback interno — no mostrar salvo necesidad</span></pre>
+
+        <div class="insight b" style="margin-top:18px;">
+          <div class="ilabel">Por qué esto NO es el routing dinámico que evitamos</div>
+          <div class="itext">
+            La clasificación de complejidad la hace el orquestador <strong>una sola vez, antes del spawn</strong>, con contexto completo. El modelo asignado queda <strong>fijo durante toda la ejecución</strong> del general_agent — nunca cambia mid-task. El patrón malo (que el router viejo causaba y que el partner ya parchó) era cambiar de modelo <em>a mitad de una tarea en curso</em>, perdiendo contexto. Acá el general_agent es el único agente cuyo modelo se decide al spawn en vez de estar hardcodeado — todos los especialistas mantienen su modelo fijo del registry. Decisión 100% backend, encriptada, solo el orquestador.
+          </div>
+        </div>
+
+        <ul class="impl-list">
+          <li><strong>agent_types.yaml</strong> — archivo central con los 9 tipos de agente</li>
+          <li><strong>load_agent_registry()</strong> — función que lee el YAML al init del orquestador</li>
+          <li><strong>get_agent_for_task(task_type)</strong> — devuelve el AgentConfig correcto</li>
+          <li class="done"><strong>delegate_tool.py ya existe</strong> — solo hay que pasarle el config del registry</li>
+          <li class="warn"><strong>smart_router.py context_protection flag</strong> — si is_orchestrator → nunca simplify</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FASE 2 -->
+    <div class="phase">
+      <div class="phase-left">
+        <div class="phase-circle pc-critical">2</div>
+        <div class="phase-time">3–5 días</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-header">
+          <span class="phase-tag pt-r">CRÍTICO</span>
+          <div class="phase-title">Reescritura del system prompt del orquestador</div>
+        </div>
+        <div class="phase-body">
+          El cambio más impactante y el más barato de implementar: cambiar el system prompt del agente principal de "asistente que ejecuta lo que se le pide" a "director de operaciones que decide y delega". El LLM cambia completamente su comportamiento con el prompt correcto. Basado en lo que encontramos en Mission Control, CORE y Praktor.
+        </div>
+
+        <pre><span class="cm"># omniworker-agent/prompts/orchestrator.md</span>
+
+<span class="ck">## Tu rol</span>
+Eres el Orquestador de OmniWorker. <span class="co">NO eres un asistente que ejecuta tareas.</span>
+Eres un Director de Operaciones que <span class="cs">decide, planifica, y delega</span>.
+
+<span class="ck">## Tu primera pregunta ante cualquier input</span>
+<span class="cs">"¿Qué tipo de tarea es esta y qué agente especializado debería manejarla?"</span>
+
+<span class="ck">## Jerarquía de decisiones</span>
+1. <span class="cs">ANALIZAR</span>: Entender el intent real detrás del input (no el literal)
+2. <span class="cs">DESCOMPONER</span>: Si la tarea es compleja, crear subtareas en el kanban
+3. <span class="cs">CONSULTAR REGISTRY</span>: Qué agente del registry maneja este tipo?
+4. <span class="cs">DELEGAR</span>: Lanzar el agente correcto con un brief claro y acotado
+5. <span class="cs">INTEGRAR</span>: Recibir el summary del agente (no el raw output) e integrar al plan
+6. <span class="cs">ACTUALIZAR</span>: Actualizar el kanban con el progreso real
+7. <span class="cs">APRENDER</span>: ¿Este patrón merece convertirse en un skill?
+
+<span class="ck">## Cuándo ejecutas tú directamente (excepciones)</span>
+- La tarea es una conversación simple (<span class="cs">≤ 2 mensajes, ≤ 50 chars</span>)
+- El usuario pidió explícitamente que lo hagas tú
+<span class="cm"># REGLA: "no hay agente para esto" NO es excepción. → siempre delegar a general_agent.</span>
+<span class="cm"># El orquestador NUNCA ejecuta tareas complejas directamente (context pollution).</span>
+
+<span class="ck">## Cuándo tienes INICIATIVA PROPIA</span>
+- Si ves una tarea pendiente en el kanban sin asignar → <span class="cs">asignarla y delegarla</span>
+- Si una tarea lleva > 24hs sin progreso → <span class="cs">revisarla y reactivarla</span>
+- Si detectas un patrón repetido en 3+ tareas → <span class="cs">proponer un skill</span>
+- Si el usuario compartió un objetivo → <span class="cs">descomponer en tareas sin esperar</span>
+
+<span class="ck">## Brief de delegación (qué incluir)</span>
+<span class="cm">NO incluir: historial completo de conversación, contexto del orquestador</span>
+<span class="cs">SÍ incluir: objetivo específico, contexto mínimo necesario, criterio de éxito, formato de output esperado</span></pre>
+
+        <ul class="impl-list">
+          <li><strong>prompts/orchestrator.md</strong> — nuevo system prompt del agente principal</li>
+          <li><strong>prompts/worker_base.md</strong> — template base para workers (brief + formato de output)</li>
+          <li><strong>agent_init.py</strong> — leer el system_prompt del registry en lugar del hardcoded</li>
+          <li class="warn"><strong>No tocar context_compressor</strong> — el compañero lo está manejando</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FASE 3 -->
+    <div class="phase">
+      <div class="phase-left">
+        <div class="phase-circle pc-high">3</div>
+        <div class="phase-time">1 semana</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-header">
+          <span class="phase-tag pt-o">ALTO IMPACTO</span>
+          <div class="phase-title">Meta-loop autónomo (el daemon)</div>
+        </div>
+        <div class="phase-body">
+          El orquestador necesita un loop propio que se ejecute sin input del humano. Basado exactamente en el patrón de Mission Control (daemon que pollea task queue) y Praktor (cron-style autonomous tasks). El daemon corre en background, lee el kanban, detecta tareas pendientes, y las delega al agente correcto. El humano puede darlo dirección estratégica — pero el agente no espera al humano para avanzar.
+        </div>
+
+        <pre><span class="cm"># omniworker-agent/orchestrator_daemon.py</span>
+<span class="cm"># Background loop — el corazón del orquestador autónomo</span>
+
+<span class="ck">class</span> <span class="cf">OrchestratorDaemon</span>:
+    <span class="cm">"""
+    Corre en background. Pollea el kanban cada N segundos.
+    Si encuentra tareas pendientes → las delega al agente correcto.
+    No necesita input del humano para avanzar.
+    """</span>
+
+    <span class="cv">POLL_INTERVAL</span> = 30  <span class="cm"># segundos entre polls</span>
+    <span class="cv">MAX_FAILURES</span> = 3   <span class="cm"># loop detection — escalar tras 3 fallos</span>
+    <span class="cv">CRON_TASKS</span> = [
+        {<span class="cs">"schedule"</span>: <span class="cs">"0 9 * * 1"</span>,   <span class="cs">"task"</span>: <span class="cs">"weekly_review"</span>},      <span class="cm"># Lunes 9am</span>
+        {<span class="cs">"schedule"</span>: <span class="cs">"0 8 * * *"</span>,   <span class="cs">"task"</span>: <span class="cs">"daily_standup"</span>},      <span class="cm"># Diario 8am</span>
+        {<span class="cs">"schedule"</span>: <span class="cs">"0 18 * * 5"</span>, <span class="cs">"task"</span>: <span class="cs">"autolearning_review"</span>}, <span class="cm"># Viernes 6pm</span>
+    ]
+
+    <span class="ck">async def</span> <span class="cf">run_forever</span>(<span class="cv">self</span>):
+        <span class="ck">while</span> <span class="ck">True</span>:
+            <span class="ck">await</span> <span class="cv">self</span>.<span class="cf">tick</span>()
+            <span class="ck">await</span> asyncio.<span class="cf">sleep</span>(<span class="cv">self</span>.POLL_INTERVAL)
+
+    <span class="ck">async def</span> <span class="cf">tick</span>(<span class="cv">self</span>):
+        <span class="cm"># 1. Check cron tasks</span>
+        <span class="cv">due_cron</span> = <span class="cv">self</span>.<span class="cf">get_due_cron_tasks</span>()
+        <span class="ck">for</span> <span class="cv">task</span> <span class="ck">in</span> <span class="cv">due_cron</span>:
+            <span class="ck">await</span> <span class="cv">self</span>.<span class="cf">dispatch_task</span>(<span class="cv">task</span>)
+
+        <span class="cm"># 2. Poll kanban for unassigned ready tasks</span>
+        <span class="cv">pending</span> = <span class="cv">self</span>.kanban.<span class="cf">get_ready_unassigned</span>()
+        <span class="ck">for</span> <span class="cv">task</span> <span class="ck">in</span> <span class="cv">pending</span>:
+            <span class="cv">agent_type</span> = <span class="cv">self</span>.<span class="cf">classify_task</span>(<span class="cv">task</span>)
+            <span class="ck">await</span> <span class="cv">self</span>.<span class="cf">delegate</span>(<span class="cv">task</span>, <span class="cv">agent_type</span>)
+
+        <span class="cm"># 3. Check stalled tasks (> 24h sin progreso)</span>
+        <span class="cv">stalled</span> = <span class="cv">self</span>.kanban.<span class="cf">get_stalled</span>(hours=24)
+        <span class="ck">for</span> <span class="cv">task</span> <span class="ck">in</span> <span class="cv">stalled</span>:
+            <span class="ck">await</span> <span class="cv">self</span>.<span class="cf">reactivate_or_escalate</span>(<span class="cv">task</span>)
+
+    <span class="ck">async def</span> <span class="cf">delegate</span>(<span class="cv">self</span>, <span class="cv">task</span>, <span class="cv">agent_type</span>):
+        <span class="cv">config</span> = <span class="cf">get_agent_for_task</span>(<span class="cv">agent_type</span>)  <span class="cm"># del registry</span>
+        <span class="cv">brief</span> = <span class="cf">build_brief</span>(<span class="cv">task</span>)               <span class="cm"># no el historial completo</span>
+        <span class="cv">result</span> = <span class="ck">await</span> <span class="cf">run_worker_agent</span>(<span class="cv">config</span>, <span class="cv">brief</span>)
+        <span class="cv">summary</span> = <span class="cf">extract_summary</span>(<span class="cv">result</span>)        <span class="cm"># no el raw output</span>
+        <span class="cv">self</span>.kanban.<span class="cf">update_task</span>(<span class="cv">task</span>.id, <span class="cv">summary</span>)
+        <span class="cv">self</span>.<span class="cf">check_autolearning_trigger</span>(<span class="cv">task</span>, <span class="cv">summary</span>)</pre>
+
+        <ul class="impl-list">
+          <li><strong>orchestrator_daemon.py</strong> — nuevo módulo, ~200 líneas</li>
+          <li><strong>gateway/run.py</strong> — arrancar el daemon al init del gateway</li>
+          <li class="done"><strong>kanban_tools.py ya existe</strong> — get_ready_unassigned, update_task</li>
+          <li class="done"><strong>delegate_tool.py ya existe</strong> — run_worker_agent</li>
+          <li><strong>classify_task(task)</strong> — mapear texto de tarea → agent_type del registry</li>
+          <li><strong>build_brief(task)</strong> — condensar contexto mínimo para el worker</li>
+          <li><strong>extract_summary(result)</strong> — comprimir output del worker antes de integrar</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FASE 4 -->
+    <div class="phase">
+      <div class="phase-left">
+        <div class="phase-circle pc-medium">4</div>
+        <div class="phase-time">1–2 semanas</div>
+      </div>
+      <div class="phase-right">
+        <div class="phase-header">
+          <span class="phase-tag pt-b">DIFERENCIADOR</span>
+          <div class="phase-title">Autolearning conectado al orquestador</div>
+        </div>
+        <div class="phase-body">
+          El skills autolearning ya existe en OmniWorker — es el diferenciador más grande vs todos los competidores. Ningún framework open-source lo tiene. El paso que falta es conectarlo al orquestador para que se active automáticamente después de cada tarea completada exitosamente. La lógica: si una tarea se repite o se resuelve con un patrón identificable → el orquestador propone un skill. El skill se convierte en contexto comprimido (~50-650 tokens) inyectado en futuros workers.
+        </div>
+
+        <pre><span class="cm"># Añadir a orchestrator_daemon.py</span>
+
+<span class="ck">async def</span> <span class="cf">check_autolearning_trigger</span>(<span class="cv">self</span>, <span class="cv">task</span>, <span class="cv">summary</span>):
+    <span class="cm">"""
+    Después de cada tarea exitosa: ¿merece convertirse en skill?
+    Reglas:
+      - Mismo patrón visto 3+ veces → proponer skill automáticamente
+      - Tarea compleja resuelta con éxito → sugerir skill al orquestador
+      - Intervalo: cada 30 tareas → review de autolearning
+    """</span>
+    <span class="cv">self</span>.task_history.<span class="cf">append</span>(<span class="cv">task</span>)
+
+    <span class="cm"># Check: mismo tipo de tarea vista 3+ veces</span>
+    <span class="cv">similar</span> = [<span class="cv">t</span> <span class="ck">for</span> <span class="cv">t</span> <span class="ck">in</span> <span class="cv">self</span>.task_history
+               <span class="ck">if</span> <span class="cv">t</span>.type == <span class="cv">task</span>.type]
+    <span class="ck">if</span> <span class="cf">len</span>(<span class="cv">similar</span>) >= 3 <span class="ck">and not</span> <span class="cv">self</span>.<span class="cf">skill_exists_for</span>(<span class="cv">task</span>.type):
+        <span class="ck">await</span> <span class="cv">self</span>.<span class="cf">propose_skill</span>(
+            <span class="cv">task_type</span>=<span class="cv">task</span>.type,
+            <span class="cv">examples</span>=<span class="cv">similar</span>[-3:],
+            <span class="cv">summary</span>=<span class="cv">summary</span>
+        )
+
+    <span class="cm"># Check: intervalo periódico (cada 30 tareas)</span>
+    <span class="ck">if</span> <span class="cf">len</span>(<span class="cv">self</span>.task_history) % 30 == 0:
+        <span class="ck">await</span> <span class="cv">self</span>.<span class="cf">autolearning_review</span>()
+
+<span class="ck">async def</span> <span class="cf">propose_skill</span>(<span class="cv">self</span>, <span class="cv">task_type</span>, <span class="cv">examples</span>, <span class="cv">summary</span>):
+    <span class="cm"># Lanzar skill_creator con el patrón detectado</span>
+    <span class="cv">brief</span> = <span class="cf">build_skill_proposal_brief</span>(<span class="cv">task_type</span>, <span class="cv">examples</span>, <span class="cv">summary</span>)
+    <span class="ck">await</span> <span class="cf">delegate</span>(<span class="cv">brief</span>, agent_type=<span class="cs">"planner"</span>)
+    <span class="cm"># Notificar al usuario: "Creé un skill nuevo: {task_type}"</span>
+    <span class="ck">await</span> <span class="cv">self</span>.<span class="cf">notify</span>(<span class="cs">f"Nuevo skill propuesto: {task_type}"</span>)</pre>
+
+        <ul class="impl-list">
+          <li class="done"><strong>skills autolearning ya existe</strong> (creation_nudge_interval: 50)</li>
+          <li><strong>Bajar intervalo a 30</strong> en config.yaml — más agresivo</li>
+          <li><strong>task_history tracking</strong> — agregar al daemon loop</li>
+          <li><strong>skill_exists_for(task_type)</strong> — check en el skills registry existente</li>
+          <li><strong>notify()</strong> — enviar al usuario vía la plataforma configurada</li>
+          <li class="done"><strong>skill_creator tool ya existe</strong> — solo hay que llamarlo desde el daemon</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== EJÉRCITO DE AGENTES ===== -->
+<section class="sec" id="army">
+  <div class="sec-head">
+    <div class="sec-icon ic-p">⚔️</div>
+    <h2 class="sec-title">El ejército — 10 agentes predefinidos</h2>
+  </div>
+
+  <p style="color:var(--dim);font-size:13px;margin-bottom:20px;">Cada agente tiene un rol, modelo LLM fijo, toolset específico, y criterio de activación claro. El orquestador decide cuál usar — los workers nunca saben del contexto global.</p>
+
+  <div style="overflow-x:auto;">
+    <table class="army-table">
+      <thead>
+        <tr>
+          <th>Agente</th>
+          <th>Rol</th>
+          <th>Modelo LLM</th>
+          <th>Fallback</th>
+          <th>Toolset</th>
+          <th>Se activa cuando...</th>
+          <th>Output</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="agent-name">orchestrator</td>
+          <td>Director de Operaciones</td>
+          <td><span class="model-pill mp-kimi">kimi-k2</span></td>
+          <td style="font-size:11px;color:var(--muted);">kimi-k2-turbo</td>
+          <td><div class="tools-list"><span class="tool-tag">kanban</span><span class="tool-tag">delegate</span><span class="tool-tag">skills</span><span class="tool-tag">todo</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Todo input del usuario. Decide y rutea. El único que llama al router.</td>
+          <td style="font-size:12px;color:var(--dim);">Decision + plan de delegación</td>
+        </tr>
+        <tr>
+          <td class="agent-name">planner</td>
+          <td>Arquitecto de Soluciones</td>
+          <td><span class="model-pill mp-kimi">kimi-k2-thinking</span></td>
+          <td style="font-size:11px;color:var(--muted);">kimi-k2</td>
+          <td><div class="tools-list"><span class="tool-tag">file</span><span class="tool-tag">kanban</span><span class="tool-tag">web</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Tarea compleja sin plan claro. Propuesta de arquitectura. SDD phases.</td>
+          <td style="font-size:12px;color:var(--dim);">plan.md estructurado</td>
+        </tr>
+        <tr>
+          <td class="agent-name">researcher</td>
+          <td>Investigador Web</td>
+          <td><span class="model-pill mp-kimi">kimi-k2</span></td>
+          <td style="font-size:11px;color:var(--muted);">kimi-k2-turbo</td>
+          <td><div class="tools-list"><span class="tool-tag">web</span><span class="tool-tag">browser</span><span class="tool-tag">vision</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Necesita data externa. Research competitivo. 262K context = búsqueda profunda.</td>
+          <td style="font-size:12px;color:var(--dim);">research_summary.md</td>
+        </tr>
+        <tr>
+          <td class="agent-name">developer</td>
+          <td>Ingeniero de Software</td>
+          <td><span class="model-pill mp-glm">glm-5</span></td>
+          <td style="font-size:11px;color:var(--muted);">glm-4-9b</td>
+          <td><div class="tools-list"><span class="tool-tag">terminal</span><span class="tool-tag">file</span><span class="tool-tag">code_exec</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Tarea de desarrollo, bug fix, implementación de feature.</td>
+          <td style="font-size:12px;color:var(--dim);">código + diff + test results</td>
+        </tr>
+        <tr>
+          <td class="agent-name">reviewer</td>
+          <td>Auditor Adversarial</td>
+          <td><span class="model-pill mp-glm">glm-4.5-flash</span></td>
+          <td style="font-size:11px;color:var(--muted);">glm-4-9b</td>
+          <td><div class="tools-list"><span class="tool-tag">file</span><span class="tool-tag">terminal</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Post-desarrollo. Judgment-day (2 instancias paralelas, ciegas entre sí).</td>
+          <td style="font-size:12px;color:var(--dim);">verdict: approved / issues[]</td>
+        </tr>
+        <tr>
+          <td class="agent-name">browser_agent</td>
+          <td>Operador Web</td>
+          <td><span class="model-pill mp-opencode">glm-4.5-flash</span></td>
+          <td style="font-size:11px;color:var(--muted);">glm-4-9b</td>
+          <td><div class="tools-list"><span class="tool-tag">browser</span><span class="tool-tag">vision</span><span class="tool-tag">web</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Task requiere navegación web, scraping, o interacción con UI.</td>
+          <td style="font-size:12px;color:var(--dim);">data extraída + screenshots</td>
+        </tr>
+        <tr>
+          <td class="agent-name">data_analyst</td>
+          <td>Analista de Datos</td>
+          <td><span class="model-pill mp-kimi">kimi-k2-thinking</span></td>
+          <td style="font-size:11px;color:var(--muted);">kimi-k2</td>
+          <td><div class="tools-list"><span class="tool-tag">code_exec</span><span class="tool-tag">file</span><span class="tool-tag">web</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Análisis numérico, datos, reportes, métricas.</td>
+          <td style="font-size:12px;color:var(--dim);">analysis_report.md + charts</td>
+        </tr>
+        <tr>
+          <td class="agent-name">marketer</td>
+          <td>Estratega de Marketing</td>
+          <td><span class="model-pill mp-opencode">glm-5</span></td>
+          <td style="font-size:11px;color:var(--muted);">glm-4.5-flash</td>
+          <td><div class="tools-list"><span class="tool-tag">web</span><span class="tool-tag">file</span><span class="tool-tag">image_gen</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Copy, estrategia comercial, contenido, ads.</td>
+          <td style="font-size:12px;color:var(--dim);">copy + assets + strategy</td>
+        </tr>
+        <tr>
+          <td class="agent-name">code_runner</td>
+          <td>Ejecutor Seguro</td>
+          <td><span class="model-pill mp-glm">glm-5</span></td>
+          <td style="font-size:11px;color:var(--muted);">glm-4-9b</td>
+          <td><div class="tools-list"><span class="tool-tag">terminal</span><span class="tool-tag">code_exec</span><span class="tool-tag">file</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Scripts, comandos, automatizaciones, sin razonamiento profundo.</td>
+          <td style="font-size:12px;color:var(--dim);">stdout + exit_code + summary</td>
+        </tr>
+        <tr style="background:rgba(59,130,246,0.04);border-top:1px solid var(--border2);">
+          <td class="agent-name" style="color:var(--muted);">general_agent</td>
+          <td style="color:var(--muted);">Agente General (fallback)</td>
+          <td style="line-height:1.9;"><span class="model-pill mp-glm">glm-4.5-flash</span> <span class="model-pill mp-glm">glm-5</span> <span class="model-pill mp-kimi">kimi-k2</span><br><span style="font-size:10px;color:var(--muted);">↑ tier por complejidad, asignado al spawn</span></td>
+          <td style="font-size:11px;color:var(--muted);">glm-4-9b</td>
+          <td><div class="tools-list"><span class="tool-tag">terminal</span><span class="tool-tag">file</span><span class="tool-tag">web</span><span class="tool-tag">browser</span><span class="tool-tag">kanban</span></div></td>
+          <td style="font-size:12px;color:var(--dim);">Ningún agente especializado coincide. Orquestador clasifica complejidad → asigna modelo al spawn → fijo toda la ejecución. N usos → nudge para crear especialista.</td>
+          <td style="font-size:12px;color:var(--dim);">output + tipo_de_tarea_detectado</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight p" style="margin-top:20px;">
+    <div class="ilabel">Por qué este modelo funciona</div>
+    <div class="itext">
+      Praktor (Feb 2026, HN): <strong>"each with its own role, model, and config"</strong>. Mission Control: <strong>6 roles en agents.json, skills como markdown ~650 tokens</strong>. Zenflow: <strong>writer → reviewer → auditor, cada uno distinto proveedor</strong>. El patrón es consistente: el modelo se fija en el momento de definición del agente, nunca se decide mid-ejecución. Esto elimina la inestabilidad de contexto que tenemos hoy.
+    </div>
+  </div>
+</section>
+
+<!-- ===== VS COMPETIDORES ===== -->
+<section class="sec" id="vs">
+  <div class="sec-head">
+    <div class="sec-icon ic-g">🥊</div>
+    <h2 class="sec-title">OmniWorker + este plan vs el campo</h2>
+  </div>
+
+  <div class="comp-grid">
+    <div class="comp-card">
+      <div class="comp-name" style="color:var(--blue);">OmniWorker<br><small style="font-weight:400;color:var(--muted);">con este plan</small></div>
+      <div class="comp-model">Full runtime · 10 agentes · daemon · model-mgmt</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Orquestador con daemon autónomo</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> 10 agentes con modelo fijo/rol + fallback</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Auto-update de modelos (router + SaaS check)</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Opacidad total de infraestructura al cliente</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Skills autolearning nativo</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> 20+ plataformas de mensajería</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Browser nativo (Camofox)</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Judgment-day (2 reviewers ciegos)</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> 30+ LLM providers</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-name" style="color:var(--purple);">gentle-ai<br><small style="font-weight:400;color:var(--muted);">Gentleman Programming</small></div>
+      <div class="comp-model">Workflow overlay · SDD · 3,634★</div>
+      <div class="comp-row"><span class="ck" style="color:var(--orange);">~</span> No tiene daemon autónomo</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No define modelos por agente</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No tiene autolearning</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No tiene plataformas de msg</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> SDD workflow formalizado</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Homebrew install UX</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Multi-agent compatible</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-name" style="color:var(--green);">Mission Control<br><small style="font-weight:400;color:var(--muted);">MeisnerDan · Open Source</small></div>
+      <div class="comp-model">Daemon · 6 roles · Task queue</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Daemon autónomo real</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> 6 roles en agents.json</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No autolearning</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> Solo Claude Code</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No plataformas externas</div>
+      <div class="comp-row"><span class="ck" style="color:var(--orange);">~</span> Token efficiency (~650 tokens)</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No browser nativo</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-name" style="color:var(--orange);">Praktor<br><small style="font-weight:400;color:var(--muted);">GitHub · Feb 2026</small></div>
+      <div class="comp-model">Multi-model · Container isolation</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Modelo fijo por agente</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Per-agent SQLite memory</div>
+      <div class="comp-row"><span class="ck" style="color:var(--green);">✓</span> Container isolation</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No autolearning</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No plataformas de mensajería</div>
+      <div class="comp-row"><span class="ck" style="color:var(--orange);">~</span> Telegram control (solo input)</div>
+      <div class="comp-row"><span class="ck" style="color:var(--red);">✗</span> No daemon proactivo</div>
+    </div>
+  </div>
+
+  <div class="insight g" style="margin-top:24px;">
+    <div class="ilabel">Conclusión estratégica</div>
+    <div class="itext">
+      Con las 4 fases implementadas, <strong>OmniWorker no tiene competencia directa</strong>. Mission Control tiene el daemon, Praktor tiene el modelo fijo por agente, gentle-ai tiene el workflow — pero ninguno tiene las tres cosas juntas + skills autolearning + 20 plataformas + browser propio. El plan convierte a OmniWorker en el único sistema que combina runtime completo + orquestador autónomo + ejército especializado + aprendizaje continuo.
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOUNDATION: PLAN-001 COMPLETADO ===== -->
+<section class="sec" id="foundation">
+  <div class="sec-head">
+    <div class="sec-icon ic-g">✅</div>
+    <h2 class="sec-title">Foundation ya completada — PLAN-001</h2>
+    <span class="sec-badge">Ejecutado 2026-06-04</span>
+  </div>
+  <p style="color:var(--dim);font-size:13px;margin-bottom:20px;">El partner ejecutó PLAN-001 antes de este plan. Las tres capas de pérdida de contexto están resueltas. El plan del orquestador se construye sobre esta base sólida.</p>
+  <div class="signals" style="grid-template-columns:repeat(3,1fr);">
+    <div class="sig">
+      <div class="sig-source green">FASE 1 — Native Memory</div>
+      <div class="sig-title">NativeMemory siempre activa</div>
+      <div class="sig-text"><code>agent/native_memory.py</code> — 4 capas: BM25 full-text, vector search (sqlite-vec opcional), extracción de hechos, workspace state. Zero-config, auto-registrada como proveedor default. Indexa cada turno automáticamente.</div>
+      <div class="sig-quote">Sin setup, sin API keys. Funciona desde el primer mensaje.</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source blue">FASE 2 — Provider State</div>
+      <div class="sig-title">Estado cross-modelo persistido</div>
+      <div class="sig-text"><code>agent/provider_state.py</code> — Persiste <code>provider_data</code> por turno en SQLite (Kimi reasoning_content, Anthropic thinking blocks, Codex call_ids). En cambio de modelo: recupera y sanitiza solo el estado compatible con el provider destino.</div>
+      <div class="sig-quote">El fallback_model puede activarse sin perder el contexto del turno anterior.</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source orange">FASE 3 — Desktop + Gateway</div>
+      <div class="sig-title">Historial completo desde SQLite</div>
+      <div class="sig-text">Desktop eliminó el truncamiento a 50 mensajes. Si hay <code>sessionId</code>, el desktop envía solo el mensaje actual — el API server recupera el historial completo (con tool_calls, reasoning) desde SQLite. Sin context loss en cambio de modelo ni reinicio.</div>
+      <div class="sig-quote">El orquestador siempre tiene visión completa de la conversación.</div>
+    </div>
+  </div>
+
+  <div class="insight" style="margin-top:20px;border-color:var(--red);background:var(--red-dim);">
+    <div class="ilabel" style="color:var(--red);">⚠️ Bloqueo descubierto — master (33bb7ab) está roto</div>
+    <div class="itext">
+      El commit del partner que trae PLAN-001 vino con un <strong>script de branding roto</strong> que reemplazó <code>OmniWorker → Flux Agent</code> dentro de identificadores Python, imports y env vars. Resultado: <code>from flux-agent_constants import display_flux-agent_home</code> (guion = SyntaxError), <code>os.environ.get("FLUX AGENT_KANBAN_TASK")</code> (espacio en env var). <strong>865 archivos .py afectados</strong>, incluyendo <code>conversation_loop.py</code> (core) — el agente <strong>no importaría</strong> en master.
+      <br><br>
+      <strong>Lo bueno:</strong> los archivos nuevos <code>native_memory.py</code> y <code>provider_state.py</code> están <strong>limpios</strong> (0 identificadores rotos). <strong>Estrategia:</strong> NO mergear master a feat/next. Cherry-pick selectivo de los archivos limpios de PLAN-001 + re-aplicar a mano el fix de <code>smart_router.py</code> (que sí tiene lógica nueva). El rebrand roto se resuelve aparte con el partner.
+    </div>
+  </div>
+</section>
+
+<!-- ===== GESTIÓN DINÁMICA DE MODELOS ===== -->
+<section class="sec" id="model-mgmt">
+  <div class="sec-head">
+    <div class="sec-icon ic-b">🔄</div>
+    <h2 class="sec-title">Gestión dinámica de modelos</h2>
+  </div>
+  <p style="color:var(--dim);font-size:13px;margin-bottom:24px;">Los providers lanzan modelos constantemente y deprecan otros. Este sistema permite que los agentes se actualicen automáticamente sin interrumpir el servicio, y sin que el usuario final vea nada.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">Dos archivos, dos responsabilidades</div>
+      <pre><span class="cm"># agent_types.yaml — LA CONSTITUCIÓN (toca el humano)</span>
+<span class="cv">developer</span>:
+  <span class="cs">model</span>: <span class="cs">glm-5</span>           <span class="cm"># modelo base definido al crear el agente</span>
+  <span class="cs">fallback_model</span>: <span class="cs">glm-4-9b</span>  <span class="cm"># siempre disponible, estático</span>
+  <span class="cs">model_family</span>: <span class="cs">glm</span>      <span class="cm"># para agrupación en auto-update</span>
+
+<span class="cm"># model_overrides.yaml — CAPA DINÁMICA (toca el orquestador)</span>
+<span class="cv">overrides</span>:
+  <span class="cv">glm</span>:
+    <span class="cs">active</span>: <span class="cs">glm-5</span>
+    <span class="cs">previous</span>: <span class="cs">glm-4.9</span>
+    <span class="cs">updated_at</span>: <span class="cs">2026-06-10T08:00:00Z</span>
+    <span class="cs">source</span>: <span class="cs">saas_daily_check</span></pre>
+      <p style="font-size:12px;color:var(--dim);margin-top:8px;">Resolución: el agente lee primero <code>model_overrides.yaml</code>, si no hay override lee <code>agent_types.yaml</code>. Nunca se rompe la config base.</p>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">Flujo completo de actualización</div>
+      <div style="font-size:13px;color:var(--dim);line-height:1.9;">
+        <span style="color:var(--muted);">1.</span> SaaS corre <code>daily_model_check</code> → pollea <code>/models</code> de cada provider<br>
+        <span style="color:var(--muted);">2.</span> Detecta cambio: actualiza <code>model_catalog</code> en DB<br>
+        <span style="color:var(--muted);">3.</span> Push al Smart Router (webhook / polling 5min)<br>
+        <span style="color:var(--muted);">4.</span> Router notifica al Orquestador con <code>{ family, old, new, severity }</code><br>
+        <span style="color:var(--muted);">5a.</span> <strong>Minor bump</strong>: orquestador activa <code>fallback_model</code> → escribe override → desactiva fallback<br>
+        <span style="color:var(--muted);">5b.</span> <strong>Major change</strong>: orquestador activa fallback + notifica operador → espera aprobación<br>
+        <span style="color:var(--muted);">6.</span> Agentes continúan sin interrupción durante toda la transición
+      </div>
+    </div>
+  </div>
+
+  <div class="insight b">
+    <div class="ilabel">Regla de oro del routing</div>
+    <div class="itext">
+      <strong>Solo el orquestador llama al router.</strong> Los agentes worker nunca hacen llamadas al router ni conocen su modelo. El modelo se les asigna en el momento de ser spawneados y es fijo durante toda su ejecución. El orquestador consulta el router al inicio de cada sesión para verificar el estado del catálogo — no en cada delegación.
+    </div>
+  </div>
+
+  <div style="margin-top:24px;">
+    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">Notificación al operador (cambio mayor)</div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;color:var(--dim);">
+      El "humano" notificado es el <strong>operador del SaaS</strong> (vos y tu socio), no el cliente final. La notificación llega al panel de admin: <em>"GLM-6 disponible. Agentes afectados: developer, code_runner, marketer. ¿Actualizar ahora o en próxima ventana de mantenimiento?"</em>. El cliente nunca ve nada — su "Agente de Desarrollo" sigue funcionando con el fallback mientras tanto.
+    </div>
+  </div>
+</section>
+
+<!-- ===== CAPA DE OPACIDAD SAAS ===== -->
+<section class="sec" id="saas-opacity">
+  <div class="sec-head">
+    <div class="sec-icon ic-o">🔒</div>
+    <h2 class="sec-title">Capa de opacidad SaaS — el modelo es infraestructura</h2>
+  </div>
+  <p style="color:var(--dim);font-size:13px;margin-bottom:24px;">El cliente ve roles, no modelos. "Agente de Marketing está trabajando" — nunca "glm-5 está procesando". El modelo es infraestructura interna que puede cambiar sin que el producto cambie.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
+    <div class="sig">
+      <div class="sig-source blue">REGLA</div>
+      <div class="sig-title">Una sola regla de encriptación</div>
+      <div class="sig-text">Todo componente que comunica hacia el desktop, gateway, o front ejecuta <code>strip_model_info()</code> antes de enviar. Esta función se implementa <strong>una sola vez</strong> en el gateway como middleware — no en cada agente. Hacia adentro fluye info completa; hacia afuera nunca sale <code>model</code>, <code>provider</code>, ni <code>base_url</code>.</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source green">BLOQUE DISPLAY</div>
+      <div class="sig-title">Qué ve el usuario final</div>
+      <div class="sig-text">Cada agente en <code>agent_types.yaml</code> tiene un bloque <code>display:</code> con <code>name</code> e <code>icon</code>. El SaaS frontend solo consume esos campos. Los campos <code>provider</code>, <code>model</code>, <code>fallback_model</code>, <code>base_url</code> son infraestructura interna — nunca salen del backend.</div>
+      <div class="sig-quote">"Agente de Marketing" — no "glm-5 via opencode-go"</div>
+    </div>
+    <div class="sig">
+      <div class="sig-source orange">BILLING</div>
+      <div class="sig-title">Costos reales vs precio al cliente</div>
+      <div class="sig-text">Los costos reales por token se registran internamente por tenant y por agente. El cliente ve unidades de negocio (tareas completadas, horas de agente, créditos). Si mañana Kimi lanza una versión más barata, cambiás el modelo en el YAML y mejorás tu margen sin que el cliente note nada. El producto es el agente, no el modelo.</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--cyan);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">4 Layers de autolearning — mapa completo</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:8px;color:var(--muted);">Layer</th>
+          <th style="text-align:left;padding:8px;color:var(--muted);">Qué captura</th>
+          <th style="text-align:left;padding:8px;color:var(--muted);">Creado por</th>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px;color:var(--blue);">Memory</td>
+          <td style="padding:8px;color:var(--dim);">Contexto del usuario y estado actual</td>
+          <td style="padding:8px;color:var(--dim);">Memory review (ya existe)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px;color:var(--green);">Skills</td>
+          <td style="padding:8px;color:var(--dim);">HOW — procedimientos por clase de tarea</td>
+          <td style="padding:8px;color:var(--dim);">Background review (ya existe)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px;color:var(--orange);">Cron jobs</td>
+          <td style="padding:8px;color:var(--dim);">WHEN — tareas recurrentes autónomas</td>
+          <td style="padding:8px;color:var(--dim);">Pattern engine (ya existe)</td>
+        </tr>
+        <tr>
+          <td style="padding:8px;color:var(--purple);font-weight:700;">Agent types</td>
+          <td style="padding:8px;color:var(--dim);font-weight:600;">WHO — qué rol/modelo maneja qué clase</td>
+          <td style="padding:8px;color:var(--purple);">Orquestador con propuesta → humano aprueba <strong>(NUEVO)</strong></td>
+        </tr>
+      </table>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Flujo de creación de agentes</div>
+      <div style="font-size:13px;color:var(--dim);line-height:1.9;">
+        <span style="color:var(--muted);">1.</span> <code>general_agent</code> recibe N usos del mismo tipo de tarea<br>
+        <span style="color:var(--muted);">2.</span> Nudge dispara: orquestador analiza el patrón<br>
+        <span style="color:var(--muted);">3.</span> Orquestador escribe draft en <code>agent_types_proposals.yaml</code><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;con: nombre, rol, model_family, toolset sugerido<br>
+        <span style="color:var(--muted);">4.</span> Notifica al operador: <em>"Propongo crear competitive_intel_agent"</em><br>
+        <span style="color:var(--muted);">5.</span> Operador aprueba → orquestador mueve draft a <code>agent_types.yaml</code><br>
+        <span style="color:var(--red);">⚠️</span> El orquestador <strong>nunca crea agentes unilateralmente</strong> — siempre aprobación humana
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESUMEN EJECUTIVO -->
+<div style="background:var(--s1);border:1px solid var(--border2);border-radius:16px;padding:32px;margin-bottom:48px;">
+  <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:16px;">Resumen ejecutivo</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px;">Fase 1 · 1-2 días</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.6;">agent_types.yaml con <strong>10 agentes</strong> (incluye general_agent). Modelo + fallback + display fijos por rol. Routing dinámico eliminado para siempre. model_overrides.yaml como capa de auto-update separada.</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--orange);margin-bottom:8px;">Fase 2 · 3-5 días</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.6;">Reescribir system prompt: director que decide y delega. El orquestador <strong>nunca ejecuta tareas complejas</strong> — todo va al registry. Incluye regla de general_agent como fallback obligatorio.</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px;">Fase 3 · 1 semana</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.6;">Daemon autónomo + model management: background loop + sistema de notificación de modelos al operador. Gateway strip_model_info() como middleware único.</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px;">Fase 4 · 1-2 semanas</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.6;">4 layers de autolearning conectados: memory + skills + crons + <strong>agent type proposals</strong>. El sistema aprende a crear sus propios especialistas. Diferenciador permanente.</div>
+    </div>
+  </div>
+  <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);font-size:13px;color:var(--green);">
+    ✅ Foundation (PLAN-001): nativeMemory + providerState + desktop history fix ya ejecutados. Las 4 fases se construyen sobre esta base.
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<div style="text-align:center;padding:24px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);">
+  Generado con research de HN 2026 (Praktor, Mission Control, CORE, Zenflow, Tuplet, AI Station Navigator, metaswarm) · Jun 2026
+</div>
+
+</body>
+</html>

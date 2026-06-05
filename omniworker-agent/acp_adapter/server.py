@@ -71,9 +71,9 @@ from acp_adapter.tools import build_tool_complete, build_tool_start
 logger = logging.getLogger(__name__)
 
 try:
-    from flux-agent_cli import __version__ as FLUX AGENT_VERSION
+    from omniworker_cli import __version__ as OMNIWORKER_VERSION
 except Exception:
-    FLUX AGENT_VERSION = "0.0.0"
+    OMNIWORKER_VERSION = "0.0.0"
 
 # Thread pool for running AIAgent (synchronous) in parallel.
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="acp-agent")
@@ -436,7 +436,7 @@ def _content_blocks_to_openai_user_content(
     return parts
 
 
-class Flux AgentACPAgent(acp.Agent):
+class OmniWorkerACPAgent(acp.Agent):
     """ACP Agent implementation wrapping Flux Agent AIAgent."""
 
     _SLASH_COMMANDS = {
@@ -522,7 +522,7 @@ class Flux AgentACPAgent(acp.Agent):
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
 
         try:
-            from flux-agent_cli.models import curated_models_for_provider, normalize_provider, provider_label
+            from omniworker_cli.models import curated_models_for_provider, normalize_provider, provider_label
 
             normalized_provider = normalize_provider(provider)
             provider_name = provider_label(normalized_provider)
@@ -585,7 +585,7 @@ class Flux AgentACPAgent(acp.Agent):
         new_model = raw_model.strip()
 
         try:
-            from flux-agent_cli.models import detect_provider_for_model, parse_model_input
+            from omniworker_cli.models import detect_provider_for_model, parse_model_input
 
             target_provider, new_model = parse_model_input(new_model, current_provider)
             if target_provider == current_provider:
@@ -698,7 +698,7 @@ class Flux AgentACPAgent(acp.Agent):
             from model_tools import get_tool_definitions
 
             enabled_toolsets = _expand_acp_enabled_toolsets(
-                getattr(state.agent, "enabled_toolsets", None) or ["flux-agent-acp"],
+                getattr(state.agent, "enabled_toolsets", None) or ["omniworker-acp"],
                 mcp_server_names=[server.name for server in mcp_servers],
             )
             state.agent.enabled_toolsets = enabled_toolsets
@@ -749,7 +749,7 @@ class Flux AgentACPAgent(acp.Agent):
 
         return InitializeResponse(
             protocol_version=acp.PROTOCOL_VERSION,
-            agent_info=Implementation(name="flux-agent-agent", version=FLUX AGENT_VERSION),
+            agent_info=Implementation(name="omniworker-agent", version=OMNIWORKER_VERSION),
             agent_capabilities=AgentCapabilities(
                 load_session=True,
                 prompt_capabilities=PromptCapabilities(image=True),
@@ -1199,19 +1199,19 @@ class Flux AgentACPAgent(acp.Agent):
         # Approval callback is per-thread (thread-local, GHSA-qg5c-hvr5-hjgr).
         # Set it INSIDE _run_agent so the TLS write happens in the executor
         # thread — setting it here would write to the event-loop thread's TLS,
-        # not the executor's. Also set FLUX AGENT_INTERACTIVE so approval.py
+        # not the executor's. Also set OMNIWORKER_INTERACTIVE so approval.py
         # takes the CLI-interactive path (which calls the registered
         # callback via prompt_dangerous_approval) instead of the
         # non-interactive auto-approve branch (GHSA-96vc-wcxf-jjff).
         # ACP's conn.request_permission maps cleanly to the interactive
-        # callback shape — not the gateway-queue FLUX AGENT_EXEC_ASK path,
+        # callback shape — not the gateway-queue OMNIWORKER_EXEC_ASK path,
         # which requires a notify_cb registered in _gateway_notify_cbs.
         previous_approval_cb = None
         previous_interactive = None
 
         def _run_agent() -> dict:
             nonlocal previous_approval_cb, previous_interactive
-            # Bind FLUX AGENT_SESSION_KEY for this session so per-session caches
+            # Bind OMNIWORKER_SESSION_KEY for this session so per-session caches
             # (e.g. the interactive sudo password cache in tools.terminal_tool)
             # scope to the ACP session rather than leaking across sessions
             # that land on the same reused executor thread. This call runs
@@ -1236,8 +1236,8 @@ class Flux AgentACPAgent(acp.Agent):
                     logger.debug("Could not set ACP approval callback", exc_info=True)
             # Signal to tools.approval that we have an interactive callback
             # and the non-interactive auto-approve path must not fire.
-            previous_interactive = os.environ.get("FLUX AGENT_INTERACTIVE")
-            os.environ["FLUX AGENT_INTERACTIVE"] = "1"
+            previous_interactive = os.environ.get("OMNIWORKER_INTERACTIVE")
+            os.environ["OMNIWORKER_INTERACTIVE"] = "1"
             try:
                 result = agent.run_conversation(
                     user_message=user_content,
@@ -1250,11 +1250,11 @@ class Flux AgentACPAgent(acp.Agent):
                 logger.exception("Agent error in session %s", session_id)
                 return {"final_response": f"Error: {e}", "messages": state.history}
             finally:
-                # Restore FLUX AGENT_INTERACTIVE.
+                # Restore OMNIWORKER_INTERACTIVE.
                 if previous_interactive is None:
-                    os.environ.pop("FLUX AGENT_INTERACTIVE", None)
+                    os.environ.pop("OMNIWORKER_INTERACTIVE", None)
                 else:
-                    os.environ["FLUX AGENT_INTERACTIVE"] = previous_interactive
+                    os.environ["OMNIWORKER_INTERACTIVE"] = previous_interactive
                 if approval_cb:
                     try:
                         from tools import terminal_tool as _terminal_tool
@@ -1270,7 +1270,7 @@ class Flux AgentACPAgent(acp.Agent):
         try:
             # Wrap the executor call in a fresh copy of the current context so
             # concurrent ACP sessions on the shared ThreadPoolExecutor don't
-            # stomp on each other's ContextVar writes (FLUX AGENT_SESSION_KEY in
+            # stomp on each other's ContextVar writes (OMNIWORKER_SESSION_KEY in
             # particular — used by the interactive sudo password cache scope).
             ctx = contextvars.copy_context()
             result = await loop.run_in_executor(_executor, ctx.run, _run_agent)
@@ -1452,7 +1452,7 @@ class Flux AgentACPAgent(acp.Agent):
         try:
             from model_tools import get_tool_definitions
             toolsets = _expand_acp_enabled_toolsets(
-                getattr(state.agent, "enabled_toolsets", None) or ["flux-agent-acp"]
+                getattr(state.agent, "enabled_toolsets", None) or ["omniworker-acp"]
             )
             tools = get_tool_definitions(enabled_toolsets=toolsets, quiet_mode=True)
             if not tools:
@@ -1637,7 +1637,7 @@ class Flux AgentACPAgent(acp.Agent):
         return f"Queued for the next turn. ({depth} queued)"
 
     def _cmd_version(self, args: str, state: SessionState) -> str:
-        return f"Flux Agent Agent v{FLUX AGENT_VERSION}"
+        return f"Flux Agent Agent v{OMNIWORKER_VERSION}"
 
     # ---- Model switching (ACP protocol method) -------------------------------
 

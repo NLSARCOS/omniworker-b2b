@@ -1,4 +1,4 @@
-"""Tests for flux-agent_constants module."""
+"""Tests for omniworker_constants module."""
 
 import os
 from pathlib import Path
@@ -6,67 +6,67 @@ from unittest.mock import patch
 
 import pytest
 
-import flux-agent_constants
-from flux-agent_constants import (
+import omniworker_constants
+from omniworker_constants import (
     VALID_REASONING_EFFORTS,
-    get_default_flux-agent_root,
+    get_default_omniworker_root,
     is_container,
     parse_reasoning_effort,
 )
 
 
-class TestGetDefaultFlux AgentRoot:
-    """Tests for get_default_flux-agent_root() — Docker/custom deployment awareness."""
+class TestGetDefaultOmniWorkerRoot:
+    """Tests for get_default_omniworker_root() — Docker/custom deployment awareness."""
 
-    def test_no_flux-agent_home_returns_native(self, tmp_path, monkeypatch):
-        """When FLUX AGENT_HOME is not set, returns ~/.flux-agent."""
-        monkeypatch.delenv("FLUX AGENT_HOME", raising=False)
+    def test_no_omniworker_home_returns_native(self, tmp_path, monkeypatch):
+        """When OMNIWORKER_HOME is not set, returns ~/.omniworker."""
+        monkeypatch.delenv("OMNIWORKER_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        assert get_default_flux-agent_root() == tmp_path / ".flux-agent"
+        assert get_default_omniworker_root() == tmp_path / ".omniworker"
 
-    def test_flux-agent_home_is_native(self, tmp_path, monkeypatch):
-        """When FLUX AGENT_HOME = ~/.flux-agent, returns ~/.flux-agent."""
-        native = tmp_path / ".flux-agent"
+    def test_omniworker_home_is_native(self, tmp_path, monkeypatch):
+        """When OMNIWORKER_HOME = ~/.omniworker, returns ~/.omniworker."""
+        native = tmp_path / ".omniworker"
         native.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("FLUX AGENT_HOME", str(native))
-        assert get_default_flux-agent_root() == native
+        monkeypatch.setenv("OMNIWORKER_HOME", str(native))
+        assert get_default_omniworker_root() == native
 
-    def test_flux-agent_home_is_profile(self, tmp_path, monkeypatch):
-        """When FLUX AGENT_HOME is a profile under ~/.flux-agent, returns ~/.flux-agent."""
-        native = tmp_path / ".flux-agent"
+    def test_omniworker_home_is_profile(self, tmp_path, monkeypatch):
+        """When OMNIWORKER_HOME is a profile under ~/.omniworker, returns ~/.omniworker."""
+        native = tmp_path / ".omniworker"
         profile = native / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("FLUX AGENT_HOME", str(profile))
-        assert get_default_flux-agent_root() == native
+        monkeypatch.setenv("OMNIWORKER_HOME", str(profile))
+        assert get_default_omniworker_root() == native
 
-    def test_flux-agent_home_is_docker(self, tmp_path, monkeypatch):
-        """When FLUX AGENT_HOME points outside ~/.flux-agent (Docker), returns FLUX AGENT_HOME."""
+    def test_omniworker_home_is_docker(self, tmp_path, monkeypatch):
+        """When OMNIWORKER_HOME points outside ~/.omniworker (Docker), returns OMNIWORKER_HOME."""
         docker_home = tmp_path / "opt" / "data"
         docker_home.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("FLUX AGENT_HOME", str(docker_home))
-        assert get_default_flux-agent_root() == docker_home
+        monkeypatch.setenv("OMNIWORKER_HOME", str(docker_home))
+        assert get_default_omniworker_root() == docker_home
 
-    def test_flux-agent_home_is_custom_path(self, tmp_path, monkeypatch):
-        """Any FLUX AGENT_HOME outside ~/.flux-agent is treated as the root."""
-        custom = tmp_path / "my-flux-agent-data"
+    def test_omniworker_home_is_custom_path(self, tmp_path, monkeypatch):
+        """Any OMNIWORKER_HOME outside ~/.omniworker is treated as the root."""
+        custom = tmp_path / "my-omniworker-data"
         custom.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("FLUX AGENT_HOME", str(custom))
-        assert get_default_flux-agent_root() == custom
+        monkeypatch.setenv("OMNIWORKER_HOME", str(custom))
+        assert get_default_omniworker_root() == custom
 
     def test_docker_profile_active(self, tmp_path, monkeypatch):
-        """When a Docker profile is active (FLUX AGENT_HOME=<root>/profiles/<name>),
+        """When a Docker profile is active (OMNIWORKER_HOME=<root>/profiles/<name>),
         returns the Docker root, not the profile dir."""
         docker_root = tmp_path / "opt" / "data"
         profile = docker_root / "profiles" / "coder"
         profile.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("FLUX AGENT_HOME", str(profile))
-        assert get_default_flux-agent_root() == docker_root
+        monkeypatch.setenv("OMNIWORKER_HOME", str(profile))
+        assert get_default_omniworker_root() == docker_root
 
 
 class TestIsContainer:
@@ -74,7 +74,7 @@ class TestIsContainer:
 
     def _reset_cache(self, monkeypatch):
         """Reset the cached detection result before each test."""
-        monkeypatch.setattr(flux-agent_constants, "_container_detected", None)
+        monkeypatch.setattr(omniworker_constants, "_container_detected", None)
 
     def test_detects_dockerenv(self, monkeypatch, tmp_path):
         """/.dockerenv triggers container detection."""
@@ -112,7 +112,7 @@ class TestIsContainer:
 
     def test_caches_result(self, monkeypatch):
         """Second call uses cached value without re-probing."""
-        monkeypatch.setattr(flux-agent_constants, "_container_detected", True)
+        monkeypatch.setattr(omniworker_constants, "_container_detected", True)
         assert is_container() is True
         # Even if we make os.path.exists return False, cached value wins
         monkeypatch.setattr(os.path, "exists", lambda p: False)

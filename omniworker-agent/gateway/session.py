@@ -219,8 +219,8 @@ def _discord_tools_loaded() -> bool:
     if not (os.environ.get("DISCORD_BOT_TOKEN") or "").strip():
         return False
     try:
-        from flux-agent_cli.config import load_config
-        from flux-agent_cli.tools_config import _get_platform_tools
+        from omniworker_cli.config import load_config
+        from omniworker_cli.tools_config import _get_platform_tools
         cfg = load_config()
         enabled = _get_platform_tools(cfg, "discord", include_default_mcp_servers=False)
         return "discord" in enabled or "discord_admin" in enabled
@@ -394,7 +394,7 @@ def build_session_context_prompt(
     lines.append("")
     lines.append("**Delivery options for scheduled tasks:**")
 
-    from flux-agent_constants import display_flux-agent_home
+    from omniworker_constants import display_omniworker_home
 
     # Origin delivery
     if context.source.platform == Platform.LOCAL:
@@ -407,7 +407,7 @@ def build_session_context_prompt(
 
     # Local always available
     lines.append(
-        f"- `\"local\"` → Save to local files only ({display_flux-agent_home()}/cron/output/)"
+        f"- `\"local\"` → Save to local files only ({display_omniworker_home()}/cron/output/)"
     )
 
     # Platform home channels
@@ -685,7 +685,7 @@ class SessionStore:
         # Initialize SQLite session database
         self._db = None
         try:
-            from flux-agent_state import SessionDB
+            from omniworker_state import SessionDB
             self._db = SessionDB()
         except Exception as e:
             print(f"[gateway] Warning: SQLite session store unavailable, falling back to JSONL: {e}")

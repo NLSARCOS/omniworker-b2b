@@ -43,7 +43,7 @@
 - `MasterProvider`: guarda `apiKey`, `priority`, `dailyLimit` — el SaaS actúa como **proxy/gateway**
 
 **Routing** (`route.ts`):
-- Cuando `model = "flux-agent-code"`, el SaaS elige el provider automáticamente por prioridad + health check
+- Cuando `model = "omniworker-code"`, el SaaS elige el provider automáticamente por prioridad + health check
 - Cuando `model = "gpt-4o"`, elige el provider correspondiente
 - **Siempre** aplica `compactMessages()` a >30 mensajes
 - **Siempre** inyecta `ContextBridge` a >=6 mensajes
@@ -106,7 +106,7 @@ model Conversation {
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String?   // Título auto-generado o manual
-  model       String    // Modelo virtual usado (ej: "flux-agent-code")
+  model       String    // Modelo virtual usado (ej: "omniworker-code")
   provider    String?   // Último provider que respondió
   status      String    @default("active") // active | archived | deleted
   messageCount Int     @default(0)
@@ -157,7 +157,7 @@ Content-Type: application/json
 {
   "message": "Continúa con la API",
   "conversationId": "conv-123",  // Opcional: si no existe, crea nueva
-  "model": "flux-agent-code",    // Virtual model
+  "model": "omniworker-code",    // Virtual model
   "stream": true
 }
 ```

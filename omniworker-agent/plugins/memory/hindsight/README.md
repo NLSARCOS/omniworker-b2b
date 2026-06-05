@@ -11,15 +11,15 @@ Long-term memory with knowledge graph, entity resolution, and multi-strategy ret
 ## Setup
 
 ```bash
-flux-agent memory setup    # select "hindsight"
+omniworker memory setup    # select "hindsight"
 ```
 
 The setup wizard will install dependencies automatically via `uv` and walk you through configuration.
 
 Or manually (cloud mode with defaults):
 ```bash
-flux-agent config set memory.provider hindsight
-echo "HINDSIGHT_API_KEY=your-key" >> ~/.flux-agent/.env
+omniworker config set memory.provider hindsight
+echo "HINDSIGHT_API_KEY=your-key" >> ~/.omniworker/.env
 ```
 
 ### Cloud
@@ -32,12 +32,12 @@ Flux Agent spins up a local Hindsight daemon with built-in PostgreSQL. Requires 
 
 Supports any OpenAI-compatible LLM endpoint (llama.cpp, vLLM, LM Studio, etc.) — pick `openai_compatible` as the provider and enter the base URL.
 
-Daemon startup logs: `~/.flux-agent/logs/hindsight-embed.log`
+Daemon startup logs: `~/.omniworker/logs/hindsight-embed.log`
 Daemon runtime logs: `~/.hindsight/profiles/<profile>.log`
 
 To open the Hindsight web UI (local embedded mode only):
 ```bash
-hindsight-embed -p flux-agent ui start
+hindsight-embed -p omniworker ui start
 ```
 
 ### Local External
@@ -46,7 +46,7 @@ Points the plugin at an existing Hindsight instance you're already running (Dock
 
 ## Config
 
-Config file: `~/.flux-agent/hindsight/config.json`
+Config file: `~/.omniworker/hindsight/config.json`
 
 ### Connection
 
@@ -59,8 +59,8 @@ Config file: `~/.flux-agent/hindsight/config.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `bank_id` | `flux-agent` | Memory bank name (static fallback used when `bank_id_template` is unset or resolves empty) |
-| `bank_id_template` | — | Optional template to derive the bank name dynamically. Placeholders: `{profile}`, `{workspace}`, `{platform}`, `{user}`, `{session}`. Example: `flux-agent-{profile}` isolates memory per active Flux Agent profile. Empty placeholders collapse cleanly (e.g. `flux-agent-{user}` with no user becomes `flux-agent`). |
+| `bank_id` | `omniworker` | Memory bank name (static fallback used when `bank_id_template` is unset or resolves empty) |
+| `bank_id_template` | — | Optional template to derive the bank name dynamically. Placeholders: `{profile}`, `{workspace}`, `{platform}`, `{user}`, `{session}`. Example: `omniworker-{profile}` isolates memory per active Flux Agent profile. Empty placeholders collapse cleanly (e.g. `omniworker-{user}` with no user becomes `omniworker`). |
 | `bank_mission` | — | Reflect mission (identity/framing for reflect reasoning). Applied via Banks API. |
 | `bank_retain_mission` | — | Retain mission (steers what gets extracted). Applied via Banks API. |
 
@@ -109,7 +109,7 @@ Config file: `~/.flux-agent/hindsight/config.json`
 | `llm_model` | per-provider | Model name (e.g. `gpt-4o-mini`, `qwen/qwen3.5-9b`) |
 | `llm_base_url` | — | Endpoint URL for `openai_compatible` (e.g. `http://192.168.1.10:8080/v1`) |
 
-The LLM API key is stored in `~/.flux-agent/.env` as `HINDSIGHT_LLM_API_KEY`.
+The LLM API key is stored in `~/.omniworker/.env` as `HINDSIGHT_LLM_API_KEY`.
 
 ## Tools
 

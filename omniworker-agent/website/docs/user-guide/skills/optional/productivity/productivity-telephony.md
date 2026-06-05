@@ -14,7 +14,7 @@ Give Flux Agent phone capabilities without core tool changes. Provision and pers
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/productivity/telephony` |
+| Source | Optional — install with `omniworker skills install official/productivity/telephony` |
 | Path | `optional-skills/productivity/telephony` |
 | Version | `1.0.0` |
 | Author | Nous Research |
@@ -34,7 +34,7 @@ The following is the complete skill definition that Flux Agent loads when this s
 This optional skill gives Flux Agent practical phone capabilities while keeping telephony out of the core tool list.
 
 It ships with a helper script, `scripts/telephony.py`, that can:
-- save provider credentials into `~/.flux-agent/.env`
+- save provider credentials into `~/.omniworker/.env`
 - search for and buy a Twilio phone number
 - remember that owned number for later sessions
 - send SMS / MMS from the owned number
@@ -121,7 +121,7 @@ Why:
 
 The skill persists telephony state in two places:
 
-### `~/.flux-agent/.env`
+### `~/.omniworker/.env`
 Used for long-lived provider credentials and owned-number IDs, for example:
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
@@ -132,7 +132,7 @@ Used for long-lived provider credentials and owned-number IDs, for example:
 - `VAPI_PHONE_NUMBER_ID`
 - `PHONE_PROVIDER` (AI call provider: bland or vapi)
 
-### `~/.flux-agent/telephony_state.json`
+### `~/.omniworker/telephony_state.json`
 Used for skill-only state that should survive across sessions, for example:
 - remembered default Twilio number / SID
 - remembered Vapi phone number ID
@@ -147,7 +147,7 @@ This means:
 After installing this skill, locate the script like this:
 
 ```bash
-SCRIPT="$(find ~/.flux-agent/skills -path '*/telephony/scripts/telephony.py' -print -quit)"
+SCRIPT="$(find ~/.omniworker/skills -path '*/telephony/scripts/telephony.py' -print -quit)"
 ```
 
 If `SCRIPT` is empty, the skill is not installed yet.
@@ -157,8 +157,8 @@ If `SCRIPT` is empty, the skill is not installed yet.
 This is an official optional skill, so install it from the Skills Hub:
 
 ```bash
-flux-agent skills search telephony
-flux-agent skills install official/productivity/telephony
+omniworker skills search telephony
+omniworker skills install official/productivity/telephony
 ```
 
 ## Provider setup
@@ -258,7 +258,7 @@ python3 "$SCRIPT" save-twilio AC... auth_token_here
 python3 "$SCRIPT" twilio-search --country US --area-code 702 --limit 10
 ```
 
-3. Buy it and save it into `~/.flux-agent/.env` + state:
+3. Buy it and save it into `~/.omniworker/.env` + state:
 ```bash
 python3 "$SCRIPT" twilio-buy "+17025551234" --save-env
 ```
@@ -420,7 +420,7 @@ After setup, you should be able to do all of the following with just this skill:
 
 1. `diagnose` shows provider readiness and remembered state
 2. search and buy a Twilio number
-3. persist that number to `~/.flux-agent/.env`
+3. persist that number to `~/.omniworker/.env`
 4. send an SMS from the owned number
 5. poll inbound texts for the owned number later
 6. place a direct Twilio call

@@ -6,9 +6,9 @@ author: Flux Agent Agent (Nous Research)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Coding-Agent, Blackbox, Multi-Agent, Judge, Multi-Model]
-    related_skills: [claude-code, codex, flux-agent-agent]
+    related_skills: [claude-code, codex, omniworker-agent]
 ---
 
 # Blackbox CLI

@@ -100,7 +100,7 @@ USER_OWNED_EXCLUDE: frozenset = frozenset({
     "auth.json", ".env",
     # Databases & runtime state
     "state.db", "state.db-shm", "state.db-wal",
-    "flux-agent_state.db", "response_store.db",
+    "omniworker_state.db", "response_store.db",
     "response_store.db-shm", "response_store.db-wal",
     "gateway.pid", "gateway_state.json", "processes.json",
     "auth.lock", "active_profile", ".update_check",
@@ -472,12 +472,12 @@ def plan_install(
     override_name: Optional[str] = None,
 ) -> InstallPlan:
     """Stage *source* and produce a plan describing what install would do."""
-    from flux-agent_cli.profiles import (
+    from omniworker_cli.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,
     )
-    from flux-agent_cli import __version__ as hermes_version
+    from omniworker_cli import __version__ as hermes_version
 
     staged, provenance = _stage_source(source, workdir)
     manifest = read_manifest(staged)
@@ -590,7 +590,7 @@ def install_distribution(
     Returns the resolved :class:`InstallPlan`.  Use :func:`plan_install`
     first if you want to preview + prompt the user before calling this.
     """
-    from flux-agent_cli.profiles import (
+    from omniworker_cli.profiles import (
         check_alias_collision,
         create_wrapper_script,
     )
@@ -633,7 +633,7 @@ def update_distribution(
     data (memories, sessions, auth) is never touched.  ``config.yaml`` is
     preserved unless ``force_config`` is True.
     """
-    from flux-agent_cli.profiles import (
+    from omniworker_cli.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,
@@ -685,7 +685,7 @@ def describe_distribution(profile_name: str) -> Dict[str, Any]:
     Returns an empty dict if the profile exists but has no manifest.
     Raises DistributionError if the profile itself doesn't exist.
     """
-    from flux-agent_cli.profiles import (
+    from omniworker_cli.profiles import (
         get_profile_dir,
         normalize_profile_name,
         validate_profile_name,

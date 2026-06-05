@@ -14,7 +14,7 @@ Build auditable Excel workbooks headless with openpyxl — blue/black/green cell
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/finance/excel-author` |
+| Source | Optional — install with `omniworker skills install official/finance/excel-author` |
 | Path | `optional-skills/finance/excel-author` |
 | Version | `1.0.0` |
 | Author | Anthropic (adapted by Nous Research) |

@@ -20,7 +20,7 @@ The SMS gateway shares credentials with the optional [telephony skill](/docs/ref
 - **Twilio account** — [Sign up at twilio.com](https://www.twilio.com/try-twilio) (free trial available)
 - **A Twilio phone number** with SMS capability
 - **A publicly accessible server** — Twilio sends webhooks to your server when SMS arrives
-- **aiohttp** — `pip install 'flux-agent-agent[sms]'`
+- **aiohttp** — `pip install 'omniworker-agent[sms]'`
 
 ---
 
@@ -37,14 +37,14 @@ The SMS gateway shares credentials with the optional [telephony skill](/docs/ref
 ### Interactive setup (recommended)
 
 ```bash
-flux-agent gateway setup
+omniworker gateway setup
 ```
 
 Select **SMS (Twilio)** from the platform list. The wizard will prompt for your credentials.
 
 ### Manual setup
 
-Add to `~/.flux-agent/.env`:
+Add to `~/.omniworker/.env`:
 
 ```bash
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -102,7 +102,7 @@ SMS_WEBHOOK_PORT=3000
 ## Step 4: Start the Gateway
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 You should see:

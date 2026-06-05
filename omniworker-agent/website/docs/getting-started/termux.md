@@ -46,14 +46,14 @@ That does not stop Flux Agent from working well as a phone-native CLI agent — 
 Flux Agent now ships a Termux-aware installer path:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Flux Agent/omniworker-agent/main/scripts/install.sh | bash
 ```
 
 On Termux, the installer automatically:
 - uses `pkg` for system packages
 - creates the venv with `python -m venv`
 - attempts the broad `.[termux-all]` extra first and falls back to the smaller `.[termux]` extra (then a base install) — the curl installer matches this order automatically
-- links `flux-agent` into `$PREFIX/bin` so it stays on your Termux PATH
+- links `omniworker` into `$PREFIX/bin` so it stays on your Termux PATH
 - skips the untested browser / WhatsApp bootstrap
 
 If you want the explicit commands or need to debug a failed install, use the manual path below.
@@ -80,8 +80,8 @@ Why these packages?
 ### 2. Clone Flux Agent
 
 ```bash
-git clone --recurse-submodules https://github.com/Flux Agent/flux-agent-agent.git
-cd flux-agent-agent
+git clone --recurse-submodules https://github.com/Flux Agent/omniworker-agent.git
+cd omniworker-agent
 ```
 
 If you already cloned without submodules:
@@ -113,25 +113,25 @@ If you only want the minimal core agent, this also works:
 python -m pip install -e '.' -c constraints-termux.txt
 ```
 
-### 5. Put `flux-agent` on your Termux PATH
+### 5. Put `omniworker` on your Termux PATH
 
 ```bash
-ln -sf "$PWD/venv/bin/flux-agent" "$PREFIX/bin/flux-agent"
+ln -sf "$PWD/venv/bin/omniworker" "$PREFIX/bin/omniworker"
 ```
 
-`$PREFIX/bin` is already on PATH in Termux, so this makes the `flux-agent` command persist across new shells without re-activating the venv every time.
+`$PREFIX/bin` is already on PATH in Termux, so this makes the `omniworker` command persist across new shells without re-activating the venv every time.
 
 ### 6. Verify the install
 
 ```bash
-flux-agent version
-flux-agent doctor
+omniworker version
+omniworker doctor
 ```
 
 ### 7. Start Flux Agent
 
 ```bash
-flux-agent
+omniworker
 ```
 
 ---
@@ -141,15 +141,15 @@ flux-agent
 ### Configure a model
 
 ```bash
-flux-agent model
+omniworker model
 ```
 
-Or set keys directly in `~/.flux-agent/.env`.
+Or set keys directly in `~/.omniworker/.env`.
 
 ### Re-run the full interactive setup wizard later
 
 ```bash
-flux-agent setup
+omniworker setup
 ```
 
 ### Install optional Node dependencies manually
@@ -203,7 +203,7 @@ export ANDROID_API_LEVEL="$(getprop ro.build.version.sdk)"
 python -m pip install -e '.[termux]' -c constraints-termux.txt
 ```
 
-### `flux-agent doctor` says ripgrep or Node is missing
+### `omniworker doctor` says ripgrep or Node is missing
 
 Install them with Termux packages:
 
@@ -238,5 +238,5 @@ If you hit a new Android-specific issue, please open a GitHub issue with:
 - your Android version
 - `termux-info`
 - `python --version`
-- `flux-agent doctor`
+- `omniworker doctor`
 - the exact install command and full error output

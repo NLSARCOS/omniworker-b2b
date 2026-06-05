@@ -5,7 +5,7 @@ version: 1.2.0
 author: eren-karakus0
 license: MIT
 metadata:
-  flux-agent:
+  omniworker:
     tags: [api, rest, graphql, http, debugging, testing, curl, integration]
     category: software-development
     related_skills: [systematic-debugging, test-driven-development]
@@ -397,7 +397,7 @@ class TestAPISmoke:
 
 ### Token handling
 - Never log full tokens. Redact: `Bearer <REDACTED>`.
-- Never hardcode tokens in scripts. Read from env (`os.environ["API_TOKEN"]`) or `~/.flux-agent/.env`.
+- Never hardcode tokens in scripts. Read from env (`os.environ["API_TOKEN"]`) or `~/.omniworker/.env`.
 - Rotate immediately if a token surfaces in logs, error messages, or git history.
 
 ### Safe logging

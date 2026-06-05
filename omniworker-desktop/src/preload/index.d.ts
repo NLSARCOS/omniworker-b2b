@@ -110,7 +110,7 @@ interface KanbanCreateTaskInput {
   maxRetries?: number;
 }
 
-interface Flux AgentAPI {
+interface OmniWorkerAPI {
   // Installation
   checkInstall: () => Promise<InstallStatus>;
   verifyInstall: () => Promise<boolean>;
@@ -126,10 +126,10 @@ interface Flux AgentAPI {
   ) => () => void;
 
   // Flux Agent engine info
-  getFlux AgentVersion: () => Promise<string | null>;
-  refreshFlux AgentVersion: () => Promise<string | null>;
-  runFlux AgentDoctor: () => Promise<string>;
-  runFlux AgentUpdate: () => Promise<{ success: boolean; error?: string }>;
+  getOmniWorkerVersion: () => Promise<string | null>;
+  refreshOmniWorkerVersion: () => Promise<string | null>;
+  runOmniWorkerDoctor: () => Promise<string>;
+  runOmniWorkerUpdate: () => Promise<{ success: boolean; error?: string }>;
 
   // Flux Agent migration
   checkFlux Agent: () => Promise<{ found: boolean; path: string | null }>;
@@ -143,7 +143,7 @@ interface Flux AgentAPI {
   setEnv: (key: string, value: string, profile?: string) => Promise<boolean>;
   getConfig: (key: string, profile?: string) => Promise<string | null>;
   setConfig: (key: string, value: string, profile?: string) => Promise<boolean>;
-  getFlux AgentHome: (profile?: string) => Promise<string>;
+  getOmniWorkerHome: (profile?: string) => Promise<string>;
   getModelConfig: (
     profile?: string,
   ) => Promise<{ provider: string; model: string; baseUrl: string }>;
@@ -692,10 +692,10 @@ interface Flux AgentAPI {
   openExternal: (url: string) => Promise<void>;
 
   // Backup / Import
-  runFlux AgentBackup: (
+  runOmniWorkerBackup: (
     profile?: string,
   ) => Promise<{ success: boolean; path?: string; error?: string }>;
-  runFlux AgentImport: (
+  runOmniWorkerImport: (
     archivePath: string,
     profile?: string,
   ) => Promise<{ success: boolean; error?: string }>;
@@ -734,7 +734,7 @@ interface Flux AgentAPI {
   onAppStateChanged: (callback: () => void) => () => void;
 
   // Debug dump
-  runFlux AgentDump: () => Promise<string>;
+  runOmniWorkerDump: () => Promise<string>;
 
   // Memory providers
   discoverMemoryProviders: (profile?: string) => Promise<
@@ -895,6 +895,6 @@ interface Flux AgentAPI {
 declare global {
   interface Window {
     electron: ElectronAPI;
-    flux-agentAPI: Flux AgentAPI;
+    omniworkerAPI: OmniWorkerAPI;
   }
 }

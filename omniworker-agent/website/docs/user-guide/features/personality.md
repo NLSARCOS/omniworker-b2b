@@ -8,7 +8,7 @@ description: "Customize Flux Agent Agent's personality with a global SOUL.md, bu
 
 Flux Agent Agent's personality is fully customizable. `SOUL.md` is the **primary identity** — it's the first thing in the system prompt and defines who the agent is.
 
-- `SOUL.md` — a durable persona file that lives in `FLUX AGENT_HOME` and serves as the agent's identity (slot #1 in the system prompt)
+- `SOUL.md` — a durable persona file that lives in `OMNIWORKER_HOME` and serves as the agent's identity (slot #1 in the system prompt)
 - built-in or custom `/personality` presets — session-level system-prompt overlays
 
 If you want to change who Flux Agent is — or replace it with an entirely different agent persona — edit `SOUL.md`.
@@ -18,13 +18,13 @@ If you want to change who Flux Agent is — or replace it with an entirely diffe
 Flux Agent now seeds a default `SOUL.md` automatically in:
 
 ```text
-~/.flux-agent/SOUL.md
+~/.omniworker/SOUL.md
 ```
 
-More precisely, it uses the current instance's `FLUX AGENT_HOME`, so if you run Flux Agent with a custom home directory, it will use:
+More precisely, it uses the current instance's `OMNIWORKER_HOME`, so if you run Flux Agent with a custom home directory, it will use:
 
 ```text
-$FLUX AGENT_HOME/SOUL.md
+$OMNIWORKER_HOME/SOUL.md
 ```
 
 ### Important behavior
@@ -32,7 +32,7 @@ $FLUX AGENT_HOME/SOUL.md
 - **SOUL.md is the agent's primary identity.** It occupies slot #1 in the system prompt, replacing the hardcoded default identity.
 - Flux Agent creates a starter `SOUL.md` automatically if one does not exist yet
 - Existing user `SOUL.md` files are never overwritten
-- Flux Agent loads `SOUL.md` only from `FLUX AGENT_HOME`
+- Flux Agent loads `SOUL.md` only from `OMNIWORKER_HOME`
 - Flux Agent does not look in the current working directory for `SOUL.md`
 - If `SOUL.md` exists but is empty, or cannot be loaded, Flux Agent falls back to a built-in default identity
 - If `SOUL.md` has content, that content is injected verbatim after security scanning and truncation
@@ -44,23 +44,23 @@ That makes `SOUL.md` a true per-user or per-instance identity, not just an addit
 
 This keeps personality predictable.
 
-If Flux Agent loaded `SOUL.md` from whatever directory you happened to launch it in, your personality could change unexpectedly between projects. By loading only from `FLUX AGENT_HOME`, the personality belongs to the Flux Agent instance itself.
+If Flux Agent loaded `SOUL.md` from whatever directory you happened to launch it in, your personality could change unexpectedly between projects. By loading only from `OMNIWORKER_HOME`, the personality belongs to the Flux Agent instance itself.
 
 That also makes it easier to teach users:
-- "Edit `~/.flux-agent/SOUL.md` to change Flux Agent' default personality."
+- "Edit `~/.omniworker/SOUL.md` to change Flux Agent' default personality."
 
 ## Where to edit it
 
 For most users:
 
 ```bash
-~/.flux-agent/SOUL.md
+~/.omniworker/SOUL.md
 ```
 
 If you use a custom home:
 
 ```bash
-$FLUX AGENT_HOME/SOUL.md
+$OMNIWORKER_HOME/SOUL.md
 ```
 
 ## What should go in SOUL.md?
@@ -211,7 +211,7 @@ These are convenient overlays, but your global `SOUL.md` still gives Flux Agent 
 
 ## Custom personalities in config
 
-You can also define named custom personalities in `~/.flux-agent/config.yaml` under `agent.personalities`.
+You can also define named custom personalities in `~/.omniworker/config.yaml` under `agent.personalities`.
 
 ```yaml
 agent:
@@ -231,7 +231,7 @@ Then switch to it with:
 
 A strong default setup is:
 
-1. Keep a thoughtful global `SOUL.md` in `~/.flux-agent/SOUL.md`
+1. Keep a thoughtful global `SOUL.md` in `~/.omniworker/SOUL.md`
 2. Put project instructions in `AGENTS.md`
 3. Use `/personality` only when you want a temporary mode shift
 
@@ -259,7 +259,7 @@ At a high level, the prompt stack includes:
 - [Context Files](/docs/user-guide/features/context-files)
 - [Configuration](/docs/user-guide/configuration)
 - [Tips & Best Practices](/docs/guides/tips)
-- [SOUL.md Guide](/docs/guides/use-soul-with-flux-agent)
+- [SOUL.md Guide](/docs/guides/use-soul-with-omniworker)
 
 ## CLI appearance vs conversational personality
 

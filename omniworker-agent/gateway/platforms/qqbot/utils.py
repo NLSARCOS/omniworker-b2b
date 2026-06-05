@@ -13,11 +13,11 @@ from .constants import QQBOT_VERSION
 # User-Agent
 # ---------------------------------------------------------------------------
 
-def _get_flux-agent_version() -> str:
-    """Return the flux-agent-agent package version, or 'dev' if unavailable."""
+def _get_omniworker_version() -> str:
+    """Return the omniworker-agent package version, or 'dev' if unavailable."""
     try:
         from importlib.metadata import version
-        return version("flux-agent-agent")
+        return version("omniworker-agent")
     except Exception:
         return "dev"
 
@@ -27,7 +27,7 @@ def build_user_agent() -> str:
 
     Format::
 
-        QQBotAdapter/<qqbot_version> (Python/<py_version>; <os>; Flux Agent/<flux-agent_version>)
+        QQBotAdapter/<qqbot_version> (Python/<py_version>; <os>; Flux Agent/<omniworker_version>)
 
     Example::
 
@@ -35,8 +35,8 @@ def build_user_agent() -> str:
     """
     py_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
     os_name = platform.system().lower()
-    flux-agent_version = _get_flux-agent_version()
-    return f"QQBotAdapter/{QQBOT_VERSION} (Python/{py_version}; {os_name}; Flux Agent/{flux-agent_version})"
+    omniworker_version = _get_omniworker_version()
+    return f"QQBotAdapter/{QQBOT_VERSION} (Python/{py_version}; {os_name}; Flux Agent/{omniworker_version})"
 
 
 def get_api_headers() -> Dict[str, str]:

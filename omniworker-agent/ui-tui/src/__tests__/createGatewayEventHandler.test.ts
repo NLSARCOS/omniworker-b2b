@@ -138,12 +138,12 @@ describe('createGatewayEventHandler', () => {
     const onEvent = createGatewayEventHandler(ctx)
 
     onEvent({
-      payload: { text: "💾 Self-improvement review: Skill 'flux-agent-release' patched" },
+      payload: { text: "💾 Self-improvement review: Skill 'omniworker-release' patched" },
       type: 'review.summary'
     } as any)
 
     expect(ctx.system.sys).toHaveBeenCalledWith(
-      "💾 Self-improvement review: Skill 'flux-agent-release' patched"
+      "💾 Self-improvement review: Skill 'omniworker-release' patched"
     )
   })
 
@@ -355,7 +355,7 @@ describe('createGatewayEventHandler', () => {
         cwd: '/repo',
         python: '/opt/venv/bin/python',
         stderr_tail:
-          '[startup] timed out\nModuleNotFoundError: No module named openai\nFileNotFoundError: ~/.flux-agent/config.yaml'
+          '[startup] timed out\nModuleNotFoundError: No module named openai\nFileNotFoundError: ~/.omniworker/config.yaml'
       },
       type: 'gateway.start_timeout'
     } as any)
@@ -540,7 +540,7 @@ describe('createGatewayEventHandler', () => {
     onEvent({
       payload: {
         message:
-          'agent init failed: No LLM provider configured. Run `flux-agent model` to select a provider, or run `flux-agent setup` for first-time configuration.'
+          'agent init failed: No LLM provider configured. Run `omniworker model` to select a provider, or run `omniworker setup` for first-time configuration.'
       },
       type: 'error'
     } as any)

@@ -5,12 +5,12 @@ A walkthrough of the four use-cases the Flux Agent Kanban system was designed fo
 ## Setup
 
 ```bash
-flux-agent kanban init           # optional; first `flux-agent kanban <anything>` auto-inits
-flux-agent dashboard             # opens http://127.0.0.1:9119 in your browser
+omniworker kanban init           # optional; first `omniworker kanban <anything>` auto-inits
+omniworker dashboard             # opens http://127.0.0.1:9119 in your browser
 # click Kanban in the left nav
 ```
 
-The dashboard is the most comfortable place for **you** to watch the system. Agent workers the dispatcher spawns never see the dashboard or the CLI — they drive the board through a dedicated `kanban_*` [toolset](./kanban#how-workers-interact-with-the-board) (`kanban_show`, `kanban_list`, `kanban_complete`, `kanban_block`, `kanban_heartbeat`, `kanban_comment`, `kanban_create`, `kanban_link`, `kanban_unblock`). All three surfaces — dashboard, CLI, worker tools — route through the same per-board SQLite DB (`~/.flux-agent/kanban.db` for the default board, `~/.flux-agent/kanban/boards/<slug>/kanban.db` for any board you create later), so each board is consistent no matter which side of the fence a change came from.
+The dashboard is the most comfortable place for **you** to watch the system. Agent workers the dispatcher spawns never see the dashboard or the CLI — they drive the board through a dedicated `kanban_*` [toolset](./kanban#how-workers-interact-with-the-board) (`kanban_show`, `kanban_list`, `kanban_complete`, `kanban_block`, `kanban_heartbeat`, `kanban_comment`, `kanban_create`, `kanban_link`, `kanban_unblock`). All three surfaces — dashboard, CLI, worker tools — route through the same per-board SQLite DB (`~/.omniworker/kanban.db` for the default board, `~/.omniworker/kanban/boards/<slug>/kanban.db` for any board you create later), so each board is consistent no matter which side of the fence a change came from.
 
 This tutorial uses the `default` board throughout. If you want multiple isolated queues (one per project / repo / domain), see [Boards (multi-project)](./kanban#boards-multi-project) in the overview — the same CLI / dashboard / worker flows apply per board, and workers physically cannot see tasks on other boards.
 
@@ -22,7 +22,7 @@ Throughout the tutorial, **code blocks labelled `bash` are commands *you* run.**
 
 Six columns, left to right:
 
-- **Triage** — raw ideas, a specifier will flesh out the spec before anyone works on them. Click the **✨ Specify** button on any triage card (or run `flux-agent kanban specify <id>` / `/kanban specify <id>` from a chat) to have the auxiliary LLM turn a one-liner into a full spec (goal, approach, acceptance criteria) and promote it to `todo` in one shot. Configure which model runs it under `auxiliary.triage_specifier` in `config.yaml`.
+- **Triage** — raw ideas, a specifier will flesh out the spec before anyone works on them. Click the **✨ Specify** button on any triage card (or run `omniworker kanban specify <id>` / `/kanban specify <id>` from a chat) to have the auxiliary LLM turn a one-liner into a full spec (goal, approach, acceptance criteria) and promote it to `todo` in one shot. Configure which model runs it under `auxiliary.triage_specifier` in `config.yaml`.
 - **Todo** — created but waiting on dependencies, or not yet assigned.
 - **Ready** — assigned and waiting for the dispatcher to claim.
 - **In progress** — a worker is actively running the task. With "Lanes by profile" on (the default), this column sub-groups by assignee so you can see at a glance what each worker is doing.
@@ -42,18 +42,18 @@ If the profile lanes are noisy, toggle "Lanes by profile" off and the In Progres
 You're building a feature. Classic flow: design a schema, implement the API, write the tests. Three tasks with parent→child dependencies.
 
 ```bash
-SCHEMA=$(flux-agent kanban create "Design auth schema" \
+SCHEMA=$(omniworker kanban create "Design auth schema" \
     --assignee backend-dev --tenant auth-project --priority 2 \
     --body "Design the user/session/token schema for the auth module." \
     --json | jq -r .id)
 
-API=$(flux-agent kanban create "Implement auth API endpoints" \
+API=$(omniworker kanban create "Implement auth API endpoints" \
     --assignee backend-dev --tenant auth-project --priority 2 \
     --parent $SCHEMA \
     --body "POST /register, POST /login, POST /refresh, POST /logout." \
     --json | jq -r .id)
 
-flux-agent kanban create "Write auth integration tests" \
+omniworker kanban create "Write auth integration tests" \
     --assignee qa-dev --tenant auth-project --priority 2 \
     --parent $API \
     --body "Cover happy path, wrong password, expired token, concurrent refresh."
@@ -61,7 +61,7 @@ flux-agent kanban create "Write auth integration tests" \
 
 Because `API` has `SCHEMA` as its parent, and `tests` has `API` as its parent, only `SCHEMA` starts in `ready`. The other two sit in `todo` until their parents complete. This is the dependency promotion engine doing its job — no other worker will pick up the test-writing until there's an API to test.
 
-On the next dispatcher tick (60s by default, or immediately if you hit **Nudge dispatcher**) the `backend-dev` profile spawns as a worker with `FLUX AGENT_KANBAN_TASK=$SCHEMA` in its env. Here's what the worker's tool-call loop looks like from inside the agent:
+On the next dispatcher tick (60s by default, or immediately if you hit **Nudge dispatcher**) the `backend-dev` profile spawns as a worker with `OMNIWORKER_KANBAN_TASK=$SCHEMA` in its env. Here's what the worker's tool-call loop looks like from inside the agent:
 
 ```python
 # worker tool calls — NOT commands you run
@@ -84,7 +84,7 @@ kanban_complete(
 )
 ```
 
-`kanban_show` defaults `task_id` to `$FLUX AGENT_KANBAN_TASK`, so the worker doesn't need to know its own id. `kanban_complete` writes the summary + metadata onto the current `task_runs` row, closes that run, and transitions the task to `done` — all in one atomic hop through `kanban_db`.
+`kanban_show` defaults `task_id` to `$OMNIWORKER_KANBAN_TASK`, so the worker doesn't need to know its own id. `kanban_complete` writes the summary + metadata onto the current `task_runs` row, closes that run, and transitions the task to `done` — all in one atomic hop through `kanban_db`.
 
 When `SCHEMA` hits `done`, the dependency engine promotes `API` to `ready` automatically. The API worker, when it picks up, will call `kanban_show()` and see `SCHEMA`'s summary and metadata attached to the parent handoff — so it knows the schema decisions without re-reading a long design doc.
 
@@ -97,8 +97,8 @@ The Run History section at the bottom is the key addition. One attempt: outcome 
 You can inspect the same data from your terminal at any time — these commands are **you** peeking at the board, not the worker:
 
 ```bash
-flux-agent kanban show $SCHEMA
-flux-agent kanban runs $SCHEMA
+omniworker kanban show $SCHEMA
+omniworker kanban runs $SCHEMA
 # #  OUTCOME       PROFILE       ELAPSED  STARTED
 # 1  completed     backend-dev        0s  2026-04-27 19:34
 #     → users(id, email, pw_hash), sessions(id, user_id, jti, expires_at); refresh tokens ...
@@ -112,15 +112,15 @@ Create the work:
 
 ```bash
 for lang in Spanish French German; do
-    flux-agent kanban create "Translate homepage to $lang" \
+    omniworker kanban create "Translate homepage to $lang" \
         --assignee translator --tenant content-ops
 done
 for i in 1 2 3 4 5; do
-    flux-agent kanban create "Transcribe Q3 customer call #$i" \
+    omniworker kanban create "Transcribe Q3 customer call #$i" \
         --assignee transcriber --tenant content-ops
 done
 for sku in 1001 1002 1003 1004; do
-    flux-agent kanban create "Generate product description: SKU-$sku" \
+    omniworker kanban create "Generate product description: SKU-$sku" \
         --assignee copywriter --tenant content-ops
 done
 ```
@@ -130,7 +130,7 @@ that picks up all three specialist profiles' tasks on the same
 kanban.db:
 
 ```bash
-flux-agent gateway start
+omniworker gateway start
 ```
 
 Now filter the board to `content-ops` (or just search for "Transcribe") and you get this:
@@ -183,7 +183,7 @@ kanban_block(
 Now you (the human, or a separate reviewer profile) read the block reason, decide the fix direction is clear, and unblock from the dashboard's "Unblock" button — or from the CLI / slash command:
 
 ```bash
-flux-agent kanban unblock $IMPL
+omniworker kanban unblock $IMPL
 # or from a chat: /kanban unblock $IMPL
 ```
 
@@ -235,7 +235,7 @@ Real workers fail. Missing credentials, OOM kills, transient network errors. The
 A deploy task that can't spawn its worker because `AWS_ACCESS_KEY_ID` isn't set in the profile's environment:
 
 ```bash
-flux-agent kanban create "Deploy to staging (missing creds)" \
+omniworker kanban create "Deploy to staging (missing creds)" \
     --assignee deploy-bot --tenant ops
 ```
 
@@ -250,7 +250,7 @@ Three runs, all with the same error on the `error` field. The first two are `spa
 On the terminal:
 
 ```bash
-flux-agent kanban runs t_ef5d
+omniworker kanban runs t_ef5d
 # #   OUTCOME        PROFILE        ELAPSED  STARTED
 # 1   spawn_failed   deploy-bot          0s  2026-04-27 19:34
 #       ! AWS_ACCESS_KEY_ID not set in deploy-bot env
@@ -291,7 +291,7 @@ When a worker on task B is spawned and calls `kanban_show()`, the `worker_contex
 
 This replaces the "dig through comments and the work output" dance that plagues flat kanban systems. A PM writes acceptance criteria in the spec's metadata, and the engineer's worker sees them structurally in the parent handoff. An engineer records which tests they ran and how many passed, and the reviewer's worker has that list in hand before opening a diff.
 
-The bulk-close guard exists because this data is per-run. `flux-agent kanban complete a b c --summary X` (you, from the CLI) is refused — copy-pasting the same summary to three tasks is almost always wrong. Bulk close without the handoff flags still works for the common "I finished a pile of admin tasks" case. The tool surface doesn't expose a bulk variant at all; `kanban_complete` is always single-task-at-a-time for the same reason.
+The bulk-close guard exists because this data is per-run. `omniworker kanban complete a b c --summary X` (you, from the CLI) is refused — copy-pasting the same summary to three tasks is almost always wrong. Bulk close without the handoff flags still works for the common "I finished a pile of admin tasks" case. The tool surface doesn't expose a bulk variant at all; `kanban_complete` is always single-task-at-a-time for the same reason.
 
 ## Inspecting a task currently running
 
@@ -304,6 +304,6 @@ Status is `Running`. The active run appears in the Run History section with outc
 ## Next steps
 
 - [Kanban overview](./kanban) — the full data model, event vocabulary, and CLI reference.
-- `flux-agent kanban --help` — every subcommand, every flag.
-- `flux-agent kanban watch --kinds completed,gave_up,timed_out` — live stream terminal events across the whole board.
-- `flux-agent kanban notify-subscribe <task> --platform telegram --chat-id <id>` — get a gateway ping when a specific task finishes.
+- `omniworker kanban --help` — every subcommand, every flag.
+- `omniworker kanban watch --kinds completed,gave_up,timed_out` — live stream terminal events across the whole board.
+- `omniworker kanban notify-subscribe <task> --platform telegram --chat-id <id>` — get a gateway ping when a specific task finishes.

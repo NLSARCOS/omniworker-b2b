@@ -12,14 +12,14 @@ class TestSaveConfigValueAtomic:
     @pytest.fixture
     def config_env(self, tmp_path, monkeypatch):
         """Isolated config environment with a writable config.yaml."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        config_path = flux-agent_home / "config.yaml"
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        config_path = omniworker_home / "config.yaml"
         config_path.write_text(yaml.dump({
             "model": {"default": "test-model", "provider": "openrouter"},
             "display": {"skin": "default"},
         }))
-        monkeypatch.setattr("cli._flux-agent_home", flux-agent_home)
+        monkeypatch.setattr("cli._omniworker_home", omniworker_home)
         return config_path
 
     def test_calls_roundtrip_yaml_update(self, config_env, monkeypatch):

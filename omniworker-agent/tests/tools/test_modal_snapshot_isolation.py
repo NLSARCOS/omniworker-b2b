@@ -29,25 +29,25 @@ def _reset_modules(prefixes: tuple[str, ...]):
 
 @pytest.fixture(autouse=True)
 def _restore_tool_modules():
-    original_flux-agent_home = os.environ.get("OMNIWORKER_HOME")
+    original_omniworker_home = os.environ.get("OMNIWORKER_HOME")
     original_modules = {
         name: module
         for name, module in sys.modules.items()
         if name == "tools"
         or name.startswith("tools.")
-        or name == "flux-agent_cli"
-        or name.startswith("flux-agent_cli.")
+        or name == "omniworker_cli"
+        or name.startswith("omniworker_cli.")
         or name == "modal"
         or name.startswith("modal.")
     }
     try:
         yield
     finally:
-        if original_flux-agent_home is None:
+        if original_omniworker_home is None:
             os.environ.pop("OMNIWORKER_HOME", None)
         else:
-            os.environ["OMNIWORKER_HOME"] = original_flux-agent_home
-        _reset_modules(("tools", "flux-agent_cli", "modal"))
+            os.environ["OMNIWORKER_HOME"] = original_omniworker_home
+        _reset_modules(("tools", "omniworker_cli", "modal"))
         sys.modules.update(original_modules)
 
 
@@ -57,15 +57,15 @@ def _install_modal_test_modules(
     fail_on_snapshot_ids: set[str] | None = None,
     snapshot_id: str = "im-fresh",
 ):
-    _reset_modules(("tools", "flux-agent_cli", "modal"))
+    _reset_modules(("tools", "omniworker_cli", "modal"))
 
-    flux-agent_cli = types.ModuleType("flux-agent_cli")
-    flux-agent_cli.__path__ = []  # type: ignore[attr-defined]
-    sys.modules["flux-agent_cli"] = flux-agent_cli
-    flux-agent_home = tmp_path / "flux-agent-home"
-    os.environ["OMNIWORKER_HOME"] = str(flux-agent_home)
-    sys.modules["flux-agent_cli.config"] = types.SimpleNamespace(
-        get_flux-agent_home=lambda: flux-agent_home,
+    omniworker_cli = types.ModuleType("omniworker_cli")
+    omniworker_cli.__path__ = []  # type: ignore[attr-defined]
+    sys.modules["omniworker_cli"] = omniworker_cli
+    omniworker_home = tmp_path / "omniworker-home"
+    os.environ["OMNIWORKER_HOME"] = str(omniworker_home)
+    sys.modules["omniworker_cli.config"] = types.SimpleNamespace(
+        get_omniworker_home=lambda: omniworker_home,
     )
 
     tools_package = types.ModuleType("tools")
@@ -144,7 +144,7 @@ def _install_modal_test_modules(
             return {"kind": "registry", "image": image}
 
     async def _lookup_aio(_name: str, create_if_missing: bool = False):
-        return types.SimpleNamespace(name="flux-agent-agent", create_if_missing=create_if_missing)
+        return types.SimpleNamespace(name="omniworker-agent", create_if_missing=create_if_missing)
 
     class _FakeSandboxInstance:
         def __init__(self, image):
@@ -190,7 +190,7 @@ def _install_modal_test_modules(
     )
 
     return {
-        "snapshot_store": flux-agent_home / "modal_snapshots.json",
+        "snapshot_store": omniworker_home / "modal_snapshots.json",
         "create_calls": create_calls,
         "from_id_calls": from_id_calls,
         "registry_calls": registry_calls,

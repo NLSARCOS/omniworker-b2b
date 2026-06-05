@@ -1,6 +1,6 @@
 """Tests for the curator per-run report writer (run.json + REPORT.md).
 
-Reports live under ``~/.flux-agent/logs/curator/{YYYYMMDD-HHMMSS}/`` alongside
+Reports live under ``~/.omniworker/logs/curator/{YYYYMMDD-HHMMSS}/`` alongside
 the standard log dir, not inside the user's ``skills/`` data directory.
 """
 
@@ -17,7 +17,7 @@ import pytest
 @pytest.fixture
 def curator_env(tmp_path, monkeypatch):
     """Isolated OMNIWORKER_HOME with a skills/ dir + reset curator module state."""
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir()
     (home / "skills").mkdir()
     (home / "logs").mkdir()
@@ -25,8 +25,8 @@ def curator_env(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     import importlib
-    import flux-agent_constants
-    importlib.reload(flux-agent_constants)
+    import omniworker_constants
+    importlib.reload(omniworker_constants)
     from agent import curator
     importlib.reload(curator)
     from tools import skill_usage

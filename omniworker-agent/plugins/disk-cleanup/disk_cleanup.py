@@ -10,13 +10,13 @@ Rules:
   - test files    → delete immediately at task end (age >= 0)
   - temp files    → delete after 7 days
   - cron-output   → delete after 14 days
-  - empty dirs    → always delete (under FLUX AGENT_HOME)
+  - empty dirs    → always delete (under OMNIWORKER_HOME)
   - research      → keep 10 newest, prompt for older (deep only)
   - chrome-profile→ prompt after 14 days (deep only)
   - >500 MB files → prompt always (deep only)
 
-Scope: strictly FLUX AGENT_HOME and /tmp/flux-agent-*
-Never touches: ~/.flux-agent/logs/ or any system directory.
+Scope: strictly OMNIWORKER_HOME and /tmp/omniworker-*
+Never touches: ~/.omniworker/logs/ or any system directory.
 """
 
 from __future__ import annotations
@@ -29,13 +29,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
-    from flux-agent_constants import get_flux-agent_home
+    from omniworker_constants import get_omniworker_home
 except Exception:  # pragma: no cover — plugin may load before constants resolves
     import os
 
-    def get_flux-agent_home() -> Path:  # type: ignore[no-redef]
-        val = (os.environ.get("FLUX AGENT_HOME") or "").strip()
-        return Path(val).resolve() if val else (Path.home() / ".flux-agent").resolve()
+    def get_omniworker_home() -> Path:  # type: ignore[no-redef]
+        val = (os.environ.get("OMNIWORKER_HOME") or "").strip()
+        return Path(val).resolve() if val else (Path.home() / ".omniworker").resolve()
 
 
 logger = logging.getLogger(__name__)
@@ -46,8 +46,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def get_state_dir() -> Path:
-    """State dir — separate from ``$FLUX AGENT_HOME/logs/``."""
-    return get_flux-agent_home() / "disk-cleanup"
+    """State dir — separate from ``$OMNIWORKER_HOME/logs/``."""
+    return get_omniworker_home() / "disk-cleanup"
 
 
 def get_tracked_file() -> Path:
@@ -55,7 +55,7 @@ def get_tracked_file() -> Path:
 
 
 def get_log_file() -> Path:
-    """Audit log — intentionally NOT under ``$FLUX AGENT_HOME/logs/``."""
+    """Audit log — intentionally NOT under ``$OMNIWORKER_HOME/logs/``."""
     return get_state_dir() / "cleanup.log"
 
 
@@ -64,19 +64,19 @@ def get_log_file() -> Path:
 # ---------------------------------------------------------------------------
 
 def is_safe_path(path: Path) -> bool:
-    """Accept only paths under FLUX AGENT_HOME or ``/tmp/flux-agent-*``.
+    """Accept only paths under OMNIWORKER_HOME or ``/tmp/omniworker-*``.
 
     Rejects Windows mounts (``/mnt/c`` etc.) and any system directory.
     """
-    flux-agent_home = get_flux-agent_home()
+    omniworker_home = get_omniworker_home()
     try:
-        path.resolve().relative_to(flux-agent_home)
+        path.resolve().relative_to(omniworker_home)
         return True
     except (ValueError, OSError):
         pass
-    # Allow /tmp/flux-agent-* explicitly
+    # Allow /tmp/omniworker-* explicitly
     parts = path.parts
-    if len(parts) >= 3 and parts[1] == "tmp" and parts[2].startswith("flux-agent-"):
+    if len(parts) >= 3 and parts[1] == "tmp" and parts[2].startswith("omniworker-"):
         return True
     return False
 
@@ -170,7 +170,7 @@ def track(path_str: str, category: str, silent: bool = False) -> bool:
         return False
 
     if not is_safe_path(path):
-        _log(f"REJECT: {path} (outside FLUX AGENT_HOME)")
+        _log(f"REJECT: {path} (outside OMNIWORKER_HOME)")
         return False
 
     size = path.stat().st_size if path.is_file() else 0
@@ -291,22 +291,22 @@ def quick() -> Dict[str, Any]:
         else:
             new_tracked.append(item)
 
-    # Remove empty dirs under FLUX AGENT_HOME (but leave FLUX AGENT_HOME itself and
+    # Remove empty dirs under OMNIWORKER_HOME (but leave OMNIWORKER_HOME itself and
     # a short list of well-known top-level state dirs alone — a fresh install
     # has these empty, and deleting them would surprise the user).
-    flux-agent_home = get_flux-agent_home()
+    omniworker_home = get_omniworker_home()
     _PROTECTED_TOP_LEVEL = {
         "logs", "memories", "sessions", "cron", "cronjobs",
         "cache", "skills", "plugins", "disk-cleanup", "optional-skills",
-        "flux-agent-agent", "backups", "profiles", ".worktrees",
+        "omniworker-agent", "backups", "profiles", ".worktrees",
     }
     empty_removed = 0
     try:
-        for dirpath in sorted(flux-agent_home.rglob("*"), reverse=True):
-            if not dirpath.is_dir() or dirpath == flux-agent_home:
+        for dirpath in sorted(omniworker_home.rglob("*"), reverse=True):
+            if not dirpath.is_dir() or dirpath == omniworker_home:
                 continue
             try:
-                rel_parts = dirpath.relative_to(flux-agent_home).parts
+                rel_parts = dirpath.relative_to(omniworker_home).parts
             except ValueError:
                 continue
             # Skip the well-known top-level state dirs themselves.
@@ -470,14 +470,14 @@ def guess_category(path: Path) -> Optional[str]:
         return None
 
     # Skip the state dir itself, logs, memory files, sessions, config.
-    flux-agent_home = get_flux-agent_home()
+    omniworker_home = get_omniworker_home()
     try:
-        rel = path.resolve().relative_to(flux-agent_home)
+        rel = path.resolve().relative_to(omniworker_home)
         top = rel.parts[0] if rel.parts else ""
         if top in {
             "disk-cleanup", "logs", "memories", "sessions", "config.yaml",
             "skills", "plugins", ".env", "USER.md", "MEMORY.md", "SOUL.md",
-            "auth.json", "flux-agent-agent",
+            "auth.json", "omniworker-agent",
         }:
             return None
         if top == "cron" or top == "cronjobs":
@@ -485,7 +485,7 @@ def guess_category(path: Path) -> Optional[str]:
         if top == "cache":
             return "temp"
     except ValueError:
-        # Path isn't under FLUX AGENT_HOME (e.g. /tmp/flux-agent-*) — fall through.
+        # Path isn't under OMNIWORKER_HOME (e.g. /tmp/omniworker-*) — fall through.
         pass
 
     name = path.name

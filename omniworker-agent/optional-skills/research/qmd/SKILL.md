@@ -6,7 +6,7 @@ author: Flux Agent Agent + Teknium
 license: MIT
 platforms: [macos, linux]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Search, Knowledge-Base, RAG, Notes, MCP, Local-AI]
     related_skills: [obsidian, native-mcp, arxiv]
 ---
@@ -226,7 +226,7 @@ without needing to load this skill.
 
 ### Option A: Stdio Mode (Simple)
 
-Add to `~/.flux-agent/config.yaml`:
+Add to `~/.omniworker/config.yaml`:
 
 ```yaml
 mcp_servers:

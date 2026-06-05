@@ -60,10 +60,10 @@ WECOM_CALLBACK_ALLOWED_USERS=user1,user2
 ### 3. Start the Gateway
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
-(Use `flux-agent gateway start` only after `flux-agent gateway install` has registered the systemd/launchd service.)
+(Use `omniworker gateway start` only after `omniworker gateway install` has registered the systemd/launchd service.)
 
 The callback adapter starts an HTTP server on the configured port. WeCom will verify the callback URL via a GET request, then begin sending messages via POST.
 

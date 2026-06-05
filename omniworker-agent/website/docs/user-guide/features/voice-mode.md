@@ -8,18 +8,18 @@ description: "Real-time voice conversations with Flux Agent Agent — CLI, Teleg
 
 Flux Agent Agent supports full voice interaction across CLI and messaging platforms. Talk to the agent using your microphone, hear spoken replies, and have live voice conversations in Discord voice channels.
 
-If you want a practical setup walkthrough with recommended configurations and real usage patterns, see [Use Voice Mode with Flux Agent](/docs/guides/use-voice-mode-with-flux-agent).
+If you want a practical setup walkthrough with recommended configurations and real usage patterns, see [Use Voice Mode with Flux Agent](/docs/guides/use-voice-mode-with-omniworker).
 
 ## Prerequisites
 
 Before using voice features, make sure you have:
 
-1. **Flux Agent Agent installed** — `pip install flux-agent-agent` (see [Installation](/docs/getting-started/installation))
-2. **An LLM provider configured** — run `flux-agent model` or set your preferred provider credentials in `~/.flux-agent/.env`
-3. **A working base setup** — run `flux-agent` to verify the agent responds to text before enabling voice
+1. **Flux Agent Agent installed** — `pip install omniworker-agent` (see [Installation](/docs/getting-started/installation))
+2. **An LLM provider configured** — run `omniworker model` or set your preferred provider credentials in `~/.omniworker/.env`
+3. **A working base setup** — run `omniworker` to verify the agent responds to text before enabling voice
 
 :::tip
-The `~/.flux-agent/` directory and default `config.yaml` are created automatically the first time you run `flux-agent`. You only need to create `~/.flux-agent/.env` manually for API keys.
+The `~/.omniworker/` directory and default `config.yaml` are created automatically the first time you run `omniworker`. You only need to create `~/.omniworker/.env` manually for API keys.
 :::
 
 ## Overview
@@ -36,19 +36,19 @@ The `~/.flux-agent/` directory and default `config.yaml` are created automatical
 
 ```bash
 # CLI voice mode (microphone + audio playback)
-pip install "flux-agent-agent[voice]"
+pip install "omniworker-agent[voice]"
 
 # Discord + Telegram messaging (includes discord.py[voice] for VC support)
-pip install "flux-agent-agent[messaging]"
+pip install "omniworker-agent[messaging]"
 
 # Premium TTS (ElevenLabs)
-pip install "flux-agent-agent[tts-premium]"
+pip install "omniworker-agent[tts-premium]"
 
 # Local TTS (NeuTTS, optional)
 python -m pip install -U neutts[all]
 
 # Everything at once
-pip install "flux-agent-agent[all]"
+pip install "omniworker-agent[all]"
 ```
 
 | Extra | Packages | Required For |
@@ -84,7 +84,7 @@ sudo apt install espeak-ng   # for NeuTTS
 
 ### API Keys
 
-Add to `~/.flux-agent/.env`:
+Add to `~/.omniworker/.env`:
 
 ```bash
 # Speech-to-Text — local provider needs NO key at all
@@ -105,14 +105,14 @@ If `faster-whisper` is installed, voice mode works with **zero API keys** for ST
 
 ## CLI Voice Mode
 
-Voice mode is available in both the **classic CLI** (`flux-agent chat`) and the **TUI** (`flux-agent --tui`). Behavior is identical across both — same slash commands, same VAD silence detection, same streaming TTS, same hallucination filter. The TUI additionally forwards crash-forensic logs to `~/.flux-agent/logs/` so push-to-talk failures on exotic audio backends can be reported with a full stack trace rather than disappearing silently.
+Voice mode is available in both the **classic CLI** (`omniworker chat`) and the **TUI** (`omniworker --tui`). Behavior is identical across both — same slash commands, same VAD silence detection, same streaming TTS, same hallucination filter. The TUI additionally forwards crash-forensic logs to `~/.omniworker/logs/` so push-to-talk failures on exotic audio backends can be reported with a full stack trace rather than disappearing silently.
 
 ### Quick Start
 
 Start the CLI and enable voice mode:
 
 ```bash
-flux-agent                # Start the interactive CLI
+omniworker                # Start the interactive CLI
 ```
 
 Then use these commands inside the CLI:
@@ -127,7 +127,7 @@ Then use these commands inside the CLI:
 
 ### How It Works
 
-1. Start the CLI with `flux-agent` and enable voice mode with `/voice on`
+1. Start the CLI with `omniworker` and enable voice mode with `/voice on`
 2. **Press Ctrl+B** — a beep plays (880Hz), recording starts
 3. **Speak** — a live audio level bar shows your input: `● [▁▂▃▅▇▇▅▂] ❯`
 4. **Stop speaking** — after 3 seconds of silence, recording auto-stops
@@ -139,7 +139,7 @@ Then use these commands inside the CLI:
 This loop continues until you press **Ctrl+B** during recording (exits continuous mode) or 3 consecutive recordings detect no speech.
 
 :::tip
-The record key is configurable via `voice.record_key` in `~/.flux-agent/config.yaml` (default: `ctrl+b`).
+The record key is configurable via `voice.record_key` in `~/.omniworker/config.yaml` (default: `ctrl+b`).
 :::
 
 ### Silence Detection
@@ -176,8 +176,8 @@ If you haven't set up your messaging bots yet, see the platform-specific guides:
 Start the gateway to connect to your messaging platforms:
 
 ```bash
-flux-agent gateway        # Start the gateway (connects to configured platforms)
-flux-agent gateway setup  # Interactive setup wizard for first-time configuration
+omniworker gateway        # Start the gateway (connects to configured platforms)
+omniworker gateway setup  # Interactive setup wizard for first-time configuration
 ```
 
 ### Discord: Channels vs DMs
@@ -191,10 +191,10 @@ The bot supports two interaction modes on Discord:
 
 **DM (recommended for personal use):** Just open a DM with the bot and type — no @mention needed. Voice replies and all commands work the same as in channels.
 
-**Server channels:** The bot only responds when you @mention it (e.g. `@flux-agentbyt4 hello`). Make sure you select the **bot user** from the mention popup, not the role with the same name.
+**Server channels:** The bot only responds when you @mention it (e.g. `@omniworkerbyt4 hello`). Make sure you select the **bot user** from the mention popup, not the role with the same name.
 
 :::tip
-To disable the mention requirement in server channels, add to `~/.flux-agent/.env`:
+To disable the mention requirement in server channels, add to `~/.omniworker/.env`:
 ```bash
 DISCORD_REQUIRE_MENTION=false
 ```
@@ -305,7 +305,7 @@ The bot auto-loads the codec from:
 #### 4. Environment Variables
 
 ```bash
-# ~/.flux-agent/.env
+# ~/.omniworker/.env
 
 # Discord bot (already configured for text)
 DISCORD_BOT_TOKEN=your-bot-token
@@ -322,7 +322,7 @@ DISCORD_ALLOWED_USERS=your-user-id
 ### Start the Gateway
 
 ```bash
-flux-agent gateway        # Start with existing configuration
+omniworker gateway        # Start with existing configuration
 ```
 
 The bot should come online in Discord within a few seconds.
@@ -369,7 +369,7 @@ The bot automatically pauses its audio listener while playing TTS replies, preve
 Only users listed in `DISCORD_ALLOWED_USERS` can interact via voice. Other users' audio is silently ignored.
 
 ```bash
-# ~/.flux-agent/.env
+# ~/.omniworker/.env
 DISCORD_ALLOWED_USERS=284102345871466496
 ```
 
@@ -482,7 +482,7 @@ The bot requires an @mention by default in server channels. Make sure you:
 
 1. Type `@` and select the **bot user** (with the #discriminator), not the **role** with the same name
 2. Or use DMs instead — no mention needed
-3. Or set `DISCORD_REQUIRE_MENTION=false` in `~/.flux-agent/.env`
+3. Or set `DISCORD_REQUIRE_MENTION=false` in `~/.omniworker/.env`
 
 ### Bot joins VC but doesn't hear me
 
@@ -494,7 +494,7 @@ The bot requires an @mention by default in server channels. Make sure you:
 
 - Verify STT is available: install `faster-whisper` (no key needed) or set `GROQ_API_KEY` / `VOICE_TOOLS_OPENAI_KEY`
 - Check the LLM model is configured and accessible
-- Review gateway logs: `tail -f ~/.flux-agent/logs/gateway.log`
+- Review gateway logs: `tail -f ~/.omniworker/logs/gateway.log`
 
 ### Bot responds in text but not in voice channel
 

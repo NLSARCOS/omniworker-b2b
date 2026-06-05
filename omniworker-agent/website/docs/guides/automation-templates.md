@@ -14,8 +14,8 @@ Every template works with **any model** — not locked to a single provider.
 | Trigger | How | Tool |
 |---------|-----|------|
 | **Schedule** | Runs on a cadence (hourly, nightly, weekly) | `cronjob` tool or `/cron` slash command |
-| **GitHub Event** | Fires on PR opens, pushes, issues, CI results | Webhook platform (`flux-agent webhook subscribe`) |
-| **API Call** | External service POSTs JSON to your endpoint | Webhook platform (config.yaml routes or `flux-agent webhook subscribe`) |
+| **GitHub Event** | Fires on PR opens, pushes, issues, CI results | Webhook platform (`omniworker webhook subscribe`) |
+| **API Call** | External service POSTs JSON to your endpoint | Webhook platform (config.yaml routes or `omniworker webhook subscribe`) |
 
 All three support delivery to Telegram, Discord, Slack, SMS, email, GitHub comments, or local files.
 :::
@@ -31,10 +31,10 @@ Label, prioritize, and summarize new issues every night. Delivers a digest to yo
 **Trigger:** Schedule (nightly)
 
 ```bash
-flux-agent cron create "0 2 * * *" \
-  "You are a project manager triaging the Flux Agent/flux-agent-agent GitHub repo.
+omniworker cron create "0 2 * * *" \
+  "You are a project manager triaging the Flux Agent/omniworker-agent GitHub repo.
 
-1. Run: gh issue list --repo Flux Agent/flux-agent-agent --state open --json number,title,labels,author,createdAt --limit 30
+1. Run: gh issue list --repo Flux Agent/omniworker-agent --state open --json number,title,labels,author,createdAt --limit 30
 2. Identify issues opened in the last 24 hours
 3. For each new issue:
    - Suggest a priority label (P0-critical, P1-high, P2-medium, P3-low)
@@ -56,7 +56,7 @@ Review every pull request automatically when it's opened. Posts a review comment
 **Option A — Dynamic subscription (CLI):**
 
 ```bash
-flux-agent webhook subscribe github-pr-review \
+omniworker webhook subscribe github-pr-review \
   --events "pull_request" \
   --prompt "Review this pull request:
 Repository: {repository.full_name}
@@ -113,15 +113,15 @@ Weekly scan of merged PRs to find API changes that need documentation updates.
 **Trigger:** Schedule (weekly)
 
 ```bash
-flux-agent cron create "0 9 * * 1" \
-  "Scan the Flux Agent/flux-agent-agent repo for documentation drift.
+omniworker cron create "0 9 * * 1" \
+  "Scan the Flux Agent/omniworker-agent repo for documentation drift.
 
-1. Run: gh pr list --repo Flux Agent/flux-agent-agent --state merged --json number,title,files,mergedAt --limit 30
+1. Run: gh pr list --repo Flux Agent/omniworker-agent --state merged --json number,title,files,mergedAt --limit 30
 2. Filter to PRs merged in the last 7 days
 3. For each merged PR, check if it modified:
    - Tool schemas (tools/*.py) — may need docs/reference/tools-reference.md update
-   - CLI commands (flux-agent_cli/commands.py, flux-agent_cli/main.py) — may need docs/reference/cli-commands.md update
-   - Config options (flux-agent_cli/config.py) — may need docs/user-guide/configuration.md update
+   - CLI commands (omniworker_cli/commands.py, omniworker_cli/main.py) — may need docs/reference/cli-commands.md update
+   - Config options (omniworker_cli/config.py) — may need docs/user-guide/configuration.md update
    - Environment variables — may need docs/reference/environment-variables.md update
 4. Cross-reference: for each code change, check if the corresponding docs page was also updated in the same PR
 
@@ -137,10 +137,10 @@ Daily scan for known vulnerabilities in project dependencies.
 **Trigger:** Schedule (daily)
 
 ```bash
-flux-agent cron create "0 6 * * *" \
-  "Run a dependency security audit on the flux-agent-agent project.
+omniworker cron create "0 6 * * *" \
+  "Run a dependency security audit on the omniworker-agent project.
 
-1. cd ~/.flux-agent/flux-agent-agent && source .venv/bin/activate
+1. cd ~/.omniworker/omniworker-agent && source .venv/bin/activate
 2. Run: pip audit --format json 2>/dev/null || pip audit 2>&1
 3. Run: npm audit --json 2>/dev/null (in website/ directory if it exists)
 4. Check for any CVEs with CVSS score >= 7.0
@@ -166,7 +166,7 @@ Trigger smoke tests after every deployment. Your CI/CD pipeline POSTs to the web
 **Trigger:** API call (webhook)
 
 ```bash
-flux-agent webhook subscribe deploy-verify \
+omniworker webhook subscribe deploy-verify \
   --events "deployment" \
   --prompt "A deployment just completed:
 Service: {service}
@@ -200,7 +200,7 @@ Correlate monitoring alerts with recent changes to draft a response. Works with 
 **Trigger:** API call (webhook)
 
 ```bash
-flux-agent webhook subscribe alert-triage \
+omniworker webhook subscribe alert-triage \
   --prompt "Monitoring alert received:
 Alert: {alert.name}
 Severity: {alert.severity}
@@ -226,7 +226,7 @@ Check endpoints every 30 minutes. Only notify when something is down.
 
 **Trigger:** Schedule (every 30 min)
 
-```python title="~/.flux-agent/scripts/check-uptime.py"
+```python title="~/.omniworker/scripts/check-uptime.py"
 import urllib.request, json, time
 
 ENDPOINTS = [
@@ -257,9 +257,9 @@ else:
 ```
 
 ```bash
-flux-agent cron create "every 30m" \
+omniworker cron create "every 30m" \
   "If the script reports OUTAGE DETECTED, summarize which services are down and suggest likely causes. If NO_ISSUES, respond with [SILENT]." \
-  --script ~/.flux-agent/scripts/check-uptime.py \
+  --script ~/.omniworker/scripts/check-uptime.py \
   --name "Uptime monitor" \
   --deliver telegram
 ```
@@ -275,7 +275,7 @@ Monitor competitor repos for interesting PRs, features, and architectural decisi
 **Trigger:** Schedule (daily)
 
 ```bash
-flux-agent cron create "0 8 * * *" \
+omniworker cron create "0 8 * * *" \
   "Scout these AI agent repositories for notable activity in the last 24 hours:
 
 Repos to check:
@@ -308,7 +308,7 @@ Weekly roundup of AI/ML developments.
 **Trigger:** Schedule (weekly)
 
 ```bash
-flux-agent cron create "0 9 * * 1" \
+omniworker cron create "0 9 * * 1" \
   "Generate a weekly AI news digest covering the past 7 days:
 
 1. Search the web for major AI announcements, model releases, and research breakthroughs
@@ -333,7 +333,7 @@ Daily arXiv scan that saves summaries to your note-taking system.
 **Trigger:** Schedule (daily)
 
 ```bash
-flux-agent cron create "0 8 * * *" \
+omniworker cron create "0 8 * * *" \
   "Search arXiv for the 3 most interesting papers on 'language model reasoning' OR 'tool-use agents' from the past day. For each paper, create an Obsidian note with the title, authors, abstract summary, key contribution, and potential relevance to Flux Agent Agent development." \
   --skill arxiv --skill obsidian \
   --name "Paper digest" \
@@ -351,7 +351,7 @@ Automatically label and respond to new issues.
 **Trigger:** GitHub webhook
 
 ```bash
-flux-agent webhook subscribe github-issues \
+omniworker webhook subscribe github-issues \
   --events "issues" \
   --prompt "New GitHub issue received:
 Repository: {repository.full_name}
@@ -413,7 +413,7 @@ When a PR merges in one repo, automatically port the equivalent change to anothe
 **Trigger:** GitHub webhook
 
 ```bash
-flux-agent webhook subscribe auto-port \
+omniworker webhook subscribe auto-port \
   --events "pull_request" \
   --prompt "PR merged in the source repository:
 Repository: {repository.full_name}
@@ -445,7 +445,7 @@ Track payment events and get summaries of failures.
 **Trigger:** API call (webhook)
 
 ```bash
-flux-agent webhook subscribe stripe-payments \
+omniworker webhook subscribe stripe-payments \
   --events "payment_intent.succeeded,payment_intent.payment_failed,charge.dispute.created" \
   --prompt "Stripe event received:
 Event type: {type}
@@ -475,7 +475,7 @@ Compile key business metrics every morning.
 **Trigger:** Schedule (daily)
 
 ```bash
-flux-agent cron create "0 8 * * *" \
+omniworker cron create "0 8 * * *" \
   "Generate a morning business metrics summary.
 
 Search the web for:
@@ -500,8 +500,8 @@ Combine multiple skills for a comprehensive weekly security review.
 **Trigger:** Schedule (weekly)
 
 ```bash
-flux-agent cron create "0 3 * * 0" \
-  "Run a comprehensive security audit of the flux-agent-agent codebase.
+omniworker cron create "0 3 * * 0" \
+  "Run a comprehensive security audit of the omniworker-agent codebase.
 
 1. Check for dependency vulnerabilities (pip audit, npm audit)
 2. Search the codebase for common security anti-patterns:
@@ -526,7 +526,7 @@ Research, draft, and prepare content on a schedule.
 **Trigger:** Schedule (weekly)
 
 ```bash
-flux-agent cron create "0 10 * * 3" \
+omniworker cron create "0 10 * * 3" \
   "Research and draft a technical blog post outline about a trending topic in AI agents.
 
 1. Search the web for the most discussed AI agent topics this week

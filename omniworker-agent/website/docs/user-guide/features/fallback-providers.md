@@ -24,12 +24,12 @@ When your main LLM provider encounters errors — rate limits, server overload, 
 The easiest path is the interactive manager:
 
 ```bash
-flux-agent fallback
+omniworker fallback
 ```
 
-`flux-agent fallback` reuses the provider picker from `flux-agent model` — same provider list, same credential prompts, same validation. Use the subcommands `add`, `list` (alias `ls`), `remove` (alias `rm`), and `clear` to manage the chain. Changes persist under the top-level `fallback_providers:` list in `config.yaml`.
+`omniworker fallback` reuses the provider picker from `omniworker model` — same provider list, same credential prompts, same validation. Use the subcommands `add`, `list` (alias `ls`), `remove` (alias `rm`), and `clear` to manage the chain. Changes persist under the top-level `fallback_providers:` list in `config.yaml`.
 
-If you'd rather edit the YAML directly, add a `fallback_model` section to `~/.flux-agent/config.yaml`:
+If you'd rather edit the YAML directly, add a `fallback_model` section to `~/.omniworker/config.yaml`:
 
 ```yaml
 fallback_model:
@@ -40,7 +40,7 @@ fallback_model:
 Both `provider` and `model` are **required**. If either is missing, the fallback is disabled.
 
 :::note `fallback_model` vs `fallback_providers`
-`fallback_model` (singular) is the legacy single-fallback key — Flux Agent still honors it for back-compat. `fallback_providers` (plural, list) supports multiple fallbacks tried in order; `flux-agent fallback` writes to this key. When both are set, Flux Agent merges them with `fallback_providers` taking priority.
+`fallback_model` (singular) is the legacy single-fallback key — Flux Agent still honors it for back-compat. `fallback_providers` (plural, list) supports multiple fallbacks tried in order; `omniworker fallback` writes to this key. When both are set, Flux Agent merges them with `fallback_providers` taking priority.
 :::
 
 ### Supported Providers
@@ -49,8 +49,8 @@ Both `provider` and `model` are **required**. If either is missing, the fallback
 |----------|-------|-------------|
 | AI Gateway | `ai-gateway` | `AI_GATEWAY_API_KEY` |
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| Nous Portal | `nous` | `flux-agent auth` (OAuth) |
-| OpenAI Codex | `openai-codex` | `flux-agent model` (ChatGPT OAuth) |
+| Nous Portal | `nous` | `omniworker auth` (OAuth) |
+| OpenAI Codex | `openai-codex` | `omniworker model` (ChatGPT OAuth) |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | External process (editor integration) |
 | Anthropic | `anthropic` | `ANTHROPIC_API_KEY` or Claude Code credentials |
@@ -63,12 +63,12 @@ Both `provider` and `model` are **required**. If either is missing, the fallback
 | GMI Cloud | `gmi` | `GMI_API_KEY` (optional: `GMI_BASE_URL`) |
 | StepFun | `stepfun` | `STEPFUN_API_KEY` (optional: `STEPFUN_BASE_URL`) |
 | Ollama Cloud | `ollama-cloud` | `OLLAMA_API_KEY` |
-| Google Gemini (OAuth) | `google-gemini-cli` | `flux-agent model` (Google OAuth; optional: `FLUX AGENT_GEMINI_PROJECT_ID`) |
+| Google Gemini (OAuth) | `google-gemini-cli` | `omniworker model` (Google OAuth; optional: `OMNIWORKER_GEMINI_PROJECT_ID`) |
 | Google AI Studio | `gemini` | `GOOGLE_API_KEY` (alias: `GEMINI_API_KEY`) |
 | xAI (Grok) | `xai` (alias `grok`) | `XAI_API_KEY` (optional: `XAI_BASE_URL`) |
 | AWS Bedrock | `bedrock` | Standard boto3 auth (`AWS_REGION` + `AWS_PROFILE` or `AWS_ACCESS_KEY_ID`) |
-| Qwen Portal (OAuth) | `qwen-oauth` | `flux-agent model` (Qwen Portal OAuth; optional: `FLUX AGENT_QWEN_BASE_URL`) |
-| MiniMax (OAuth) | `minimax-oauth` | `flux-agent model` (MiniMax portal OAuth) |
+| Qwen Portal (OAuth) | `qwen-oauth` | `omniworker model` (Qwen Portal OAuth; optional: `OMNIWORKER_QWEN_BASE_URL`) |
+| MiniMax (OAuth) | `minimax-oauth` | `omniworker model` (MiniMax portal OAuth) |
 | OpenCode Zen | `opencode-zen` | `OPENCODE_ZEN_API_KEY` |
 | OpenCode Go | `opencode-go` | `OPENCODE_GO_API_KEY` |
 | Kilo Code | `kilocode` | `KILOCODE_API_KEY` |
@@ -141,7 +141,7 @@ model:
 
 fallback_model:
   provider: nous
-  model: nous-flux-agent-3
+  model: nous-omniworker-3
 ```
 
 **Local model as fallback for cloud:**
@@ -192,7 +192,7 @@ Flux Agent uses separate lightweight models for side tasks. Each task has its ow
 | MCP | MCP helper operations | `auxiliary.mcp` |
 | Approval | Smart command-approval classification | `auxiliary.approval` |
 | Title Generation | Session title summaries | `auxiliary.title_generation` |
-| Triage Specifier | `flux-agent kanban specify` / dashboard ✨ button — fleshes out a one-liner triage task into a real spec | `auxiliary.triage_specifier` |
+| Triage Specifier | `omniworker kanban specify` / dashboard ✨ button — fleshes out a one-liner triage task into a real spec | `auxiliary.triage_specifier` |
 
 ### Auto-Detection Chain
 
@@ -298,8 +298,8 @@ These options apply to `auxiliary:`, `compression:`, and `fallback_model:` confi
 |----------|-------------|-------------|
 | `"auto"` | Try providers in order until one works (default) | At least one provider configured |
 | `"openrouter"` | Force OpenRouter | `OPENROUTER_API_KEY` |
-| `"nous"` | Force Nous Portal | `flux-agent auth` |
-| `"codex"` | Force Codex OAuth | `flux-agent model` → Codex |
+| `"nous"` | Force Nous Portal | `omniworker auth` |
+| `"codex"` | Force Codex OAuth | `omniworker model` → Codex |
 | `"main"` | Use whatever provider the main agent uses (auxiliary tasks only) | Active main provider configured |
 | `"anthropic"` | Force Anthropic native | `ANTHROPIC_API_KEY` or Claude Code credentials |
 

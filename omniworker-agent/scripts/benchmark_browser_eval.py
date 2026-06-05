@@ -29,7 +29,7 @@ def _find_chrome() -> str:
 
 
 def _start_chrome(port: int):
-    profile = tempfile.mkdtemp(prefix="flux-agent-bench-eval-")
+    profile = tempfile.mkdtemp(prefix="omniworker-bench-eval-")
     proc = subprocess.Popen(
         [
             _find_chrome(),

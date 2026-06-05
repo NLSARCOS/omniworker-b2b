@@ -8,7 +8,7 @@ instances via ``PluginContext.register_video_gen_provider()``; the active one
 ``video_generate`` tool call.
 
 Providers live in ``<repo>/plugins/video_gen/<name>/`` (built-in, auto-loaded
-as ``kind: backend``) or ``~/.flux-agent/plugins/video_gen/<name>/`` (user, opt-in
+as ``kind: backend``) or ``~/.omniworker/plugins/video_gen/<name>/`` (user, opt-in
 via ``plugins.enabled``).
 
 Mirrors the ``image_gen`` provider design (``agent/image_gen_provider.py``) so
@@ -89,7 +89,7 @@ class VideoGenProvider(abc.ABC):
 
     @property
     def display_name(self) -> str:
-        """Human-readable label shown in ``flux-agent tools``. Defaults to ``name.title()``."""
+        """Human-readable label shown in ``omniworker tools``. Defaults to ``name.title()``."""
         return self.name.title()
 
     def is_available(self) -> bool:
@@ -101,7 +101,7 @@ class VideoGenProvider(abc.ABC):
         return True
 
     def list_models(self) -> List[Dict[str, Any]]:
-        """Return catalog entries for ``flux-agent tools`` model picker.
+        """Return catalog entries for ``omniworker tools`` model picker.
 
         Each entry represents a **model family** that supports text-to-video
         and/or image-to-video routing internally::
@@ -120,7 +120,7 @@ class VideoGenProvider(abc.ABC):
         return []
 
     def get_setup_schema(self) -> Dict[str, Any]:
-        """Return provider metadata for the ``flux-agent tools`` picker."""
+        """Return provider metadata for the ``omniworker tools`` picker."""
         return {
             "name": self.display_name,
             "badge": "",
@@ -151,7 +151,7 @@ class VideoGenProvider(abc.ABC):
                 "max_reference_images": 7,
             }
 
-        Used by the tool layer for soft validation and by ``flux-agent tools``
+        Used by the tool layer for soft validation and by ``omniworker tools``
         for the picker. Default: text-only.
         """
         return {
@@ -203,9 +203,9 @@ class VideoGenProvider(abc.ABC):
 
 def _videos_cache_dir() -> Path:
     """Return ``$OMNIWORKER_HOME/cache/videos/``, creating parents as needed."""
-    from flux-agent_constants import get_flux-agent_home
+    from omniworker_constants import get_omniworker_home
 
-    path = get_flux-agent_home() / "cache" / "videos"
+    path = get_omniworker_home() / "cache" / "videos"
     path.mkdir(parents=True, exist_ok=True)
     return path
 

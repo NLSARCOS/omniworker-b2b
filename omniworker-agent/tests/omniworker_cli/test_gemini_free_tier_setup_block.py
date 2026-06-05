@@ -9,7 +9,7 @@ import pytest
 @pytest.fixture
 def config_home(tmp_path, monkeypatch):
     """Isolated OMNIWORKER_HOME with an empty config."""
-    home = tmp_path / "flux-agent"
+    home = tmp_path / "omniworker"
     home.mkdir()
     (home / "config.yaml").write_text("model: some-old-model\n")
     (home / ".env").write_text("")
@@ -34,18 +34,18 @@ class TestGeminiSetupFreeTierBlock:
         """Free-tier probe result -> provider is NOT saved, message is printed."""
         monkeypatch.setenv("GOOGLE_API_KEY", "fake-free-tier-key")
 
-        from flux-agent_cli.main import _model_flow_api_key_provider
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.main import _model_flow_api_key_provider
+        from omniworker_cli.config import load_config
 
         # Mock the probe to claim this is a free-tier key
         with patch(
             "agent.gemini_native_adapter.probe_gemini_tier",
             return_value="free",
         ), patch(
-            "flux-agent_cli.auth._prompt_model_selection",
+            "omniworker_cli.auth._prompt_model_selection",
             return_value="gemini-2.5-flash",
         ), patch(
-            "flux-agent_cli.auth.deactivate_provider",
+            "omniworker_cli.auth.deactivate_provider",
         ), patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "gemini", "old-model")
 
@@ -68,17 +68,17 @@ class TestGeminiSetupFreeTierBlock:
         """Paid-tier probe result -> provider IS saved normally."""
         monkeypatch.setenv("GOOGLE_API_KEY", "fake-paid-tier-key")
 
-        from flux-agent_cli.main import _model_flow_api_key_provider
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.main import _model_flow_api_key_provider
+        from omniworker_cli.config import load_config
 
         with patch(
             "agent.gemini_native_adapter.probe_gemini_tier",
             return_value="paid",
         ), patch(
-            "flux-agent_cli.auth._prompt_model_selection",
+            "omniworker_cli.auth._prompt_model_selection",
             return_value="gemini-2.5-flash",
         ), patch(
-            "flux-agent_cli.auth.deactivate_provider",
+            "omniworker_cli.auth.deactivate_provider",
         ), patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "gemini", "old-model")
 
@@ -97,17 +97,17 @@ class TestGeminiSetupFreeTierBlock:
         """Probe returning 'unknown' (network/auth error) -> proceed without blocking."""
         monkeypatch.setenv("GOOGLE_API_KEY", "fake-key")
 
-        from flux-agent_cli.main import _model_flow_api_key_provider
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.main import _model_flow_api_key_provider
+        from omniworker_cli.config import load_config
 
         with patch(
             "agent.gemini_native_adapter.probe_gemini_tier",
             return_value="unknown",
         ), patch(
-            "flux-agent_cli.auth._prompt_model_selection",
+            "omniworker_cli.auth._prompt_model_selection",
             return_value="gemini-2.5-flash",
         ), patch(
-            "flux-agent_cli.auth.deactivate_provider",
+            "omniworker_cli.auth.deactivate_provider",
         ), patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "gemini", "old-model")
 
@@ -125,16 +125,16 @@ class TestGeminiSetupFreeTierBlock:
         """Probe must only run for provider_id == 'gemini', not for other providers."""
         monkeypatch.setenv("DEEPSEEK_API_KEY", "fake-key")
 
-        from flux-agent_cli.main import _model_flow_api_key_provider
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.main import _model_flow_api_key_provider
+        from omniworker_cli.config import load_config
 
         with patch(
             "agent.gemini_native_adapter.probe_gemini_tier",
         ) as mock_probe, patch(
-            "flux-agent_cli.auth._prompt_model_selection",
+            "omniworker_cli.auth._prompt_model_selection",
             return_value="deepseek-chat",
         ), patch(
-            "flux-agent_cli.auth.deactivate_provider",
+            "omniworker_cli.auth.deactivate_provider",
         ), patch("builtins.input", return_value=""):
             _model_flow_api_key_provider(load_config(), "deepseek", "old-model")
 

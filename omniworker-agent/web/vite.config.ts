@@ -6,8 +6,8 @@ import path from "path";
 const BACKEND = process.env.OMNIWORKER_DASHBOARD_URL ?? "http://127.0.0.1:9119";
 
 /**
- * In production the Python `flux-agent dashboard` server injects a one-shot
- * session token into `index.html` (see `flux-agent_cli/web_server.py`). The
+ * In production the Python `omniworker dashboard` server injects a one-shot
+ * session token into `index.html` (see `omniworker_cli/web_server.py`). The
  * Vite dev server serves its own `index.html`, so unless we forward that
  * token, every protected `/api/*` call 401s.
  *
@@ -15,7 +15,7 @@ const BACKEND = process.env.OMNIWORKER_DASHBOARD_URL ?? "http://127.0.0.1:9119";
  * load, scrapes the `window.__OMNIWORKER_SESSION_TOKEN__` assignment, and
  * re-injects it into the dev HTML. No-op in production builds.
  */
-function flux-agentDevToken(): Plugin {
+function omniworkerDevToken(): Plugin {
   const TOKEN_RE = /window\.__OMNIWORKER_SESSION_TOKEN__\s*=\s*"([^"]+)"/;
   const EMBEDDED_RE =
     /window\.__OMNIWORKER_DASHBOARD_EMBEDDED_CHAT__\s*=\s*(true|false)/;
@@ -23,7 +23,7 @@ function flux-agentDevToken(): Plugin {
     /window\.__OMNIWORKER_DASHBOARD_TUI__\s*=\s*(true|false)/;
 
   return {
-    name: "flux-agent:dev-session-token",
+    name: "omniworker:dev-session-token",
     apply: "serve",
     async transformIndexHtml() {
       try {
@@ -32,8 +32,8 @@ function flux-agentDevToken(): Plugin {
         const match = html.match(TOKEN_RE);
         if (!match) {
           console.warn(
-            `[flux-agent] Could not find session token in ${BACKEND} — ` +
-              `is \`flux-agent dashboard\` running? /api calls will 401.`,
+            `[omniworker] Could not find session token in ${BACKEND} — ` +
+              `is \`omniworker dashboard\` running? /api calls will 401.`,
           );
           return;
         }
@@ -55,8 +55,8 @@ function flux-agentDevToken(): Plugin {
         ];
       } catch (err) {
         console.warn(
-          `[flux-agent] Dashboard at ${BACKEND} unreachable — ` +
-            `start it with \`flux-agent dashboard\` or set OMNIWORKER_DASHBOARD_URL. ` +
+          `[omniworker] Dashboard at ${BACKEND} unreachable — ` +
+            `start it with \`omniworker dashboard\` or set OMNIWORKER_DASHBOARD_URL. ` +
             `(${(err as Error).message})`,
         );
       }
@@ -65,7 +65,7 @@ function flux-agentDevToken(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), flux-agentDevToken()],
+  plugins: [react(), tailwindcss(), omniworkerDevToken()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -90,7 +90,7 @@ export default defineConfig({
     ],
   },
   build: {
-    outDir: "../flux-agent_cli/web_dist",
+    outDir: "../omniworker_cli/web_dist",
     emptyOutDir: true,
   },
   server: {
@@ -99,7 +99,7 @@ export default defineConfig({
         target: BACKEND,
         ws: true,
       },
-      // Same host as `flux-agent dashboard` must serve these; Vite has no
+      // Same host as `omniworker dashboard` must serve these; Vite has no
       // dashboard-plugins/* files, so without this, plugin scripts 404
       // or receive index.html in dev.
       "/dashboard-plugins": BACKEND,

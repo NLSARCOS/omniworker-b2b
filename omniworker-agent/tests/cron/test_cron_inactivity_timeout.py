@@ -304,13 +304,13 @@ class TestInactivityTimeout:
 class TestSysPathOrdering:
     """Test that sys.path is set before repo-level imports."""
 
-    def test_flux-agent_time_importable(self):
-        """flux-agent_time should be importable when cron.scheduler loads."""
+    def test_omniworker_time_importable(self):
+        """omniworker_time should be importable when cron.scheduler loads."""
         # This import would fail if sys.path.insert comes after the import
-        from cron.scheduler import _flux-agent_now
-        assert callable(_flux-agent_now)
+        from cron.scheduler import _omniworker_now
+        assert callable(_omniworker_now)
 
-    def test_flux-agent_constants_importable(self):
-        """flux-agent_constants should be importable from cron context."""
-        from flux-agent_constants import get_flux-agent_home
-        assert callable(get_flux-agent_home)
+    def test_omniworker_constants_importable(self):
+        """omniworker_constants should be importable from cron context."""
+        from omniworker_constants import get_omniworker_home
+        assert callable(get_omniworker_home)

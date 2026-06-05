@@ -97,7 +97,7 @@ gateway:
     upload_failed:         "✗ Не вдалося завантажити звіт налагодження: {error}"
     header:                "**Звіт налагодження завантажено:**"
     auto_delete:           "⏱ Вставки автоматично видаляться через 6 годин."
-    full_logs_hint:        "Щоб завантажити повні журнали, використайте `flux-agent debug share` з CLI."
+    full_logs_hint:        "Щоб завантажити повні журнали, використайте `omniworker debug share` з CLI."
     share_hint:            "Поділіться цими посиланнями з командою Flux Agent для отримання підтримки."
 
   deny:
@@ -146,7 +146,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ помилка kanban: {error}"
     subscribed_suffix:     "(підписано — ви отримаєте сповіщення, коли {task_id} завершиться або буде заблоковано)"
-    truncated_suffix:      "… (скорочено; використовуйте `flux-agent kanban …` у терміналі для повного виводу)"
+    truncated_suffix:      "… (скорочено; використовуйте `omniworker kanban …` у терміналі для повного виводу)"
     no_output:             "(немає виводу)"
 
   personality:
@@ -214,7 +214,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ Перезапуск гейтвея вже виконується..."
-    restarting:            "♻ Перезапуск гейтвея. Якщо ви не отримаєте сповіщення протягом 60 секунд, перезапустіть із консолі командою `flux-agent gateway restart`."
+    restarting:            "♻ Перезапуск гейтвея. Якщо ви не отримаєте сповіщення протягом 60 секунд, перезапустіть із консолі командою `omniworker gateway restart`."
 
   resume:
     db_unavailable:        "База даних сеансів недоступна."
@@ -289,9 +289,9 @@ gateway:
     removed:               "↩️ Скасовано {count} повідомлень.\nВидалено: «{preview}»"
 
   update:
-    platform_not_messaging:  "✗ /update доступний лише на платформах обміну повідомленнями. Виконайте `flux-agent update` у терміналі."
+    platform_not_messaging:  "✗ /update доступний лише на платформах обміну повідомленнями. Виконайте `omniworker update` у терміналі."
     not_git_repo:            "✗ Не git-репозиторій — оновлення неможливе."
-    flux-agent_cmd_not_found:    "✗ Не вдалося знайти команду `flux-agent`. Flux Agent запущено, але команда оновлення не знайшла виконуваний файл у PATH або через поточний інтерпретатор Python. Спробуйте виконати `flux-agent update` вручну у вашому терміналі."
+    omniworker_cmd_not_found:    "✗ Не вдалося знайти команду `omniworker`. Flux Agent запущено, але команда оновлення не знайшла виконуваний файл у PATH або через поточний інтерпретатор Python. Спробуйте виконати `omniworker update` вручну у вашому терміналі."
     start_failed:            "✗ Не вдалося запустити оновлення: {error}"
     starting:                "⚕ Запуск оновлення Flux Agent… Я транслюватиму прогрес сюди."
 

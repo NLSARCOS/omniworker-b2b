@@ -49,6 +49,6 @@ and in the SKILL.md credits block. No code was relicensed.
 
 ## pixel-art skill itself
 
-- License: MIT (inherits from flux-agent-agent repo)
+- License: MIT (inherits from omniworker-agent repo)
 - Original author of the skill shell: dodo-reach
 - Expansion with palettes + video: Flux Agent Agent contributors

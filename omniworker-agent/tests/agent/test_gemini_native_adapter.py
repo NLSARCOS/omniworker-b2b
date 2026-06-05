@@ -134,7 +134,7 @@ def test_translate_native_response_surfaces_reasoning_and_tool_calls():
                 "content": {
                     "parts": [
                         {"thought": True, "text": "thinking..."},
-                        {"functionCall": {"name": "search", "args": {"q": "flux-agent"}}},
+                        {"functionCall": {"name": "search", "args": {"q": "omniworker"}}},
                     ]
                 },
                 "finishReason": "STOP",
@@ -152,7 +152,7 @@ def test_translate_native_response_surfaces_reasoning_and_tool_calls():
     assert choice.finish_reason == "tool_calls"
     assert choice.message.reasoning == "thinking..."
     assert choice.message.tool_calls[0].function.name == "search"
-    assert json.loads(choice.message.tool_calls[0].function.arguments) == {"q": "flux-agent"}
+    assert json.loads(choice.message.tool_calls[0].function.arguments) == {"q": "omniworker"}
 
 
 def test_native_client_uses_x_goog_api_key_and_native_models_endpoint(monkeypatch):

@@ -43,21 +43,21 @@ Usage:
     hermes claw migrate --dry-run  # Preview migration without changes
 """
 
-# IMPORTANT: flux-agent_bootstrap must be the very first import — it sets up
+# IMPORTANT: omniworker_bootstrap must be the very first import — it sets up
 # UTF-8 stdio on Windows so print()/subprocess children don't hit
 # UnicodeEncodeError with non-ASCII characters.  No-op on POSIX.
 #
-# Guarded against ModuleNotFoundError because ``flux-agent_bootstrap`` is a
+# Guarded against ModuleNotFoundError because ``omniworker_bootstrap`` is a
 # top-level module registered via pyproject.toml's ``py-modules`` list.
 # When the user upgrades code via ``git pull`` (or ``hermes update``
 # crashes between ``git reset --hard`` and ``uv pip install -e .``), the
-# new code references ``flux-agent_bootstrap`` but the editable install's
+# new code references ``omniworker_bootstrap`` but the editable install's
 # ``.pth`` file still points at the old set of top-level modules.  Without
 # this guard, hermes crashes on import and the user can't run
 # ``hermes update`` to recover.  Missing the bootstrap means UTF-8 stdio
 # setup is skipped on Windows — degraded, not broken.  POSIX is unaffected.
 try:
-    import flux-agent_bootstrap  # noqa: F401
+    import omniworker_bootstrap  # noqa: F401
 except ModuleNotFoundError:
     pass
 
@@ -80,7 +80,7 @@ def _add_accept_hooks_flag(parser) -> None:
         default=argparse.SUPPRESS,
         help=(
             "Auto-approve unseen shell hooks without a TTY prompt "
-            "(equivalent to FLUX AGENT_ACCEPT_HOOKS=1 / hooks_auto_accept: true)."
+            "(equivalent to OMNIWORKER_ACCEPT_HOOKS=1 / hooks_auto_accept: true)."
         ),
     )
 
@@ -110,14 +110,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # ---------------------------------------------------------------------------
 # Profile override — MUST happen before any hermes module import.
 #
-# Many modules cache FLUX AGENT_HOME at import time (module-level constants).
+# Many modules cache OMNIWORKER_HOME at import time (module-level constants).
 # We intercept --profile/-p from sys.argv here and set the env var so that
-# every subsequent ``os.getenv("FLUX AGENT_HOME", ...)`` resolves correctly.
+# every subsequent ``os.getenv("OMNIWORKER_HOME", ...)`` resolves correctly.
 # The flag is stripped from sys.argv so argparse never sees it.
 # Falls back to ~/.hermes/active_profile for sticky default.
 # ---------------------------------------------------------------------------
 def _apply_profile_override() -> None:
-    """Pre-parse --profile/-p and set FLUX AGENT_HOME before module imports."""
+    """Pre-parse --profile/-p and set OMNIWORKER_HOME before module imports."""
     argv = sys.argv[1:]
     profile_name = None
     consume = 0
@@ -135,7 +135,7 @@ def _apply_profile_override() -> None:
 
     # 1b. Reject values that can't be valid profile names (e.g. pytest's
     # "-p no:xdist" would be misread as profile "no:xdist" otherwise).
-    # Mirrors flux-agent_cli.profiles._PROFILE_ID_RE so we never call
+    # Mirrors omniworker_cli.profiles._PROFILE_ID_RE so we never call
     # resolve_profile_env() with a value it must reject + sys.exit on.
     if profile_name is not None and consume == 2:
         import re as _re
@@ -144,24 +144,24 @@ def _apply_profile_override() -> None:
             profile_name = None
             consume = 0
 
-    # 1.5 If FLUX AGENT_HOME is already set and no explicit flag was given, trust it
+    # 1.5 If OMNIWORKER_HOME is already set and no explicit flag was given, trust it
     # only when it already points to a specific profile directory.  The
     # distinguishing heuristic: a profile path has "profiles" as its immediate
     # parent directory name (e.g. ~/.hermes/profiles/coder or
-    # /opt/data/profiles/coder).  If FLUX AGENT_HOME points to the hermes root
-    # instead (e.g. systemd hardcodes FLUX AGENT_HOME=/root/.hermes), we must
+    # /opt/data/profiles/coder).  If OMNIWORKER_HOME points to the hermes root
+    # instead (e.g. systemd hardcodes OMNIWORKER_HOME=/root/.hermes), we must
     # still read active_profile — the user may have switched profiles via
     # `hermes profile use` and the gateway should honour that choice.
     # See issue #22502.
-    flux-agent_home_env = os.environ.get("FLUX AGENT_HOME", "")
-    if profile_name is None and flux-agent_home_env:
-        if Path(flux-agent_home_env).parent.name == "profiles":
+    omniworker_home_env = os.environ.get("OMNIWORKER_HOME", "")
+    if profile_name is None and omniworker_home_env:
+        if Path(omniworker_home_env).parent.name == "profiles":
             return
 
     # 2. If no flag, check active_profile in the hermes root
     if profile_name is None:
         try:
-            from flux-agent_constants import get_default_hermes_root
+            from omniworker_constants import get_default_hermes_root
 
             active_path = get_default_hermes_root() / "active_profile"
             if active_path.exists():
@@ -172,12 +172,12 @@ def _apply_profile_override() -> None:
         except (UnicodeDecodeError, OSError):
             pass  # corrupted file, skip
 
-    # 3. If we found a profile, resolve and set FLUX AGENT_HOME
+    # 3. If we found a profile, resolve and set OMNIWORKER_HOME
     if profile_name is not None:
         try:
-            from flux-agent_cli.profiles import resolve_profile_env
+            from omniworker_cli.profiles import resolve_profile_env
 
-            flux-agent_home = resolve_profile_env(profile_name)
+            omniworker_home = resolve_profile_env(profile_name)
         except (ValueError, FileNotFoundError) as exc:
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
@@ -188,7 +188,7 @@ def _apply_profile_override() -> None:
                 file=sys.stderr,
             )
             return
-        os.environ["FLUX AGENT_HOME"] = flux-agent_home
+        os.environ["OMNIWORKER_HOME"] = omniworker_home
         # Strip the flag from argv so argparse doesn't choke
         if consume > 0:
             for i, arg in enumerate(argv):
@@ -206,28 +206,28 @@ _apply_profile_override()
 
 # Load .env from ~/.hermes/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from flux-agent_cli.config import get_flux-agent_home
-from flux-agent_cli.env_loader import load_hermes_dotenv
+from omniworker_cli.config import get_omniworker_home
+from omniworker_cli.env_loader import load_hermes_dotenv
 
 load_hermes_dotenv(project_env=PROJECT_ROOT / ".env")
 
-# Bridge security.redact_secrets from config.yaml → FLUX AGENT_REDACT_SECRETS env
-# var BEFORE flux-agent_logging imports agent.redact (which snapshots the flag at
+# Bridge security.redact_secrets from config.yaml → OMNIWORKER_REDACT_SECRETS env
+# var BEFORE omniworker_logging imports agent.redact (which snapshots the flag at
 # module-import time). Without this, config.yaml's toggle is ignored because
 # the setup_logging() call below imports agent.redact, which reads the env var
 # exactly once. Env var in .env still wins — this is config.yaml fallback only.
 try:
-    if "FLUX AGENT_REDACT_SECRETS" not in os.environ:
+    if "OMNIWORKER_REDACT_SECRETS" not in os.environ:
         import yaml as _yaml_early
 
-        _cfg_path = get_flux-agent_home() / "config.yaml"
+        _cfg_path = get_omniworker_home() / "config.yaml"
         if _cfg_path.exists():
             with open(_cfg_path, encoding="utf-8") as _f:
                 _early_sec_cfg = (_yaml_early.safe_load(_f) or {}).get("security", {})
             if isinstance(_early_sec_cfg, dict):
                 _early_redact = _early_sec_cfg.get("redact_secrets")
                 if _early_redact is not None:
-                    os.environ["FLUX AGENT_REDACT_SECRETS"] = str(_early_redact).lower()
+                    os.environ["OMNIWORKER_REDACT_SECRETS"] = str(_early_redact).lower()
             del _early_sec_cfg
         del _cfg_path
 except Exception:
@@ -236,7 +236,7 @@ except Exception:
 # Initialize centralized file logging early — all `hermes` subcommands
 # (chat, setup, gateway, config, etc.) write to agent.log + errors.log.
 try:
-    from flux-agent_logging import setup_logging as _setup_logging
+    from omniworker_logging import setup_logging as _setup_logging
 
     _setup_logging(mode="cli")
 except Exception:
@@ -244,8 +244,8 @@ except Exception:
 
 # Apply IPv4 preference early, before any HTTP clients are created.
 try:
-    from flux-agent_cli.config import load_config as _load_config_early
-    from flux-agent_constants import apply_ipv4_preference as _apply_ipv4
+    from omniworker_cli.config import load_config as _load_config_early
+    from omniworker_constants import apply_ipv4_preference as _apply_ipv4
 
     _early_cfg = _load_config_early()
     _net = _early_cfg.get("network", {})
@@ -260,8 +260,8 @@ import threading
 import time as _time
 from datetime import datetime
 
-from flux-agent_cli import __version__, __release_date__
-from flux-agent_constants import AI_GATEWAY_BASE_URL, OPENROUTER_BASE_URL
+from omniworker_cli import __version__, __release_date__
+from omniworker_constants import AI_GATEWAY_BASE_URL, OPENROUTER_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -286,14 +286,14 @@ def _relative_time(ts) -> str:
 
 def _has_any_provider_configured() -> bool:
     """Check if at least one inference provider is usable."""
-    from flux-agent_cli.config import get_env_path, get_flux-agent_home, load_config
-    from flux-agent_cli.auth import get_auth_status
+    from omniworker_cli.config import get_env_path, get_omniworker_home, load_config
+    from omniworker_cli.auth import get_auth_status
 
     # Determine whether Flux Agent itself has been explicitly configured (model
     # in config that isn't the hardcoded default). Used below to gate external
     # tool credentials (Claude Code, Codex CLI) that shouldn't silently skip
     # the setup wizard on a fresh install.
-    from flux-agent_cli.config import DEFAULT_CONFIG
+    from omniworker_cli.config import DEFAULT_CONFIG
 
     _DEFAULT_MODEL = DEFAULT_CONFIG.get("model", "")
     cfg = load_config()
@@ -309,7 +309,7 @@ def _has_any_provider_configured() -> bool:
     # Check env vars (may be set by .env or shell).
     # OPENAI_BASE_URL alone counts — local models (vLLM, llama.cpp, etc.)
     # often don't require an API key.
-    from flux-agent_cli.auth import PROVIDER_REGISTRY
+    from omniworker_cli.auth import PROVIDER_REGISTRY
 
     # Collect all provider env vars
     provider_env_vars = {
@@ -352,7 +352,7 @@ def _has_any_provider_configured() -> bool:
         pass
 
     # Check for Nous Portal OAuth credentials
-    auth_file = get_flux-agent_home() / "auth.json"
+    auth_file = get_omniworker_home() / "auth.json"
     if auth_file.exists():
         try:
             import json
@@ -643,7 +643,7 @@ def _resolve_last_session(source: str = "cli") -> Optional[str]:
     """Look up the most recently-used session ID for a source."""
     db = None
     try:
-        from flux-agent_state import SessionDB
+        from omniworker_state import SessionDB
 
         db = SessionDB()
         sessions = db.search_sessions(source=source, limit=1)
@@ -782,7 +782,7 @@ def _resolve_session_by_name_or_id(name_or_id: str) -> Optional[str]:
       resumed at the live tip instead of a stale parent with no messages.
     """
     try:
-        from flux-agent_state import SessionDB
+        from omniworker_state import SessionDB
 
         db = SessionDB()
 
@@ -835,7 +835,7 @@ def _print_tui_exit_summary(
 
     db = None
     try:
-        from flux-agent_state import SessionDB
+        from omniworker_state import SessionDB
 
         db = SessionDB()
         session = db.get_session(target)
@@ -978,18 +978,18 @@ def _ensure_tui_node() -> None:
     was used (nvm, fnm, proto, brew, or the bundled fallback).
 
     Idempotent no-op when node+npm are already discoverable. Set
-    ``FLUX AGENT_SKIP_NODE_BOOTSTRAP=1`` to disable auto-install.
+    ``OMNIWORKER_SKIP_NODE_BOOTSTRAP=1`` to disable auto-install.
     """
     if shutil.which("node") and shutil.which("npm"):
         return
-    if os.environ.get("FLUX AGENT_SKIP_NODE_BOOTSTRAP"):
+    if os.environ.get("OMNIWORKER_SKIP_NODE_BOOTSTRAP"):
         return
 
     helper = PROJECT_ROOT / "scripts" / "lib" / "node-bootstrap.sh"
     if not helper.is_file():
         return
 
-    flux-agent_home = os.environ.get("FLUX AGENT_HOME") or str(Path.home() / ".hermes")
+    omniworker_home = os.environ.get("OMNIWORKER_HOME") or str(Path.home() / ".hermes")
     try:
         # Helper writes logs to stderr; we ask bash to print `command -v node`
         # on stdout once ensure_node succeeds. Subshell PATH edits don't leak
@@ -1000,7 +1000,7 @@ def _ensure_tui_node() -> None:
                 "-c",
                 f'source "{helper}" >&2 && ensure_node >&2 && command -v node',
             ],
-            env={**os.environ, "FLUX AGENT_HOME": flux-agent_home},
+            env={**os.environ, "OMNIWORKER_HOME": omniworker_home},
             capture_output=True,
             text=True,
             check=False,
@@ -1015,7 +1015,7 @@ def _ensure_tui_node() -> None:
     if resolved:
         extras.append(Path(resolved).resolve().parent)
 
-    extras.extend([Path(flux-agent_home) / "node" / "bin", Path.home() / ".local" / "bin"])
+    extras.extend([Path(omniworker_home) / "node" / "bin", Path.home() / ".local" / "bin"])
 
     for extra in extras:
         s = str(extra)
@@ -1024,27 +1024,27 @@ def _ensure_tui_node() -> None:
     os.environ["PATH"] = os.pathsep.join(parts)
 
 
-def _find_bundled_tui(flux-agent_cli_dir: Path | None = None) -> Path | None:
+def _find_bundled_tui(omniworker_cli_dir: Path | None = None) -> Path | None:
     """Find a pre-built TUI entry.js bundled in the wheel."""
-    if flux-agent_cli_dir is None:
-        flux-agent_cli_dir = Path(__file__).parent
-    bundled = flux-agent_cli_dir / "tui_dist" / "entry.js"
+    if omniworker_cli_dir is None:
+        omniworker_cli_dir = Path(__file__).parent
+    bundled = omniworker_cli_dir / "tui_dist" / "entry.js"
     return bundled if bundled.is_file() else None
 
 
 def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
-    """TUI: --dev → tsx src; else node dist (FLUX AGENT_TUI_DIR prebuilt or esbuild)."""
+    """TUI: --dev → tsx src; else node dist (OMNIWORKER_TUI_DIR prebuilt or esbuild)."""
     _ensure_tui_node()
 
     def _node_bin(bin: str) -> str:
         if bin == "node":
-            env_node = os.environ.get("FLUX AGENT_NODE")
+            env_node = os.environ.get("OMNIWORKER_NODE")
             if env_node and os.path.isfile(env_node) and os.access(env_node, os.X_OK):
                 return env_node
         path = shutil.which(bin)
         if not path and bin == "node":
             try:
-                from flux-agent_cli.dep_ensure import ensure_dependency
+                from omniworker_cli.dep_ensure import ensure_dependency
                 if ensure_dependency("node"):
                     path = shutil.which("node")
             except Exception:
@@ -1055,12 +1055,12 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
         return path
 
     # Footgun: --dev against a prebuilt bundle that has no source/node_modules.
-    ext_dir = os.environ.get("FLUX AGENT_TUI_DIR")
+    ext_dir = os.environ.get("OMNIWORKER_TUI_DIR")
     if tui_dev and ext_dir:
         print(
-            f"Error: --dev is incompatible with FLUX AGENT_TUI_DIR={ext_dir}\n"
+            f"Error: --dev is incompatible with OMNIWORKER_TUI_DIR={ext_dir}\n"
             f"The prebuilt TUI has no source code to hot-reload.\n"
-            f"Unset FLUX AGENT_TUI_DIR (e.g. `unset FLUX AGENT_TUI_DIR`) to use --dev from a checkout.",
+            f"Unset OMNIWORKER_TUI_DIR (e.g. `unset OMNIWORKER_TUI_DIR`) to use --dev from a checkout.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -1083,7 +1083,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
     #    --dev flow: npm install if needed, then tsx src/entry.tsx.
     if _tui_need_npm_install(tui_dir):
         npm = _node_bin("npm")
-        if not os.environ.get("FLUX AGENT_QUIET"):
+        if not os.environ.get("OMNIWORKER_QUIET"):
             print("Installing TUI dependencies…")
         result = subprocess.run(
             [npm, "install", "--silent", "--no-fund", "--no-audit", "--progress=false"],
@@ -1151,7 +1151,7 @@ def _make_tui_argv(tui_dir: Path, tui_dev: bool) -> tuple[list[str], Path]:
 def _normalize_tui_toolsets(toolsets: object) -> list[str]:
     """Normalize argparse/Fire-style toolset input for the TUI subprocess."""
     try:
-        from flux-agent_cli.oneshot import _normalize_toolsets
+        from omniworker_cli.oneshot import _normalize_toolsets
 
         return _normalize_toolsets(toolsets) or []
     except (AttributeError, ImportError):
@@ -1199,12 +1199,12 @@ def _launch_tui(
         prefix="hermes-tui-active-session-", suffix=".json"
     )
     os.close(active_session_fd)
-    env["FLUX AGENT_TUI_ACTIVE_SESSION_FILE"] = active_session_file
-    env["FLUX AGENT_PYTHON_SRC_ROOT"] = os.environ.get(
-        "FLUX AGENT_PYTHON_SRC_ROOT", str(PROJECT_ROOT)
+    env["OMNIWORKER_TUI_ACTIVE_SESSION_FILE"] = active_session_file
+    env["OMNIWORKER_PYTHON_SRC_ROOT"] = os.environ.get(
+        "OMNIWORKER_PYTHON_SRC_ROOT", str(PROJECT_ROOT)
     )
-    env.setdefault("FLUX AGENT_PYTHON", sys.executable)
-    env.setdefault("FLUX AGENT_CWD", os.getcwd())
+    env.setdefault("OMNIWORKER_PYTHON", sys.executable)
+    env.setdefault("OMNIWORKER_CWD", os.getcwd())
     env.setdefault("NODE_ENV", "development" if tui_dev else "production")
 
     wt_info = None
@@ -1226,18 +1226,18 @@ def _launch_tui(
             wt_info = None
         if not wt_info:
             sys.exit(1)
-        env["FLUX AGENT_CWD"] = wt_info["path"]
+        env["OMNIWORKER_CWD"] = wt_info["path"]
         env["TERMINAL_CWD"] = wt_info["path"]
 
     if model:
-        env["FLUX AGENT_MODEL"] = model
-        env["FLUX AGENT_INFERENCE_MODEL"] = model
+        env["OMNIWORKER_MODEL"] = model
+        env["OMNIWORKER_INFERENCE_MODEL"] = model
     if provider:
-        env["FLUX AGENT_TUI_PROVIDER"] = provider
-        env["FLUX AGENT_INFERENCE_PROVIDER"] = provider
+        env["OMNIWORKER_TUI_PROVIDER"] = provider
+        env["OMNIWORKER_INFERENCE_PROVIDER"] = provider
     tui_toolsets = _normalize_tui_toolsets(toolsets)
     if tui_toolsets:
-        env["FLUX AGENT_TUI_TOOLSETS"] = ",".join(tui_toolsets)
+        env["OMNIWORKER_TUI_TOOLSETS"] = ",".join(tui_toolsets)
     if skills:
         if isinstance(skills, (list, tuple)):
             flattened = []
@@ -1246,27 +1246,27 @@ def _launch_tui(
                     part.strip() for part in str(item).split(",") if part.strip()
                 )
             if flattened:
-                env["FLUX AGENT_TUI_SKILLS"] = ",".join(flattened)
+                env["OMNIWORKER_TUI_SKILLS"] = ",".join(flattened)
         else:
             value = str(skills).strip()
             if value:
-                env["FLUX AGENT_TUI_SKILLS"] = value
+                env["OMNIWORKER_TUI_SKILLS"] = value
     if query:
-        env["FLUX AGENT_TUI_QUERY"] = query
+        env["OMNIWORKER_TUI_QUERY"] = query
     if image:
-        env["FLUX AGENT_TUI_IMAGE"] = image
+        env["OMNIWORKER_TUI_IMAGE"] = image
     if checkpoints:
-        env["FLUX AGENT_TUI_CHECKPOINTS"] = "1"
+        env["OMNIWORKER_TUI_CHECKPOINTS"] = "1"
     if pass_session_id:
-        env["FLUX AGENT_TUI_PASS_SESSION_ID"] = "1"
+        env["OMNIWORKER_TUI_PASS_SESSION_ID"] = "1"
     if max_turns is not None:
-        env["FLUX AGENT_TUI_MAX_TURNS"] = str(max_turns)
+        env["OMNIWORKER_TUI_MAX_TURNS"] = str(max_turns)
     if verbose:
-        env["FLUX AGENT_TUI_TOOL_PROGRESS"] = "verbose"
+        env["OMNIWORKER_TUI_TOOL_PROGRESS"] = "verbose"
     elif quiet:
-        env["FLUX AGENT_TUI_TOOL_PROGRESS"] = "off"
+        env["OMNIWORKER_TUI_TOOL_PROGRESS"] = "off"
     if accept_hooks:
-        env["FLUX AGENT_ACCEPT_HOOKS"] = "1"
+        env["OMNIWORKER_ACCEPT_HOOKS"] = "1"
     # Guarantee an 8GB V8 heap + exposed GC for the TUI. Default node cap is
     # ~1.5–4GB depending on version and can fatal-OOM on long sessions with
     # large transcripts / reasoning blobs. Token-level merge: respect any
@@ -1279,7 +1279,7 @@ def _launch_tui(
         _tokens.append("--expose-gc")
     env["NODE_OPTIONS"] = " ".join(_tokens)
     if resume_session_id:
-        env["FLUX AGENT_TUI_RESUME"] = resume_session_id
+        env["OMNIWORKER_TUI_RESUME"] = resume_session_id
 
     argv, cwd = _make_tui_argv(tui_dir, tui_dev)
     code: Optional[int] = None
@@ -1307,7 +1307,7 @@ def _launch_tui(
     # preserve_inherited=False ensures --tui and other flags are NOT carried
     # into the update subcommand.
     if code == 42:
-        from flux-agent_cli.relaunch import relaunch
+        from omniworker_cli.relaunch import relaunch
 
         print()
         print("⚕ Launching update...")
@@ -1318,7 +1318,7 @@ def _launch_tui(
 
 
 def _pin_kanban_board_env() -> None:
-    """Pin the active kanban board into ``FLUX AGENT_KANBAN_BOARD`` for the chat session.
+    """Pin the active kanban board into ``OMNIWORKER_KANBAN_BOARD`` for the chat session.
 
     Without this, in-process tools (``kanban_*``) and shelled-out CLI calls
     (``hermes kanban …``) resolve the board on different paths: the env-pin if
@@ -1328,19 +1328,19 @@ def _pin_kanban_board_env() -> None:
     calls hit board B (#20074). Pinning at chat boot mirrors what the
     dispatcher already does for spawned workers.
     """
-    if os.environ.get("FLUX AGENT_KANBAN_BOARD"):
+    if os.environ.get("OMNIWORKER_KANBAN_BOARD"):
         return
     try:
-        from flux-agent_cli.kanban_db import get_current_board
+        from omniworker_cli.kanban_db import get_current_board
 
-        os.environ["FLUX AGENT_KANBAN_BOARD"] = get_current_board()
+        os.environ["OMNIWORKER_KANBAN_BOARD"] = get_current_board()
     except Exception:
         pass
 
 
 def cmd_chat(args):
     """Run interactive chat CLI."""
-    use_tui = getattr(args, "tui", False) or os.environ.get("FLUX AGENT_TUI") == "1"
+    use_tui = getattr(args, "tui", False) or os.environ.get("OMNIWORKER_TUI") == "1"
 
     # Resolve --continue into --resume with the latest session or by name
     continue_val = getattr(args, "continue_last", None)
@@ -1386,7 +1386,7 @@ def cmd_chat(args):
         print("  Run:  hermes setup")
         print()
 
-        from flux-agent_cli.setup import (
+        from omniworker_cli.setup import (
             is_interactive_stdin,
             print_noninteractive_setup_guidance,
         )
@@ -1410,7 +1410,7 @@ def cmd_chat(args):
 
     # Start update check in background (runs while other init happens)
     try:
-        from flux-agent_cli.banner import prefetch_update_check
+        from omniworker_cli.banner import prefetch_update_check
 
         prefetch_update_check()
     except Exception:
@@ -1426,7 +1426,7 @@ def cmd_chat(args):
 
     # --yolo: bypass all dangerous command approvals
     if getattr(args, "yolo", False):
-        os.environ["FLUX AGENT_YOLO_MODE"] = "1"
+        os.environ["OMNIWORKER_YOLO_MODE"] = "1"
 
     # --ignore-user-config: make load_cli_config() / load_config() skip the
     # user's ~/.hermes/config.yaml and return built-in defaults. Set BEFORE
@@ -1434,17 +1434,17 @@ def cmd_chat(args):
     # import time). Credentials in .env are still loaded — this flag only
     # ignores behavioral/config settings.
     if getattr(args, "ignore_user_config", False):
-        os.environ["FLUX AGENT_IGNORE_USER_CONFIG"] = "1"
+        os.environ["OMNIWORKER_IGNORE_USER_CONFIG"] = "1"
 
     # --ignore-rules: skip auto-injection of AGENTS.md/SOUL.md/.cursorrules
     # (rules), memory entries, and any preloaded skills coming from user config.
     # Maps to AIAgent(skip_context_files=True, skip_memory=True).
     if getattr(args, "ignore_rules", False):
-        os.environ["FLUX AGENT_IGNORE_RULES"] = "1"
+        os.environ["OMNIWORKER_IGNORE_RULES"] = "1"
 
     # --source: tag session source for filtering (e.g. 'tool' for third-party integrations)
     if getattr(args, "source", None):
-        os.environ["FLUX AGENT_SESSION_SOURCE"] = args.source
+        os.environ["OMNIWORKER_SESSION_SOURCE"] = args.source
 
     _pin_kanban_board_env()
 
@@ -1500,7 +1500,7 @@ def cmd_chat(args):
 
 def cmd_gateway(args):
     """Gateway management commands."""
-    from flux-agent_cli.gateway import gateway_command
+    from omniworker_cli.gateway import gateway_command
 
     gateway_command(args)
 
@@ -1509,7 +1509,7 @@ def cmd_proxy(args):
     """Local OpenAI-compatible proxy to OAuth providers."""
     # Lazy import — pulls in aiohttp, which is gated behind an extras install
     # for users who don't run the proxy or the messaging gateway.
-    from flux-agent_cli.proxy.cli import cmd_proxy as _cmd_proxy
+    from omniworker_cli.proxy.cli import cmd_proxy as _cmd_proxy
 
     rc = _cmd_proxy(args)
     if isinstance(rc, int) and rc != 0:
@@ -1519,7 +1519,7 @@ def cmd_proxy(args):
 def cmd_whatsapp(args):
     """Set up WhatsApp: choose mode, configure, install bridge, pair via QR."""
     _require_tty("whatsapp")
-    from flux-agent_cli.config import get_env_value, save_env_value
+    from omniworker_cli.config import get_env_value, save_env_value
 
     print()
     print("⚕ WhatsApp Setup")
@@ -1660,7 +1660,7 @@ def cmd_whatsapp(args):
         print("✓ Bridge dependencies already installed")
 
     # ── Step 5: Check for existing session ───────────────────────────────
-    session_dir = get_flux-agent_home() / "whatsapp" / "session"
+    session_dir = get_omniworker_home() / "whatsapp" / "session"
     session_dir.mkdir(parents=True, exist_ok=True)
 
     if (session_dir / "creds.json").exists():
@@ -1740,15 +1740,15 @@ def cmd_whatsapp(args):
 
 def cmd_setup(args):
     """Interactive setup wizard."""
-    from flux-agent_cli.setup import run_setup_wizard
+    from omniworker_cli.setup import run_setup_wizard
 
     run_setup_wizard(args)
 
 
 def cmd_postinstall(args):
     """One-shot bootstrap for pip users: install non-Python deps + run setup."""
-    from flux-agent_cli.config import stamp_install_method
-    from flux-agent_cli.dep_ensure import ensure_dependency
+    from omniworker_cli.config import stamp_install_method
+    from omniworker_cli.dep_ensure import ensure_dependency
 
     stamp_install_method("pip")
 
@@ -1795,17 +1795,17 @@ def select_provider_and_model(args=None):
     provider picker, credential prompting, model selection, and config
     persistence.
     """
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         resolve_provider,
         AuthError,
         format_auth_error,
     )
-    from flux-agent_cli.config import (
+    from omniworker_cli.config import (
         get_compatible_custom_providers,
         load_config,
         get_env_value,
     )
-    from flux-agent_cli.providers import resolve_provider_full
+    from omniworker_cli.providers import resolve_provider_full
 
     config = load_config()
     current_model = config.get("model")
@@ -1821,7 +1821,7 @@ def select_provider_and_model(args=None):
         config_provider = model_cfg.get("provider")
 
     effective_provider = (
-        config_provider or os.getenv("FLUX AGENT_INFERENCE_PROVIDER") or "auto"
+        config_provider or os.getenv("OMNIWORKER_INFERENCE_PROVIDER") or "auto"
     )
     compatible_custom_providers = get_compatible_custom_providers(config)
     active = None
@@ -1853,7 +1853,7 @@ def select_provider_and_model(args=None):
     if active == "openrouter" and get_env_value("OPENAI_BASE_URL"):
         active = "custom"
 
-    from flux-agent_cli.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS
+    from omniworker_cli.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS
 
     provider_labels = dict(_PROVIDER_LABELS)  # derive from canonical list
     active_label = provider_labels.get(active, active) if active else "none"
@@ -1867,7 +1867,7 @@ def select_provider_and_model(args=None):
     all_providers = [(p.slug, p.tui_desc) for p in CANONICAL_PROVIDERS]
 
     def _named_custom_provider_map(cfg) -> dict[str, dict[str, str]]:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
 
         # Build a lookup of raw (un-expanded) api_key templates keyed by a
         # stable identity. We intentionally bypass
@@ -2102,7 +2102,7 @@ def _clear_stale_openai_base_url():
     requests to the old custom endpoint instead of the newly selected
     provider.  See issue #5161.
     """
-    from flux-agent_cli.config import get_env_value, save_env_value, load_config
+    from omniworker_cli.config import get_env_value, save_env_value, load_config
 
     cfg = load_config()
     model_cfg = cfg.get("model", {})
@@ -2181,7 +2181,7 @@ def _save_aux_choice(
     other task-specific settings are preserved untouched. The main model
     config (``model.default``/``model.provider``) is never modified.
     """
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     cfg = load_config()
     aux = cfg.setdefault("auxiliary", {})
@@ -2201,7 +2201,7 @@ def _save_aux_choice(
 
 def _reset_aux_to_auto() -> int:
     """Reset every known aux task back to auto/empty. Returns number reset."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     cfg = load_config()
     aux = cfg.setdefault("auxiliary", {})
@@ -2235,7 +2235,7 @@ def _aux_config_menu() -> None:
     Loops until the user picks "Back" so multiple tasks can be configured
     without returning to the main provider menu.
     """
-    from flux-agent_cli.config import load_config
+    from omniworker_cli.config import load_config
 
     while True:
         cfg = load_config()
@@ -2296,8 +2296,8 @@ def _aux_select_for_task(task: str) -> None:
     inside the aux picker — users set up new providers through the normal
     ``hermes model`` flow, then route aux tasks to them here.
     """
-    from flux-agent_cli.config import load_config
-    from flux-agent_cli.model_switch import list_authenticated_providers
+    from omniworker_cli.config import load_config
+    from omniworker_cli.model_switch import list_authenticated_providers
 
     cfg = load_config()
     aux = cfg.get("auxiliary", {}) if isinstance(cfg.get("auxiliary"), dict) else {}
@@ -2374,8 +2374,8 @@ def _aux_flow_provider_model(
     current_model: str = "",
 ) -> None:
     """Prompt for a model under an already-authenticated provider, save to aux."""
-    from flux-agent_cli.auth import _prompt_model_selection
-    from flux-agent_cli.models import get_pricing_for_provider
+    from omniworker_cli.auth import _prompt_model_selection
+    from omniworker_cli.models import get_pricing_for_provider
 
     display_name = next((name for key, name, _ in _AUX_TASKS if key == task), task)
 
@@ -2481,7 +2481,7 @@ def _prompt_provider_choice(choices, *, default=0):
     if the user cancels.
     """
     try:
-        from flux-agent_cli.setup import _curses_prompt_choice
+        from omniworker_cli.setup import _curses_prompt_choice
 
         idx = _curses_prompt_choice("Select provider:", choices, default)
         if idx >= 0:
@@ -2514,13 +2514,13 @@ def _prompt_provider_choice(choices, *, default=0):
 
 def _model_flow_openrouter(config, current_model=""):
     """OpenRouter provider: ensure API key, then pick model."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         ProviderConfig,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from flux-agent_cli.config import get_env_value
+    from omniworker_cli.config import get_env_value
 
     # Route through _prompt_api_key so users can replace a stale/broken key
     # in-flow (K/R/C) instead of having to edit ~/.hermes/.env by hand. The
@@ -2541,7 +2541,7 @@ def _model_flow_openrouter(config, current_model=""):
     if abort:
         return
 
-    from flux-agent_cli.models import model_ids, get_pricing_for_provider
+    from omniworker_cli.models import model_ids, get_pricing_for_provider
 
     openrouter_models = model_ids(force_refresh=True)
 
@@ -2555,7 +2555,7 @@ def _model_flow_openrouter(config, current_model=""):
         _save_model_choice(selected)
 
         # Update config provider and deactivate any OAuth provider
-        from flux-agent_cli.config import load_config, save_config
+        from omniworker_cli.config import load_config, save_config
 
         cfg = load_config()
         model = cfg.get("model")
@@ -2574,13 +2574,13 @@ def _model_flow_openrouter(config, current_model=""):
 
 def _model_flow_ai_gateway(config, current_model=""):
     """Vercel AI Gateway provider: ensure API key, then pick model with pricing."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from flux-agent_cli.config import get_env_value
+    from omniworker_cli.config import get_env_value
 
     # Route through _prompt_api_key so users can replace a stale/broken key
     # in-flow (K/R/C) instead of having to edit ~/.hermes/.env by hand.
@@ -2596,7 +2596,7 @@ def _model_flow_ai_gateway(config, current_model=""):
     if abort:
         return
 
-    from flux-agent_cli.models import ai_gateway_model_ids, get_pricing_for_provider
+    from omniworker_cli.models import ai_gateway_model_ids, get_pricing_for_provider
 
     models_list = ai_gateway_model_ids(force_refresh=True)
     pricing = get_pricing_for_provider("ai-gateway", force_refresh=True)
@@ -2607,7 +2607,7 @@ def _model_flow_ai_gateway(config, current_model=""):
     if selected:
         _save_model_choice(selected)
 
-        from flux-agent_cli.config import load_config, save_config
+        from omniworker_cli.config import load_config, save_config
 
         cfg = load_config()
         model = cfg.get("model")
@@ -2626,7 +2626,7 @@ def _model_flow_ai_gateway(config, current_model=""):
 
 def _model_flow_nous(config, current_model="", args=None):
     """Nous Portal provider: ensure logged in, then pick model."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         get_provider_auth_state,
         _prompt_model_selection,
         _save_model_choice,
@@ -2637,13 +2637,13 @@ def _model_flow_nous(config, current_model="", args=None):
         _login_nous,
         PROVIDER_REGISTRY,
     )
-    from flux-agent_cli.config import (
+    from omniworker_cli.config import (
         get_env_value,
         load_config,
         save_config,
         save_env_value,
     )
-    from flux-agent_cli.nous_subscription import prompt_enable_tool_gateway
+    from omniworker_cli.nous_subscription import prompt_enable_tool_gateway
 
     state = get_provider_auth_state("nous")
     if not state or not state.get("access_token"):
@@ -2679,7 +2679,7 @@ def _model_flow_nous(config, current_model="", args=None):
     # Already logged in — use curated model list (same as OpenRouter defaults).
     # The live /models endpoint returns hundreds of models; the curated list
     # shows only agentic models users recognize from OpenRouter.
-    from flux-agent_cli.models import (
+    from omniworker_cli.models import (
         get_curated_nous_model_ids,
         get_pricing_for_provider,
         check_nous_free_tier,
@@ -2765,7 +2765,7 @@ def _model_flow_nous(config, current_model="", args=None):
     if free_tier and not model_ids:
         print("No free models currently available.")
         if unavailable_models:
-            from flux-agent_cli.auth import DEFAULT_NOUS_PORTAL_URL
+            from omniworker_cli.auth import DEFAULT_NOUS_PORTAL_URL
 
             _url = (_nous_portal_url or DEFAULT_NOUS_PORTAL_URL).rstrip("/")
             print(f"Upgrade at {_url} to access paid models.")
@@ -2815,7 +2815,7 @@ def _model_flow_nous(config, current_model="", args=None):
 
 def _model_flow_openai_codex(config, current_model=""):
     """OpenAI Codex provider: ensure logged in, then pick model."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         get_codex_auth_status,
         _prompt_model_selection,
         _save_model_choice,
@@ -2824,7 +2824,7 @@ def _model_flow_openai_codex(config, current_model=""):
         PROVIDER_REGISTRY,
         DEFAULT_CODEX_BASE_URL,
     )
-    from flux-agent_cli.codex_models import get_codex_model_ids
+    from omniworker_cli.codex_models import get_codex_model_ids
 
     status = get_codex_auth_status()
     if status.get("logged_in"):
@@ -2885,7 +2885,7 @@ def _model_flow_openai_codex(config, current_model=""):
         pass
     if not _codex_token:
         try:
-            from flux-agent_cli.auth import resolve_codex_runtime_credentials
+            from omniworker_cli.auth import resolve_codex_runtime_credentials
 
             _codex_creds = resolve_codex_runtime_credentials()
             _codex_token = _codex_creds.get("api_key")
@@ -2905,7 +2905,7 @@ def _model_flow_openai_codex(config, current_model=""):
 
 def _model_flow_xai_oauth(_config, current_model="", *, args=None):
     """xAI Grok OAuth (SuperGrok Subscription) provider: ensure logged in, then pick model."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         get_xai_oauth_auth_status,
         _prompt_model_selection,
         _save_model_choice,
@@ -2915,7 +2915,7 @@ def _model_flow_xai_oauth(_config, current_model="", *, args=None):
         DEFAULT_XAI_OAUTH_BASE_URL,
         PROVIDER_REGISTRY,
     )
-    from flux-agent_cli.models import _PROVIDER_MODELS
+    from omniworker_cli.models import _PROVIDER_MODELS
 
     status = get_xai_oauth_auth_status()
     if status.get("logged_in"):
@@ -3004,7 +3004,7 @@ _DEFAULT_QWEN_PORTAL_MODELS = [
 
 def _model_flow_qwen_oauth(_config, current_model=""):
     """Qwen OAuth provider: reuse local Qwen CLI login, then pick model."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         get_qwen_auth_status,
         resolve_qwen_runtime_credentials,
         _prompt_model_selection,
@@ -3012,7 +3012,7 @@ def _model_flow_qwen_oauth(_config, current_model=""):
         _update_config_for_provider,
         DEFAULT_QWEN_BASE_URL,
     )
-    from flux-agent_cli.models import fetch_api_models
+    from omniworker_cli.models import fetch_api_models
 
     status = get_qwen_auth_status()
     if not status.get("logged_in"):
@@ -3047,7 +3047,7 @@ def _model_flow_qwen_oauth(_config, current_model=""):
 
 def _model_flow_minimax_oauth(config, current_model="", args=None):
     """MiniMax OAuth provider: ensure logged in, then pick model."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         get_provider_auth_state,
         _prompt_model_selection,
         _save_model_choice,
@@ -3083,7 +3083,7 @@ def _model_flow_minimax_oauth(config, current_model="", args=None):
         print(format_auth_error(exc))
         return
 
-    from flux-agent_cli.models import _PROVIDER_MODELS
+    from omniworker_cli.models import _PROVIDER_MODELS
 
     model_ids = _PROVIDER_MODELS.get("minimax-oauth", [])
     selected = _prompt_model_selection(model_ids, current_model)
@@ -3104,7 +3104,7 @@ def _model_flow_google_gemini_cli(_config, current_model=""):
       4. Prompt user to pick a model.
       5. Save to ~/.hermes/config.yaml.
     """
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         DEFAULT_GEMINI_CLOUDCODE_BASE_URL,
         get_gemini_oauth_auth_status,
         resolve_gemini_oauth_runtime_credentials,
@@ -3112,7 +3112,7 @@ def _model_flow_google_gemini_cli(_config, current_model=""):
         _save_model_choice,
         _update_config_for_provider,
     )
-    from flux-agent_cli.models import _PROVIDER_MODELS
+    from omniworker_cli.models import _PROVIDER_MODELS
 
     print()
     print("⚠  Google considers using the Gemini CLI OAuth client with third-party")
@@ -3175,8 +3175,8 @@ def _model_flow_custom(config):
     Automatically saves the endpoint to ``custom_providers`` in config.yaml
     so it appears in the provider menu on subsequent runs.
     """
-    from flux-agent_cli.auth import _save_model_choice, deactivate_provider
-    from flux-agent_cli.config import get_env_value, load_config, save_config
+    from omniworker_cli.auth import _save_model_choice, deactivate_provider
+    from omniworker_cli.config import get_env_value, load_config, save_config
 
     current_url = get_env_value("OPENAI_BASE_URL") or ""
     current_key = get_env_value("OPENAI_API_KEY") or ""
@@ -3237,7 +3237,7 @@ def _model_flow_custom(config):
             print(f"  Updated URL: {effective_url}")
         print()
 
-    from flux-agent_cli.models import probe_api_models
+    from omniworker_cli.models import probe_api_models
 
     probe = probe_api_models(effective_key, effective_url)
     if probe.get("used_fallback") and probe.get("resolved_base_url"):
@@ -3394,7 +3394,7 @@ def _prompt_custom_api_mode_selection(base_url: str, current_api_mode: str = "")
 
     Returns an explicit mode string, or None to keep auto-detect behavior.
     """
-    from flux-agent_cli.runtime_provider import _detect_api_mode_for_url
+    from omniworker_cli.runtime_provider import _detect_api_mode_for_url
 
     detected_mode = _detect_api_mode_for_url(base_url)
     normalized_current = str(current_api_mode or "").strip().lower()
@@ -3502,7 +3502,7 @@ def _save_custom_provider(
     model name, context_length, and api_mode but doesn't add a duplicate entry.
     Uses *name* when provided, otherwise auto-generates from the URL.
     """
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     cfg = load_config()
     providers = cfg.get("custom_providers") or []
@@ -3590,14 +3590,14 @@ def _model_flow_azure_foundry(config, current_model=""):
     :func:`agent.model_metadata.get_model_context_length` chain
     (models.dev, provider metadata, hardcoded family fallbacks).
     """
-    from flux-agent_cli.auth import _save_model_choice, deactivate_provider  # noqa: F401
-    from flux-agent_cli.config import (
+    from omniworker_cli.auth import _save_model_choice, deactivate_provider  # noqa: F401
+    from omniworker_cli.config import (
         get_env_value,
         save_env_value,
         load_config,
         save_config,
     )
-    from flux-agent_cli import azure_detect
+    from omniworker_cli import azure_detect
     import getpass
 
     # ── Load current Azure Foundry configuration ─────────────────────
@@ -3926,7 +3926,7 @@ def _model_flow_azure_foundry(config, current_model=""):
 
 def _remove_custom_provider(config):
     """Let the user remove a saved custom provider from config.yaml."""
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     cfg = load_config()
     providers = cfg.get("custom_providers") or []
@@ -3961,7 +3961,7 @@ def _remove_custom_provider(config):
             title="Select provider to remove:",
         )
         idx = menu.show()
-        from flux-agent_cli.curses_ui import flush_stdin
+        from omniworker_cli.curses_ui import flush_stdin
 
         flush_stdin()
         print()
@@ -3995,9 +3995,9 @@ def _model_flow_named_custom(config, provider_info):
     If a model was previously saved, it is pre-selected in the menu.
     Falls back to the saved model if probing fails.
     """
-    from flux-agent_cli.auth import _save_model_choice, deactivate_provider
-    from flux-agent_cli.config import load_config, save_config
-    from flux-agent_cli.models import fetch_api_models
+    from omniworker_cli.auth import _save_model_choice, deactivate_provider
+    from omniworker_cli.config import load_config, save_config
+    from omniworker_cli.models import fetch_api_models
 
     name = provider_info["name"]
     base_url = provider_info["base_url"]
@@ -4047,7 +4047,7 @@ def _model_flow_named_custom(config, provider_info):
                 title=f"Select model from {name}:",
             )
             idx = menu.show()
-            from flux-agent_cli.curses_ui import flush_stdin
+            from omniworker_cli.curses_ui import flush_stdin
 
             flush_stdin()
             print()
@@ -4158,7 +4158,7 @@ def _model_flow_named_custom(config, provider_info):
 
 
 # Curated model lists for direct API-key providers — single source in models.py
-from flux-agent_cli.models import _PROVIDER_MODELS
+from omniworker_cli.models import _PROVIDER_MODELS
 
 
 def _current_reasoning_effort(config) -> str:
@@ -4223,7 +4223,7 @@ def _prompt_reasoning_effort_selection(efforts, current_effort=""):
             title="Select reasoning effort:",
         )
         idx = menu.show()
-        from flux-agent_cli.curses_ui import flush_stdin
+        from omniworker_cli.curses_ui import flush_stdin
 
         flush_stdin()
         if idx is None:
@@ -4266,15 +4266,15 @@ def _prompt_reasoning_effort_selection(efforts, current_effort=""):
 
 def _model_flow_copilot(config, current_model=""):
     """GitHub Copilot flow using env vars, gh CLI, or OAuth device code."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
         resolve_api_key_provider_credentials,
     )
-    from flux-agent_cli.config import save_env_value, load_config, save_config
-    from flux-agent_cli.models import (
+    from omniworker_cli.config import save_env_value, load_config, save_config
+    from omniworker_cli.models import (
         fetch_api_models,
         fetch_github_model_catalog,
         github_model_reasoning_efforts,
@@ -4313,7 +4313,7 @@ def _model_flow_copilot(config, current_model=""):
 
         if choice == "1":
             try:
-                from flux-agent_cli.copilot_auth import copilot_device_code_login
+                from omniworker_cli.copilot_auth import copilot_device_code_login
 
                 token = copilot_device_code_login()
                 if token:
@@ -4339,7 +4339,7 @@ def _model_flow_copilot(config, current_model=""):
                 return
             # Validate token type
             try:
-                from flux-agent_cli.copilot_auth import validate_copilot_token
+                from omniworker_cli.copilot_auth import validate_copilot_token
 
                 valid, msg = validate_copilot_token(new_key)
                 if not valid:
@@ -4457,7 +4457,7 @@ def _model_flow_copilot(config, current_model=""):
 
 def _model_flow_copilot_acp(config, current_model=""):
     """GitHub Copilot ACP flow using the local Copilot CLI."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
@@ -4466,11 +4466,11 @@ def _model_flow_copilot_acp(config, current_model=""):
         resolve_api_key_provider_credentials,
         resolve_external_process_provider_credentials,
     )
-    from flux-agent_cli.models import (
+    from omniworker_cli.models import (
         fetch_github_model_catalog,
         normalize_copilot_model_id,
     )
-    from flux-agent_cli.config import load_config, save_config
+    from omniworker_cli.config import load_config, save_config
 
     del config
 
@@ -4495,7 +4495,7 @@ def _model_flow_copilot_acp(config, current_model=""):
     except Exception as exc:
         print(f"  ⚠ {exc}")
         print(
-            "  Set FLUX AGENT_COPILOT_ACP_COMMAND or COPILOT_CLI_PATH if Copilot CLI is installed elsewhere."
+            "  Set OMNIWORKER_COPILOT_ACP_COMMAND or COPILOT_CLI_PATH if Copilot CLI is installed elsewhere."
         )
         return
 
@@ -4581,8 +4581,8 @@ def _prompt_api_key(pconfig, existing_key: str, provider_id: str = "") -> tuple:
     """
     import getpass
 
-    from flux-agent_cli.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
-    from flux-agent_cli.config import save_env_value
+    from omniworker_cli.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
+    from omniworker_cli.config import save_env_value
 
     key_env = pconfig.api_key_env_vars[0] if pconfig.api_key_env_vars else ""
 
@@ -4657,14 +4657,14 @@ def _model_flow_kimi(config, current_model=""):
 
     No manual base URL prompt — endpoint is determined by key prefix.
     """
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         PROVIDER_REGISTRY,
         KIMI_CODE_BASE_URL,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from flux-agent_cli.config import (
+    from omniworker_cli.config import (
         get_env_value,
         save_env_value,
         load_config,
@@ -4754,7 +4754,7 @@ def _infer_stepfun_region(base_url: str) -> str:
 
 
 def _stepfun_base_url_for_region(region: str) -> str:
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         STEPFUN_STEP_PLAN_CN_BASE_URL,
         STEPFUN_STEP_PLAN_INTL_BASE_URL,
     )
@@ -4768,19 +4768,19 @@ def _stepfun_base_url_for_region(region: str) -> str:
 
 def _model_flow_stepfun(config, current_model=""):
     """StepFun Step Plan flow with region-specific endpoints."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from flux-agent_cli.config import (
+    from omniworker_cli.config import (
         get_env_value,
         save_env_value,
         load_config,
         save_config,
     )
-    from flux-agent_cli.models import fetch_api_models
+    from omniworker_cli.models import fetch_api_models
 
     provider_id = "stepfun"
     pconfig = PROVIDER_REGISTRY[provider_id]
@@ -4879,18 +4879,18 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
     For developers who don't have an AWS account but received a Bedrock API Key
     from their AWS admin. Works like any OpenAI-compatible endpoint.
     """
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from flux-agent_cli.config import (
+    from omniworker_cli.config import (
         load_config,
         save_config,
         get_env_value,
         save_env_value,
     )
-    from flux-agent_cli.models import _PROVIDER_MODELS
+    from omniworker_cli.models import _PROVIDER_MODELS
 
     mantle_base_url = f"https://bedrock-mantle.{region}.api.aws/v1"
 
@@ -4968,13 +4968,13 @@ def _model_flow_bedrock(config, current_model=""):
     Auth is handled by the AWS SDK default credential chain (env vars, profile,
     instance role), so no API key prompt is needed.
     """
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from flux-agent_cli.config import load_config, save_config
-    from flux-agent_cli.models import _PROVIDER_MODELS
+    from omniworker_cli.config import load_config, save_config
+    from omniworker_cli.models import _PROVIDER_MODELS
 
     # 1. Check for AWS credentials
     try:
@@ -5146,20 +5146,20 @@ def _model_flow_bedrock(config, current_model=""):
 
 def _model_flow_api_key_provider(config, provider_id, current_model=""):
     """Generic flow for API-key providers (z.ai, MiniMax, OpenCode, etc.)."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         LMSTUDIO_NOAUTH_PLACEHOLDER,
         PROVIDER_REGISTRY,
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from flux-agent_cli.config import (
+    from omniworker_cli.config import (
         get_env_value,
         save_env_value,
         load_config,
         save_config,
     )
-    from flux-agent_cli.models import (
+    from omniworker_cli.models import (
         fetch_api_models,
         opencode_model_api_mode,
         normalize_opencode_model_id,
@@ -5279,8 +5279,8 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
     # LM Studio: live /api/v1/models probe (no models.dev catalog).
     # Ollama Cloud: merged discovery (live API + models.dev + disk cache).
     if provider_id == "lmstudio":
-        from flux-agent_cli.auth import AuthError
-        from flux-agent_cli.models import fetch_lmstudio_models
+        from omniworker_cli.auth import AuthError
+        from omniworker_cli.models import fetch_lmstudio_models
 
         api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
         try:
@@ -5294,7 +5294,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         if model_list:
             print(f"  Found {len(model_list)} model(s) from LM Studio")
     elif provider_id == "ollama-cloud":
-        from flux-agent_cli.models import fetch_ollama_cloud_models
+        from omniworker_cli.models import fetch_ollama_cloud_models
 
         api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
         # During setup, force a live refresh so the picker reflects newly
@@ -5309,7 +5309,7 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         if model_list:
             print(f"  Found {len(model_list)} model(s) from Ollama Cloud")
     elif provider_id == "novita":
-        from flux-agent_cli.models import fetch_api_models
+        from omniworker_cli.models import fetch_api_models
 
         api_key_for_probe = existing_key or (get_env_value(key_env) if key_env else "")
         curated = _PROVIDER_MODELS.get(provider_id, [])
@@ -5435,7 +5435,7 @@ def _run_anthropic_oauth_flow(save_env_value):
         read_claude_code_credentials,
         is_claude_code_token_valid,
     )
-    from flux-agent_cli.config import (
+    from omniworker_cli.config import (
         save_anthropic_oauth_token,
         use_anthropic_claude_code_credentials,
     )
@@ -5450,7 +5450,7 @@ def _run_anthropic_oauth_flow(save_env_value):
         ):
             use_anthropic_claude_code_credentials(save_fn=save_env_value)
             print("  ✓ Claude Code credentials linked.")
-            from flux-agent_constants import display_flux-agent_home as _dhh_fn
+            from omniworker_constants import display_omniworker_home as _dhh_fn
 
             print(
                 f"    Flux Agent will use Claude's credential store directly instead of copying a setup-token into {_dhh_fn()}/.env."
@@ -5523,21 +5523,21 @@ def _run_anthropic_oauth_flow(save_env_value):
 
 def _model_flow_anthropic(config, current_model=""):
     """Flow for Anthropic provider — OAuth subscription, API key, or Claude Code creds."""
-    from flux-agent_cli.auth import (
+    from omniworker_cli.auth import (
         _prompt_model_selection,
         _save_model_choice,
         deactivate_provider,
     )
-    from flux-agent_cli.config import (
+    from omniworker_cli.config import (
         save_env_value,
         load_config,
         save_config,
         save_anthropic_api_key,
     )
-    from flux-agent_cli.models import _PROVIDER_MODELS
+    from omniworker_cli.models import _PROVIDER_MODELS
 
     # Check ALL credential sources
-    from flux-agent_cli.auth import get_anthropic_key
+    from omniworker_cli.auth import get_anthropic_key
 
     existing_key = get_anthropic_key()
     cc_available = False
@@ -5661,49 +5661,49 @@ def _model_flow_anthropic(config, current_model=""):
 
 def cmd_login(args):
     """Authenticate Flux Agent CLI with a provider."""
-    from flux-agent_cli.auth import login_command
+    from omniworker_cli.auth import login_command
 
     login_command(args)
 
 
 def cmd_logout(args):
     """Clear provider authentication."""
-    from flux-agent_cli.auth import logout_command
+    from omniworker_cli.auth import logout_command
 
     logout_command(args)
 
 
 def cmd_auth(args):
     """Manage pooled credentials."""
-    from flux-agent_cli.auth_commands import auth_command
+    from omniworker_cli.auth_commands import auth_command
 
     auth_command(args)
 
 
 def cmd_status(args):
     """Show status of all components."""
-    from flux-agent_cli.status import show_status
+    from omniworker_cli.status import show_status
 
     show_status(args)
 
 
 def cmd_cron(args):
     """Cron job management."""
-    from flux-agent_cli.cron import cron_command
+    from omniworker_cli.cron import cron_command
 
     cron_command(args)
 
 
 def cmd_patterns(args):
     """Auto-detected behavior pattern management."""
-    from flux-agent_cli.autolearning import patterns_command
+    from omniworker_cli.autolearning import patterns_command
 
     patterns_command(args)
 
 
 def cmd_webhook(args):
     """Webhook subscription management."""
-    from flux-agent_cli.webhook import webhook_command
+    from omniworker_cli.webhook import webhook_command
 
     webhook_command(args)
 
@@ -5731,7 +5731,7 @@ def cmd_slack(args):
         return 1
 
     if sub == "manifest":
-        from flux-agent_cli.slack_cli import slack_manifest_command
+        from omniworker_cli.slack_cli import slack_manifest_command
 
         return slack_manifest_command(args)
 
@@ -5741,42 +5741,42 @@ def cmd_slack(args):
 
 def cmd_kanban(args):
     """Multi-profile collaboration board."""
-    from flux-agent_cli.kanban import kanban_command
+    from omniworker_cli.kanban import kanban_command
 
     return kanban_command(args)
 
 
 def cmd_hooks(args):
     """Shell-hook inspection and management."""
-    from flux-agent_cli.hooks import hooks_command
+    from omniworker_cli.hooks import hooks_command
 
     hooks_command(args)
 
 
 def cmd_doctor(args):
     """Check configuration and dependencies."""
-    from flux-agent_cli.doctor import run_doctor
+    from omniworker_cli.doctor import run_doctor
 
     run_doctor(args)
 
 
 def cmd_dump(args):
     """Dump setup summary for support/debugging."""
-    from flux-agent_cli.dump import run_dump
+    from omniworker_cli.dump import run_dump
 
     run_dump(args)
 
 
 def cmd_debug(args):
     """Debug tools (share report, etc.)."""
-    from flux-agent_cli.debug import run_debug
+    from omniworker_cli.debug import run_debug
 
     run_debug(args)
 
 
 def cmd_config(args):
     """Configuration management."""
-    from flux-agent_cli.config import config_command
+    from omniworker_cli.config import config_command
 
     config_command(args)
 
@@ -5784,18 +5784,18 @@ def cmd_config(args):
 def cmd_backup(args):
     """Back up Flux Agent home directory to a zip file."""
     if getattr(args, "quick", False):
-        from flux-agent_cli.backup import run_quick_backup
+        from omniworker_cli.backup import run_quick_backup
 
         run_quick_backup(args)
     else:
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
 
         run_backup(args)
 
 
 def cmd_import(args):
     """Restore a Flux Agent backup from a zip file."""
-    from flux-agent_cli.backup import run_import
+    from omniworker_cli.backup import run_import
 
     run_import(args)
 
@@ -5823,8 +5823,8 @@ def cmd_version(args):
 
     # Show update status (synchronous — acceptable since user asked for version info)
     try:
-        from flux-agent_cli.banner import check_for_updates
-        from flux-agent_cli.config import recommended_update_command
+        from omniworker_cli.banner import check_for_updates
+        from omniworker_cli.config import recommended_update_command
 
         behind = check_for_updates()
         if behind and behind > 0:
@@ -5842,7 +5842,7 @@ def cmd_version(args):
 def cmd_uninstall(args):
     """Uninstall Flux Agent Agent."""
     _require_tty("uninstall")
-    from flux-agent_cli.uninstall import run_uninstall
+    from omniworker_cli.uninstall import run_uninstall
 
     run_uninstall(args)
 
@@ -5887,9 +5887,9 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
     """
     import json as _json
     import uuid as _uuid
-    from flux-agent_constants import get_flux-agent_home
+    from omniworker_constants import get_omniworker_home
 
-    home = get_flux-agent_home()
+    home = get_omniworker_home()
     prompt_path = home / ".update_prompt.json"
     response_path = home / ".update_response"
 
@@ -5928,12 +5928,12 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
 def _web_ui_build_needed(web_dir: Path) -> bool:
     """Return True if the web UI dist is missing or stale.
 
-    The Vite build outputs to ``flux-agent_cli/web_dist/`` (per vite.config.ts
-    outDir: "../flux-agent_cli/web_dist"), NOT to ``web/dist/``.  Uses the Vite
+    The Vite build outputs to ``omniworker_cli/web_dist/`` (per vite.config.ts
+    outDir: "../omniworker_cli/web_dist"), NOT to ``web/dist/``.  Uses the Vite
     manifest as the sentinel because it is written last and therefore has the
     newest mtime of any build output.
     """
-    dist_dir = web_dir.parent / "flux-agent_cli" / "web_dist"
+    dist_dir = web_dir.parent / "omniworker_cli" / "web_dist"
     sentinel = dist_dir / ".vite" / "manifest.json"
     if not sentinel.exists():
         sentinel = dist_dir / "index.html"
@@ -6025,7 +6025,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     # (or similar) and will raise UnicodeEncodeError on arrow / check
     # glyphs unless PYTHONIOENCODING=utf-8 is set. Routing every print
     # in this function through _say() with errors="replace" keeps the
-    # build path usable on a stock `py -m flux-agent_cli.main web` invocation.
+    # build path usable on a stock `py -m omniworker_cli.main web` invocation.
     def _say(text: str) -> None:
         try:
             print(text)
@@ -6092,7 +6092,7 @@ def _build_web_ui(web_dir: Path, *, fatal: bool = False) -> bool:
     if r2.returncode != 0:
         stderr_preview = (r2.stderr or "").strip()
         stderr_tail = "\n  ".join(stderr_preview.splitlines()[-10:]) if stderr_preview else ""
-        dist_dir = web_dir.parent / "flux-agent_cli" / "web_dist"
+        dist_dir = web_dir.parent / "omniworker_cli" / "web_dist"
         dist_index = dist_dir / "index.html"
 
         # If a stale dist exists, serve it as a fallback instead of failing.
@@ -6135,8 +6135,8 @@ def _find_stale_dashboard_pids() -> list[int]:
     """
     patterns = [
         "hermes dashboard",
-        "flux-agent_cli.main dashboard",
-        "flux-agent_cli/main.py dashboard",
+        "omniworker_cli.main dashboard",
+        "omniworker_cli/main.py dashboard",
     ]
     self_pid = os.getpid()
     dashboard_pids: list[int] = []
@@ -6179,7 +6179,7 @@ def _find_stale_dashboard_pids() -> list[int]:
             # Linux / macOS: scan the process table via ps and match against
             # the same explicit patterns list used on Windows.  Using ps
             # (rather than `pgrep -f "hermes.*dashboard"`) keeps us consistent
-            # with `flux-agent_cli.gateway._scan_gateway_pids` and avoids the
+            # with `omniworker_cli.gateway._scan_gateway_pids` and avoids the
             # greedy regex matching unrelated cmdlines that merely contain
             # both words (e.g. a chat session discussing "dashboard").
             result = subprocess.run(
@@ -6867,17 +6867,17 @@ def _count_commits_between(git_cmd: list[str], cwd: Path, base: str, head: str) 
 
 def _should_skip_upstream_prompt() -> bool:
     """Check if user previously declined to add upstream."""
-    from flux-agent_constants import get_flux-agent_home
+    from omniworker_constants import get_omniworker_home
 
-    return (get_flux-agent_home() / SKIP_UPSTREAM_PROMPT_FILE).exists()
+    return (get_omniworker_home() / SKIP_UPSTREAM_PROMPT_FILE).exists()
 
 
 def _mark_skip_upstream_prompt():
     """Create marker file to skip future upstream prompts."""
     try:
-        from flux-agent_constants import get_flux-agent_home
+        from omniworker_constants import get_omniworker_home
 
-        (get_flux-agent_home() / SKIP_UPSTREAM_PROMPT_FILE).touch()
+        (get_omniworker_home() / SKIP_UPSTREAM_PROMPT_FILE).touch()
     except Exception:
         pass
 
@@ -7022,7 +7022,7 @@ def _invalidate_update_cache():
     """
     homes = []
     # Default profile home (Docker-aware — uses /opt/data in Docker)
-    from flux-agent_constants import get_default_hermes_root
+    from omniworker_constants import get_default_hermes_root
 
     default_home = get_default_hermes_root()
     homes.append(default_home)
@@ -7578,10 +7578,10 @@ def _install_hangup_protection(gateway_mode: bool = False):
     # tolerance.  Any failure here is non-fatal; we just skip the wrap.
     try:
         # Late-bound import so tests can monkeypatch
-        # flux-agent_cli.config.get_flux-agent_home to simulate setup failure.
-        from flux-agent_cli.config import get_flux-agent_home as _get_flux-agent_home
+        # omniworker_cli.config.get_omniworker_home to simulate setup failure.
+        from omniworker_cli.config import get_omniworker_home as _get_omniworker_home
 
-        logs_dir = _get_flux-agent_home() / "logs"
+        logs_dir = _get_omniworker_home() / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         log_path = logs_dir / "update.log"
         log_file = open(log_path, "a", buffering=1, encoding="utf-8")
@@ -7629,11 +7629,11 @@ def _finalize_update_output(state):
 
 def _cmd_update_check():
     """Implement ``hermes update --check``: fetch and report without installing."""
-    from flux-agent_cli.config import detect_install_method
+    from omniworker_cli.config import detect_install_method
     method = detect_install_method(PROJECT_ROOT)
     if method == "pip":
-        from flux-agent_cli.config import recommended_update_command
-        from flux-agent_cli.banner import check_via_pypi
+        from omniworker_cli.config import recommended_update_command
+        from omniworker_cli.banner import check_via_pypi
         result = check_via_pypi()
         if result is None:
             print("✗ Could not reach PyPI to check for updates.")
@@ -7703,7 +7703,7 @@ def _cmd_update_check():
     else:
         commits_word = "commit" if behind == 1 else "commits"
         print(f"⚕ Update available: {behind} {commits_word} behind {compare_branch}.")
-        from flux-agent_cli.config import recommended_update_command
+        from omniworker_cli.config import recommended_update_command
 
         print(f"  Run '{recommended_update_command()}' to install.")
 
@@ -7798,11 +7798,11 @@ def _ensure_fhs_path_guard() -> None:
 
 
 def _run_pre_update_backup(args) -> None:
-    """Create a full zip backup of FLUX AGENT_HOME before running the update.
+    """Create a full zip backup of OMNIWORKER_HOME before running the update.
 
     Gated on ``updates.pre_update_backup`` in config (default false).  Off
     by default because the zip can add minutes to every update on large
-    FLUX AGENT_HOME directories.  The ``--backup`` flag on ``hermes update``
+    OMNIWORKER_HOME directories.  The ``--backup`` flag on ``hermes update``
     opts in for a single run; ``--no-backup`` forces it off when config
     has it enabled.  Never raises — a backup failure should not block the
     update itself.
@@ -7816,7 +7816,7 @@ def _run_pre_update_backup(args) -> None:
     force_backup = bool(getattr(args, "backup", False))
 
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
 
         cfg = load_config()
     except Exception as exc:
@@ -7836,7 +7836,7 @@ def _run_pre_update_backup(args) -> None:
         return
 
     try:
-        from flux-agent_cli.backup import create_pre_update_backup
+        from omniworker_cli.backup import create_pre_update_backup
     except Exception as exc:
         print(
             f"⚠ Pre-update backup: could not load backup module ({exc}); continuing update."
@@ -7874,13 +7874,13 @@ def _run_pre_update_backup(args) -> None:
         size_bytes /= 1024
         size_str = f"{size_bytes:.1f} {unit}"
 
-    # Render path using display_flux-agent_home so the user sees ~/.hermes/...
+    # Render path using display_omniworker_home so the user sees ~/.hermes/...
     try:
-        from flux-agent_constants import get_flux-agent_home, display_flux-agent_home
+        from omniworker_constants import get_omniworker_home, display_omniworker_home
 
-        home = get_flux-agent_home()
+        home = get_omniworker_home()
         try:
-            display_path = f"{display_flux-agent_home()}/{out_path.relative_to(home)}"
+            display_path = f"{display_omniworker_home()}/{out_path.relative_to(home)}"
         except ValueError:
             display_path = str(out_path)
     except Exception:
@@ -7900,7 +7900,7 @@ def cmd_update(args):
     runs the update, then restores stdio on the way out (even on
     ``sys.exit`` or unhandled exceptions).
     """
-    from flux-agent_cli.config import is_managed, managed_error
+    from omniworker_cli.config import is_managed, managed_error
 
     if is_managed():
         managed_error("update Flux Agent Agent")
@@ -7924,7 +7924,7 @@ def cmd_update(args):
 
 def _cmd_update_pip(args):
     """Update Flux Agent via pip (for PyPI installs)."""
-    from flux-agent_cli import __version__
+    from omniworker_cli import __version__
 
     print(f"→ Current version: {__version__}")
     print("→ Checking PyPI for updates...")
@@ -7971,7 +7971,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         if sys.platform == "win32":
             use_zip_update = True
         else:
-            from flux-agent_cli.config import detect_install_method
+            from omniworker_cli.config import detect_install_method
             method = detect_install_method(PROJECT_ROOT)
             if method == "pip":
                 _cmd_update_pip(args)
@@ -8121,11 +8121,11 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # Snapshot critical state (state.db, config, pairing JSONs, etc.)
         # before pulling so a user can recover if something goes wrong.
         # Issue #15733 reported missing pairing data after an update; even
-        # though `git pull` can't touch $FLUX AGENT_HOME, this is cheap
+        # though `git pull` can't touch $OMNIWORKER_HOME, this is cheap
         # belt-and-suspenders insurance and gives the user something to
         # restore from via `/snapshot list` / `/snapshot restore <id>`.
         try:
-            from flux-agent_cli.backup import create_quick_snapshot
+            from omniworker_cli.backup import create_quick_snapshot
 
             snap_id = create_quick_snapshot(label="pre-update")
             if snap_id:
@@ -8187,7 +8187,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
         # Clear stale .pyc bytecode cache — prevents ImportError on gateway
         # restart when updated source references names that didn't exist in
-        # the old bytecode (e.g. get_flux-agent_home added to flux-agent_constants).
+        # the old bytecode (e.g. get_omniworker_home added to omniworker_constants).
         removed = _clear_bytecode_cache(PROJECT_ROOT)
         if removed:
             print(
@@ -8255,12 +8255,12 @@ def _cmd_update_impl(args, gateway_mode: bool):
         print("✓ Code updated!")
 
         # After git pull, source files on disk are newer than cached Python
-        # modules in this process.  Reload flux-agent_constants so that any lazy
+        # modules in this process.  Reload omniworker_constants so that any lazy
         # import executed below (skills sync, gateway restart) sees new
-        # attributes like display_flux-agent_home() added since the last release.
+        # attributes like display_omniworker_home() added since the last release.
         try:
             import importlib
-            import flux-agent_constants as _hc
+            import omniworker_constants as _hc
 
             importlib.reload(_hc)
         except Exception:
@@ -8289,12 +8289,12 @@ def _cmd_update_impl(args, gateway_mode: bool):
             logger.debug("Skills sync during update failed: %s", e)
 
         # Sync bundled skills to all profiles (including the active one).
-        # seed_profile_skills() uses subprocess with an explicit FLUX AGENT_HOME so
-        # it is not affected by sync_skills()'s module-level FLUX AGENT_HOME cache,
+        # seed_profile_skills() uses subprocess with an explicit OMNIWORKER_HOME so
+        # it is not affected by sync_skills()'s module-level OMNIWORKER_HOME cache,
         # which means the active profile is reliably synced regardless of whether
-        # the caller's FLUX AGENT_HOME env var points at the default or a named profile.
+        # the caller's OMNIWORKER_HOME env var points at the default or a named profile.
         try:
-            from flux-agent_cli.profiles import (
+            from omniworker_cli.profiles import (
                 list_profiles,
                 seed_profile_skills,
             )
@@ -8342,7 +8342,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         print()
         print("→ Checking configuration for new options...")
 
-        from flux-agent_cli.config import (
+        from omniworker_cli.config import (
             get_missing_env_vars,
             get_missing_config_fields,
             check_config_version,
@@ -8451,7 +8451,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # startup latency or a per-launch GitHub API call.
         try:
             if sys.platform == "darwin" and shutil.which("cua-driver"):
-                from flux-agent_cli.tools_config import install_cua_driver
+                from omniworker_cli.tools_config import install_cua_driver
 
                 print()
                 print("→ Refreshing cua-driver (Computer Use)...")
@@ -8476,7 +8476,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # before we attempt the restart — ensures the new gateway sees it
         # regardless of how we die.
         if gateway_mode:
-            _exit_code_path = get_flux-agent_home() / ".update_exit_code"
+            _exit_code_path = get_omniworker_home() / ".update_exit_code"
             try:
                 _exit_code_path.write_text("0")
             except OSError:
@@ -8486,7 +8486,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # The code update (git pull) is shared across all profiles, so every
         # running gateway needs restarting to pick up the new code.
         try:
-            from flux-agent_cli.gateway import (
+            from omniworker_cli.gateway import (
                 is_macos,
                 supports_systemd_services,
                 _ensure_user_systemd_env,
@@ -8585,14 +8585,14 @@ def _cmd_update_impl(args, gateway_mode: bool):
             # systemd units without SIGUSR1 wiring this wait just times out
             # and we fall back to ``systemctl restart`` (the old behaviour).
             try:
-                from flux-agent_constants import (
+                from omniworker_constants import (
                     DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT as _DEFAULT_DRAIN,
                 )
             except Exception:
                 _DEFAULT_DRAIN = 60.0
             _cfg_drain = None
             try:
-                from flux-agent_cli.config import load_config
+                from omniworker_cli.config import load_config
 
                 _cfg_agent = load_config().get("agent") or {}
                 _cfg_drain = _cfg_agent.get("restart_drain_timeout")
@@ -8859,7 +8859,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
             # --- Launchd services (macOS) ---
             if is_macos():
                 try:
-                    from flux-agent_cli.gateway import (
+                    from omniworker_cli.gateway import (
                         launchd_restart,
                         get_launchd_label,
                         get_launchd_plist_path,
@@ -8996,7 +8996,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         # for the same bot token (see PR #11909). Flagging here means
         # every `hermes update` surfaces the issue until the user migrates.
         try:
-            from flux-agent_cli.gateway import (
+            from omniworker_cli.gateway import (
                 has_legacy_hermes_units,
                 _find_legacy_hermes_units,
                 supports_systemd_services,
@@ -9117,7 +9117,7 @@ def _coalesce_session_name_args(argv: list) -> list:
 
 def cmd_profile(args):
     """Profile management — create, delete, list, switch, alias."""
-    from flux-agent_cli.profiles import (
+    from omniworker_cli.profiles import (
         list_profiles,
         create_profile,
         delete_profile,
@@ -9130,14 +9130,14 @@ def cmd_profile(args):
         _is_wrapper_dir_in_path,
         _get_wrapper_dir,
     )
-    from flux-agent_constants import display_flux-agent_home
+    from omniworker_constants import display_omniworker_home
 
     action = getattr(args, "profile_action", None)
 
     if action is None:
         # Bare `hermes profile` — show current profile status
         profile_name = get_active_profile_name()
-        dhh = display_flux-agent_home()
+        dhh = display_omniworker_home()
         print(f"\nActive profile: {profile_name}")
         print(f"Path:           {dhh}")
 
@@ -9330,7 +9330,7 @@ def cmd_profile(args):
         # Read or write a profile's description. The description is
         # consumed by the kanban decomposer to route tasks based on
         # role instead of name alone.
-        from flux-agent_cli import profiles as _profiles_mod
+        from omniworker_cli import profiles as _profiles_mod
 
         all_flag = bool(getattr(args, "all_missing", False))
         auto_flag = bool(getattr(args, "auto", False))
@@ -9361,7 +9361,7 @@ def cmd_profile(args):
         if name and not text_value and not auto_flag:
             try:
                 if _profiles_mod.normalize_profile_name(name) == "default":
-                    from flux-agent_constants import get_flux-agent_home as _hh
+                    from omniworker_constants import get_omniworker_home as _hh
                     profile_dir = Path(_hh())
                 else:
                     profile_dir = _profiles_mod.get_profile_dir(name)
@@ -9384,7 +9384,7 @@ def cmd_profile(args):
         if text_value:
             try:
                 if _profiles_mod.normalize_profile_name(name) == "default":
-                    from flux-agent_constants import get_flux-agent_home as _hh
+                    from omniworker_constants import get_omniworker_home as _hh
                     profile_dir = Path(_hh())
                 else:
                     profile_dir = _profiles_mod.get_profile_dir(name)
@@ -9400,7 +9400,7 @@ def cmd_profile(args):
             sys.exit(0)
 
         # --auto path: invoke the LLM describer.
-        from flux-agent_cli import profile_describer as _pd
+        from omniworker_cli import profile_describer as _pd
 
         if all_flag:
             targets = _pd.list_describable_profiles(missing_only=True)
@@ -9429,7 +9429,7 @@ def cmd_profile(args):
 
     elif action == "show":
         name = args.profile_name
-        from flux-agent_cli.profiles import (
+        from omniworker_cli.profiles import (
             get_profile_dir,
             profile_exists,
             _read_config_model,
@@ -9474,7 +9474,7 @@ def cmd_profile(args):
         remove = getattr(args, "remove", False)
         custom_name = getattr(args, "alias_name", None)
 
-        from flux-agent_cli.profiles import profile_exists
+        from omniworker_cli.profiles import profile_exists
 
         if not profile_exists(name):
             print(f"Error: Profile '{name}' does not exist.")
@@ -9502,7 +9502,7 @@ def cmd_profile(args):
                     print(f"⚠ {_get_wrapper_dir()} is not in your PATH.")
 
     elif action == "rename":
-        from flux-agent_cli.profiles import rename_profile
+        from omniworker_cli.profiles import rename_profile
 
         try:
             new_dir = rename_profile(args.old_name, args.new_name)
@@ -9513,7 +9513,7 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "export":
-        from flux-agent_cli.profiles import export_profile
+        from omniworker_cli.profiles import export_profile
 
         name = args.profile_name
         output = args.output or f"{name}.tar.gz"
@@ -9525,7 +9525,7 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "import":
-        from flux-agent_cli.profiles import import_profile
+        from omniworker_cli.profiles import import_profile
 
         try:
             profile_dir = import_profile(
@@ -9547,7 +9547,7 @@ def cmd_profile(args):
 
     elif action == "install":
         import tempfile
-        from flux-agent_cli.profile_distribution import (
+        from omniworker_cli.profile_distribution import (
             plan_install,
             install_distribution,
             DistributionError,
@@ -9598,12 +9598,12 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "update":
-        from flux-agent_cli.profile_distribution import (
+        from omniworker_cli.profile_distribution import (
             update_distribution,
             read_manifest,
             DistributionError,
         )
-        from flux-agent_cli.profiles import get_profile_dir, normalize_profile_name
+        from omniworker_cli.profiles import get_profile_dir, normalize_profile_name
 
         name = args.profile_name
         try:
@@ -9645,7 +9645,7 @@ def cmd_profile(args):
             sys.exit(1)
 
     elif action == "info":
-        from flux-agent_cli.profile_distribution import describe_distribution, DistributionError
+        from omniworker_cli.profile_distribution import describe_distribution, DistributionError
 
         try:
             data = describe_distribution(args.profile_name)
@@ -9688,7 +9688,7 @@ def cmd_profile(args):
 
 def _render_distribution_plan(plan) -> None:
     """Print a human-readable summary of a pending distribution install."""
-    from flux-agent_cli.profile_distribution import MANIFEST_FILENAME
+    from omniworker_cli.profile_distribution import MANIFEST_FILENAME
     mf = plan.manifest
     print(f"\nDistribution: {mf.name} v{mf.version}")
     if mf.description:
@@ -9819,7 +9819,7 @@ def cmd_dashboard(args):
         print(f"Import error: {e}")
         sys.exit(1)
 
-    if "FLUX AGENT_WEB_DIST" not in os.environ and not getattr(args, "skip_build", False):
+    if "OMNIWORKER_WEB_DIST" not in os.environ and not getattr(args, "skip_build", False):
         if not _build_web_ui(PROJECT_ROOT / "web", fatal=True):
             sys.exit(1)
     elif getattr(args, "skip_build", False):
@@ -9827,9 +9827,9 @@ def cmd_dashboard(args):
         # Verify the dist actually exists; otherwise the server will start
         # and serve 404s with no obvious cause (issue #23817).
         _dist_root = (
-            Path(os.environ["FLUX AGENT_WEB_DIST"])
-            if "FLUX AGENT_WEB_DIST" in os.environ
-            else PROJECT_ROOT / "flux-agent_cli" / "web_dist"
+            Path(os.environ["OMNIWORKER_WEB_DIST"])
+            if "OMNIWORKER_WEB_DIST" in os.environ
+            else PROJECT_ROOT / "omniworker_cli" / "web_dist"
         )
         if not (_dist_root / "index.html").exists():
             print(f"✗ --skip-build was passed but no web dist found at: {_dist_root}")
@@ -9838,9 +9838,9 @@ def cmd_dashboard(args):
             sys.exit(1)
         print(f"→ Skipping web UI build (--skip-build); using dist at {_dist_root}")
 
-    from flux-agent_cli.web_server import start_server
+    from omniworker_cli.web_server import start_server
 
-    embedded_chat = args.tui or os.environ.get("FLUX AGENT_DASHBOARD_TUI") == "1"
+    embedded_chat = args.tui or os.environ.get("OMNIWORKER_DASHBOARD_TUI") == "1"
     start_server(
         host=args.host,
         port=args.port,
@@ -9852,7 +9852,7 @@ def cmd_dashboard(args):
 
 def cmd_completion(args, parser=None):
     """Print shell completion script."""
-    from flux-agent_cli.completion import generate_bash, generate_zsh, generate_fish
+    from omniworker_cli.completion import generate_bash, generate_zsh, generate_fish
 
     shell = getattr(args, "shell", "bash")
     if shell == "zsh":
@@ -9865,7 +9865,7 @@ def cmd_completion(args, parser=None):
 
 def cmd_logs(args):
     """View and filter Flux Agent log files."""
-    from flux-agent_cli.logs import tail_log, list_logs
+    from omniworker_cli.logs import tail_log, list_logs
 
     log_name = getattr(args, "log_name", "agent") or "agent"
 
@@ -9887,7 +9887,7 @@ def cmd_logs(args):
 def _build_provider_choices() -> list[str]:
     """Build the --provider choices list from CANONICAL_PROVIDERS + 'auto'."""
     try:
-        from flux-agent_cli.models import CANONICAL_PROVIDERS as _cp
+        from omniworker_cli.models import CANONICAL_PROVIDERS as _cp
         return ["auto"] + [p.slug for p in _cp]
     except Exception:
         # Fallback: static list guarantees the CLI always works
@@ -9931,7 +9931,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
 # Top-level flags that take a value. Needed by ``_first_positional_argv``
 # so that in ``hermes -m gpt5 chat``, ``gpt5`` is correctly skipped as a
 # flag value rather than misclassified as a subcommand. Kept in sync with
-# the top-level flags declared in ``flux-agent_cli/_parser.py``.
+# the top-level flags declared in ``omniworker_cli/_parser.py``.
 #
 # Correctness-safe either way: missing an entry here only makes the
 # fast-path bail out too eagerly (we run plugin discovery when we didn't
@@ -10013,7 +10013,7 @@ def main():
     """Main entry point for hermes CLI."""
     # Force UTF-8 stdio on Windows before anything prints.  No-op elsewhere.
     try:
-        from flux-agent_cli.stdio import configure_windows_stdio
+        from omniworker_cli.stdio import configure_windows_stdio
         configure_windows_stdio()
     except Exception:
         pass
@@ -10026,7 +10026,7 @@ def main():
     except Exception:
         pass
 
-    from flux-agent_cli._parser import build_top_level_parser
+    from omniworker_cli._parser import build_top_level_parser
 
     parser, subparsers, chat_parser = build_top_level_parser()
     chat_parser.set_defaults(func=cmd_chat)
@@ -10089,7 +10089,7 @@ def main():
     # =========================================================================
     # fallback command — manage the fallback provider chain
     # =========================================================================
-    from flux-agent_cli.fallback_cmd import cmd_fallback
+    from omniworker_cli.fallback_cmd import cmd_fallback
 
     fallback_parser = subparsers.add_parser(
         "fallback",
@@ -10415,7 +10415,7 @@ def main():
         default=None,
         metavar="PATH",
         help="Write manifest to a file instead of stdout. With no PATH "
-        "writes to $FLUX AGENT_HOME/slack-manifest.json.",
+        "writes to $OMNIWORKER_HOME/slack-manifest.json.",
     )
     slack_manifest.add_argument(
         "--name",
@@ -10438,7 +10438,7 @@ def main():
     # =========================================================================
     # send command — pipe shell-script output to any configured platform
     # =========================================================================
-    from flux-agent_cli.send_cmd import register_send_subparser
+    from omniworker_cli.send_cmd import register_send_subparser
     register_send_subparser(subparsers)
 
     # =========================================================================
@@ -10583,7 +10583,7 @@ def main():
         default="login",
     )
     auth_spotify.add_argument(
-        "--client-id", help="Spotify app client_id (or set FLUX AGENT_SPOTIFY_CLIENT_ID)"
+        "--client-id", help="Spotify app client_id (or set OMNIWORKER_SPOTIFY_CLIENT_ID)"
     )
     auth_spotify.add_argument(
         "--redirect-uri",
@@ -10882,7 +10882,7 @@ def main():
     # =========================================================================
     # kanban command — multi-profile collaboration board
     # =========================================================================
-    from flux-agent_cli.kanban import build_parser as _build_kanban_parser
+    from omniworker_cli.kanban import build_parser as _build_kanban_parser
 
     kanban_parser = _build_kanban_parser(subparsers)
     kanban_parser.set_defaults(func=cmd_kanban)
@@ -11094,7 +11094,7 @@ Examples:
         "write_file/patch/terminal calls. Lets you see how much "
         "space checkpoints occupy, force a prune, or wipe the base.",
     )
-    from flux-agent_cli.checkpoints import register_cli as _register_checkpoints_cli
+    from omniworker_cli.checkpoints import register_cli as _register_checkpoints_cli
     _register_checkpoints_cli(checkpoints_parser)
 
     # =========================================================================
@@ -11180,7 +11180,7 @@ Examples:
     pairing_sub.add_parser("clear-pending", help="Clear all pending codes")
 
     def cmd_pairing(args):
-        from flux-agent_cli.pairing import pairing_command
+        from omniworker_cli.pairing import pairing_command
 
         pairing_command(args)
 
@@ -11375,11 +11375,11 @@ Examples:
         # Route 'config' action to skills_config module
         if getattr(args, "skills_action", None) == "config":
             _require_tty("skills config")
-            from flux-agent_cli.skills_config import skills_command as skills_config_command
+            from omniworker_cli.skills_config import skills_command as skills_config_command
 
             skills_config_command(args)
         else:
-            from flux-agent_cli.skills_hub import skills_command
+            from omniworker_cli.skills_hub import skills_command
 
             skills_command(args)
 
@@ -11443,7 +11443,7 @@ Examples:
     plugins_disable.add_argument("name", help="Plugin name to disable")
 
     def cmd_plugins(args):
-        from flux-agent_cli.plugins_cmd import plugins_command
+        from omniworker_cli.plugins_cmd import plugins_command
 
         plugins_command(args)
 
@@ -11463,7 +11463,7 @@ Examples:
     if _plugin_cli_discovery_needed():
         try:
             from plugins.memory import discover_plugin_cli_commands
-            from flux-agent_cli.plugins import discover_plugins, get_plugin_manager
+            from omniworker_cli.plugins import discover_plugins, get_plugin_manager
 
             seen_plugin_commands = set()
             for cmd_info in discover_plugin_cli_commands():
@@ -11509,7 +11509,7 @@ Examples:
         ),
     )
     try:
-        from flux-agent_cli.curator import register_cli as _register_curator_cli
+        from omniworker_cli.curator import register_cli as _register_curator_cli
 
         _register_curator_cli(curator_parser)
     except Exception as _exc:
@@ -11555,7 +11555,7 @@ Examples:
     def cmd_memory(args):
         sub = getattr(args, "memory_command", None)
         if sub == "off":
-            from flux-agent_cli.config import load_config, save_config
+            from omniworker_cli.config import load_config, save_config
 
             config = load_config()
             if not isinstance(config.get("memory"), dict):
@@ -11565,9 +11565,9 @@ Examples:
             print("\n  ✓ Memory provider: built-in only")
             print("  Saved to config.yaml\n")
         elif sub == "reset":
-            from flux-agent_constants import get_flux-agent_home, display_flux-agent_home
+            from omniworker_constants import get_omniworker_home, display_omniworker_home
 
-            mem_dir = get_flux-agent_home() / "memories"
+            mem_dir = get_omniworker_home() / "memories"
             target = getattr(args, "target", "all")
             files_to_reset = []
             if target in {"all", "memory"}:
@@ -11581,7 +11581,7 @@ Examples:
             ]
             if not existing:
                 print(
-                    f"\n  Nothing to reset — no memory files found in {display_flux-agent_home()}/memories/\n"
+                    f"\n  Nothing to reset — no memory files found in {display_omniworker_home()}/memories/\n"
                 )
                 return
 
@@ -11608,9 +11608,9 @@ Examples:
             print(
                 f"\n  Memory reset complete. New sessions will start with a blank slate."
             )
-            print(f"  Files were in: {display_flux-agent_home()}/memories/\n")
+            print(f"  Files were in: {display_omniworker_home()}/memories/\n")
         else:
-            from flux-agent_cli.memory_setup import memory_command
+            from omniworker_cli.memory_setup import memory_command
 
             memory_command(args)
 
@@ -11684,12 +11684,12 @@ Examples:
     def cmd_tools(args):
         action = getattr(args, "tools_action", None)
         if action in {"list", "disable", "enable"}:
-            from flux-agent_cli.tools_config import tools_disable_enable_command
+            from omniworker_cli.tools_config import tools_disable_enable_command
 
             tools_disable_enable_command(args)
         else:
             _require_tty("tools")
-            from flux-agent_cli.tools_config import tools_command
+            from omniworker_cli.tools_config import tools_command
 
             tools_command(args)
 
@@ -11735,7 +11735,7 @@ Examples:
     def cmd_computer_use(args):
         action = getattr(args, "computer_use_action", None)
         if action == "install":
-            from flux-agent_cli.tools_config import install_cua_driver
+            from omniworker_cli.tools_config import install_cua_driver
             install_cua_driver(upgrade=bool(getattr(args, "upgrade", False)))
             return
         if action == "status":
@@ -11839,7 +11839,7 @@ Examples:
     _add_accept_hooks_flag(mcp_parser)
 
     def cmd_mcp(args):
-        from flux-agent_cli.mcp_config import mcp_command
+        from omniworker_cli.mcp_config import mcp_command
 
         mcp_command(args)
 
@@ -11922,7 +11922,7 @@ Examples:
         import json as _json
 
         try:
-            from flux-agent_state import SessionDB
+            from omniworker_state import SessionDB
 
             db = SessionDB()
         except Exception as e:
@@ -12005,7 +12005,7 @@ Examples:
                 ):
                     print("Cancelled.")
                     return
-            sessions_dir = get_flux-agent_home() / "sessions"
+            sessions_dir = get_omniworker_home() / "sessions"
             if db.delete_session(resolved_session_id, sessions_dir=sessions_dir):
                 print(f"Deleted session '{resolved_session_id}'.")
             else:
@@ -12020,7 +12020,7 @@ Examples:
                 ):
                     print("Cancelled.")
                     return
-            sessions_dir = get_flux-agent_home() / "sessions"
+            sessions_dir = get_omniworker_home() / "sessions"
             count = db.prune_sessions(
                 older_than_days=days, source=args.source, sessions_dir=sessions_dir
             )
@@ -12059,7 +12059,7 @@ Examples:
 
             # Launch hermes --resume <id> by replacing the current process
             print(f"Resuming session: {selected_id}")
-            from flux-agent_cli.relaunch import relaunch
+            from omniworker_cli.relaunch import relaunch
 
             relaunch(["--resume", selected_id])
             return  # won't reach here after execvp
@@ -12102,7 +12102,7 @@ Examples:
 
     def cmd_insights(args):
         try:
-            from flux-agent_state import SessionDB
+            from omniworker_state import SessionDB
             from agent.insights import InsightsEngine
 
             db = SessionDB()
@@ -12198,7 +12198,7 @@ Examples:
     )
 
     def cmd_claw(args):
-        from flux-agent_cli.claw import claw_command
+        from omniworker_cli.claw import claw_command
 
         claw_command(args)
 
@@ -12567,7 +12567,7 @@ Examples:
         action="store_true",
         help=(
             "Expose the in-browser Chat tab (embedded `hermes --tui` via PTY/WebSocket). "
-            "Alternatively set FLUX AGENT_DASHBOARD_TUI=1."
+            "Alternatively set OMNIWORKER_DASHBOARD_TUI=1."
         ),
     )
     dashboard_parser.add_argument(
@@ -12671,7 +12671,7 @@ Examples:
     # the managed container.  This MUST run before parse_args() so that
     # --help, unrecognised flags, and every subcommand are forwarded
     # transparently instead of being intercepted by argparse on the host.
-    from flux-agent_cli.config import get_container_exec_info
+    from omniworker_cli.config import get_container_exec_info
 
     container_info = get_container_exec_info()
     if container_info:
@@ -12747,7 +12747,7 @@ Examples:
     ):
         _accept_hooks = bool(getattr(args, "accept_hooks", False))
         try:
-            from flux-agent_cli.plugins import discover_plugins
+            from omniworker_cli.plugins import discover_plugins
 
             discover_plugins()
         except Exception:
@@ -12769,7 +12769,7 @@ Examples:
                 exc_info=True,
             )
         try:
-            from flux-agent_cli.config import load_config
+            from omniworker_cli.config import load_config
             from agent.shell_hooks import register_from_config
 
             register_from_config(load_config(), accept_hooks=_accept_hooks)
@@ -12782,7 +12782,7 @@ Examples:
     # Handle top-level --oneshot / -z: single-shot mode, stdout = final
     # response only, nothing else. Bypasses cli.py entirely.
     if getattr(args, "oneshot", None):
-        from flux-agent_cli.oneshot import run_oneshot
+        from omniworker_cli.oneshot import run_oneshot
 
         sys.exit(
             run_oneshot(

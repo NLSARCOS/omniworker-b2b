@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { delimiter } from "path";
 import {
   getEnhancedPath,
-  flux-agentCliArgs,
+  omniworkerCliArgs,
   OMNIWORKER_PYTHON,
   OMNIWORKER_SCRIPT,
 } from "../src/main/installer";
@@ -16,13 +16,13 @@ describe("installer platform wiring", () => {
   });
 
   it("builds platform-specific OmniWorker CLI invocation args", () => {
-    const args = flux-agentCliArgs(["--version"]);
+    const args = omniworkerCliArgs(["--version"]);
 
     if (process.platform === "win32") {
-      expect(args).toEqual(["-m", "flux-agent_cli.main", "--version"]);
+      expect(args).toEqual(["-m", "omniworker_cli.main", "--version"]);
       expect(OMNIWORKER_PYTHON).toMatch(/venv[\\/]Scripts[\\/]python\.exe$/);
       expect(OMNIWORKER_SCRIPT).toMatch(
-        /venv[\\/]Scripts[\\/]flux-agent\.exe$/,
+        /venv[\\/]Scripts[\\/]omniworker\.exe$/,
       );
       return;
     }

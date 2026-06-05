@@ -9,10 +9,10 @@ sidebar_position: 2
 
 **One subscription. Every tool built in.**
 
-The Tool Gateway is included with every paid [Nous Portal](https://portal.flux-agent.com) subscription. It routes Flux Agent' tool calls — web search, image generation, text-to-speech, and cloud browser automation — through infrastructure Nous already runs, so you don't have to sign up with Firecrawl, FAL, OpenAI, Browser Use, or anyone else just to make your agent useful.
+The Tool Gateway is included with every paid [Nous Portal](https://portal.omniworker.com) subscription. It routes Flux Agent' tool calls — web search, image generation, text-to-speech, and cloud browser automation — through infrastructure Nous already runs, so you don't have to sign up with Firecrawl, FAL, OpenAI, Browser Use, or anyone else just to make your agent useful.
 
 <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '1.5rem 0'}}>
-  <a href="https://portal.flux-agent.com/manage-subscription" style={{background: 'var(--ifm-color-primary)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold'}}>Start or manage subscription →</a>
+  <a href="https://portal.omniworker.com/manage-subscription" style={{background: 'var(--ifm-color-primary)', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold'}}>Start or manage subscription →</a>
 </div>
 
 ## What's included
@@ -40,7 +40,7 @@ Bring your own keys anytime — per-tool, whenever you want to. The gateway isn'
 ## Get started
 
 ```bash
-flux-agent model          # Pick Nous Portal as your provider
+omniworker model          # Pick Nous Portal as your provider
 ```
 
 When you select Nous Portal, Flux Agent offers to turn on the Tool Gateway. Accept, and you're done — every supported tool is live on the next run.
@@ -48,7 +48,7 @@ When you select Nous Portal, Flux Agent offers to turn on the Tool Gateway. Acce
 Check what's active at any time:
 
 ```bash
-flux-agent status
+omniworker status
 ```
 
 You'll see a section like:
@@ -66,7 +66,7 @@ Tools marked "active via Nous subscription" are going through the gateway. Anyth
 
 ## Eligibility
 
-The Tool Gateway is a **paid-subscription** feature. Free-tier Nous accounts can use Portal for inference but don't include managed tools — [upgrade your plan](https://portal.flux-agent.com/manage-subscription) to unlock the gateway.
+The Tool Gateway is a **paid-subscription** feature. Free-tier Nous accounts can use Portal for inference but don't include managed tools — [upgrade your plan](https://portal.omniworker.com/manage-subscription) to unlock the gateway.
 
 ## Mix and match
 
@@ -79,7 +79,7 @@ The gateway is per-tool. Turn it on for just what you want:
 Switch any tool at any time via:
 
 ```bash
-flux-agent tools          # Interactive picker for each tool category
+omniworker tools          # Interactive picker for each tool category
 ```
 
 Select the tool, pick **Nous Subscription** as the provider (or any direct provider you prefer). No config editing required.
@@ -100,13 +100,13 @@ Image generation defaults to FLUX 2 Klein 9B for speed. Override per-call by pas
 | Recraft V4 Pro | `fal-ai/recraft/v4/pro` | Vector-style, graphic design |
 | Qwen Image | `fal-ai/qwen-image` | Alibaba multimodal |
 
-The set evolves — `flux-agent tools` → Image Generation shows the current live list.
+The set evolves — `omniworker tools` → Image Generation shows the current live list.
 
 ---
 
 ## Configuration reference
 
-Most users never need to touch this — `flux-agent model` and `flux-agent tools` cover every workflow interactively. This section is for writing config.yaml directly or scripting setups.
+Most users never need to touch this — `omniworker model` and `omniworker tools` cover every workflow interactively. This section is for writing config.yaml directly or scripting setups.
 
 ### Per-tool `use_gateway` flag
 
@@ -138,11 +138,11 @@ web:
   use_gateway: false   # Flux Agent now uses FIRECRAWL_API_KEY from .env
 ```
 
-`flux-agent tools` automatically clears the flag when you pick a non-gateway provider, so this usually happens for you.
+`omniworker tools` automatically clears the flag when you pick a non-gateway provider, so this usually happens for you.
 
 ### Self-hosted gateway (advanced)
 
-Running your own Nous-compatible gateway? Override endpoints in `~/.flux-agent/.env`:
+Running your own Nous-compatible gateway? Override endpoints in `~/.omniworker/.env`:
 
 ```bash
 TOOL_GATEWAY_DOMAIN=your-domain.example.com
@@ -161,15 +161,15 @@ Yes. Tool Gateway operates at the tool-execution layer, not the CLI. Every inter
 
 ### What happens if my subscription expires?
 
-Tools routed through the gateway stop working until you renew or swap in direct API keys via `flux-agent tools`. Flux Agent shows a clear error pointing at the portal.
+Tools routed through the gateway stop working until you renew or swap in direct API keys via `omniworker tools`. Flux Agent shows a clear error pointing at the portal.
 
 ### Can I see usage or costs per tool?
 
-Yes — the [Nous Portal dashboard](https://portal.flux-agent.com) breaks usage down by tool so you can see what's driving your bill.
+Yes — the [Nous Portal dashboard](https://portal.omniworker.com) breaks usage down by tool so you can see what's driving your bill.
 
 ### Is Modal (serverless terminal) included?
 
-Modal is available as an **optional add-on** through the Nous subscription, not part of the default Tool Gateway bundle. Configure it via `flux-agent setup terminal` or directly in `config.yaml` when you want a remote sandbox for shell execution.
+Modal is available as an **optional add-on** through the Nous subscription, not part of the default Tool Gateway bundle. Configure it via `omniworker setup terminal` or directly in `config.yaml` when you want a remote sandbox for shell execution.
 
 ### Do I need to delete my existing API keys when I enable the gateway?
 

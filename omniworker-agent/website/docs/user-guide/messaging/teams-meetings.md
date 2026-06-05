@@ -25,12 +25,12 @@ The pipeline:
 4. stores durable job state and sink records locally
 5. can write summaries to Notion, Linear, and Microsoft Teams
 
-Operator actions stay in the CLI (the `teams-pipeline` subcommand is registered by the `teams_pipeline` plugin — enable it via `flux-agent plugins enable teams_pipeline` or set `plugins.enabled: [teams_pipeline]` in `config.yaml`):
+Operator actions stay in the CLI (the `teams-pipeline` subcommand is registered by the `teams_pipeline` plugin — enable it via `omniworker plugins enable teams_pipeline` or set `plugins.enabled: [teams_pipeline]` in `config.yaml`):
 
 ```bash
-flux-agent teams-pipeline validate
-flux-agent teams-pipeline list
-flux-agent teams-pipeline maintain-subscriptions
+omniworker teams-pipeline validate
+omniworker teams-pipeline list
+omniworker teams-pipeline maintain-subscriptions
 ```
 
 ## Prerequisites
@@ -45,7 +45,7 @@ Before enabling the meetings pipeline, make sure you have:
 
 ## Step 1: Add Microsoft Graph Credentials
 
-Add Graph app-only credentials to `~/.flux-agent/.env`:
+Add Graph app-only credentials to `~/.omniworker/.env`:
 
 ```bash
 MSGRAPH_TENANT_ID=<tenant-id>
@@ -84,7 +84,7 @@ https://ops.example.com/msgraph/webhook
 
 The meeting pipeline reads its runtime config from the existing `teams` platform entry. Pipeline-specific knobs live under `teams.extra.meeting_pipeline`. Teams outbound delivery stays on the normal Teams platform config surface.
 
-Example `~/.flux-agent/config.yaml`:
+Example `~/.omniworker/config.yaml`:
 
 ```yaml
 platforms:
@@ -165,7 +165,7 @@ platforms:
 Start Flux Agent normally after updating config:
 
 ```bash
-flux-agent gateway run
+omniworker gateway run
 ```
 
 Or, if you run Flux Agent in Docker, start the gateway the same way you already do for your deployment.
@@ -183,12 +183,12 @@ Use the plugin CLI to create and inspect subscriptions.
 Examples:
 
 ```bash
-flux-agent teams-pipeline subscribe \
+omniworker teams-pipeline subscribe \
   --resource communications/onlineMeetings/getAllTranscripts \
   --notification-url https://ops.example.com/msgraph/webhook \
   --client-state "$MSGRAPH_WEBHOOK_CLIENT_STATE"
 
-flux-agent teams-pipeline subscribe \
+omniworker teams-pipeline subscribe \
   --resource communications/onlineMeetings/getAllRecordings \
   --notification-url https://ops.example.com/msgraph/webhook \
   --client-state "$MSGRAPH_WEBHOOK_CLIENT_STATE"
@@ -196,7 +196,7 @@ flux-agent teams-pipeline subscribe \
 
 :::warning Graph subscriptions expire in 72 hours
 
-Microsoft Graph caps webhook subscriptions at 72 hours and will not auto-renew them. You MUST schedule `flux-agent teams-pipeline maintain-subscriptions` before going live, or notifications will silently stop three days after any manual subscription creation. See [Automating subscription renewal](/docs/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production) in the operator runbook — three options (Flux Agent cron, systemd timer, plain crontab).
+Microsoft Graph caps webhook subscriptions at 72 hours and will not auto-renew them. You MUST schedule `omniworker teams-pipeline maintain-subscriptions` before going live, or notifications will silently stop three days after any manual subscription creation. See [Automating subscription renewal](/docs/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production) in the operator runbook — three options (Flux Agent cron, systemd timer, plain crontab).
 
 :::
 
@@ -207,14 +207,14 @@ For subscription maintenance and day-2 operator flows, continue with the guide: 
 Run the built-in validation snapshot:
 
 ```bash
-flux-agent teams-pipeline validate
+omniworker teams-pipeline validate
 ```
 
 Useful companion checks:
 
 ```bash
-flux-agent teams-pipeline token-health
-flux-agent teams-pipeline subscriptions
+omniworker teams-pipeline token-health
+omniworker teams-pipeline subscriptions
 ```
 
 ## Troubleshooting
@@ -222,7 +222,7 @@ flux-agent teams-pipeline subscriptions
 | Problem | What to check |
 |---------|---------------|
 | Graph webhook validation fails | Confirm the public URL is correct and reachable, and that Graph is calling the exact `/msgraph/webhook` path |
-| Jobs do not appear in `flux-agent teams-pipeline list` | Confirm `msgraph_webhook` is enabled and that subscriptions point at the right notification URL |
+| Jobs do not appear in `omniworker teams-pipeline list` | Confirm `msgraph_webhook` is enabled and that subscriptions point at the right notification URL |
 | Transcript-first never succeeds | Check Graph permissions for transcript resources and whether the transcript artifact exists for that meeting |
 | Recording fallback fails | Confirm `ffmpeg` is installed and the Graph app can access recording artifacts |
 | Teams summary delivery fails | Re-check `delivery_mode`, target IDs, and Teams auth config |

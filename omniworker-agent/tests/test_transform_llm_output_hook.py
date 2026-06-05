@@ -19,13 +19,13 @@ from pathlib import Path
 
 import yaml
 
-import flux-agent_cli.plugins as plugins_mod
-from flux-agent_cli.plugins import PluginManager, VALID_HOOKS
+import omniworker_cli.plugins as plugins_mod
+from omniworker_cli.plugins import PluginManager, VALID_HOOKS
 
 
-def _make_enabled_plugin(flux-agent_home: Path, name: str, register_body: str) -> Path:
-    """Create a plugin under <flux-agent_home>/plugins/<name> and opt it in."""
-    plugin_dir = flux-agent_home / "plugins" / name
+def _make_enabled_plugin(omniworker_home: Path, name: str, register_body: str) -> Path:
+    """Create a plugin under <omniworker_home>/plugins/<name> and opt it in."""
+    plugin_dir = omniworker_home / "plugins" / name
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "plugin.yaml").write_text(
         yaml.safe_dump({"name": name, "version": "0.1.0"}), encoding="utf-8",
@@ -35,7 +35,7 @@ def _make_enabled_plugin(flux-agent_home: Path, name: str, register_body: str) -
         f"    {register_body}\n",
         encoding="utf-8",
     )
-    cfg_path = flux-agent_home / "config.yaml"
+    cfg_path = omniworker_home / "config.yaml"
     cfg = {}
     if cfg_path.exists():
         cfg = yaml.safe_load(cfg_path.read_text()) or {}
@@ -50,17 +50,17 @@ def test_transform_llm_output_in_valid_hooks():
 
 def test_hook_receives_expected_kwargs(tmp_path, monkeypatch):
     """Hook callback should see response_text + session_id + model + platform."""
-    flux-agent_home = tmp_path / "flux-agent_test"
-    flux-agent_home.mkdir(exist_ok=True)
+    omniworker_home = tmp_path / "omniworker_test"
+    omniworker_home.mkdir(exist_ok=True)
     _make_enabled_plugin(
-        flux-agent_home, "capture_hook",
+        omniworker_home, "capture_hook",
         register_body=(
             'ctx.register_hook("transform_llm_output", '
             'lambda **kw: f"{kw[\'response_text\']}|{kw[\'session_id\']}|'
             '{kw[\'model\']}|{kw[\'platform\']}")'
         ),
     )
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     mgr = PluginManager()
     mgr.discover_and_load()
@@ -111,17 +111,17 @@ def test_hook_exception_does_not_replace_response(tmp_path, monkeypatch):
     to the results list, and the walk in run_agent.py finds nothing to
     replace with.
     """
-    flux-agent_home = tmp_path / "flux-agent_test"
-    flux-agent_home.mkdir(exist_ok=True)
+    omniworker_home = tmp_path / "omniworker_test"
+    omniworker_home.mkdir(exist_ok=True)
     _make_enabled_plugin(
-        flux-agent_home, "raising_hook",
+        omniworker_home, "raising_hook",
         register_body=(
             'def _boom(**kw):\n'
             '        raise RuntimeError("boom")\n'
             '    ctx.register_hook("transform_llm_output", _boom)'
         ),
     )
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
     mgr = PluginManager()
     mgr.discover_and_load()
@@ -145,7 +145,7 @@ def test_hook_exception_does_not_replace_response(tmp_path, monkeypatch):
 
 def test_no_plugins_returns_empty_results(tmp_path, monkeypatch):
     """With no plugins loaded, invoke_hook returns [] and the response is unchanged."""
-    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / "flux-agent_empty"))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / "omniworker_empty"))
     plugins_mod._plugin_manager = PluginManager()
 
     mgr = plugins_mod._plugin_manager

@@ -1,4 +1,4 @@
-"""Tests for `flux-agent fallback` — chain reading, add/remove/clear, legacy migration."""
+"""Tests for `omniworker fallback` — chain reading, add/remove/clear, legacy migration."""
 from __future__ import annotations
 
 import io
@@ -11,25 +11,25 @@ import yaml
 
 
 # ---------------------------------------------------------------------------
-# Shared fixture — isolate FLUX AGENT_HOME so save_config writes to tmp_path
+# Shared fixture — isolate OMNIWORKER_HOME so save_config writes to tmp_path
 # ---------------------------------------------------------------------------
 
 @pytest.fixture()
 def isolated_home(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".flux-agent"
+    home = tmp_path / ".omniworker"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("FLUX AGENT_HOME", str(home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(home))
     return tmp_path
 
 
 def _write_config(home: Path, data: dict) -> None:
-    config_path = home / ".flux-agent" / "config.yaml"
+    config_path = home / ".omniworker" / "config.yaml"
     config_path.write_text(yaml.safe_dump(data), encoding="utf-8")
 
 
 def _read_config(home: Path) -> dict:
-    config_path = home / ".flux-agent" / "config.yaml"
+    config_path = home / ".omniworker" / "config.yaml"
     return yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
 
 
@@ -39,11 +39,11 @@ def _read_config(home: Path) -> dict:
 
 class TestReadChain:
     def test_returns_empty_list_when_unset(self):
-        from flux-agent_cli.fallback_cmd import _read_chain
+        from omniworker_cli.fallback_cmd import _read_chain
         assert _read_chain({}) == []
 
     def test_reads_new_list_format(self):
-        from flux-agent_cli.fallback_cmd import _read_chain
+        from omniworker_cli.fallback_cmd import _read_chain
         cfg = {
             "fallback_providers": [
                 {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
@@ -56,12 +56,12 @@ class TestReadChain:
         ]
 
     def test_migrates_legacy_single_dict(self):
-        from flux-agent_cli.fallback_cmd import _read_chain
+        from omniworker_cli.fallback_cmd import _read_chain
         cfg = {"fallback_model": {"provider": "openrouter", "model": "gpt-5.4"}}
         assert _read_chain(cfg) == [{"provider": "openrouter", "model": "gpt-5.4"}]
 
     def test_skips_incomplete_entries(self):
-        from flux-agent_cli.fallback_cmd import _read_chain
+        from omniworker_cli.fallback_cmd import _read_chain
         cfg = {
             "fallback_providers": [
                 {"provider": "openrouter"},            # missing model
@@ -73,7 +73,7 @@ class TestReadChain:
         assert _read_chain(cfg) == [{"provider": "nous", "model": "foo"}]
 
     def test_returns_copies_not_aliases(self):
-        from flux-agent_cli.fallback_cmd import _read_chain
+        from omniworker_cli.fallback_cmd import _read_chain
         cfg = {"fallback_providers": [{"provider": "nous", "model": "foo"}]}
         result = _read_chain(cfg)
         result[0]["provider"] = "mutated"
@@ -86,7 +86,7 @@ class TestReadChain:
 
 class TestExtractFallback:
     def test_extracts_from_default_field(self):
-        from flux-agent_cli.fallback_cmd import _extract_fallback_from_model_cfg
+        from omniworker_cli.fallback_cmd import _extract_fallback_from_model_cfg
         model_cfg = {"provider": "openrouter", "default": "anthropic/claude-sonnet-4.6"}
         assert _extract_fallback_from_model_cfg(model_cfg) == {
             "provider": "openrouter",
@@ -94,7 +94,7 @@ class TestExtractFallback:
         }
 
     def test_extracts_optional_base_url_and_api_mode(self):
-        from flux-agent_cli.fallback_cmd import _extract_fallback_from_model_cfg
+        from omniworker_cli.fallback_cmd import _extract_fallback_from_model_cfg
         model_cfg = {
             "provider": "custom",
             "default": "local-model",
@@ -109,15 +109,15 @@ class TestExtractFallback:
         }
 
     def test_returns_none_without_provider(self):
-        from flux-agent_cli.fallback_cmd import _extract_fallback_from_model_cfg
+        from omniworker_cli.fallback_cmd import _extract_fallback_from_model_cfg
         assert _extract_fallback_from_model_cfg({"default": "foo"}) is None
 
     def test_returns_none_without_model(self):
-        from flux-agent_cli.fallback_cmd import _extract_fallback_from_model_cfg
+        from omniworker_cli.fallback_cmd import _extract_fallback_from_model_cfg
         assert _extract_fallback_from_model_cfg({"provider": "openrouter"}) is None
 
     def test_returns_none_for_non_dict(self):
-        from flux-agent_cli.fallback_cmd import _extract_fallback_from_model_cfg
+        from omniworker_cli.fallback_cmd import _extract_fallback_from_model_cfg
         assert _extract_fallback_from_model_cfg("plain-string") is None
         assert _extract_fallback_from_model_cfg(None) is None
 
@@ -129,11 +129,11 @@ class TestExtractFallback:
 class TestListCommand:
     def test_list_empty(self, isolated_home, capsys):
         _write_config(isolated_home, {})
-        from flux-agent_cli.fallback_cmd import cmd_fallback_list
+        from omniworker_cli.fallback_cmd import cmd_fallback_list
         cmd_fallback_list(types.SimpleNamespace())
         out = capsys.readouterr().out
         assert "No fallback providers configured" in out
-        assert "flux-agent fallback add" in out
+        assert "omniworker fallback add" in out
 
     def test_list_with_entries(self, isolated_home, capsys):
         _write_config(isolated_home, {
@@ -143,7 +143,7 @@ class TestListCommand:
                 {"provider": "nous", "model": "Flux Agent-4"},
             ],
         })
-        from flux-agent_cli.fallback_cmd import cmd_fallback_list
+        from omniworker_cli.fallback_cmd import cmd_fallback_list
         cmd_fallback_list(types.SimpleNamespace())
         out = capsys.readouterr().out
         assert "Fallback chain (2 entries)" in out
@@ -156,7 +156,7 @@ class TestListCommand:
         _write_config(isolated_home, {
             "fallback_model": {"provider": "openrouter", "model": "gpt-5.4"},
         })
-        from flux-agent_cli.fallback_cmd import cmd_fallback_list
+        from omniworker_cli.fallback_cmd import cmd_fallback_list
         cmd_fallback_list(types.SimpleNamespace())
         out = capsys.readouterr().out
         assert "1 entry" in out
@@ -175,7 +175,7 @@ class TestAddCommand:
 
         def fake_picker(args=None):
             # Simulate what the real picker does: writes the selection to config["model"]
-            from flux-agent_cli.config import load_config, save_config
+            from omniworker_cli.config import load_config, save_config
             cfg = load_config()
             cfg["model"] = {
                 "provider": "openrouter",
@@ -185,9 +185,9 @@ class TestAddCommand:
             }
             save_config(cfg)
 
-        with patch("flux-agent_cli.main.select_provider_and_model", side_effect=fake_picker), \
-                patch("flux-agent_cli.main._require_tty"):
-            from flux-agent_cli.fallback_cmd import cmd_fallback_add
+        with patch("omniworker_cli.main.select_provider_and_model", side_effect=fake_picker), \
+                patch("omniworker_cli.main._require_tty"):
+            from omniworker_cli.fallback_cmd import cmd_fallback_add
             cmd_fallback_add(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -215,14 +215,14 @@ class TestAddCommand:
         })
 
         def fake_picker(args=None):
-            from flux-agent_cli.config import load_config, save_config
+            from omniworker_cli.config import load_config, save_config
             cfg = load_config()
             cfg["model"] = {"provider": "openrouter", "default": "gpt-5.4"}
             save_config(cfg)
 
-        with patch("flux-agent_cli.main.select_provider_and_model", side_effect=fake_picker), \
-                patch("flux-agent_cli.main._require_tty"):
-            from flux-agent_cli.fallback_cmd import cmd_fallback_add
+        with patch("omniworker_cli.main.select_provider_and_model", side_effect=fake_picker), \
+                patch("omniworker_cli.main._require_tty"):
+            from omniworker_cli.fallback_cmd import cmd_fallback_add
             cmd_fallback_add(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -238,14 +238,14 @@ class TestAddCommand:
 
         def fake_picker(args=None):
             # User picks the same thing that's already the primary
-            from flux-agent_cli.config import load_config, save_config
+            from omniworker_cli.config import load_config, save_config
             cfg = load_config()
             cfg["model"] = {"provider": "openrouter", "default": "gpt-5.4"}
             save_config(cfg)
 
-        with patch("flux-agent_cli.main.select_provider_and_model", side_effect=fake_picker), \
-                patch("flux-agent_cli.main._require_tty"):
-            from flux-agent_cli.fallback_cmd import cmd_fallback_add
+        with patch("omniworker_cli.main.select_provider_and_model", side_effect=fake_picker), \
+                patch("omniworker_cli.main._require_tty"):
+            from omniworker_cli.fallback_cmd import cmd_fallback_add
             cmd_fallback_add(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -265,7 +265,7 @@ class TestAddCommand:
         })
 
         def fake_picker(args=None):
-            from flux-agent_cli.config import load_config, save_config
+            from omniworker_cli.config import load_config, save_config
             cfg = load_config()
             cfg["model"] = {
                 "provider": "openrouter",
@@ -275,9 +275,9 @@ class TestAddCommand:
             }
             save_config(cfg)
 
-        with patch("flux-agent_cli.main.select_provider_and_model", side_effect=fake_picker), \
-                patch("flux-agent_cli.main._require_tty"):
-            from flux-agent_cli.fallback_cmd import cmd_fallback_add
+        with patch("omniworker_cli.main.select_provider_and_model", side_effect=fake_picker), \
+                patch("omniworker_cli.main._require_tty"):
+            from omniworker_cli.fallback_cmd import cmd_fallback_add
             cmd_fallback_add(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -299,9 +299,9 @@ class TestAddCommand:
             # User cancelled — no change to config
             pass
 
-        with patch("flux-agent_cli.main.select_provider_and_model", side_effect=fake_picker), \
-                patch("flux-agent_cli.main._require_tty"):
-            from flux-agent_cli.fallback_cmd import cmd_fallback_add
+        with patch("omniworker_cli.main.select_provider_and_model", side_effect=fake_picker), \
+                patch("omniworker_cli.main._require_tty"):
+            from omniworker_cli.fallback_cmd import cmd_fallback_add
             cmd_fallback_add(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -318,14 +318,14 @@ class TestAddCommand:
         })
 
         def fake_picker(args=None):
-            from flux-agent_cli.config import load_config, save_config
+            from omniworker_cli.config import load_config, save_config
             cfg = load_config()
             cfg["model"] = {"provider": "", "default": ""}
             save_config(cfg)
 
-        with patch("flux-agent_cli.main.select_provider_and_model", side_effect=fake_picker), \
-                patch("flux-agent_cli.main._require_tty"):
-            from flux-agent_cli.fallback_cmd import cmd_fallback_add
+        with patch("omniworker_cli.main.select_provider_and_model", side_effect=fake_picker), \
+                patch("omniworker_cli.main._require_tty"):
+            from omniworker_cli.fallback_cmd import cmd_fallback_add
             cmd_fallback_add(types.SimpleNamespace())
 
         out = capsys.readouterr().out
@@ -339,7 +339,7 @@ class TestAddCommand:
 class TestRemoveCommand:
     def test_remove_empty_chain(self, isolated_home, capsys):
         _write_config(isolated_home, {})
-        from flux-agent_cli.fallback_cmd import cmd_fallback_remove
+        from omniworker_cli.fallback_cmd import cmd_fallback_remove
         cmd_fallback_remove(types.SimpleNamespace())
         out = capsys.readouterr().out
         assert "nothing to remove" in out
@@ -354,8 +354,8 @@ class TestRemoveCommand:
         })
 
         # Picker returns index 1 (the middle entry, "nous / Flux Agent-4")
-        with patch("flux-agent_cli.setup._curses_prompt_choice", return_value=1):
-            from flux-agent_cli.fallback_cmd import cmd_fallback_remove
+        with patch("omniworker_cli.setup._curses_prompt_choice", return_value=1):
+            from omniworker_cli.fallback_cmd import cmd_fallback_remove
             cmd_fallback_remove(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -375,8 +375,8 @@ class TestRemoveCommand:
         })
 
         # Cancel = last item (index == len(chain) == 1 in our menu)
-        with patch("flux-agent_cli.setup._curses_prompt_choice", return_value=1):
-            from flux-agent_cli.fallback_cmd import cmd_fallback_remove
+        with patch("omniworker_cli.setup._curses_prompt_choice", return_value=1):
+            from omniworker_cli.fallback_cmd import cmd_fallback_remove
             cmd_fallback_remove(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -390,7 +390,7 @@ class TestRemoveCommand:
 class TestClearCommand:
     def test_clear_empty_chain(self, isolated_home, capsys):
         _write_config(isolated_home, {})
-        from flux-agent_cli.fallback_cmd import cmd_fallback_clear
+        from omniworker_cli.fallback_cmd import cmd_fallback_clear
         cmd_fallback_clear(types.SimpleNamespace())
         out = capsys.readouterr().out
         assert "nothing to clear" in out
@@ -403,7 +403,7 @@ class TestClearCommand:
             ],
         })
         monkeypatch.setattr("builtins.input", lambda *a, **kw: "y")
-        from flux-agent_cli.fallback_cmd import cmd_fallback_clear
+        from omniworker_cli.fallback_cmd import cmd_fallback_clear
         cmd_fallback_clear(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -416,7 +416,7 @@ class TestClearCommand:
             "fallback_providers": [{"provider": "openrouter", "model": "gpt-5.4"}],
         })
         monkeypatch.setattr("builtins.input", lambda *a, **kw: "n")
-        from flux-agent_cli.fallback_cmd import cmd_fallback_clear
+        from omniworker_cli.fallback_cmd import cmd_fallback_clear
         cmd_fallback_clear(types.SimpleNamespace())
 
         cfg = _read_config(isolated_home)
@@ -430,28 +430,28 @@ class TestClearCommand:
 class TestDispatcher:
     def test_no_subcommand_lists(self, isolated_home, capsys):
         _write_config(isolated_home, {})
-        from flux-agent_cli.fallback_cmd import cmd_fallback
+        from omniworker_cli.fallback_cmd import cmd_fallback
         cmd_fallback(types.SimpleNamespace(fallback_command=None))
         out = capsys.readouterr().out
         assert "No fallback providers configured" in out
 
     def test_list_alias(self, isolated_home, capsys):
         _write_config(isolated_home, {})
-        from flux-agent_cli.fallback_cmd import cmd_fallback
+        from omniworker_cli.fallback_cmd import cmd_fallback
         cmd_fallback(types.SimpleNamespace(fallback_command="ls"))
         out = capsys.readouterr().out
         assert "No fallback providers configured" in out
 
     def test_remove_alias(self, isolated_home, capsys):
         _write_config(isolated_home, {})
-        from flux-agent_cli.fallback_cmd import cmd_fallback
+        from omniworker_cli.fallback_cmd import cmd_fallback
         cmd_fallback(types.SimpleNamespace(fallback_command="rm"))
         out = capsys.readouterr().out
         assert "nothing to remove" in out
 
     def test_unknown_subcommand_exits(self, isolated_home):
         _write_config(isolated_home, {})
-        from flux-agent_cli.fallback_cmd import cmd_fallback
+        from omniworker_cli.fallback_cmd import cmd_fallback
         with pytest.raises(SystemExit):
             cmd_fallback(types.SimpleNamespace(fallback_command="nope"))
 
@@ -461,7 +461,7 @@ class TestDispatcher:
 # ---------------------------------------------------------------------------
 
 class TestArgparseWiring:
-    """Verify `flux-agent fallback` is wired into main.py's argparse tree.
+    """Verify `omniworker fallback` is wired into main.py's argparse tree.
 
     main() builds the parser inline, so we invoke main([...]) via subprocess
     with --help to introspect registered subcommands without side effects.
@@ -471,7 +471,7 @@ class TestArgparseWiring:
         import subprocess
         import sys
         result = subprocess.run(
-            [sys.executable, "-m", "flux-agent_cli.main", "fallback", "--help"],
+            [sys.executable, "-m", "omniworker_cli.main", "fallback", "--help"],
             capture_output=True,
             text=True,
             timeout=30,

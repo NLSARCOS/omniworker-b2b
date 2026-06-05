@@ -4,8 +4,8 @@ import { join } from "path";
 import { tmpdir } from "os";
 
 const ROOT = join(__dirname, "..");
-const flux-agentSrc = readFileSync(
-  join(ROOT, "src/main/flux-agent.ts"),
+const omniworkerSrc = readFileSync(
+  join(ROOT, "src/main/omniworker.ts"),
   "utf-8",
 );
 
@@ -19,7 +19,7 @@ const flux-agentSrc = readFileSync(
 describe("Remote/SSH Mode History Preservation", () => {
   it("sendMessage passes history to sendMessageViaApi in remote mode", () => {
     // Extract the sendMessage function's remote mode branch
-    const remoteModeBranch = flux-agentSrc.match(
+    const remoteModeBranch = omniworkerSrc.match(
       /\/\/ Remote mode: always use API, no CLI fallback[\s\S]*?if \(isRemoteMode\(\)\) \{[\s\S]*?return sendMessageViaApi\([^)]+\);[\s\S]*?\}/,
     );
 
@@ -47,7 +47,7 @@ describe("Remote/SSH Mode History Preservation", () => {
 
   it("sendMessageViaApi builds messages from history + current message", () => {
     // Extract sendMessageViaApi function
-    const funcMatch = flux-agentSrc.match(
+    const funcMatch = omniworkerSrc.match(
       /function sendMessageViaApi\([\s\S]*?\): ChatHandle \{[\s\S]*?const messages: Array<\{ role: string; content: string \}> = \[\];[\s\S]*?if \(history && history\.length > 0\) \{[\s\S]*?for \(const msg of history\) \{[\s\S]*?messages\.push\(\{[\s\S]*?role: msg\.role === "agent" \? "assistant" : msg\.role,[\s\S]*?content: msg\.content,[\s\S]*?\}\);[\s\S]*?\}[\s\S]*?\}[\s\S]*?messages\.push\(\{ role: "user", content: message \}\);/,
     );
 
@@ -74,7 +74,7 @@ describe("Remote/SSH Mode History Preservation", () => {
 
   it("local API available branch also passes history", () => {
     // Extract the local API available branch
-    const localApiBranch = flux-agentSrc.match(
+    const localApiBranch = omniworkerSrc.match(
       /if \(apiServerAvailable\) \{[\s\S]*?return sendMessageViaApi\([^)]+\);[\s\S]*?\}/,
     );
 
@@ -99,13 +99,13 @@ describe("Remote/SSH Mode History Preservation", () => {
 
   it("all sendMessageViaApi calls in sendMessage include history parameter", () => {
     // Find the sendMessage function - use a more flexible regex
-    const startMatch = flux-agentSrc.indexOf(
+    const startMatch = omniworkerSrc.indexOf(
       "export async function sendMessage(",
     );
     expect(startMatch).toBeGreaterThan(-1);
 
     // Extract from "export async function sendMessage" to the next "export function" or end
-    const remainingCode = flux-agentSrc.substring(startMatch);
+    const remainingCode = omniworkerSrc.substring(startMatch);
     const endMatch = remainingCode.indexOf("\nexport function ");
     const funcCode =
       endMatch > 0 ? remainingCode.substring(0, endMatch) : remainingCode;

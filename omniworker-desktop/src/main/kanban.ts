@@ -1,12 +1,12 @@
 import { execFile, ExecFileOptions } from "child_process";
 import { join } from "path";
 import {
-  FLUX AGENT_HOME,
-  FLUX AGENT_PYTHON,
-  flux-agentCliArgs,
+  OMNIWORKER_HOME,
+  OMNIWORKER_PYTHON,
+  omniworkerCliArgs,
   getEnhancedPath,
 } from "./installer";
-import { isRemoteMode } from "./flux-agent";
+import { isRemoteMode } from "./omniworker";
 
 export interface KanbanTask {
   id: string;
@@ -99,25 +99,25 @@ function runKanban(
   args: string[],
   opts: RunOpts = {},
 ): Promise<KanbanResult<unknown>> {
-  const cliArgs = flux-agentCliArgs();
+  const cliArgs = omniworkerCliArgs();
   if (opts.profile && opts.profile !== "default") {
     cliArgs.push("-p", opts.profile);
   }
   cliArgs.push("kanban", ...args);
 
   const execOpts: ExecFileOptions = {
-    cwd: join(FLUX AGENT_HOME, "flux-agent-agent"),
+    cwd: join(OMNIWORKER_HOME, "omniworker-agent"),
     timeout: opts.timeoutMs ?? KANBAN_TIMEOUT_MS,
     env: {
       ...process.env,
       PATH: getEnhancedPath(),
-      FLUX AGENT_HOME: FLUX AGENT_HOME,
+      OMNIWORKER_HOME: OMNIWORKER_HOME,
     },
     maxBuffer: 16 * 1024 * 1024,
   };
 
   return new Promise((resolve) => {
-    execFile(FLUX AGENT_PYTHON, cliArgs, execOpts, (err, stdout, stderr) => {
+    execFile(OMNIWORKER_PYTHON, cliArgs, execOpts, (err, stdout, stderr) => {
       const out = (stdout || "").toString();
       if (err) {
         resolve({
@@ -133,7 +133,7 @@ function runKanban(
         } catch (parseErr) {
           resolve({
             success: false,
-            error: `Failed to parse JSON from 'flux-agent kanban': ${(parseErr as Error).message}`,
+            error: `Failed to parse JSON from 'omniworker kanban': ${(parseErr as Error).message}`,
             stdout: out,
           });
         }

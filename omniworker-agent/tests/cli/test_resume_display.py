@@ -17,9 +17,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
 def _make_cli(config_overrides=None, env_overrides=None, **kwargs):
-    """Create a Flux AgentCLI instance with minimal mocking."""
+    """Create a OmniWorkerCLI instance with minimal mocking."""
     import cli as _cli_mod
-    from cli import Flux AgentCLI
+    from cli import OmniWorkerCLI
 
     _clean_config = {
         "model": {
@@ -38,7 +38,7 @@ def _make_cli(config_overrides=None, env_overrides=None, **kwargs):
             else:
                 _clean_config[k] = v
 
-    clean_env = {"LLM_MODEL": "", "FLUX AGENT_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "OMNIWORKER_MAX_ITERATIONS": ""}
     if env_overrides:
         clean_env.update(env_overrides)
     with (
@@ -46,7 +46,7 @@ def _make_cli(config_overrides=None, env_overrides=None, **kwargs):
         patch.dict("os.environ", clean_env, clear=False),
         patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
     ):
-        return Flux AgentCLI(**kwargs)
+        return OmniWorkerCLI(**kwargs)
 
 
 # ── Sample conversation histories for tests ──────────────────────────
@@ -642,8 +642,8 @@ class TestResumeDisplayConfig:
     """resume_display config option defaults and behavior."""
 
     def test_default_config_has_resume_display(self):
-        """DEFAULT_CONFIG in flux-agent_cli/config.py includes resume_display."""
-        from flux-agent_cli.config import DEFAULT_CONFIG
+        """DEFAULT_CONFIG in omniworker_cli/config.py includes resume_display."""
+        from omniworker_cli.config import DEFAULT_CONFIG
         display = DEFAULT_CONFIG.get("display", {})
         assert "resume_display" in display
         assert display["resume_display"] == "full"

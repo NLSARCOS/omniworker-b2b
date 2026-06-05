@@ -2,7 +2,7 @@
 
 **Status:** Approved (brainstorming) — pending implementation plan
 **Date:** 2026-04-30
-**Branch target:** `Aiacos/flux-agent-desktop:feat/winget-rpm-release` → PR upstream `fathah/flux-agent-desktop:main`
+**Branch target:** `Aiacos/omniworker-desktop:feat/winget-rpm-release` → PR upstream `fathah/omniworker-desktop:main`
 
 ## Goal
 
@@ -47,10 +47,10 @@ The default-true on dispatch is a safety net: a stray click in the Actions UI ca
 ### Identifiers and naming
 
 - **Winget `PackageIdentifier`:** `OmniWorker.OmniWorkerDesktop` (stable, never renamed)
-- **Winget `Publisher`:** `Nous Research` (free-text; binaries hosted under `fathah/flux-agent-desktop`, which the moderation review will verify against the `InstallerUrl`)
+- **Winget `Publisher`:** `Nous Research` (free-text; binaries hosted under `fathah/omniworker-desktop`, which the moderation review will verify against the `InstallerUrl`)
 - **Winget `PackageName`:** `OmniWorker Agent` (matches `productName` in `electron-builder.yml`)
-- **NSIS scope:** `oneClick: true`, `perMachine: false` — installs into `%LOCALAPPDATA%`, no UAC prompt, aligns with `winget install` default user scope and with the app's existing `~/.flux-agent` user-state model.
-- **RPM artifact name:** `flux-agent-desktop-<version>.rpm` (no spaces, no arch suffix — consistent with the existing `.deb` and `.AppImage` naming. The default `${productName}` would produce `OmniWorker Agent-...rpm` which breaks `dnf install ./file.rpm`. We explicitly only build `x86_64`, so the missing arch suffix is unambiguous in practice.).
+- **NSIS scope:** `oneClick: true`, `perMachine: false` — installs into `%LOCALAPPDATA%`, no UAC prompt, aligns with `winget install` default user scope and with the app's existing `~/.omniworker` user-state model.
+- **RPM artifact name:** `omniworker-desktop-<version>.rpm` (no spaces, no arch suffix — consistent with the existing `.deb` and `.AppImage` naming. The default `${productName}` would produce `OmniWorker Agent-...rpm` which breaks `dnf install ./file.rpm`. We explicitly only build `x86_64`, so the missing arch suffix is unambiguous in practice.).
 
 ## File changes
 
@@ -99,7 +99,7 @@ YAML manifest with placeholders: `{{VERSION}}`, `{{INSTALLER_URL}}`, `{{INSTALLE
 
 #### `build/winget/Locale.en-US.template.yaml`
 
-Locale manifest with placeholders: `{{VERSION}}`, `{{RELEASE_NOTES_URL}}`. Includes `Publisher: Nous Research`, `PublisherUrl: https://github.com/fathah/flux-agent-desktop`, `PackageName: OmniWorker Agent`, `License: MIT`, `LicenseUrl: https://github.com/fathah/flux-agent-desktop/blob/main/LICENSE`, `ShortDescription`, `Tags: [ai, agent, desktop, electron, llm]`.
+Locale manifest with placeholders: `{{VERSION}}`, `{{RELEASE_NOTES_URL}}`. Includes `Publisher: Nous Research`, `PublisherUrl: https://github.com/fathah/omniworker-desktop`, `PackageName: OmniWorker Agent`, `License: MIT`, `LicenseUrl: https://github.com/fathah/omniworker-desktop/blob/main/LICENSE`, `ShortDescription`, `Tags: [ai, agent, desktop, electron, llm]`.
 
 #### `build/winget/Version.template.yaml`
 
@@ -126,7 +126,7 @@ Add script `"build:rpm": "npm run build && electron-builder --linux rpm"` for lo
 Update the Install section's platform table to add Windows (`.exe` and, once accepted into winget-pkgs, `winget install OmniWorker.OmniWorkerDesktop`) and Fedora (`.rpm`). Add a note that:
 
 - The Windows build is unsigned; Windows SmartScreen will warn on first launch.
-- The `.rpm` is unsigned; install with `sudo dnf install ./flux-agent-desktop-<version>.x86_64.rpm` (or use `--nogpgcheck` if a system policy enforces signature checking).
+- The `.rpm` is unsigned; install with `sudo dnf install ./omniworker-desktop-<version>.x86_64.rpm` (or use `--nogpgcheck` if a system policy enforces signature checking).
 - Auto-update on Linux is supported only for `.AppImage` builds; `.rpm` and `.deb` users must download new releases manually.
 
 ## Data flow
@@ -138,8 +138,8 @@ checkout
   → npm ci                  → node_modules + electron-builder install-app-deps
   → npm run build           → out/main + out/preload + out/renderer
   → electron-builder --win nsis --x64
-                            → dist/flux-agent-desktop-<version>-setup.exe
-                            → dist/flux-agent-desktop-<version>-setup.exe.blockmap
+                            → dist/omniworker-desktop-<version>-setup.exe
+                            → dist/omniworker-desktop-<version>-setup.exe.blockmap
                             → dist/latest.yml
   → upload-artifact "windows-artifacts"
 ```
@@ -149,7 +149,7 @@ checkout
 ```
 download-artifact "windows-artifacts" → dist/
 node scripts/generate-winget-manifests.mjs
-  → SHA256(dist/flux-agent-desktop-<version>-setup.exe)
+  → SHA256(dist/omniworker-desktop-<version>-setup.exe)
   → fill 3 templates with VERSION, INSTALLER_URL, INSTALLER_SHA256, RELEASE_DATE
   → write dist/winget/manifests/n/OmniWorker/OmniWorkerDesktop/<version>/*.yaml
 upload-artifact "winget-manifests-<version>"
@@ -163,9 +163,9 @@ checkout
   → npm run build
   → apt install rpm
   → electron-builder --linux AppImage deb rpm
-                            → dist/flux-agent-desktop-<version>.AppImage
-                            → dist/flux-agent-desktop-<version>.deb
-                            → dist/flux-agent-desktop-<version>.x86_64.rpm
+                            → dist/omniworker-desktop-<version>.AppImage
+                            → dist/omniworker-desktop-<version>.deb
+                            → dist/omniworker-desktop-<version>.x86_64.rpm
                             → dist/latest-linux.yml
   → upload-artifact "linux-artifacts"
 ```
@@ -205,7 +205,7 @@ softprops/action-gh-release files=artifacts/* (excludes winget/ subdir)
 
 ### CI on fork
 
-9. Push `feat/winget-rpm-release` to `Aiacos/flux-agent-desktop`.
+9. Push `feat/winget-rpm-release` to `Aiacos/omniworker-desktop`.
 10. Trigger `workflow_dispatch` from the Actions UI on `feat/winget-rpm-release` with `dry_run=true`.
 11. Verify all build jobs succeed:
     - `prepare` ✓

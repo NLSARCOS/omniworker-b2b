@@ -33,26 +33,26 @@ def _restore_tool_and_agent_modules():
     original_modules = {
         name: module
         for name, module in sys.modules.items()
-        if name in ("tools", "agent", "flux-agent_cli")
+        if name in ("tools", "agent", "omniworker_cli")
         or name.startswith("tools.")
         or name.startswith("agent.")
-        or name.startswith("flux-agent_cli.")
+        or name.startswith("omniworker_cli.")
     }
     try:
         yield
     finally:
-        _reset_modules(("tools", "agent", "flux-agent_cli"))
+        _reset_modules(("tools", "agent", "omniworker_cli"))
         sys.modules.update(original_modules)
 
 
 def _install_fake_tools_package(*, credential_mounts=None):
-    _reset_modules(("tools", "agent", "flux-agent_cli"))
+    _reset_modules(("tools", "agent", "omniworker_cli"))
 
-    flux-agent_cli = types.ModuleType("flux-agent_cli")
-    flux-agent_cli.__path__ = []  # type: ignore[attr-defined]
-    sys.modules["flux-agent_cli"] = flux-agent_cli
-    sys.modules["flux-agent_cli.config"] = types.SimpleNamespace(
-        get_flux-agent_home=lambda: Path(tempfile.gettempdir()) / "flux-agent-home",
+    omniworker_cli = types.ModuleType("omniworker_cli")
+    omniworker_cli.__path__ = []  # type: ignore[attr-defined]
+    sys.modules["omniworker_cli"] = omniworker_cli
+    sys.modules["omniworker_cli.config"] = types.SimpleNamespace(
+        get_omniworker_home=lambda: Path(tempfile.gettempdir()) / "omniworker-home",
     )
 
     tools_package = types.ModuleType("tools")
@@ -281,7 +281,7 @@ def test_managed_modal_rejects_host_credential_passthrough():
     _install_fake_tools_package(
         credential_mounts=[{
             "host_path": "/tmp/token.json",
-            "container_path": "/root/.flux-agent/token.json",
+            "container_path": "/root/.omniworker/token.json",
         }]
     )
     managed_modal = _load_tool_module("tools.environments.managed_modal", "environments/managed_modal.py")

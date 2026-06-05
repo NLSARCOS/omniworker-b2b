@@ -6,7 +6,7 @@ author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Research, Web, Search, Deep-Research, Enrichment, CLI]
     related_skills: [duckduckgo-search, mcporter]
 ---

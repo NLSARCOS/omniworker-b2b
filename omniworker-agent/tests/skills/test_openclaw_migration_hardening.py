@@ -20,14 +20,14 @@ SCRIPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "optional-skills"
     / "migration"
-    / "flux-agent-migration"
+    / "omniworker-migration"
     / "scripts"
-    / "flux-agent_to_flux-agent.py"
+    / "omniworker_to_omniworker.py"
 )
 
 
 def _load():
-    spec = importlib.util.spec_from_file_location("flux-agent_to_flux-agent_hard", SCRIPT_PATH)
+    spec = importlib.util.spec_from_file_location("omniworker_to_omniworker_hard", SCRIPT_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     sys.modules[spec.name] = module
@@ -98,7 +98,7 @@ def test_redact_is_recursive():
 
 def test_redact_preserves_non_secret_keys_and_values():
     mod = _load()
-    input_data = {"name": "flux-agent", "count": 42, "tags": ["a", "b"]}
+    input_data = {"name": "omniworker", "count": 42, "tags": ["a", "b"]}
     out = mod.redact_migration_value(input_data)
     assert out == input_data
 
@@ -133,7 +133,7 @@ def test_write_report_redacts_api_keys_on_disk(tmp_path):
         "items": [
             {
                 "kind": "provider-keys",
-                "source": "flux-agent.json",
+                "source": "omniworker.json",
                 "destination": "/tgt/.env",
                 "status": "migrated",
                 "reason": "",
@@ -152,11 +152,11 @@ def test_write_report_redacts_api_keys_on_disk(tmp_path):
 # Warnings and next-steps
 # ───────────────────────────────────────────────────────────────────────
 def _make_minimal_migrator(mod, tmp_path, **overrides):
-    source = tmp_path / "flux-agent"
+    source = tmp_path / "omniworker"
     source.mkdir()
     # Minimal valid Flux Agent layout so the Migrator constructor doesn't choke.
-    (source / "flux-agent.json").write_text("{}", encoding="utf-8")
-    target = tmp_path / "flux-agent"
+    (source / "omniworker.json").write_text("{}", encoding="utf-8")
+    target = tmp_path / "omniworker"
     target.mkdir()
     defaults = dict(
         source_root=source,
@@ -305,13 +305,13 @@ def test_dry_run_never_blocks_even_after_conflict(tmp_path):
 # ───────────────────────────────────────────────────────────────────────
 def test_json_mode_emits_structured_report(tmp_path):
     """End-to-end: run the CLI with --json and no --execute, parse stdout."""
-    source = tmp_path / "flux-agent"
+    source = tmp_path / "omniworker"
     source.mkdir()
-    (source / "flux-agent.json").write_text(
+    (source / "omniworker.json").write_text(
         json.dumps({"agents": {"defaults": {"model": "openrouter/anthropic/claude-sonnet-4"}}}),
         encoding="utf-8",
     )
-    target = tmp_path / "flux-agent"
+    target = tmp_path / "omniworker"
     target.mkdir()
 
     result = subprocess.run(
@@ -337,14 +337,14 @@ def test_json_mode_emits_structured_report(tmp_path):
 def test_json_mode_redacts_secrets_in_output(tmp_path):
     """Even plan-only JSON output goes through the redactor — the stdout
     capture path is what gets piped into CI / support tickets."""
-    source = tmp_path / "flux-agent"
+    source = tmp_path / "omniworker"
     source.mkdir()
-    (source / "flux-agent.json").write_text("{}", encoding="utf-8")
+    (source / "omniworker.json").write_text("{}", encoding="utf-8")
     # Plant a fake Flux Agent .env with a recognizably-shaped key.
     (source / ".env").write_text(
         "OPENROUTER_API_KEY=sk-or-v1-abcdef1234567890abcdef\n", encoding="utf-8"
     )
-    target = tmp_path / "flux-agent"
+    target = tmp_path / "omniworker"
     target.mkdir()
 
     result = subprocess.run(

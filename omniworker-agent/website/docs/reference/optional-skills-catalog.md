@@ -1,22 +1,22 @@
 ---
 sidebar_position: 9
 title: "Optional Skills Catalog"
-description: "Official optional skills shipped with flux-agent-agent — install via flux-agent skills install official/<category>/<skill>"
+description: "Official optional skills shipped with omniworker-agent — install via omniworker skills install official/<category>/<skill>"
 ---
 
 # Optional Skills Catalog
 
-Optional skills ship with flux-agent-agent under `optional-skills/` but are **not active by default**. Install them explicitly:
+Optional skills ship with omniworker-agent under `optional-skills/` but are **not active by default**. Install them explicitly:
 
 ```bash
-flux-agent skills install official/<category>/<skill>
+omniworker skills install official/<category>/<skill>
 ```
 
 For example:
 
 ```bash
-flux-agent skills install official/blockchain/solana
-flux-agent skills install official/mlops/flash-attention
+omniworker skills install official/blockchain/solana
+omniworker skills install official/mlops/flash-attention
 ```
 
 Each skill below links to a dedicated page with its full definition, setup, and usage.
@@ -24,7 +24,7 @@ Each skill below links to a dedicated page with its full definition, setup, and 
 To uninstall:
 
 ```bash
-flux-agent skills uninstall <skill-name>
+omniworker skills uninstall <skill-name>
 ```
 
 ## autonomous-ai-agents
@@ -75,7 +75,7 @@ flux-agent skills uninstall <skill-name>
 
 | Skill | Description |
 |-------|-------------|
-| [**agentmail**](/docs/user-guide/skills/optional/email/email-agentmail) | Give the agent its own dedicated email inbox via AgentMail. Send, receive, and manage email autonomously using agent-owned email addresses (e.g. flux-agent-agent@agentmail.to). |
+| [**agentmail**](/docs/user-guide/skills/optional/email/email-agentmail) | Give the agent its own dedicated email inbox via AgentMail. Send, receive, and manage email autonomously using agent-owned email addresses (e.g. omniworker-agent@agentmail.to). |
 
 ## finance
 
@@ -107,7 +107,7 @@ flux-agent skills uninstall <skill-name>
 
 | Skill | Description |
 |-------|-------------|
-| [**flux-agent-migration**](/docs/user-guide/skills/optional/migration/migration-flux-agent-migration) | Migrate a user's Flux Agent customization footprint into Flux Agent Agent. Imports Flux Agent-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.flux-agent, then reports exactly what could not be mig... |
+| [**omniworker-migration**](/docs/user-guide/skills/optional/migration/migration-omniworker-migration) | Migrate a user's Flux Agent customization footprint into Flux Agent Agent. Imports Flux Agent-compatible memories, SOUL.md, command allowlists, user skills, and selected workspace assets from ~/.omniworker, then reports exactly what could not be mig... |
 
 ## mlops
 

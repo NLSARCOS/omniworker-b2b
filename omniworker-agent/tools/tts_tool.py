@@ -16,7 +16,7 @@ Built-in TTS providers:
 
 Custom command providers:
 - Users can declare any number of named providers with ``type: command``
-  under ``tts.providers.<name>`` in ``~/.flux-agent/config.yaml``. Flux Agent
+  under ``tts.providers.<name>`` in ``~/.omniworker/config.yaml``. Flux Agent
   writes the input text to a temp file and runs the configured shell
   command, which must produce the audio file at the expected path.
   See the Local Command section of ``website/docs/user-guide/features/tts.md``.
@@ -25,7 +25,7 @@ Output formats:
 - Opus (.ogg) for Telegram voice bubbles (requires ffmpeg for Edge TTS)
 - MP3 (.mp3) for everything else (CLI, Discord, WhatsApp)
 
-Configuration is loaded from ~/.flux-agent/config.yaml under the 'tts:' key.
+Configuration is loaded from ~/.omniworker/config.yaml under the 'tts:' key.
 The user chooses the provider and voice; the model just sends text.
 
 Usage:
@@ -53,25 +53,25 @@ from pathlib import Path
 from typing import Callable, Dict, Any, Optional
 from urllib.parse import urljoin
 
-from flux-agent_constants import display_flux-agent_home
+from omniworker_constants import display_omniworker_home
 
 logger = logging.getLogger(__name__)
 def get_env_value(name, default=None):
     """Read env values through the live config module.
 
-    Tests may monkeypatch and later restore ``flux-agent_cli.config.get_env_value``
+    Tests may monkeypatch and later restore ``omniworker_cli.config.get_env_value``
     before this module is imported. Resolve the helper at call time so TTS does
     not keep a stale imported function for the rest of the test process.
     """
     try:
-        from flux-agent_cli.config import get_env_value as _get_env_value
+        from omniworker_cli.config import get_env_value as _get_env_value
     except ImportError:
         return os.getenv(name, default)
     value = _get_env_value(name)
     return default if value is None else value
 from tools.managed_tool_gateway import resolve_managed_tool_gateway
 from tools.tool_backend_helpers import managed_nous_tools_enabled, prefers_gateway, resolve_openai_audio_api_key
-from tools.xai_http import flux-agent_xai_user_agent
+from tools.xai_http import omniworker_xai_user_agent
 
 # ---------------------------------------------------------------------------
 # Lazy imports -- providers are imported only when actually used to avoid
@@ -178,8 +178,8 @@ GEMINI_TTS_CHANNELS = 1
 GEMINI_TTS_SAMPLE_WIDTH = 2  # 16-bit PCM (L16)
 
 def _get_default_output_dir() -> str:
-    from flux-agent_constants import get_flux-agent_dir
-    return str(get_flux-agent_dir("cache/audio", "audio_cache"))
+    from omniworker_constants import get_omniworker_dir
+    return str(get_omniworker_dir("cache/audio", "audio_cache"))
 
 DEFAULT_OUTPUT_DIR = _get_default_output_dir()
 
@@ -279,21 +279,21 @@ def _resolve_max_text_length(
 
 
 # ===========================================================================
-# Config loader -- reads tts: section from ~/.flux-agent/config.yaml
+# Config loader -- reads tts: section from ~/.omniworker/config.yaml
 # ===========================================================================
 def _load_tts_config() -> Dict[str, Any]:
     """
-    Load TTS configuration from ~/.flux-agent/config.yaml.
+    Load TTS configuration from ~/.omniworker/config.yaml.
 
     Returns a dict with provider settings. Falls back to defaults
     for any missing fields.
     """
     try:
-        from flux-agent_cli.config import load_config
+        from omniworker_cli.config import load_config
         config = load_config()
         return config.get("tts", {})
     except ImportError:
-        logger.debug("flux-agent_cli.config not available, using default TTS config")
+        logger.debug("omniworker_cli.config not available, using default TTS config")
         return {}
     except Exception as e:
         logger.warning("Failed to load TTS config: %s", e, exc_info=True)
@@ -529,7 +529,7 @@ def _render_command_tts_template(
 
     def replace_match(match: re.Match[str]) -> str:
         name = match.group("double") or match.group("single")
-        token = f"__FLUX AGENT_TTS_PLACEHOLDER_{len(replacements)}__"
+        token = f"__OMNIWORKER_TTS_PLACEHOLDER_{len(replacements)}__"
         replacements.append((
             token,
             _quote_command_tts_placeholder(
@@ -942,7 +942,7 @@ def _generate_xai_tts(text: str, output_path: str, tts_config: Dict[str, Any]) -
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "User-Agent": flux-agent_xai_user_agent(),
+            "User-Agent": omniworker_xai_user_agent(),
         },
         json=payload,
         timeout=60,
@@ -1410,11 +1410,11 @@ def _check_piper_available() -> bool:
 def _get_piper_voices_dir() -> Path:
     """Return the directory where Flux Agent caches Piper voice models.
 
-    Resolves to ``~/.flux-agent/cache/piper-voices/`` under the active
-    FLUX AGENT_HOME so voice downloads follow profile boundaries.
+    Resolves to ``~/.omniworker/cache/piper-voices/`` under the active
+    OMNIWORKER_HOME so voice downloads follow profile boundaries.
     """
-    from flux-agent_constants import get_flux-agent_dir
-    root = Path(get_flux-agent_dir("cache/piper-voices", "piper_voices_cache"))
+    from omniworker_constants import get_omniworker_dir
+    root = Path(get_omniworker_dir("cache/piper-voices", "piper_voices_cache"))
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -1622,7 +1622,7 @@ def text_to_speech_tool(
     """
     Convert text to speech audio.
 
-    Reads provider/voice config from ~/.flux-agent/config.yaml (tts: section).
+    Reads provider/voice config from ~/.omniworker/config.yaml (tts: section).
     The model sends text; the user configures voice and provider.
 
     On messaging platforms, the returned MEDIA:<path> tag is intercepted
@@ -1663,7 +1663,7 @@ def text_to_speech_tool(
     # produce Opus natively (no ffmpeg needed).  Edge TTS always outputs MP3
     # and needs ffmpeg for conversion.
     from gateway.session_context import get_session_env
-    platform = get_session_env("FLUX AGENT_SESSION_PLATFORM", "").lower()
+    platform = get_session_env("OMNIWORKER_SESSION_PLATFORM", "").lower()
     want_opus = (platform == "telegram")
 
     # Determine output path
@@ -1760,7 +1760,7 @@ def text_to_speech_tool(
                 return json.dumps({
                     "success": False,
                     "error": "NeuTTS provider selected but neutts is not installed. "
-                             "Run flux-agent setup and choose NeuTTS, or install espeak-ng and run python -m pip install -U neutts[all]."
+                             "Run omniworker setup and choose NeuTTS, or install espeak-ng and run python -m pip install -U neutts[all]."
                 }, ensure_ascii=False)
             logger.info("Generating speech with NeuTTS (local)...")
             _generate_neutts(text, file_str, tts_config)
@@ -1772,7 +1772,7 @@ def text_to_speech_tool(
                 return json.dumps({
                     "success": False,
                     "error": "KittenTTS provider selected but 'kittentts' package not installed. "
-                             "Run 'flux-agent setup tts' and choose KittenTTS, or install manually: "
+                             "Run 'omniworker setup tts' and choose KittenTTS, or install manually: "
                              "pip install https://github.com/KittenML/KittenTTS/releases/download/0.8.1/kittentts-0.8.1-py3-none-any.whl"
                 }, ensure_ascii=False)
             logger.info("Generating speech with KittenTTS (local, ~25MB)...")
@@ -1785,7 +1785,7 @@ def text_to_speech_tool(
                 return json.dumps({
                     "success": False,
                     "error": "Piper provider selected but 'piper-tts' package not installed. "
-                             "Run 'flux-agent tools' and select Piper under TTS, or install manually: "
+                             "Run 'omniworker tools' and select Piper under TTS, or install manually: "
                              "pip install piper-tts",
                 }, ensure_ascii=False)
             logger.info("Generating speech with Piper (local)...")
@@ -2256,7 +2256,7 @@ TTS_SCHEMA = {
             },
             "output_path": {
                 "type": "string",
-                "description": f"Optional custom file path to save the audio. Defaults to {display_flux-agent_home()}/audio_cache/<timestamp>.mp3"
+                "description": f"Optional custom file path to save the audio. Defaults to {display_omniworker_home()}/audio_cache/<timestamp>.mp3"
             }
         },
         "required": ["text"]

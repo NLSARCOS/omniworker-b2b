@@ -11,10 +11,10 @@ from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from tools.tool_backend_helpers import managed_nous_tools_enabled
 
-_DEFAULT_TOOL_GATEWAY_DOMAIN = "flux-agent.com"
+_DEFAULT_TOOL_GATEWAY_DOMAIN = "omniworker.com"
 _DEFAULT_TOOL_GATEWAY_SCHEME = "https"
 _NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 
@@ -28,8 +28,8 @@ class ManagedToolGatewayConfig:
 
 
 def auth_json_path():
-    """Return the Flux Agent auth store path, respecting FLUX AGENT_HOME overrides."""
-    return get_flux-agent_home() / "auth.json"
+    """Return the Flux Agent auth store path, respecting OMNIWORKER_HOME overrides."""
+    return get_omniworker_home() / "auth.json"
 
 
 def _read_nous_provider_state() -> Optional[dict]:
@@ -89,7 +89,7 @@ def read_nous_access_token() -> Optional[str]:
         return cached_token
 
     try:
-        from flux-agent_cli.auth import resolve_nous_access_token
+        from omniworker_cli.auth import resolve_nous_access_token
 
         refreshed_token = resolve_nous_access_token(
             refresh_skew_seconds=_NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,

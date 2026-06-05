@@ -60,18 +60,18 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 def _get_sessions_dir() -> Path:
-    """Return the sessions directory using FLUX AGENT_HOME."""
+    """Return the sessions directory using OMNIWORKER_HOME."""
     try:
-        from flux-agent_constants import get_flux-agent_home
-        return get_flux-agent_home() / "sessions"
+        from omniworker_constants import get_omniworker_home
+        return get_omniworker_home() / "sessions"
     except ImportError:
-        return Path(os.environ.get("FLUX AGENT_HOME", Path.home() / ".hermes")) / "sessions"
+        return Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")) / "sessions"
 
 
 def _get_session_db():
     """Get a SessionDB instance for reading message transcripts."""
     try:
-        from flux-agent_state import SessionDB
+        from omniworker_state import SessionDB
         return SessionDB()
     except Exception as e:
         logger.debug("SessionDB unavailable: %s", e)
@@ -98,11 +98,11 @@ def _load_sessions_index() -> dict:
 def _load_channel_directory() -> dict:
     """Load the cached channel directory for available targets."""
     try:
-        from flux-agent_constants import get_flux-agent_home
-        directory_file = get_flux-agent_home() / "channel_directory.json"
+        from omniworker_constants import get_omniworker_home
+        directory_file = get_omniworker_home() / "channel_directory.json"
     except ImportError:
         directory_file = Path(
-            os.environ.get("FLUX AGENT_HOME", Path.home() / ".hermes")
+            os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")
         ) / "channel_directory.json"
 
     if not directory_file.exists():
@@ -362,10 +362,10 @@ class EventBridge:
 
         # Check if state.db has changed
         try:
-            from flux-agent_constants import get_flux-agent_home
-            db_file = get_flux-agent_home() / "state.db"
+            from omniworker_constants import get_omniworker_home
+            db_file = get_omniworker_home() / "state.db"
         except ImportError:
-            db_file = Path(os.environ.get("FLUX AGENT_HOME", Path.home() / ".hermes")) / "state.db"
+            db_file = Path(os.environ.get("OMNIWORKER_HOME", Path.home() / ".hermes")) / "state.db"
 
         try:
             db_mtime = db_file.stat().st_mtime if db_file.exists() else 0.0

@@ -35,11 +35,11 @@ class OfflineFTSMemoryProvider(MemoryProvider):
 
     def initialize(self, session_id: str, **kwargs) -> None:
         self._active_session_id = session_id
-        home = kwargs.get("flux-agent_home", str(Path.home() / ".flux-agent"))
+        home = kwargs.get("omniworker_home", str(Path.home() / ".omniworker"))
         self._db_path = Path(home) / "state.db"
 
         try:
-            from flux-agent_state import SessionDB
+            from omniworker_state import SessionDB
             self._session_db = SessionDB(db_path=self._db_path)
             logger.info("offline_fts: initialized with state.db at %s", self._db_path)
         except Exception as e:

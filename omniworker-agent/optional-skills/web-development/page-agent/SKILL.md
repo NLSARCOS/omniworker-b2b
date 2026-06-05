@@ -6,7 +6,7 @@ author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [web, javascript, agent, browser, gui, alibaba, embed, copilot, saas]
     category: web-development
 ---

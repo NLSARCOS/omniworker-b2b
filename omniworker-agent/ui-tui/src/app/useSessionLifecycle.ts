@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 
-import type { ScrollBoxHandle } from '@flux-agent/ink'
-import { evictInkCaches } from '@flux-agent/ink'
+import type { ScrollBoxHandle } from '@omniworker/ink'
+import { evictInkCaches } from '@omniworker/ink'
 import { useCallback, type RefObject } from 'react'
 
 import { buildSetupRequiredSections, SETUP_REQUIRED_TITLE } from '../content/setup.js'

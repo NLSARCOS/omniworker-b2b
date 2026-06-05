@@ -11,7 +11,7 @@ const { TEST_HOME } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const os = require("os");
   return {
-    TEST_HOME: path.join(os.tmpdir(), `flux-agent-profiles-test-${Date.now()}`),
+    TEST_HOME: path.join(os.tmpdir(), `omniworker-profiles-test-${Date.now()}`),
   };
 });
 
@@ -21,7 +21,7 @@ vi.mock("../src/main/installer", () => ({
   OMNIWORKER_HOME: TEST_HOME,
   OMNIWORKER_PYTHON: "/usr/bin/python3",
   OMNIWORKER_SCRIPT: "/dev/null",
-  flux-agentCliArgs: (args: string[] = []) => ["/dev/null", ...args],
+  omniworkerCliArgs: (args: string[] = []) => ["/dev/null", ...args],
   getEnhancedPath: () => process.env.PATH || "",
 }));
 
@@ -38,7 +38,7 @@ const PROFILES_DIR = join(TEST_HOME, "profiles");
 beforeEach(() => {
   mkdirSync(TEST_HOME, { recursive: true });
   mkdirSync(PROFILES_DIR, { recursive: true });
-  mkdirSync(join(TEST_HOME, "flux-agent-agent"), { recursive: true });
+  mkdirSync(join(TEST_HOME, "omniworker-agent"), { recursive: true });
 });
 
 afterEach(() => {
@@ -116,7 +116,7 @@ describe("listProfiles", () => {
     expect(profiles.find((p) => p.name === "UpperCase")).toBeUndefined();
   });
 
-  it("returns the default profile even when ~/.flux-agent/profiles/ is empty", async () => {
+  it("returns the default profile even when ~/.omniworker/profiles/ is empty", async () => {
     const profiles = await listProfiles();
     expect(profiles.find((p) => p.isDefault)).toBeDefined();
   });

@@ -14,7 +14,7 @@ Facebook's library for efficient similarity search and clustering of dense vecto
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/mlops/faiss` |
+| Source | Optional — install with `omniworker skills install official/mlops/faiss` |
 | Path | `optional-skills/mlops/faiss` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |

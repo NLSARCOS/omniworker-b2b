@@ -103,7 +103,7 @@ class InsightsEngine:
         Initialize with a SessionDB instance.
 
         Args:
-            db: A SessionDB instance (from flux-agent_state.py)
+            db: A SessionDB instance (from omniworker_state.py)
         """
         self.db = db
         self._conn = db._conn

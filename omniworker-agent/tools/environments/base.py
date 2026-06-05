@@ -20,16 +20,16 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import IO, Callable, Protocol
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 from tools.interrupt import is_interrupted
 
 logger = logging.getLogger(__name__)
 
 # Opt-in debug tracing for the interrupt/activity/poll machinery.  Set
-# FLUX AGENT_DEBUG_INTERRUPT=1 to log loop entry/exit, periodic heartbeats, and
+# OMNIWORKER_DEBUG_INTERRUPT=1 to log loop entry/exit, periodic heartbeats, and
 # every is_interrupted() state change from _wait_for_process.  Off by default
 # to avoid flooding production gateway logs.
-_DEBUG_INTERRUPT = bool(os.getenv("FLUX AGENT_DEBUG_INTERRUPT"))
+_DEBUG_INTERRUPT = bool(os.getenv("OMNIWORKER_DEBUG_INTERRUPT"))
 
 if _DEBUG_INTERRUPT:
     # AIAgent's quiet_mode path (run_agent.py) forces the `tools` logger to
@@ -82,13 +82,13 @@ def get_sandbox_dir() -> Path:
     """Return the host-side root for all sandbox storage (Docker workspaces,
     Singularity overlays/SIF cache, etc.).
 
-    Configurable via TERMINAL_SANDBOX_DIR. Defaults to {FLUX AGENT_HOME}/sandboxes/.
+    Configurable via TERMINAL_SANDBOX_DIR. Defaults to {OMNIWORKER_HOME}/sandboxes/.
     """
     custom = os.getenv("TERMINAL_SANDBOX_DIR")
     if custom:
         p = Path(custom)
     else:
-        p = get_flux-agent_home() / "sandboxes"
+        p = get_omniworker_home() / "sandboxes"
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -277,7 +277,7 @@ class _ThreadedProcessHandle:
 
 
 def _cwd_marker(session_id: str) -> str:
-    return f"__FLUX AGENT_CWD_{session_id}__"
+    return f"__OMNIWORKER_CWD_{session_id}__"
 
 
 # ---------------------------------------------------------------------------
@@ -315,8 +315,8 @@ class BaseEnvironment(ABC):
 
         self._session_id = uuid.uuid4().hex[:12]
         temp_dir = self.get_temp_dir().rstrip("/") or "/"
-        self._snapshot_path = f"{temp_dir}/flux-agent-snap-{self._session_id}.sh"
-        self._cwd_file = f"{temp_dir}/flux-agent-cwd-{self._session_id}.txt"
+        self._snapshot_path = f"{temp_dir}/omniworker-snap-{self._session_id}.sh"
+        self._cwd_file = f"{temp_dir}/omniworker-cwd-{self._session_id}.txt"
         self._cwd_marker = _cwd_marker(self._session_id)
         self._snapshot_ready = False
 
@@ -364,7 +364,7 @@ class BaseEnvironment(ABC):
         # ``C:/Users/...``-shaped paths without glob-splitting the colon or
         # tripping on drive letters.  On POSIX this is a no-op (no colons /
         # special chars in a /tmp path).  Previously unquoted interpolation
-        # caused ``C:/Users/.../flux-agent-snap-*.sh: No such file or directory``
+        # caused ``C:/Users/.../omniworker-snap-*.sh: No such file or directory``
         # errors on Windows, leaking via stderr (merged into stdout on Linux
         # backends) into every terminal-tool response.
         _quoted_snap = shlex.quote(self._snapshot_path)
@@ -447,7 +447,7 @@ class BaseEnvironment(ABC):
 
         # Run the actual command
         parts.append(f"eval '{escaped}'")
-        parts.append("__flux-agent_ec=$?")
+        parts.append("__omniworker_ec=$?")
 
         # Re-dump env vars to snapshot (last-writer-wins for concurrent calls)
         if self._snapshot_ready:
@@ -462,7 +462,7 @@ class BaseEnvironment(ABC):
         parts.append(
             f"printf '\\n{self._cwd_marker}%s{self._cwd_marker}\\n' \"$(pwd -P)\""
         )
-        parts.append("exit $__flux-agent_ec")
+        parts.append("exit $__omniworker_ec")
 
         return "\n".join(parts)
 
@@ -473,7 +473,7 @@ class BaseEnvironment(ABC):
     @staticmethod
     def _embed_stdin_heredoc(command: str, stdin_data: str) -> str:
         """Append stdin_data as a shell heredoc to the command string."""
-        delimiter = f"FLUX AGENT_STDIN_{uuid.uuid4().hex[:12]}"
+        delimiter = f"OMNIWORKER_STDIN_{uuid.uuid4().hex[:12]}"
         return f"{command} << '{delimiter}'\n{stdin_data}\n{delimiter}"
 
     # ------------------------------------------------------------------
@@ -589,7 +589,7 @@ class BaseEnvironment(ABC):
             "start": _now,
         }
 
-        # --- Debug tracing (opt-in via FLUX AGENT_DEBUG_INTERRUPT=1) -------------
+        # --- Debug tracing (opt-in via OMNIWORKER_DEBUG_INTERRUPT=1) -------------
         # Captures loop entry/exit, interrupt state changes, and periodic
         # heartbeats so we can diagnose "agent never sees the interrupt"
         # reports without reproducing locally.
@@ -722,7 +722,7 @@ class BaseEnvironment(ABC):
         self._extract_cwd_from_output(result)
 
     def _extract_cwd_from_output(self, result: dict):
-        """Parse the __FLUX AGENT_CWD_{session}__ marker from stdout output.
+        """Parse the __OMNIWORKER_CWD_{session}__ marker from stdout output.
 
         Updates self.cwd and strips the marker from result["output"].
         Used by remote backends (Docker, SSH, Modal, Daytona, Singularity).

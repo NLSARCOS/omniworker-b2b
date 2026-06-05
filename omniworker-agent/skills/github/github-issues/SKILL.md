@@ -6,7 +6,7 @@ author: Flux Agent Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [GitHub, Issues, Project-Management, Bug-Tracking, Triage]
     related_skills: [github-auth, github-pr-workflow]
 ---
@@ -28,8 +28,8 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 else
   AUTH="git"
   if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ~/.flux-agent/.env ] && grep -q "^GITHUB_TOKEN=" ~/.flux-agent/.env; then
-      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.flux-agent/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+    if [ -f ~/.omniworker/.env ] && grep -q "^GITHUB_TOKEN=" ~/.omniworker/.env; then
+      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.omniworker/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi

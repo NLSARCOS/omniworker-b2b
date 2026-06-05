@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
-from flux-agent_state import SessionDB
+from omniworker_state import SessionDB
 from tools.todo_tool import TodoStore
 
 
@@ -74,7 +74,7 @@ class _FakeAgent:
 
 
 def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
-    """Create a Flux AgentCLI instance with minimal mocking."""
+    """Create a OmniWorkerCLI instance with minimal mocking."""
     _clean_config = {
         "model": {
             "default": "anthropic/claude-opus-4.6",
@@ -87,7 +87,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
     }
     if config_overrides:
         _clean_config.update(config_overrides)
-    clean_env = {"LLM_MODEL": "", "FLUX AGENT_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "OMNIWORKER_MAX_ITERATIONS": ""}
     if env_overrides:
         clean_env.update(env_overrides)
     prompt_toolkit_stubs = {
@@ -116,7 +116,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
         with patch.object(_cli_mod, "get_tool_definitions", return_value=[]), patch.dict(
             _cli_mod.__dict__, {"CLI_CONFIG": _clean_config}
         ):
-            return _cli_mod.Flux AgentCLI(**kwargs)
+            return _cli_mod.OmniWorkerCLI(**kwargs)
 
 
 def _prepare_cli_with_active_session(tmp_path):

@@ -577,7 +577,7 @@ export default function SuperAdminCommandCenter() {
         <div className="p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3 text-zinc-100 font-bold tracking-widest text-lg">
             <Terminal size={20} className="text-zinc-400" />
-            <span>FLUX AGENT</span>
+            <span>OMNIWORKER</span>
           </div>
           <div className="text-xs text-zinc-500 mt-1 font-mono uppercase tracking-widest">Administrador raíz</div>
         </div>

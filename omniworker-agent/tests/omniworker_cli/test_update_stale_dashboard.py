@@ -1,6 +1,6 @@
-"""Tests for the stale-dashboard handling run at the end of ``flux-agent update``.
+"""Tests for the stale-dashboard handling run at the end of ``omniworker update``.
 
-``flux-agent update`` detects ``flux-agent dashboard`` processes left over from the
+``omniworker update`` detects ``omniworker dashboard`` processes left over from the
 previous version and kills them (SIGTERM + SIGKILL grace, or ``taskkill /F``
 on Windows).  Without this, the running backend silently serves stale Python
 against a freshly-updated JS bundle, producing 401s / empty data.
@@ -20,7 +20,7 @@ from unittest.mock import patch, MagicMock, call
 
 import pytest
 
-from flux-agent_cli.main import (
+from omniworker_cli.main import (
     _find_stale_dashboard_pids,
     _kill_stale_dashboard_processes,
     _warn_stale_dashboard_processes,  # back-compat alias
@@ -29,13 +29,13 @@ from flux-agent_cli.main import (
 
 @pytest.fixture(autouse=True)
 def _refresh_bindings_against_live_module():
-    """Rebind module-level names to the *current* ``flux-agent_cli.main``.
+    """Rebind module-level names to the *current* ``omniworker_cli.main``.
 
     Other tests in the suite (notably ``test_env_loader.py`` and
-    ``test_skills_subparser.py``) reload or delete ``flux-agent_cli.main`` from
+    ``test_skills_subparser.py``) reload or delete ``omniworker_cli.main`` from
     ``sys.modules``.  When that happens on the same xdist worker before we
-    run, our top-of-file ``from flux-agent_cli.main import ...`` bindings end
-    up pointing at the *old* module object.  ``patch(\"flux-agent_cli.main.X\")``
+    run, our top-of-file ``from omniworker_cli.main import ...`` bindings end
+    up pointing at the *old* module object.  ``patch(\"omniworker_cli.main.X\")``
     then patches the *new* module, but the function we call still resolves
     ``_find_stale_dashboard_pids`` via its stale ``__globals__``, so every
     patch becomes a no-op and the kill path silently returns early.
@@ -49,9 +49,9 @@ def _refresh_bindings_against_live_module():
     global _kill_stale_dashboard_processes
     global _warn_stale_dashboard_processes
 
-    live = sys.modules.get("flux-agent_cli.main")
+    live = sys.modules.get("omniworker_cli.main")
     if live is None:
-        live = importlib.import_module("flux-agent_cli.main")
+        live = importlib.import_module("omniworker_cli.main")
 
     _find_stale_dashboard_pids = live._find_stale_dashboard_pids
     _kill_stale_dashboard_processes = live._kill_stale_dashboard_processes
@@ -99,7 +99,7 @@ class TestFindStaleDashboardPids:
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0,
-                stdout=_ps_line(12345, "python3 -m flux-agent_cli.main dashboard --port 9119") + "\n",
+                stdout=_ps_line(12345, "python3 -m omniworker_cli.main dashboard --port 9119") + "\n",
                 stderr="",
             )
             assert _find_stale_dashboard_pids() == [12345]
@@ -109,9 +109,9 @@ class TestFindStaleDashboardPids:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout="\n".join([
-                    _ps_line(12345, "python3 -m flux-agent_cli.main dashboard --port 9119"),
-                    _ps_line(12346, "flux-agent dashboard --port 9120 --no-open"),
-                    _ps_line(12347, "python /home/x/flux-agent_cli/main.py dashboard"),
+                    _ps_line(12345, "python3 -m omniworker_cli.main dashboard --port 9119"),
+                    _ps_line(12346, "omniworker dashboard --port 9120 --no-open"),
+                    _ps_line(12347, "python /home/x/omniworker_cli/main.py dashboard"),
                 ]) + "\n",
                 stderr="",
             )
@@ -122,8 +122,8 @@ class TestFindStaleDashboardPids:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout="\n".join([
-                    _ps_line(os.getpid(), "python3 -m flux-agent_cli.main dashboard"),
-                    _ps_line(12345, "flux-agent dashboard --port 9119"),
+                    _ps_line(os.getpid(), "python3 -m omniworker_cli.main dashboard"),
+                    _ps_line(12345, "omniworker dashboard --port 9119"),
                 ]) + "\n",
                 stderr="",
             )
@@ -148,8 +148,8 @@ class TestFindStaleDashboardPids:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout="\n".join([
-                    _ps_line(12345, "python3 -m flux-agent_cli.main dashboard --port 9119"),
-                    _ps_line(22222, "python3 -m flux-agent_cli.main chat -q 'rewrite my dashboard'"),
+                    _ps_line(12345, "python3 -m omniworker_cli.main dashboard --port 9119"),
+                    _ps_line(22222, "python3 -m omniworker_cli.main chat -q 'rewrite my dashboard'"),
                     _ps_line(33333, "node /opt/grafana/dashboard-server.js"),
                 ]) + "\n",
                 stderr="",
@@ -162,8 +162,8 @@ class TestFindStaleDashboardPids:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout="\n".join([
-                    _ps_line(99999, "grep flux-agent dashboard"),
-                    _ps_line(12345, "flux-agent dashboard --port 9119"),
+                    _ps_line(99999, "grep omniworker dashboard"),
+                    _ps_line(12345, "omniworker dashboard --port 9119"),
                 ]) + "\n",
                 stderr="",
             )
@@ -176,8 +176,8 @@ class TestFindStaleDashboardPids:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout="\n".join([
-                    "notapid flux-agent dashboard --bad",
-                    _ps_line(12345, "flux-agent dashboard --port 9119"),
+                    "notapid omniworker dashboard --bad",
+                    _ps_line(12345, "omniworker dashboard --port 9119"),
                     "   ",
                 ]) + "\n",
                 stderr="",
@@ -191,7 +191,7 @@ class TestKillStaleDashboardPosix:
     """Kill path on Linux / macOS: SIGTERM then SIGKILL any survivors."""
 
     def test_no_stale_processes_is_a_noop(self, capsys):
-        with patch("flux-agent_cli.main._find_stale_dashboard_pids", return_value=[]):
+        with patch("omniworker_cli.main._find_stale_dashboard_pids", return_value=[]):
             _kill_stale_dashboard_processes()
         assert capsys.readouterr().out == ""
 
@@ -209,7 +209,7 @@ class TestKillStaleDashboardPosix:
                 raise ProcessLookupError
             # SIGTERM itself: succeed silently.
 
-        with patch("flux-agent_cli.main._find_stale_dashboard_pids",
+        with patch("omniworker_cli.main._find_stale_dashboard_pids",
                    return_value=[12345, 12346]), \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"):
@@ -241,7 +241,7 @@ class TestKillStaleDashboardPosix:
                 return
             # Any other signal — also fine.
 
-        with patch("flux-agent_cli.main._find_stale_dashboard_pids",
+        with patch("omniworker_cli.main._find_stale_dashboard_pids",
                    return_value=[99999]), \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"), \
@@ -259,12 +259,12 @@ class TestKillStaleDashboardPosix:
 
     def test_permission_error_is_reported_not_raised(self, capsys):
         """os.kill raising PermissionError (e.g. another user's process)
-        must not abort flux-agent update — it's reported as a failure and we
+        must not abort omniworker update — it's reported as a failure and we
         move on."""
         def fake_kill(pid, sig):
             raise PermissionError("Operation not permitted")
 
-        with patch("flux-agent_cli.main._find_stale_dashboard_pids",
+        with patch("omniworker_cli.main._find_stale_dashboard_pids",
                    return_value=[12345]), \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"):
@@ -280,7 +280,7 @@ class TestKillStaleDashboardPosix:
         def fake_kill(pid, sig):
             raise ProcessLookupError
 
-        with patch("flux-agent_cli.main._find_stale_dashboard_pids",
+        with patch("omniworker_cli.main._find_stale_dashboard_pids",
                    return_value=[12345]), \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"):
@@ -301,7 +301,7 @@ class TestKillStaleDashboardWindows:
             # taskkill returns 0 on success
             return MagicMock(returncode=0, stdout="", stderr="")
 
-        with patch("flux-agent_cli.main._find_stale_dashboard_pids",
+        with patch("omniworker_cli.main._find_stale_dashboard_pids",
                    return_value=[12345, 12346]), \
              patch("subprocess.run", side_effect=fake_run) as mock_run:
             _kill_stale_dashboard_processes()
@@ -326,7 +326,7 @@ class TestKillStaleDashboardWindows:
             return MagicMock(returncode=128, stdout="",
                              stderr="ERROR: Access is denied.")
 
-        with patch("flux-agent_cli.main._find_stale_dashboard_pids",
+        with patch("omniworker_cli.main._find_stale_dashboard_pids",
                    return_value=[12345]), \
              patch("subprocess.run", side_effect=fake_run):
             _kill_stale_dashboard_processes()  # must not raise
@@ -346,7 +346,7 @@ class TestBackCompatAlias:
 
 class TestWindowsWmicEncoding:
     """Regression tests for #17049 — the Windows wmic branch must not crash
-    `flux-agent update` on non-UTF-8 system locales (e.g. cp936 on zh-CN).
+    `omniworker update` on non-UTF-8 system locales (e.g. cp936 on zh-CN).
     """
 
     def test_wmic_invoked_with_utf8_ignore_errors(self, monkeypatch):
@@ -358,7 +358,7 @@ class TestWindowsWmicEncoding:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout=(
-                    "CommandLine=python -m flux-agent_cli.main dashboard\n"
+                    "CommandLine=python -m omniworker_cli.main dashboard\n"
                     "ProcessId=12345\n"
                 ),
                 stderr="",
@@ -384,7 +384,7 @@ class TestWindowsWmicEncoding:
         is what Python 3.11 leaves behind when the reader thread silently
         crashed on UnicodeDecodeError before this fix landed — detection
         must short-circuit instead of raising AttributeError on
-        ``None.split('\\n')`` and aborting `flux-agent update` (#17049)."""
+        ``None.split('\\n')`` and aborting `omniworker update` (#17049)."""
         monkeypatch.setattr(sys, "platform", "win32")
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(

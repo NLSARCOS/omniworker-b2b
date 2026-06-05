@@ -121,7 +121,7 @@ TIPS = [
     "Set worktree: true in config.yaml to always create a git worktree (same as hermes -w).",
     "Set security.website_blocklist.enabled: true to block specific domains from web tools.",
     "Set cron.wrap_response: false to deliver raw agent output without the cron header/footer.",
-    "FLUX AGENT_TIMEZONE overrides the server timezone with any IANA timezone string.",
+    "OMNIWORKER_TIMEZONE overrides the server timezone with any IANA timezone string.",
     "Environment variable substitution works in config.yaml: use ${VAR_NAME} syntax.",
     "Quick commands in config.yaml run shell commands instantly with zero token usage.",
     "Custom personalities can be defined in config.yaml under agent.personalities.",
@@ -258,7 +258,7 @@ TIPS = [
     ".worktreeinclude in your repo root lists gitignored files to copy into worktrees.",
     "hermes acp runs Flux Agent as an ACP server for VS Code, Zed, and JetBrains integration.",
     "Custom providers: save named endpoints in config.yaml under custom_providers.",
-    "FLUX AGENT_EPHEMERAL_SYSTEM_PROMPT injects a system prompt that's never persisted to history.",
+    "OMNIWORKER_EPHEMERAL_SYSTEM_PROMPT injects a system prompt that's never persisted to history.",
     "credential_pool_strategies supports fill_first, round_robin, least_used, and random rotation.",
     "hermes login supports OAuth-based auth for Nous and OpenAI Codex providers.",
     "The API server supports both Chat Completions and Responses API with server-side state.",
@@ -295,9 +295,9 @@ TIPS = [
     "Any website can expose skills via /.well-known/skills/index.json — the skills hub discovers them automatically.",
     "The skills audit log at ~/.hermes/skills/.hub/audit.log tracks every install and removal operation.",
     "Stale git worktrees are auto-cleaned: 24-72h old with no unpushed commits get pruned on startup.",
-    "Each profile gets its own subprocess HOME at FLUX AGENT_HOME/home/ — isolated git, ssh, npm, gh configs.",
-    "FLUX AGENT_HOME_MODE env var (octal, e.g. 0701) sets custom directory permissions for web server traversal.",
-    "Container mode: place .container-mode in FLUX AGENT_HOME and the host CLI auto-execs into the container.",
+    "Each profile gets its own subprocess HOME at OMNIWORKER_HOME/home/ — isolated git, ssh, npm, gh configs.",
+    "OMNIWORKER_HOME_MODE env var (octal, e.g. 0701) sets custom directory permissions for web server traversal.",
+    "Container mode: place .container-mode in OMNIWORKER_HOME and the host CLI auto-execs into the container.",
     "Ctrl+C has 5 priority tiers: cancel recording → cancel prompts → cancel picker → interrupt agent → exit.",
     "Every interrupt during an agent run is logged to ~/.hermes/interrupt_debug.log with timestamps.",
     "BROWSER_CDP_URL connects browser tools to any running Chrome — accepts WebSocket, HTTP, or host:port.",
@@ -329,7 +329,7 @@ TIPS = [
     "File paths pasted with quotes or escaped spaces are handled automatically — no manual cleanup needed.",
     "Slash commands never trigger the large-paste collapse — /command with big arguments works correctly.",
     "In interrupt mode, slash commands typed during agent execution bypass interrupt logic and run immediately.",
-    "FLUX AGENT_DEV=1 bypasses container mode detection for local development.",
+    "OMNIWORKER_DEV=1 bypasses container mode detection for local development.",
     "Each MCP server gets its own toolset (mcp-servername) that can be toggled independently via hermes tools.",
     "MCP ${ENV_VAR} placeholders in config are resolved at server spawn — including vars from ~/.hermes/.env.",
     "Skills from trusted repos (NousResearch) get a 'trusted' security level; community skills get extra scanning.",
@@ -353,7 +353,7 @@ TIPS = [
     # --- Cron (no-agent & scripts) ---
     'cronjob with no_agent=True runs a script on schedule and sends its stdout directly — zero tokens, zero LLM.',
     'An empty cron script stdout means silent tick — nothing is delivered, perfect for threshold watchdogs.',
-    "FLUX AGENT_CRON_MAX_PARALLEL (default 4) caps how many cron jobs run per tick so bursts don't saturate your keys.",
+    "OMNIWORKER_CRON_MAX_PARALLEL (default 4) caps how many cron jobs run per tick so bursts don't saturate your keys.",
 
     # --- Gateway Hooks ---
     'Gateway hooks live under ~/.hermes/hooks/<name>/ with HOOK.yaml + handler.py — handler must be named `handle`.',
@@ -373,8 +373,8 @@ TIPS = [
     'provider_routing.require_parameters: true only routes to providers that support every param in your request.',
 
     # --- TUI & Dashboard ---
-    'FLUX AGENT_TUI_RESUME=1 auto-re-attaches to the most recent TUI session on launch — handy after SSH drops.',
-    "FLUX AGENT_TUI_THEME=light|dark|<hex> forces the TUI theme on terminals that don't set COLORFGBG.",
+    'OMNIWORKER_TUI_RESUME=1 auto-re-attaches to the most recent TUI session on launch — handy after SSH drops.',
+    "OMNIWORKER_TUI_THEME=light|dark|<hex> forces the TUI theme on terminals that don't set COLORFGBG.",
     'Ctrl+G or Ctrl+X Ctrl+E in the TUI opens the input buffer in $EDITOR for long multi-line prompts.',
     'The TUI renders LaTeX inline — $E=mc^2$ becomes Unicode math instead of raw TeX.',
     'hermes dashboard launches a local web UI at 127.0.0.1:9119 — zero data leaves localhost.',
@@ -385,10 +385,10 @@ TIPS = [
 
     # --- Env Vars & Config Gates ---
     "display.tool_progress_command: true exposes /verbose on messaging platforms; it's CLI-only by default.",
-    'FLUX AGENT_BACKGROUND_NOTIFICATIONS=result only pings when background tasks finish (vs all/error/off).',
-    'FLUX AGENT_WRITE_SAFE_ROOT restricts write_file and patch to a directory prefix; writes outside require approval.',
-    'FLUX AGENT_IGNORE_RULES skips auto-injection of AGENTS.md, SOUL.md, .cursorrules, memory, and preloaded skills.',
-    'FLUX AGENT_ACCEPT_HOOKS auto-approves unseen shell hooks declared in config.yaml without a TTY prompt.',
+    'OMNIWORKER_BACKGROUND_NOTIFICATIONS=result only pings when background tasks finish (vs all/error/off).',
+    'OMNIWORKER_WRITE_SAFE_ROOT restricts write_file and patch to a directory prefix; writes outside require approval.',
+    'OMNIWORKER_IGNORE_RULES skips auto-injection of AGENTS.md, SOUL.md, .cursorrules, memory, and preloaded skills.',
+    'OMNIWORKER_ACCEPT_HOOKS auto-approves unseen shell hooks declared in config.yaml without a TTY prompt.',
     'auxiliary.goal_judge.model routes the /goal judge to a cheap fast model to keep loop cost near zero.',
     'Checkpoints skip directories with more than 50,000 files to avoid slow git operations on massive monorepos.',
 
@@ -438,21 +438,21 @@ TIPS = [
     'hermes status --deep runs the full health sweep across every component; plain hermes status is the quick view.',
 
     # --- Agent Behavior Env Vars ---
-    'FLUX AGENT_AGENT_TIMEOUT=0 disables the gateway inactivity kill for a running agent — use for long research runs.',
-    'FLUX AGENT_ENABLE_PROJECT_PLUGINS=1 auto-loads repo-local plugins from ./.hermes/plugins/ — trust-gated by design.',
-    "FLUX AGENT_DISABLE_FILE_STATE_GUARD=1 turns off the 'file changed since you read it' guard on patch and write_file.",
-    'FLUX AGENT_ALLOW_PRIVATE_URLS=true lets web tools hit localhost and private networks — off by default in gateway mode.',
-    'FLUX AGENT_OPTIONAL_SKILLS=name1,name2 auto-installs extra optional-catalog skills on first run per profile.',
-    'FLUX AGENT_BUNDLED_SKILLS points at a custom bundled-skill tree — used by Homebrew and Nix packaging.',
-    'FLUX AGENT_DUMP_REQUEST_STDOUT=1 dumps every API request payload to stdout instead of log files.',
-    'FLUX AGENT_OAUTH_TRACE=1 logs redacted OAuth token exchange and refresh attempts for debugging provider auth.',
-    'FLUX AGENT_STREAM_RETRIES (default 3) controls mid-stream reconnect attempts on transient network errors.',
+    'OMNIWORKER_AGENT_TIMEOUT=0 disables the gateway inactivity kill for a running agent — use for long research runs.',
+    'OMNIWORKER_ENABLE_PROJECT_PLUGINS=1 auto-loads repo-local plugins from ./.hermes/plugins/ — trust-gated by design.',
+    "OMNIWORKER_DISABLE_FILE_STATE_GUARD=1 turns off the 'file changed since you read it' guard on patch and write_file.",
+    'OMNIWORKER_ALLOW_PRIVATE_URLS=true lets web tools hit localhost and private networks — off by default in gateway mode.',
+    'OMNIWORKER_OPTIONAL_SKILLS=name1,name2 auto-installs extra optional-catalog skills on first run per profile.',
+    'OMNIWORKER_BUNDLED_SKILLS points at a custom bundled-skill tree — used by Homebrew and Nix packaging.',
+    'OMNIWORKER_DUMP_REQUEST_STDOUT=1 dumps every API request payload to stdout instead of log files.',
+    'OMNIWORKER_OAUTH_TRACE=1 logs redacted OAuth token exchange and refresh attempts for debugging provider auth.',
+    'OMNIWORKER_STREAM_RETRIES (default 3) controls mid-stream reconnect attempts on transient network errors.',
 
     # --- Gateway Behavior Env Vars ---
-    'FLUX AGENT_GATEWAY_BUSY_ACK_ENABLED=false silences the ⚡/⏳/⏩ ack messages when a user messages a busy agent.',
-    'FLUX AGENT_AGENT_NOTIFY_INTERVAL (default 180s) sets how often the gateway pings with progress on long turns.',
-    'FLUX AGENT_RESTART_DRAIN_TIMEOUT (default 900s) caps how long /restart waits for in-flight runs before forcing.',
-    'FLUX AGENT_CHECKPOINT_TIMEOUT (default 30s) caps filesystem checkpoint creation — raise it on huge monorepos.',
+    'OMNIWORKER_GATEWAY_BUSY_ACK_ENABLED=false silences the ⚡/⏳/⏩ ack messages when a user messages a busy agent.',
+    'OMNIWORKER_AGENT_NOTIFY_INTERVAL (default 180s) sets how often the gateway pings with progress on long turns.',
+    'OMNIWORKER_RESTART_DRAIN_TIMEOUT (default 900s) caps how long /restart waits for in-flight runs before forcing.',
+    'OMNIWORKER_CHECKPOINT_TIMEOUT (default 30s) caps filesystem checkpoint creation — raise it on huge monorepos.',
 
     # --- Auxiliary Tasks & Image Generation ---
     'image_gen.model in config.yaml picks the FAL model: flux-2/klein, gpt-image-2, nano-banana-pro, and more.',

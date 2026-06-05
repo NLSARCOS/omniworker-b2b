@@ -24,7 +24,7 @@ Add a first-class `gemini` provider that authenticates via Google OAuth, using t
 - Alternatively: accept user-provided client_id via env vars as override
 
 ## Token Lifecycle
-- Store at `~/.flux-agent/gemini_oauth.json` (NOT sharing with `~/.gemini/oauth_creds.json`)
+- Store at `~/.omniworker/gemini_oauth.json` (NOT sharing with `~/.gemini/oauth_creds.json`)
 - Fields: `client_id`, `client_secret`, `refresh_token`, `access_token`, `expires_at`, `email`
 - File permissions: 0o600
 - Before each API call: check expiry, refresh if within 5 min of expiration
@@ -49,11 +49,11 @@ Add a first-class `gemini` provider that authenticates via Google OAuth, using t
    - ~200 lines
 
 ### Existing files to modify
-2. `flux-agent_cli/auth.py` — Add ProviderConfig for "gemini" with auth_type="oauth_google"
-3. `flux-agent_cli/models.py` — Add Gemini model catalog
-4. `flux-agent_cli/runtime_provider.py` — Add gemini branch (read OAuth token, build OpenAI client)
-5. `flux-agent_cli/main.py` — Add `_model_flow_gemini()`, add to provider choices
-6. `flux-agent_cli/setup.py` — Add gemini auth flow (trigger browser OAuth)
+2. `omniworker_cli/auth.py` — Add ProviderConfig for "gemini" with auth_type="oauth_google"
+3. `omniworker_cli/models.py` — Add Gemini model catalog
+4. `omniworker_cli/runtime_provider.py` — Add gemini branch (read OAuth token, build OpenAI client)
+5. `omniworker_cli/main.py` — Add `_model_flow_gemini()`, add to provider choices
+6. `omniworker_cli/setup.py` — Add gemini auth flow (trigger browser OAuth)
 7. `run_agent.py` — Token refresh before API calls (like Copilot pattern)
 8. `agent/auxiliary_client.py` — Add gemini to aux resolution chain
 9. `agent/model_metadata.py` — Add Gemini model context lengths
@@ -77,4 +77,4 @@ Add a first-class `gemini` provider that authenticates via Google OAuth, using t
 ## Reference implementations
 - clawdbot: `extensions/google/oauth.flow.ts` (PKCE + localhost server)
 - pi-mono: `packages/ai/src/utils/oauth/google-gemini-cli.ts` (same flow)
-- flux-agent-agent Copilot OAuth: `flux-agent_cli/main.py` `_copilot_device_flow()` (different flow type but same lifecycle pattern)
+- omniworker-agent Copilot OAuth: `omniworker_cli/main.py` `_copilot_device_flow()` (different flow type but same lifecycle pattern)

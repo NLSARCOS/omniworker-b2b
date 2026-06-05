@@ -10,13 +10,13 @@ Server-side LLM fact extraction with semantic search, reranking, and automatic d
 ## Setup
 
 ```bash
-flux-agent memory setup    # select "mem0"
+omniworker memory setup    # select "mem0"
 ```
 
 Or manually:
 ```bash
-flux-agent config set memory.provider mem0
-echo "MEM0_API_KEY=your-key" >> ~/.flux-agent/.env
+omniworker config set memory.provider mem0
+echo "MEM0_API_KEY=your-key" >> ~/.omniworker/.env
 ```
 
 ## Config
@@ -25,8 +25,8 @@ Config file: `$OMNIWORKER_HOME/mem0.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `user_id` | `flux-agent-user` | User identifier on Mem0 |
-| `agent_id` | `flux-agent` | Agent identifier |
+| `user_id` | `omniworker-user` | User identifier on Mem0 |
+| `agent_id` | `omniworker` | Agent identifier |
 | `rerank` | `true` | Enable reranking for recall |
 
 ## Tools

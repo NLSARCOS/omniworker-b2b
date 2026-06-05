@@ -1,8 +1,8 @@
 # Spotify
 
-Flux Agent can control Spotify directly — playback, queue, search, playlists, saved tracks/albums, and listening history — using Spotify's official Web API with PKCE OAuth. Tokens are stored in `~/.flux-agent/auth.json` and refreshed automatically on 401; you only log in once per machine.
+Flux Agent can control Spotify directly — playback, queue, search, playlists, saved tracks/albums, and listening history — using Spotify's official Web API with PKCE OAuth. Tokens are stored in `~/.omniworker/auth.json` and refreshed automatically on 401; you only log in once per machine.
 
-Unlike Flux Agent' built-in OAuth integrations (Google, GitHub Copilot, Codex), Spotify requires every user to register their own lightweight developer app. Spotify does not let third parties ship a public OAuth app that anyone can use. It takes about two minutes and `flux-agent auth spotify` walks you through it.
+Unlike Flux Agent' built-in OAuth integrations (Google, GitHub Copilot, Codex), Spotify requires every user to register their own lightweight developer app. Spotify does not let third parties ship a public OAuth app that anyone can use. It takes about two minutes and `omniworker auth spotify` walks you through it.
 
 ## Prerequisites
 
@@ -12,12 +12,12 @@ Unlike Flux Agent' built-in OAuth integrations (Google, GitHub Copilot, Codex), 
 
 ## Setup
 
-### One-shot: `flux-agent tools`
+### One-shot: `omniworker tools`
 
 The fastest path. Run:
 
 ```bash
-flux-agent tools
+omniworker tools
 ```
 
 Scroll to `🎵 Spotify`, press space to toggle it on, then `s` to save. Flux Agent drops you straight into the OAuth flow — if you don't have a Spotify app yet, it walks you through creating one inline. Once you finish, the toolset is enabled AND authenticated in one pass.
@@ -29,7 +29,7 @@ If you prefer to do the steps separately (or you're re-authing later), use the t
 #### 1. Enable the toolset
 
 ```bash
-flux-agent tools
+omniworker tools
 ```
 
 Toggle `🎵 Spotify` on, save, and when the inline wizard opens, dismiss it (Ctrl+C). The toolset stays on; only the auth step is deferred.
@@ -37,20 +37,20 @@ Toggle `🎵 Spotify` on, save, and when the inline wizard opens, dismiss it (Ct
 #### 2. Run the login wizard
 
 ```bash
-flux-agent auth spotify
+omniworker auth spotify
 ```
 
 The 7 Spotify tools only appear in the agent's toolset after step 1 — they're off by default so users who don't want them don't ship extra tool schemas on every API call.
 
-If no `FLUX AGENT_SPOTIFY_CLIENT_ID` is set, Flux Agent walks you through the app registration inline:
+If no `OMNIWORKER_SPOTIFY_CLIENT_ID` is set, Flux Agent walks you through the app registration inline:
 
 1. Opens `https://developer.spotify.com/dashboard` in your browser
 2. Prints the exact values to paste into Spotify's "Create app" form
 3. Prompts you for the Client ID you get back
-4. Saves it to `~/.flux-agent/.env` so future runs skip this step
+4. Saves it to `~/.omniworker/.env` so future runs skip this step
 5. Continues straight into the OAuth consent flow
 
-After you approve, tokens are written under `providers.spotify` in `~/.flux-agent/auth.json`. The active inference provider is NOT changed — Spotify auth is independent of your LLM provider.
+After you approve, tokens are written under `providers.spotify` in `~/.omniworker/auth.json`. The active inference provider is NOT changed — Spotify auth is independent of your LLM provider.
 
 ### Creating the Spotify app (what the wizard asks for)
 
@@ -58,7 +58,7 @@ When the dashboard opens, click **Create app** and fill in:
 
 | Field | Value |
 |-------|-------|
-| App name | anything (e.g. `flux-agent-agent`) |
+| App name | anything (e.g. `omniworker-agent`) |
 | App description | anything (e.g. `personal Flux Agent integration`) |
 | Website | leave blank |
 | Redirect URI | `http://127.0.0.1:43827/spotify/callback` |
@@ -73,10 +73,10 @@ If `SSH_CLIENT` or `SSH_TTY` is set, Flux Agent skips the automatic browser open
 ## Verify
 
 ```bash
-flux-agent auth status spotify
+omniworker auth status spotify
 ```
 
-Shows whether tokens are present and when the access token expires. Refresh is automatic: when any Spotify API call returns 401, the client exchanges the refresh token and retries once. Refresh tokens persist across Flux Agent restarts, so you only re-auth if you revoke the app in your Spotify account settings or run `flux-agent auth logout spotify`.
+Shows whether tokens are present and when the access token expires. Refresh is automatic: when any Spotify API call returns 401, the client exchanges the refresh token and retries once. Refresh tokens persist across Flux Agent restarts, so you only re-auth if you revoke the app in your Spotify account settings or run `omniworker auth logout spotify`.
 
 ## Using it
 
@@ -176,7 +176,7 @@ Because Spotify tools are regular Flux Agent tools, a cron job running in a Flux
 ### Morning wake-up playlist
 
 ```bash
-flux-agent cron add \
+omniworker cron add \
   --name "morning-commute" \
   "0 7 * * 1-5" \
   "Transfer playback to my kitchen speaker and start my 'Morning Commute' playlist. Volume to 40. Shuffle on."
@@ -190,7 +190,7 @@ What happens at 7am every weekday:
 ### Wind-down at night
 
 ```bash
-flux-agent cron add \
+omniworker cron add \
   --name "wind-down" \
   "30 22 * * *" \
   "Pause Spotify. Then set volume to 20 so it's quiet when I start it again tomorrow."
@@ -200,7 +200,7 @@ flux-agent cron add \
 
 - **An active device must exist when the cron fires.** If no Spotify client is running (phone/desktop/Connect speaker), playback actions return `403 no active device`. For morning playlists, the trick is to target a device that's always on (Sonos, Echo, a smart speaker) rather than your phone.
 - **Premium required for anything that mutates playback** — play, pause, skip, volume, transfer. Read-only cron jobs (scheduled "email me my recently played tracks") work fine on Free.
-- **The cron agent inherits your active toolsets.** Spotify must be enabled in `flux-agent tools` for the cron session to see the Spotify tools.
+- **The cron agent inherits your active toolsets.** Spotify must be enabled in `omniworker tools` for the cron session to see the Spotify tools.
 - **Cron jobs run with `skip_memory=True`** so they don't write to your memory store.
 
 Full cron reference: [Cron Jobs](./cron).
@@ -208,10 +208,10 @@ Full cron reference: [Cron Jobs](./cron).
 ## Sign out
 
 ```bash
-flux-agent auth logout spotify
+omniworker auth logout spotify
 ```
 
-Removes tokens from `~/.flux-agent/auth.json`. To also clear the app config, delete `FLUX AGENT_SPOTIFY_CLIENT_ID` (and `FLUX AGENT_SPOTIFY_REDIRECT_URI` if you set it) from `~/.flux-agent/.env`, or run the wizard again.
+Removes tokens from `~/.omniworker/auth.json`. To also clear the app config, delete `OMNIWORKER_SPOTIFY_CLIENT_ID` (and `OMNIWORKER_SPOTIFY_REDIRECT_URI` if you set it) from `~/.omniworker/.env`, or run the wizard again.
 
 To revoke the app on Spotify's side, visit [Apps connected to your account](https://www.spotify.com/account/apps/) and click **REMOVE ACCESS**.
 
@@ -223,11 +223,11 @@ To revoke the app on Spotify's side, visit [Apps connected to your account](http
 
 **`204 No Content` on `get_currently_playing`** — nothing is currently playing on any device. This is Spotify's normal response, not an error; Flux Agent surfaces it as an explanatory empty result (`is_playing: false`).
 
-**`INVALID_CLIENT: Invalid redirect URI`** — the redirect URI in your Spotify app settings doesn't match what Flux Agent is using. The default is `http://127.0.0.1:43827/spotify/callback`. Either add that to your app's allowed redirect URIs, or set `FLUX AGENT_SPOTIFY_REDIRECT_URI` in `~/.flux-agent/.env` to whatever you registered.
+**`INVALID_CLIENT: Invalid redirect URI`** — the redirect URI in your Spotify app settings doesn't match what Flux Agent is using. The default is `http://127.0.0.1:43827/spotify/callback`. Either add that to your app's allowed redirect URIs, or set `OMNIWORKER_SPOTIFY_REDIRECT_URI` in `~/.omniworker/.env` to whatever you registered.
 
 **`429 Too Many Requests`** — Spotify's rate limit. Flux Agent returns a friendly error; wait a minute and retry. If this persists, you're probably running a tight loop in a script — Spotify's quota resets roughly every 30 seconds.
 
-**`401 Unauthorized` keeps coming back** — Your refresh token was revoked (usually because you removed the app from your account, or the app was deleted). Run `flux-agent auth spotify` again.
+**`401 Unauthorized` keeps coming back** — Your refresh token was revoked (usually because you removed the app from your account, or the app was deleted). Run `omniworker auth spotify` again.
 
 **Wizard doesn't open the browser** — If you're over SSH or in a container without a display, Flux Agent detects it and skips the auto-open. Copy the dashboard URL it prints and open it manually.
 
@@ -236,7 +236,7 @@ To revoke the app on Spotify's side, visit [Apps connected to your account](http
 By default Flux Agent requests the scopes needed for every shipped tool. Override if you want to restrict access:
 
 ```bash
-flux-agent auth spotify --scope "user-read-playback-state user-modify-playback-state playlist-read-private"
+omniworker auth spotify --scope "user-read-playback-state user-modify-playback-state playlist-read-private"
 ```
 
 Scope reference: [Spotify Web API scopes](https://developer.spotify.com/documentation/web-api/concepts/scopes). If you request fewer scopes than a tool needs, that tool's calls will fail with 403.
@@ -244,14 +244,14 @@ Scope reference: [Spotify Web API scopes](https://developer.spotify.com/document
 ## Advanced: custom client ID / redirect URI
 
 ```bash
-flux-agent auth spotify --client-id <id> --redirect-uri http://localhost:3000/callback
+omniworker auth spotify --client-id <id> --redirect-uri http://localhost:3000/callback
 ```
 
-Or set them permanently in `~/.flux-agent/.env`:
+Or set them permanently in `~/.omniworker/.env`:
 
 ```
-FLUX AGENT_SPOTIFY_CLIENT_ID=<your_id>
-FLUX AGENT_SPOTIFY_REDIRECT_URI=http://localhost:3000/callback
+OMNIWORKER_SPOTIFY_CLIENT_ID=<your_id>
+OMNIWORKER_SPOTIFY_REDIRECT_URI=http://localhost:3000/callback
 ```
 
 The redirect URI must be allow-listed in your Spotify app's settings. The default works for almost everyone — only change it if port 43827 is taken.
@@ -260,6 +260,6 @@ The redirect URI must be allow-listed in your Spotify app's settings. The defaul
 
 | File | Contents |
 |------|----------|
-| `~/.flux-agent/auth.json` → `providers.spotify` | access token, refresh token, expiry, scope, redirect URI |
-| `~/.flux-agent/.env` | `FLUX AGENT_SPOTIFY_CLIENT_ID`, optional `FLUX AGENT_SPOTIFY_REDIRECT_URI` |
+| `~/.omniworker/auth.json` → `providers.spotify` | access token, refresh token, expiry, scope, redirect URI |
+| `~/.omniworker/.env` | `OMNIWORKER_SPOTIFY_CLIENT_ID`, optional `OMNIWORKER_SPOTIFY_REDIRECT_URI` |
 | Spotify app | owned by you at [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard); contains the Client ID and the redirect URI allow-list |

@@ -97,7 +97,7 @@ gateway:
     upload_failed:         "✗ Nem sikerült feltölteni a hibakeresési jelentést: {error}"
     header:                "**Hibakeresési jelentés feltöltve:**"
     auto_delete:           "⏱ A beillesztések 6 óra múlva automatikusan törlődnek."
-    full_logs_hint:        "Teljes naplók feltöltéséhez használd a `flux-agent debug share` parancsot a CLI-ből."
+    full_logs_hint:        "Teljes naplók feltöltéséhez használd a `omniworker debug share` parancsot a CLI-ből."
     share_hint:            "Oszd meg ezeket a hivatkozásokat a Flux Agent csapattal támogatásért."
 
   deny:
@@ -146,7 +146,7 @@ gateway:
   kanban:
     error_prefix:          "⚠ kanban hiba: {error}"
     subscribed_suffix:     "(feliratkozva — értesítést kapsz, ha a {task_id} befejeződik vagy elakad)"
-    truncated_suffix:      "… (csonkítva; használd a `flux-agent kanban …` parancsot a terminálban a teljes kimenethez)"
+    truncated_suffix:      "… (csonkítva; használd a `omniworker kanban …` parancsot a terminálban a teljes kimenethez)"
     no_output:             "(nincs kimenet)"
 
   personality:
@@ -214,7 +214,7 @@ gateway:
 
   restart:
     in_progress:           "⏳ Az átjáró újraindítása már folyamatban van..."
-    restarting:            "♻ Átjáró újraindítása. Ha 60 másodpercen belül nem kapsz értesítést, indítsd újra a konzolból a `flux-agent gateway restart` paranccsal."
+    restarting:            "♻ Átjáró újraindítása. Ha 60 másodpercen belül nem kapsz értesítést, indítsd újra a konzolból a `omniworker gateway restart` paranccsal."
 
   resume:
     db_unavailable:        "A munkamenet-adatbázis nem érhető el."
@@ -289,9 +289,9 @@ gateway:
     removed:               "↩️ {count} üzenet visszavonva.\nEltávolítva: \"{preview}\""
 
   update:
-    platform_not_messaging:  "✗ A /update csak üzenetküldő platformokról érhető el. Futtasd a `flux-agent update` parancsot a terminálból."
+    platform_not_messaging:  "✗ A /update csak üzenetküldő platformokról érhető el. Futtasd a `omniworker update` parancsot a terminálból."
     not_git_repo:            "✗ Nem git-tárhely — frissítés nem lehetséges."
-    flux-agent_cmd_not_found:    "✗ Nem sikerült megtalálni a `flux-agent` parancsot. A Flux Agent fut, de a frissítőparancs nem találta a futtatható fájlt a PATH-on vagy a jelenlegi Python interpreteren keresztül. Próbáld futtatni a `flux-agent update` parancsot manuálisan a terminálban."
+    omniworker_cmd_not_found:    "✗ Nem sikerült megtalálni a `omniworker` parancsot. A Flux Agent fut, de a frissítőparancs nem találta a futtatható fájlt a PATH-on vagy a jelenlegi Python interpreteren keresztül. Próbáld futtatni a `omniworker update` parancsot manuálisan a terminálban."
     start_failed:            "✗ Nem sikerült elindítani a frissítést: {error}"
     starting:                "⚕ Flux Agent frissítés indítása… A folyamatot itt fogom közvetíteni."
 

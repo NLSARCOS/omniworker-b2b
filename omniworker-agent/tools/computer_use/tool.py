@@ -130,14 +130,14 @@ def _get_backend() -> ComputerUseBackend:
     global _backend
     with _backend_lock:
         if _backend is None:
-            backend_name = os.environ.get("FLUX AGENT_COMPUTER_USE_BACKEND", "cua").lower()
+            backend_name = os.environ.get("OMNIWORKER_COMPUTER_USE_BACKEND", "cua").lower()
             if backend_name in {"cua", "cua-driver", ""}:
                 from tools.computer_use.cua_backend import CuaDriverBackend
                 _backend = CuaDriverBackend()
             elif backend_name == "noop":  # pragma: no cover
                 _backend = _NoopBackend()
             else:
-                raise RuntimeError(f"Unknown FLUX AGENT_COMPUTER_USE_BACKEND={backend_name!r}")
+                raise RuntimeError(f"Unknown OMNIWORKER_COMPUTER_USE_BACKEND={backend_name!r}")
             _backend.start()
         return _backend
 
@@ -247,7 +247,7 @@ def handle_computer_use(args: Dict[str, Any], **kwargs) -> Any:
     except Exception as e:
         return json.dumps({
             "error": f"computer_use backend unavailable: {e}",
-            "hint": "Run `flux-agent tools` and enable Computer Use to install cua-driver.",
+            "hint": "Run `omniworker tools` and enable Computer Use to install cua-driver.",
         })
 
     try:

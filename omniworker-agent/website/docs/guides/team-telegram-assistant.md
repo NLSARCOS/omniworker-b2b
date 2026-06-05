@@ -26,7 +26,7 @@ Before starting, make sure you have:
 
 - **Flux Agent Agent installed** on a server or VPS (not your laptop — the bot needs to stay running). Follow the [installation guide](/docs/getting-started/installation) if you haven't yet.
 - **A Telegram account** for yourself (the bot owner)
-- **An LLM provider configured** — at minimum, an API key for OpenAI, Anthropic, or another supported provider in `~/.flux-agent/.env`
+- **An LLM provider configured** — at minimum, an API key for OpenAI, Anthropic, or another supported provider in `~/.omniworker/.env`
 
 :::tip
 A $5/month VPS is plenty for running the gateway. Flux Agent itself is lightweight — the LLM API calls are what cost money, and those happen remotely.
@@ -42,7 +42,7 @@ Every Telegram bot starts with **@BotFather** — Telegram's official bot for cr
 
 2. **Send `/newbot`** — BotFather will ask you two things:
    - **Display name** — what users see (e.g., `Team Flux Agent Assistant`)
-   - **Username** — must end in `bot` (e.g., `myteam_flux-agent_bot`)
+   - **Username** — must end in `bot` (e.g., `myteam_omniworker_bot`)
 
 3. **Copy the bot token** — BotFather replies with something like:
    ```
@@ -86,14 +86,14 @@ You have two options: the interactive setup wizard (recommended) or manual confi
 ### Option A: Interactive Setup (Recommended)
 
 ```bash
-flux-agent gateway setup
+omniworker gateway setup
 ```
 
 This walks you through everything with arrow-key selection. Pick **Telegram**, paste your bot token, and enter your user ID when prompted.
 
 ### Option B: Manual Configuration
 
-Add these lines to `~/.flux-agent/.env`:
+Add these lines to `~/.omniworker/.env`:
 
 ```bash
 # Telegram bot token from BotFather
@@ -124,7 +124,7 @@ Telegram user IDs are permanent numbers like `123456789`. They're different from
 Run the gateway in the foreground first to make sure everything works:
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 You should see output like:
@@ -142,45 +142,45 @@ Open Telegram, find your bot, and send it a message. If it replies, you're in bu
 For a persistent deployment that survives reboots:
 
 ```bash
-flux-agent gateway install
-sudo flux-agent gateway install --system   # Linux only: boot-time system service
+omniworker gateway install
+sudo omniworker gateway install --system   # Linux only: boot-time system service
 ```
 
 This creates a background service: a user-level **systemd** service on Linux by default, a **launchd** service on macOS, or a boot-time Linux system service if you pass `--system`.
 
 ```bash
 # Linux — manage the default user service
-flux-agent gateway start
-flux-agent gateway stop
-flux-agent gateway status
+omniworker gateway start
+omniworker gateway stop
+omniworker gateway status
 
 # View live logs
-journalctl --user -u flux-agent-gateway -f
+journalctl --user -u omniworker-gateway -f
 
 # Keep running after SSH logout
 sudo loginctl enable-linger $USER
 
 # Linux servers — explicit system-service commands
-sudo flux-agent gateway start --system
-sudo flux-agent gateway status --system
-journalctl -u flux-agent-gateway -f
+sudo omniworker gateway start --system
+sudo omniworker gateway status --system
+journalctl -u omniworker-gateway -f
 ```
 
 ```bash
 # macOS — manage the service
-flux-agent gateway start
-flux-agent gateway stop
-tail -f ~/.flux-agent/logs/gateway.log
+omniworker gateway start
+omniworker gateway stop
+tail -f ~/.omniworker/logs/gateway.log
 ```
 
 :::tip macOS PATH
-The launchd plist captures your shell PATH at install time so gateway subprocesses can find tools like Node.js and ffmpeg. If you install new tools later, re-run `flux-agent gateway install` to update the plist.
+The launchd plist captures your shell PATH at install time so gateway subprocesses can find tools like Node.js and ffmpeg. If you install new tools later, re-run `omniworker gateway install` to update the plist.
 :::
 
 ### Verify It's Running
 
 ```bash
-flux-agent gateway status
+omniworker gateway status
 ```
 
 Then send a test message to your bot on Telegram. You should get a response within a few seconds.
@@ -196,14 +196,14 @@ Now let's give your teammates access. There are two approaches.
 Collect each team member's Telegram user ID (have them message [@userinfobot](https://t.me/userinfobot)) and add them as a comma-separated list:
 
 ```bash
-# In ~/.flux-agent/.env
+# In ~/.omniworker/.env
 TELEGRAM_ALLOWED_USERS=123456789,987654321,555555555
 ```
 
 Restart the gateway after changes:
 
 ```bash
-flux-agent gateway stop && flux-agent gateway start
+omniworker gateway stop && omniworker gateway start
 ```
 
 ### Approach B: DM Pairing (Recommended for Teams)
@@ -220,7 +220,7 @@ DM pairing is more flexible — you don't need to collect user IDs upfront. Here
 
 3. **You approve it** on the server:
    ```bash
-   flux-agent pairing approve telegram XKGH5N7P
+   omniworker pairing approve telegram XKGH5N7P
    ```
 
 4. **They're in** — the bot immediately starts responding to their messages
@@ -229,13 +229,13 @@ DM pairing is more flexible — you don't need to collect user IDs upfront. Here
 
 ```bash
 # See all pending and approved users
-flux-agent pairing list
+omniworker pairing list
 
 # Revoke someone's access
-flux-agent pairing revoke telegram 987654321
+omniworker pairing revoke telegram 987654321
 
 # Clear expired pending codes
-flux-agent pairing clear-pending
+omniworker pairing clear-pending
 ```
 
 :::tip
@@ -260,7 +260,7 @@ A **home channel** is where the bot delivers cron job results and proactive mess
 
 **Option 1:** Use the `/sethome` command in any Telegram group or chat where the bot is a member.
 
-**Option 2:** Set it manually in `~/.flux-agent/.env`:
+**Option 2:** Set it manually in `~/.omniworker/.env`:
 
 ```bash
 TELEGRAM_HOME_CHANNEL=-1001234567890
@@ -271,7 +271,7 @@ To find a channel ID, add [@userinfobot](https://t.me/userinfobot) to the group 
 
 ### Configure Tool Progress Display
 
-Control how much detail the bot shows when using tools. In `~/.flux-agent/config.yaml`:
+Control how much detail the bot shows when using tools. In `~/.omniworker/config.yaml`:
 
 ```yaml
 display:
@@ -289,9 +289,9 @@ Users can also change this per-session with the `/verbose` command in chat.
 
 ### Set Up a Personality with SOUL.md
 
-Customize how the bot communicates by editing `~/.flux-agent/SOUL.md`:
+Customize how the bot communicates by editing `~/.omniworker/SOUL.md`:
 
-For a full guide, see [Use SOUL.md with Flux Agent](/docs/guides/use-soul-with-flux-agent).
+For a full guide, see [Use SOUL.md with Flux Agent](/docs/guides/use-soul-with-omniworker).
 
 ```markdown
 # Soul
@@ -306,7 +306,7 @@ before guessing at solutions.
 If your team works on specific projects, create context files so the bot knows your stack:
 
 ```markdown
-<!-- ~/.flux-agent/AGENTS.md -->
+<!-- ~/.omniworker/AGENTS.md -->
 # Team Context
 - We use Python 3.12 with FastAPI and SQLAlchemy
 - Frontend is React with TypeScript
@@ -352,8 +352,8 @@ partitions above 80%, containers that have restarted, or high memory usage.
 
 ```bash
 # From the CLI
-flux-agent cron list          # View all scheduled jobs
-flux-agent cron status        # Check if scheduler is running
+omniworker cron list          # View all scheduled jobs
+omniworker cron status        # Check if scheduler is running
 
 # From Telegram chat
 /cron list                # View jobs
@@ -373,12 +373,12 @@ Cron job prompts run in completely fresh sessions with no memory of prior conver
 On a shared team bot, use Docker as the terminal backend so agent commands run in a container instead of on your host:
 
 ```bash
-# In ~/.flux-agent/.env
+# In ~/.omniworker/.env
 TERMINAL_BACKEND=docker
 TERMINAL_DOCKER_IMAGE=nikolaik/python-nodejs:python3.11-nodejs20
 ```
 
-Or in `~/.flux-agent/config.yaml`:
+Or in `~/.omniworker/config.yaml`:
 
 ```yaml
 terminal:
@@ -394,13 +394,13 @@ This way, even if someone asks the bot to run something destructive, your host s
 
 ```bash
 # Check if the gateway is running
-flux-agent gateway status
+omniworker gateway status
 
 # Watch live logs (Linux)
-journalctl --user -u flux-agent-gateway -f
+journalctl --user -u omniworker-gateway -f
 
 # Watch live logs (macOS)
-tail -f ~/.flux-agent/logs/gateway.log
+tail -f ~/.omniworker/logs/gateway.log
 ```
 
 ### Keep Flux Agent Updated
@@ -408,19 +408,19 @@ tail -f ~/.flux-agent/logs/gateway.log
 From Telegram, send `/update` to the bot — it will pull the latest version and restart. Or from the server:
 
 ```bash
-flux-agent update
-flux-agent gateway stop && flux-agent gateway start
+omniworker update
+omniworker gateway stop && omniworker gateway start
 ```
 
 ### Log Locations
 
 | What | Location |
 |------|----------|
-| Gateway logs | `journalctl --user -u flux-agent-gateway` (Linux) or `~/.flux-agent/logs/gateway.log` (macOS) |
-| Cron job output | `~/.flux-agent/cron/output/{job_id}/{timestamp}.md` |
-| Cron job definitions | `~/.flux-agent/cron/jobs.json` |
-| Pairing data | `~/.flux-agent/pairing/` |
-| Session history | `~/.flux-agent/sessions/` |
+| Gateway logs | `journalctl --user -u omniworker-gateway` (Linux) or `~/.omniworker/logs/gateway.log` (macOS) |
+| Cron job output | `~/.omniworker/cron/output/{job_id}/{timestamp}.md` |
+| Cron job definitions | `~/.omniworker/cron/jobs.json` |
+| Pairing data | `~/.omniworker/pairing/` |
+| Session history | `~/.omniworker/sessions/` |
 
 ---
 

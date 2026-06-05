@@ -7,9 +7,9 @@ This module provides scheduled task execution, allowing the agent to:
 - Execute tasks in isolated sessions (no prior context)
 
 Cron jobs are executed automatically by the gateway daemon:
-    flux-agent gateway install    # Install as a user service
-    sudo flux-agent gateway install --system  # Linux servers: boot-time system service
-    flux-agent gateway            # Or run in foreground
+    omniworker gateway install    # Install as a user service
+    sudo omniworker gateway install --system  # Linux servers: boot-time system service
+    omniworker gateway            # Or run in foreground
 
 The gateway ticks the scheduler every 60 seconds. A file lock prevents
 duplicate execution if multiple processes overlap.

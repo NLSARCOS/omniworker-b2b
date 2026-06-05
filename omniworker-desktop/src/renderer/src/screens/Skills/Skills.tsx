@@ -50,12 +50,12 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
 
 
   const loadInstalled = useCallback(async (): Promise<void> => {
-    const list = await window.flux-agentAPI.listInstalledSkills(profile);
+    const list = await window.omniworkerAPI.listInstalledSkills(profile);
     setInstalledSkills(list);
   }, [profile]);
 
   const loadBundled = useCallback(async (): Promise<void> => {
-    const list = await window.flux-agentAPI.listBundledSkills();
+    const list = await window.omniworkerAPI.listBundledSkills();
     setBundledSkills(list);
   }, []);
 
@@ -71,14 +71,14 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
 
   async function handleViewDetail(skill: InstalledSkill): Promise<void> {
     setDetailSkill(skill);
-    const content = await window.flux-agentAPI.getSkillContent(skill.path);
+    const content = await window.omniworkerAPI.getSkillContent(skill.path);
     setDetailContent(content);
   }
 
   async function handleInstall(name: string): Promise<void> {
     setActionInProgress(name);
     setError("");
-    const result = await window.flux-agentAPI.installSkill(name, profile);
+    const result = await window.omniworkerAPI.installSkill(name, profile);
     setActionInProgress(null);
     if (result.success) {
       await loadInstalled();
@@ -90,7 +90,7 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
   async function handleUninstall(name: string): Promise<void> {
     setActionInProgress(name);
     setError("");
-    const result = await window.flux-agentAPI.uninstallSkill(name, profile);
+    const result = await window.omniworkerAPI.uninstallSkill(name, profile);
     setActionInProgress(null);
     if (result.success) {
       setDetailSkill(null);
@@ -154,7 +154,7 @@ function Skills({ profile }: SkillsProps): React.JSX.Element {
     }
     
     setActionInProgress("creating-skill");
-    const result = await window.flux-agentAPI.createCustomSkill(
+    const result = await window.omniworkerAPI.createCustomSkill(
       createName,
       createCategory,
       createDescription,

@@ -6,7 +6,7 @@ Exposes an HTTP server with endpoints:
 - POST /v1/responses               — OpenAI Responses API format (stateful via previous_response_id; X-Flux Agent-Session-Key supported)
 - GET  /v1/responses/{response_id} — Retrieve a stored response
 - DELETE /v1/responses/{response_id} — Delete a stored response
-- GET  /v1/models                  — lists flux-agent-agent as an available model
+- GET  /v1/models                  — lists omniworker-agent as an available model
 - GET  /v1/capabilities            — machine-readable API capabilities for external UIs
 - POST /v1/runs                    — start a run, returns run_id immediately (202)
 - GET  /v1/runs/{run_id}           — retrieve current run status
@@ -17,7 +17,7 @@ Exposes an HTTP server with endpoints:
 - GET  /health/detailed            — rich status for cross-container dashboard probing
 
 Any OpenAI-compatible frontend (Open WebUI, LobeChat, LibreChat,
-AnythingLLM, NextChat, ChatBox, etc.) can connect to flux-agent-agent
+AnythingLLM, NextChat, ChatBox, etc.) can connect to omniworker-agent
 through this adapter by pointing at http://localhost:8642/v1.
 
 Requires:
@@ -304,8 +304,8 @@ class ResponseStore:
         self._max_size = max_size
         if db_path is None:
             try:
-                from flux-agent_cli.config import get_flux-agent_home
-                db_path = str(get_flux-agent_home() / "response_store.db")
+                from omniworker_cli.config import get_omniworker_home
+                db_path = str(get_omniworker_home() / "response_store.db")
             except Exception:
                 db_path = ":memory:"
         try:
@@ -313,10 +313,10 @@ class ResponseStore:
         except Exception:
             self._conn = sqlite3.connect(":memory:", check_same_thread=False)
         # Use shared WAL-fallback helper so response_store.db degrades
-        # gracefully on NFS/SMB/FUSE-mounted FLUX AGENT_HOME (same filesystem
+        # gracefully on NFS/SMB/FUSE-mounted OMNIWORKER_HOME (same filesystem
         # issue addressed for state.db/kanban.db — see
-        # flux-agent_state._WAL_INCOMPAT_MARKERS).
-        from flux-agent_state import apply_wal_with_fallback
+        # omniworker_state._WAL_INCOMPAT_MARKERS).
+        from omniworker_state import apply_wal_with_fallback
         apply_wal_with_fallback(self._conn, db_label="response_store.db")
         self._conn.execute(
             """CREATE TABLE IF NOT EXISTS responses (
@@ -599,7 +599,7 @@ class APIServerAdapter(BasePlatformAdapter):
     OpenAI-compatible HTTP API server adapter.
 
     Runs an aiohttp web server that accepts OpenAI-format requests
-    and routes them through flux-agent-agent's AIAgent.
+    and routes them through omniworker-agent's AIAgent.
     """
 
     def __init__(self, config: PlatformConfig):
@@ -658,18 +658,18 @@ class APIServerAdapter(BasePlatformAdapter):
         Priority:
         1. Explicit override (config extra or API_SERVER_MODEL_NAME env var)
         2. Active profile name (so each profile advertises a distinct model)
-        3. Fallback: "flux-agent-agent"
+        3. Fallback: "omniworker-agent"
         """
         if explicit and explicit.strip():
             return explicit.strip()
         try:
-            from flux-agent_cli.profiles import get_active_profile_name
+            from omniworker_cli.profiles import get_active_profile_name
             profile = get_active_profile_name()
             if profile and profile not in {"default", "custom"}:
                 return profile
         except Exception:
             pass
-        return "flux-agent-agent"
+        return "omniworker-agent"
 
     def _cors_headers_for_origin(self, origin: str) -> Optional[Dict[str, str]]:
         """Return CORS headers for an allowed browser origin."""
@@ -799,12 +799,12 @@ class APIServerAdapter(BasePlatformAdapter):
     def _ensure_session_db(self):
         """Lazily initialise and return the shared SessionDB instance.
 
-        Sessions are persisted to ``state.db`` so that ``flux-agent sessions list``
+        Sessions are persisted to ``state.db`` so that ``omniworker sessions list``
         shows API-server conversations alongside CLI and gateway ones.
         """
         if self._session_db is None:
             try:
-                from flux-agent_state import SessionDB
+                from omniworker_state import SessionDB
                 self._session_db = SessionDB()
             except Exception as e:
                 logger.debug("SessionDB unavailable for API server: %s", e)
@@ -830,7 +830,7 @@ class APIServerAdapter(BasePlatformAdapter):
         Uses _resolve_runtime_agent_kwargs() to pick up model, api_key,
         base_url, etc. from config.yaml / env vars.  Toolsets are resolved
         from config.yaml platform_toolsets.api_server (same as all other
-        gateway platforms), falling back to the flux-agent-api-server default.
+        gateway platforms), falling back to the omniworker-api-server default.
 
         ``gateway_session_key`` is a stable per-channel identifier supplied
         by the client (via ``X-Flux Agent-Session-Key``).  Unlike ``session_id``
@@ -841,7 +841,7 @@ class APIServerAdapter(BasePlatformAdapter):
         """
         from run_agent import AIAgent
         from gateway.run import _resolve_runtime_agent_kwargs, _resolve_gateway_model, _load_gateway_config, GatewayRunner
-        from flux-agent_cli.tools_config import _get_platform_tools
+        from omniworker_cli.tools_config import _get_platform_tools
 
         runtime_kwargs = _resolve_runtime_agent_kwargs()
         reasoning_config = GatewayRunner._load_reasoning_config()
@@ -850,7 +850,7 @@ class APIServerAdapter(BasePlatformAdapter):
         user_config = _load_gateway_config()
         enabled_toolsets = sorted(_get_platform_tools(user_config, "api_server"))
 
-        max_iterations = int(os.getenv("FLUX AGENT_MAX_ITERATIONS", "90"))
+        max_iterations = int(os.getenv("OMNIWORKER_MAX_ITERATIONS", "90"))
 
         # Load fallback provider chain so the API server platform has the
         # same fallback behaviour as Telegram/Discord/Slack (fixes #4954).
@@ -889,7 +889,7 @@ class APIServerAdapter(BasePlatformAdapter):
 
     async def _handle_health(self, request: "web.Request") -> "web.Response":
         """GET /health — simple health check."""
-        return web.json_response({"status": "ok", "platform": "flux-agent-agent"})
+        return web.json_response({"status": "ok", "platform": "omniworker-agent"})
 
     async def _handle_health_detailed(self, request: "web.Request") -> "web.Response":
         """GET /health/detailed — rich status for cross-container dashboard probing.
@@ -903,7 +903,7 @@ class APIServerAdapter(BasePlatformAdapter):
         runtime = read_runtime_status() or {}
         return web.json_response({
             "status": "ok",
-            "platform": "flux-agent-agent",
+            "platform": "omniworker-agent",
             "gateway_state": runtime.get("gateway_state"),
             "platforms": runtime.get("platforms", {}),
             "active_agents": runtime.get("active_agents", 0),
@@ -913,7 +913,7 @@ class APIServerAdapter(BasePlatformAdapter):
         })
 
     async def _handle_models(self, request: "web.Request") -> "web.Response":
-        """GET /v1/models — return flux-agent-agent as an available model."""
+        """GET /v1/models — return omniworker-agent as an available model."""
         auth_err = self._check_auth(request)
         if auth_err:
             return auth_err
@@ -925,7 +925,7 @@ class APIServerAdapter(BasePlatformAdapter):
                     "id": self._model_name,
                     "object": "model",
                     "created": int(time.time()),
-                    "owned_by": "flux-agent",
+                    "owned_by": "omniworker",
                     "permission": [],
                     "root": self._model_name,
                     "parent": None,
@@ -945,8 +945,8 @@ class APIServerAdapter(BasePlatformAdapter):
             return auth_err
 
         return web.json_response({
-            "object": "flux-agent.api_server.capabilities",
-            "platform": "flux-agent-agent",
+            "object": "omniworker.api_server.capabilities",
+            "platform": "omniworker-agent",
             "model": self._model_name,
             "auth": {
                 "type": "bearer",
@@ -1137,7 +1137,7 @@ class APIServerAdapter(BasePlatformAdapter):
             _started_tool_call_ids: set[str] = set()
 
             def _on_tool_start(tool_call_id, function_name, function_args):
-                """Emit ``flux-agent.tool.progress`` with ``status: running``.
+                """Emit ``omniworker.tool.progress`` with ``status: running``.
 
                 Replaces the old ``tool_progress_callback("tool.started",
                 ...)`` emit so SSE consumers receive a single event per
@@ -1270,7 +1270,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 err_type="server_error",
                 code="agent_incomplete",
             )
-            err_body["error"]["flux-agent"] = {
+            err_body["error"]["omniworker"] = {
                 "completed": completed,
                 "partial": is_partial,
                 "failed": is_failed,
@@ -1304,7 +1304,7 @@ class APIServerAdapter(BasePlatformAdapter):
             },
         }
         if is_partial or is_failed or not completed:
-            response_data["flux-agent"] = {
+            response_data["omniworker"] = {
                 "completed": completed,
                 "partial": is_partial,
                 "failed": is_failed,
@@ -1367,7 +1367,7 @@ class APIServerAdapter(BasePlatformAdapter):
 
                 Plain strings are sent as normal ``delta.content`` chunks.
                 Tagged tuples ``("__tool_progress__", payload)`` are sent
-                as a custom ``event: flux-agent.tool.progress`` SSE event so
+                as a custom ``event: omniworker.tool.progress`` SSE event so
                 frontends can display them without storing the markers in
                 conversation history.  See #6972 for the original event,
                 #16588 for the ``toolCallId``/``status`` lifecycle fields.
@@ -1375,7 +1375,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 if isinstance(item, tuple) and len(item) == 2 and item[0] == "__tool_progress__":
                     event_data = json.dumps(item[1])
                     await response.write(
-                        f"event: flux-agent.tool.progress\ndata: {event_data}\n\n".encode()
+                        f"event: omniworker.tool.progress\ndata: {event_data}\n\n".encode()
                     )
                 else:
                     content_chunk = {
@@ -2897,7 +2897,7 @@ class APIServerAdapter(BasePlatformAdapter):
         now = time.time()
         current = self._run_statuses.get(run_id, {})
         current.update({
-            "object": "flux-agent.run",
+            "object": "omniworker.run",
             "run_id": run_id,
             "status": status,
             "updated_at": now,
@@ -3393,7 +3393,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 pass
 
         return web.json_response({
-            "object": "flux-agent.run.approval_response",
+            "object": "omniworker.run.approval_response",
             "run_id": run_id,
             "choice": choice,
             "resolved": resolved,
@@ -3603,10 +3603,10 @@ class APIServerAdapter(BasePlatformAdapter):
                 return False
 
             # Refuse to start network-accessible with a placeholder key.
-            # Ported from flux-agent/flux-agent#64586.
+            # Ported from omniworker/omniworker#64586.
             if is_network_accessible(self._host) and self._api_key:
                 try:
-                    from flux-agent_cli.auth import has_usable_secret
+                    from omniworker_cli.auth import has_usable_secret
                     if not has_usable_secret(self._api_key, min_length=8):
                         logger.error(
                             "[%s] Refusing to start: API_SERVER_KEY is set to a "

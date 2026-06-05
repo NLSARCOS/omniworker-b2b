@@ -1,5 +1,5 @@
 /**
- * SSH-proxied implementations of all flux-agent operations.
+ * SSH-proxied implementations of all omniworker operations.
  * Used when connection mode is "ssh" — every feature that normally reads/writes
  * local files is instead executed on the remote host via SSH.
  */
@@ -168,7 +168,7 @@ export async function sshListInstalledSkills(
 import os, json, sys
 payload = json.load(sys.stdin)
 profile = payload.get("profile")
-skills_dir = os.path.expanduser(f"~/.flux-agent/profiles/{profile}/skills" if profile and profile != "default" else "~/.flux-agent/skills")
+skills_dir = os.path.expanduser(f"~/.omniworker/profiles/{profile}/skills" if profile and profile != "default" else "~/.omniworker/skills")
 skills = []
 
 def read_meta(skill_path):
@@ -238,7 +238,7 @@ export async function sshInstallSkill(
   try {
     await sshExec(
       config,
-      `flux-agent skills install ${shellQuote(identifier)} --yes 2>&1`,
+      `omniworker skills install ${shellQuote(identifier)} --yes 2>&1`,
       undefined,
       120000,
     );
@@ -255,7 +255,7 @@ export async function sshUninstallSkill(
   try {
     await sshExec(
       config,
-      `flux-agent skills uninstall ${shellQuote(name)} 2>&1`,
+      `omniworker skills uninstall ${shellQuote(name)} 2>&1`,
     );
     return { success: true };
   } catch (err) {
@@ -281,8 +281,8 @@ export async function sshCreateCustomSkill(
 
     const profileSegment = profile && profile !== "default" ? `profiles/${profile}/` : "";
     const targetDir = cleanCategory
-      ? `~/.flux-agent/${profileSegment}skills/${cleanCategory}/${cleanName}`
-      : `~/.flux-agent/${profileSegment}skills/${cleanName}`;
+      ? `~/.omniworker/${profileSegment}skills/${cleanCategory}/${cleanName}`
+      : `~/.omniworker/${profileSegment}skills/${cleanName}`;
 
     const skillFile = `${targetDir}/SKILL.md`;
     const skillContent = `---
@@ -306,7 +306,7 @@ export async function sshSearchSkills(
   try {
     const out = await sshExec(
       config,
-      `flux-agent skills browse --query ${shellQuote(query)} --json 2>/dev/null || echo "[]"`,
+      `omniworker skills browse --query ${shellQuote(query)} --json 2>/dev/null || echo "[]"`,
     );
     const parsed = JSON.parse(out.trim() || "[]");
     if (Array.isArray(parsed)) {
@@ -354,16 +354,16 @@ function serializeEntries(
 
 function remoteMemoryPath(profile?: string): string {
   if (profile && profile !== "default") {
-    return `~/.flux-agent/profiles/${profile}/memories/MEMORY.md`;
+    return `~/.omniworker/profiles/${profile}/memories/MEMORY.md`;
   }
-  return "~/.flux-agent/memories/MEMORY.md";
+  return "~/.omniworker/memories/MEMORY.md";
 }
 
 function remoteUserPath(profile?: string): string {
   if (profile && profile !== "default") {
-    return `~/.flux-agent/profiles/${profile}/memories/USER.md`;
+    return `~/.omniworker/profiles/${profile}/memories/USER.md`;
   }
-  return "~/.flux-agent/memories/USER.md";
+  return "~/.omniworker/memories/USER.md";
 }
 
 async function sshGetSessionStats(
@@ -374,7 +374,7 @@ async function sshGetSessionStats(
 import sqlite3, json, os, sys
 payload = json.load(sys.stdin)
 profile = payload.get("profile")
-db = os.path.expanduser(f"~/.flux-agent/profiles/{profile}/state.db" if profile and profile != "default" else "~/.flux-agent/state.db")
+db = os.path.expanduser(f"~/.omniworker/profiles/{profile}/state.db" if profile and profile != "default" else "~/.omniworker/state.db")
 if not os.path.exists(db):
     print(json.dumps({"totalSessions": 0, "totalMessages": 0}))
     sys.exit(0)
@@ -510,8 +510,8 @@ You strive to be helpful while being safe and responsible. You respect the user'
 
 function remoteSoulPath(profile?: string): string {
   if (profile && profile !== "default")
-    return `~/.flux-agent/profiles/${profile}/SOUL.md`;
-  return "~/.flux-agent/SOUL.md";
+    return `~/.omniworker/profiles/${profile}/SOUL.md`;
+  return "~/.omniworker/SOUL.md";
 }
 
 export async function sshReadSoul(
@@ -658,8 +658,8 @@ function localizeToolDefs(
 
 function remoteConfigPath(profile?: string): string {
   if (profile && profile !== "default")
-    return `$HOME/.flux-agent/profiles/${profile}/config.yaml`;
-  return `$HOME/.flux-agent/config.yaml`;
+    return `$HOME/.omniworker/profiles/${profile}/config.yaml`;
+  return `$HOME/.omniworker/config.yaml`;
 }
 
 export async function sshGetToolsets(
@@ -747,8 +747,8 @@ export async function sshSetToolsetEnabled(
 
 function remoteEnvPath(profile?: string): string {
   if (profile && profile !== "default")
-    return `~/.flux-agent/profiles/${profile}/.env`;
-  return "~/.flux-agent/.env";
+    return `~/.omniworker/profiles/${profile}/.env`;
+  return "~/.omniworker/.env";
 }
 
 export async function sshReadEnv(
@@ -851,13 +851,13 @@ export async function sshSetConfigValue(
   await sshWriteFile(config, configPath, updated);
 }
 
-export function sshGetFlux AgentHome(
+export function sshGetOmniWorkerHome(
   _config: SshConfig,
   profile?: string,
 ): string {
   if (profile && profile !== "default")
-    return `~/.flux-agent/profiles/${profile}`;
-  return "~/.flux-agent";
+    return `~/.omniworker/profiles/${profile}`;
+  return "~/.omniworker";
 }
 
 export async function sshGetModelConfig(
@@ -866,7 +866,7 @@ export async function sshGetModelConfig(
 ): Promise<{ provider: string; model: string; baseUrl: string }> {
   return {
     provider: (await sshGetConfigValue(config, "provider", profile)) || "custom",
-    model: (await sshGetConfigValue(config, "default", profile)) || "flux-agent",
+    model: (await sshGetConfigValue(config, "default", profile)) || "omniworker",
     baseUrl: (await sshGetConfigValue(config, "base_url", profile)) || "",
   };
 }
@@ -913,7 +913,7 @@ payload = json.load(sys.stdin)
 profile = payload.get("profile")
 limit = max(1, min(200, int(payload.get("limit") or 30)))
 offset = max(0, int(payload.get("offset") or 0))
-db = os.path.expanduser(f"~/.flux-agent/profiles/{profile}/state.db" if profile and profile != "default" else "~/.flux-agent/state.db")
+db = os.path.expanduser(f"~/.omniworker/profiles/{profile}/state.db" if profile and profile != "default" else "~/.omniworker/state.db")
 if not os.path.exists(db):
     print("[]"); sys.exit(0)
 conn = sqlite3.connect(db)
@@ -956,7 +956,7 @@ import sqlite3, json, os, sys
 payload = json.load(sys.stdin)
 profile = payload.get("profile")
 session_id = payload.get("sessionId") or ""
-db = os.path.expanduser(f"~/.flux-agent/profiles/{profile}/state.db" if profile and profile != "default" else "~/.flux-agent/state.db")
+db = os.path.expanduser(f"~/.omniworker/profiles/{profile}/state.db" if profile and profile != "default" else "~/.omniworker/state.db")
 if not os.path.exists(db):
     print("[]"); sys.exit(0)
 conn = sqlite3.connect(db)
@@ -992,7 +992,7 @@ payload = json.load(sys.stdin)
 profile = payload.get("profile")
 query = payload.get("query") or ""
 limit = max(1, min(200, int(payload.get("limit") or 20)))
-db = os.path.expanduser(f"~/.flux-agent/profiles/{profile}/state.db" if profile and profile != "default" else "~/.flux-agent/state.db")
+db = os.path.expanduser(f"~/.omniworker/profiles/{profile}/state.db" if profile and profile != "default" else "~/.omniworker/state.db")
 if not os.path.exists(db):
     print("[]"); sys.exit(0)
 conn = sqlite3.connect(db)
@@ -1041,12 +1041,12 @@ export async function sshListProfiles(
 ): Promise<SshProfileInfo[]> {
   const script = `
 import os, json
-flux-agent_home = os.path.expanduser("~/.flux-agent")
-profiles_dir = os.path.join(flux-agent_home, "profiles")
+omniworker_home = os.path.expanduser("~/.omniworker")
+profiles_dir = os.path.join(omniworker_home, "profiles")
 profiles = []
 
 def read_config(path):
-    model, provider = "flux-agent", "custom"
+    model, provider = "omniworker", "custom"
     config_file = os.path.join(path, "config.yaml")
     if os.path.exists(config_file):
         content = open(config_file).read()
@@ -1080,14 +1080,14 @@ def gw_running(path):
         return False
 
 # Default profile
-model, provider = read_config(flux-agent_home)
+model, provider = read_config(omniworker_home)
 profiles.append({
-    "name": "default", "path": flux-agent_home, "isDefault": True, "isActive": True,
+    "name": "default", "path": omniworker_home, "isDefault": True, "isActive": True,
     "model": model, "provider": provider,
-    "hasEnv": os.path.exists(os.path.join(flux-agent_home, ".env")),
-    "hasSoul": os.path.exists(os.path.join(flux-agent_home, "SOUL.md")),
-    "skillCount": count_skills(flux-agent_home),
-    "gatewayRunning": gw_running(flux-agent_home)
+    "hasEnv": os.path.exists(os.path.join(omniworker_home, ".env")),
+    "hasSoul": os.path.exists(os.path.join(omniworker_home, "SOUL.md")),
+    "skillCount": count_skills(omniworker_home),
+    "gatewayRunning": gw_running(omniworker_home)
 })
 
 if os.path.isdir(profiles_dir):
@@ -1113,10 +1113,10 @@ print(json.dumps(profiles))
     return [
       {
         name: "default",
-        path: "~/.flux-agent",
+        path: "~/.omniworker",
         isDefault: true,
         isActive: true,
-        model: "flux-agent",
+        model: "omniworker",
         provider: "custom",
         hasEnv: false,
         hasSoul: false,
@@ -1139,12 +1139,12 @@ export async function sshCreateProfile(
     if (clone) {
       await sshExec(
         config,
-        `flux-agent profiles create ${quoted} --clone-from default 2>&1 || mkdir -p ~/.flux-agent/profiles/${quoted}`,
+        `omniworker profiles create ${quoted} --clone-from default 2>&1 || mkdir -p ~/.omniworker/profiles/${quoted}`,
       );
     } else {
       await sshExec(
         config,
-        `flux-agent profiles create ${quoted} 2>&1 || mkdir -p ~/.flux-agent/profiles/${quoted}`,
+        `omniworker profiles create ${quoted} 2>&1 || mkdir -p ~/.omniworker/profiles/${quoted}`,
       );
     }
     return true;
@@ -1163,7 +1163,7 @@ export async function sshDeleteProfile(
     const quoted = shellQuote(safe);
     await sshExec(
       config,
-      `flux-agent profiles delete ${quoted} --yes 2>&1 || rm -rf ~/.flux-agent/profiles/${quoted}`,
+      `omniworker profiles delete ${quoted} --yes 2>&1 || rm -rf ~/.omniworker/profiles/${quoted}`,
     );
     return true;
   } catch {
@@ -1177,8 +1177,8 @@ export async function sshGatewayStatus(config: SshConfig): Promise<boolean> {
   try {
     const out = await sshExec(
       config,
-      `if [ -f $HOME/.flux-agent/gateway.pid ]; then ` +
-        `pid=$(python3 -c "import json,sys; d=json.load(open('$HOME/.flux-agent/gateway.pid')); print(d.get('pid',d) if isinstance(d,dict) else d)" 2>/dev/null || cat $HOME/.flux-agent/gateway.pid); ` +
+      `if [ -f $HOME/.omniworker/gateway.pid ]; then ` +
+        `pid=$(python3 -c "import json,sys; d=json.load(open('$HOME/.omniworker/gateway.pid')); print(d.get('pid',d) if isinstance(d,dict) else d)" 2>/dev/null || cat $HOME/.omniworker/gateway.pid); ` +
         `kill -0 $pid 2>/dev/null && echo "running" || echo "stopped"; ` +
         `else echo "stopped"; fi`,
     );
@@ -1192,7 +1192,7 @@ export async function sshStartGateway(config: SshConfig): Promise<void> {
   try {
     await sshExec(
       config,
-      `nohup flux-agent gateway start > $HOME/.flux-agent/gateway.log 2>&1 &`,
+      `nohup omniworker gateway start > $HOME/.omniworker/gateway.log 2>&1 &`,
     );
   } catch {
     // best effort
@@ -1203,9 +1203,9 @@ export async function sshStopGateway(config: SshConfig): Promise<void> {
   try {
     await sshExec(
       config,
-      `flux-agent gateway stop 2>/dev/null || ` +
-        `(if [ -f $HOME/.flux-agent/gateway.pid ]; then ` +
-        `pid=$(python3 -c "import json; d=json.load(open('$HOME/.flux-agent/gateway.pid')); print(d['pid'] if isinstance(d,dict) else d)" 2>/dev/null); ` +
+      `omniworker gateway stop 2>/dev/null || ` +
+        `(if [ -f $HOME/.omniworker/gateway.pid ]; then ` +
+        `pid=$(python3 -c "import json; d=json.load(open('$HOME/.omniworker/gateway.pid')); print(d['pid'] if isinstance(d,dict) else d)" 2>/dev/null); ` +
         `[ -n "$pid" ] && kill $pid 2>/dev/null; fi); true`,
     );
   } catch {
@@ -1226,13 +1226,13 @@ export async function sshReadRemoteApiKey(config: SshConfig): Promise<string> {
 
 // ── Versions ──────────────────────────────────────────────────────────────────
 
-export async function sshGetFlux AgentVersion(
+export async function sshGetOmniWorkerVersion(
   config: SshConfig,
 ): Promise<string | null> {
   try {
     const out = await sshExec(
       config,
-      `flux-agent --version 2>/dev/null || flux-agent version 2>/dev/null || echo ""`,
+      `omniworker --version 2>/dev/null || omniworker version 2>/dev/null || echo ""`,
     );
     return out.trim() || null;
   } catch {
@@ -1249,7 +1249,7 @@ export async function sshReadLogs(
 ): Promise<{ content: string; path: string }> {
   const allowed = ["agent.log", "errors.log", "gateway.log"];
   const file = logFile && allowed.includes(logFile) ? logFile : "agent.log";
-  const remotePath = `$HOME/.flux-agent/logs/${file}`;
+  const remotePath = `$HOME/.omniworker/logs/${file}`;
   try {
     const safeLines = Math.max(
       1,
@@ -1259,9 +1259,9 @@ export async function sshReadLogs(
       config,
       `bash -c 'case "$2" in "~/"*) p="$HOME/\${2#~/}" ;; "\\$HOME/"*) p="$HOME/\${2#\\$HOME/}" ;; *) p="$2" ;; esac; tail -n "$1" -- "$p" 2>/dev/null || echo ""' -- ${shellQuote(String(safeLines))} ${shellQuote(remotePath)}`,
     );
-    return { content: content.trim(), path: `~/.flux-agent/logs/${file}` };
+    return { content: content.trim(), path: `~/.omniworker/logs/${file}` };
   } catch {
-    return { content: "", path: `~/.flux-agent/logs/${file}` };
+    return { content: "", path: `~/.omniworker/logs/${file}` };
   }
 }
 
@@ -1299,7 +1299,7 @@ export async function sshGetPlatformEnabled(
   try {
     const raw = await sshReadFile(
       config,
-      "$HOME/.flux-agent/gateway_state.json",
+      "$HOME/.omniworker/gateway_state.json",
     );
     if (raw.trim()) {
       const state = JSON.parse(raw);
@@ -1388,7 +1388,7 @@ export async function sshRunDoctor(config: SshConfig): Promise<string> {
   try {
     const out = await sshExec(
       config,
-      `flux-agent doctor 2>&1 || echo "flux-agent not found in PATH"`,
+      `omniworker doctor 2>&1 || echo "omniworker not found in PATH"`,
     );
     return out.trim() || "No output from doctor.";
   } catch (err) {
@@ -1397,12 +1397,12 @@ export async function sshRunDoctor(config: SshConfig): Promise<string> {
 }
 
 export async function sshRunUpdate(config: SshConfig): Promise<void> {
-  await sshExec(config, "flux-agent update 2>&1", undefined, 120000);
+  await sshExec(config, "omniworker update 2>&1", undefined, 120000);
 }
 
 export async function sshRunDump(config: SshConfig): Promise<string> {
   try {
-    const out = await sshExec(config, "flux-agent dump 2>&1", undefined, 60000);
+    const out = await sshExec(config, "omniworker dump 2>&1", undefined, 60000);
     return out.trim() || "No output from dump.";
   } catch (err) {
     return `SSH dump failed: ${(err as Error).message}`;
@@ -1428,9 +1428,9 @@ known = {
     "byterover": {"description": "memory.providers.byterover", "envVars": ["BRV_API_KEY"]},
 }
 roots = [
-    os.path.expanduser("~/.flux-agent/plugins/memory"),
-    os.path.expanduser("~/flux-agent/plugins/memory"),
-    os.path.expanduser("~/flux-agent-agent/plugins/memory"),
+    os.path.expanduser("~/.omniworker/plugins/memory"),
+    os.path.expanduser("~/omniworker/plugins/memory"),
+    os.path.expanduser("~/omniworker-agent/plugins/memory"),
 ]
 names = set(known)
 for root in roots:
@@ -1462,7 +1462,7 @@ print(json.dumps(result))
 
 export async function sshListModels(config: SshConfig): Promise<SavedModel[]> {
   try {
-    const raw = await sshReadFile(config, "$HOME/.flux-agent/models.json");
+    const raw = await sshReadFile(config, "$HOME/.omniworker/models.json");
     if (raw.trim()) return JSON.parse(raw);
   } catch {
     // no models.json on remote yet
@@ -1476,7 +1476,7 @@ export async function sshSaveModels(
 ): Promise<void> {
   await sshWriteFile(
     config,
-    "$HOME/.flux-agent/models.json",
+    "$HOME/.omniworker/models.json",
     JSON.stringify(models, null, 2),
   );
 }

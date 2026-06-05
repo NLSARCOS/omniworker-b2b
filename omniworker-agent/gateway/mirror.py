@@ -14,11 +14,11 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from flux-agent_cli.config import get_flux-agent_home
+from omniworker_cli.config import get_omniworker_home
 
 logger = logging.getLogger(__name__)
 
-_SESSIONS_DIR = get_flux-agent_home() / "sessions"
+_SESSIONS_DIR = get_omniworker_home() / "sessions"
 _SESSIONS_INDEX = _SESSIONS_DIR / "sessions.json"
 
 
@@ -164,7 +164,7 @@ def _append_to_sqlite(session_id: str, message: dict) -> None:
     """Append a message to the SQLite session database."""
     db = None
     try:
-        from flux-agent_state import SessionDB
+        from omniworker_state import SessionDB
         db = SessionDB()
         db.append_message(
             session_id=session_id,

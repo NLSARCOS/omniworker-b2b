@@ -300,7 +300,7 @@ def adapter(platform, runner):
 # ═══════════════════════════════════════════════════════════════════════════
 
 BOT_USER_ID = 99999
-BOT_USER_NAME = "Flux AgentBot"
+BOT_USER_NAME = "OmniWorkerBot"
 CHANNEL_ID = 22222
 GUILD_ID = 44444
 THREAD_ID = 33333

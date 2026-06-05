@@ -7,7 +7,7 @@ license: MIT
 dependencies: [chromadb, sentence-transformers]
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [RAG, Chroma, Vector Database, Embeddings, Semantic Search, Open Source, Self-Hosted, Document Retrieval, Metadata Filtering]
 
 ---

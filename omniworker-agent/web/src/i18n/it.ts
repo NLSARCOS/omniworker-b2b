@@ -266,7 +266,7 @@ export const it: Translations = {
     enableRuntime: "Abilita",
     forceReinstall: "Forza reinstallazione (elimina prima la cartella esistente)",
     headline:
-      "Scopri, installa, abilita e aggiorna i plugin OmniWorker (parità con `flux-agent plugins`).",
+      "Scopri, installa, abilita e aggiorna i plugin OmniWorker (parità con `omniworker plugins`).",
     identifierLabel: "URL Git o owner/repo",
     inactive: "inattivo",
     installBtn: "Installa da Git",
@@ -283,8 +283,8 @@ export const it: Translations = {
     providersHint:
       "Scrive memory.provider (vuoto = integrato) e context.engine in config.yaml. Effetto dalla prossima sessione.",
     refreshDashboard: "Riscansiona estensioni dashboard",
-    removeConfirm: "Rimuovere questo plugin da ~/.flux-agent/plugins/?",
-    removeHint: "Solo i plugin installati dall'utente in ~/.flux-agent/plugins possono essere rimossi.",
+    removeConfirm: "Rimuovere questo plugin da ~/.omniworker/plugins/?",
+    removeHint: "Solo i plugin installati dall'utente in ~/.omniworker/plugins possono essere rimossi.",
     rescanHeading: "Registro plugin SPA",
     rescanHint: "Riscansiona dopo aver aggiunto file su disco affinché la barra laterale rilevi i nuovi manifest.",
     runtimeHeading: "Runtime gateway (plugin YAML)",
@@ -306,7 +306,7 @@ export const it: Translations = {
     all: "Tutti",
     categories: "Categorie",
     filters: "Filtri",
-    noSkills: "Nessuna competenza trovata. Le competenze vengono caricate da ~/.flux-agent/skills/",
+    noSkills: "Nessuna competenza trovata. Le competenze vengono caricate da ~/.omniworker/skills/",
     noSkillsMatch: "Nessuna competenza corrisponde alla ricerca o al filtro.",
     skillCount: "{count} competenz{s}",
     resultCount: "{count} risultat{s}",
@@ -320,7 +320,7 @@ export const it: Translations = {
   },
 
   config: {
-    configPath: "~/.flux-agent/config.yaml",
+    configPath: "~/.omniworker/config.yaml",
     filters: "Filtri",
     sections: "Sezioni",
     exportConfig: "Esporta configurazione come JSON",

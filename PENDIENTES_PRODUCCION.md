@@ -58,3 +58,78 @@ En la otra computadora (la que está probando la instalación desde cero):
 ## Correcciones adicionales (v8.1)
 - Corregida la inicialización de `smart_router.py`: `isSmartRouterRunning()` es asíncrona pero se evaluaba sincrónicamente, haciendo que la app de escritorio pensara que el proxy ya estaba activo cuando no lo estaba. Esto causaba el `[Errno 61] Connection refused` que el agente recibía al intentar hablar con el SaaS a través del proxy muerto.
 - Se agregó un botón de **Validación de Sistema** en la pestaña de `Cuenta` del cliente de escritorio para diagnosticar rápidamente el estado del servidor API local y la conexión con el modelo SLM o el SaaS en el cliente final.
+
+---
+
+# 🤖 Orquestador + Ejército de Agentes — pendiente para probar en vivo
+
+> **Auditado:** 2026-06-04 · **Branch:** `feat/next` · Ver `ORCHESTRATOR-SPEC.md` (38/44 ✅, 110 tests verdes).
+> **Código:** listo y testeado. **Bloqueo:** credenciales de modelo + decisión de ruteo.
+
+## El problema, simple
+El orquestador y los 10 agentes están construidos, pero **nunca se probaron con un
+modelo real desde esta máquina de desarrollo** — no tiene llaves de modelo, y el
+JWT del gateway en su `config.yaml` **expiró hace 8 días** (se renueva al loguearse
+en el desktop).
+
+Evidencia (la prueba en vivo falló así):
+```
+RuntimeError: Provider 'kimi-coding' is set in config.yaml but no API key
+was found. Set the KIMI_API_KEY environment variable.
+```
+
+## Dónde están las credenciales (sí existen)
+Las llaves reales de los modelos **NO están en el repo ni en la máquina de dev**
+(correcto: no se commitean). Están —o deben estar— en el **entorno del servidor de
+producción** (`217.76.62.37` / `flux.simplex.lat`, ver credenciales SSH al inicio
+de este doc). El cliente local habla con ese gateway vía JWT; el SaaS guarda las
+llaves de Kimi/GLM del lado servidor.
+
+## ⚠️ El conflicto a resolver: el ejército apunta a los modelos DIRECTOS, no al gateway
+El registry (`omniworker-agent/agent_types.yaml`) configura a los agentes para ir
+**directo** a los proveedores, no por `flux.simplex.lat`:
+
+| Agente usa provider | Va a | Llave que pediría |
+|---|---|---|
+| `kimi-coding` | `api.moonshot.ai` | `KIMI_API_KEY` |
+| `zai` | `api.z.ai` | `GLM_API_KEY` / `ZAI_API_KEY` |
+| `opencode-go` | `opencode.ai/zen/go` | `OPENCODE_GO_API_KEY` |
+
+→ Aunque renueves el JWT, los agentes **no pasarían por tu gateway** salvo que se
+re-apunten al provider `custom` (flux). Esta es la decisión clave.
+
+## ✅ Qué falta hacer (elegir UNA)
+
+### Opción A — Probar rápido con llaves directas
+Traer las llaves del servidor de prod (SSH) y pegarlas en `~/.omniworker/.env`:
+```
+KIMI_API_KEY=...          # kimi-k2 (orquestador, researcher, data_analyst)
+GLM_API_KEY=...           # glm-5 / glm-4.5-flash (developer, reviewer, etc.)
+OPENCODE_GO_API_KEY=...   # opcional (browser_agent, marketer)
+```
+
+### Opción B — Producción correcta: que el ejército pase por `flux.simplex.lat` ✅ recomendado
+1. Loguearse en el **desktop** → renueva el JWT del gateway.
+2. Confirmar **qué nombres de modelo sirve el gateway** (¿`kimi-k2` / `glm-5`, u otros?).
+3. Re-apuntar los agentes del registry al provider `custom` (flux) en vez de los directos.
+→ Así el ejército usa tu capa de opacidad/billing y las llaves que ya viven en el server.
+
+## Verificación (cuando haya credenciales)
+```bash
+cd omniworker-agent
+RUN_E2E=1 python3 -m pytest tests/test_orchestrator_e2e.py::test_real_model_delegation -q -o addopts=""
+```
+Debe pasar **sin** devolver `{"error": ...}`. (El test ya valida delegación real;
+se corrigió un falso positivo que aceptaba cualquier string.)
+
+## Pendientes menores del orquestador (no bloquean)
+- **A8** sandbox real (necesita `TERMINAL_ENV=docker/modal` + override por-agente).
+- **C6** generar tareas desde señales externas (email/evento). *(Ya descompone objetivos manuales.)*
+- **F4** opacidad en el front del desktop (código TS, otro repo).
+- **D5** autolearning desde el chat (no solo el daemon).
+- **E6** endpoints admin para push de modelos del SaaS *(opcional — el poller local ya cubre el auto-update)*.
+
+## Resumen en una línea
+**El código del orquestador está listo. Para verlo funcionar falta: (1) las llaves
+de los modelos —que viven en el servidor de prod, no acá— y (2) decidir si los
+agentes van directo a Kimi/GLM o por tu gateway `flux.simplex.lat` (recomendado).**

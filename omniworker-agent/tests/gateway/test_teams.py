@@ -338,13 +338,13 @@ class TestTeamsPluginRegistration:
 class TestTeamsInteractiveSetup:
     def test_interactive_setup_persists_credentials(self, tmp_path, monkeypatch):
         """Regression for #19173: interactive_setup must import prompt helpers
-        from flux-agent_cli.cli_output (not flux-agent_cli.config) and persist
+        from omniworker_cli.cli_output (not omniworker_cli.config) and persist
         credentials to .env without crashing.
         """
-        flux-agent_home = tmp_path / "flux-agent"
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / "omniworker"
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
-        import flux-agent_cli.cli_output as cli_output_mod
+        import omniworker_cli.cli_output as cli_output_mod
 
         answers = iter(["client-id", "client-secret", "tenant-id", "aad-1, aad-2"])
         monkeypatch.setattr(cli_output_mod, "prompt", lambda *_a, **_kw: next(answers))
@@ -355,7 +355,7 @@ class TestTeamsInteractiveSetup:
 
         _teams_mod.interactive_setup()
 
-        env_text = (flux-agent_home / ".env").read_text(encoding="utf-8")
+        env_text = (omniworker_home / ".env").read_text(encoding="utf-8")
         assert "TEAMS_CLIENT_ID=client-id" in env_text
         assert "TEAMS_TENANT_ID=tenant-id" in env_text
 

@@ -16,18 +16,18 @@ from gateway import run as gateway_run
 
 
 def test_reload_runtime_env_preserves_config_max_turns(tmp_path: Path, monkeypatch) -> None:
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir()
-    (flux-agent_home / "config.yaml").write_text(
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir()
+    (omniworker_home / "config.yaml").write_text(
         yaml.safe_dump({"agent": {"max_turns": 9000}}),
         encoding="utf-8",
     )
-    (flux-agent_home / ".env").write_text(
+    (omniworker_home / ".env").write_text(
         "OMNIWORKER_MAX_ITERATIONS=90\nOPENROUTER_API_KEY=fresh-key\n",
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(gateway_run, "_flux-agent_home", flux-agent_home)
+    monkeypatch.setattr(gateway_run, "_omniworker_home", omniworker_home)
     monkeypatch.setenv("OMNIWORKER_MAX_ITERATIONS", "9000")
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
 
@@ -40,12 +40,12 @@ def test_reload_runtime_env_preserves_config_max_turns(tmp_path: Path, monkeypat
 def test_reload_runtime_env_keeps_env_max_iterations_when_config_omits_key(
     tmp_path: Path, monkeypatch
 ) -> None:
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir()
-    (flux-agent_home / "config.yaml").write_text(yaml.safe_dump({"agent": {}}), encoding="utf-8")
-    (flux-agent_home / ".env").write_text("OMNIWORKER_MAX_ITERATIONS=123\n", encoding="utf-8")
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir()
+    (omniworker_home / "config.yaml").write_text(yaml.safe_dump({"agent": {}}), encoding="utf-8")
+    (omniworker_home / ".env").write_text("OMNIWORKER_MAX_ITERATIONS=123\n", encoding="utf-8")
 
-    monkeypatch.setattr(gateway_run, "_flux-agent_home", flux-agent_home)
+    monkeypatch.setattr(gateway_run, "_omniworker_home", omniworker_home)
     monkeypatch.delenv("OMNIWORKER_MAX_ITERATIONS", raising=False)
 
     gateway_run._reload_runtime_env_preserving_config_authority()

@@ -1,13 +1,13 @@
 ---
 title: 文生图（Image Generation）
-description: 通过 FAL.ai 文生图；支持 8 个模型，含 FLUX 2、GPT-Image、Nano Banana Pro、Ideogram、Recraft V4 Pro 等，可用 flux-agent tools 切换。
+description: 通过 FAL.ai 文生图；支持 8 个模型，含 FLUX 2、GPT-Image、Nano Banana Pro、Ideogram、Recraft V4 Pro 等，可用 omniworker tools 切换。
 sidebar_label: 文生图
 sidebar_position: 6
 ---
 
 # 文生图（Image Generation）
 
-Flux Agent Agent 通过 FAL.ai 根据文字提示生成图像。默认内置 8 个模型，在速度、画质与成本上各有取舍。当前模型可通过 `flux-agent tools` 配置，并持久化在 `config.yaml`。
+Flux Agent Agent 通过 FAL.ai 根据文字提示生成图像。默认内置 8 个模型，在速度、画质与成本上各有取舍。当前模型可通过 `omniworker tools` 配置，并持久化在 `config.yaml`。
 
 ## 支持的模型
 
@@ -27,7 +27,7 @@ Flux Agent Agent 通过 FAL.ai 根据文字提示生成图像。默认内置 8 �
 ## 配置
 
 :::tip Nous 订阅用户
-若你持有付费 [Nous Portal](https://portal.flux-agent.com) 订阅，可通过 **[Tool Gateway](tool-gateway.md)** 使用文生图，**无需** `FAL_KEY`。模型选择在「直连 FAL」与「订阅网关」两条路径下保持一致。
+若你持有付费 [Nous Portal](https://portal.omniworker.com) 订阅，可通过 **[Tool Gateway](tool-gateway.md)** 使用文生图，**无需** `FAL_KEY`。模型选择在「直连 FAL」与「订阅网关」两条路径下保持一致。
 
 若托管网关对某一模型返回 `HTTP 4xx`，通常表示该模型尚未在 Portal 侧代理——智能体会给出处理建议（例如配置 `FAL_KEY` 直连，或换用其他模型）。
 :::
@@ -42,7 +42,7 @@ Flux Agent Agent 通过 FAL.ai 根据文字提示生成图像。默认内置 8 �
 执行：
 
 ```bash
-flux-agent tools
+omniworker tools
 ```
 
 进入 **🎨 Image Generation**，选择后端（Nous Subscription 或 FAL.ai），随后在表格中用方向键选择模型，回车确认：

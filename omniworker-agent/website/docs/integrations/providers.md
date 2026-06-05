@@ -10,38 +10,38 @@ This page covers setting up inference providers for Flux Agent Agent — from cl
 
 ## Inference Providers
 
-You need at least one way to connect to an LLM. Use `flux-agent model` to switch providers and models interactively, or configure directly:
+You need at least one way to connect to an LLM. Use `omniworker model` to switch providers and models interactively, or configure directly:
 
 | Provider | Setup |
 |----------|-------|
-| **Nous Portal** | `flux-agent model` (OAuth, subscription-based) |
-| **OpenAI Codex** | `flux-agent model` (ChatGPT OAuth, uses Codex models) |
-| **GitHub Copilot** | `flux-agent model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
-| **GitHub Copilot ACP** | `flux-agent model` (spawns local `copilot --acp --stdio`) |
-| **Anthropic** | `flux-agent model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
-| **OpenRouter** | `OPENROUTER_API_KEY` in `~/.flux-agent/.env` |
-| **NovitaAI** | `NOVITA_API_KEY` in `~/.flux-agent/.env` (provider: `novita`, 200+ models, Model API, Agent Sandbox, GPU Cloud) |
-| **AI Gateway** | `AI_GATEWAY_API_KEY` in `~/.flux-agent/.env` (provider: `ai-gateway`) |
-| **z.ai / GLM** | `GLM_API_KEY` in `~/.flux-agent/.env` (provider: `zai`) |
-| **Kimi / Moonshot** | `KIMI_API_KEY` in `~/.flux-agent/.env` (provider: `kimi-coding`) |
-| **Kimi / Moonshot (China)** | `KIMI_CN_API_KEY` in `~/.flux-agent/.env` (provider: `kimi-coding-cn`; aliases: `kimi-cn`, `moonshot-cn`) |
-| **Arcee AI** | `ARCEEAI_API_KEY` in `~/.flux-agent/.env` (provider: `arcee`; aliases: `arcee-ai`, `arceeai`) |
-| **GMI Cloud** | `GMI_API_KEY` in `~/.flux-agent/.env` (provider: `gmi`; aliases: `gmi-cloud`, `gmicloud`) |
-| **MiniMax** | `MINIMAX_API_KEY` in `~/.flux-agent/.env` (provider: `minimax`) |
-| **MiniMax China** | `MINIMAX_CN_API_KEY` in `~/.flux-agent/.env` (provider: `minimax-cn`) |
-| **Alibaba Cloud** | `DASHSCOPE_API_KEY` in `~/.flux-agent/.env` (provider: `alibaba`) |
+| **Nous Portal** | `omniworker model` (OAuth, subscription-based) |
+| **OpenAI Codex** | `omniworker model` (ChatGPT OAuth, uses Codex models) |
+| **GitHub Copilot** | `omniworker model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
+| **GitHub Copilot ACP** | `omniworker model` (spawns local `copilot --acp --stdio`) |
+| **Anthropic** | `omniworker model` (Claude Max + extra usage credits via OAuth; also supports Anthropic API key or manual setup-token — see note below) |
+| **OpenRouter** | `OPENROUTER_API_KEY` in `~/.omniworker/.env` |
+| **NovitaAI** | `NOVITA_API_KEY` in `~/.omniworker/.env` (provider: `novita`, 200+ models, Model API, Agent Sandbox, GPU Cloud) |
+| **AI Gateway** | `AI_GATEWAY_API_KEY` in `~/.omniworker/.env` (provider: `ai-gateway`) |
+| **z.ai / GLM** | `GLM_API_KEY` in `~/.omniworker/.env` (provider: `zai`) |
+| **Kimi / Moonshot** | `KIMI_API_KEY` in `~/.omniworker/.env` (provider: `kimi-coding`) |
+| **Kimi / Moonshot (China)** | `KIMI_CN_API_KEY` in `~/.omniworker/.env` (provider: `kimi-coding-cn`; aliases: `kimi-cn`, `moonshot-cn`) |
+| **Arcee AI** | `ARCEEAI_API_KEY` in `~/.omniworker/.env` (provider: `arcee`; aliases: `arcee-ai`, `arceeai`) |
+| **GMI Cloud** | `GMI_API_KEY` in `~/.omniworker/.env` (provider: `gmi`; aliases: `gmi-cloud`, `gmicloud`) |
+| **MiniMax** | `MINIMAX_API_KEY` in `~/.omniworker/.env` (provider: `minimax`) |
+| **MiniMax China** | `MINIMAX_CN_API_KEY` in `~/.omniworker/.env` (provider: `minimax-cn`) |
+| **Alibaba Cloud** | `DASHSCOPE_API_KEY` in `~/.omniworker/.env` (provider: `alibaba`) |
 | **Alibaba Coding Plan** | `DASHSCOPE_API_KEY` (provider: `alibaba-coding-plan`, alias: `alibaba_coding`) — separate billing SKU, different endpoint |
-| **Kilo Code** | `KILOCODE_API_KEY` in `~/.flux-agent/.env` (provider: `kilocode`) |
-| **Xiaomi MiMo** | `XIAOMI_API_KEY` in `~/.flux-agent/.env` (provider: `xiaomi`, aliases: `mimo`, `xiaomi-mimo`) |
-| **Tencent TokenHub** | `TOKENHUB_API_KEY` in `~/.flux-agent/.env` (provider: `tencent-tokenhub`, aliases: `tencent`, `tokenhub`, `tencentmaas`) |
-| **OpenCode Zen** | `OPENCODE_ZEN_API_KEY` in `~/.flux-agent/.env` (provider: `opencode-zen`) |
-| **OpenCode Go** | `OPENCODE_GO_API_KEY` in `~/.flux-agent/.env` (provider: `opencode-go`) |
-| **DeepSeek** | `DEEPSEEK_API_KEY` in `~/.flux-agent/.env` (provider: `deepseek`) |
-| **Hugging Face** | `HF_TOKEN` in `~/.flux-agent/.env` (provider: `huggingface`, aliases: `hf`) |
-| **Google / Gemini** | `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) in `~/.flux-agent/.env` (provider: `gemini`) |
-| **Google Gemini (OAuth)** | `flux-agent model` → "Google Gemini (OAuth)" (provider: `google-gemini-cli`, free tier supported, browser PKCE login) |
-| **LM Studio** | `flux-agent model` → "LM Studio" (provider: `lmstudio`, optional `LM_API_KEY`) |
-| **Custom Endpoint** | `flux-agent model` → choose "Custom endpoint" (saved in `config.yaml`) |
+| **Kilo Code** | `KILOCODE_API_KEY` in `~/.omniworker/.env` (provider: `kilocode`) |
+| **Xiaomi MiMo** | `XIAOMI_API_KEY` in `~/.omniworker/.env` (provider: `xiaomi`, aliases: `mimo`, `xiaomi-mimo`) |
+| **Tencent TokenHub** | `TOKENHUB_API_KEY` in `~/.omniworker/.env` (provider: `tencent-tokenhub`, aliases: `tencent`, `tokenhub`, `tencentmaas`) |
+| **OpenCode Zen** | `OPENCODE_ZEN_API_KEY` in `~/.omniworker/.env` (provider: `opencode-zen`) |
+| **OpenCode Go** | `OPENCODE_GO_API_KEY` in `~/.omniworker/.env` (provider: `opencode-go`) |
+| **DeepSeek** | `DEEPSEEK_API_KEY` in `~/.omniworker/.env` (provider: `deepseek`) |
+| **Hugging Face** | `HF_TOKEN` in `~/.omniworker/.env` (provider: `huggingface`, aliases: `hf`) |
+| **Google / Gemini** | `GOOGLE_API_KEY` (or `GEMINI_API_KEY`) in `~/.omniworker/.env` (provider: `gemini`) |
+| **Google Gemini (OAuth)** | `omniworker model` → "Google Gemini (OAuth)" (provider: `google-gemini-cli`, free tier supported, browser PKCE login) |
+| **LM Studio** | `omniworker model` → "LM Studio" (provider: `lmstudio`, optional `LM_API_KEY`) |
+| **Custom Endpoint** | `omniworker model` → choose "Custom endpoint" (saved in `config.yaml`) |
 
 For the official API-key path, see the dedicated [Google Gemini guide](/docs/guides/google-gemini).
 
@@ -60,7 +60,7 @@ same API that Google's own `gemini-cli` tool uses. This supports both the
 **Quick start:**
 
 ```bash
-flux-agent model
+omniworker model
 # → pick "Google Gemini (OAuth)"
 # → see policy warning, confirm
 # → browser opens to accounts.google.com, sign in
@@ -75,9 +75,9 @@ need to install `gemini-cli` or register your own GCP OAuth client.
 **How auth works:**
 - PKCE Authorization Code flow against `accounts.google.com`
 - Browser callback at `http://127.0.0.1:8085/oauth2callback` (with ephemeral-port fallback if busy)
-- Tokens stored at `~/.flux-agent/auth/google_oauth.json` (chmod 0600, atomic write, cross-process `fcntl` lock)
+- Tokens stored at `~/.omniworker/auth/google_oauth.json` (chmod 0600, atomic write, cross-process `fcntl` lock)
 - Automatic refresh 60 s before expiry
-- Headless environments (SSH, `FLUX AGENT_HEADLESS=1`) → paste-mode fallback
+- Headless environments (SSH, `OMNIWORKER_HEADLESS=1`) → paste-mode fallback
 - Inflight refresh deduplication — two concurrent requests won't double-refresh
 - `invalid_grant` (revoked refresh) → credential file wiped, user prompted to re-login
 
@@ -94,7 +94,7 @@ need to install `gemini-cli` or register your own GCP OAuth client.
 | Your situation | What to do |
 |---|---|
 | Personal Google account, want free tier | Nothing — sign in, start chatting |
-| Workspace / Standard / Enterprise account | Set `FLUX AGENT_GEMINI_PROJECT_ID` or `GOOGLE_CLOUD_PROJECT` to your GCP project ID |
+| Workspace / Standard / Enterprise account | Set `OMNIWORKER_GEMINI_PROJECT_ID` or `GOOGLE_CLOUD_PROJECT` to your GCP project ID |
 | VPC-SC-protected org | Flux Agent detects `SECURITY_POLICY_VIOLATED` and forces `standard-tier` automatically |
 
 Free tier auto-provisions a Google-managed project on first use. No GCP setup required.
@@ -127,8 +127,8 @@ If you'd rather register your own Google OAuth client — e.g., to keep quota
 and consent scoped to your own GCP project — set:
 
 ```bash
-FLUX AGENT_GEMINI_CLIENT_ID=your-client.apps.googleusercontent.com
-FLUX AGENT_GEMINI_CLIENT_SECRET=...   # optional for Desktop clients
+OMNIWORKER_GEMINI_CLIENT_ID=your-client.apps.googleusercontent.com
+OMNIWORKER_GEMINI_CLIENT_SECRET=...   # optional for Desktop clients
 ```
 
 Register a **Desktop app** OAuth client at
@@ -136,15 +136,15 @@ Register a **Desktop app** OAuth client at
 with the Generative Language API enabled.
 
 :::info Codex Note
-The OpenAI Codex provider authenticates via device code (open a URL, enter a code). Flux Agent stores the resulting credentials in its own auth store under `~/.flux-agent/auth.json` and can import existing Codex CLI credentials from `~/.codex/auth.json` when present. No Codex CLI installation is required.
+The OpenAI Codex provider authenticates via device code (open a URL, enter a code). Flux Agent stores the resulting credentials in its own auth store under `~/.omniworker/auth.json` and can import existing Codex CLI credentials from `~/.codex/auth.json` when present. No Codex CLI installation is required.
 :::
 
 :::warning
-Even when using Nous Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Flux Agent routes these tasks to your **main chat model** — the same model you picked in `flux-agent model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/docs/user-guide/configuration#auxiliary-models).
+Even when using Nous Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Flux Agent routes these tasks to your **main chat model** — the same model you picked in `omniworker model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/docs/user-guide/configuration#auxiliary-models).
 :::
 
 :::tip Nous Tool Gateway
-Paid Nous Portal subscribers also get access to the **[Tool Gateway](/docs/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. It's offered automatically during `flux-agent model` setup, or enable it later with `flux-agent tools`.
+Paid Nous Portal subscribers also get access to the **[Tool Gateway](/docs/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. It's offered automatically during `omniworker model` setup, or enable it later with `omniworker tools`.
 :::
 
 ### Two Commands for Model Management
@@ -153,17 +153,17 @@ Flux Agent has **two** model commands that serve different purposes:
 
 | Command | Where to run | What it does |
 |---------|-------------|--------------|
-| **`flux-agent model`** | Your terminal (outside any session) | Full setup wizard — add providers, run OAuth, enter API keys, configure endpoints |
+| **`omniworker model`** | Your terminal (outside any session) | Full setup wizard — add providers, run OAuth, enter API keys, configure endpoints |
 | **`/model`** | Inside a Flux Agent chat session | Quick switch between **already-configured** providers and models |
 
-If you're trying to switch to a provider you haven't set up yet (e.g. you only have OpenRouter configured and want to use Anthropic), you need `flux-agent model`, not `/model`. Exit your session first (`Ctrl+C` or `/quit`), run `flux-agent model`, complete the provider setup, then start a new session.
+If you're trying to switch to a provider you haven't set up yet (e.g. you only have OpenRouter configured and want to use Anthropic), you need `omniworker model`, not `/model`. Exit your session first (`Ctrl+C` or `/quit`), run `omniworker model`, complete the provider setup, then start a new session.
 
 ### Anthropic (Native)
 
 Use Claude models directly through the Anthropic API — no OpenRouter proxy needed. Supports three auth methods:
 
 :::caution Requires Claude Max "extra usage" credits
-When you authenticate via `flux-agent model` → Anthropic OAuth (or via `flux-agent auth add anthropic --type oauth`), Flux Agent routes as Claude Code against your Anthropic account. **It only works if you're on a Claude Max plan and have purchased extra usage credits.** The base Max plan allowance (the usage included in Claude Code by default) is not consumed by Flux Agent — only the extra/overage credits you've added on top are. Claude Pro subscribers cannot use this path.
+When you authenticate via `omniworker model` → Anthropic OAuth (or via `omniworker auth add anthropic --type oauth`), Flux Agent routes as Claude Code against your Anthropic account. **It only works if you're on a Claude Max plan and have purchased extra usage credits.** The base Max plan allowance (the usage included in Claude Code by default) is not consumed by Flux Agent — only the extra/overage credits you've added on top are. Claude Pro subscribers cannot use this path.
 
 If you don't have Max + extra credits, use an `ANTHROPIC_API_KEY` instead — requests are billed pay-per-token against that key's organization (standard API pricing, independent of any Claude subscription).
 :::
@@ -171,21 +171,21 @@ If you don't have Max + extra credits, use an `ANTHROPIC_API_KEY` instead — re
 ```bash
 # With an API key (pay-per-token)
 export ANTHROPIC_API_KEY=***
-flux-agent chat --provider anthropic --model claude-sonnet-4-6
+omniworker chat --provider anthropic --model claude-sonnet-4-6
 
-# Preferred: authenticate through `flux-agent model`
+# Preferred: authenticate through `omniworker model`
 # Flux Agent will use Claude Code's credential store directly when available
-flux-agent model
+omniworker model
 
 # Manual override with a setup-token (fallback / legacy)
 export ANTHROPIC_TOKEN=***  # setup-token or manual OAuth token
-flux-agent chat --provider anthropic
+omniworker chat --provider anthropic
 
 # Auto-detect Claude Code credentials (if you already use Claude Code)
-flux-agent chat --provider anthropic  # reads Claude Code credential files automatically
+omniworker chat --provider anthropic  # reads Claude Code credential files automatically
 ```
 
-When you choose Anthropic OAuth through `flux-agent model`, Flux Agent prefers Claude Code's own credential store over copying the token into `~/.flux-agent/.env`. That keeps refreshable Claude credentials refreshable.
+When you choose Anthropic OAuth through `omniworker model`, Flux Agent prefers Claude Code's own credential store over copying the token into `~/.omniworker/.env`. That keeps refreshable Claude credentials refreshable.
 
 Or set it permanently:
 ```yaml
@@ -205,7 +205,7 @@ Flux Agent supports GitHub Copilot as a first-class provider with two modes:
 **`copilot` — Direct Copilot API** (recommended). Uses your GitHub Copilot subscription to access GPT-5.x, Claude, Gemini, and other models through the Copilot API.
 
 ```bash
-flux-agent chat --provider copilot --model gpt-5.4
+omniworker chat --provider copilot --model gpt-5.4
 ```
 
 **Authentication options** (checked in this order):
@@ -215,18 +215,18 @@ flux-agent chat --provider copilot --model gpt-5.4
 3. `GITHUB_TOKEN` environment variable
 4. `gh auth token` CLI fallback
 
-If no token is found, `flux-agent model` offers an **OAuth device code login** — the same flow used by the Copilot CLI and opencode.
+If no token is found, `omniworker model` offers an **OAuth device code login** — the same flow used by the Copilot CLI and opencode.
 
 :::warning Token types
 The Copilot API does **not** support classic Personal Access Tokens (`ghp_*`). Supported token types:
 
 | Type | Prefix | How to get |
 |------|--------|------------|
-| OAuth token | `gho_` | `flux-agent model` → GitHub Copilot → Login with GitHub |
+| OAuth token | `gho_` | `omniworker model` → GitHub Copilot → Login with GitHub |
 | Fine-grained PAT | `github_pat_` | GitHub Settings → Developer settings → Fine-grained tokens (needs **Copilot Requests** permission) |
 | GitHub App token | `ghu_` | Via GitHub App installation |
 
-If your `gh auth token` returns a `ghp_*` token, use `flux-agent model` to authenticate via OAuth instead.
+If your `gh auth token` returns a `ghp_*` token, use `omniworker model` to authenticate via OAuth instead.
 :::
 
 :::info Copilot auth behavior in Flux Agent
@@ -246,7 +246,7 @@ Some older community proxies use `api.github.com/copilot_internal/v2/token` exch
 **`copilot-acp` — Copilot ACP agent backend**. Spawns the local Copilot CLI as a subprocess:
 
 ```bash
-flux-agent chat --provider copilot-acp --model copilot-acp
+omniworker chat --provider copilot-acp --model copilot-acp
 # Requires the GitHub Copilot CLI in PATH and an existing `copilot login` session
 ```
 
@@ -260,8 +260,8 @@ model:
 | Environment variable | Description |
 |---------------------|-------------|
 | `COPILOT_GITHUB_TOKEN` | GitHub token for Copilot API (first priority) |
-| `FLUX AGENT_COPILOT_ACP_COMMAND` | Override the Copilot CLI binary path (default: `copilot`) |
-| `FLUX AGENT_COPILOT_ACP_ARGS` | Override ACP args (default: `--acp --stdio`) |
+| `OMNIWORKER_COPILOT_ACP_COMMAND` | Override the Copilot CLI binary path (default: `copilot`) |
+| `OMNIWORKER_COPILOT_ACP_ARGS` | Override ACP args (default: `--acp --stdio`) |
 
 ### First-Class API-Key Providers
 
@@ -269,49 +269,49 @@ These providers have built-in support with dedicated provider IDs. Set the API k
 
 ```bash
 # NovitaAI Model API
-flux-agent chat --provider novita --model moonshotai/kimi-k2.5
-# Requires: NOVITA_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider novita --model moonshotai/kimi-k2.5
+# Requires: NOVITA_API_KEY in ~/.omniworker/.env
 
 # z.ai / ZhipuAI GLM
-flux-agent chat --provider zai --model glm-5
-# Requires: GLM_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider zai --model glm-5
+# Requires: GLM_API_KEY in ~/.omniworker/.env
 
 # Kimi / Moonshot AI (international: api.moonshot.ai)
-flux-agent chat --provider kimi-coding --model kimi-for-coding
-# Requires: KIMI_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider kimi-coding --model kimi-for-coding
+# Requires: KIMI_API_KEY in ~/.omniworker/.env
 
 # Kimi / Moonshot AI (China: api.moonshot.cn)
-flux-agent chat --provider kimi-coding-cn --model kimi-k2.5
-# Requires: KIMI_CN_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider kimi-coding-cn --model kimi-k2.5
+# Requires: KIMI_CN_API_KEY in ~/.omniworker/.env
 
 # MiniMax (global endpoint)
-flux-agent chat --provider minimax --model MiniMax-M2.7
-# Requires: MINIMAX_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider minimax --model MiniMax-M2.7
+# Requires: MINIMAX_API_KEY in ~/.omniworker/.env
 
 # MiniMax (China endpoint)
-flux-agent chat --provider minimax-cn --model MiniMax-M2.7
-# Requires: MINIMAX_CN_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider minimax-cn --model MiniMax-M2.7
+# Requires: MINIMAX_CN_API_KEY in ~/.omniworker/.env
 
 # Alibaba Cloud / DashScope (Qwen models)
-flux-agent chat --provider alibaba --model qwen3.5-plus
-# Requires: DASHSCOPE_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider alibaba --model qwen3.5-plus
+# Requires: DASHSCOPE_API_KEY in ~/.omniworker/.env
 
 # Xiaomi MiMo
-flux-agent chat --provider xiaomi --model mimo-v2-pro
-# Requires: XIAOMI_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider xiaomi --model mimo-v2-pro
+# Requires: XIAOMI_API_KEY in ~/.omniworker/.env
 
 # Tencent TokenHub (Hy3 Preview)
-flux-agent chat --provider tencent-tokenhub --model hy3-preview
-# Requires: TOKENHUB_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider tencent-tokenhub --model hy3-preview
+# Requires: TOKENHUB_API_KEY in ~/.omniworker/.env
 
 # Arcee AI (Trinity models)
-flux-agent chat --provider arcee --model trinity-large-thinking
-# Requires: ARCEEAI_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider arcee --model trinity-large-thinking
+# Requires: ARCEEAI_API_KEY in ~/.omniworker/.env
 
 # GMI Cloud
 # Use the exact model ID returned by GMI's /v1/models endpoint.
-flux-agent chat --provider gmi --model zai-org/GLM-5.1-FP8
-# Requires: GMI_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider gmi --model zai-org/GLM-5.1-FP8
+# Requires: GMI_API_KEY in ~/.omniworker/.env
 ```
 
 Or set the provider permanently in `config.yaml`:
@@ -329,13 +329,13 @@ When using the Z.AI / GLM provider, Flux Agent automatically probes multiple end
 
 ### xAI (Grok) — Responses API + Prompt Caching
 
-xAI is wired through the Responses API (`codex_responses` transport) for automatic reasoning support on Grok 4 models — no `reasoning_effort` parameter needed, the server reasons by default. Set `XAI_API_KEY` in `~/.flux-agent/.env` and pick xAI in `flux-agent model`, or drop `grok` as a shortcut into `/model grok-4-1-fast-reasoning`.
+xAI is wired through the Responses API (`codex_responses` transport) for automatic reasoning support on Grok 4 models — no `reasoning_effort` parameter needed, the server reasons by default. Set `XAI_API_KEY` in `~/.omniworker/.env` and pick xAI in `omniworker model`, or drop `grok` as a shortcut into `/model grok-4-1-fast-reasoning`.
 
 When using xAI as a provider (any base URL containing `x.ai`), Flux Agent automatically enables prompt caching by sending the `x-grok-conv-id` header with every API request. This routes requests to the same server within a conversation session, allowing xAI's infrastructure to reuse cached system prompts and conversation history.
 
 No configuration is needed — caching activates automatically when an xAI endpoint is detected and a session ID is available. This reduces latency and cost for multi-turn conversations.
 
-xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `flux-agent tools` → Voice & TTS, or see the [Voice & TTS](../user-guide/features/tts.md#text-to-speech) page for config.
+xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `omniworker tools` → Voice & TTS, or see the [Voice & TTS](../user-guide/features/tts.md#text-to-speech) page for config.
 
 ### NovitaAI
 
@@ -343,11 +343,11 @@ xAI also ships a dedicated TTS endpoint (`/v1/tts`). Select **xAI TTS** in `flux
 
 ```bash
 # Use any available model
-flux-agent chat --provider novita --model moonshotai/kimi-k2.5
-# Requires: NOVITA_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider novita --model moonshotai/kimi-k2.5
+# Requires: NOVITA_API_KEY in ~/.omniworker/.env
 
 # Short alias
-flux-agent chat --provider novita-ai --model deepseek/deepseek-v3-0324
+omniworker chat --provider novita-ai --model deepseek/deepseek-v3-0324
 ```
 
 Or set it permanently in `config.yaml`:
@@ -362,10 +362,10 @@ Get your API key at [novita.ai/settings/key-management](https://novita.ai/settin
 
 ### Ollama Cloud — Managed Ollama Models, OAuth + API Key
 
-[Ollama Cloud](https://ollama.com/cloud) hosts the same open-weight catalog as local Ollama but without the GPU requirement. Pick it in `flux-agent model` as **Ollama Cloud**, paste your API key from [ollama.com/settings/keys](https://ollama.com/settings/keys), and Flux Agent auto-discovers the available models.
+[Ollama Cloud](https://ollama.com/cloud) hosts the same open-weight catalog as local Ollama but without the GPU requirement. Pick it in `omniworker model` as **Ollama Cloud**, paste your API key from [ollama.com/settings/keys](https://ollama.com/settings/keys), and Flux Agent auto-discovers the available models.
 
 ```bash
-flux-agent model
+omniworker model
 # → pick "Ollama Cloud"
 # → paste your OLLAMA_API_KEY
 # → select from discovered models (gpt-oss:120b, glm-4.6:cloud, qwen3-coder:480b-cloud, etc.)
@@ -390,10 +390,10 @@ Anthropic Claude, Amazon Nova, DeepSeek v3.2, Meta Llama 4, and other models via
 
 ```bash
 # Simplest — named profile in ~/.aws/credentials
-flux-agent chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
+omniworker chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
 
 # Or with explicit env vars
-AWS_PROFILE=myprofile AWS_REGION=us-east-1 flux-agent chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
+AWS_PROFILE=myprofile AWS_REGION=us-east-1 omniworker chat --provider bedrock --model us.anthropic.claude-sonnet-4-6
 ```
 
 Or permanently in `config.yaml`:
@@ -418,15 +418,15 @@ See the [AWS Bedrock guide](/docs/guides/aws-bedrock) for a walkthrough of IAM s
 
 ### Qwen Portal (OAuth)
 
-Alibaba's Qwen Portal with browser-based OAuth login. Pick **Qwen OAuth (Portal)** in `flux-agent model`, sign in through the browser, and Flux Agent persists the refresh token.
+Alibaba's Qwen Portal with browser-based OAuth login. Pick **Qwen OAuth (Portal)** in `omniworker model`, sign in through the browser, and Flux Agent persists the refresh token.
 
 ```bash
-flux-agent model
+omniworker model
 # → pick "Qwen OAuth (Portal)"
 # → browser opens; sign in with your Alibaba account
-# → confirm — credentials are saved to ~/.flux-agent/auth.json
+# → confirm — credentials are saved to ~/.omniworker/auth.json
 
-flux-agent chat   # uses portal.qwen.ai/v1 endpoint
+omniworker chat   # uses portal.qwen.ai/v1 endpoint
 ```
 
 Or configure `config.yaml`:
@@ -436,7 +436,7 @@ model:
   default: "qwen3-coder-plus"
 ```
 
-Set `FLUX AGENT_QWEN_BASE_URL` only if the portal endpoint relocates (default: `https://portal.qwen.ai/v1`).
+Set `OMNIWORKER_QWEN_BASE_URL` only if the portal endpoint relocates (default: `https://portal.qwen.ai/v1`).
 
 :::tip Qwen OAuth vs DashScope (Alibaba)
 `qwen-oauth` uses the consumer-facing Qwen Portal with OAuth login — ideal for individual users. The `alibaba` provider uses DashScope's enterprise API with a `DASHSCOPE_API_KEY` — ideal for programmatic / production workloads. Both route to Qwen-family models but live at different endpoints.
@@ -455,22 +455,22 @@ model:
 Or from the CLI:
 
 ```bash
-flux-agent chat --provider alibaba_coding --model qwen3-coder-plus
+omniworker chat --provider alibaba_coding --model qwen3-coder-plus
 ```
 
 `alibaba_coding` uses the same `DASHSCOPE_API_KEY` your `alibaba` entry already uses — no separate key needed, just a different routing target. Before this provider was registered, users who set `provider: alibaba_coding` in `config.yaml` silently fell through to OpenRouter routing.
 
 ### MiniMax (OAuth)
 
-MiniMax-M2.7 via browser OAuth login — no API key needed. Pick **MiniMax (OAuth)** in `flux-agent model`, sign in through the browser, and Flux Agent persists the access + refresh tokens. Uses the Anthropic Messages-compatible endpoint (`/anthropic`) under the hood.
+MiniMax-M2.7 via browser OAuth login — no API key needed. Pick **MiniMax (OAuth)** in `omniworker model`, sign in through the browser, and Flux Agent persists the access + refresh tokens. Uses the Anthropic Messages-compatible endpoint (`/anthropic`) under the hood.
 
 ```bash
-flux-agent model
+omniworker model
 # → pick "MiniMax (OAuth)"
 # → browser opens; sign in with your MiniMax account (global or CN region)
-# → confirm — credentials are saved to ~/.flux-agent/auth.json
+# → confirm — credentials are saved to ~/.omniworker/auth.json
 
-flux-agent chat   # uses api.minimax.io/anthropic endpoint
+omniworker chat   # uses api.minimax.io/anthropic endpoint
 ```
 
 Or configure `config.yaml`:
@@ -492,11 +492,11 @@ Nemotron and other open source models via [build.nvidia.com](https://build.nvidi
 
 ```bash
 # Cloud (build.nvidia.com)
-flux-agent chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
-# Requires: NVIDIA_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
+# Requires: NVIDIA_API_KEY in ~/.omniworker/.env
 
 # Local NIM endpoint — override base URL
-NVIDIA_BASE_URL=http://localhost:8000/v1 flux-agent chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
+NVIDIA_BASE_URL=http://localhost:8000/v1 omniworker chat --provider nvidia --model nvidia/nemotron-3-super-120b-a12b
 ```
 
 Or set it permanently in `config.yaml`:
@@ -516,8 +516,8 @@ Open and reasoning models via [GMI Cloud](https://www.gmicloud.ai/) — OpenAI-c
 
 ```bash
 # GMI Cloud
-flux-agent chat --provider gmi --model deepseek-ai/DeepSeek-R1
-# Requires: GMI_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider gmi --model deepseek-ai/DeepSeek-R1
+# Requires: GMI_API_KEY in ~/.omniworker/.env
 ```
 
 Or set it permanently in `config.yaml`:
@@ -535,8 +535,8 @@ Step-series models via [StepFun](https://platform.stepfun.com) — OpenAI-compat
 
 ```bash
 # StepFun
-flux-agent chat --provider stepfun --model step-3-mini
-# Requires: STEPFUN_API_KEY in ~/.flux-agent/.env
+omniworker chat --provider stepfun --model step-3-mini
+# Requires: STEPFUN_API_KEY in ~/.omniworker/.env
 ```
 
 Or set it permanently in `config.yaml`:
@@ -554,11 +554,11 @@ The base URL can be overridden with `STEPFUN_BASE_URL` (default: `https://api.st
 
 ```bash
 # Use any available model
-flux-agent chat --provider huggingface --model Qwen/Qwen3-235B-A22B-Thinking-2507
-# Requires: HF_TOKEN in ~/.flux-agent/.env
+omniworker chat --provider huggingface --model Qwen/Qwen3-235B-A22B-Thinking-2507
+# Requires: HF_TOKEN in ~/.omniworker/.env
 
 # Short alias
-flux-agent chat --provider hf --model deepseek-ai/DeepSeek-V3.2
+omniworker chat --provider hf --model deepseek-ai/DeepSeek-V3.2
 ```
 
 Or set it permanently in `config.yaml`:
@@ -584,14 +584,14 @@ Three ways to configure a custom endpoint:
 
 **Interactive setup (recommended):**
 ```bash
-flux-agent model
+omniworker model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter: API base URL, API key, Model name
 ```
 
 **Manual config (`config.yaml`):**
 ```yaml
-# In ~/.flux-agent/config.yaml
+# In ~/.omniworker/config.yaml
 model:
   default: your-model-name
   provider: custom
@@ -600,19 +600,19 @@ model:
 ```
 
 :::warning Legacy env vars
-`OPENAI_BASE_URL` and `LLM_MODEL` in `.env` are **removed**. Neither is read by any part of Flux Agent — `config.yaml` is the single source of truth for model and endpoint configuration. If you have stale entries in your `.env`, they are automatically cleared on the next `flux-agent setup` or config migration. Use `flux-agent model` or edit `config.yaml` directly.
+`OPENAI_BASE_URL` and `LLM_MODEL` in `.env` are **removed**. Neither is read by any part of Flux Agent — `config.yaml` is the single source of truth for model and endpoint configuration. If you have stale entries in your `.env`, they are automatically cleared on the next `omniworker setup` or config migration. Use `omniworker model` or edit `config.yaml` directly.
 :::
 
 Both approaches persist to `config.yaml`, which is the source of truth for model, provider, and base URL.
 
 ### Switching Models with `/model`
 
-:::warning flux-agent model vs /model
-**`flux-agent model`** (run from your terminal, outside any chat session) is the **full provider setup wizard**. Use it to add new providers, run OAuth flows, enter API keys, and configure custom endpoints.
+:::warning omniworker model vs /model
+**`omniworker model`** (run from your terminal, outside any chat session) is the **full provider setup wizard**. Use it to add new providers, run OAuth flows, enter API keys, and configure custom endpoints.
 
 **`/model`** (typed inside an active Flux Agent chat session) can only **switch between providers and models you've already set up**. It cannot add new providers, run OAuth, or prompt for API keys. If you've only configured one provider (e.g. OpenRouter), `/model` will only show models for that provider.
 
-**To add a new provider:** Exit your session (`Ctrl+C` or `/quit`), run `flux-agent model`, set up the new provider, then start a new session.
+**To add a new provider:** Exit your session (`Ctrl+C` or `/quit`), run `omniworker model`, set up the new provider, then start a new session.
 :::
 
 Once you have at least one custom endpoint configured, you can switch models mid-session:
@@ -653,7 +653,7 @@ ollama serve   # Starts on port 11434
 Then configure Flux Agent:
 
 ```bash
-flux-agent model
+omniworker model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:11434/v1
 # Skip API key (Ollama doesn't need one)
@@ -724,13 +724,13 @@ vllm serve meta-llama/Llama-3.1-70B-Instruct \
   --max-model-len 65536 \
   --tensor-parallel-size 2 \
   --enable-auto-tool-choice \
-  --tool-call-parser flux-agent
+  --tool-call-parser omniworker
 ```
 
 Then configure Flux Agent:
 
 ```bash
-flux-agent model
+omniworker model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:8000/v1
 # Skip API key (or enter one if you configured vLLM with --api-key)
@@ -746,7 +746,7 @@ flux-agent model
 | `--enable-auto-tool-choice` | Required for `tool_choice: "auto"` (the default in Flux Agent) |
 | `--tool-call-parser <name>` | Parser for the model's tool call format |
 
-Supported parsers: `flux-agent` (Qwen 2.5, Flux Agent 2/3), `llama3_json` (Llama 3.x), `mistral`, `deepseek_v3`, `deepseek_v31`, `xlam`, `pythonic`. Without these flags, tool calls won't work — the model will output tool calls as text.
+Supported parsers: `omniworker` (Qwen 2.5, Flux Agent 2/3), `llama3_json` (Llama 3.x), `mistral`, `deepseek_v3`, `deepseek_v31`, `xlam`, `pythonic`. Without these flags, tool calls won't work — the model will output tool calls as text.
 
 :::tip
 vLLM supports human-readable sizes: `--max-model-len 64k` (lowercase k = 1000, uppercase K = 1024).
@@ -771,7 +771,7 @@ python -m sglang.launch_server \
 Then configure Flux Agent:
 
 ```bash
-flux-agent model
+omniworker model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:30000/v1
 # Enter model name: meta-llama/Llama-3.1-70B-Instruct
@@ -807,7 +807,7 @@ cmake -B build && cmake --build build --config Release
 Then configure Flux Agent to point at it:
 
 ```bash
-flux-agent model
+omniworker model
 # Select "Custom endpoint (self-hosted / VLLM / etc.)"
 # Enter URL: http://localhost:8080/v1
 # Skip API key (local servers don't need one)
@@ -844,7 +844,7 @@ lms load qwen2.5-coder --context-length 32768
 Then configure Flux Agent:
 
 ```bash
-flux-agent model
+omniworker model
 # Select "LM Studio"
 # Press Enter to use http://localhost:1234/v1
 # Pick one of the discovered models
@@ -999,7 +999,7 @@ The model outputs something like `{"name": "web_search", "arguments": {...}}` as
 | Server | Fix |
 |--------|-----|
 | **llama.cpp** | Add `--jinja` to the startup command |
-| **vLLM** | Add `--enable-auto-tool-choice --tool-call-parser flux-agent` |
+| **vLLM** | Add `--enable-auto-tool-choice --tool-call-parser omniworker` |
 | **SGLang** | Add `--tool-call-parser qwen` (or appropriate parser) |
 | **Ollama** | Tool calling is enabled by default — make sure your model supports it (check with `ollama show model-name`) |
 | **LM Studio** | Update to 0.3.6+ and use a model with native tool support |
@@ -1057,7 +1057,7 @@ litellm --model anthropic/claude-sonnet-4 --port 4000
 litellm --config litellm_config.yaml --port 4000
 ```
 
-Then configure Flux Agent with `flux-agent model` → Custom endpoint → `http://localhost:4000/v1`.
+Then configure Flux Agent with `omniworker model` → Custom endpoint → `http://localhost:4000/v1`.
 
 Example `litellm_config.yaml` with fallback:
 ```yaml
@@ -1085,7 +1085,7 @@ router_settings:
 npx @blockrun/clawrouter    # Starts on port 8402
 ```
 
-Then configure Flux Agent with `flux-agent model` → Custom endpoint → `http://localhost:8402/v1` → model name `blockrun/auto`.
+Then configure Flux Agent with `omniworker model` → Custom endpoint → `http://localhost:8402/v1` → model name `blockrun/auto`.
 
 Routing profiles:
 | Profile | Strategy | Savings |
@@ -1120,7 +1120,7 @@ Any service with an OpenAI-compatible API works. Some popular options:
 | [LocalAI](https://localai.io) | `http://localhost:8080/v1` | Self-hosted, multi-model |
 | [Jan](https://jan.ai) | `http://localhost:1337/v1` | Desktop app with local models |
 
-Configure any of these with `flux-agent model` → Custom endpoint, or in `config.yaml`:
+Configure any of these with `omniworker model` → Custom endpoint, or in `config.yaml`:
 
 ```yaml
 model:
@@ -1179,7 +1179,7 @@ custom_providers:
         context_length: 65536
 ```
 
-`flux-agent model` will prompt for context length when configuring a custom endpoint. Leave it blank for auto-detection.
+`omniworker model` will prompt for context length when configuring a custom endpoint. Leave it blank for auto-detection.
 
 :::tip When to set this manually
 - You're using Ollama with a custom `num_ctx` that's lower than the model's maximum
@@ -1216,20 +1216,20 @@ Switch between them mid-session with the triple syntax:
 /model custom:anthropic-proxy:claude-sonnet-4  # Use the proxy
 ```
 
-You can also select named custom providers from the interactive `flux-agent model` menu.
+You can also select named custom providers from the interactive `omniworker model` menu.
 
 ---
 
 ### Cookbook: Together AI, Groq, Perplexity
 
-The cloud providers listed in [Other Compatible Providers](#other-compatible-providers) all speak OpenAI's REST dialect, so they wire up the same way under `custom_providers:`. Three worked recipes follow. Each drops into `~/.flux-agent/config.yaml` and the matching API key goes in `~/.flux-agent/.env`.
+The cloud providers listed in [Other Compatible Providers](#other-compatible-providers) all speak OpenAI's REST dialect, so they wire up the same way under `custom_providers:`. Three worked recipes follow. Each drops into `~/.omniworker/config.yaml` and the matching API key goes in `~/.omniworker/.env`.
 
 #### Together AI
 
 Hosts open-weight models (Llama, MiniMax, Gemma, DeepSeek, Qwen) at prices significantly below first-party APIs. Good default for multi-model fleets.
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 custom_providers:
   - name: together
     base_url: https://api.together.xyz/v1
@@ -1242,7 +1242,7 @@ model:
 ```
 
 ```bash
-# ~/.flux-agent/.env
+# ~/.omniworker/.env
 TOGETHER_API_KEY=your-together-key
 ```
 
@@ -1254,14 +1254,14 @@ Switch models mid-session:
 /model custom:together:deepseek-ai/DeepSeek-V3
 ```
 
-Together's `/v1/models` endpoint works, so `flux-agent model` can auto-discover available models.
+Together's `/v1/models` endpoint works, so `omniworker model` can auto-discover available models.
 
 #### Groq
 
 Ultra-fast inference (~500 tok/s on Llama-3.3-70B). Small catalog but strong for latency-sensitive interactive use.
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 custom_providers:
   - name: groq
     base_url: https://api.groq.com/openai/v1
@@ -1273,7 +1273,7 @@ model:
 ```
 
 ```bash
-# ~/.flux-agent/.env
+# ~/.omniworker/.env
 GROQ_API_KEY=your-groq-key
 ```
 
@@ -1282,7 +1282,7 @@ GROQ_API_KEY=your-groq-key
 Useful when you want a model that does live web search and citation automatically. Strict about which models are available — check [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api) for the current list.
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 custom_providers:
   - name: perplexity
     base_url: https://api.perplexity.ai
@@ -1294,7 +1294,7 @@ model:
 ```
 
 ```bash
-# ~/.flux-agent/.env
+# ~/.omniworker/.env
 PERPLEXITY_API_KEY=your-perplexity-key
 ```
 
@@ -1320,8 +1320,8 @@ model:
 ```
 
 :::tip Troubleshooting
-- `flux-agent doctor` should print no `Unknown provider` warnings for any of these names after the CLI validator fixes in #15083.
-- If a provider's `/v1/models` endpoint is unreachable (Perplexity is the common one), `flux-agent model` will persist the model with a warning rather than hard-reject — see #15136.
+- `omniworker doctor` should print no `Unknown provider` warnings for any of these names after the CLI validator fixes in #15083.
+- If a provider's `/v1/models` endpoint is unreachable (Perplexity is the common one), `omniworker model` will persist the model with a warning rather than hard-reject — see #15136.
 - To skip `custom_providers:` entirely and use bare `provider: custom` with `CUSTOM_BASE_URL` env var, see #15103.
 :::
 
@@ -1342,7 +1342,7 @@ model:
 | **Chinese AI models** | z.ai (GLM), Kimi/Moonshot (`kimi-coding` or `kimi-coding-cn`), MiniMax, Xiaomi MiMo, or Tencent TokenHub (first-class providers) |
 
 :::tip
-You can switch between providers at any time with `flux-agent model` — no restart required. Your conversation history, memory, and skills carry over regardless of which provider you use.
+You can switch between providers at any time with `omniworker model` — no restart required. Your conversation history, memory, and skills carry over regardless of which provider you use.
 :::
 
 ## Optional API Keys
@@ -1378,14 +1378,14 @@ By default, Flux Agent uses the [Firecrawl cloud API](https://firecrawl.dev/) fo
 
 2. Point Flux Agent at your instance (no API key needed):
    ```bash
-   flux-agent config set FIRECRAWL_API_URL http://localhost:3002
+   omniworker config set FIRECRAWL_API_URL http://localhost:3002
    ```
 
 You can also set both `FIRECRAWL_API_KEY` and `FIRECRAWL_API_URL` if your self-hosted instance has authentication enabled.
 
 ## OpenRouter Provider Routing
 
-When using OpenRouter, you can control how requests are routed across providers. Add a `provider_routing` section to `~/.flux-agent/config.yaml`:
+When using OpenRouter, you can control how requests are routed across providers. Add a `provider_routing` section to `~/.omniworker/config.yaml`:
 
 ```yaml
 provider_routing:
@@ -1401,7 +1401,7 @@ provider_routing:
 
 ## OpenRouter Pareto Code Router
 
-OpenRouter ships an experimental coding-model router at `openrouter/pareto-code` that auto-routes requests to the cheapest model meeting a coding-quality bar (ranked by [Artificial Analysis](https://artificialanalysis.ai/)). Pick this model and tune the `min_coding_score` knob in `~/.flux-agent/config.yaml`:
+OpenRouter ships an experimental coding-model router at `openrouter/pareto-code` that auto-routes requests to the cheapest model meeting a coding-quality bar (ranked by [Artificial Analysis](https://artificialanalysis.ai/)). Pick this model and tune the `min_coding_score` knob in `~/.omniworker/config.yaml`:
 
 ```yaml
 model:
@@ -1447,7 +1447,7 @@ When activated, the fallback swaps the model and provider mid-session without lo
 Supported providers: `openrouter`, `nous`, `openai-codex`, `copilot`, `copilot-acp`, `anthropic`, `gemini`, `google-gemini-cli`, `qwen-oauth`, `huggingface`, `zai`, `kimi-coding`, `kimi-coding-cn`, `minimax`, `minimax-cn`, `minimax-oauth`, `deepseek`, `nvidia`, `xai`, `ollama-cloud`, `bedrock`, `ai-gateway`, `azure-foundry`, `opencode-zen`, `opencode-go`, `kilocode`, `xiaomi`, `arcee`, `gmi`, `stepfun`, `lmstudio`, `alibaba`, `alibaba-coding-plan`, `tencent-tokenhub`, `custom`.
 
 :::tip
-Fallback is configured exclusively through `config.yaml` — or interactively via `flux-agent fallback`. For full details on when it triggers, how the chain advances, and how it interacts with auxiliary tasks and delegation, see [Fallback Providers](/docs/user-guide/features/fallback-providers).
+Fallback is configured exclusively through `config.yaml` — or interactively via `omniworker fallback`. For full details on when it triggers, how the chain advances, and how it interacts with auxiliary tasks and delegation, see [Fallback Providers](/docs/user-guide/features/fallback-providers).
 :::
 
 ---

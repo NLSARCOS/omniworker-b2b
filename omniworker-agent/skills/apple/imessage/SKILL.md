@@ -6,7 +6,7 @@ author: Flux Agent Agent
 license: MIT
 platforms: [macos]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [iMessage, SMS, messaging, macOS, Apple]
 prerequisites:
   commands: [imsg]

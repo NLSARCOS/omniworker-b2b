@@ -19,21 +19,21 @@ Flux Agent Agent works with any OpenAI-compatible API. Supported providers inclu
 - **[OpenRouter](https://openrouter.ai/)** — access hundreds of models through one API key (recommended for flexibility)
 - **Nous Portal** — Nous Research's own inference endpoint
 - **OpenAI** — GPT-5.4, GPT-5-codex, GPT-4.1, GPT-4o, etc.
-- **Anthropic** — Claude models (direct API, OAuth via `flux-agent login anthropic`, OpenRouter, or any compatible proxy)
+- **Anthropic** — Claude models (direct API, OAuth via `omniworker login anthropic`, OpenRouter, or any compatible proxy)
 - **Google** — Gemini models (direct API via `gemini` provider, the `google-gemini-cli` OAuth provider, OpenRouter, or compatible proxy)
 - **z.ai / ZhipuAI** — GLM models
 - **Kimi / Moonshot AI** — Kimi models
 - **MiniMax** — global and China endpoints
 - **Local models** — via [Ollama](https://ollama.com/), [vLLM](https://docs.vllm.ai/), [llama.cpp](https://github.com/ggerganov/llama.cpp), [SGLang](https://github.com/sgl-project/sglang), or any OpenAI-compatible server
 
-Set your provider with `flux-agent model` or by editing `~/.flux-agent/.env`. See the [Environment Variables](./environment-variables.md) reference for all provider keys.
+Set your provider with `omniworker model` or by editing `~/.omniworker/.env`. See the [Environment Variables](./environment-variables.md) reference for all provider keys.
 
 ### Does it work on Windows?
 
 **Not natively.** Flux Agent Agent requires a Unix-like environment. On Windows, install [WSL2](https://learn.microsoft.com/en-us/windows/wsl/install) and run Flux Agent from inside it. The standard install command works perfectly in WSL2:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Flux Agent/omniworker-agent/main/scripts/install.sh | bash
 ```
 
 ### I run Flux Agent in WSL2. What's the best way to control my normal Windows Chrome?
@@ -51,7 +51,7 @@ This is more reliable than trying to force Flux Agent core browser transport to 
 
 See:
 
-- [Use MCP with Flux Agent](../guides/use-mcp-with-flux-agent.md#wsl2-bridge-flux-agent-in-wsl-to-windows-chrome)
+- [Use MCP with Flux Agent](../guides/use-mcp-with-omniworker.md#wsl2-bridge-omniworker-in-wsl-to-windows-chrome)
 - [Browser Automation](../user-guide/features/browser.md#wsl2--windows-chrome-prefer-mcp-over-browser-connect)
 
 ### Does it work on Android / Termux?
@@ -61,7 +61,7 @@ Yes — Flux Agent now has a tested Termux install path for Android phones.
 Quick install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Flux Agent/omniworker-agent/main/scripts/install.sh | bash
 ```
 
 For the fully explicit manual steps, supported extras, and current limitations, see the [Termux guide](../getting-started/termux.md).
@@ -70,14 +70,14 @@ Important caveat: the full `.[all]` extra is not currently available on Android 
 
 ### Is my data sent anywhere?
 
-API calls go **only to the LLM provider you configure** (e.g., OpenRouter, your local Ollama instance). Flux Agent Agent does not collect telemetry, usage data, or analytics. Your conversations, memory, and skills are stored locally in `~/.flux-agent/`.
+API calls go **only to the LLM provider you configure** (e.g., OpenRouter, your local Ollama instance). Flux Agent Agent does not collect telemetry, usage data, or analytics. Your conversations, memory, and skills are stored locally in `~/.omniworker/`.
 
 ### Can I use it offline / with local models?
 
-Yes. Run `flux-agent model`, select **Custom endpoint**, and enter your server's URL:
+Yes. Run `omniworker model`, select **Custom endpoint**, and enter your server's URL:
 
 ```bash
-flux-agent model
+omniworker model
 # Select: Custom endpoint (enter URL manually)
 # API base URL: http://localhost:11434/v1
 # API key: ollama
@@ -103,7 +103,7 @@ If you set a custom `num_ctx` in Ollama (e.g., `ollama run --num_ctx 16384`), ma
 :::
 
 :::tip Timeouts with local models
-Flux Agent auto-detects local endpoints and relaxes streaming timeouts (read timeout raised from 120s to 1800s, stale stream detection disabled). If you still hit timeouts on very large contexts, set `FLUX AGENT_STREAM_READ_TIMEOUT=1800` in your `.env`. See the [Local LLM guide](../guides/local-llm-on-mac.md#timeouts) for details.
+Flux Agent auto-detects local endpoints and relaxes streaming timeouts (read timeout raised from 120s to 1800s, stale stream detection disabled). If you still hit timeouts on very large contexts, set `OMNIWORKER_STREAM_READ_TIMEOUT=1800` in your `.env`. See the [Local LLM guide](../guides/local-llm-on-mac.md#timeouts) for details.
 :::
 
 ### How much does it cost?
@@ -140,7 +140,7 @@ See the [Python Library guide](../user-guide/features/code-execution.md) for ful
 
 ### Installation Issues
 
-#### `flux-agent: command not found` after installation
+#### `omniworker: command not found` after installation
 
 **Cause:** Your shell hasn't reloaded the updated PATH.
 
@@ -155,8 +155,8 @@ source ~/.zshrc     # zsh
 
 If it still doesn't work, verify the install location:
 ```bash
-which flux-agent
-ls ~/.local/bin/flux-agent
+which omniworker
+ls ~/.local/bin/omniworker
 ```
 
 :::tip
@@ -182,7 +182,7 @@ The installer handles this automatically — if you see this error during manual
 
 **Cause:** Flux Agent builds a per-session environment snapshot by running `bash -l` once at startup. A bash login shell reads `/etc/profile`, `~/.bash_profile`, and `~/.profile`, but **does not source `~/.bashrc`** — so tools that install themselves there (`nvm`, `asdf`, `pyenv`, `cargo`, custom `PATH` exports) stay invisible to the snapshot. This most commonly happens when Flux Agent runs under systemd or in a minimal shell where nothing has pre-loaded the interactive shell profile.
 
-**Solution:** Flux Agent auto-sources `~/.bashrc` by default. If that's not enough — e.g. you're a zsh user whose PATH lives in `~/.zshrc`, or you init `nvm` from a standalone file — list the extra files to source in `~/.flux-agent/config.yaml`:
+**Solution:** Flux Agent auto-sources `~/.bashrc` by default. If that's not enough — e.g. you're a zsh user whose PATH lives in `~/.zshrc`, or you init `nvm` from a standalone file — list the extra files to source in `~/.omniworker/config.yaml`:
 
 ```yaml
 terminal:
@@ -223,9 +223,9 @@ source ~/.bashrc
 ```bash
 # Don't use sudo with the installer — it installs to ~/.local/bin
 # If you previously installed with sudo, clean up:
-sudo rm /usr/local/bin/flux-agent
+sudo rm /usr/local/bin/omniworker
 # Then re-run the standard installer
-curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Flux Agent/omniworker-agent/main/scripts/install.sh | bash
 ```
 
 ---
@@ -236,24 +236,24 @@ curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/sc
 
 **Cause:** `/model` (inside a chat session) can only switch between providers you've **already configured**. If you've only set up OpenRouter, that's all `/model` will show.
 
-**Solution:** Exit your session and use `flux-agent model` from your terminal to add new providers:
+**Solution:** Exit your session and use `omniworker model` from your terminal to add new providers:
 
 ```bash
 # Exit the Flux Agent chat session first (Ctrl+C or /quit)
 
 # Run the full provider setup wizard
-flux-agent model
+omniworker model
 
 # This lets you: add providers, run OAuth, enter API keys, configure endpoints
 ```
 
-After adding a new provider via `flux-agent model`, start a new chat session — `/model` will now show all your configured providers.
+After adding a new provider via `omniworker model`, start a new chat session — `/model` will now show all your configured providers.
 
 :::tip Quick reference
 | Want to... | Use |
 |-----------|-----|
-| Add a new provider | `flux-agent model` (from terminal) |
-| Enter/change API keys | `flux-agent model` (from terminal) |
+| Add a new provider | `omniworker model` (from terminal) |
+| Enter/change API keys | `omniworker model` (from terminal) |
 | Switch model mid-session | `/model <name>` (inside session) |
 | Switch to different configured provider | `/model provider:model` (inside session) |
 :::
@@ -265,17 +265,17 @@ After adding a new provider via `flux-agent model`, start a new chat session —
 **Solution:**
 ```bash
 # Check your configuration
-flux-agent config show
+omniworker config show
 
 # Re-configure your provider
-flux-agent model
+omniworker model
 
 # Or set directly
-flux-agent config set OPENROUTER_API_KEY sk-or-v1-xxxxxxxxxxxx
+omniworker config set OPENROUTER_API_KEY sk-or-v1-xxxxxxxxxxxx
 ```
 
 :::warning
-Make sure the key matches the provider. An OpenAI key won't work with OpenRouter and vice versa. Check `~/.flux-agent/.env` for conflicting entries.
+Make sure the key matches the provider. An OpenAI key won't work with OpenRouter and vice versa. Check `~/.omniworker/.env` for conflicting entries.
 :::
 
 #### Model not available / model not found
@@ -285,13 +285,13 @@ Make sure the key matches the provider. An OpenAI key won't work with OpenRouter
 **Solution:**
 ```bash
 # List available models for your provider
-flux-agent model
+omniworker model
 
 # Set a valid model
-flux-agent config set FLUX AGENT_MODEL anthropic/claude-opus-4.7
+omniworker config set OMNIWORKER_MODEL anthropic/claude-opus-4.7
 
 # Or specify per-session
-flux-agent chat --model openrouter/meta-llama/llama-3.1-70b-instruct
+omniworker chat --model openrouter/meta-llama/llama-3.1-70b-instruct
 ```
 
 #### Rate limiting (429 errors)
@@ -301,7 +301,7 @@ flux-agent chat --model openrouter/meta-llama/llama-3.1-70b-instruct
 **Solution:** Wait a moment and retry. For sustained usage, consider:
 - Upgrading your provider plan
 - Switching to a different model or provider
-- Using `flux-agent chat --provider <alternative>` to route to a different backend
+- Using `omniworker chat --provider <alternative>` to route to a different backend
 
 #### Context length exceeded
 
@@ -313,10 +313,10 @@ flux-agent chat --model openrouter/meta-llama/llama-3.1-70b-instruct
 /compress
 
 # Or start a fresh session
-flux-agent chat
+omniworker chat
 
 # Use a model with a larger context window
-flux-agent chat --model openrouter/google/gemini-3-flash-preview
+omniworker chat --model openrouter/google/gemini-3-flash-preview
 ```
 
 If this happens on the first long conversation, Flux Agent may have the wrong context length for your model. Check what it detected:
@@ -326,7 +326,7 @@ Look at the CLI startup line — it shows the detected context length (e.g., `�
 To fix context detection, set it explicitly:
 
 ```yaml
-# In ~/.flux-agent/config.yaml
+# In ~/.omniworker/config.yaml
 model:
   default: your-model-name
   context_length: 131072  # your model's actual context window
@@ -368,7 +368,7 @@ This is working as intended — Flux Agent never silently runs destructive comma
 **Solution:**
 - Avoid `sudo` in messaging — ask the agent to find alternatives
 - If you must use `sudo`, configure passwordless sudo for specific commands in `/etc/sudoers`
-- Or switch to the terminal interface for administrative tasks: `flux-agent chat`
+- Or switch to the terminal interface for administrative tasks: `omniworker chat`
 
 #### Docker backend not connecting
 
@@ -398,13 +398,13 @@ docker run hello-world
 **Solution:**
 ```bash
 # Check if the gateway is running
-flux-agent gateway status
+omniworker gateway status
 
 # Start the gateway
-flux-agent gateway start
+omniworker gateway start
 
 # Check logs for errors
-cat ~/.flux-agent/logs/gateway.log | tail -50
+cat ~/.omniworker/logs/gateway.log | tail -50
 ```
 
 #### Messages not delivering
@@ -412,8 +412,8 @@ cat ~/.flux-agent/logs/gateway.log | tail -50
 **Cause:** Network issues, bot token expired, or platform webhook misconfiguration.
 
 **Solution:**
-- Verify your bot token is valid with `flux-agent gateway setup`
-- Check gateway logs: `cat ~/.flux-agent/logs/gateway.log | tail -50`
+- Verify your bot token is valid with `omniworker gateway setup`
+- Check gateway logs: `cat ~/.omniworker/logs/gateway.log | tail -50`
 - For webhook-based platforms (Slack, WhatsApp), ensure your server is publicly accessible
 
 #### Allowlist confusion — who can talk to the bot?
@@ -428,7 +428,7 @@ cat ~/.flux-agent/logs/gateway.log | tail -50
 | **DM pairing** | First user to message in DM claims exclusive access |
 | **Open** | Anyone can interact (not recommended for production) |
 
-Configure in `~/.flux-agent/config.yaml` under your gateway's settings. See the [Messaging docs](../user-guide/messaging/index.md).
+Configure in `~/.omniworker/config.yaml` under your gateway's settings. See the [Messaging docs](../user-guide/messaging/index.md).
 
 #### Gateway won't start
 
@@ -437,16 +437,16 @@ Configure in `~/.flux-agent/config.yaml` under your gateway's settings. See the 
 **Solution:**
 ```bash
 # Install core messaging gateway dependencies
-pip install "flux-agent-agent[messaging]"  # Telegram, Discord, Slack, and shared gateway deps
+pip install "omniworker-agent[messaging]"  # Telegram, Discord, Slack, and shared gateway deps
 
 # Check for port conflicts
 lsof -i :8080
 
 # Verify configuration
-flux-agent config show
+omniworker config show
 ```
 
-#### WSL: Gateway keeps disconnecting or `flux-agent gateway start` fails
+#### WSL: Gateway keeps disconnecting or `omniworker gateway start` fails
 
 **Cause:** WSL's systemd support is unreliable. Many WSL2 installations don't have systemd enabled, and even when enabled, services may not survive WSL restarts or Windows idle shutdowns.
 
@@ -454,14 +454,14 @@ flux-agent config show
 
 ```bash
 # Option 1: Direct foreground (simplest)
-flux-agent gateway run
+omniworker gateway run
 
 # Option 2: Persistent via tmux (survives terminal close)
-tmux new -s flux-agent 'flux-agent gateway run'
-# Reattach later: tmux attach -t flux-agent
+tmux new -s omniworker 'omniworker gateway run'
+# Reattach later: tmux attach -t omniworker
 
 # Option 3: Background via nohup
-nohup flux-agent gateway run > ~/.flux-agent/logs/gateway.log 2>&1 &
+nohup omniworker gateway run > ~/.omniworker/logs/gateway.log 2>&1 &
 ```
 
 If you want to try systemd anyway, make sure it's enabled:
@@ -478,7 +478,7 @@ If you want to try systemd anyway, make sure it's enabled:
 
 :::tip Auto-start on Windows boot
 For reliable auto-start, use Windows Task Scheduler to launch WSL + the gateway on login:
-1. Create a task that runs `wsl -d Ubuntu -- bash -lc 'flux-agent gateway run'`
+1. Create a task that runs `wsl -d Ubuntu -- bash -lc 'omniworker gateway run'`
 2. Set it to trigger on user logon
 :::
 
@@ -486,17 +486,17 @@ For reliable auto-start, use Windows Task Scheduler to launch WSL + the gateway 
 
 **Cause:** launchd services inherit a minimal PATH (`/usr/bin:/bin:/usr/sbin:/sbin`) that doesn't include Homebrew, nvm, cargo, or other user-installed tool directories. This commonly breaks the WhatsApp bridge (`node not found`) or voice transcription (`ffmpeg not found`).
 
-**Solution:** The gateway captures your shell PATH when you run `flux-agent gateway install`. If you installed tools after setting up the gateway, re-run the install to capture the updated PATH:
+**Solution:** The gateway captures your shell PATH when you run `omniworker gateway install`. If you installed tools after setting up the gateway, re-run the install to capture the updated PATH:
 
 ```bash
-flux-agent gateway install    # Re-snapshots your current PATH
-flux-agent gateway start      # Detects the updated plist and reloads
+omniworker gateway install    # Re-snapshots your current PATH
+omniworker gateway start      # Detects the updated plist and reloads
 ```
 
 You can verify the plist has the correct PATH:
 ```bash
 /usr/libexec/PlistBuddy -c "Print :EnvironmentVariables:PATH" \
-  ~/Library/LaunchAgents/ai.flux-agent.gateway.plist
+  ~/Library/LaunchAgents/ai.omniworker.gateway.plist
 ```
 
 ---
@@ -508,8 +508,8 @@ You can verify the plist has the correct PATH:
 **Cause:** Large model, distant API server, or heavy system prompt with many tools.
 
 **Solution:**
-- Try a faster/smaller model: `flux-agent chat --model openrouter/meta-llama/llama-3.1-8b-instruct`
-- Reduce active toolsets: `flux-agent chat -t "terminal"`
+- Try a faster/smaller model: `omniworker chat --model openrouter/meta-llama/llama-3.1-8b-instruct`
+- Reduce active toolsets: `omniworker chat -t "terminal"`
 - Check your network latency to the provider
 - For local models, ensure you have enough GPU VRAM
 
@@ -540,10 +540,10 @@ Use `/compress` regularly during long sessions. It summarizes the conversation h
 /compress
 
 # Start a new session with a reference to the old one
-flux-agent chat
+omniworker chat
 
 # Resume a specific session later if needed
-flux-agent chat --continue
+omniworker chat --continue
 ```
 
 ---
@@ -557,7 +557,7 @@ flux-agent chat --continue
 **Solution:**
 ```bash
 # Ensure MCP dependencies are installed (already included in standard install)
-cd ~/.flux-agent/flux-agent-agent && uv pip install -e ".[mcp]"
+cd ~/.omniworker/omniworker-agent && uv pip install -e ".[mcp]"
 
 # For npm-based servers, ensure Node.js is available
 node --version
@@ -567,7 +567,7 @@ npx --version
 npx -y @modelcontextprotocol/server-filesystem /tmp
 ```
 
-Verify your `~/.flux-agent/config.yaml` MCP configuration:
+Verify your `~/.omniworker/config.yaml` MCP configuration:
 ```yaml
 mcp_servers:
   filesystem:
@@ -588,15 +588,15 @@ mcp_servers:
 
 ```bash
 # Verify MCP servers are configured
-flux-agent config show | grep -A 12 mcp_servers
+omniworker config show | grep -A 12 mcp_servers
 
 # Restart Flux Agent or reload MCP after config changes
-flux-agent chat
+omniworker chat
 ```
 
 See also:
 - [MCP (Model Context Protocol)](/docs/user-guide/features/mcp)
-- [Use MCP with Flux Agent](/docs/guides/use-mcp-with-flux-agent)
+- [Use MCP with Flux Agent](/docs/guides/use-mcp-with-omniworker)
 - [MCP Config Reference](/docs/reference/mcp-config-reference)
 
 #### MCP timeout errors
@@ -616,9 +616,9 @@ If an MCP server crashes mid-request, Flux Agent will report a timeout. Check th
 
 ## Profiles
 
-### How do profiles differ from just setting FLUX AGENT_HOME?
+### How do profiles differ from just setting OMNIWORKER_HOME?
 
-Profiles are a managed layer on top of `FLUX AGENT_HOME`. You *could* manually set `FLUX AGENT_HOME=/some/path` before every command, but profiles handle all the plumbing for you: creating the directory structure, generating shell aliases (`flux-agent-work`), tracking the active profile in `~/.flux-agent/active_profile`, and syncing skill updates across all profiles automatically. They also integrate with tab completion so you don't have to remember paths.
+Profiles are a managed layer on top of `OMNIWORKER_HOME`. You *could* manually set `OMNIWORKER_HOME=/some/path` before every command, but profiles handle all the plumbing for you: creating the directory structure, generating shell aliases (`omniworker-work`), tracking the active profile in `~/.omniworker/active_profile`, and syncing skill updates across all profiles automatically. They also integrate with tab completion so you don't have to remember paths.
 
 ### Can two profiles share the same bot token?
 
@@ -626,16 +626,16 @@ No. Each messaging platform (Telegram, Discord, etc.) requires exclusive access 
 
 ### Do profiles share memory or sessions?
 
-No. Each profile has its own memory store, session database, and skills directory. They are completely isolated. If you want to start a new profile with existing memories and sessions, use `flux-agent profile create newname --clone-all` to copy everything from the current profile.
+No. Each profile has its own memory store, session database, and skills directory. They are completely isolated. If you want to start a new profile with existing memories and sessions, use `omniworker profile create newname --clone-all` to copy everything from the current profile.
 
-### What happens when I run `flux-agent update`?
+### What happens when I run `omniworker update`?
 
-`flux-agent update` pulls the latest code and reinstalls dependencies **once** (not per-profile). It then syncs updated skills to all profiles automatically. You only need to run `flux-agent update` once — it covers every profile on the machine.
+`omniworker update` pulls the latest code and reinstalls dependencies **once** (not per-profile). It then syncs updated skills to all profiles automatically. You only need to run `omniworker update` once — it covers every profile on the machine.
 
 
 ### How many profiles can I run?
 
-There is no hard limit. Each profile is just a directory under `~/.flux-agent/profiles/`. The practical limit depends on your disk space and how many concurrent gateways your system can handle (each gateway is a lightweight Python process). Running dozens of profiles is fine; each idle profile uses no resources.
+There is no hard limit. Each profile is just a directory under `~/.omniworker/profiles/`. The practical limit depends on your disk space and how many concurrent gateways your system can handle (each gateway is a lightweight Python process). Running dozens of profiles is fine; each idle profile uses no resources.
 
 ---
 
@@ -645,7 +645,7 @@ There is no hard limit. Each profile is just a directory under `~/.flux-agent/pr
 
 **Scenario:** You use GPT-5.4 as your daily driver, but Gemini or Grok writes better social media content. Manually switching models every time is tedious.
 
-**Solution: Delegation config.** Flux Agent can route subagents to a different model automatically. Set this in `~/.flux-agent/config.yaml`:
+**Solution: Delegation config.** Flux Agent can route subagents to a different model automatically. Set this in `~/.omniworker/config.yaml`:
 
 ```yaml
 delegation:
@@ -712,9 +712,9 @@ display:
 
 ### Managing skills on Telegram (slash command limit)
 
-**Scenario:** Telegram has a 100 slash command limit, and your skills are pushing past it. You want to disable skills you don't need on Telegram, but `flux-agent skills config` settings don't seem to take effect.
+**Scenario:** Telegram has a 100 slash command limit, and your skills are pushing past it. You want to disable skills you don't need on Telegram, but `omniworker skills config` settings don't seem to take effect.
 
-**Solution:** Use `flux-agent skills config` to disable skills per-platform. This writes to `config.yaml`:
+**Solution:** Use `omniworker skills config` to disable skills per-platform. This writes to `config.yaml`:
 
 ```yaml
 skills:
@@ -723,7 +723,7 @@ skills:
     telegram: [skill-a, skill-b]  # disabled only on telegram
 ```
 
-After changing this, **restart the gateway** (`flux-agent gateway restart` or kill and relaunch). The Telegram bot command menu rebuilds on startup.
+After changing this, **restart the gateway** (`omniworker gateway restart` or kill and relaunch). The Telegram bot command menu rebuilds on startup.
 
 :::tip
 Skills with very long descriptions are truncated to 40 characters in the Telegram menu to stay within payload size limits. If skills aren't appearing, it may be a total payload size issue rather than the 100 command count limit — disabling unused skills helps with both.
@@ -751,25 +751,25 @@ Skills with very long descriptions are truncated to 40 characters in the Telegra
 
 1. Install Flux Agent Agent on the new machine:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/Flux Agent/omniworker-agent/main/scripts/install.sh | bash
    ```
 
 2. On the **source machine**, create a full backup:
    ```bash
-   flux-agent backup
+   omniworker backup
    ```
-   This creates a zip of your entire `~/.flux-agent/` directory — config, API keys, memories, skills, sessions, and profiles — saved to your home directory as `~/flux-agent-backup-<timestamp>.zip`.
+   This creates a zip of your entire `~/.omniworker/` directory — config, API keys, memories, skills, sessions, and profiles — saved to your home directory as `~/omniworker-backup-<timestamp>.zip`.
 
 3. Copy the zip to the new machine and import it:
    ```bash
    # On the source machine
-   scp ~/flux-agent-backup-<timestamp>.zip newmachine:~/
+   scp ~/omniworker-backup-<timestamp>.zip newmachine:~/
 
    # On the new machine
-   flux-agent import ~/flux-agent-backup-<timestamp>.zip
+   omniworker import ~/omniworker-backup-<timestamp>.zip
    ```
 
-4. On the new machine, run `flux-agent setup` to verify API keys and provider config are working.
+4. On the new machine, run `omniworker setup` to verify API keys and provider config are working.
 
 ### Moving a single profile to another machine
 
@@ -777,31 +777,31 @@ Skills with very long descriptions are truncated to 40 characters in the Telegra
 
 ```bash
 # On the source machine
-flux-agent profile export work ./work-backup.tar.gz
+omniworker profile export work ./work-backup.tar.gz
 
 # Copy the file to the target machine, then:
-flux-agent profile import ./work-backup.tar.gz work
+omniworker profile import ./work-backup.tar.gz work
 ```
 
 The imported profile will have all config, memories, sessions, and skills from the export. You may need to update paths or re-authenticate with providers if the new machine has a different setup.
 
-### `flux-agent backup` vs `flux-agent profile export`
+### `omniworker backup` vs `omniworker profile export`
 
-| Feature | `flux-agent backup` | `flux-agent profile export` |
+| Feature | `omniworker backup` | `omniworker profile export` |
 | :--- | :--- | :--- |
 | **Use Case** | **Full machine migration** | **Porting/sharing a specific profile** |
-| **Scope** | Global (entire `~/.flux-agent` directory) | Local (single profile directory) |
+| **Scope** | Global (entire `~/.omniworker` directory) | Local (single profile directory) |
 | **Includes** | All profiles, global config, API keys, sessions | Single profile: SOUL.md, memories, sessions, skills |
 | **Credentials** | **Included** (`.env` and `auth.json`) | **Excluded** (stripped for safe sharing) |
 | **Format** | `.zip` | `.tar.gz` |
 
 **Manual fallback (rsync):** If you prefer to copy files directly, exclude the code repo:
 ```bash
-rsync -av --exclude='flux-agent-agent' ~/.flux-agent/ newmachine:~/.flux-agent/
+rsync -av --exclude='omniworker-agent' ~/.omniworker/ newmachine:~/.omniworker/
 ```
 
 :::tip
-`flux-agent backup` produces a consistent snapshot even while Flux Agent is actively running. The restored archive excludes machine-local runtime files like `gateway.pid` and `cron.pid`.
+`omniworker backup` produces a consistent snapshot even while Flux Agent is actively running. The restored archive excludes machine-local runtime files like `gateway.pid` and `cron.pid`.
 :::
 
 ### Permission denied when reloading shell after install
@@ -838,13 +838,13 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 **Solution:**
 ```bash
 # Check what model and provider are configured
-flux-agent config show | head -20
+omniworker config show | head -20
 
 # Re-run model selection
-flux-agent model
+omniworker model
 
 # Or test with a known-good model
-flux-agent chat -q "hello" --model anthropic/claude-opus-4.7
+omniworker chat -q "hello" --model anthropic/claude-opus-4.7
 ```
 
 If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter often means the model requires a paid plan or the model ID has a typo.
@@ -855,6 +855,6 @@ If using OpenRouter, make sure your API key has credits. A 400 from OpenRouter o
 
 If your issue isn't covered here:
 
-1. **Search existing issues:** [GitHub Issues](https://github.com/Flux Agent/flux-agent-agent/issues)
-2. **Ask the community:** [Nous Research Discord](https://discord.gg/flux-agent)
-3. **File a bug report:** Include your OS, Python version (`python3 --version`), Flux Agent version (`flux-agent --version`), and the full error message
+1. **Search existing issues:** [GitHub Issues](https://github.com/Flux Agent/omniworker-agent/issues)
+2. **Ask the community:** [Nous Research Discord](https://discord.gg/omniworker)
+3. **File a bug report:** Include your OS, Python version (`python3 --version`), Flux Agent version (`omniworker --version`), and the full error message

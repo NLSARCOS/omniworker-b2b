@@ -1,4 +1,4 @@
-"""Tests for flux-agent backup and import commands."""
+"""Tests for omniworker backup and import commands."""
 
 import json
 import os
@@ -15,12 +15,12 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_flux-agent_tree(root: Path) -> None:
-    """Create a realistic ~/.flux-agent directory structure for testing."""
+def _make_omniworker_tree(root: Path) -> None:
+    """Create a realistic ~/.omniworker directory structure for testing."""
     (root / "config.yaml").write_text("model:\n  provider: openrouter\n")
     (root / ".env").write_text("OPENROUTER_API_KEY=sk-test-123\n")
     (root / "memory_store.db").write_bytes(b"fake-sqlite")
-    (root / "flux-agent_state.db").write_bytes(b"fake-state")
+    (root / "omniworker_state.db").write_bytes(b"fake-state")
 
     # Sessions
     (root / "sessions").mkdir(exist_ok=True)
@@ -49,11 +49,11 @@ def _make_flux-agent_tree(root: Path) -> None:
     (root / "profiles" / "coder" / "config.yaml").write_text("model:\n  provider: anthropic\n")
     (root / "profiles" / "coder" / ".env").write_text("ANTHROPIC_API_KEY=sk-ant-123\n")
 
-    # flux-agent-agent repo (should be EXCLUDED)
-    (root / "flux-agent-agent").mkdir(exist_ok=True)
-    (root / "flux-agent-agent" / "run_agent.py").write_text("# big file\n")
-    (root / "flux-agent-agent" / ".git").mkdir()
-    (root / "flux-agent-agent" / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
+    # omniworker-agent repo (should be EXCLUDED)
+    (root / "omniworker-agent").mkdir(exist_ok=True)
+    (root / "omniworker-agent" / "run_agent.py").write_text("# big file\n")
+    (root / "omniworker-agent" / ".git").mkdir()
+    (root / "omniworker-agent" / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
 
     # __pycache__ (should be EXCLUDED)
     (root / "plugins").mkdir(exist_ok=True)
@@ -73,41 +73,41 @@ def _make_flux-agent_tree(root: Path) -> None:
 # ---------------------------------------------------------------------------
 
 class TestShouldExclude:
-    def test_excludes_flux-agent_agent(self):
-        from flux-agent_cli.backup import _should_exclude
-        assert _should_exclude(Path("flux-agent-agent/run_agent.py"))
-        assert _should_exclude(Path("flux-agent-agent/.git/HEAD"))
+    def test_excludes_omniworker_agent(self):
+        from omniworker_cli.backup import _should_exclude
+        assert _should_exclude(Path("omniworker-agent/run_agent.py"))
+        assert _should_exclude(Path("omniworker-agent/.git/HEAD"))
 
     def test_excludes_pycache(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert _should_exclude(Path("plugins/__pycache__/mod.cpython-312.pyc"))
 
     def test_excludes_pyc_files(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert _should_exclude(Path("some/module.pyc"))
 
     def test_excludes_pid_files(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert _should_exclude(Path("gateway.pid"))
         assert _should_exclude(Path("cron.pid"))
 
     def test_excludes_checkpoints(self):
         """checkpoints/ is session-local trajectory cache — hash-keyed,
         regenerated per-session, won't port to another machine anyway."""
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert _should_exclude(Path("checkpoints/abc123/trajectory.json"))
         assert _should_exclude(Path("checkpoints/deadbeef/step_0001.json"))
 
     def test_excludes_backups_dir(self):
         """backups/ is excluded so pre-update backups don't nest exponentially."""
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert _should_exclude(Path("backups/pre-update-2026-04-27-063400.zip"))
 
     def test_excludes_sqlite_sidecars(self):
         """SQLite WAL/SHM/journal sidecars must not ship alongside the
         safe-copied .db — pairing a fresh snapshot with stale sidecar state
         produces a torn restore."""
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert _should_exclude(Path("state.db-wal"))
         assert _should_exclude(Path("state.db-shm"))
         assert _should_exclude(Path("state.db-journal"))
@@ -116,27 +116,27 @@ class TestShouldExclude:
         assert not _should_exclude(Path("state.db"))
 
     def test_includes_config(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert not _should_exclude(Path("config.yaml"))
 
     def test_includes_env(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert not _should_exclude(Path(".env"))
 
     def test_includes_skills(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert not _should_exclude(Path("skills/my-skill/SKILL.md"))
 
     def test_includes_profiles(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert not _should_exclude(Path("profiles/coder/config.yaml"))
 
     def test_includes_sessions(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert not _should_exclude(Path("sessions/abc.json"))
 
     def test_includes_logs(self):
-        from flux-agent_cli.backup import _should_exclude
+        from omniworker_cli.backup import _should_exclude
         assert not _should_exclude(Path("logs/agent.log"))
 
 
@@ -147,18 +147,18 @@ class TestShouldExclude:
 class TestBackup:
     def test_creates_zip(self, tmp_path, monkeypatch):
         """Backup creates a valid zip containing expected files."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        _make_flux-agent_tree(flux-agent_home)
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        _make_omniworker_tree(omniworker_home)
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
-        # get_default_flux-agent_root needs this
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+        # get_default_omniworker_root needs this
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         assert out_zip.exists()
@@ -179,39 +179,39 @@ class TestBackup:
             # Skins
             assert "skins/cyber.yaml" in names
 
-    def test_excludes_flux-agent_agent(self, tmp_path, monkeypatch):
-        """Backup does NOT include flux-agent-agent/ directory."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        _make_flux-agent_tree(flux-agent_home)
+    def test_excludes_omniworker_agent(self, tmp_path, monkeypatch):
+        """Backup does NOT include omniworker-agent/ directory."""
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        _make_omniworker_tree(omniworker_home)
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
             names = zf.namelist()
-            agent_files = [n for n in names if "flux-agent-agent" in n]
-            assert agent_files == [], f"flux-agent-agent files leaked into backup: {agent_files}"
+            agent_files = [n for n in names if "omniworker-agent" in n]
+            assert agent_files == [], f"omniworker-agent files leaked into backup: {agent_files}"
 
     def test_excludes_pycache(self, tmp_path, monkeypatch):
         """Backup does NOT include __pycache__ dirs."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        _make_flux-agent_tree(flux-agent_home)
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        _make_omniworker_tree(omniworker_home)
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -221,17 +221,17 @@ class TestBackup:
 
     def test_excludes_pid_files(self, tmp_path, monkeypatch):
         """Backup does NOT include PID files."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        _make_flux-agent_tree(flux-agent_home)
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        _make_omniworker_tree(omniworker_home)
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         with zipfile.ZipFile(out_zip, "r") as zf:
@@ -240,21 +240,21 @@ class TestBackup:
             assert pid_files == []
 
     def test_default_output_path(self, tmp_path, monkeypatch):
-        """When no output path given, zip goes to ~/flux-agent-backup-*.zip."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / "config.yaml").write_text("model: test\n")
+        """When no output path given, zip goes to ~/omniworker-backup-*.zip."""
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         args = Namespace(output=None)
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         # Should exist in home dir
-        zips = list(tmp_path.glob("flux-agent-backup-*.zip"))
+        zips = list(tmp_path.glob("omniworker-backup-*.zip"))
         assert len(zips) == 1
 
 
@@ -270,7 +270,7 @@ class TestValidateBackupZip:
 
     def test_state_db_passes(self, tmp_path):
         """A zip containing state.db is accepted as a valid Flux Agent backup."""
-        from flux-agent_cli.backup import _validate_backup_zip
+        from omniworker_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["state.db", "sessions/abc.json"])
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -278,17 +278,17 @@ class TestValidateBackupZip:
         assert ok, reason
 
     def test_old_wrong_db_name_fails(self, tmp_path):
-        """A zip with only flux-agent_state.db (old wrong name) is rejected."""
-        from flux-agent_cli.backup import _validate_backup_zip
+        """A zip with only omniworker_state.db (old wrong name) is rejected."""
+        from omniworker_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "old.zip"
-        self._make_zip(zip_path, ["flux-agent_state.db", "memory_store.db"])
+        self._make_zip(zip_path, ["omniworker_state.db", "memory_store.db"])
         with zipfile.ZipFile(zip_path, "r") as zf:
             ok, reason = _validate_backup_zip(zf)
         assert not ok
 
     def test_config_yaml_passes(self, tmp_path):
         """A zip containing config.yaml is accepted (existing behaviour preserved)."""
-        from flux-agent_cli.backup import _validate_backup_zip
+        from omniworker_cli.backup import _validate_backup_zip
         zip_path = tmp_path / "backup.zip"
         self._make_zip(zip_path, ["config.yaml", "skills/x/SKILL.md"])
         with zipfile.ZipFile(zip_path, "r") as zf:
@@ -311,10 +311,10 @@ class TestImport:
                     zf.writestr(name, content)
 
     def test_restores_files(self, tmp_path, monkeypatch):
-        """Import extracts files into flux-agent home."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        """Import extracts files into omniworker home."""
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -327,40 +327,40 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         run_import(args)
 
-        assert (flux-agent_home / "config.yaml").read_text() == "model:\n  provider: openrouter\n"
-        assert (flux-agent_home / ".env").read_text() == "OPENROUTER_API_KEY=sk-test\n"
-        assert (flux-agent_home / "skills" / "my-skill" / "SKILL.md").read_text() == "# My Skill\n"
-        assert (flux-agent_home / "profiles" / "coder" / "config.yaml").exists()
+        assert (omniworker_home / "config.yaml").read_text() == "model:\n  provider: openrouter\n"
+        assert (omniworker_home / ".env").read_text() == "OPENROUTER_API_KEY=sk-test\n"
+        assert (omniworker_home / "skills" / "my-skill" / "SKILL.md").read_text() == "# My Skill\n"
+        assert (omniworker_home / "profiles" / "coder" / "config.yaml").exists()
 
-    def test_strips_flux-agent_prefix(self, tmp_path, monkeypatch):
-        """Import strips .flux-agent/ prefix if all entries share it."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    def test_strips_omniworker_prefix(self, tmp_path, monkeypatch):
+        """Import strips .omniworker/ prefix if all entries share it."""
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
         self._make_backup_zip(zip_path, {
-            ".flux-agent/config.yaml": "model: test\n",
-            ".flux-agent/skills/a/SKILL.md": "# A\n",
+            ".omniworker/config.yaml": "model: test\n",
+            ".omniworker/skills/a/SKILL.md": "# A\n",
         })
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         run_import(args)
 
-        assert (flux-agent_home / "config.yaml").read_text() == "model: test\n"
-        assert (flux-agent_home / "skills" / "a" / "SKILL.md").read_text() == "# A\n"
+        assert (omniworker_home / "config.yaml").read_text() == "model: test\n"
+        assert (omniworker_home / "skills" / "a" / "SKILL.md").read_text() == "# A\n"
 
     def test_rejects_empty_zip(self, tmp_path, monkeypatch):
         """Import rejects an empty zip."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "empty.zip"
@@ -369,15 +369,15 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
-    def test_rejects_non_flux-agent_zip(self, tmp_path, monkeypatch):
-        """Import rejects a zip that doesn't look like a flux-agent backup."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+    def test_rejects_non_omniworker_zip(self, tmp_path, monkeypatch):
+        """Import rejects a zip that doesn't look like a omniworker backup."""
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "random.zip"
@@ -388,15 +388,15 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
     def test_blocks_path_traversal(self, tmp_path, monkeypatch):
         """Import blocks zip entries with path traversal."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "evil.zip"
@@ -408,21 +408,21 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         run_import(args)
 
         # config.yaml should be restored
-        assert (flux-agent_home / "config.yaml").exists()
-        # traversal file should NOT exist outside flux-agent home
+        assert (omniworker_home / "config.yaml").exists()
+        # traversal file should NOT exist outside omniworker home
         assert not (tmp_path / "etc" / "passwd").exists()
 
     def test_confirmation_prompt_abort(self, tmp_path, monkeypatch):
         """Import aborts when user says no to confirmation."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
         # Pre-existing config triggers the confirmation
-        (flux-agent_home / "config.yaml").write_text("existing: true\n")
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        (omniworker_home / "config.yaml").write_text("existing: true\n")
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -432,19 +432,19 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         with patch("builtins.input", return_value="n"):
             run_import(args)
 
         # Original config should be unchanged
-        assert (flux-agent_home / "config.yaml").read_text() == "existing: true\n"
+        assert (omniworker_home / "config.yaml").read_text() == "existing: true\n"
 
     def test_force_skips_confirmation(self, tmp_path, monkeypatch):
         """Import with --force skips confirmation and overwrites."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / "config.yaml").write_text("existing: true\n")
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / "config.yaml").write_text("existing: true\n")
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -454,29 +454,29 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         run_import(args)
 
-        assert (flux-agent_home / "config.yaml").read_text() == "model: restored\n"
+        assert (omniworker_home / "config.yaml").read_text() == "model: restored\n"
 
     def test_missing_file_exits(self, tmp_path, monkeypatch):
         """Import exits with error for nonexistent file."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
         args = Namespace(zipfile=str(tmp_path / "nonexistent.zip"), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
     @pytest.mark.skipif(os.name != "posix", reason="POSIX file permissions only")
     def test_restores_secret_files_with_0600_perms(self, tmp_path, monkeypatch):
         """Secret files must end up at 0600 after restore (zipfile drops mode bits)."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -490,11 +490,11 @@ class TestImport:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         run_import(args)
 
         for rel in (".env", "auth.json", "state.db", "profiles/coder/.env"):
-            mode = (flux-agent_home / rel).stat().st_mode & 0o777
+            mode = (omniworker_home / rel).stat().st_mode & 0o777
             assert mode == 0o600, f"{rel} restored with mode {oct(mode)}, expected 0o600"
 
 
@@ -506,24 +506,24 @@ class TestRoundTrip:
     def test_backup_then_import(self, tmp_path, monkeypatch):
         """Full round-trip: backup -> import to a new location -> verify."""
         # Source
-        src_home = tmp_path / "source" / ".flux-agent"
+        src_home = tmp_path / "source" / ".omniworker"
         src_home.mkdir(parents=True)
-        _make_flux-agent_tree(src_home)
+        _make_omniworker_tree(src_home)
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(src_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(src_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "source")
 
         # Backup
         out_zip = tmp_path / "roundtrip.zip"
-        from flux-agent_cli.backup import run_backup, run_import
+        from omniworker_cli.backup import run_backup, run_import
 
         run_backup(Namespace(output=str(out_zip)))
         assert out_zip.exists()
 
         # Import into a different location
-        dst_home = tmp_path / "dest" / ".flux-agent"
+        dst_home = tmp_path / "dest" / ".omniworker"
         dst_home.mkdir(parents=True)
-        monkeypatch.setenv("FLUX AGENT_HOME", str(dst_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(dst_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "dest")
 
         run_import(Namespace(zipfile=str(out_zip), force=True))
@@ -536,8 +536,8 @@ class TestRoundTrip:
         assert (dst_home / "sessions" / "abc123.json").exists()
         assert (dst_home / "logs" / "agent.log").exists()
 
-        # flux-agent-agent should NOT be present
-        assert not (dst_home / "flux-agent-agent").exists()
+        # omniworker-agent should NOT be present
+        assert not (dst_home / "omniworker-agent").exists()
         # __pycache__ should NOT be present
         assert not (dst_home / "plugins" / "__pycache__").exists()
         # PID files should NOT be present
@@ -550,23 +550,23 @@ class TestRoundTrip:
 
 class TestFormatSize:
     def test_bytes(self):
-        from flux-agent_cli.backup import _format_size
+        from omniworker_cli.backup import _format_size
         assert _format_size(512) == "512 B"
 
     def test_kilobytes(self):
-        from flux-agent_cli.backup import _format_size
+        from omniworker_cli.backup import _format_size
         assert "KB" in _format_size(2048)
 
     def test_megabytes(self):
-        from flux-agent_cli.backup import _format_size
+        from omniworker_cli.backup import _format_size
         assert "MB" in _format_size(5 * 1024 * 1024)
 
     def test_gigabytes(self):
-        from flux-agent_cli.backup import _format_size
+        from omniworker_cli.backup import _format_size
         assert "GB" in _format_size(3 * 1024 ** 3)
 
     def test_terabytes(self):
-        from flux-agent_cli.backup import _format_size
+        from omniworker_cli.backup import _format_size
         assert "TB" in _format_size(2 * 1024 ** 4)
 
 
@@ -574,7 +574,7 @@ class TestValidation:
     def test_validate_with_config(self):
         """Zip with config.yaml passes validation."""
         import io
-        from flux-agent_cli.backup import _validate_backup_zip
+        from omniworker_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -587,7 +587,7 @@ class TestValidation:
     def test_validate_with_env(self):
         """Zip with .env passes validation."""
         import io
-        from flux-agent_cli.backup import _validate_backup_zip
+        from omniworker_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -598,9 +598,9 @@ class TestValidation:
         assert ok
 
     def test_validate_rejects_random(self):
-        """Zip without flux-agent markers fails validation."""
+        """Zip without omniworker markers fails validation."""
         import io
-        from flux-agent_cli.backup import _validate_backup_zip
+        from omniworker_cli.backup import _validate_backup_zip
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -610,23 +610,23 @@ class TestValidation:
             ok, reason = _validate_backup_zip(zf)
         assert not ok
 
-    def test_detect_prefix_flux-agent(self):
-        """Detects .flux-agent/ prefix wrapping all entries."""
+    def test_detect_prefix_omniworker(self):
+        """Detects .omniworker/ prefix wrapping all entries."""
         import io
-        from flux-agent_cli.backup import _detect_prefix
+        from omniworker_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
-            zf.writestr(".flux-agent/config.yaml", "test")
-            zf.writestr(".flux-agent/skills/a/SKILL.md", "skill")
+            zf.writestr(".omniworker/config.yaml", "test")
+            zf.writestr(".omniworker/skills/a/SKILL.md", "skill")
         buf.seek(0)
         with zipfile.ZipFile(buf, "r") as zf:
-            assert _detect_prefix(zf) == ".flux-agent/"
+            assert _detect_prefix(zf) == ".omniworker/"
 
     def test_detect_prefix_none(self):
         """No prefix when entries are at root."""
         import io
-        from flux-agent_cli.backup import _detect_prefix
+        from omniworker_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
@@ -639,13 +639,13 @@ class TestValidation:
     def test_detect_prefix_only_dirs(self):
         """Prefix detection returns empty for zip with only directory entries."""
         import io
-        from flux-agent_cli.backup import _detect_prefix
+        from omniworker_cli.backup import _detect_prefix
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w") as zf:
             # Only directory entries (trailing slash)
-            zf.writestr(".flux-agent/", "")
-            zf.writestr(".flux-agent/skills/", "")
+            zf.writestr(".omniworker/", "")
+            zf.writestr(".omniworker/skills/", "")
         buf.seek(0)
         with zipfile.ZipFile(buf, "r") as zf:
             assert _detect_prefix(zf) == ""
@@ -656,25 +656,25 @@ class TestValidation:
 # ---------------------------------------------------------------------------
 
 class TestBackupEdgeCases:
-    def test_nonexistent_flux-agent_home(self, tmp_path, monkeypatch):
-        """Backup exits when flux-agent home doesn't exist."""
-        fake_home = tmp_path / "nonexistent" / ".flux-agent"
-        monkeypatch.setenv("FLUX AGENT_HOME", str(fake_home))
+    def test_nonexistent_omniworker_home(self, tmp_path, monkeypatch):
+        """Backup exits when omniworker home doesn't exist."""
+        fake_home = tmp_path / "nonexistent" / ".omniworker"
+        monkeypatch.setenv("OMNIWORKER_HOME", str(fake_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path / "nonexistent")
 
         args = Namespace(output=str(tmp_path / "out.zip"))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         with pytest.raises(SystemExit):
             run_backup(args)
 
     def test_output_is_directory(self, tmp_path, monkeypatch):
         """When output path is a directory, zip is created inside it."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / "config.yaml").write_text("model: test\n")
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_dir = tmp_path / "backups"
@@ -682,44 +682,44 @@ class TestBackupEdgeCases:
 
         args = Namespace(output=str(out_dir))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
-        zips = list(out_dir.glob("flux-agent-backup-*.zip"))
+        zips = list(out_dir.glob("omniworker-backup-*.zip"))
         assert len(zips) == 1
 
     def test_output_without_zip_suffix(self, tmp_path, monkeypatch):
         """Output path without .zip gets suffix appended."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / "config.yaml").write_text("model: test\n")
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_path = tmp_path / "mybackup.tar"
         args = Namespace(output=str(out_path))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         # Should have .tar.zip suffix
         assert (tmp_path / "mybackup.tar.zip").exists()
 
-    def test_empty_flux-agent_home(self, tmp_path, monkeypatch):
-        """Backup handles empty flux-agent home (no files to back up)."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
+    def test_empty_omniworker_home(self, tmp_path, monkeypatch):
+        """Backup handles empty omniworker home (no files to back up)."""
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
         # Only excluded dirs, no actual files
-        (flux-agent_home / "__pycache__").mkdir()
-        (flux-agent_home / "__pycache__" / "foo.pyc").write_bytes(b"\x00")
+        (omniworker_home / "__pycache__").mkdir()
+        (omniworker_home / "__pycache__" / "foo.pyc").write_bytes(b"\x00")
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         args = Namespace(output=str(tmp_path / "out.zip"))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         # No zip should be created
@@ -727,22 +727,22 @@ class TestBackupEdgeCases:
 
     def test_permission_error_during_backup(self, tmp_path, monkeypatch):
         """Backup handles permission errors gracefully."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / "config.yaml").write_text("model: test\n")
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / "config.yaml").write_text("model: test\n")
 
         # Create an unreadable file
-        bad_file = flux-agent_home / "secret.db"
+        bad_file = omniworker_home / "secret.db"
         bad_file.write_text("data")
         bad_file.chmod(0o000)
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "out.zip"
         args = Namespace(output=str(out_zip))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         try:
             run_backup(args)
         finally:
@@ -754,22 +754,22 @@ class TestBackupEdgeCases:
 
     def test_pre1980_timestamp_skipped(self, tmp_path, monkeypatch):
         """Backup skips files with pre-1980 timestamps (ZIP limitation)."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / "config.yaml").write_text("model: test\n")
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / "config.yaml").write_text("model: test\n")
 
         # Create a file with epoch timestamp (1970-01-01)
-        old_file = flux-agent_home / "ancient.txt"
+        old_file = omniworker_home / "ancient.txt"
         old_file.write_text("old data")
         os.utime(old_file, (0, 0))
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         out_zip = tmp_path / "out.zip"
         args = Namespace(output=str(out_zip))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         # Zip should still be created with the valid files
@@ -780,20 +780,20 @@ class TestBackupEdgeCases:
             # The pre-1980 file should be skipped, not crash the backup
             assert "ancient.txt" not in names
 
-    def test_skips_output_zip_inside_flux-agent(self, tmp_path, monkeypatch):
-        """Backup skips its own output zip if it's inside flux-agent root."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / "config.yaml").write_text("model: test\n")
+    def test_skips_output_zip_inside_omniworker(self, tmp_path, monkeypatch):
+        """Backup skips its own output zip if it's inside omniworker root."""
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / "config.yaml").write_text("model: test\n")
 
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        # Output inside flux-agent home
-        out_zip = flux-agent_home / "backup.zip"
+        # Output inside omniworker home
+        out_zip = omniworker_home / "backup.zip"
         args = Namespace(output=str(out_zip))
 
-        from flux-agent_cli.backup import run_backup
+        from omniworker_cli.backup import run_backup
         run_backup(args)
 
         # The zip should exist but not contain itself
@@ -810,25 +810,25 @@ class TestImportEdgeCases:
 
     def test_not_a_zip(self, tmp_path, monkeypatch):
         """Import rejects a non-zip file."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
 
         not_zip = tmp_path / "fake.zip"
         not_zip.write_text("this is not a zip")
 
         args = Namespace(zipfile=str(not_zip), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         with pytest.raises(SystemExit):
             run_import(args)
 
     def test_eof_during_confirmation(self, tmp_path, monkeypatch):
         """Import handles EOFError during confirmation prompt."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / "config.yaml").write_text("existing\n")
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / "config.yaml").write_text("existing\n")
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -836,17 +836,17 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         with patch("builtins.input", side_effect=EOFError):
             with pytest.raises(SystemExit):
                 run_import(args)
 
     def test_keyboard_interrupt_during_confirmation(self, tmp_path, monkeypatch):
         """Import handles KeyboardInterrupt during confirmation prompt."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        (flux-agent_home / ".env").write_text("KEY=val\n")
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        (omniworker_home / ".env").write_text("KEY=val\n")
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -854,20 +854,20 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=False)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         with patch("builtins.input", side_effect=KeyboardInterrupt):
             with pytest.raises(SystemExit):
                 run_import(args)
 
     def test_permission_error_during_import(self, tmp_path, monkeypatch):
         """Import handles permission errors during extraction."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Create a read-only directory so extraction fails
-        locked_dir = flux-agent_home / "locked"
+        locked_dir = omniworker_home / "locked"
         locked_dir.mkdir()
         locked_dir.chmod(0o555)
 
@@ -879,20 +879,20 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         try:
             run_import(args)
         finally:
             locked_dir.chmod(0o755)
 
         # config.yaml should still be restored despite the error
-        assert (flux-agent_home / "config.yaml").exists()
+        assert (omniworker_home / "config.yaml").exists()
 
     def test_progress_with_many_files(self, tmp_path, monkeypatch):
         """Import shows progress with 500+ files."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "big.zip"
@@ -904,11 +904,11 @@ class TestImportEdgeCases:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         run_import(args)
 
-        assert (flux-agent_home / "config.yaml").exists()
-        assert (flux-agent_home / "sessions" / "s0599.json").exists()
+        assert (omniworker_home / "config.yaml").exists()
+        assert (omniworker_home / "sessions" / "s0599.json").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -923,9 +923,9 @@ class TestProfileRestoration:
 
     def test_import_creates_profile_wrappers(self, tmp_path, monkeypatch):
         """Import auto-creates wrapper scripts for restored profiles."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         # Mock the wrapper dir to be inside tmp_path
@@ -942,12 +942,12 @@ class TestProfileRestoration:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         run_import(args)
 
         # Profile directories should exist
-        assert (flux-agent_home / "profiles" / "coder" / "config.yaml").exists()
-        assert (flux-agent_home / "profiles" / "researcher" / "config.yaml").exists()
+        assert (omniworker_home / "profiles" / "coder" / "config.yaml").exists()
+        assert (omniworker_home / "profiles" / "researcher" / "config.yaml").exists()
 
         # Wrapper scripts should be created
         assert (wrapper_dir / "coder").exists()
@@ -955,13 +955,13 @@ class TestProfileRestoration:
 
         # Wrappers should contain the right content
         coder_wrapper = (wrapper_dir / "coder").read_text()
-        assert "flux-agent -p coder" in coder_wrapper
+        assert "omniworker -p coder" in coder_wrapper
 
     def test_import_skips_profile_dirs_without_config(self, tmp_path, monkeypatch):
         """Import doesn't create wrappers for profile dirs without config."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         wrapper_dir = tmp_path / ".local" / "bin"
@@ -976,7 +976,7 @@ class TestProfileRestoration:
 
         args = Namespace(zipfile=str(zip_path), force=True)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         run_import(args)
 
         # Only valid profile should get a wrapper
@@ -985,9 +985,9 @@ class TestProfileRestoration:
 
     def test_import_without_profiles_module(self, tmp_path, monkeypatch):
         """Import gracefully handles missing profiles module (fresh install)."""
-        flux-agent_home = tmp_path / ".flux-agent"
-        flux-agent_home.mkdir()
-        monkeypatch.setenv("FLUX AGENT_HOME", str(flux-agent_home))
+        omniworker_home = tmp_path / ".omniworker"
+        omniworker_home.mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
         zip_path = tmp_path / "backup.zip"
@@ -999,20 +999,20 @@ class TestProfileRestoration:
         args = Namespace(zipfile=str(zip_path), force=True)
 
         # Simulate profiles module not being available
-        import flux-agent_cli.backup as backup_mod
+        import omniworker_cli.backup as backup_mod
         original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
 
         def fake_import(name, *a, **kw):
-            if name == "flux-agent_cli.profiles":
+            if name == "omniworker_cli.profiles":
                 raise ImportError("no profiles module")
             return original_import(name, *a, **kw)
 
-        from flux-agent_cli.backup import run_import
+        from omniworker_cli.backup import run_import
         with patch("builtins.__import__", side_effect=fake_import):
             run_import(args)
 
         # Files should still be restored even if wrappers can't be created
-        assert (flux-agent_home / "profiles" / "coder" / "config.yaml").exists()
+        assert (omniworker_home / "profiles" / "coder" / "config.yaml").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -1021,7 +1021,7 @@ class TestProfileRestoration:
 
 class TestSafeCopyDb:
     def test_copies_valid_database(self, tmp_path):
-        from flux-agent_cli.backup import _safe_copy_db
+        from omniworker_cli.backup import _safe_copy_db
         src = tmp_path / "test.db"
         dst = tmp_path / "copy.db"
 
@@ -1040,7 +1040,7 @@ class TestSafeCopyDb:
         assert rows == [(42,)]
 
     def test_copies_wal_mode_database(self, tmp_path):
-        from flux-agent_cli.backup import _safe_copy_db
+        from omniworker_cli.backup import _safe_copy_db
         src = tmp_path / "wal.db"
         dst = tmp_path / "copy.db"
 
@@ -1066,9 +1066,9 @@ class TestSafeCopyDb:
 
 class TestQuickSnapshot:
     @pytest.fixture
-    def flux-agent_home(self, tmp_path):
-        """Create a fake FLUX AGENT_HOME with critical state files."""
-        home = tmp_path / ".flux-agent"
+    def omniworker_home(self, tmp_path):
+        """Create a fake OMNIWORKER_HOME with critical state files."""
+        home = tmp_path / ".omniworker"
         home.mkdir()
         (home / "config.yaml").write_text("model:\n  provider: openrouter\n")
         (home / ".env").write_text("OPENROUTER_API_KEY=test-key-123\n")
@@ -1085,23 +1085,23 @@ class TestQuickSnapshot:
         conn.close()
         return home
 
-    def test_creates_snapshot(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
+    def test_creates_snapshot(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
         assert snap_id is not None
-        snap_dir = flux-agent_home / "state-snapshots" / snap_id
+        snap_dir = omniworker_home / "state-snapshots" / snap_id
         assert snap_dir.is_dir()
         assert (snap_dir / "manifest.json").exists()
 
-    def test_label_in_id(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(label="before-upgrade", flux-agent_home=flux-agent_home)
+    def test_label_in_id(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(label="before-upgrade", omniworker_home=omniworker_home)
         assert "before-upgrade" in snap_id
 
-    def test_state_db_safely_copied(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
-        db_copy = flux-agent_home / "state-snapshots" / snap_id / "state.db"
+    def test_state_db_safely_copied(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
+        db_copy = omniworker_home / "state-snapshots" / snap_id / "state.db"
         assert db_copy.exists()
 
         conn = sqlite3.connect(str(db_copy))
@@ -1110,116 +1110,116 @@ class TestQuickSnapshot:
         assert len(rows) == 1
         assert rows[0] == ("s1", "hello world")
 
-    def test_copies_nested_files(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
-        assert (flux-agent_home / "state-snapshots" / snap_id / "cron" / "jobs.json").exists()
+    def test_copies_nested_files(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
+        assert (omniworker_home / "state-snapshots" / snap_id / "cron" / "jobs.json").exists()
 
-    def test_missing_files_skipped(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
-        with open(flux-agent_home / "state-snapshots" / snap_id / "manifest.json") as f:
+    def test_missing_files_skipped(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
+        with open(omniworker_home / "state-snapshots" / snap_id / "manifest.json") as f:
             meta = json.load(f)
         # gateway_state.json etc. don't exist in fixture
         assert "gateway_state.json" not in meta["files"]
 
     def test_empty_home_returns_none(self, tmp_path):
-        from flux-agent_cli.backup import create_quick_snapshot
+        from omniworker_cli.backup import create_quick_snapshot
         empty = tmp_path / "empty"
         empty.mkdir()
-        assert create_quick_snapshot(flux-agent_home=empty) is None
+        assert create_quick_snapshot(omniworker_home=empty) is None
 
-    def test_list_snapshots(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot, list_quick_snapshots
-        id1 = create_quick_snapshot(label="first", flux-agent_home=flux-agent_home)
-        id2 = create_quick_snapshot(label="second", flux-agent_home=flux-agent_home)
+    def test_list_snapshots(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot, list_quick_snapshots
+        id1 = create_quick_snapshot(label="first", omniworker_home=omniworker_home)
+        id2 = create_quick_snapshot(label="second", omniworker_home=omniworker_home)
 
-        snaps = list_quick_snapshots(flux-agent_home=flux-agent_home)
+        snaps = list_quick_snapshots(omniworker_home=omniworker_home)
         assert len(snaps) == 2
         assert snaps[0]["id"] == id2  # most recent first
         assert snaps[1]["id"] == id1
 
-    def test_list_limit(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot, list_quick_snapshots
+    def test_list_limit(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot, list_quick_snapshots
         for i in range(5):
-            create_quick_snapshot(label=f"s{i}", flux-agent_home=flux-agent_home)
-        snaps = list_quick_snapshots(limit=3, flux-agent_home=flux-agent_home)
+            create_quick_snapshot(label=f"s{i}", omniworker_home=omniworker_home)
+        snaps = list_quick_snapshots(limit=3, omniworker_home=omniworker_home)
         assert len(snaps) == 3
 
-    def test_restore_config(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot, restore_quick_snapshot
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
+    def test_restore_config(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
 
-        (flux-agent_home / "config.yaml").write_text("model:\n  provider: anthropic\n")
-        assert "anthropic" in (flux-agent_home / "config.yaml").read_text()
+        (omniworker_home / "config.yaml").write_text("model:\n  provider: anthropic\n")
+        assert "anthropic" in (omniworker_home / "config.yaml").read_text()
 
-        result = restore_quick_snapshot(snap_id, flux-agent_home=flux-agent_home)
+        result = restore_quick_snapshot(snap_id, omniworker_home=omniworker_home)
         assert result is True
-        assert "openrouter" in (flux-agent_home / "config.yaml").read_text()
+        assert "openrouter" in (omniworker_home / "config.yaml").read_text()
 
-    def test_restore_state_db(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot, restore_quick_snapshot
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
+    def test_restore_state_db(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
 
-        conn = sqlite3.connect(str(flux-agent_home / "state.db"))
+        conn = sqlite3.connect(str(omniworker_home / "state.db"))
         conn.execute("INSERT INTO sessions VALUES ('s2', 'new')")
         conn.commit()
         conn.close()
 
-        restore_quick_snapshot(snap_id, flux-agent_home=flux-agent_home)
+        restore_quick_snapshot(snap_id, omniworker_home=omniworker_home)
 
-        conn = sqlite3.connect(str(flux-agent_home / "state.db"))
+        conn = sqlite3.connect(str(omniworker_home / "state.db"))
         rows = conn.execute("SELECT * FROM sessions").fetchall()
         conn.close()
         assert len(rows) == 1
 
-    def test_restore_nonexistent(self, flux-agent_home):
-        from flux-agent_cli.backup import restore_quick_snapshot
-        assert restore_quick_snapshot("nonexistent", flux-agent_home=flux-agent_home) is False
+    def test_restore_nonexistent(self, omniworker_home):
+        from omniworker_cli.backup import restore_quick_snapshot
+        assert restore_quick_snapshot("nonexistent", omniworker_home=omniworker_home) is False
 
-    def test_auto_prune(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot, list_quick_snapshots, _QUICK_DEFAULT_KEEP
+    def test_auto_prune(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot, list_quick_snapshots, _QUICK_DEFAULT_KEEP
         for i in range(_QUICK_DEFAULT_KEEP + 5):
-            create_quick_snapshot(label=f"snap-{i:03d}", flux-agent_home=flux-agent_home)
-        snaps = list_quick_snapshots(limit=100, flux-agent_home=flux-agent_home)
+            create_quick_snapshot(label=f"snap-{i:03d}", omniworker_home=omniworker_home)
+        snaps = list_quick_snapshots(limit=100, omniworker_home=omniworker_home)
         assert len(snaps) <= _QUICK_DEFAULT_KEEP
 
-    def test_manual_prune(self, flux-agent_home):
-        from flux-agent_cli.backup import create_quick_snapshot, prune_quick_snapshots, list_quick_snapshots
+    def test_manual_prune(self, omniworker_home):
+        from omniworker_cli.backup import create_quick_snapshot, prune_quick_snapshots, list_quick_snapshots
         for i in range(10):
-            create_quick_snapshot(label=f"s{i}", flux-agent_home=flux-agent_home)
-        deleted = prune_quick_snapshots(keep=3, flux-agent_home=flux-agent_home)
+            create_quick_snapshot(label=f"s{i}", omniworker_home=omniworker_home)
+        deleted = prune_quick_snapshots(keep=3, omniworker_home=omniworker_home)
         assert deleted == 7
-        assert len(list_quick_snapshots(flux-agent_home=flux-agent_home)) == 3
+        assert len(list_quick_snapshots(omniworker_home=omniworker_home)) == 3
 
-    def test_snapshot_includes_pairing_directories(self, flux-agent_home):
+    def test_snapshot_includes_pairing_directories(self, omniworker_home):
         """Pairing JSONs live outside state.db — snapshot must capture them
         recursively (generic + per-platform) so approved-user lists survive
         disasters like #15733."""
-        from flux-agent_cli.backup import create_quick_snapshot
+        from omniworker_cli.backup import create_quick_snapshot
 
         # Generic pairing store (new location)
-        (flux-agent_home / "platforms" / "pairing").mkdir(parents=True)
-        (flux-agent_home / "platforms" / "pairing" / "telegram-approved.json").write_text(
+        (omniworker_home / "platforms" / "pairing").mkdir(parents=True)
+        (omniworker_home / "platforms" / "pairing" / "telegram-approved.json").write_text(
             '{"12345": {"user_name": "alice"}}'
         )
-        (flux-agent_home / "platforms" / "pairing" / "discord-approved.json").write_text(
+        (omniworker_home / "platforms" / "pairing" / "discord-approved.json").write_text(
             '{"67890": {"user_name": "bob"}}'
         )
         # Legacy pairing store (old location)
-        (flux-agent_home / "pairing").mkdir()
-        (flux-agent_home / "pairing" / "matrix-approved.json").write_text(
+        (omniworker_home / "pairing").mkdir()
+        (omniworker_home / "pairing" / "matrix-approved.json").write_text(
             '{"@charlie:server": {"user_name": "charlie"}}'
         )
         # Feishu's separate JSON
-        (flux-agent_home / "feishu_comment_pairing.json").write_text(
+        (omniworker_home / "feishu_comment_pairing.json").write_text(
             '{"doc_abc": {"allow_from": ["user_xyz"]}}'
         )
 
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
         assert snap_id is not None
 
-        snap_dir = flux-agent_home / "state-snapshots" / snap_id
+        snap_dir = omniworker_home / "state-snapshots" / snap_id
         assert (snap_dir / "platforms" / "pairing" / "telegram-approved.json").exists()
         assert (snap_dir / "platforms" / "pairing" / "discord-approved.json").exists()
         assert (snap_dir / "pairing" / "matrix-approved.json").exists()
@@ -1233,18 +1233,18 @@ class TestQuickSnapshot:
         assert "pairing/matrix-approved.json" in files
         assert "feishu_comment_pairing.json" in files
 
-    def test_restore_recovers_pairing_data(self, flux-agent_home):
+    def test_restore_recovers_pairing_data(self, omniworker_home):
         """After restore, deleted pairing files reappear with original content."""
-        from flux-agent_cli.backup import create_quick_snapshot, restore_quick_snapshot
+        from omniworker_cli.backup import create_quick_snapshot, restore_quick_snapshot
 
-        pairing_dir = flux-agent_home / "platforms" / "pairing"
+        pairing_dir = omniworker_home / "platforms" / "pairing"
         pairing_dir.mkdir(parents=True)
         approved = pairing_dir / "telegram-approved.json"
         approved.write_text('{"12345": {"user_name": "alice"}}')
-        feishu = flux-agent_home / "feishu_comment_pairing.json"
+        feishu = omniworker_home / "feishu_comment_pairing.json"
         feishu.write_text('{"doc_abc": {"allow_from": ["user_xyz"]}}')
 
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
         assert snap_id is not None
 
         # Simulate the disaster — user loses both pairing files.
@@ -1253,51 +1253,51 @@ class TestQuickSnapshot:
         assert not approved.exists()
         assert not feishu.exists()
 
-        assert restore_quick_snapshot(snap_id, flux-agent_home=flux-agent_home) is True
+        assert restore_quick_snapshot(snap_id, omniworker_home=omniworker_home) is True
         assert approved.exists()
         assert '"alice"' in approved.read_text()
         assert feishu.exists()
         assert '"user_xyz"' in feishu.read_text()
 
-    def test_empty_pairing_dir_does_not_fail(self, flux-agent_home):
+    def test_empty_pairing_dir_does_not_fail(self, omniworker_home):
         """An empty pairing directory should be silently skipped."""
-        from flux-agent_cli.backup import create_quick_snapshot
+        from omniworker_cli.backup import create_quick_snapshot
 
-        (flux-agent_home / "platforms" / "pairing").mkdir(parents=True)
+        (omniworker_home / "platforms" / "pairing").mkdir(parents=True)
         # Directory exists but contains no files.
-        snap_id = create_quick_snapshot(flux-agent_home=flux-agent_home)
+        snap_id = create_quick_snapshot(omniworker_home=omniworker_home)
         # Other state still present → snapshot succeeds.
         assert snap_id is not None
 
 # ---------------------------------------------------------------------------
-# Pre-update backup (flux-agent update safety net)
+# Pre-update backup (omniworker update safety net)
 # ---------------------------------------------------------------------------
 
 class TestPreUpdateBackup:
-    """Tests for create_pre_update_backup — the auto-backup ``flux-agent update``
+    """Tests for create_pre_update_backup — the auto-backup ``omniworker update``
     runs before touching anything."""
 
     @pytest.fixture
-    def flux-agent_home(self, tmp_path):
-        root = tmp_path / ".flux-agent"
+    def omniworker_home(self, tmp_path):
+        root = tmp_path / ".omniworker"
         root.mkdir()
-        _make_flux-agent_tree(root)
+        _make_omniworker_tree(root)
         return root
 
-    def test_creates_backup_under_backups_dir(self, flux-agent_home):
-        from flux-agent_cli.backup import create_pre_update_backup
-        out = create_pre_update_backup(flux-agent_home=flux-agent_home)
+    def test_creates_backup_under_backups_dir(self, omniworker_home):
+        from omniworker_cli.backup import create_pre_update_backup
+        out = create_pre_update_backup(omniworker_home=omniworker_home)
         assert out is not None
         assert out.exists()
-        assert out.parent == flux-agent_home / "backups"
+        assert out.parent == omniworker_home / "backups"
         assert out.name.startswith("pre-update-")
         assert out.suffix == ".zip"
 
-    def test_backup_contents_match_full_backup(self, flux-agent_home):
+    def test_backup_contents_match_full_backup(self, omniworker_home):
         """Pre-update backup should include the same user data that
-        ``flux-agent backup`` would, and should exclude the same directories."""
-        from flux-agent_cli.backup import create_pre_update_backup
-        out = create_pre_update_backup(flux-agent_home=flux-agent_home)
+        ``omniworker backup`` would, and should exclude the same directories."""
+        from omniworker_cli.backup import create_pre_update_backup
+        out = create_pre_update_backup(omniworker_home=omniworker_home)
         assert out is not None
         with zipfile.ZipFile(out) as zf:
             names = set(zf.namelist())
@@ -1307,22 +1307,22 @@ class TestPreUpdateBackup:
         assert "sessions/abc123.json" in names
         assert "skills/my-skill/SKILL.md" in names
         assert "profiles/coder/config.yaml" in names
-        # flux-agent-agent repo excluded
-        assert not any(n.startswith("flux-agent-agent/") for n in names)
+        # omniworker-agent repo excluded
+        assert not any(n.startswith("omniworker-agent/") for n in names)
         # __pycache__ excluded
         assert not any("__pycache__" in n for n in names)
         # pid files excluded
         assert "gateway.pid" not in names
 
-    def test_does_not_recurse_into_prior_backups(self, flux-agent_home):
+    def test_does_not_recurse_into_prior_backups(self, omniworker_home):
         """The ``backups/`` directory must be excluded so that each backup
         doesn't grow exponentially by including all prior backups."""
-        from flux-agent_cli.backup import create_pre_update_backup
+        from omniworker_cli.backup import create_pre_update_backup
         # First backup
-        out1 = create_pre_update_backup(flux-agent_home=flux-agent_home)
+        out1 = create_pre_update_backup(omniworker_home=omniworker_home)
         assert out1 is not None
         # Second backup — must not include the first
-        out2 = create_pre_update_backup(flux-agent_home=flux-agent_home)
+        out2 = create_pre_update_backup(omniworker_home=omniworker_home)
         assert out2 is not None
         with zipfile.ZipFile(out2) as zf:
             names = zf.namelist()
@@ -1331,20 +1331,20 @@ class TestPreUpdateBackup:
             f"{[n for n in names if n.startswith('backups/')]}"
         )
 
-    def test_rotation_keeps_only_n(self, flux-agent_home):
+    def test_rotation_keeps_only_n(self, omniworker_home):
         """After more than ``keep`` backups are created, older ones are
         pruned automatically."""
         import time as _t
-        from flux-agent_cli.backup import create_pre_update_backup
+        from omniworker_cli.backup import create_pre_update_backup
 
         created = []
         for _ in range(5):
-            out = create_pre_update_backup(flux-agent_home=flux-agent_home, keep=3)
+            out = create_pre_update_backup(omniworker_home=omniworker_home, keep=3)
             created.append(out)
             _t.sleep(1.05)  # ensure distinct seconds in timestamp
 
         remaining = sorted(
-            p.name for p in (flux-agent_home / "backups").iterdir()
+            p.name for p in (omniworker_home / "backups").iterdir()
             if p.name.startswith("pre-update-")
         )
         assert len(remaining) == 3
@@ -1354,65 +1354,65 @@ class TestPreUpdateBackup:
         # Newest three should remain
         assert created[4].name in remaining
 
-    def test_rotation_preserves_manual_files(self, flux-agent_home):
+    def test_rotation_preserves_manual_files(self, omniworker_home):
         """Hand-dropped zips in ``backups/`` must not be touched by
         rotation — it only prunes files matching ``pre-update-*.zip``."""
         import time as _t
-        from flux-agent_cli.backup import create_pre_update_backup
+        from omniworker_cli.backup import create_pre_update_backup
 
-        (flux-agent_home / "backups").mkdir(exist_ok=True)
-        manual = flux-agent_home / "backups" / "my-manual.zip"
+        (omniworker_home / "backups").mkdir(exist_ok=True)
+        manual = omniworker_home / "backups" / "my-manual.zip"
         manual.write_bytes(b"manual backup")
 
         for _ in range(5):
-            create_pre_update_backup(flux-agent_home=flux-agent_home, keep=2)
+            create_pre_update_backup(omniworker_home=omniworker_home, keep=2)
             _t.sleep(1.05)
 
         assert manual.exists(), "Manual backup zip was incorrectly pruned"
 
     def test_returns_none_if_root_missing(self, tmp_path):
-        from flux-agent_cli.backup import create_pre_update_backup
-        assert create_pre_update_backup(flux-agent_home=tmp_path / "does-not-exist") is None
+        from omniworker_cli.backup import create_pre_update_backup
+        assert create_pre_update_backup(omniworker_home=tmp_path / "does-not-exist") is None
 
-    def test_keep_zero_does_not_delete_freshly_created_backup(self, flux-agent_home):
+    def test_keep_zero_does_not_delete_freshly_created_backup(self, omniworker_home):
         """Regression: ``backup_keep: 0`` previously triggered ``backups[0:]``
         in the pruner — wiping the just-created zip and leaving the user
         with no recovery point.  The floor (keep>=1) preserves the new file
         regardless of misconfiguration; users who don't want backups should
         set ``pre_update_backup: false`` instead.
         """
-        from flux-agent_cli.backup import create_pre_update_backup
-        out = create_pre_update_backup(flux-agent_home=flux-agent_home, keep=0)
+        from omniworker_cli.backup import create_pre_update_backup
+        out = create_pre_update_backup(omniworker_home=omniworker_home, keep=0)
         assert out is not None
         assert out.exists(), (
             "keep=0 silently deleted the freshly-created backup; floor "
             "should preserve the just-written file."
         )
 
-    def test_keep_negative_does_not_delete_freshly_created_backup(self, flux-agent_home):
+    def test_keep_negative_does_not_delete_freshly_created_backup(self, omniworker_home):
         """Mirror coverage: any value <1 should be floored, not literally
         applied as a slice index."""
-        from flux-agent_cli.backup import create_pre_update_backup
-        out = create_pre_update_backup(flux-agent_home=flux-agent_home, keep=-3)
+        from omniworker_cli.backup import create_pre_update_backup
+        out = create_pre_update_backup(omniworker_home=omniworker_home, keep=-3)
         assert out is not None
         assert out.exists()
 
-    def test_keep_zero_still_prunes_older_backups(self, flux-agent_home):
+    def test_keep_zero_still_prunes_older_backups(self, omniworker_home):
         """The floor preserves the new backup but should NOT regress the
         rotation behaviour for older zips: a third call with keep=0 must
         still remove pre-existing backups beyond the (floored) limit of 1.
         """
         import time as _t
-        from flux-agent_cli.backup import create_pre_update_backup
+        from omniworker_cli.backup import create_pre_update_backup
 
-        first = create_pre_update_backup(flux-agent_home=flux-agent_home, keep=5)
+        first = create_pre_update_backup(omniworker_home=omniworker_home, keep=5)
         _t.sleep(1.05)
-        second = create_pre_update_backup(flux-agent_home=flux-agent_home, keep=5)
+        second = create_pre_update_backup(omniworker_home=omniworker_home, keep=5)
         _t.sleep(1.05)
-        third = create_pre_update_backup(flux-agent_home=flux-agent_home, keep=0)
+        third = create_pre_update_backup(omniworker_home=omniworker_home, keep=0)
 
         remaining = {
-            p.name for p in (flux-agent_home / "backups").iterdir()
+            p.name for p in (omniworker_home / "backups").iterdir()
             if p.name.startswith("pre-update-")
         }
         assert third.name in remaining, "Floor must preserve the new backup"
@@ -1427,147 +1427,147 @@ class TestRunPreUpdateBackup:
     covers config gate, ``--no-backup`` flag, and user-facing output."""
 
     @pytest.fixture
-    def flux-agent_home(self, tmp_path, monkeypatch):
-        root = tmp_path / ".flux-agent"
+    def omniworker_home(self, tmp_path, monkeypatch):
+        root = tmp_path / ".omniworker"
         root.mkdir()
-        _make_flux-agent_tree(root)
-        # Point FLUX AGENT_HOME at the temp dir so config + backup paths resolve here
-        monkeypatch.setenv("FLUX AGENT_HOME", str(root))
+        _make_omniworker_tree(root)
+        # Point OMNIWORKER_HOME at the temp dir so config + backup paths resolve here
+        monkeypatch.setenv("OMNIWORKER_HOME", str(root))
         # Make Path.home() point at tmp_path for anything that uses it
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        # Bust caches for flux-agent_cli.config + flux-agent_constants so they pick up FLUX AGENT_HOME
+        # Bust caches for omniworker_cli.config + omniworker_constants so they pick up OMNIWORKER_HOME
         for mod in list(__import__("sys").modules.keys()):
-            if mod.startswith("flux-agent_cli.config") or mod == "flux-agent_constants":
+            if mod.startswith("omniworker_cli.config") or mod == "omniworker_constants":
                 del __import__("sys").modules[mod]
         return root
 
-    def test_backup_flag_creates_backup(self, flux-agent_home, capsys):
+    def test_backup_flag_creates_backup(self, omniworker_home, capsys):
         """--backup forces the pre-update backup for one run even when config is off."""
-        from flux-agent_cli.main import _run_pre_update_backup
+        from omniworker_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=False, backup=True))
         out = capsys.readouterr().out
         assert "Creating pre-update backup" in out
         assert "Saved:" in out
         assert "Restore:" in out
-        assert "flux-agent import" in out
+        assert "omniworker import" in out
         assert "Disable:" in out
         # Actual backup was created
-        backups = list((flux-agent_home / "backups").glob("pre-update-*.zip"))
+        backups = list((omniworker_home / "backups").glob("pre-update-*.zip"))
         assert len(backups) == 1
 
-    def test_default_disabled_is_silent(self, flux-agent_home, capsys):
+    def test_default_disabled_is_silent(self, omniworker_home, capsys):
         """With the default-off config and no --backup flag, the hook is silent
         and creates no backup.  This is the common case for every update."""
-        from flux-agent_cli.main import _run_pre_update_backup
+        from omniworker_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=False, backup=False))
         out = capsys.readouterr().out
         assert out == ""
-        assert not (flux-agent_home / "backups").exists() or not list(
-            (flux-agent_home / "backups").glob("pre-update-*.zip")
+        assert not (omniworker_home / "backups").exists() or not list(
+            (omniworker_home / "backups").glob("pre-update-*.zip")
         )
 
-    def test_no_backup_flag_skips(self, flux-agent_home, capsys):
-        from flux-agent_cli.main import _run_pre_update_backup
+    def test_no_backup_flag_skips(self, omniworker_home, capsys):
+        from omniworker_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=True, backup=False))
         out = capsys.readouterr().out
         assert "skipped (--no-backup)" in out
         assert "Creating pre-update backup" not in out
         # No backup written
-        assert not (flux-agent_home / "backups").exists() or not list(
-            (flux-agent_home / "backups").glob("pre-update-*.zip")
+        assert not (omniworker_home / "backups").exists() or not list(
+            (omniworker_home / "backups").glob("pre-update-*.zip")
         )
 
-    def test_config_enabled_creates_backup(self, flux-agent_home, capsys):
+    def test_config_enabled_creates_backup(self, omniworker_home, capsys):
         """Users who explicitly set updates.pre_update_backup: true still get
         a backup on every update — this is the opt-in legacy behavior."""
         import yaml
-        (flux-agent_home / "config.yaml").write_text(yaml.safe_dump({
+        (omniworker_home / "config.yaml").write_text(yaml.safe_dump({
             "_config_version": 22,
             "updates": {"pre_update_backup": True},
         }))
         import sys as _sys
         for mod in list(_sys.modules.keys()):
-            if mod.startswith("flux-agent_cli.config"):
+            if mod.startswith("omniworker_cli.config"):
                 del _sys.modules[mod]
 
-        from flux-agent_cli.main import _run_pre_update_backup
+        from omniworker_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=False, backup=False))
         out = capsys.readouterr().out
         assert "Creating pre-update backup" in out
         assert "Saved:" in out
-        backups = list((flux-agent_home / "backups").glob("pre-update-*.zip"))
+        backups = list((omniworker_home / "backups").glob("pre-update-*.zip"))
         assert len(backups) == 1
 
-    def test_config_disabled_is_silent(self, flux-agent_home, capsys):
+    def test_config_disabled_is_silent(self, omniworker_home, capsys):
         """Explicit pre_update_backup: false behaves the same as the default —
         silent no-op, no message spam."""
         import yaml
-        (flux-agent_home / "config.yaml").write_text(yaml.safe_dump({
+        (omniworker_home / "config.yaml").write_text(yaml.safe_dump({
             "_config_version": 22,
             "updates": {"pre_update_backup": False},
         }))
         # Ensure config module re-reads
         import sys as _sys
         for mod in list(_sys.modules.keys()):
-            if mod.startswith("flux-agent_cli.config"):
+            if mod.startswith("omniworker_cli.config"):
                 del _sys.modules[mod]
 
-        from flux-agent_cli.main import _run_pre_update_backup
+        from omniworker_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=False, backup=False))
         out = capsys.readouterr().out
         assert out == ""
-        assert not list((flux-agent_home / "backups").glob("pre-update-*.zip")) \
-            if (flux-agent_home / "backups").exists() else True
+        assert not list((omniworker_home / "backups").glob("pre-update-*.zip")) \
+            if (omniworker_home / "backups").exists() else True
 
-    def test_cli_flag_overrides_enabled_config(self, flux-agent_home, capsys):
+    def test_cli_flag_overrides_enabled_config(self, omniworker_home, capsys):
         """--no-backup wins even when config says pre_update_backup: true."""
         import yaml
-        (flux-agent_home / "config.yaml").write_text(yaml.safe_dump({
+        (omniworker_home / "config.yaml").write_text(yaml.safe_dump({
             "_config_version": 22,
             "updates": {"pre_update_backup": True},
         }))
         import sys as _sys
         for mod in list(_sys.modules.keys()):
-            if mod.startswith("flux-agent_cli.config"):
+            if mod.startswith("omniworker_cli.config"):
                 del _sys.modules[mod]
 
-        from flux-agent_cli.main import _run_pre_update_backup
+        from omniworker_cli.main import _run_pre_update_backup
         _run_pre_update_backup(Namespace(no_backup=True, backup=False))
         out = capsys.readouterr().out
         assert "skipped (--no-backup)" in out
 
 
 # ---------------------------------------------------------------------------
-# Pre-migration backup (flux-agent claw migrate safety net)
+# Pre-migration backup (omniworker claw migrate safety net)
 # ---------------------------------------------------------------------------
 
 class TestPreMigrationBackup:
     """Tests for create_pre_migration_backup — the auto-backup
-    ``flux-agent claw migrate`` runs before mutating ~/.flux-agent/."""
+    ``omniworker claw migrate`` runs before mutating ~/.omniworker/."""
 
     @pytest.fixture
-    def flux-agent_home(self, tmp_path):
-        root = tmp_path / ".flux-agent"
+    def omniworker_home(self, tmp_path):
+        root = tmp_path / ".omniworker"
         root.mkdir()
-        _make_flux-agent_tree(root)
+        _make_omniworker_tree(root)
         return root
 
-    def test_creates_backup_under_backups_dir(self, flux-agent_home):
-        from flux-agent_cli.backup import create_pre_migration_backup
-        out = create_pre_migration_backup(flux-agent_home=flux-agent_home)
+    def test_creates_backup_under_backups_dir(self, omniworker_home):
+        from omniworker_cli.backup import create_pre_migration_backup
+        out = create_pre_migration_backup(omniworker_home=omniworker_home)
         assert out is not None
         assert out.exists()
-        # Shares the backups/ directory with pre-update backups so `flux-agent
+        # Shares the backups/ directory with pre-update backups so `omniworker
         # import` and the update-backup listing both pick them up.
-        assert out.parent == flux-agent_home / "backups"
+        assert out.parent == omniworker_home / "backups"
         assert out.name.startswith("pre-migration-")
         assert out.suffix == ".zip"
 
-    def test_backup_uses_shared_exclusion_rules(self, flux-agent_home):
+    def test_backup_uses_shared_exclusion_rules(self, omniworker_home):
         """Pre-migration backup reuses the same exclusion rules as
-        ``flux-agent backup`` / ``create_pre_update_backup`` — no drift."""
-        from flux-agent_cli.backup import create_pre_migration_backup
-        out = create_pre_migration_backup(flux-agent_home=flux-agent_home)
+        ``omniworker backup`` / ``create_pre_update_backup`` — no drift."""
+        from omniworker_cli.backup import create_pre_migration_backup
+        out = create_pre_migration_backup(omniworker_home=omniworker_home)
         assert out is not None
         with zipfile.ZipFile(out) as zf:
             names = set(zf.namelist())
@@ -1576,61 +1576,61 @@ class TestPreMigrationBackup:
         assert ".env" in names
         assert "skills/my-skill/SKILL.md" in names
         # Same exclusions as the shared helper
-        assert not any(n.startswith("flux-agent-agent/") for n in names)
+        assert not any(n.startswith("omniworker-agent/") for n in names)
         assert not any("__pycache__" in n for n in names)
         assert "gateway.pid" not in names
 
-    def test_restorable_with_flux-agent_import(self, flux-agent_home, tmp_path):
+    def test_restorable_with_omniworker_import(self, omniworker_home, tmp_path):
         """The zip produced by pre-migration backup must be a valid Flux Agent
-        backup — `flux-agent import` should accept it."""
-        from flux-agent_cli.backup import create_pre_migration_backup, _validate_backup_zip
-        out = create_pre_migration_backup(flux-agent_home=flux-agent_home)
+        backup — `omniworker import` should accept it."""
+        from omniworker_cli.backup import create_pre_migration_backup, _validate_backup_zip
+        out = create_pre_migration_backup(omniworker_home=omniworker_home)
         assert out is not None
         with zipfile.ZipFile(out) as zf:
             valid, _reason = _validate_backup_zip(zf)
         assert valid, "pre-migration zip failed _validate_backup_zip"
 
-    def test_does_not_recurse_into_prior_backups(self, flux-agent_home):
-        from flux-agent_cli.backup import create_pre_migration_backup
-        out1 = create_pre_migration_backup(flux-agent_home=flux-agent_home)
+    def test_does_not_recurse_into_prior_backups(self, omniworker_home):
+        from omniworker_cli.backup import create_pre_migration_backup
+        out1 = create_pre_migration_backup(omniworker_home=omniworker_home)
         assert out1 is not None
-        out2 = create_pre_migration_backup(flux-agent_home=flux-agent_home)
+        out2 = create_pre_migration_backup(omniworker_home=omniworker_home)
         assert out2 is not None
         with zipfile.ZipFile(out2) as zf:
             names = zf.namelist()
         assert not any(n.startswith("backups/") for n in names)
 
-    def test_rotation_keeps_only_n(self, flux-agent_home):
+    def test_rotation_keeps_only_n(self, omniworker_home):
         import time as _t
-        from flux-agent_cli.backup import create_pre_migration_backup
+        from omniworker_cli.backup import create_pre_migration_backup
 
         created = []
         for _ in range(7):
-            out = create_pre_migration_backup(flux-agent_home=flux-agent_home, keep=3)
+            out = create_pre_migration_backup(omniworker_home=omniworker_home, keep=3)
             if out is not None:
                 created.append(out)
             _t.sleep(1.05)  # timestamp resolution
 
-        remaining = sorted((flux-agent_home / "backups").glob("pre-migration-*.zip"))
+        remaining = sorted((omniworker_home / "backups").glob("pre-migration-*.zip"))
         assert len(remaining) <= 3, f"expected <=3 backups retained, got {len(remaining)}"
 
-    def test_missing_flux-agent_home_returns_none(self, tmp_path):
-        """Fresh install with no ~/.flux-agent yet — nothing to back up."""
-        from flux-agent_cli.backup import create_pre_migration_backup
+    def test_missing_omniworker_home_returns_none(self, tmp_path):
+        """Fresh install with no ~/.omniworker yet — nothing to back up."""
+        from omniworker_cli.backup import create_pre_migration_backup
         missing = tmp_path / "does-not-exist"
-        out = create_pre_migration_backup(flux-agent_home=missing)
+        out = create_pre_migration_backup(omniworker_home=missing)
         assert out is None
 
-    def test_does_not_touch_pre_update_backups(self, flux-agent_home):
+    def test_does_not_touch_pre_update_backups(self, omniworker_home):
         """Pre-migration rotation must only prune pre-migration-*.zip files,
         leaving pre-update-*.zip backups untouched."""
-        from flux-agent_cli.backup import create_pre_update_backup, create_pre_migration_backup
-        update_backup = create_pre_update_backup(flux-agent_home=flux-agent_home, keep=5)
+        from omniworker_cli.backup import create_pre_update_backup, create_pre_migration_backup
+        update_backup = create_pre_update_backup(omniworker_home=omniworker_home, keep=5)
         assert update_backup is not None and update_backup.exists()
         # Spin up a lot of migration backups with keep=1
         import time as _t
         for _ in range(3):
-            out = create_pre_migration_backup(flux-agent_home=flux-agent_home, keep=1)
+            out = create_pre_migration_backup(omniworker_home=omniworker_home, keep=1)
             assert out is not None
             _t.sleep(1.05)
         # Update backup must still be there

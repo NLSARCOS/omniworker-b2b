@@ -186,11 +186,11 @@ def _paste_to_tasks(ctx, raw_args: str) -> str:
 ```
 
 A third worked example, this time with image input, lives in the
-[`flux-agent-example-plugins`](https://github.com/Flux Agent/flux-agent-example-plugins/tree/main/plugin-llm-example)
+[`omniworker-example-plugins`](https://github.com/Flux Agent/omniworker-example-plugins/tree/main/plugin-llm-example)
 repo (companion repo for reference plugins — not bundled with
-flux-agent-agent itself). For the async surface (`acomplete()` /
+omniworker-agent itself). For the async surface (`acomplete()` /
 `acomplete_structured()` with `asyncio.gather()`), see
-[`plugin-llm-async-example`](https://github.com/Flux Agent/flux-agent-example-plugins/tree/main/plugin-llm-async-example)
+[`plugin-llm-async-example`](https://github.com/Flux Agent/omniworker-example-plugins/tree/main/plugin-llm-async-example)
 in the same repo.
 
 ## When to use which
@@ -337,7 +337,7 @@ plugins:
       llm:
         # Allow this plugin to choose a different Flux Agent provider
         # (must be one Flux Agent already knows about — same names as
-        # `flux-agent model` and config.yaml model.provider).
+        # `omniworker model` and config.yaml model.provider).
         allow_provider_override: true
 
         # Optionally restrict which providers. Use ["*"] for any.
@@ -402,7 +402,7 @@ don't have to:
 * **Provider resolution.** Reads `model.provider` + `model.model`
   from the user's config (or the explicit overrides when trusted).
 * **Auth.** Pulls API keys, OAuth tokens, or refresh tokens from
-  `~/.flux-agent/auth.json` / env, including the credential pool when
+  `~/.omniworker/auth.json` / env, including the credential pool when
   one is configured. The plugin never sees them.
 * **Vision routing.** When image input is supplied and the user's
   active text model is text-only, the host falls back to the
@@ -456,10 +456,10 @@ own model call — for any reason, structured or not — `ctx.llm`.
 
 ## Reference
 
-* Implementation: [`agent/plugin_llm.py`](https://github.com/Flux Agent/flux-agent-agent/blob/main/agent/plugin_llm.py)
-* Tests: [`tests/agent/test_plugin_llm.py`](https://github.com/Flux Agent/flux-agent-agent/blob/main/tests/agent/test_plugin_llm.py)
+* Implementation: [`agent/plugin_llm.py`](https://github.com/Flux Agent/omniworker-agent/blob/main/agent/plugin_llm.py)
+* Tests: [`tests/agent/test_plugin_llm.py`](https://github.com/Flux Agent/omniworker-agent/blob/main/tests/agent/test_plugin_llm.py)
 * Reference plugins (companion repo):
-  * [`plugin-llm-example`](https://github.com/Flux Agent/flux-agent-example-plugins/tree/main/plugin-llm-example) — sync structured extraction with image input
-  * [`plugin-llm-async-example`](https://github.com/Flux Agent/flux-agent-example-plugins/tree/main/plugin-llm-async-example) — async with `asyncio.gather()`
+  * [`plugin-llm-example`](https://github.com/Flux Agent/omniworker-example-plugins/tree/main/plugin-llm-example) — sync structured extraction with image input
+  * [`plugin-llm-async-example`](https://github.com/Flux Agent/omniworker-example-plugins/tree/main/plugin-llm-async-example) — async with `asyncio.gather()`
 * Auxiliary client (the engine under the hood): see
   [Provider Runtime](/docs/developer-guide/provider-runtime).

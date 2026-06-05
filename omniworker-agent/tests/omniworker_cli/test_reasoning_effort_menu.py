@@ -2,7 +2,7 @@ import sys
 import types
 
 
-from flux-agent_cli.main import _prompt_reasoning_effort_selection
+from omniworker_cli.main import _prompt_reasoning_effort_selection
 
 
 class _FakeTerminalMenu:

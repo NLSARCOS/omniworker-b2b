@@ -18,7 +18,7 @@ import yaml
 
 from utils import base_url_host_matches, base_url_hostname
 
-from flux-agent_constants import OPENROUTER_MODELS_URL
+from omniworker_constants import OPENROUTER_MODELS_URL
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def _resolve_requests_verify() -> bool | str:
     """Resolve SSL verify setting for `requests` calls from env vars.
 
     The `requests` library only honours REQUESTS_CA_BUNDLE / CURL_CA_BUNDLE
-    by default. Flux Agent also honours FLUX AGENT_CA_BUNDLE (its own convention)
+    by default. Flux Agent also honours OMNIWORKER_CA_BUNDLE (its own convention)
     and SSL_CERT_FILE (used by the stdlib `ssl` module and by httpx), so
     that a single env var can cover both `requests` and `httpx` callsites
     inside the same process.
@@ -35,7 +35,7 @@ def _resolve_requests_verify() -> bool | str:
     Returns either a filesystem path to a CA bundle, or True to defer to
     the requests default (certifi).
     """
-    for env_var in ("FLUX AGENT_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
+    for env_var in ("OMNIWORKER_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE"):
         val = os.getenv(env_var)
         if val and os.path.isfile(val):
             return val
@@ -356,8 +356,8 @@ _URL_TO_PROVIDER: Dict[str, str] = {
     "openrouter.ai": "openrouter",
     "generativelanguage.googleapis.com": "gemini",
     "inference-api.nousresearch.com": "nous",
-    "inference-api.flux-agent.com": "nous",
-    "inference.flux-agent.com": "nous",
+    "inference-api.omniworker.com": "nous",
+    "inference.omniworker.com": "nous",
     "api.deepseek.com": "deepseek",
     "api.githubcopilot.com": "copilot",
     "models.github.ai": "copilot",
@@ -815,8 +815,8 @@ def _resolve_endpoint_context_length(
 
 def _get_context_cache_path() -> Path:
     """Return path to the persistent context length cache file."""
-    from flux-agent_constants import get_flux-agent_home
-    return get_flux-agent_home() / "context_length_cache.yaml"
+    from omniworker_constants import get_omniworker_home
+    return get_omniworker_home() / "context_length_cache.yaml"
 
 
 def _load_context_cache() -> Dict[str, int]:
@@ -1470,7 +1470,7 @@ def get_model_context_length(
     # See #15779.
     if custom_providers and base_url and model:
         try:
-            from flux-agent_cli.config import get_custom_provider_context_length
+            from omniworker_cli.config import get_custom_provider_context_length
             cp_ctx = get_custom_provider_context_length(
                 model=model,
                 base_url=base_url,
@@ -1618,7 +1618,7 @@ def get_model_context_length(
     # returns the provider-enforced limit which is what users can actually use.
     if effective_provider in {"copilot", "copilot-acp", "github-copilot"}:
         try:
-            from flux-agent_cli.models import get_copilot_model_context
+            from omniworker_cli.models import get_copilot_model_context
             ctx = get_copilot_model_context(model, api_key=api_key)
             if ctx:
                 return ctx

@@ -28,7 +28,7 @@ import os
 import uuid
 from typing import Any, Dict
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class DebugSession:
         self.tool_name = tool_name
         self.enabled = os.getenv(env_var, "false").lower() == "true"
         self.session_id = str(uuid.uuid4()) if self.enabled else ""
-        self.log_dir = get_flux-agent_home() / "logs"
+        self.log_dir = get_omniworker_home() / "logs"
         self._calls: list[Dict[str, Any]] = []
         self._start_time = datetime.datetime.now().isoformat() if self.enabled else ""
 

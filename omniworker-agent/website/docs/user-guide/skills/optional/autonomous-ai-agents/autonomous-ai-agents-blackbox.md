@@ -14,14 +14,14 @@ Delegate coding tasks to Blackbox AI CLI agent. Multi-model agent with built-in 
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/autonomous-ai-agents/blackbox` |
+| Source | Optional — install with `omniworker skills install official/autonomous-ai-agents/blackbox` |
 | Path | `optional-skills/autonomous-ai-agents/blackbox` |
 | Version | `1.0.0` |
 | Author | Flux Agent Agent (Nous Research) |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Coding-Agent`, `Blackbox`, `Multi-Agent`, `Judge`, `Multi-Model` |
-| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`flux-agent-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-flux-agent-agent) |
+| Related skills | [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`omniworker-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-omniworker-agent) |
 
 ## Reference: full SKILL.md
 

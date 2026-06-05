@@ -1,4 +1,4 @@
-"""Tests for flux-agent_cli.auth._update_config_for_provider clearing stale fields.
+"""Tests for omniworker_cli.auth._update_config_for_provider clearing stale fields.
 
 When the user switches from a custom provider (e.g. MiniMax with
 ``api_mode: anthropic_messages``, ``api_key: mxp-...``) to a built-in
@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import yaml
 
-from flux-agent_cli.auth import _update_config_for_provider
-from flux-agent_cli.config import get_config_path
+from omniworker_cli.auth import _update_config_for_provider
+from omniworker_cli.config import get_config_path
 
 
 def _read_model_cfg() -> dict:
@@ -71,7 +71,7 @@ class TestUpdateConfigForProviderClearsStaleCustomFields:
 
     def test_switching_to_nous_clears_stale_api_mode(self):
         _seed_custom_provider_config()
-        _update_config_for_provider("nous", "https://inference-api.flux-agent.com/v1")
+        _update_config_for_provider("nous", "https://inference-api.omniworker.com/v1")
         model_cfg = _read_model_cfg()
         assert model_cfg.get("provider") == "nous"
         assert "api_mode" not in model_cfg

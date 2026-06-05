@@ -220,7 +220,7 @@ Recién aquí se implementa la idea de PLAN-002, **con las correcciones**:
 - Migración creada: `prisma/migrations/20250604010000_add_conversation_model/` (pendiente de aplicar con `prisma migrate deploy`).
 
 ### 🐛 Bugs bloqueantes encontrados y arreglados de paso
-- **Identificadores rotos por el rebrand**: `const FLUX AGENT_ROLES`, `function isFlux AgentVirtualModel` (espacios dentro de nombres) → **errores de sintaxis que impedían compilar/bundlear el SaaS entero**. Corregidos a `FLUX_AGENT_ROLES` / `isFluxAgentVirtualModel`.
+- **Identificadores rotos por el rebrand**: `const OMNIWORKER_ROLES`, `function isOmniWorkerVirtualModel` (espacios dentro de nombres) → **errores de sintaxis que impedían compilar/bundlear el SaaS entero**. Corregidos a `FLUX_AGENT_ROLES` / `isFluxAgentVirtualModel`.
 - **Template literal corrupto** en `conversation-compaction.ts` (backticks escapados inválidos) → corregido.
 
 ### Verificación

@@ -3,7 +3,7 @@ import type { ChatMessage, UsageState } from "../types";
 
 interface UseChatIPCArgs {
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
-  setFlux AgentSessionId: (id: string) => void;
+  setOmniWorkerSessionId: (id: string) => void;
   setToolProgress: (tool: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   setUsage: React.Dispatch<React.SetStateAction<UsageState | null>>;
@@ -17,13 +17,13 @@ interface UseChatIPCArgs {
  */
 export function useChatIPC({
   setMessages,
-  setFlux AgentSessionId,
+  setOmniWorkerSessionId,
   setToolProgress,
   setIsLoading,
   setUsage,
 }: UseChatIPCArgs): void {
   useEffect(() => {
-    const cleanupChunk = window.flux-agentAPI.onChatChunk((chunk) => {
+    const cleanupChunk = window.omniworkerAPI.onChatChunk((chunk) => {
       setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last && last.role === "agent") {
@@ -41,13 +41,13 @@ export function useChatIPC({
       });
     });
 
-    const cleanupDone = window.flux-agentAPI.onChatDone((sessionId) => {
-      if (sessionId) setFlux AgentSessionId(sessionId);
+    const cleanupDone = window.omniworkerAPI.onChatDone((sessionId) => {
+      if (sessionId) setOmniWorkerSessionId(sessionId);
       setToolProgress(null);
       setIsLoading(false);
     });
 
-    const cleanupError = window.flux-agentAPI.onChatError((error) => {
+    const cleanupError = window.omniworkerAPI.onChatError((error) => {
       setMessages((prev) => [
         ...prev,
         {
@@ -60,13 +60,13 @@ export function useChatIPC({
       setIsLoading(false);
     });
 
-    const cleanupToolProgress = window.flux-agentAPI.onChatToolProgress(
+    const cleanupToolProgress = window.omniworkerAPI.onChatToolProgress(
       (tool) => {
         setToolProgress(tool);
       },
     );
 
-    const cleanupUsage = window.flux-agentAPI.onChatUsage((u) => {
+    const cleanupUsage = window.omniworkerAPI.onChatUsage((u) => {
       setUsage((prev) => ({
         promptTokens: (prev?.promptTokens || 0) + u.promptTokens,
         completionTokens: (prev?.completionTokens || 0) + u.completionTokens,
@@ -84,7 +84,7 @@ export function useChatIPC({
     };
   }, [
     setMessages,
-    setFlux AgentSessionId,
+    setOmniWorkerSessionId,
     setToolProgress,
     setIsLoading,
     setUsage,

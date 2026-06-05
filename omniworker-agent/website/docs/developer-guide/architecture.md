@@ -41,7 +41,7 @@ This page is the top-level map of Flux Agent Agent internals. Use it to orient y
 ┌───────────────────┐              ┌──────────────────────┐
 │ Session Storage   │              │ Tool Backends         │
 │ (SQLite + FTS5)   │              │ Terminal (7 backends) │
-│ flux-agent_state.py   │              │ Browser (5 backends)  │
+│ omniworker_state.py   │              │ Browser (5 backends)  │
 │ gateway/session.py│              │ Web (4 backends)      │
 └───────────────────┘              │ MCP (dynamic)         │
                                    │ File, Vision, etc.    │
@@ -51,13 +51,13 @@ This page is the top-level map of Flux Agent Agent internals. Use it to orient y
 ## Directory Structure
 
 ```text
-flux-agent-agent/
+omniworker-agent/
 ├── run_agent.py              # AIAgent — core conversation loop (large file)
-├── cli.py                    # Flux AgentCLI — interactive terminal UI (large file)
+├── cli.py                    # OmniWorkerCLI — interactive terminal UI (large file)
 ├── model_tools.py            # Tool discovery, schema collection, dispatch
 ├── toolsets.py               # Tool groupings and platform presets
-├── flux-agent_state.py           # SQLite session/state database with FTS5
-├── flux-agent_constants.py       # FLUX AGENT_HOME, profile-aware paths
+├── omniworker_state.py           # SQLite session/state database with FTS5
+├── omniworker_constants.py       # OMNIWORKER_HOME, profile-aware paths
 ├── batch_runner.py           # Batch trajectory generation
 │
 ├── agent/                    # Agent internals
@@ -75,8 +75,8 @@ flux-agent-agent/
 │   ├── memory_provider.py   # Memory provider ABC
 │   └── trajectory.py         # Trajectory saving helpers
 │
-├── flux-agent_cli/               # CLI subcommands and setup
-│   ├── main.py               # Entry point — all `flux-agent` subcommands (large file)
+├── omniworker_cli/               # CLI subcommands and setup
+│   ├── main.py               # Entry point — all `omniworker` subcommands (large file)
 │   ├── config.py             # DEFAULT_CONFIG, OPTIONAL_ENV_VARS, migration
 │   ├── commands.py           # COMMAND_REGISTRY — central slash command definitions
 │   ├── auth.py               # PROVIDER_REGISTRY, credential resolution
@@ -85,12 +85,12 @@ flux-agent-agent/
 │   ├── model_switch.py       # /model command logic (CLI + gateway shared)
 │   ├── setup.py              # Interactive setup wizard (large file)
 │   ├── skin_engine.py        # CLI theming engine
-│   ├── skills_config.py      # flux-agent skills — enable/disable per platform
+│   ├── skills_config.py      # omniworker skills — enable/disable per platform
 │   ├── skills_hub.py         # /skills slash command
-│   ├── tools_config.py       # flux-agent tools — enable/disable per platform
+│   ├── tools_config.py       # omniworker tools — enable/disable per platform
 │   ├── plugins.py            # PluginManager — discovery, loading, hooks
 │   ├── callbacks.py          # Terminal callbacks (clarify, sudo, approval)
-│   └── gateway.py            # flux-agent gateway start/stop
+│   └── gateway.py            # omniworker gateway start/stop
 │
 ├── tools/                    # Tool implementations (one file per tool)
 │   ├── registry.py           # Central tool registry
@@ -138,7 +138,7 @@ flux-agent-agent/
 ### CLI Session
 
 ```text
-User input → Flux AgentCLI.process_input()
+User input → OmniWorkerCLI.process_input()
   → AIAgent.run_conversation()
     → prompt_builder.build_system_prompt()
     → runtime_provider.resolve_runtime_provider()
@@ -197,7 +197,7 @@ The synchronous orchestration engine (`AIAgent` in `run_agent.py`). Handles prov
 
 Prompt construction and maintenance across the conversation lifecycle:
 
-- **`prompt_builder.py`** — Assembles the system prompt from: personality (SOUL.md), memory (MEMORY.md, USER.md), skills, context files (AGENTS.md, .flux-agent.md), tool-use guidance, and model-specific instructions
+- **`prompt_builder.py`** — Assembles the system prompt from: personality (SOUL.md), memory (MEMORY.md, USER.md), skills, context files (AGENTS.md, .omniworker.md), tool-use guidance, and model-specific instructions
 - **`prompt_caching.py`** — Applies Anthropic cache breakpoints for prefix caching
 - **`context_compressor.py`** — Summarizes middle conversation turns when context exceeds thresholds
 
@@ -229,9 +229,9 @@ Long-running process with 20 platform adapters, unified session routing, user au
 
 ### Plugin System
 
-Three discovery sources: `~/.flux-agent/plugins/` (user), `.flux-agent/plugins/` (project), and pip entry points. Plugins register tools, hooks, and CLI commands through a context API. Two specialized plugin types exist: memory providers (`plugins/memory/`) and context engines (`plugins/context_engine/`). Both are single-select — only one of each can be active at a time, configured via `flux-agent plugins` or `config.yaml`.
+Three discovery sources: `~/.omniworker/plugins/` (user), `.omniworker/plugins/` (project), and pip entry points. Plugins register tools, hooks, and CLI commands through a context API. Two specialized plugin types exist: memory providers (`plugins/memory/`) and context engines (`plugins/context_engine/`). Both are single-select — only one of each can be active at a time, configured via `omniworker plugins` or `config.yaml`.
 
-→ [Plugin Guide](/docs/guides/build-a-flux-agent-plugin), [Memory Provider Plugin](./memory-provider-plugin.md)
+→ [Plugin Guide](/docs/guides/build-a-omniworker-plugin), [Memory Provider Plugin](./memory-provider-plugin.md)
 
 ### Cron
 
@@ -260,7 +260,7 @@ Generates ShareGPT-format trajectories from agent sessions for training data gen
 | **Interruptible** | API calls and tool execution can be cancelled mid-flight by user input or signals. |
 | **Platform-agnostic core** | One AIAgent class serves CLI, gateway, ACP, batch, and API server. Platform differences live in the entry point, not the agent. |
 | **Loose coupling** | Optional subsystems (MCP, plugins, memory providers, RL environments) use registry patterns and check_fn gating, not hard dependencies. |
-| **Profile isolation** | Each profile (`flux-agent -p <name>`) gets its own FLUX AGENT_HOME, config, memory, sessions, and gateway PID. Multiple profiles run concurrently. |
+| **Profile isolation** | Each profile (`omniworker -p <name>`) gets its own OMNIWORKER_HOME, config, memory, sessions, and gateway PID. Multiple profiles run concurrently. |
 
 ## File Dependency Chain
 

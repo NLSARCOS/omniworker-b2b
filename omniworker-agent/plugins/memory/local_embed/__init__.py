@@ -4,7 +4,7 @@ Uses a local llama.cpp server (localhost:11435) for embeddings generation
 and SQLite for vector storage + cosine-similarity search.
 
 Requires the local LLM server to be running. The desktop installer
-auto-starts it; otherwise run ~/.flux-agent/local-llm/scripts/start-local-llm.sh
+auto-starts it; otherwise run ~/.omniworker/local-llm/scripts/start-local-llm.sh
 """
 
 from __future__ import annotations
@@ -88,7 +88,7 @@ class LocalEmbedMemoryProvider(MemoryProvider):
         return _check_server()
 
     def initialize(self, session_id: str, **kwargs) -> None:
-        home = kwargs.get("flux-agent_home", str(Path.home() / ".flux-agent"))
+        home = kwargs.get("omniworker_home", str(Path.home() / ".omniworker"))
         self._db_path = Path(home) / DB_NAME
 
         with sqlite3.connect(self._db_path) as conn:

@@ -25,14 +25,14 @@ export interface AskpassHandle {
 export async function setupAskpass(
   parent: BrowserWindow | null,
 ): Promise<AskpassHandle> {
-  const dir = mkdtempSync(join(tmpdir(), "flux-agent-askpass-"));
+  const dir = mkdtempSync(join(tmpdir(), "omniworker-askpass-"));
   const sockPath = join(dir, "ipc.sock");
   const askpassPath = join(dir, "askpass.sh");
   const sudoShim = join(dir, "sudo");
 
   // The askpass program. sudo invokes this with a single arg (the prompt).
   // We pipe through python3 because it's available on every macOS/Linux box
-  // that can run flux-agent-agent (which itself requires python).
+  // that can run omniworker-agent (which itself requires python).
   writeFileSync(
     askpassPath,
     `#!/bin/sh

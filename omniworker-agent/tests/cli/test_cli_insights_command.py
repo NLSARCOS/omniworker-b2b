@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from cli import Flux AgentCLI
+from cli import OmniWorkerCLI
 
 
 class _InsightsEngineStub:
@@ -18,10 +18,10 @@ class _InsightsEngineStub:
 
 
 def _run_show_insights(command: str):
-    cli_obj = Flux AgentCLI.__new__(Flux AgentCLI)
+    cli_obj = OmniWorkerCLI.__new__(OmniWorkerCLI)
     db = MagicMock()
     _InsightsEngineStub.calls = []
-    with patch("flux-agent_state.SessionDB", return_value=db), \
+    with patch("omniworker_state.SessionDB", return_value=db), \
          patch("agent.insights.InsightsEngine", _InsightsEngineStub):
         cli_obj._show_insights(command)
     return _InsightsEngineStub.calls, db

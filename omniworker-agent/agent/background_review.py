@@ -308,7 +308,7 @@ def build_memory_write_metadata(
         ),
         "session_id": agent.session_id or "",
         "parent_session_id": agent._parent_session_id or "",
-        "platform": agent.platform or os.environ.get("FLUX AGENT_SESSION_SOURCE", "cli"),
+        "platform": agent.platform or os.environ.get("OMNIWORKER_SESSION_SOURCE", "cli"),
         "tool_name": "memory",
     }
     if task_id:
@@ -440,7 +440,7 @@ def _run_review_in_thread(
             review_agent.session_id = agent.session_id
 
             from model_tools import get_tool_definitions
-            from flux-agent_cli.plugins import (
+            from omniworker_cli.plugins import (
                 set_thread_tool_whitelist,
                 clear_thread_tool_whitelist,
             )

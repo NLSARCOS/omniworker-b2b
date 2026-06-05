@@ -19,10 +19,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_home(tmp_path, monkeypatch):
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
-    yield flux-agent_home
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
+    yield omniworker_home
 
 
 # ---------------------------------------------------------------------------
@@ -212,14 +212,14 @@ def test_registry_resolve_by_name(tmp_path):
     assert r.resolve("ghost") is None
 
 
-def test_registry_defaults_to_flux-agent_home(tmp_path, monkeypatch):
+def test_registry_defaults_to_omniworker_home(tmp_path, monkeypatch):
     from plugins.google_meet.node.registry import NodeRegistry
 
-    # _isolate_home already set OMNIWORKER_HOME to tmp_path/.flux-agent; the
+    # _isolate_home already set OMNIWORKER_HOME to tmp_path/.omniworker; the
     # registry default path must live inside that tree.
     r = NodeRegistry()
     r.add("x", "ws://x", "t")
-    expected = Path(tmp_path) / ".flux-agent" / "workspace" / "meetings" / "nodes.json"
+    expected = Path(tmp_path) / ".omniworker" / "workspace" / "meetings" / "nodes.json"
     assert expected.is_file()
 
 
@@ -630,7 +630,7 @@ def test_cli_status_pings_via_node_client(capsys, monkeypatch):
             assert token == "tok"
 
         def ping(self):
-            return {"type": "pong", "display_name": "flux-agent-meet-node"}
+            return {"type": "pong", "display_name": "omniworker-meet-node"}
 
     monkeypatch.setattr(node_cli, "NodeClient", _FakeClient)
 

@@ -15,7 +15,7 @@ Flux Agent Agent supports Amazon Bedrock as a native provider using the **Conver
   - `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` environment variables
   - `AWS_PROFILE` for SSO or named profiles
   - `aws configure` for local development
-- **boto3** — install with `pip install flux-agent-agent[bedrock]`
+- **boto3** — install with `pip install omniworker-agent[bedrock]`
 - **IAM permissions** — at minimum:
   - `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` (for inference)
   - `bedrock:ListFoundationModels` and `bedrock:ListInferenceProfiles` (for model discovery)
@@ -28,20 +28,20 @@ On AWS compute, attach an IAM role with `AmazonBedrockFullAccess` and you're don
 
 ```bash
 # Install with Bedrock support
-pip install flux-agent-agent[bedrock]
+pip install omniworker-agent[bedrock]
 
 # Select Bedrock as your provider
-flux-agent model
+omniworker model
 # → Choose "More providers..." → "AWS Bedrock"
 # → Select your region and model
 
 # Start chatting
-flux-agent chat
+omniworker chat
 ```
 
 ## Configuration
 
-After running `flux-agent model`, your `~/.flux-agent/config.yaml` will contain:
+After running `omniworker model`, your `~/.omniworker/config.yaml` will contain:
 
 ```yaml
 model:
@@ -90,7 +90,7 @@ bedrock:
 
 ## Available Models
 
-Bedrock models use **inference profile IDs** for on-demand invocation. The `flux-agent model` picker shows these automatically, with recommended models at the top:
+Bedrock models use **inference profile IDs** for on-demand invocation. The `omniworker model` picker shows these automatically, with recommended models at the top:
 
 | Model | ID | Notes |
 |-------|-----|-------|
@@ -119,7 +119,7 @@ Use the `/model` command during a conversation:
 ## Diagnostics
 
 ```bash
-flux-agent doctor
+omniworker doctor
 ```
 
 The doctor checks:
@@ -133,8 +133,8 @@ The doctor checks:
 Bedrock works with all Flux Agent gateway platforms (Telegram, Discord, Slack, Feishu, etc.). Configure Bedrock as your provider, then start the gateway normally:
 
 ```bash
-flux-agent gateway setup
-flux-agent gateway start
+omniworker gateway setup
+omniworker gateway start
 ```
 
 The gateway reads `config.yaml` and uses the same Bedrock provider configuration.
@@ -167,4 +167,4 @@ You've hit the Bedrock per-model rate limit. Flux Agent automatically retries wi
 
 For a fully automated deployment on EC2 with CloudFormation:
 
-**[sample-flux-agent-agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-flux-agent-agent-on-aws-with-bedrock)** — creates VPC, IAM role, EC2 instance, and configures Bedrock automatically. Deploy in any region with one click.
+**[sample-omniworker-agent-on-aws-with-bedrock](https://github.com/JiaDe-Wu/sample-omniworker-agent-on-aws-with-bedrock)** — creates VPC, IAM role, EC2 instance, and configures Bedrock automatically. Deploy in any region with one click.

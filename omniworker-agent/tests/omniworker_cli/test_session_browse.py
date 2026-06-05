@@ -1,4 +1,4 @@
-"""Tests for the interactive session browser (`flux-agent sessions browse`).
+"""Tests for the interactive session browser (`omniworker sessions browse`).
 
 Covers:
 - _session_browse_picker logic (curses mocked, fallback tested)
@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-from flux-agent_cli.main import _session_browse_picker
+from omniworker_cli.main import _session_browse_picker
 
 
 # ─── Sample session data ──────────────────────────────────────────────────────
@@ -390,15 +390,15 @@ class TestSessionBrowseArgparse:
     """Verify the 'browse' subcommand is properly registered."""
 
     def test_browse_subcommand_exists(self):
-        """flux-agent sessions browse should be parseable."""
-        from flux-agent_cli.main import main as _main_entry
+        """omniworker sessions browse should be parseable."""
+        from omniworker_cli.main import main as _main_entry
 
         # We can't run main(), but we can import and test the parser setup
         # by checking that argparse doesn't error on "sessions browse"
         import argparse
         # Re-create the parser portion
         # Instead, let's just verify the import works and the function exists
-        from flux-agent_cli.main import _session_browse_picker
+        from omniworker_cli.main import _session_browse_picker
         assert callable(_session_browse_picker)
 
     def test_browse_default_limit_is_500(self):

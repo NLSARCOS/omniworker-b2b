@@ -2,7 +2,7 @@
 
 Provider profiles can live in two places:
 
-1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with flux-agent-agent)
+1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with omniworker-agent)
 2. User plugins: ``$OMNIWORKER_HOME/plugins/model-providers/<name>/``
 
 Each plugin directory contains:
@@ -91,9 +91,9 @@ def list_providers() -> list[ProviderProfile]:
 def _user_plugins_dir() -> Path | None:
     """Return ``$OMNIWORKER_HOME/plugins/model-providers/`` if it exists."""
     try:
-        from flux-agent_constants import get_flux-agent_home
+        from omniworker_constants import get_omniworker_home
 
-        d = get_flux-agent_home() / "plugins" / "model-providers"
+        d = get_omniworker_home() / "plugins" / "model-providers"
         return d if d.is_dir() else None
     except Exception:
         return None
@@ -116,7 +116,7 @@ def _import_plugin_dir(plugin_dir: Path, source: str) -> None:
     if source == "bundled":
         module_name = f"plugins.model_providers.{safe_name}"
     else:
-        module_name = f"_flux-agent_user_provider_{safe_name}"
+        module_name = f"_omniworker_user_provider_{safe_name}"
 
     if module_name in sys.modules:
         return  # already imported
@@ -153,7 +153,7 @@ def _discover_providers() -> None:
         return
     _discovered = True
 
-    # 1. Bundled plugins — shipped with flux-agent-agent.
+    # 1. Bundled plugins — shipped with omniworker-agent.
     if _BUNDLED_PLUGINS_DIR.is_dir():
         for child in sorted(_BUNDLED_PLUGINS_DIR.iterdir()):
             if not child.is_dir() or child.name.startswith(("_", ".")):

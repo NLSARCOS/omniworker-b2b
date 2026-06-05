@@ -65,7 +65,7 @@ class MemoryProvider(ABC):
         establish connections, start background threads, etc.
 
         kwargs always include:
-          - flux-agent_home (str): The active OMNIWORKER_HOME directory path. Use this
+          - omniworker_home (str): The active OMNIWORKER_HOME directory path. Use this
             for profile-scoped storage instead of hardcoding ``~/.hermes``.
           - platform (str): "cli", "telegram", "discord", "cron", etc.
 
@@ -242,12 +242,12 @@ class MemoryProvider(ABC):
         """
         return []
 
-    def save_config(self, values: Dict[str, Any], flux-agent_home: str) -> None:
+    def save_config(self, values: Dict[str, Any], omniworker_home: str) -> None:
         """Write non-secret config to the provider's native location.
 
         Called by 'hermes memory setup' after collecting user inputs.
         ``values`` contains only non-secret fields (secrets go to .env).
-        ``flux-agent_home`` is the active OMNIWORKER_HOME directory path.
+        ``omniworker_home`` is the active OMNIWORKER_HOME directory path.
 
         Providers with native config files (JSON, YAML) should override
         this to write to their expected location. Providers that use only

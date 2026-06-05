@@ -208,7 +208,7 @@ def test_resolve_user_uses_env_fallback(monkeypatch):
 def test_resolve_user_errors_when_missing(monkeypatch, tmp_path):
     mod = load_module()
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / ".flux-agent"))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / ".omniworker"))
     monkeypatch.delenv("HYPERLIQUID_USER_ADDRESS", raising=False)
 
     try:
@@ -240,15 +240,15 @@ def test_main_state_json_uses_env_fallback(monkeypatch, capsys):
     assert mock_post.call_args[0][0]["user"] == "0xenv999"
 
 
-def test_env_lookup_reads_flux-agent_dotenv(tmp_path, monkeypatch):
+def test_env_lookup_reads_omniworker_dotenv(tmp_path, monkeypatch):
     mod = load_module()
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir(parents=True)
-    (flux-agent_home / ".env").write_text(
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir(parents=True)
+    (omniworker_home / ".env").write_text(
         "HYPERLIQUID_USER_ADDRESS=0xdotenv123\nHYPERLIQUID_API_URL=https://api.hyperliquid-testnet.xyz\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
     monkeypatch.delenv("HYPERLIQUID_USER_ADDRESS", raising=False)
     monkeypatch.delenv("HYPERLIQUID_API_URL", raising=False)
 
@@ -263,12 +263,12 @@ def test_user_dotenv_overrides_project_dotenv(tmp_path, monkeypatch):
     project_dir.mkdir()
     (project_dir / ".env").write_text("HYPERLIQUID_USER_ADDRESS=0xproject\n", encoding="utf-8")
 
-    flux-agent_home = tmp_path / ".flux-agent"
-    flux-agent_home.mkdir()
-    (flux-agent_home / ".env").write_text("HYPERLIQUID_USER_ADDRESS=0xuserhome\n", encoding="utf-8")
+    omniworker_home = tmp_path / ".omniworker"
+    omniworker_home.mkdir()
+    (omniworker_home / ".env").write_text("HYPERLIQUID_USER_ADDRESS=0xuserhome\n", encoding="utf-8")
 
     monkeypatch.chdir(project_dir)
-    monkeypatch.setenv("OMNIWORKER_HOME", str(flux-agent_home))
+    monkeypatch.setenv("OMNIWORKER_HOME", str(omniworker_home))
     monkeypatch.delenv("HYPERLIQUID_USER_ADDRESS", raising=False)
 
     assert mod._env_lookup("HYPERLIQUID_USER_ADDRESS") == "0xuserhome"

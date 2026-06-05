@@ -135,19 +135,19 @@ _EXTRA_ENV_KEYS = frozenset({
     # Langfuse observability plugin — optional tuning keys + standard SDK vars.
     # Activation is via plugins.enabled (opt-in through `hermes plugins enable
     # observability/langfuse`); credentials gate the plugin at runtime.
-    "FLUX AGENT_LANGFUSE_ENV",
-    "FLUX AGENT_LANGFUSE_RELEASE",
-    "FLUX AGENT_LANGFUSE_SAMPLE_RATE",
-    "FLUX AGENT_LANGFUSE_MAX_CHARS",
-    "FLUX AGENT_LANGFUSE_DEBUG",
+    "OMNIWORKER_LANGFUSE_ENV",
+    "OMNIWORKER_LANGFUSE_RELEASE",
+    "OMNIWORKER_LANGFUSE_SAMPLE_RATE",
+    "OMNIWORKER_LANGFUSE_MAX_CHARS",
+    "OMNIWORKER_LANGFUSE_DEBUG",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
     "LANGFUSE_BASE_URL",
 })
 import yaml
 
-from flux-agent_cli.colors import Colors, color
-from flux-agent_cli.default_soul import DEFAULT_SOUL_MD
+from omniworker_cli.colors import Colors, color
+from omniworker_cli.default_soul import DEFAULT_SOUL_MD
 
 
 # =============================================================================
@@ -165,14 +165,14 @@ _MANAGED_SYSTEM_NAMES = {
 
 def get_managed_system() -> Optional[str]:
     """Return the package manager owning this install, if any."""
-    raw = os.getenv("FLUX AGENT_MANAGED", "").strip()
+    raw = os.getenv("OMNIWORKER_MANAGED", "").strip()
     if raw:
         normalized = raw.lower()
         if normalized in _MANAGED_TRUE_VALUES:
             return "NixOS"
         return _MANAGED_SYSTEM_NAMES.get(normalized, raw)
 
-    managed_marker = get_flux-agent_home() / ".managed"
+    managed_marker = get_omniworker_home() / ".managed"
     if managed_marker.exists():
         return "NixOS"
     return None
@@ -181,8 +181,8 @@ def get_managed_system() -> Optional[str]:
 def is_managed() -> bool:
     """Check if Flux Agent is running in package-manager-managed mode.
 
-    Two signals: the FLUX AGENT_MANAGED env var (set by the systemd service),
-    or a .managed marker file in FLUX AGENT_HOME (set by the NixOS activation
+    Two signals: the OMNIWORKER_MANAGED env var (set by the systemd service),
+    or a .managed marker file in OMNIWORKER_HOME (set by the NixOS activation
     script, so interactive shells also see it).
     """
     return get_managed_system() is not None
@@ -206,12 +206,12 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
 
     Resolution order:
     1. Stamped ``~/.hermes/.install_method`` file (written by installers)
-    2. FLUX AGENT_MANAGED env / .managed marker (NixOS, Homebrew)
+    2. OMNIWORKER_MANAGED env / .managed marker (NixOS, Homebrew)
     3. Container detection (/.dockerenv, /run/.containerenv, cgroup)
     4. .git directory presence -> 'git'
     5. Fallback -> 'pip'
     """
-    stamp = get_flux-agent_home() / ".install_method"
+    stamp = get_omniworker_home() / ".install_method"
     try:
         method = stamp.read_text(encoding="utf-8").strip().lower()
         if method:
@@ -221,7 +221,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
     managed = get_managed_system()
     if managed:
         return managed.lower().replace(" ", "-")
-    from flux-agent_constants import is_container
+    from omniworker_constants import is_container
     if is_container():
         return "docker"
     if project_root is None:
@@ -233,7 +233,7 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
 
 def stamp_install_method(method: str) -> None:
     """Write the install method to ~/.hermes/.install_method."""
-    stamp = get_flux-agent_home() / ".install_method"
+    stamp = get_omniworker_home() / ".install_method"
     try:
         stamp.parent.mkdir(parents=True, exist_ok=True)
         stamp.write_text(method + "\n", encoding="utf-8")
@@ -270,13 +270,13 @@ def recommended_update_command() -> str:
 def format_managed_message(action: str = "modify this Flux Agent installation") -> str:
     """Build a user-facing error for managed installs."""
     managed_system = get_managed_system() or "a package manager"
-    raw = os.getenv("FLUX AGENT_MANAGED", "").strip().lower()
+    raw = os.getenv("OMNIWORKER_MANAGED", "").strip().lower()
 
     if managed_system == "NixOS":
         env_hint = "true" if raw in _MANAGED_TRUE_VALUES else raw or "true"
         return (
             f"Cannot {action}: this Flux Agent installation is managed by NixOS "
-            f"(FLUX AGENT_MANAGED={env_hint}).\n"
+            f"(OMNIWORKER_MANAGED={env_hint}).\n"
             "Edit services.hermes-agent.settings in your configuration.nix and run:\n"
             "  sudo nixos-rebuild switch"
         )
@@ -285,7 +285,7 @@ def format_managed_message(action: str = "modify this Flux Agent installation") 
         env_hint = raw or "homebrew"
         return (
             f"Cannot {action}: this Flux Agent installation is managed by Homebrew "
-            f"(FLUX AGENT_MANAGED={env_hint}).\n"
+            f"(OMNIWORKER_MANAGED={env_hint}).\n"
             "Use:\n"
             "  brew upgrade hermes-agent"
         )
@@ -305,24 +305,24 @@ def managed_error(action: str = "modify configuration"):
 # =============================================================================
 
 def get_container_exec_info() -> Optional[dict]:
-    """Read container mode metadata from FLUX AGENT_HOME/.container-mode.
+    """Read container mode metadata from OMNIWORKER_HOME/.container-mode.
 
     Returns a dict with keys: backend, container_name, exec_user, hermes_bin
     or None if container mode is not active, we're already inside the
-    container, or FLUX AGENT_DEV=1 is set.
+    container, or OMNIWORKER_DEV=1 is set.
 
     The .container-mode file is written by the NixOS activation script when
     container.enable = true. It tells the host CLI to exec into the container
     instead of running locally.
     """
-    if os.environ.get("FLUX AGENT_DEV") == "1":
+    if os.environ.get("OMNIWORKER_DEV") == "1":
         return None
 
-    from flux-agent_constants import is_container
+    from omniworker_constants import is_container
     if is_container():
         return None
 
-    container_mode_file = get_flux-agent_home() / ".container-mode"
+    container_mode_file = get_omniworker_home() / ".container-mode"
 
     try:
         info = {}
@@ -353,17 +353,17 @@ def get_container_exec_info() -> Optional[dict]:
 # Config paths
 # =============================================================================
 
-# Re-export from flux-agent_constants — canonical definition lives there.
-from flux-agent_constants import get_flux-agent_home  # noqa: F811,E402
+# Re-export from omniworker_constants — canonical definition lives there.
+from omniworker_constants import get_omniworker_home  # noqa: F811,E402
 from utils import atomic_replace
 
 def get_config_path() -> Path:
     """Get the main config file path."""
-    return get_flux-agent_home() / "config.yaml"
+    return get_omniworker_home() / "config.yaml"
 
 def get_env_path() -> Path:
     """Get the .env file path (for API keys)."""
-    return get_flux-agent_home() / ".env"
+    return get_omniworker_home() / ".env"
 
 def get_project_root() -> Path:
     """Get the project installation directory."""
@@ -376,16 +376,16 @@ def _secure_dir(path):
     permissions (0750) so interactive users in the hermes group can
     share state with the gateway service.
 
-    The mode can be overridden via the FLUX AGENT_HOME_MODE environment variable
-    (e.g. FLUX AGENT_HOME_MODE=0701) for deployments where a web server (nginx,
-    caddy, etc.) needs to traverse FLUX AGENT_HOME to reach a served subdirectory.
+    The mode can be overridden via the OMNIWORKER_HOME_MODE environment variable
+    (e.g. OMNIWORKER_HOME_MODE=0701) for deployments where a web server (nginx,
+    caddy, etc.) needs to traverse OMNIWORKER_HOME to reach a served subdirectory.
     The execute-only bit on a directory permits cd-through without exposing
     directory listings.
     """
     if is_managed():
         return
     try:
-        mode_str = os.environ.get("FLUX AGENT_HOME_MODE", "").strip()
+        mode_str = os.environ.get("OMNIWORKER_HOME_MODE", "").strip()
         mode = int(mode_str, 8) if mode_str else 0o700
     except ValueError:
         mode = 0o700
@@ -404,7 +404,7 @@ def _is_container() -> bool:
     permissions.
     """
     # Explicit opt-out
-    if os.environ.get("FLUX AGENT_CONTAINER") or os.environ.get("FLUX AGENT_SKIP_CHMOD"):
+    if os.environ.get("OMNIWORKER_CONTAINER") or os.environ.get("OMNIWORKER_SKIP_CHMOD"):
         return True
     # Docker / Podman marker file
     if os.path.exists("/.dockerenv"):
@@ -427,7 +427,7 @@ def _secure_file(path):
     group-readable permissions (0640) on config files.
 
     Skipped in containers — Docker/Podman volume mounts often need broader
-    permissions.  Set FLUX AGENT_SKIP_CHMOD=1 to force-skip on other systems.
+    permissions.  Set OMNIWORKER_SKIP_CHMOD=1 to force-skip on other systems.
     """
     if is_managed() or _is_container():
         return
@@ -439,7 +439,7 @@ def _secure_file(path):
 
 
 def _ensure_default_soul_md(home: Path) -> None:
-    """Seed a default SOUL.md into FLUX AGENT_HOME if the user doesn't have one yet."""
+    """Seed a default SOUL.md into OMNIWORKER_HOME if the user doesn't have one yet."""
     soul_path = home / "SOUL.md"
     if soul_path.exists():
         return
@@ -447,18 +447,18 @@ def _ensure_default_soul_md(home: Path) -> None:
     _secure_file(soul_path)
 
 
-def ensure_flux-agent_home():
+def ensure_omniworker_home():
     """Ensure ~/.hermes directory structure exists with secure permissions.
 
     In managed mode (NixOS), dirs are created by the activation script with
     setgid + group-writable (2770). We skip mkdir and set umask(0o007) so
     any files created (e.g. SOUL.md) are group-writable (0660).
     """
-    home = get_flux-agent_home()
+    home = get_omniworker_home()
     if is_managed():
         old_umask = os.umask(0o007)
         try:
-            _ensure_flux-agent_home_managed(home)
+            _ensure_omniworker_home_managed(home)
         finally:
             os.umask(old_umask)
     else:
@@ -474,11 +474,11 @@ def ensure_flux-agent_home():
         _ensure_default_soul_md(home)
 
 
-def _ensure_flux-agent_home_managed(home: Path):
+def _ensure_omniworker_home_managed(home: Path):
     """Managed-mode variant: verify dirs exist (activation creates them), seed SOUL.md."""
     if not home.is_dir():
         raise RuntimeError(
-            f"FLUX AGENT_HOME {home} does not exist. "
+            f"OMNIWORKER_HOME {home} does not exist. "
             "Run 'sudo nixos-rebuild switch' first."
         )
     for subdir in ("cron", "sessions", "logs", "memories"):
@@ -813,7 +813,7 @@ DEFAULT_CONFIG = {
                                       # (which bypasses the failure cooldown) or /new.
                                       # Set to False to restore historical behavior
                                       # (drop + static placeholder). When False, dropped
-                                      # messages are persisted to ~/.flux-agent/recovery/
+                                      # messages are persisted to ~/.omniworker/recovery/
                                       # before being removed.
     },
 
@@ -1013,7 +1013,7 @@ DEFAULT_CONFIG = {
         # When true, `hermes --tui` auto-resumes the most recent human-
         # facing session on launch instead of forging a fresh one.
         # Mirrors `hermes -c` muscle memory.  Default off so existing
-        # users aren't surprised.  FLUX AGENT_TUI_RESUME=<id> always wins.
+        # users aren't surprised.  OMNIWORKER_TUI_RESUME=<id> always wins.
         "tui_auto_resume_recent": False,
         "bell_on_complete": False,
         "show_reasoning": False,
@@ -1277,7 +1277,7 @@ DEFAULT_CONFIG = {
     # always goes to ~/.hermes/skills/.
     "skills": {
         "external_dirs": [],   # e.g. ["~/.agents/skills", "/shared/team-skills"]
-        # Substitute ${FLUX AGENT_SKILL_DIR} and ${FLUX AGENT_SESSION_ID} in SKILL.md
+        # Substitute ${OMNIWORKER_SKILL_DIR} and ${OMNIWORKER_SESSION_ID} in SKILL.md
         # content with the absolute skill directory and the active session id
         # before the agent sees it.  Lets skill authors reference bundled
         # scripts without the agent having to join paths.
@@ -1447,7 +1447,7 @@ DEFAULT_CONFIG = {
         # through tools.slash_confirm — native yes/no buttons on Telegram,
         # Discord, and Slack; text fallback elsewhere.  Users click "Always
         # Approve" to silence the prompt permanently; that flips this key to
-        # false.  TUI has its own modal overlay (FLUX AGENT_TUI_NO_CONFIRM=1 to
+        # false.  TUI has its own modal overlay (OMNIWORKER_TUI_NO_CONFIRM=1 to
         # opt out there).
         "destructive_slash_confirm": True,
     },
@@ -1467,7 +1467,7 @@ DEFAULT_CONFIG = {
     "hooks": {},
 
     # Auto-accept shell-hook registrations without a TTY prompt.  Also
-    # toggleable per-invocation via --accept-hooks or FLUX AGENT_ACCEPT_HOOKS=1.
+    # toggleable per-invocation via --accept-hooks or OMNIWORKER_ACCEPT_HOOKS=1.
     # Gateway / cron / non-interactive runs need this (or one of the other
     # channels) to pick up newly-added hooks.
     "hooks_auto_accept": False,
@@ -1494,7 +1494,7 @@ DEFAULT_CONFIG = {
         # compromised package, rotated credentials). Acked advisories no
         # longer trigger the startup banner. Add via `hermes doctor --ack
         # <id>`; remove by editing the list directly. See
-        # ``flux-agent_cli/security_advisories.py`` for the catalog.
+        # ``omniworker_cli/security_advisories.py`` for the catalog.
         "acked_advisories": [],
         # Allow Flux Agent to lazy-install opt-in backend packages from PyPI
         # the first time the user enables a backend that needs them
@@ -1513,7 +1513,7 @@ DEFAULT_CONFIG = {
         # Maximum number of due jobs to run in parallel per tick.
         # null/0 = unbounded (limited only by thread count).
         # 1 = serial (pre-v0.9 behaviour).
-        # Also overridable via FLUX AGENT_CRON_MAX_PARALLEL env var.
+        # Also overridable via OMNIWORKER_CRON_MAX_PARALLEL env var.
         "max_parallel_jobs": None,
     },
 
@@ -1660,10 +1660,10 @@ DEFAULT_CONFIG = {
 
     # ``hermes update`` behaviour.
     "updates": {
-        # Run a full ``hermes backup``-style zip of FLUX AGENT_HOME before every
-        # ``hermes update``.  Backups land in ``<FLUX AGENT_HOME>/backups/`` and
+        # Run a full ``hermes backup``-style zip of OMNIWORKER_HOME before every
+        # ``hermes update``.  Backups land in ``<OMNIWORKER_HOME>/backups/`` and
         # can be restored with ``hermes import <path>``.  Off by default —
-        # on large FLUX AGENT_HOME directories the zip can add minutes to every
+        # on large OMNIWORKER_HOME directories the zip can add minutes to every
         # update.  Set to true to re-enable, or pass ``--backup`` to opt in
         # for a single update run.
         "pre_update_backup": False,
@@ -1701,7 +1701,7 @@ DEFAULT_CONFIG = {
 
         # How to handle missing server binaries.
         # ``"auto"`` — try to install via npm/go/pip into
-        #              ``<FLUX AGENT_HOME>/lsp/bin/`` on first use.
+        #              ``<OMNIWORKER_HOME>/lsp/bin/`` on first use.
         # ``"manual"`` — only use binaries already on PATH.
         # ``"off"`` — alias for ``manual``.
         "install_strategy": "auto",
@@ -2021,7 +2021,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "FLUX AGENT_QWEN_BASE_URL": {
+    "OMNIWORKER_QWEN_BASE_URL": {
         "description": "Qwen Portal base URL override (default: https://portal.qwen.ai/v1)",
         "prompt": "Qwen Portal base URL (leave empty for default)",
         "url": None,
@@ -2029,7 +2029,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "FLUX AGENT_GEMINI_CLIENT_ID": {
+    "OMNIWORKER_GEMINI_CLIENT_ID": {
         "description": "Google OAuth client ID for google-gemini-cli (optional; defaults to Google's public gemini-cli client)",
         "prompt": "Google OAuth client ID (optional — leave empty to use the public default)",
         "url": "https://console.cloud.google.com/apis/credentials",
@@ -2037,7 +2037,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "FLUX AGENT_GEMINI_CLIENT_SECRET": {
+    "OMNIWORKER_GEMINI_CLIENT_SECRET": {
         "description": "Google OAuth client secret for google-gemini-cli (optional)",
         "prompt": "Google OAuth client secret (optional)",
         "url": "https://console.cloud.google.com/apis/credentials",
@@ -2045,7 +2045,7 @@ OPTIONAL_ENV_VARS = {
         "category": "provider",
         "advanced": True,
     },
-    "FLUX AGENT_GEMINI_PROJECT_ID": {
+    "OMNIWORKER_GEMINI_PROJECT_ID": {
         "description": "GCP project ID for paid Gemini tiers (free tier auto-provisions)",
         "prompt": "GCP project ID for Gemini OAuth (leave empty for free tier)",
         "url": None,
@@ -2392,21 +2392,21 @@ OPTIONAL_ENV_VARS = {
     },
 
     # ── Langfuse observability ──
-    "FLUX AGENT_LANGFUSE_PUBLIC_KEY": {
+    "OMNIWORKER_LANGFUSE_PUBLIC_KEY": {
         "description": "Langfuse project public key (pk-lf-...)",
         "prompt": "Langfuse public key",
         "url": "https://cloud.langfuse.com",
         "password": False,
         "category": "tool",
     },
-    "FLUX AGENT_LANGFUSE_SECRET_KEY": {
+    "OMNIWORKER_LANGFUSE_SECRET_KEY": {
         "description": "Langfuse project secret key (sk-lf-...)",
         "prompt": "Langfuse secret key",
         "url": "https://cloud.langfuse.com",
         "password": True,
         "category": "tool",
     },
-    "FLUX AGENT_LANGFUSE_BASE_URL": {
+    "OMNIWORKER_LANGFUSE_BASE_URL": {
         "description": "Langfuse server URL (default: https://cloud.langfuse.com)",
         "prompt": "Langfuse server URL (leave empty for cloud.langfuse.com)",
         "url": None,
@@ -2571,7 +2571,7 @@ OPTIONAL_ENV_VARS = {
         "advanced": True,
     },
     "MATRIX_DEVICE_ID": {
-        "description": "Stable Matrix device ID for E2EE persistence across restarts (e.g. FLUX AGENT_BOT)",
+        "description": "Stable Matrix device ID for E2EE persistence across restarts (e.g. OMNIWORKER_BOT)",
         "prompt": "Matrix device ID (stable across restarts)",
         "url": None,
         "password": False,
@@ -2787,38 +2787,38 @@ OPTIONAL_ENV_VARS = {
         "password": True,
         "category": "setting",
     },
-    "FLUX AGENT_MAX_ITERATIONS": {
+    "OMNIWORKER_MAX_ITERATIONS": {
         "description": "Maximum tool-calling iterations per conversation (default: 90)",
         "prompt": "Max iterations",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    # FLUX AGENT_TOOL_PROGRESS and FLUX AGENT_TOOL_PROGRESS_MODE are deprecated —
+    # OMNIWORKER_TOOL_PROGRESS and OMNIWORKER_TOOL_PROGRESS_MODE are deprecated —
     # now configured via display.tool_progress in config.yaml (off|new|all|verbose).
     # Gateway falls back to these env vars for backward compatibility.
-    "FLUX AGENT_TOOL_PROGRESS": {
+    "OMNIWORKER_TOOL_PROGRESS": {
         "description": "(deprecated) Use display.tool_progress in config.yaml instead",
         "prompt": "Tool progress (deprecated — use config.yaml)",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "FLUX AGENT_TOOL_PROGRESS_MODE": {
+    "OMNIWORKER_TOOL_PROGRESS_MODE": {
         "description": "(deprecated) Use display.tool_progress in config.yaml instead",
         "prompt": "Progress mode (deprecated — use config.yaml)",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "FLUX AGENT_PREFILL_MESSAGES_FILE": {
+    "OMNIWORKER_PREFILL_MESSAGES_FILE": {
         "description": "Path to JSON file with ephemeral prefill messages for few-shot priming",
         "prompt": "Prefill messages file path",
         "url": None,
         "password": False,
         "category": "setting",
     },
-    "FLUX AGENT_EPHEMERAL_SYSTEM_PROMPT": {
+    "OMNIWORKER_EPHEMERAL_SYSTEM_PROMPT": {
         "description": "Ephemeral system prompt injected at API-call time (never persisted to sessions)",
         "prompt": "Ephemeral system prompt",
         "url": None,
@@ -3187,7 +3187,7 @@ def get_custom_provider_context_length(
     used by:
       * ``AIAgent.__init__`` (startup resolution)
       * ``AIAgent.switch_model`` (mid-session ``/model`` switch)
-      * ``flux-agent_cli.model_switch.resolve_display_context_length`` (``/model`` confirmation display)
+      * ``omniworker_cli.model_switch.resolve_display_context_length`` (``/model`` confirmation display)
       * ``gateway.run._format_session_info`` (``/info`` display)
       * ``agent.model_metadata.get_model_context_length`` (when custom_providers is threaded through)
 
@@ -3482,7 +3482,7 @@ def warn_deprecated_cwd_env_vars(config: Optional[Dict[str, Any]] = None) -> Non
             f"this is deprecated."
         )
     if lines:
-        hint_path = os.environ.get("FLUX AGENT_HOME", "~/.hermes")
+        hint_path = os.environ.get("OMNIWORKER_HOME", "~/.hermes")
         lines.insert(0, "\033[33m⚠ Deprecated .env settings detected:\033[0m")
         lines.append(
             f"  \033[2mMove to config.yaml instead:  "
@@ -3525,14 +3525,14 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
         if not isinstance(display, dict):
             display = {}
         if "tool_progress" not in display:
-            old_enabled = get_env_value("FLUX AGENT_TOOL_PROGRESS")
-            old_mode = get_env_value("FLUX AGENT_TOOL_PROGRESS_MODE")
+            old_enabled = get_env_value("OMNIWORKER_TOOL_PROGRESS")
+            old_mode = get_env_value("OMNIWORKER_TOOL_PROGRESS_MODE")
             if old_enabled and old_enabled.lower() in {"false", "0", "no"}:
                 display["tool_progress"] = "off"
-                results["config_added"].append("display.tool_progress=off (from FLUX AGENT_TOOL_PROGRESS=false)")
+                results["config_added"].append("display.tool_progress=off (from OMNIWORKER_TOOL_PROGRESS=false)")
             elif old_mode and old_mode.lower() in {"new", "all"}:
                 display["tool_progress"] = old_mode.lower()
-                results["config_added"].append(f"display.tool_progress={old_mode.lower()} (from FLUX AGENT_TOOL_PROGRESS_MODE)")
+                results["config_added"].append(f"display.tool_progress={old_mode.lower()} (from OMNIWORKER_TOOL_PROGRESS_MODE)")
             else:
                 display["tool_progress"] = "all"
                 results["config_added"].append("display.tool_progress=all (default)")
@@ -3545,10 +3545,10 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     if current_ver < 5:
         config = load_config()
         if "timezone" not in config:
-            old_tz = os.getenv("FLUX AGENT_TIMEZONE", "")
+            old_tz = os.getenv("OMNIWORKER_TIMEZONE", "")
             if old_tz and old_tz.strip():
                 config["timezone"] = old_tz.strip()
-                results["config_added"].append(f"timezone={old_tz.strip()} (from FLUX AGENT_TIMEZONE)")
+                results["config_added"].append(f"timezone={old_tz.strip()} (from OMNIWORKER_TIMEZONE)")
             else:
                 config["timezone"] = ""
                 results["config_added"].append("timezone= (empty, uses server-local)")
@@ -3794,10 +3794,10 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                 disabled = []
             disabled_set = set(disabled)
 
-            # Scan ``$FLUX AGENT_HOME/plugins/`` for currently installed user plugins.
+            # Scan ``$OMNIWORKER_HOME/plugins/`` for currently installed user plugins.
             grandfathered: List[str] = []
             try:
-                user_plugins_dir = get_flux-agent_home() / "plugins"
+                user_plugins_dir = get_omniworker_home() / "plugins"
                 if user_plugins_dir.is_dir():
                     for child in sorted(user_plugins_dir.iterdir()):
                         if not child.is_dir():
@@ -3854,11 +3854,11 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
     #      base_url, api_key, timeout, extra_body) — canonical slot for
     #      routing the curator fork to a cheaper aux model.
     #   3. Creates `~/.hermes/logs/curator/` if missing (belt-and-suspenders
-    #      on top of ensure_flux-agent_home() — old profiles that predate this
+    #      on top of ensure_omniworker_home() — old profiles that predate this
     #      migration still benefit).
     if current_ver < 23:
         try:
-            curator_dir = get_flux-agent_home() / "logs" / "curator"
+            curator_dir = get_omniworker_home() / "logs" / "curator"
             curator_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             results["warnings"].append(f"Could not create {curator_dir}: {e}")
@@ -4252,7 +4252,7 @@ def cfg_get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> A
       3. ``cfg is None`` (callers sometimes pass ``load_config() or None``).
 
     Named ``cfg_get`` rather than ``cfg_path`` to avoid shadowing the
-    ubiquitous ``cfg_path = _flux-agent_home / "config.yaml"`` local variable
+    ubiquitous ``cfg_path = _omniworker_home / "config.yaml"`` local variable
     that appears in gateway/run.py, cron/scheduler.py, main.py, etc.
 
     Explicit ``None`` values are returned as-is (matches ``dict.get(key,
@@ -4330,11 +4330,11 @@ def load_config() -> Dict[str, Any]:
     the cached value when unchanged, since most call sites mutate the
     result (e.g. ``cfg["model"]["default"] = ...`` before ``save_config``).
     The cache is keyed on ``str(config_path)`` so profile switches
-    (which change ``FLUX AGENT_HOME`` and therefore ``get_config_path()``)
+    (which change ``OMNIWORKER_HOME`` and therefore ``get_config_path()``)
     don't collide.
     """
     with _CONFIG_LOCK:
-        ensure_flux-agent_home()
+        ensure_omniworker_home()
         config_path = get_config_path()
         path_key = str(config_path)
 
@@ -4459,7 +4459,7 @@ def save_config(config: Dict[str, Any]):
             return
         from utils import atomic_yaml_write
 
-        ensure_flux-agent_home()
+        ensure_omniworker_home()
         config_path = get_config_path()
         current_normalized = _normalize_root_model_keys(_normalize_max_turns_config(config))
         normalized = current_normalized
@@ -4728,7 +4728,7 @@ def save_env_value(key: str, value: str):
     value = value.replace("\n", "").replace("\r", "")
     # API keys / tokens must be ASCII — strip non-ASCII with a warning.
     value = _check_non_ascii_credential(key, value)
-    ensure_flux-agent_home()
+    ensure_omniworker_home()
     env_path = get_env_path()
 
     # On Windows, open() defaults to the system locale (cp1252) which can
@@ -4959,7 +4959,7 @@ def show_config():
     for env_key, name in keys:
         value = get_env_value(env_key)
         print(f"  {name:<14} {redact_key(value)}")
-    from flux-agent_cli.auth import get_anthropic_key
+    from omniworker_cli.auth import get_anthropic_key
     anthropic_value = get_anthropic_key()
     print(f"  {'Anthropic':<14} {redact_key(anthropic_value)}")
     
@@ -5187,7 +5187,7 @@ def set_config_value(key: str, value: str):
     _set_nested(user_config, key, value)
     
     # Write only user config back (not the full merged defaults)
-    ensure_flux-agent_home()
+    ensure_omniworker_home()
     from utils import atomic_yaml_write
     atomic_yaml_write(config_path, user_config, sort_keys=False)
     

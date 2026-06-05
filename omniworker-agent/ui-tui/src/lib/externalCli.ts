@@ -5,7 +5,7 @@ export interface LaunchResult {
   error?: string
 }
 
-const resolveOmniWorkerBin = () => process.env.OMNIWORKER_BIN?.trim() || 'flux-agent'
+const resolveOmniWorkerBin = () => process.env.OMNIWORKER_BIN?.trim() || 'omniworker'
 
 export const launchOmniWorkerCommand = (args: string[]): Promise<LaunchResult> =>
   new Promise(resolve => {

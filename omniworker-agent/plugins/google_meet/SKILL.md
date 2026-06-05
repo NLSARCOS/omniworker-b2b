@@ -6,7 +6,7 @@ platforms:
   - linux
   - macos
 metadata:
-  flux-agent:
+  omniworker:
     tags: [meetings, google-meet, transcription, realtime-voice]
 ---
 
@@ -43,14 +43,14 @@ Pick `realtime` only when the user actually wants the agent to speak. It costs r
 Easiest path — run the built-in installer:
 
 ```bash
-flux-agent plugins enable google_meet
-flux-agent meet install                 # pip deps + Chromium (transcribe only)
-flux-agent meet install --realtime      # + pulseaudio-utils / brew blackhole+ffmpeg
-flux-agent meet auth                    # optional; skips guest-lobby wait
-flux-agent meet setup                   # preflight checks
+omniworker plugins enable google_meet
+omniworker meet install                 # pip deps + Chromium (transcribe only)
+omniworker meet install --realtime      # + pulseaudio-utils / brew blackhole+ffmpeg
+omniworker meet auth                    # optional; skips guest-lobby wait
+omniworker meet setup                   # preflight checks
 ```
 
-`flux-agent meet install --realtime` prompts before running `sudo apt-get` (Linux)
+`omniworker meet install --realtime` prompts before running `sudo apt-get` (Linux)
 or `brew install` (macOS). Pass `--yes` to skip the prompt. It will NOT touch
 your macOS default-input setting — you have to select BlackHole 2ch in
 System Settings yourself before starting a realtime meeting.
@@ -63,23 +63,23 @@ pip install playwright websockets && python -m playwright install chromium
 #   Linux:  sudo apt install pulseaudio-utils
 #   macOS:  brew install blackhole-2ch ffmpeg
 #           → System Settings → Sound → Input → BlackHole 2ch
-#   Then set OPENAI_API_KEY or FLUX AGENT_MEET_REALTIME_KEY in ~/.flux-agent/.env
+#   Then set OPENAI_API_KEY or OMNIWORKER_MEET_REALTIME_KEY in ~/.omniworker/.env
 ```
 
 For a remote node:
 ```bash
 # on the user's Mac (where Chrome is signed in):
 pip install playwright websockets && python -m playwright install chromium
-flux-agent plugins enable google_meet
-flux-agent meet node run --display-name my-mac    # persistent server
+omniworker plugins enable google_meet
+omniworker meet node run --display-name my-mac    # persistent server
 # copy the printed token
 
 # on the gateway:
-flux-agent meet node approve my-mac ws://<mac-ip>:18789 <token>
-flux-agent meet node ping my-mac                   # confirm reachable
+omniworker meet node approve my-mac ws://<mac-ip>:18789 <token>
+omniworker meet node ping my-mac                   # confirm reachable
 ```
 
-Run `flux-agent meet setup` to preflight local prereqs.
+Run `omniworker meet setup` to preflight local prereqs.
 
 ## Flow
 
@@ -105,8 +105,8 @@ Run `flux-agent meet setup` to preflight local prereqs.
 ## Important limits
 
 - Captions are only as good as Google Meet's live captions. English-biased, lossy on overlapping speakers.
-- Guest mode sits in the lobby until a host admits. Warn the user; `flux-agent meet auth` avoids this.
-- **Lobby timeout**: if the host doesn't admit the bot within 5 minutes (configurable via `FLUX AGENT_MEET_LOBBY_TIMEOUT` env), the bot leaves and `meet_status` reports `leaveReason: "lobby_timeout"`.
+- Guest mode sits in the lobby until a host admits. Warn the user; `omniworker meet auth` avoids this.
+- **Lobby timeout**: if the host doesn't admit the bot within 5 minutes (configurable via `OMNIWORKER_MEET_LOBBY_TIMEOUT` env), the bot leaves and `meet_status` reports `leaveReason: "lobby_timeout"`.
 - **One active meeting per install per location.** A second `meet_join` leaves the first.
 - **Windows not supported.**
 - Realtime mode needs a virtual audio device. If the audio bridge setup fails, the bot falls back to transcribe mode and flags it in `meet_status().error`.
@@ -125,7 +125,7 @@ Run `flux-agent meet setup` to preflight local prereqs.
 | `captioning` | Caption observer is installed. |
 | `transcriptLines` / `lastCaptionAt` | Transcript progress. |
 | `realtime` / `realtimeReady` | Realtime mode provisioned / WS connected. |
-| `realtimeDevice` | Audio device name the bot is feeding (e.g. `flux-agent_meet_src`). |
+| `realtimeDevice` | Audio device name the bot is feeding (e.g. `omniworker_meet_src`). |
 | `audioBytesOut` / `lastAudioOutAt` | How much PCM the OpenAI session has produced. |
 | `lastBargeInAt` | Timestamp of the most recent `response.cancel` sent. |
 | `leaveReason` | `duration_expired`, `lobby_timeout`, `denied`, `page_closed`, or null. |
@@ -135,7 +135,7 @@ Run `flux-agent meet setup` to preflight local prereqs.
 
 Local:
 ```
-$FLUX AGENT_HOME/workspace/meetings/<meeting-id>/transcript.txt
+$OMNIWORKER_HOME/workspace/meetings/<meeting-id>/transcript.txt
 ```
 
 Remote node: transcript lives on the node host's disk. Use `meet_transcript(node=...)` to read it over RPC.
@@ -144,5 +144,5 @@ Remote node: transcript lives on the node host's disk. Use `meet_transcript(node
 
 - URL regex: only `https://meet.google.com/...` URLs pass.
 - No calendar scanning. No auto-dial.
-- Remote nodes use bearer-token auth; tokens are generated on the node (32 hex chars, persisted in `$FLUX AGENT_HOME/workspace/meetings/node_token.json`) and must be copied to the gateway via `flux-agent meet node approve`.
+- Remote nodes use bearer-token auth; tokens are generated on the node (32 hex chars, persisted in `$OMNIWORKER_HOME/workspace/meetings/node_token.json`) and must be copied to the gateway via `omniworker meet node approve`.
 - `meet_say` text is rate-limited by the OpenAI Realtime session; spam-protection is the bot's problem, not yours, but still — don't queue hundreds of lines.

@@ -10,13 +10,13 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking) and 7 memory typ
 ## Setup
 
 ```bash
-flux-agent memory setup    # select "retaindb"
+omniworker memory setup    # select "retaindb"
 ```
 
 Or manually:
 ```bash
-flux-agent config set memory.provider retaindb
-echo "RETAINDB_API_KEY=your-key" >> ~/.flux-agent/.env
+omniworker config set memory.provider retaindb
+echo "RETAINDB_API_KEY=your-key" >> ~/.omniworker/.env
 ```
 
 ## Config

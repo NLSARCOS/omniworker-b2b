@@ -14,10 +14,10 @@ Generate flat, minimal light/dark-aware SVG diagrams as standalone HTML files, u
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/creative/concept-diagrams` |
+| Source | Optional — install with `omniworker skills install official/creative/concept-diagrams` |
 | Path | `optional-skills/creative/concept-diagrams` |
 | Version | `0.1.0` |
-| Author | v1k22 (original PR), ported into flux-agent-agent |
+| Author | v1k22 (original PR), ported into omniworker-agent |
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `diagrams`, `svg`, `visualization`, `education`, `physics`, `chemistry`, `engineering` |

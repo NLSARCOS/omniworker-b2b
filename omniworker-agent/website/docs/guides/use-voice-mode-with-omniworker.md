@@ -41,7 +41,7 @@ Before touching voice mode, verify that:
 - the agent can answer text prompts normally
 
 ```bash
-flux-agent
+omniworker
 ```
 
 Ask something simple:
@@ -57,19 +57,19 @@ If that is not solid yet, fix text mode first.
 ### CLI microphone + playback
 
 ```bash
-pip install "flux-agent-agent[voice]"
+pip install "omniworker-agent[voice]"
 ```
 
 ### Messaging platforms
 
 ```bash
-pip install "flux-agent-agent[messaging]"
+pip install "omniworker-agent[messaging]"
 ```
 
 ### Premium ElevenLabs TTS
 
 ```bash
-pip install "flux-agent-agent[tts-premium]"
+pip install "omniworker-agent[tts-premium]"
 ```
 
 ### Local NeuTTS (optional)
@@ -81,7 +81,7 @@ python -m pip install -U neutts[all]
 ### Everything
 
 ```bash
-pip install "flux-agent-agent[all]"
+pip install "omniworker-agent[all]"
 ```
 
 ## Step 3: install system dependencies
@@ -120,7 +120,7 @@ This is usually the best place to start.
 
 ### Environment file example
 
-Add to `~/.flux-agent/.env`:
+Add to `~/.omniworker/.env`:
 
 ```bash
 # Cloud STT options (local needs no key)
@@ -147,7 +147,7 @@ ELEVENLABS_API_KEY=***
 - `openai` → good middle ground
 - `mistral` → multilingual, native Opus
 
-### If you use `flux-agent setup`
+### If you use `omniworker setup`
 
 If you choose NeuTTS in the setup wizard, Flux Agent checks whether `neutts` is already installed. If it is missing, the wizard tells you NeuTTS needs the Python package `neutts` and the system package `espeak-ng`, offers to install them for you, installs `espeak-ng` with your platform package manager, and then runs:
 
@@ -200,7 +200,7 @@ tts:
 Start Flux Agent:
 
 ```bash
-flux-agent
+omniworker
 ```
 
 Inside the CLI:
@@ -298,7 +298,7 @@ Flux Agent stays a normal chat bot, but can speak replies.
 ### Start the gateway
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 ### Turn on voice replies
@@ -440,7 +440,7 @@ By default, the bot needs an `@mention` in Discord server text channels unless c
 If you want the shortest path to success:
 
 1. get text Flux Agent working
-2. install `flux-agent-agent[voice]`
+2. install `omniworker-agent[voice]`
 3. use CLI voice mode with local STT + Edge TTS
 4. then enable `/voice on` in Telegram or Discord
 5. only after that, try Discord VC mode

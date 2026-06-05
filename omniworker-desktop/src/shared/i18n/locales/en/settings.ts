@@ -1,7 +1,7 @@
 export default {
   title: "Settings",
   sections: {
-    flux-agentAgent: "Flux Agent",
+    omniworkerAgent: "Flux Agent",
     appearance: "Appearance",
     credentialPool: "Credential Pool",
   },
@@ -94,7 +94,7 @@ export default {
   save: "Save",
   serverConfigTitle: "Server Configuration",
   serverConfigHint:
-    "You&apos;re connected to a remote Flux Agent server. Model selection, provider API keys, and credentials are managed on the server&apos;s <code>~/.flux-agent/.env</code> and <code>config.yaml</code>. Edit them on the host (e.g. <code>docker exec -it Flux Agent vi /opt/data/.env</code>) and restart the container.",
+    "You&apos;re connected to a remote Flux Agent server. Model selection, provider API keys, and credentials are managed on the server&apos;s <code>~/.omniworker/.env</code> and <code>config.yaml</code>. Edit them on the host (e.g. <code>docker exec -it Flux Agent vi /opt/data/.env</code>) and restart the container.",
   connectionMode: "Mode",
   switchedToLocal: "Switched to local mode",
 } as const;

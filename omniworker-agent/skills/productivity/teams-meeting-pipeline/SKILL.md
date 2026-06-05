@@ -6,9 +6,9 @@ author: Flux Agent Agent + Teknium
 license: MIT
 prerequisites:
   env_vars: [MSGRAPH_TENANT_ID, MSGRAPH_CLIENT_ID, MSGRAPH_CLIENT_SECRET]
-  commands: [flux-agent]
+  commands: [omniworker]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Teams, Microsoft Graph, Meetings, Productivity, Operations]
     related_docs:
       - /docs/guides/microsoft-graph-app-registration
@@ -20,7 +20,7 @@ metadata:
 
 Use this skill whenever the user asks about Microsoft Teams meeting summaries, transcripts, recordings, action items, Graph subscriptions, or any operational question about the Teams meeting pipeline. Works in any language — the triggers below are examples, not an exhaustive list.
 
-Everything operator-facing is a `flux-agent teams-pipeline` subcommand run via the terminal tool. There are no new model tools for this pipeline — the CLI is the surface.
+Everything operator-facing is a `omniworker teams-pipeline` subcommand run via the terminal tool. There are no new model tools for this pipeline — the CLI is the surface.
 
 ## When to use this skill
 
@@ -39,7 +39,7 @@ Multilingual trigger examples (not exhaustive):
 
 ## Prerequisites
 
-Before using the pipeline, verify these are set in `~/.flux-agent/.env`:
+Before using the pipeline, verify these are set in `~/.omniworker/.env`:
 
 ```bash
 MSGRAPH_TENANT_ID=...
@@ -54,35 +54,35 @@ If any are missing, direct the user to the Azure app registration guide at `/doc
 ### Status and inspection (start here)
 
 ```bash
-flux-agent teams-pipeline validate              # config snapshot — run first after any change
-flux-agent teams-pipeline token-health          # Graph token status
-flux-agent teams-pipeline token-health --force-refresh   # force a fresh token acquisition
-flux-agent teams-pipeline list                  # recent meeting jobs
-flux-agent teams-pipeline list --status failed  # only failed jobs
-flux-agent teams-pipeline show <job-id>         # full detail of one job
-flux-agent teams-pipeline subscriptions         # current Graph webhook subscriptions
+omniworker teams-pipeline validate              # config snapshot — run first after any change
+omniworker teams-pipeline token-health          # Graph token status
+omniworker teams-pipeline token-health --force-refresh   # force a fresh token acquisition
+omniworker teams-pipeline list                  # recent meeting jobs
+omniworker teams-pipeline list --status failed  # only failed jobs
+omniworker teams-pipeline show <job-id>         # full detail of one job
+omniworker teams-pipeline subscriptions         # current Graph webhook subscriptions
 ```
 
 ### Re-running / debugging
 
 ```bash
-flux-agent teams-pipeline run <job-id>          # replay a stored job (re-summarize, re-deliver)
-flux-agent teams-pipeline fetch --meeting-id <id>   # dry-run: resolve meeting + transcript without persisting
-flux-agent teams-pipeline fetch --join-web-url "<url>"   # dry-run by join URL
+omniworker teams-pipeline run <job-id>          # replay a stored job (re-summarize, re-deliver)
+omniworker teams-pipeline fetch --meeting-id <id>   # dry-run: resolve meeting + transcript without persisting
+omniworker teams-pipeline fetch --join-web-url "<url>"   # dry-run by join URL
 ```
 
 ### Subscription management
 
 ```bash
-flux-agent teams-pipeline subscribe \
+omniworker teams-pipeline subscribe \
   --resource communications/onlineMeetings/getAllTranscripts \
   --notification-url https://<your-public-host>/msgraph/webhook \
   --client-state "$MSGRAPH_WEBHOOK_CLIENT_STATE"
 
-flux-agent teams-pipeline renew-subscription <sub-id> --expiration <iso-8601>
-flux-agent teams-pipeline delete-subscription <sub-id>
-flux-agent teams-pipeline maintain-subscriptions            # renew near-expiry ones
-flux-agent teams-pipeline maintain-subscriptions --dry-run  # show what would be renewed
+omniworker teams-pipeline renew-subscription <sub-id> --expiration <iso-8601>
+omniworker teams-pipeline delete-subscription <sub-id>
+omniworker teams-pipeline maintain-subscriptions            # renew near-expiry ones
+omniworker teams-pipeline maintain-subscriptions --dry-run  # show what would be renewed
 ```
 
 ## Decision tree for common asks
@@ -97,9 +97,9 @@ flux-agent teams-pipeline maintain-subscriptions --dry-run  # show what would be
 Microsoft Graph caps webhook subscriptions at 72 hours and **will not auto-renew them**. If `maintain-subscriptions` is not scheduled, meeting notifications silently stop arriving 3 days after any manual subscription creation.
 
 When the user reports "the pipeline worked yesterday but nothing is arriving today":
-1. Run `flux-agent teams-pipeline subscriptions` — if it's empty or all entries show `expirationDateTime` in the past, that's the cause.
+1. Run `omniworker teams-pipeline subscriptions` — if it's empty or all entries show `expirationDateTime` in the past, that's the cause.
 2. Recreate with `subscribe` as shown above.
-3. **Set up automated renewal immediately** via `flux-agent cron add`, a systemd timer, or plain crontab. The operator runbook at `/docs/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production` has all three options. 12-hour interval is safe (6x headroom against the 72h limit).
+3. **Set up automated renewal immediately** via `omniworker cron add`, a systemd timer, or plain crontab. The operator runbook at `/docs/guides/operate-teams-meeting-pipeline#automating-subscription-renewal-required-for-production` has all three options. 12-hour interval is safe (6x headroom against the 72h limit).
 
 ## Other pitfalls
 

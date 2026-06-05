@@ -1,7 +1,7 @@
 export default {
   title: "Pengaturan",
   sections: {
-    flux-agentAgent: "Flux Agent",
+    omniworkerAgent: "Flux Agent",
     appearance: "Tampilan",
     credentialPool: "Kumpulan Kredensial",
   },
@@ -93,7 +93,7 @@ export default {
   save: "Simpan",
   serverConfigTitle: "Konfigurasi Server",
   serverConfigHint:
-    "Anda terhubung ke server Flux Agent remote. Pilihan model, API key provider, dan kredensial dikelola di <code>~/.flux-agent/.env</code> dan <code>config.yaml</code> pada server. Edit di host (mis. <code>docker exec -it Flux Agent vi /opt/data/.env</code>) lalu restart container.",
+    "Anda terhubung ke server Flux Agent remote. Pilihan model, API key provider, dan kredensial dikelola di <code>~/.omniworker/.env</code> dan <code>config.yaml</code> pada server. Edit di host (mis. <code>docker exec -it Flux Agent vi /opt/data/.env</code>) lalu restart container.",
   connectionMode: "Mode",
   switchedToLocal: "Beralih ke mode lokal",
 } as const;

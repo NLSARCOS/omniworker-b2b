@@ -87,9 +87,9 @@ class TestConfigFilePermissions(unittest.TestCase):
 
     def test_save_config_sets_0600(self):
         config_path = Path(self.tmpdir) / "config.yaml"
-        with patch("flux-agent_cli.config.get_config_path", return_value=config_path), \
-             patch("flux-agent_cli.config.ensure_flux-agent_home"):
-            from flux-agent_cli.config import save_config
+        with patch("omniworker_cli.config.get_config_path", return_value=config_path), \
+             patch("omniworker_cli.config.ensure_omniworker_home"):
+            from omniworker_cli.config import save_config
             save_config({"model": "test/model"})
 
             file_mode = stat.S_IMODE(os.stat(config_path).st_mode)
@@ -97,19 +97,19 @@ class TestConfigFilePermissions(unittest.TestCase):
 
     def test_save_env_value_sets_0600(self):
         env_path = Path(self.tmpdir) / ".env"
-        with patch("flux-agent_cli.config.get_env_path", return_value=env_path), \
-             patch("flux-agent_cli.config.ensure_flux-agent_home"):
-            from flux-agent_cli.config import save_env_value
+        with patch("omniworker_cli.config.get_env_path", return_value=env_path), \
+             patch("omniworker_cli.config.ensure_omniworker_home"):
+            from omniworker_cli.config import save_env_value
             save_env_value("TEST_KEY", "test_value")
 
             file_mode = stat.S_IMODE(os.stat(env_path).st_mode)
             self.assertEqual(file_mode, 0o600)
 
-    def test_ensure_flux-agent_home_sets_0700(self):
-        home = Path(self.tmpdir) / ".flux-agent"
-        with patch("flux-agent_cli.config.get_flux-agent_home", return_value=home):
-            from flux-agent_cli.config import ensure_flux-agent_home
-            ensure_flux-agent_home()
+    def test_ensure_omniworker_home_sets_0700(self):
+        home = Path(self.tmpdir) / ".omniworker"
+        with patch("omniworker_cli.config.get_omniworker_home", return_value=home):
+            from omniworker_cli.config import ensure_omniworker_home
+            ensure_omniworker_home()
 
             home_mode = stat.S_IMODE(os.stat(home).st_mode)
             self.assertEqual(home_mode, 0o700)

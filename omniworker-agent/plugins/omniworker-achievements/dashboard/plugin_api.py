@@ -1,6 +1,6 @@
 """Flux Agent Achievements dashboard plugin backend.
 
-Mounted at /api/plugins/flux-agent-achievements/ by Flux Agent dashboard.
+Mounted at /api/plugins/omniworker-achievements/ by Flux Agent dashboard.
 """
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 try:
-    from flux-agent_constants import get_flux-agent_home
+    from omniworker_constants import get_omniworker_home
 except ImportError:
     import os as _os
-    def get_flux-agent_home() -> Path:  # type: ignore[misc]
-        val = (_os.environ.get("FLUX AGENT_HOME") or "").strip()
-        return Path(val) if val else Path.home() / ".flux-agent"
+    def get_omniworker_home() -> Path:  # type: ignore[misc]
+        val = (_os.environ.get("OMNIWORKER_HOME") or "").strip()
+        return Path(val) if val else Path.home() / ".omniworker"
 
 try:
     from fastapi import APIRouter
@@ -143,15 +143,15 @@ ACHIEVEMENTS: List[Dict[str, Any]] = [
 
 
 def state_path() -> Path:
-    return get_flux-agent_home() / "plugins" / "flux-agent-achievements" / "state.json"
+    return get_omniworker_home() / "plugins" / "omniworker-achievements" / "state.json"
 
 
 def snapshot_path() -> Path:
-    return get_flux-agent_home() / "plugins" / "flux-agent-achievements" / "scan_snapshot.json"
+    return get_omniworker_home() / "plugins" / "omniworker-achievements" / "scan_snapshot.json"
 
 
 def checkpoint_path() -> Path:
-    return get_flux-agent_home() / "plugins" / "flux-agent-achievements" / "scan_checkpoint.json"
+    return get_omniworker_home() / "plugins" / "omniworker-achievements" / "scan_checkpoint.json"
 
 
 def load_state() -> Dict[str, Any]:
@@ -399,7 +399,7 @@ def analyze_messages(session_id: str, title: str, messages: List[Dict[str, Any]]
         "tiny_patch_after_errors_events": 1 if error_count >= 5 and re.search(r"one character|single character|typo", full_text, re.I) else 0,
         "context_events": len(re.findall(r"compress|context window|token|cache", full_text, re.I)),
         "gateway_events": len(re.findall(r"gateway|discord|telegram|slack|api_server", full_text, re.I)),
-        "plugin_events": len(re.findall(r"plugin|dashboard-plugins|__FLUX AGENT_PLUGIN|manifest\.json", full_text, re.I)),
+        "plugin_events": len(re.findall(r"plugin|dashboard-plugins|__OMNIWORKER_PLUGIN|manifest\.json", full_text, re.I)),
         "rollback_events": len(re.findall(r"rollback|checkpoint", full_text, re.I)),
         "docs_activity_events": len(re.findall(r"docs|documentation|docusaurus|README", full_text, re.I)),
         "model_events": len(re.findall(r"model|provider|openrouter|codex|gemini|claude|anthropic|openai|mistral|qwen|deepseek|llama|ollama|vllm|gguf", full_text, re.I)),
@@ -585,7 +585,7 @@ def scan_sessions(
     at the end.
     """
     try:
-        from flux-agent_state import SessionDB
+        from omniworker_state import SessionDB
     except Exception as exc:
         return {"sessions": [], "aggregate": {}, "error": f"Could not import SessionDB: {exc}", "scan_meta": {"mode": "failed", "sessions_total": 0, "sessions_rescanned": 0, "sessions_reused": 0}}
 
@@ -934,7 +934,7 @@ def _start_background_scan() -> None:
         thread = threading.Thread(
             target=_run_scan_and_update_cache,
             kwargs={"publish_partial_snapshots": True},
-            name="flux-agent-achievements-scan",
+            name="omniworker-achievements-scan",
             daemon=True,
         )
         _BACKGROUND_SCAN_THREAD = thread

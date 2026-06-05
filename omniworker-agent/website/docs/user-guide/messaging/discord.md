@@ -232,14 +232,14 @@ Developer Mode also lets you copy **Channel IDs** and **Server IDs** the same wa
 Run the guided setup command:
 
 ```bash
-flux-agent gateway setup
+omniworker gateway setup
 ```
 
 Select **Discord** when prompted, then paste your bot token and user ID when asked.
 
 ### Option B: Manual Configuration
 
-Add the following to your `~/.flux-agent/.env` file:
+Add the following to your `~/.omniworker/.env` file:
 
 ```bash
 # Required
@@ -253,18 +253,18 @@ DISCORD_ALLOWED_USERS=284102345871466496
 Then start the gateway:
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 The bot should come online in Discord within a few seconds. Send it a message — either a DM or in a channel it can see — to test.
 
 :::tip
-You can run `flux-agent gateway` in the background or as a systemd service for persistent operation. See the deployment docs for details.
+You can run `omniworker gateway` in the background or as a systemd service for persistent operation. See the deployment docs for details.
 :::
 
 ## Configuration Reference
 
-Discord behavior is controlled through two files: **`~/.flux-agent/.env`** for credentials and env-level toggles, and **`~/.flux-agent/config.yaml`** for structured settings. Environment variables always take precedence over config.yaml values when both are set.
+Discord behavior is controlled through two files: **`~/.omniworker/.env`** for credentials and env-level toggles, and **`~/.omniworker/config.yaml`** for structured settings. Environment variables always take precedence over config.yaml values when both are set.
 
 ### Environment Variables (`.env`)
 
@@ -294,12 +294,12 @@ Discord behavior is controlled through two files: **`~/.flux-agent/.env`** for c
 | `DISCORD_ALLOW_MENTION_USERS` | No | `true` | When `true` (default), the bot can ping individual users by ID. |
 | `DISCORD_ALLOW_MENTION_REPLIED_USER` | No | `true` | When `true` (default), replying to a message pings the original author. |
 | `DISCORD_PROXY` | No | — | Proxy URL for Discord connections (HTTP, WebSocket, REST). Overrides `HTTPS_PROXY`/`ALL_PROXY`. Supports `http://`, `https://`, and `socks5://` schemes. |
-| `FLUX AGENT_DISCORD_TEXT_BATCH_DELAY_SECONDS` | No | `0.6` | Grace window the adapter waits before flushing a queued text chunk. Useful for smoothing streamed output. |
-| `FLUX AGENT_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS` | No | `2.0` | Delay between split chunks when a single message exceeds Discord's length limit. |
+| `OMNIWORKER_DISCORD_TEXT_BATCH_DELAY_SECONDS` | No | `0.6` | Grace window the adapter waits before flushing a queued text chunk. Useful for smoothing streamed output. |
+| `OMNIWORKER_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS` | No | `2.0` | Delay between split chunks when a single message exceeds Discord's length limit. |
 
 ### Config File (`config.yaml`)
 
-The `discord` section in `~/.flux-agent/config.yaml` mirrors the env vars above. Config.yaml settings are applied as defaults — if the equivalent env var is already set, the env var wins.
+The `discord` section in `~/.omniworker/config.yaml` mirrors the env vars above. Config.yaml settings are applied as defaults — if the equivalent env var is already set, the env var wins.
 
 ```yaml
 # Discord-specific settings
@@ -583,7 +583,7 @@ Flux Agent automatically registers installed skills as **native Discord Applicat
 - Discord has a limit of 100 application commands per bot — if you have more skills than available slots, extra skills are skipped with a warning in the logs
 - Skills are registered during bot startup alongside built-in commands like `/model`, `/reset`, and `/background`
 
-No extra configuration is needed — any skill installed via `flux-agent skills install` is automatically registered as a Discord slash command on the next gateway restart.
+No extra configuration is needed — any skill installed via `omniworker skills install` is automatically registered as a Discord slash command on the next gateway restart.
 
 ### Disabling Slash Command Registration
 
@@ -623,7 +623,7 @@ Type `/sethome` in any Discord channel where the bot is present. That channel be
 
 ### Manual Configuration
 
-Add these to your `~/.flux-agent/.env`:
+Add these to your `~/.omniworker/.env`:
 
 ```bash
 DISCORD_HOME_CHANNEL=123456789012345678
@@ -642,7 +642,7 @@ Flux Agent Agent supports Discord voice messages:
 
 For the full setup and operational guide, see:
 - [Voice Mode](/docs/user-guide/features/voice-mode)
-- [Use Voice Mode with Flux Agent](/docs/guides/use-voice-mode-with-flux-agent)
+- [Use Voice Mode with Flux Agent](/docs/guides/use-voice-mode-with-omniworker)
 
 ## Forum Channels
 
@@ -685,19 +685,19 @@ Refreshing the directory (`/channels refresh` on platforms that expose it, or a 
 
 **Cause**: The Flux Agent gateway isn't running, or the token is incorrect.
 
-**Fix**: Check that `flux-agent gateway` is running. Verify `DISCORD_BOT_TOKEN` in your `.env` file. If you recently reset the token, update it.
+**Fix**: Check that `omniworker gateway` is running. Verify `DISCORD_BOT_TOKEN` in your `.env` file. If you recently reset the token, update it.
 
 ### "User not allowed" / Bot ignores you
 
 **Cause**: Your User ID isn't in `DISCORD_ALLOWED_USERS`.
 
-**Fix**: Add your User ID to `DISCORD_ALLOWED_USERS` in `~/.flux-agent/.env` and restart the gateway.
+**Fix**: Add your User ID to `DISCORD_ALLOWED_USERS` in `~/.omniworker/.env` and restart the gateway.
 
 ### People in the same channel are sharing context unexpectedly
 
 **Cause**: `group_sessions_per_user` is disabled, or the platform cannot provide a user ID for the messages in that context.
 
-**Fix**: Set this in `~/.flux-agent/config.yaml` and restart the gateway:
+**Fix**: Set this in `~/.omniworker/config.yaml` and restart the gateway:
 
 ```yaml
 group_sessions_per_user: true
@@ -716,7 +716,7 @@ Always set `DISCORD_ALLOWED_USERS` (or `DISCORD_ALLOWED_ROLES`) to restrict who 
 For servers where access is managed by roles instead of individual user lists (moderator teams, support staff, internal tooling), use `DISCORD_ALLOWED_ROLES` — a comma-separated list of role IDs. Any member with one of those roles is authorized.
 
 ```bash
-# ~/.flux-agent/.env — works alongside or instead of DISCORD_ALLOWED_USERS
+# ~/.omniworker/.env — works alongside or instead of DISCORD_ALLOWED_USERS
 DISCORD_ALLOWED_ROLES=987654321098765432,876543210987654321
 ```
 
@@ -736,7 +736,7 @@ By default, Flux Agent blocks the bot from pinging `@everyone`, `@here`, and rol
 You can relax these defaults via either env vars or `config.yaml`:
 
 ```yaml
-# ~/.flux-agent/config.yaml
+# ~/.omniworker/config.yaml
 discord:
   allow_mentions:
     everyone: false      # allow the bot to ping @everyone / @here
@@ -746,7 +746,7 @@ discord:
 ```
 
 ```bash
-# ~/.flux-agent/.env — env vars win over config.yaml
+# ~/.omniworker/.env — env vars win over config.yaml
 DISCORD_ALLOW_MENTION_EVERYONE=false
 DISCORD_ALLOW_MENTION_ROLES=false
 DISCORD_ALLOW_MENTION_USERS=true

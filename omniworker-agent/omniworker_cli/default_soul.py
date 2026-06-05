@@ -1,4 +1,4 @@
-"""Default SOUL.md template seeded into FLUX AGENT_HOME on first run."""
+"""Default SOUL.md template seeded into OMNIWORKER_HOME on first run."""
 
 DEFAULT_SOUL_MD = (
     "You are Flux Agent Agent, an intelligent AI assistant created by Nous Research. "

@@ -1,6 +1,6 @@
-"""`flux-agent meet node ...` subcommand tree.
+"""`omniworker meet node ...` subcommand tree.
 
-Wired into the existing ``flux-agent meet`` parser by the plugin's top-level
+Wired into the existing ``omniworker meet`` parser by the plugin's top-level
 CLI. This module only defines the subparsers and their dispatch — it
 does not mutate the existing cli.py.
 """
@@ -21,7 +21,7 @@ from plugins.google_meet.node.server import NodeServer
 def register_cli(subparser: argparse.ArgumentParser) -> None:
     """Add ``run / list / approve / remove / status / ping`` subparsers.
 
-    *subparser* is the ``flux-agent meet node`` argparse object — typically
+    *subparser* is the ``omniworker meet node`` argparse object — typically
     the result of ``meet_parser.add_parser('node', ...)``.
     """
     sp = subparser.add_subparsers(dest="node_cmd", required=True)
@@ -29,7 +29,7 @@ def register_cli(subparser: argparse.ArgumentParser) -> None:
     run = sp.add_parser("run", help="Start a node server on this machine.")
     run.add_argument("--host", default="0.0.0.0")
     run.add_argument("--port", type=int, default=18789)
-    run.add_argument("--display-name", default="flux-agent-meet-node")
+    run.add_argument("--display-name", default="omniworker-meet-node")
     run.set_defaults(func=node_command)
 
     lst = sp.add_parser("list", help="List approved remote nodes.")
@@ -55,7 +55,7 @@ def register_cli(subparser: argparse.ArgumentParser) -> None:
 
 
 def node_command(args: argparse.Namespace) -> int:
-    """Dispatch for ``flux-agent meet node ...``.
+    """Dispatch for ``omniworker meet node ...``.
 
     Returns a process exit code. Side-effects print to stdout/stderr.
     """
@@ -72,7 +72,7 @@ def node_command(args: argparse.Namespace) -> int:
         print(f"[meet-node] listening on ws://{args.host}:{args.port}")
         print(f"[meet-node] token (copy to gateway): {token}")
         print(f"[meet-node] approve with:")
-        print(f"             flux-agent meet node approve <name> ws://<host>:{args.port} {token}")
+        print(f"             omniworker meet node approve <name> ws://<host>:{args.port} {token}")
         try:
             asyncio.run(server.serve())
         except KeyboardInterrupt:

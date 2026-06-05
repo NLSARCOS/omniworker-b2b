@@ -252,7 +252,7 @@ class TestDeveloperRoleSwap:
         assert messages[0]["role"] == "system"
 
     def test_developer_role_via_nous_portal(self, monkeypatch):
-        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.flux-agent.com/v1")
+        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.omniworker.com/v1")
         agent.model = "gpt-5"
         messages = [
             {"role": "system", "content": "You are helpful."},
@@ -344,14 +344,14 @@ class TestBuildApiKwargsAIGateway:
 class TestBuildApiKwargsNousPortal:
     def test_includes_nous_product_tags(self, monkeypatch):
         from agent.portal_tags import nous_portal_tags
-        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.flux-agent.com/v1")
+        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.omniworker.com/v1")
         messages = [{"role": "user", "content": "hi"}]
         kwargs = agent._build_api_kwargs(messages)
         extra = kwargs.get("extra_body", {})
         assert extra.get("tags") == nous_portal_tags()
 
     def test_uses_chat_completions_format(self, monkeypatch):
-        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.flux-agent.com/v1")
+        agent = _make_agent(monkeypatch, "nous", base_url="https://inference-api.omniworker.com/v1")
         messages = [{"role": "user", "content": "hi"}]
         kwargs = agent._build_api_kwargs(messages)
         assert "messages" in kwargs
@@ -947,7 +947,7 @@ class TestAuxiliaryClientProviderPriority:
         from agent.auxiliary_client import get_text_auxiliary_client
         with patch("agent.auxiliary_client._read_nous_auth", return_value={"access_token": "nous-tok"}), \
              patch("agent.auxiliary_client.OpenAI") as mock, \
-             patch("flux-agent_cli.models.get_nous_recommended_aux_model", return_value=None):
+             patch("omniworker_cli.models.get_nous_recommended_aux_model", return_value=None):
             client, model = get_text_auxiliary_client()
         assert model == "google/gemini-3-flash-preview"
 

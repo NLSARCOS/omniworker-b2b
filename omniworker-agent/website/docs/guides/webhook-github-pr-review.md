@@ -27,7 +27,7 @@ Webhook payloads contain attacker-controlled data — PR titles, commit messages
 
 ## Prerequisites
 
-- Flux Agent Agent installed and running (`flux-agent gateway`)
+- Flux Agent Agent installed and running (`omniworker gateway`)
 - [`gh` CLI](https://cli.github.com/) installed and authenticated on the gateway host (`gh auth login`)
 - A publicly reachable URL for your Flux Agent instance (see [Local testing with ngrok](#local-testing-with-ngrok) if running locally)
 - Admin access to the GitHub repository (required to manage webhooks)
@@ -36,7 +36,7 @@ Webhook payloads contain attacker-controlled data — PR titles, commit messages
 
 ## Step 1 — Enable the webhook platform
 
-Add the following to your `~/.flux-agent/config.yaml`:
+Add the following to your `~/.omniworker/config.yaml`:
 
 ```yaml
 platforms:
@@ -88,7 +88,7 @@ platforms:
 | `deliver_extra.pr_number` | Resolves to the PR number from the payload. |
 
 :::note The payload does not contain code
-The GitHub webhook payload includes PR metadata (title, description, branch names, URLs) but **not the diff**. The prompt above instructs the agent to run `gh pr diff` to fetch the actual changes. The `terminal` tool is included in the default `flux-agent-webhook` toolset, so no extra configuration is needed.
+The GitHub webhook payload includes PR metadata (title, description, branch names, URLs) but **not the diff**. The prompt above instructs the agent to run `gh pr diff` to fetch the actual changes. The `terminal` tool is included in the default `omniworker-webhook` toolset, so no extra configuration is needed.
 :::
 
 ---
@@ -96,7 +96,7 @@ The GitHub webhook payload includes PR metadata (title, description, branch name
 ## Step 2 — Start the gateway
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 You should see:
@@ -135,7 +135,7 @@ Create a branch, push a change, and open a PR. Within 30–90 seconds (depending
 To follow the agent's progress in real time:
 
 ```bash
-tail -f "${FLUX AGENT_HOME:-$HOME/.flux-agent}/logs/gateway.log"
+tail -f "${OMNIWORKER_HOME:-$HOME/.omniworker}/logs/gateway.log"
 ```
 
 ---
@@ -171,11 +171,11 @@ curl -s -X POST http://localhost:8644/webhooks/github-pr-review \
 
 Then watch the agent run:
 ```bash
-tail -f "${FLUX AGENT_HOME:-$HOME/.flux-agent}/logs/gateway.log"
+tail -f "${OMNIWORKER_HOME:-$HOME/.omniworker}/logs/gateway.log"
 ```
 
 :::note
-`flux-agent webhook test <name>` only works for **dynamic subscriptions** created with `flux-agent webhook subscribe`. It does not read routes from `config.yaml`.
+`omniworker webhook test <name>` only works for **dynamic subscriptions** created with `omniworker webhook subscribe`. It does not read routes from `config.yaml`.
 :::
 
 ---
@@ -325,5 +325,5 @@ platforms:
 
 - **[Cron-Based PR Reviews](./github-pr-review-agent.md)** — poll for PRs on a schedule, no public endpoint needed
 - **[Webhook Reference](/docs/user-guide/messaging/webhooks)** — full config reference for the webhook platform
-- **[Build a Plugin](/docs/guides/build-a-flux-agent-plugin)** — package review logic into a shareable plugin
+- **[Build a Plugin](/docs/guides/build-a-omniworker-plugin)** — package review logic into a shareable plugin
 - **[Profiles](/docs/user-guide/profiles)** — run a dedicated reviewer profile with its own memory and config

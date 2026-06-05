@@ -137,7 +137,7 @@ actual = str(n.width) + 'x' + str(n.height)
 
 ### Config location
 
-`$FLUX AGENT_HOME/config.yaml` (defaults to `~/.flux-agent/config.yaml` when `FLUX AGENT_HOME` is unset)
+`$OMNIWORKER_HOME/config.yaml` (defaults to `~/.omniworker/config.yaml` when `OMNIWORKER_HOME` is unset)
 
 ### MCP entry format
 

@@ -1,4 +1,4 @@
 provider: github
 owner: fathah
-repo: flux-agent-desktop
-updaterCacheDirName: flux-agent-desktop-updater
+repo: omniworker-desktop
+updaterCacheDirName: omniworker-desktop-updater

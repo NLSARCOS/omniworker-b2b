@@ -9,9 +9,9 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-from flux-agent_cli import auth as auth_mod
+from omniworker_cli import auth as auth_mod
 from agent.credential_pool import CredentialPool, PooledCredential, get_custom_provider_pool_key, load_pool
-from flux-agent_cli.auth import (
+from omniworker_cli.auth import (
     AuthError,
     DEFAULT_CODEX_BASE_URL,
     DEFAULT_QWEN_BASE_URL,
@@ -29,8 +29,8 @@ from flux-agent_cli.auth import (
     resolve_external_process_provider_credentials,
     has_usable_secret,
 )
-from flux-agent_cli.config import get_compatible_custom_providers, load_config
-from flux-agent_constants import OPENROUTER_BASE_URL
+from omniworker_cli.config import get_compatible_custom_providers, load_config
+from omniworker_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname
 
 
@@ -161,7 +161,7 @@ def _copilot_runtime_api_mode(model_cfg: Dict[str, Any], api_key: str) -> str:
         return "chat_completions"
 
     try:
-        from flux-agent_cli.models import copilot_model_api_mode
+        from omniworker_cli.models import copilot_model_api_mode
 
         return copilot_model_api_mode(model_name, api_key=api_key)
     except Exception:
@@ -289,7 +289,7 @@ def _resolve_runtime_from_pool_entry(
         # explicitly picked anthropic_messages (Anthropic-style endpoint).
         if effective_model and api_mode != "anthropic_messages":
             try:
-                from flux-agent_cli.models import azure_foundry_model_api_mode
+                from omniworker_cli.models import azure_foundry_model_api_mode
 
                 inferred = azure_foundry_model_api_mode(effective_model)
             except Exception:
@@ -318,7 +318,7 @@ def _resolve_runtime_from_pool_entry(
             # anthropic_messages and chat_completions models, so the previous
             # session's mode must not leak across /model switches.
             # Refs #16878.
-            from flux-agent_cli.models import opencode_model_api_mode
+            from omniworker_cli.models import opencode_model_api_mode
             api_mode = opencode_model_api_mode(provider, effective_model)
         elif configured_mode and _provider_supports_explicit_api_mode(provider, configured_provider):
             api_mode = configured_mode
@@ -366,7 +366,7 @@ def resolve_requested_provider(requested: Optional[str] = None) -> str:
 
     # Prefer the persisted config selection over any stale shell/.env
     # provider override so chat uses the endpoint the user last saved.
-    env_provider = os.getenv("FLUX AGENT_INFERENCE_PROVIDER", "").strip().lower()
+    env_provider = os.getenv("OMNIWORKER_INFERENCE_PROVIDER", "").strip().lower()
     if env_provider:
         return env_provider
 
@@ -427,7 +427,7 @@ def _get_named_custom_provider(requested_provider: str) -> Optional[Dict[str, An
             # the request.  We only defer to the built-in when the raw name is
             # the canonical provider itself (``nous``, ``openrouter``, …) so
             # accidentally shadowing a canonical provider still resolves to
-            # the built-in. See tests/flux-agent_cli/test_runtime_provider_resolution.py
+            # the built-in. See tests/omniworker_cli/test_runtime_provider_resolution.py
             # ``test_named_custom_provider_does_not_shadow_builtin_provider``.
             if (canonical or "").strip().lower() == requested_norm:
                 return None
@@ -782,7 +782,7 @@ def _resolve_azure_foundry_runtime(
     effective_model = str(target_model or model_cfg.get("default") or "").strip()
     if effective_model and cfg_api_mode != "anthropic_messages":
         try:
-            from flux-agent_cli.models import azure_foundry_model_api_mode
+            from omniworker_cli.models import azure_foundry_model_api_mode
 
             inferred = azure_foundry_model_api_mode(effective_model)
         except Exception:
@@ -874,7 +874,7 @@ def _resolve_azure_foundry_runtime(
     api_key = explicit_api_key
     if not api_key:
         try:
-            from flux-agent_cli.config import get_env_value
+            from omniworker_cli.config import get_env_value
             api_key = get_env_value("AZURE_FOUNDRY_API_KEY") or ""
         except Exception:
             api_key = ""
@@ -972,8 +972,8 @@ def _resolve_explicit_runtime(
         expires_at = state.get("agent_key_expires_at") or state.get("expires_at")
         if not api_key:
             creds = resolve_nous_runtime_credentials(
-                min_key_ttl_seconds=max(60, int(os.getenv("FLUX AGENT_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
-                timeout_seconds=float(os.getenv("FLUX AGENT_NOUS_TIMEOUT_SECONDS", "15")),
+                min_key_ttl_seconds=max(60, int(os.getenv("OMNIWORKER_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
+                timeout_seconds=float(os.getenv("OMNIWORKER_NOUS_TIMEOUT_SECONDS", "15")),
             )
             api_key = creds.get("api_key", "")
             expires_at = creds.get("expires_at")
@@ -1068,8 +1068,8 @@ def resolve_runtime_provider(
     # to ~/.hermes/.env by the main-process token rotation loop) are picked
     # up by long-running agent processes without a restart.
     try:
-        from flux-agent_cli.env_loader import load_flux-agent_dotenv
-        load_flux-agent_dotenv()
+        from omniworker_cli.env_loader import load_omniworker_dotenv
+        load_omniworker_dotenv()
     except Exception:
         pass  # best-effort — don't block credential resolution
 
@@ -1175,7 +1175,7 @@ def resolve_runtime_provider(
         # expired, clear pool_api_key so we fall through to
         # resolve_nous_runtime_credentials() which handles refresh + fallback.
         if provider == "nous" and entry is not None and pool_api_key:
-            min_ttl = max(60, int(os.getenv("FLUX AGENT_NOUS_MIN_KEY_TTL_SECONDS", "1800")))
+            min_ttl = max(60, int(os.getenv("OMNIWORKER_NOUS_MIN_KEY_TTL_SECONDS", "1800")))
             nous_state = {
                 "agent_key": getattr(entry, "agent_key", None),
                 "agent_key_expires_at": getattr(entry, "agent_key_expires_at", None),
@@ -1197,8 +1197,8 @@ def resolve_runtime_provider(
     if provider == "nous":
         try:
             creds = resolve_nous_runtime_credentials(
-                min_key_ttl_seconds=max(60, int(os.getenv("FLUX AGENT_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
-                timeout_seconds=float(os.getenv("FLUX AGENT_NOUS_TIMEOUT_SECONDS", "15")),
+                min_key_ttl_seconds=max(60, int(os.getenv("OMNIWORKER_NOUS_MIN_KEY_TTL_SECONDS", "1800"))),
+                timeout_seconds=float(os.getenv("OMNIWORKER_NOUS_TIMEOUT_SECONDS", "15")),
             )
             return {
                 "provider": "nous",
@@ -1276,7 +1276,7 @@ def resolve_runtime_provider(
     if provider == "minimax-oauth":
         pconfig = PROVIDER_REGISTRY.get(provider)
         if pconfig and pconfig.auth_type == "oauth_minimax":
-            from flux-agent_cli.auth import resolve_minimax_oauth_runtime_credentials
+            from omniworker_cli.auth import resolve_minimax_oauth_runtime_credentials
             creds = resolve_minimax_oauth_runtime_credentials()
             return {
                 "provider": provider,
@@ -1488,7 +1488,7 @@ def resolve_runtime_provider(
                 # otherwise carry the previous mode forward, stripping /v1
                 # from base_url for chat_completions models and 404'ing.
                 # Refs #16878.
-                from flux-agent_cli.models import opencode_model_api_mode
+                from omniworker_cli.models import opencode_model_api_mode
                 _effective = target_model or model_cfg.get("default", "")
                 api_mode = opencode_model_api_mode(provider, _effective)
             elif configured_mode and _provider_supports_explicit_api_mode(provider, configured_provider):

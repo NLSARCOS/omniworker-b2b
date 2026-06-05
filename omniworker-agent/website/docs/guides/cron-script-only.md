@@ -26,7 +26,7 @@ Flux Agent calls this **no-agent mode**. It's the cron system minus the LLM.
 
 - **No LLM call.** Zero tokens, zero agent loop, zero model spend.
 - **Script is the job.** The script decides whether to alert. Emit output → message gets sent. Emit nothing → silent tick.
-- **Bash or Python.** `.sh` / `.bash` files run under `/bin/bash`; any other extension runs under the current Python interpreter. Anything in `~/.flux-agent/scripts/` is accepted.
+- **Bash or Python.** `.sh` / `.bash` files run under `/bin/bash`; any other extension runs under the current Python interpreter. Anything in `~/.omniworker/scripts/` is accepted.
 - **Same scheduler.** Lives in `cronjob` alongside LLM jobs — pausing, resuming, listing, logs, and delivery targeting all work the same way.
 
 ## When to Use It
@@ -49,7 +49,7 @@ The real win of no-agent mode is that the agent itself can set up the watchdog f
 
 > **You:** ping me on telegram if RAM is over 85% every 5 minutes
 >
-> **Flux Agent:** *(writes `~/.flux-agent/scripts/memory-watchdog.sh`, then calls `cronjob(...)` with `no_agent=true`)*
+> **Flux Agent:** *(writes `~/.omniworker/scripts/memory-watchdog.sh`, then calls `cronjob(...)` with `no_agent=true`)*
 >
 > Set up. Runs every 5 min, alerts Telegram only when RAM is over 85%. Script: `memory-watchdog.sh`. Job ID: `abc123`.
 
@@ -58,7 +58,7 @@ Under the hood, the agent makes two tool calls:
 ```python
 # 1. Write the check script
 write_file(
-    path="~/.flux-agent/scripts/memory-watchdog.sh",
+    path="~/.omniworker/scripts/memory-watchdog.sh",
     content='''#!/usr/bin/env bash
 ram_pct=$(free | awk '/^Mem:/ {printf "%d", $3 * 100 / $2}')
 if [ "$ram_pct" -ge 85 ]; then
@@ -95,7 +95,7 @@ The agent can pause, resume, edit, and remove jobs the same way it creates them:
 >
 > **Flux Agent:** *(calls `cronjob(action='pause', job_id='abc123')`)*
 >
-> Paused. Resume with "turn it back on" or via `flux-agent cron resume abc123`.
+> Paused. Resume with "turn it back on" or via `omniworker cron resume abc123`.
 
 > **You:** change it to every 15 minutes
 >
@@ -109,7 +109,7 @@ Prefer the shell? The CLI path gives you the same result with three commands:
 
 ```bash
 # 1. Write your script
-cat > ~/.flux-agent/scripts/memory-watchdog.sh <<'EOF'
+cat > ~/.omniworker/scripts/memory-watchdog.sh <<'EOF'
 #!/usr/bin/env bash
 # Alert when RAM usage is over 85%. Silent otherwise.
 RAM_PCT=$(free | awk '/^Mem:/ {printf "%d", $3 * 100 / $2}')
@@ -118,18 +118,18 @@ if [ "$RAM_PCT" -ge 85 ]; then
 fi
 # Empty stdout = silent run; no message sent.
 EOF
-chmod +x ~/.flux-agent/scripts/memory-watchdog.sh
+chmod +x ~/.omniworker/scripts/memory-watchdog.sh
 
 # 2. Schedule it
-flux-agent cron create "every 5m" \
+omniworker cron create "every 5m" \
   --no-agent \
   --script memory-watchdog.sh \
   --deliver telegram \
   --name "memory-watchdog"
 
 # 3. Verify
-flux-agent cron list
-flux-agent cron run <job_id>    # fire it once to test
+omniworker cron list
+omniworker cron run <job_id>    # fire it once to test
 ```
 
 That's the whole thing. No prompt, no skill, no model.
@@ -149,7 +149,7 @@ The "silent when empty" behavior is the key to the classic watchdog pattern: the
 
 ## Script Rules
 
-Scripts must live in `~/.flux-agent/scripts/`. This is enforced at both job-creation time and run time — absolute paths, `~/` expansion, and path-traversal patterns (`../`) are rejected. The same directory is shared with the pre-check script gate used by LLM jobs.
+Scripts must live in `~/.omniworker/scripts/`. This is enforced at both job-creation time and run time — absolute paths, `~/` expansion, and path-traversal patterns (`../`) are rejected. The same directory is shared with the pre-check script gate used by LLM jobs.
 
 Interpreter choice is by file extension:
 
@@ -165,10 +165,10 @@ We intentionally do NOT honour `#!/...` shebangs — keeping the interpreter set
 Same as all other cron jobs:
 
 ```bash
-flux-agent cron create "every 5m"        # interval
-flux-agent cron create "every 2h"
-flux-agent cron create "0 9 * * *"       # standard cron: 9am daily
-flux-agent cron create "30m"             # one-shot: run once in 30 minutes
+omniworker cron create "every 5m"        # interval
+omniworker cron create "every 2h"
+omniworker cron create "0 9 * * *"       # standard cron: 9am daily
+omniworker cron create "30m"             # one-shot: run once in 30 minutes
 ```
 
 See the [cron feature reference](/docs/user-guide/features/cron) for the full syntax.
@@ -184,21 +184,21 @@ See the [cron feature reference](/docs/user-guide/features/cron) for the full sy
 --deliver discord:#ops
 --deliver slack:#engineering
 --deliver signal:+15551234567
---deliver local                          # just save to ~/.flux-agent/cron/output/
+--deliver local                          # just save to ~/.omniworker/cron/output/
 ```
 
-No running gateway is required at script-run time for bot-token platforms (Telegram, Discord, Slack, Signal, SMS, WhatsApp) — the tool calls each platform's REST endpoint directly using the credentials already in `~/.flux-agent/.env` / `~/.flux-agent/config.yaml`.
+No running gateway is required at script-run time for bot-token platforms (Telegram, Discord, Slack, Signal, SMS, WhatsApp) — the tool calls each platform's REST endpoint directly using the credentials already in `~/.omniworker/.env` / `~/.omniworker/config.yaml`.
 
 ## Editing and Lifecycle
 
 ```bash
-flux-agent cron list                                    # see all jobs
-flux-agent cron pause <job_id>                          # stop firing, keep definition
-flux-agent cron resume <job_id>
-flux-agent cron edit <job_id> --schedule "every 10m"    # adjust cadence
-flux-agent cron edit <job_id> --agent                   # flip to LLM mode
-flux-agent cron edit <job_id> --no-agent --script …     # flip back
-flux-agent cron remove <job_id>                         # delete it
+omniworker cron list                                    # see all jobs
+omniworker cron pause <job_id>                          # stop firing, keep definition
+omniworker cron resume <job_id>
+omniworker cron edit <job_id> --schedule "every 10m"    # adjust cadence
+omniworker cron edit <job_id> --agent                   # flip to LLM mode
+omniworker cron edit <job_id> --no-agent --script …     # flip back
+omniworker cron remove <job_id>                         # delete it
 ```
 
 Everything that works on LLM jobs (pause, resume, manual trigger, delivery target changes) works on no-agent jobs too.
@@ -206,7 +206,7 @@ Everything that works on LLM jobs (pause, resume, manual trigger, delivery targe
 ## Worked Example: Disk Space Alert
 
 ```bash
-cat > ~/.flux-agent/scripts/disk-alert.sh <<'EOF'
+cat > ~/.omniworker/scripts/disk-alert.sh <<'EOF'
 #!/usr/bin/env bash
 # Alert when / or /home is over 90% full.
 THRESHOLD=90
@@ -216,9 +216,9 @@ df -h / /home 2>/dev/null | awk -v t="$THRESHOLD" '
   }
 '
 EOF
-chmod +x ~/.flux-agent/scripts/disk-alert.sh
+chmod +x ~/.omniworker/scripts/disk-alert.sh
 
-flux-agent cron create "*/15 * * * *" \
+omniworker cron create "*/15 * * * *" \
   --no-agent \
   --script disk-alert.sh \
   --deliver telegram \

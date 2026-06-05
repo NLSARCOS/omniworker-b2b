@@ -1,4 +1,4 @@
-"""Shared fixtures for the flux-agent-agent test suite.
+"""Shared fixtures for the omniworker-agent test suite.
 
 Hermetic-test invariants enforced here (see AGENTS.md for rationale):
 
@@ -6,10 +6,10 @@ Hermetic-test invariants enforced here (see AGENTS.md for rationale):
    (ending in _API_KEY, _TOKEN, _SECRET, _PASSWORD, _CREDENTIALS, etc.)
    are unset before every test. Local developer keys cannot leak in.
 2. **Isolated OMNIWORKER_HOME.** OMNIWORKER_HOME points to a per-test tempdir so
-   code reading ``~/.flux-agent/*`` via ``get_flux-agent_home()`` can't see the
+   code reading ``~/.omniworker/*`` via ``get_omniworker_home()`` can't see the
    real one. (We do NOT also redirect HOME — that broke subprocesses in
-   CI. Code using ``Path.home() / ".flux-agent"`` instead of the canonical
-   ``get_flux-agent_home()`` is a bug to fix at the callsite.)
+   CI. Code using ``Path.home() / ".omniworker"`` instead of the canonical
+   ``get_omniworker_home()`` is a bug to fix at the callsite.)
 3. **Deterministic runtime.** TZ=UTC, LANG=C.UTF-8, PYTHONHASHSEED=0.
 4. **No OMNIWORKER_SESSION_* inheritance** — the agent's current gateway
    session must not leak into tests.
@@ -189,7 +189,7 @@ _OMNIWORKER_BEHAVIORAL_VARS = frozenset({
     "OMNIWORKER_HOME_MODE",
     # Kanban path/board pins must never leak from a developer shell or
     # dispatched worker into tests; otherwise tests can write fake tasks to
-    # the real ~/.flux-agent/kanban.db instead of the per-test OMNIWORKER_HOME.
+    # the real ~/.omniworker/kanban.db instead of the per-test OMNIWORKER_HOME.
     "OMNIWORKER_KANBAN_DB",
     "OMNIWORKER_KANBAN_BOARD",
     "OMNIWORKER_KANBAN_WORKSPACES_ROOT",
@@ -294,7 +294,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
     """Blank out all credential/behavioral env vars so local and CI match.
 
     Also redirects HOME and OMNIWORKER_HOME to per-test tempdirs so code that
-    reads ``~/.flux-agent/*`` can't touch the real one, and pins TZ/LANG so
+    reads ``~/.omniworker/*`` can't touch the real one, and pins TZ/LANG so
     datetime/locale-sensitive tests are deterministic.
     """
     # 1. Blank every credential-shaped env var that's currently set.
@@ -307,22 +307,22 @@ def _hermetic_environment(tmp_path, monkeypatch):
         monkeypatch.delenv(name, raising=False)
 
     # 3. Redirect OMNIWORKER_HOME to a per-test tempdir. Code that reads
-    #    ``~/.flux-agent/*`` via ``get_flux-agent_home()`` now gets the tempdir.
+    #    ``~/.omniworker/*`` via ``get_omniworker_home()`` now gets the tempdir.
     #
     #    NOTE: We do NOT also redirect HOME. Doing so broke CI because
     #    some tests (and their transitive deps) spawn subprocesses that
     #    inherit HOME and expect it to be stable. If a test genuinely
     #    needs HOME isolated, it should set it explicitly in its own
-    #    fixture. Any code in the codebase reading ``~/.flux-agent/*`` via
-    #    ``Path.home() / ".flux-agent"`` instead of ``get_flux-agent_home()``
+    #    fixture. Any code in the codebase reading ``~/.omniworker/*`` via
+    #    ``Path.home() / ".omniworker"`` instead of ``get_omniworker_home()``
     #    is a bug to fix at the callsite.
-    fake_flux-agent_home = tmp_path / "flux-agent_test"
-    fake_flux-agent_home.mkdir()
-    (fake_flux-agent_home / "sessions").mkdir()
-    (fake_flux-agent_home / "cron").mkdir()
-    (fake_flux-agent_home / "memories").mkdir()
-    (fake_flux-agent_home / "skills").mkdir()
-    monkeypatch.setenv("OMNIWORKER_HOME", str(fake_flux-agent_home))
+    fake_omniworker_home = tmp_path / "omniworker_test"
+    fake_omniworker_home.mkdir()
+    (fake_omniworker_home / "sessions").mkdir()
+    (fake_omniworker_home / "cron").mkdir()
+    (fake_omniworker_home / "memories").mkdir()
+    (fake_omniworker_home / "skills").mkdir()
+    monkeypatch.setenv("OMNIWORKER_HOME", str(fake_omniworker_home))
 
     # 4. Deterministic locale / timezone / hashseed. CI runs in UTC with
     #    C.UTF-8 locale; local dev often doesn't. Pin everything.
@@ -341,10 +341,10 @@ def _hermetic_environment(tmp_path, monkeypatch):
     monkeypatch.setenv("AWS_METADATA_SERVICE_NUM_ATTEMPTS", "1")
 
     # 5. Reset plugin singleton so tests don't leak plugins from
-    #    ~/.flux-agent/plugins/ (which, per step 3, is now empty — but the
+    #    ~/.omniworker/plugins/ (which, per step 3, is now empty — but the
     #    singleton might still be cached from a previous test).
     try:
-        import flux-agent_cli.plugins as _plugins_mod
+        import omniworker_cli.plugins as _plugins_mod
         monkeypatch.setattr(_plugins_mod, "_plugin_manager", None)
     except Exception:
         pass
@@ -357,7 +357,7 @@ def _hermetic_environment(tmp_path, monkeypatch):
 # Backward-compat alias — old tests reference this fixture name. Keep it
 # as a no-op wrapper so imports don't break.
 @pytest.fixture(autouse=True)
-def _isolate_flux-agent_home(_hermetic_environment):
+def _isolate_omniworker_home(_hermetic_environment):
     """Alias preserved for any test that yields this name explicitly."""
     return None
 
@@ -388,7 +388,7 @@ def _reset_module_state():
     """
     # --- logging — quiet/one-shot paths mutate process-global logger state ---
     logging.disable(logging.NOTSET)
-    for _logger_name in ("tools", "run_agent", "trajectory_compressor", "cron", "flux-agent_cli"):
+    for _logger_name in ("tools", "run_agent", "trajectory_compressor", "cron", "omniworker_cli"):
         _logger = logging.getLogger(_logger_name)
         _logger.disabled = False
         _logger.setLevel(logging.NOTSET)
@@ -510,7 +510,7 @@ def tmp_dir(tmp_path):
 
 @pytest.fixture()
 def mock_config():
-    """Return a minimal flux-agent config dict suitable for unit tests."""
+    """Return a minimal omniworker config dict suitable for unit tests."""
     return {
         "model": "test/mock-model",
         "toolsets": ["terminal", "file"],
@@ -623,10 +623,10 @@ def _reset_tool_registry_caches():
 # (``cmd_update``, ``kill_gateway_processes``, ``stop_profile_gateway``).
 # When a single test forgets to mock either ``os.kill`` or the global
 # ``find_gateway_pids`` helper, the real call leaks out of the hermetic
-# environment and finds the developer's live ``flux-agent-gateway`` process
+# environment and finds the developer's live ``omniworker-gateway`` process
 # via ``psutil`` — sending it SIGTERM mid-test. The shutdown forensics in
 # PR #23285 caught this happening 5+ times in 3 days, every time
-# correlated with a ``tests/flux-agent_cli/`` pytest run starting up.
+# correlated with a ``tests/omniworker_cli/`` pytest run starting up.
 #
 # This fixture makes the leak impossible by intercepting the two
 # primitives that actually do damage:
@@ -635,7 +635,7 @@ def _reset_tool_registry_caches():
 #    a hard ``RuntimeError`` so the offending test gets a stack trace
 #    instead of silently murdering the real gateway.
 #  • ``subprocess.run`` / ``subprocess.Popen`` / ``call`` / ``check_call`` /
-#    ``check_output`` reject any ``systemctl ... <verb> flux-agent-gateway``
+#    ``check_output`` reject any ``systemctl ... <verb> omniworker-gateway``
 #    invocation that would mutate the live unit. Read-only systemctl
 #    calls (``status``, ``show``, ``list-units``) still pass through.
 #
@@ -676,10 +676,10 @@ def _live_system_guard(request, monkeypatch):
       • pty.spawn
       • asyncio.create_subprocess_exec / create_subprocess_shell
     Subprocess inspection looks at the WHOLE command string (not just
-    tokens[0]), so ``bash -c "systemctl restart flux-agent-gateway"``,
+    tokens[0]), so ``bash -c "systemctl restart omniworker-gateway"``,
     ``sudo systemctl ...``, ``env systemctl ...``, ``setsid systemctl ...``
     are all caught. ``pkill``/``killall``/``taskkill`` invocations
-    targeting flux-agent/python patterns are also blocked.
+    targeting omniworker/python patterns are also blocked.
     """
     if request.node.get_closest_marker(_LIVE_SYSTEM_GUARD_BYPASS_MARK):
         yield
@@ -768,12 +768,12 @@ def _live_system_guard(request, monkeypatch):
 
     # ── Subprocess command-string inspection (whole-line) ──────────
     _OMNIWORKER_TOKENS = (
-        "flux-agent-gateway",
-        "flux-agent.service",
-        "flux-agent_cli.main gateway",
-        "flux-agent_cli/main.py gateway",
+        "omniworker-gateway",
+        "omniworker.service",
+        "omniworker_cli.main gateway",
+        "omniworker_cli/main.py gateway",
         "gateway/run.py",
-        "flux-agent gateway",
+        "omniworker gateway",
     )
     _MUTATING_VERBS = (
         "restart", "start", "stop", "kill", "reload",
@@ -799,7 +799,7 @@ def _live_system_guard(request, monkeypatch):
                 return ""
         return str(cmd)
 
-    def _matches_flux-agent_gateway(cmd_str: str) -> bool:
+    def _matches_omniworker_gateway(cmd_str: str) -> bool:
         low = cmd_str.lower()
         return any(tok in low for tok in _OMNIWORKER_TOKENS)
 
@@ -807,7 +807,7 @@ def _live_system_guard(request, monkeypatch):
         cmd_str = _cmd_to_string(cmd)
         if "systemctl" not in cmd_str:
             return False
-        if not _matches_flux-agent_gateway(cmd_str):
+        if not _matches_omniworker_gateway(cmd_str):
             return False
         try:
             tokens = _shlex.split(cmd_str)
@@ -827,11 +827,11 @@ def _live_system_guard(request, monkeypatch):
             head = tok.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
             if head in _PROCESS_KILLERS:
                 low = cmd_str.lower()
-                # pkill -f pattern: catch flux-agent-themed patterns + a
+                # pkill -f pattern: catch omniworker-themed patterns + a
                 # plain "python" -f which would catch the live gateway
-                # whose cmdline contains "python -m flux-agent_cli.main".
+                # whose cmdline contains "python -m omniworker_cli.main".
                 if (
-                    "flux-agent" in low
+                    "omniworker" in low
                     or "gateway" in low
                     or ("python" in low and "-f" in tokens)
                 ):
@@ -843,7 +843,7 @@ def _live_system_guard(request, monkeypatch):
             raise RuntimeError(
                 f"tests/conftest.py live-system guard: blocked "
                 f"subprocess.{name}({cmd!r}) — would mutate the "
-                "live flux-agent-gateway systemd unit. Mock "
+                "live omniworker-gateway systemd unit. Mock "
                 "subprocess.run / _run_systemctl in the test, or "
                 "mark with @pytest.mark.live_system_guard_bypass."
             )
@@ -851,7 +851,7 @@ def _live_system_guard(request, monkeypatch):
             raise RuntimeError(
                 f"tests/conftest.py live-system guard: blocked "
                 f"subprocess.{name}({cmd!r}) — process-killer command "
-                "targeting flux-agent/python could hit the live gateway. "
+                "targeting omniworker/python could hit the live gateway. "
                 "Mark with @pytest.mark.live_system_guard_bypass if "
                 "intentional."
             )

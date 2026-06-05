@@ -52,9 +52,9 @@ IGNORED_EMAILS = {
     "noreply@anthropic.com",
     "noreply@github.com",
     "cursoragent@cursor.com",
-    "flux-agent@flux-agent.com",
-    "flux-agent-audit@example.com",
-    "flux-agent@habibilabs.dev",
+    "omniworker@omniworker.com",
+    "omniworker-audit@example.com",
+    "omniworker@habibilabs.dev",
 }
 
 
@@ -96,7 +96,7 @@ def gh_pr_list():
         result = subprocess.run(
             [
                 "gh", "pr", "list",
-                "--repo", "Flux Agent/flux-agent-agent",
+                "--repo", "Flux Agent/omniworker-agent",
                 "--state", "merged",
                 "--json", "number,title,body,author,mergedAt",
                 "--limit", "300",

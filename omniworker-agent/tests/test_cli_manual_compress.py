@@ -1,6 +1,6 @@
 from contextlib import nullcontext
 
-from cli import Flux AgentCLI
+from cli import OmniWorkerCLI
 
 
 class DummyAgent:
@@ -24,7 +24,7 @@ class DummyAgent:
 
 def test_manual_compress_does_not_pass_cached_system_prompt(monkeypatch):
     """Manual /compress should rebuild the next prompt without nesting the old one."""
-    cli = Flux AgentCLI.__new__(Flux AgentCLI)
+    cli = OmniWorkerCLI.__new__(OmniWorkerCLI)
     cli.conversation_history = [
         {"role": "user", "content": "one"},
         {"role": "assistant", "content": "two"},

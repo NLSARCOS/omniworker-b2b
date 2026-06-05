@@ -431,15 +431,15 @@ class TestServerRequestRouting:
             for (rid, code, _msg) in client.error_responses
         )
 
-    def test_mcp_elicitation_for_flux-agent_tools_auto_accepts(self):
-        """When codex elicits on behalf of flux-agent-tools (our own callback),
+    def test_mcp_elicitation_for_omniworker_tools_auto_accepts(self):
+        """When codex elicits on behalf of omniworker-tools (our own callback),
         accept automatically — the user already opted in by enabling the
         runtime."""
         client = FakeClient()
         client.queue_server_request(
             "mcpServer/elicitation/request", request_id="elic-1",
             threadId="t", turnId="tu1",
-            serverName="flux-agent-tools",
+            serverName="omniworker-tools",
             mode="form",
             message="confirm",
             requestedSchema={"type": "object", "properties": {}},
@@ -594,10 +594,10 @@ class TestApprovalPromptEnrichment:
         assert "apply some changes" in captured["command"]
 
 
-# ---- flux-agent beta.8 parity: retire/wedge/oauth/abort marker ----
+# ---- omniworker beta.8 parity: retire/wedge/oauth/abort marker ----
 
 class TestSessionRetirement:
-    """Mirrors flux-agent beta.8's resilience fixes:
+    """Mirrors omniworker beta.8's resilience fixes:
       - retire timed-out app-server clients (should_retire on deadline)
       - post-tool completion watchdog (don't burn the full deadline after a
         tool result if codex goes silent)
@@ -849,7 +849,7 @@ class TestSessionRetirement:
 # ---- thread/start cross-fill ----
 
 class TestThreadStartCrossFill:
-    """Mirrors flux-agent beta.8's tolerance for thread.id/sessionId aliasing."""
+    """Mirrors omniworker beta.8's tolerance for thread.id/sessionId aliasing."""
 
     def test_thread_id_under_thread_key(self):
         client = FakeClient()

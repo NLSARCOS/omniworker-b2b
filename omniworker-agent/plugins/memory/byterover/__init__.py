@@ -115,8 +115,8 @@ def _run_brv(args: List[str], timeout: int = _QUERY_TIMEOUT,
 
 def _get_brv_cwd() -> Path:
     """Profile-scoped working directory for the brv context tree."""
-    from flux-agent_constants import get_flux-agent_home
-    return get_flux-agent_home() / "byterover"
+    from omniworker_constants import get_omniworker_home
+    return get_omniworker_home() / "byterover"
 
 
 # ---------------------------------------------------------------------------

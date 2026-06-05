@@ -75,14 +75,14 @@ def _send_imap_id(imap: "imaplib.IMAP4") -> None:
     """
     try:
         try:
-            from flux-agent_cli import __version__ as _flux-agent_version
+            from omniworker_cli import __version__ as _omniworker_version
         except Exception:  # noqa: BLE001 — keep ID best-effort if import fails
-            _flux-agent_version = "0"
+            _omniworker_version = "0"
         imap.xatom(
             "ID",
-            f'("name" "flux-agent-agent" "version" "{_flux-agent_version}" '
+            f'("name" "omniworker-agent" "version" "{_omniworker_version}" '
             '"vendor" "Flux Agent" '
-            '"support-email" "noreply@flux-agent.com")',
+            '"support-email" "noreply@omniworker.com")',
         )
     except Exception as e:  # noqa: BLE001 — best-effort, never fatal
         logger.debug("[Email] IMAP ID command not accepted: %s", e)
@@ -543,7 +543,7 @@ class EmailAdapter(BasePlatformAdapter):
             msg["References"] = original_msg_id
 
         msg["Date"] = formatdate(localtime=True)
-        msg_id = f"<flux-agent-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
+        msg_id = f"<omniworker-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
         msg["Message-ID"] = msg_id
 
         msg.attach(MIMEText(body, "plain", "utf-8"))
@@ -652,7 +652,7 @@ class EmailAdapter(BasePlatformAdapter):
             msg["References"] = original_msg_id
 
         msg["Date"] = formatdate(localtime=True)
-        msg_id = f"<flux-agent-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
+        msg_id = f"<omniworker-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
         msg["Message-ID"] = msg_id
 
         if body:
@@ -733,7 +733,7 @@ class EmailAdapter(BasePlatformAdapter):
             msg["References"] = original_msg_id
 
         msg["Date"] = formatdate(localtime=True)
-        msg_id = f"<flux-agent-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
+        msg_id = f"<omniworker-{uuid.uuid4().hex[:12]}@{self._address.split('@')[1]}>"
         msg["Message-ID"] = msg_id
 
         if body:

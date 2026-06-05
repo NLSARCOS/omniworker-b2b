@@ -6,7 +6,7 @@ author: Flux Agent Agent
 license: MIT
 platforms: [macos]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Notes, Apple, macOS, note-taking]
     related_skills: [obsidian]
 prerequisites:

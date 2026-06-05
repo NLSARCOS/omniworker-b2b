@@ -48,8 +48,8 @@ export function useModelConfig(profile?: string): UseModelConfigResult {
 
   const reload = useCallback(async (): Promise<void> => {
     const [mc, savedModels] = await Promise.all([
-      window.flux-agentAPI.getModelConfig(profile),
-      window.flux-agentAPI.listModels(),
+      window.omniworkerAPI.getModelConfig(profile),
+      window.omniworkerAPI.listModels(),
     ]);
     setCurrentModel(mc.model);
     setCurrentProvider(mc.provider);
@@ -66,7 +66,7 @@ export function useModelConfig(profile?: string): UseModelConfigResult {
 
   const selectModel = useCallback(
     async (provider: string, model: string, baseUrl: string): Promise<void> => {
-      await window.flux-agentAPI.setModelConfig(
+      await window.omniworkerAPI.setModelConfig(
         provider,
         model,
         baseUrl,
@@ -85,7 +85,7 @@ export function useModelConfig(profile?: string): UseModelConfigResult {
         ? currentModel.split("/").pop() || currentModel
         : currentProvider === "auto"
           ? t("chat.auto")
-          : "flux-agent",
+          : "omniworker",
     [currentModel, currentProvider, t],
   );
 

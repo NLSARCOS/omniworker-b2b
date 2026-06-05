@@ -1,12 +1,12 @@
 """Nous Portal upstream adapter.
 
-Reads the user's Nous OAuth state from ``~/.flux-agent/auth.json``, refreshes
+Reads the user's Nous OAuth state from ``~/.omniworker/auth.json``, refreshes
 the access token and mints a fresh agent key when needed, and exposes the
 upstream base URL plus minted bearer for the proxy server to forward to.
 
 The minted ``agent_key`` (not the OAuth ``access_token``) is what
-``inference-api.flux-agent.com`` accepts as a bearer. The refresh helper
-already handles both — see :func:`flux-agent_cli.auth.refresh_nous_oauth_from_state`.
+``inference-api.omniworker.com`` accepts as a bearer. The refresh helper
+already handles both — see :func:`omniworker_cli.auth.refresh_nous_oauth_from_state`.
 """
 
 from __future__ import annotations
@@ -15,18 +15,18 @@ import logging
 import threading
 from typing import Any, Dict, FrozenSet, Optional
 
-from flux-agent_cli.auth import (
+from omniworker_cli.auth import (
     DEFAULT_NOUS_INFERENCE_URL,
     _load_auth_store,
     _save_auth_store,
     _write_shared_nous_state,
     refresh_nous_oauth_from_state,
 )
-from flux-agent_cli.proxy.adapters.base import UpstreamAdapter, UpstreamCredential
+from omniworker_cli.proxy.adapters.base import UpstreamAdapter, UpstreamCredential
 
 logger = logging.getLogger(__name__)
 
-# Endpoints inference-api.flux-agent.com actually serves. Anything else
+# Endpoints inference-api.omniworker.com actually serves. Anything else
 # the proxy will reject with 404 — keeps stray clients from leaking weird
 # requests to the upstream.
 _ALLOWED_PATHS: FrozenSet[str] = frozenset(
@@ -76,7 +76,7 @@ class NousPortalAdapter(UpstreamAdapter):
             state = self._read_state()
             if state is None:
                 raise RuntimeError(
-                    "Not logged into Nous Portal. Run `flux-agent login nous` first."
+                    "Not logged into Nous Portal. Run `omniworker login nous` first."
                 )
 
             try:
@@ -92,7 +92,7 @@ class NousPortalAdapter(UpstreamAdapter):
             if not agent_key:
                 raise RuntimeError(
                     "Nous Portal refresh did not return a usable agent_key. "
-                    "Try `flux-agent login nous` to re-authenticate."
+                    "Try `omniworker login nous` to re-authenticate."
                 )
 
             base_url = refreshed.get("inference_base_url") or DEFAULT_NOUS_INFERENCE_URL
@@ -106,7 +106,7 @@ class NousPortalAdapter(UpstreamAdapter):
 
     # ------------------------------------------------------------------
     # Internal helpers — auth.json access. Kept local rather than added
-    # to flux-agent_cli.auth to avoid expanding that module's public surface.
+    # to omniworker_cli.auth to avoid expanding that module's public surface.
     # ------------------------------------------------------------------
 
     def _read_state(self) -> Optional[Dict[str, Any]]:

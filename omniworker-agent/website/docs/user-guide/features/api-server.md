@@ -1,12 +1,12 @@
 ---
 sidebar_position: 14
 title: "API Server"
-description: "Expose flux-agent-agent as an OpenAI-compatible API for any frontend"
+description: "Expose omniworker-agent as an OpenAI-compatible API for any frontend"
 ---
 
 # API Server
 
-The API server exposes flux-agent-agent as an OpenAI-compatible HTTP endpoint. Any frontend that speaks the OpenAI format — Open WebUI, LobeChat, LibreChat, NextChat, ChatBox, and hundreds more — can connect to flux-agent-agent and use it as a backend.
+The API server exposes omniworker-agent as an OpenAI-compatible HTTP endpoint. Any frontend that speaks the OpenAI format — Open WebUI, LobeChat, LibreChat, NextChat, ChatBox, and hundreds more — can connect to omniworker-agent and use it as a backend.
 
 Your agent handles requests with its full toolset (terminal, file operations, web search, memory, skills) and returns the final response. When streaming, tool progress indicators appear inline so frontends can show what the agent is doing.
 
@@ -14,7 +14,7 @@ Your agent handles requests with its full toolset (terminal, file operations, we
 
 ### 1. Enable the API server
 
-Add to `~/.flux-agent/.env`:
+Add to `~/.omniworker/.env`:
 
 ```bash
 API_SERVER_ENABLED=true
@@ -26,7 +26,7 @@ API_SERVER_KEY=change-me-local-dev
 ### 2. Start the gateway
 
 ```bash
-flux-agent gateway
+omniworker gateway
 ```
 
 You'll see:
@@ -44,7 +44,7 @@ Point any OpenAI-compatible client at `http://localhost:8642/v1`:
 curl http://localhost:8642/v1/chat/completions \
   -H "Authorization: Bearer change-me-local-dev" \
   -H "Content-Type: application/json" \
-  -d '{"model": "flux-agent-agent", "messages": [{"role": "user", "content": "Hello!"}]}'
+  -d '{"model": "omniworker-agent", "messages": [{"role": "user", "content": "Hello!"}]}'
 ```
 
 Or connect Open WebUI, LobeChat, or any other frontend — see the [Open WebUI integration guide](/docs/user-guide/messaging/open-webui) for step-by-step instructions.
@@ -58,7 +58,7 @@ Standard OpenAI Chat Completions format. Stateless — the full conversation is 
 **Request:**
 ```json
 {
-  "model": "flux-agent-agent",
+  "model": "omniworker-agent",
   "messages": [
     {"role": "system", "content": "You are a Python expert."},
     {"role": "user", "content": "Write a fibonacci function"}
@@ -73,7 +73,7 @@ Standard OpenAI Chat Completions format. Stateless — the full conversation is 
   "id": "chatcmpl-abc123",
   "object": "chat.completion",
   "created": 1710000000,
-  "model": "flux-agent-agent",
+  "model": "omniworker-agent",
   "choices": [{
     "index": 0,
     "message": {"role": "assistant", "content": "Here's a fibonacci function..."},
@@ -87,7 +87,7 @@ Standard OpenAI Chat Completions format. Stateless — the full conversation is 
 
 ```json
 {
-  "model": "flux-agent-agent",
+  "model": "omniworker-agent",
   "messages": [
     {
       "role": "user",
@@ -102,10 +102,10 @@ Standard OpenAI Chat Completions format. Stateless — the full conversation is 
 
 Uploaded files (`file` / `input_file` / `file_id`) and non-image `data:` URLs return `400 unsupported_content_type`.
 
-**Streaming** (`"stream": true`): Returns Server-Sent Events (SSE) with token-by-token response chunks. For **Chat Completions**, the stream uses standard `chat.completion.chunk` events plus Flux Agent' custom `flux-agent.tool.progress` event for tool-start UX. For **Responses**, the stream uses OpenAI Responses event types such as `response.created`, `response.output_text.delta`, `response.output_item.added`, `response.output_item.done`, and `response.completed`.
+**Streaming** (`"stream": true`): Returns Server-Sent Events (SSE) with token-by-token response chunks. For **Chat Completions**, the stream uses standard `chat.completion.chunk` events plus Flux Agent' custom `omniworker.tool.progress` event for tool-start UX. For **Responses**, the stream uses OpenAI Responses event types such as `response.created`, `response.output_text.delta`, `response.output_item.added`, `response.output_item.done`, and `response.completed`.
 
 **Tool progress in streams**:
-- **Chat Completions**: Flux Agent emits `event: flux-agent.tool.progress` for tool-start visibility without polluting persisted assistant text.
+- **Chat Completions**: Flux Agent emits `event: omniworker.tool.progress` for tool-start visibility without polluting persisted assistant text.
 - **Responses**: Flux Agent emits spec-native `function_call` and `function_call_output` output items during the SSE stream, so clients can render structured tool UI in real time.
 
 ### POST /v1/responses
@@ -115,7 +115,7 @@ OpenAI Responses API format. Supports server-side conversation state via `previo
 **Request:**
 ```json
 {
-  "model": "flux-agent-agent",
+  "model": "omniworker-agent",
   "input": "What files are in my project?",
   "instructions": "You are a helpful coding assistant.",
   "store": true
@@ -128,7 +128,7 @@ OpenAI Responses API format. Supports server-side conversation state via `previo
   "id": "resp_abc123",
   "object": "response",
   "status": "completed",
-  "model": "flux-agent-agent",
+  "model": "omniworker-agent",
   "output": [
     {"type": "function_call", "name": "terminal", "arguments": "{\"command\": \"ls\"}", "call_id": "call_1"},
     {"type": "function_call_output", "call_id": "call_1", "output": "README.md src/ tests/"},
@@ -142,7 +142,7 @@ OpenAI Responses API format. Supports server-side conversation state via `previo
 
 ```json
 {
-  "model": "flux-agent-agent",
+  "model": "omniworker-agent",
   "input": [
     {
       "role": "user",
@@ -192,7 +192,7 @@ Delete a stored response.
 
 ### GET /v1/models
 
-Lists the agent as an available model. The advertised model name defaults to the [profile](/docs/user-guide/profiles) name (or `flux-agent-agent` for the default profile). Required by most frontends for model discovery.
+Lists the agent as an available model. The advertised model name defaults to the [profile](/docs/user-guide/profiles) name (or `omniworker-agent` for the default profile). Required by most frontends for model discovery.
 
 ### GET /v1/capabilities
 
@@ -200,9 +200,9 @@ Returns a machine-readable description of the API server's stable surface for ex
 
 ```json
 {
-  "object": "flux-agent.api_server.capabilities",
-  "platform": "flux-agent-agent",
-  "model": "flux-agent-agent",
+  "object": "omniworker.api_server.capabilities",
+  "platform": "omniworker-agent",
+  "model": "omniworker-agent",
   "auth": {"type": "bearer", "required": true},
   "features": {
     "chat_completions": true,
@@ -248,11 +248,11 @@ Poll the current run state. This is useful for dashboards that need status witho
 
 ```json
 {
-  "object": "flux-agent.run",
+  "object": "omniworker.run",
   "run_id": "run_abc123",
   "status": "completed",
   "session_id": "space-session",
-  "model": "flux-agent-agent",
+  "model": "omniworker-agent",
   "output": "Done.",
   "usage": {"input_tokens": 50, "output_tokens": 200, "total_tokens": 250}
 }
@@ -278,7 +278,7 @@ List all scheduled jobs.
 
 ### POST /api/jobs
 
-Create a new scheduled job. Body accepts the same shape as `flux-agent cron` — prompt, schedule, skills, provider override, delivery target.
+Create a new scheduled job. Body accepts the same shape as `omniworker cron` — prompt, schedule, skills, provider override, delivery target.
 
 ### GET /api/jobs/\{job_id\}
 
@@ -306,7 +306,7 @@ Trigger the job to run immediately, out of schedule.
 
 ## System Prompt Handling
 
-When a frontend sends a `system` message (Chat Completions) or `instructions` field (Responses API), flux-agent-agent **layers it on top** of its core system prompt. Your agent keeps all its tools, memory, and skills — the frontend's system prompt adds extra instructions.
+When a frontend sends a `system` message (Chat Completions) or `instructions` field (Responses API), omniworker-agent **layers it on top** of its core system prompt. Your agent keeps all its tools, memory, and skills — the frontend's system prompt adds extra instructions.
 
 This means you can customize behavior per-frontend without losing capabilities:
 - Open WebUI system prompt: "You are a Python expert. Always include type hints."
@@ -323,7 +323,7 @@ Authorization: Bearer ***
 Configure the key via `API_SERVER_KEY` env var. If you need a browser to call Flux Agent directly, also set `API_SERVER_CORS_ORIGINS` to an explicit allowlist.
 
 :::warning Security
-The API server gives full access to flux-agent-agent's toolset, **including terminal commands**. When binding to a non-loopback address like `0.0.0.0`, `API_SERVER_KEY` is **required**. Also keep `API_SERVER_CORS_ORIGINS` narrow to control browser access.
+The API server gives full access to omniworker-agent's toolset, **including terminal commands**. When binding to a non-loopback address like `0.0.0.0`, `API_SERVER_KEY` is **required**. Also keep `API_SERVER_CORS_ORIGINS` narrow to control browser access.
 
 The default bind address (`127.0.0.1`) is for local-only use. Browser access is disabled by default; enable it only for explicit trusted origins.
 :::
@@ -339,7 +339,7 @@ The default bind address (`127.0.0.1`) is for local-only use. Browser access is 
 | `API_SERVER_HOST` | `127.0.0.1` | Bind address (localhost only by default) |
 | `API_SERVER_KEY` | _(none)_ | Bearer token for auth |
 | `API_SERVER_CORS_ORIGINS` | _(none)_ | Comma-separated allowed browser origins |
-| `API_SERVER_MODEL_NAME` | _(profile name)_ | Model name on `/v1/models`. Defaults to profile name, or `flux-agent-agent` for default profile. |
+| `API_SERVER_MODEL_NAME` | _(profile name)_ | Model name on `/v1/models`. Defaults to profile name, or `omniworker-agent` for default profile. |
 
 ### config.yaml
 
@@ -395,26 +395,26 @@ To give multiple users their own isolated Flux Agent instance (separate config, 
 
 ```bash
 # Create a profile per user
-flux-agent profile create alice
-flux-agent profile create bob
+omniworker profile create alice
+omniworker profile create bob
 
 # Configure each profile's API server on a different port. API_SERVER_* are env
 # vars (not config.yaml keys), so write them to each profile's .env:
-cat >> ~/.flux-agent/profiles/alice/.env <<EOF
+cat >> ~/.omniworker/profiles/alice/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8643
 API_SERVER_KEY=alice-secret
 EOF
 
-cat >> ~/.flux-agent/profiles/bob/.env <<EOF
+cat >> ~/.omniworker/profiles/bob/.env <<EOF
 API_SERVER_ENABLED=true
 API_SERVER_PORT=8644
 API_SERVER_KEY=bob-secret
 EOF
 
 # Start each profile's gateway
-flux-agent -p alice gateway &
-flux-agent -p bob gateway &
+omniworker -p alice gateway &
+omniworker -p bob gateway &
 ```
 
 Each profile's API server automatically advertises the profile name as the model ID:

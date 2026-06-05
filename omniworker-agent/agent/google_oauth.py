@@ -59,7 +59,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from flux-agent_constants import get_flux-agent_home
+from omniworker_constants import get_omniworker_home
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ logger = logging.getLogger(__name__)
 # OAuth client credential resolution.
 #
 # Resolution order:
-#   1. FLUX AGENT_GEMINI_CLIENT_ID / FLUX AGENT_GEMINI_CLIENT_SECRET env vars (power users)
+#   1. OMNIWORKER_GEMINI_CLIENT_ID / OMNIWORKER_GEMINI_CLIENT_SECRET env vars (power users)
 #   2. Shipped defaults — Google's public gemini-cli desktop OAuth client
 #      (baked into every copy of Google's open-source gemini-cli; NOT
 #      confidential — desktop OAuth clients use PKCE, not client_secret, for
@@ -78,8 +78,8 @@ logger = logging.getLogger(__name__)
 #   4. Fail with a helpful error.
 # =============================================================================
 
-ENV_CLIENT_ID = "FLUX AGENT_GEMINI_CLIENT_ID"
-ENV_CLIENT_SECRET = "FLUX AGENT_GEMINI_CLIENT_SECRET"
+ENV_CLIENT_ID = "OMNIWORKER_GEMINI_CLIENT_ID"
+ENV_CLIENT_SECRET = "OMNIWORKER_GEMINI_CLIENT_SECRET"
 
 # Public gemini-cli desktop OAuth client (shipped in Google's open-source
 # gemini-cli MIT repo). Composed piecewise to keep the constants readable and
@@ -134,7 +134,7 @@ CALLBACK_WAIT_SECONDS = 300
 LOCK_TIMEOUT_SECONDS = 30.0
 
 # Headless env detection
-_HEADLESS_ENV_VARS = ("SSH_CONNECTION", "SSH_CLIENT", "SSH_TTY", "FLUX AGENT_HEADLESS")
+_HEADLESS_ENV_VARS = ("SSH_CONNECTION", "SSH_CLIENT", "SSH_TTY", "OMNIWORKER_HEADLESS")
 
 
 # =============================================================================
@@ -154,7 +154,7 @@ class GoogleOAuthError(RuntimeError):
 # =============================================================================
 
 def _credentials_path() -> Path:
-    return get_flux-agent_home() / "auth" / "google_oauth.json"
+    return get_omniworker_home() / "auth" / "google_oauth.json"
 
 
 def _lock_path() -> Path:
@@ -363,7 +363,7 @@ def _require_client_id() -> str:
             "Flux Agent looks for a locally installed gemini-cli to source the OAuth client. "
             "Either:\n"
             "  1. Install it: npm install -g @google/gemini-cli  (or brew install gemini-cli)\n"
-            "  2. Set FLUX AGENT_GEMINI_CLIENT_ID and FLUX AGENT_GEMINI_CLIENT_SECRET in ~/.hermes/.env\n"
+            "  2. Set OMNIWORKER_GEMINI_CLIENT_ID and OMNIWORKER_GEMINI_CLIENT_SECRET in ~/.hermes/.env\n"
             "\n"
             "Register a Desktop OAuth client at:\n"
             "  https://console.cloud.google.com/apis/credentials\n"
@@ -1051,7 +1051,7 @@ def run_gemini_oauth_login_pure() -> Dict[str, Any]:
 def resolve_project_id_from_env() -> str:
     """Return a GCP project ID from env vars, in priority order."""
     for var in (
-        "FLUX AGENT_GEMINI_PROJECT_ID",
+        "OMNIWORKER_GEMINI_PROJECT_ID",
         "GOOGLE_CLOUD_PROJECT",
         "GOOGLE_CLOUD_PROJECT_ID",
     ):

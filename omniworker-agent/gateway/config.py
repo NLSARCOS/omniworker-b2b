@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Callable
 from enum import Enum
 
-from flux-agent_cli.config import get_flux-agent_home
+from omniworker_cli.config import get_omniworker_home
 from utils import is_truthy_value
 
 logger = logging.getLogger(__name__)
@@ -467,7 +467,7 @@ class GatewayConfig:
     quick_commands: Dict[str, Any] = field(default_factory=dict)
     
     # Storage paths
-    sessions_dir: Path = field(default_factory=lambda: get_flux-agent_home() / "sessions")
+    sessions_dir: Path = field(default_factory=lambda: get_omniworker_home() / "sessions")
     
     # Delivery settings
     always_log_local: bool = True  # Always save cron outputs to local files
@@ -613,7 +613,7 @@ class GatewayConfig:
         if "default_reset_policy" in data:
             default_policy = SessionResetPolicy.from_dict(data["default_reset_policy"])
         
-        sessions_dir = get_flux-agent_home() / "sessions"
+        sessions_dir = get_omniworker_home() / "sessions"
         if "sessions_dir" in data:
             sessions_dir = Path(data["sessions_dir"])
         
@@ -688,7 +688,7 @@ def load_gateway_config() -> GatewayConfig:
     3. ~/.hermes/gateway.json (legacy — provides defaults under config.yaml)
     4. Built-in defaults
     """
-    _home = get_flux-agent_home()
+    _home = get_omniworker_home()
     gw_data: dict = {}
 
     # Legacy fallback: gateway.json provides the base layer.
@@ -786,7 +786,7 @@ def load_gateway_config() -> GatewayConfig:
             # Iterate built-in platforms plus any registered plugin platforms
             # so plugin authors get the same shared-key bridging (#24836).
             try:
-                from flux-agent_cli.plugins import discover_plugins
+                from omniworker_cli.plugins import discover_plugins
                 discover_plugins()  # idempotent
                 from gateway.platform_registry import platform_registry as _pr
             except Exception as e:
@@ -1222,7 +1222,7 @@ def _validate_gateway_config(config: "GatewayConfig") -> None:
     # without changing placeholder values get a clear startup error instead
     # of a confusing "auth failed" from the platform API.
     try:
-        from flux-agent_cli.auth import has_usable_secret
+        from omniworker_cli.auth import has_usable_secret
     except ImportError:
         has_usable_secret = None  # type: ignore[assignment]
 
@@ -1837,7 +1837,7 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
     # project_id / subscription_name) can supply ``env_enablement_fn`` on
     # their PlatformEntry — called here BEFORE adapter construction.
     try:
-        from flux-agent_cli.plugins import discover_plugins
+        from omniworker_cli.plugins import discover_plugins
         discover_plugins()  # idempotent
         from gateway.platform_registry import platform_registry
         for entry in platform_registry.plugin_entries():

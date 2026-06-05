@@ -55,14 +55,14 @@ def _is_gh_copilot_deprecation_message(stderr_text: str) -> bool:
 
 def _resolve_command() -> str:
     return (
-        os.getenv("FLUX AGENT_COPILOT_ACP_COMMAND", "").strip()
+        os.getenv("OMNIWORKER_COPILOT_ACP_COMMAND", "").strip()
         or os.getenv("COPILOT_CLI_PATH", "").strip()
         or "copilot"
     )
 
 
 def _resolve_args() -> list[str]:
-    raw = os.getenv("FLUX AGENT_COPILOT_ACP_ARGS", "").strip()
+    raw = os.getenv("OMNIWORKER_COPILOT_ACP_ARGS", "").strip()
     if not raw:
         return ["--acp", "--stdio"]
     return shlex.split(raw)
@@ -72,7 +72,7 @@ def _resolve_home_dir() -> str:
     """Return a stable HOME for child ACP processes."""
 
     try:
-        from flux-agent_constants import get_subprocess_home
+        from omniworker_constants import get_subprocess_home
 
         profile_home = get_subprocess_home()
         if profile_home:
@@ -98,7 +98,7 @@ def _resolve_home_dir() -> str:
         pass
 
     # Last resort: /tmp (writable on any POSIX system). Avoids crashing the
-    # subprocess with no HOME; callers can set FLUX AGENT_HOME explicitly if they
+    # subprocess with no HOME; callers can set OMNIWORKER_HOME explicitly if they
     # need a different writable dir.
     return "/tmp"
 
@@ -450,7 +450,7 @@ class CopilotACPClient:
         except FileNotFoundError as exc:
             raise RuntimeError(
                 f"Could not start Copilot ACP command '{self._acp_command}'. "
-                "Install GitHub Copilot CLI or set FLUX AGENT_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
+                "Install GitHub Copilot CLI or set OMNIWORKER_COPILOT_ACP_COMMAND/COPILOT_CLI_PATH."
             ) from exc
 
         if proc.stdin is None or proc.stdout is None:
@@ -538,7 +538,7 @@ class CopilotACPClient:
                         "  # then verify with: copilot --help\n\n"
                         "If `copilot` already resolves to the new CLI but you still see this,\n"
                         "point Flux Agent at it explicitly:\n"
-                        "  export FLUX AGENT_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
+                        "  export OMNIWORKER_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
                         "Alternative: use the `copilot` provider (no ACP, hits the Copilot API\n"
                         "directly with a Copilot subscription token) via `hermes setup`.\n\n"
                         f"Original error:\n{stderr_text}"

@@ -41,7 +41,7 @@ Before fanning out, you must ground the decomposition in the profiles that actua
 
 Use one of these:
 
-- `flux-agent profile list` — prints the table of profiles configured on this machine. Run it through your terminal tool if you have one; otherwise ask the user.
+- `omniworker profile list` — prints the table of profiles configured on this machine. Run it through your terminal tool if you have one; otherwise ask the user.
 - `kanban_list(assignee="<some-name>")` — sanity-check a single name. Returns an empty list (rather than an error) for an unknown assignee, so this only confirms a name you're already considering.
 - **Just ask the user.** "What profiles do you have set up?" is a fine first turn when the goal needs more than one specialist.
 
@@ -108,7 +108,7 @@ t1 = kanban_create(
     title="research: Postgres cost vs current",
     assignee="<profile-A>",  # whichever profile handles research on this setup
     body="Compare estimated infrastructure costs, migration costs, and ongoing ops costs over a 3-year window. Sources: AWS/GCP pricing, team time estimates, current Postgres bills from peers.",
-    tenant=os.environ.get("FLUX AGENT_TENANT"),
+    tenant=os.environ.get("OMNIWORKER_TENANT"),
 )["task_id"]
 
 t2 = kanban_create(
@@ -164,7 +164,7 @@ Tell them what you created in plain prose, naming the actual profiles you used:
 > - **T3** (`<profile-B>`): synthesizes T1 + T2 into a recommendation
 > - **T4** (`<profile-C>`): turns T3 into a CTO memo
 >
-> The dispatcher will pick up T1 and T2 now. T3 starts when both finish. You'll get a gateway ping when T4 completes. Use the dashboard or `flux-agent kanban tail <id>` to follow along.
+> The dispatcher will pick up T1 and T2 now. T3 starts when both finish. You'll get a gateway ping when T4 completes. Use the dashboard or `omniworker kanban tail <id>` to follow along.
 
 ## Common patterns
 
@@ -194,14 +194,14 @@ Tell them what you created in plain prose, naming the actual profiles you used:
 
 **Don't pre-create the whole graph if the shape depends on intermediate findings.** If T3's structure depends on what T1 and T2 find, let T3 exist as a "synthesize findings" task whose own first step is to read parent handoffs and plan the rest. Orchestrators can spawn orchestrators.
 
-**Tenant inheritance.** If `FLUX AGENT_TENANT` is set in your env, pass `tenant=os.environ.get("FLUX AGENT_TENANT")` on every `kanban_create` call so child tasks stay in the same namespace.
+**Tenant inheritance.** If `OMNIWORKER_TENANT` is set in your env, pass `tenant=os.environ.get("OMNIWORKER_TENANT")` on every `kanban_create` call so child tasks stay in the same namespace.
 
 ## Recovering stuck workers
 
 When a worker profile keeps crashing, hallucinating, or getting blocked by its own mistakes (usually: wrong model, missing skill, broken credential), the kanban dashboard flags the task with a ⚠ badge and opens a **Recovery** section in the drawer. Three primary actions:
 
-1. **Reclaim** (or `flux-agent kanban reclaim <task_id>`) — abort the running worker immediately and reset the task to `ready`. The existing claim TTL is ~15 min; this is the fast path out.
-2. **Reassign** (or `flux-agent kanban reassign <task_id> <new-profile> --reclaim`) — switch the task to a different profile (one that exists on this setup) and let the dispatcher pick it up with a fresh worker.
-3. **Change profile model** — the dashboard prints a copy-paste hint for `flux-agent -p <profile> model` since profile config lives on disk; edit it in a terminal, then Reclaim to retry with the new model.
+1. **Reclaim** (or `omniworker kanban reclaim <task_id>`) — abort the running worker immediately and reset the task to `ready`. The existing claim TTL is ~15 min; this is the fast path out.
+2. **Reassign** (or `omniworker kanban reassign <task_id> <new-profile> --reclaim`) — switch the task to a different profile (one that exists on this setup) and let the dispatcher pick it up with a fresh worker.
+3. **Change profile model** — the dashboard prints a copy-paste hint for `omniworker -p <profile> model` since profile config lives on disk; edit it in a terminal, then Reclaim to retry with the new model.
 
 Hallucination warnings appear on tasks where a worker's `kanban_complete(created_cards=[...])` claim included card ids that don't exist or weren't created by the worker's profile (the gate blocks the completion), or where the free-form summary references `t_<hex>` ids that don't resolve (advisory prose scan, non-blocking). Both produce audit events that persist even after recovery actions — the trail stays for debugging.

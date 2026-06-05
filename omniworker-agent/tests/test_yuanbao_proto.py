@@ -14,7 +14,7 @@ test_yuanbao_proto.py - yuanbao_proto 单元测试
 import sys
 import os
 
-# 确保 flux-agent-agent 根目录在 sys.path 中
+# 确保 omniworker-agent 根目录在 sys.path 中
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
@@ -415,7 +415,7 @@ class TestEncodeOutbound:
         dec = decode_conn_msg(result)
         assert dec["head"]["cmd"] == "send_c2c_message"
         assert dec["head"]["msg_id"] == "msg-001"
-        assert dec["head"]["module"] == "yuanbao_flux-agent_proxy"
+        assert dec["head"]["module"] == "yuanbao_omniworker_proxy"
         assert len(dec["data"]) > 0
 
     def test_encode_send_group_message(self):
@@ -534,7 +534,7 @@ class TestConstants:
 
     def test_pkg_prefix(self):
         for k, v in BIZ_SERVICES.items():
-            assert v.startswith("yuanbao_flux-agent_proxy"), \
+            assert v.startswith("yuanbao_omniworker_proxy"), \
                 f"{k}: unexpected prefix in {v}"
 
 
@@ -632,7 +632,7 @@ class TestEndToEnd:
             cmd="/im/new_message",
             seq_no=77,
             msg_id="push-abc",
-            module="yuanbao_flux-agent_proxy",
+            module="yuanbao_omniworker_proxy",
             data=biz_payload,
             need_ack=True,
         )

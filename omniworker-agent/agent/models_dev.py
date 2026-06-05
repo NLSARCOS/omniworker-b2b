@@ -184,8 +184,8 @@ _MODELS_DEV_TO_PROVIDER: Optional[Dict[str, str]] = None
 
 def _get_cache_path() -> Path:
     """Return path to disk cache file."""
-    from flux-agent_constants import get_flux-agent_home
-    return get_flux-agent_home() / "models_dev_cache.json"
+    from omniworker_constants import get_omniworker_home
+    return get_omniworker_home() / "models_dev_cache.json"
 
 
 def _load_disk_cache() -> Dict[str, Any]:
@@ -511,7 +511,7 @@ def list_provider_models(provider: str) -> List[str]:
 
     Returns an empty list if the provider is unknown or has no data.
     """
-    from flux-agent_cli.models import normalize_provider
+    from omniworker_cli.models import normalize_provider
     provider = normalize_provider(provider) or provider
     
     models = _get_provider_models(provider)

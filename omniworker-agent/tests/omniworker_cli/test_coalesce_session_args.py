@@ -1,7 +1,7 @@
 """Tests for _coalesce_session_name_args — multi-word session name merging."""
 
 import pytest
-from flux-agent_cli.main import _coalesce_session_name_args
+from omniworker_cli.main import _coalesce_session_name_args
 
 
 class TestCoalesceSessionNameArgs:
@@ -10,46 +10,46 @@ class TestCoalesceSessionNameArgs:
     # ── -c / --continue ──────────────────────────────────────────────────
 
     def test_continue_multiword_unquoted(self):
-        """flux-agent -c Pokemon Agent Dev → -c 'Pokemon Agent Dev'"""
+        """omniworker -c Pokemon Agent Dev → -c 'Pokemon Agent Dev'"""
         assert _coalesce_session_name_args(
             ["-c", "Pokemon", "Agent", "Dev"]
         ) == ["-c", "Pokemon Agent Dev"]
 
     def test_continue_long_form_multiword(self):
-        """flux-agent --continue Pokemon Agent Dev"""
+        """omniworker --continue Pokemon Agent Dev"""
         assert _coalesce_session_name_args(
             ["--continue", "Pokemon", "Agent", "Dev"]
         ) == ["--continue", "Pokemon Agent Dev"]
 
     def test_continue_single_word(self):
-        """flux-agent -c MyProject (no merging needed)"""
+        """omniworker -c MyProject (no merging needed)"""
         assert _coalesce_session_name_args(["-c", "MyProject"]) == [
             "-c",
             "MyProject",
         ]
 
     def test_continue_already_quoted(self):
-        """flux-agent -c 'Pokemon Agent Dev' (shell already merged)"""
+        """omniworker -c 'Pokemon Agent Dev' (shell already merged)"""
         assert _coalesce_session_name_args(
             ["-c", "Pokemon Agent Dev"]
         ) == ["-c", "Pokemon Agent Dev"]
 
     def test_continue_bare_flag(self):
-        """flux-agent -c (no name — means 'continue latest')"""
+        """omniworker -c (no name — means 'continue latest')"""
         assert _coalesce_session_name_args(["-c"]) == ["-c"]
 
     def test_continue_followed_by_flag(self):
-        """flux-agent -c -w (no name consumed, -w stays separate)"""
+        """omniworker -c -w (no name consumed, -w stays separate)"""
         assert _coalesce_session_name_args(["-c", "-w"]) == ["-c", "-w"]
 
     def test_continue_multiword_then_flag(self):
-        """flux-agent -c my project -w"""
+        """omniworker -c my project -w"""
         assert _coalesce_session_name_args(
             ["-c", "my", "project", "-w"]
         ) == ["-c", "my project", "-w"]
 
     def test_continue_multiword_then_subcommand(self):
-        """flux-agent -c my project chat -q hello"""
+        """omniworker -c my project chat -q hello"""
         assert _coalesce_session_name_args(
             ["-c", "my", "project", "chat", "-q", "hello"]
         ) == ["-c", "my project", "chat", "-q", "hello"]
@@ -57,19 +57,19 @@ class TestCoalesceSessionNameArgs:
     # ── -r / --resume ────────────────────────────────────────────────────
 
     def test_resume_multiword(self):
-        """flux-agent -r My Session Name"""
+        """omniworker -r My Session Name"""
         assert _coalesce_session_name_args(
             ["-r", "My", "Session", "Name"]
         ) == ["-r", "My Session Name"]
 
     def test_resume_long_form_multiword(self):
-        """flux-agent --resume My Session Name"""
+        """omniworker --resume My Session Name"""
         assert _coalesce_session_name_args(
             ["--resume", "My", "Session", "Name"]
         ) == ["--resume", "My Session Name"]
 
     def test_resume_multiword_then_flag(self):
-        """flux-agent -r My Session -w"""
+        """omniworker -r My Session -w"""
         assert _coalesce_session_name_args(
             ["-r", "My", "Session", "-w"]
         ) == ["-r", "My Session", "-w"]
@@ -77,13 +77,13 @@ class TestCoalesceSessionNameArgs:
     # ── combined flags ───────────────────────────────────────────────────
 
     def test_worktree_and_continue_multiword(self):
-        """flux-agent -w -c Pokemon Agent Dev (the original failing case)"""
+        """omniworker -w -c Pokemon Agent Dev (the original failing case)"""
         assert _coalesce_session_name_args(
             ["-w", "-c", "Pokemon", "Agent", "Dev"]
         ) == ["-w", "-c", "Pokemon Agent Dev"]
 
     def test_continue_multiword_and_worktree(self):
-        """flux-agent -c Pokemon Agent Dev -w (order reversed)"""
+        """omniworker -c Pokemon Agent Dev -w (order reversed)"""
         assert _coalesce_session_name_args(
             ["-c", "Pokemon", "Agent", "Dev", "-w"]
         ) == ["-c", "Pokemon Agent Dev", "-w"]
@@ -91,7 +91,7 @@ class TestCoalesceSessionNameArgs:
     # ── passthrough (no session flags) ───────────────────────────────────
 
     def test_no_session_flags_passthrough(self):
-        """flux-agent -w chat -q hello (nothing to merge)"""
+        """omniworker -w chat -q hello (nothing to merge)"""
         result = _coalesce_session_name_args(["-w", "chat", "-q", "hello"])
         assert result == ["-w", "chat", "-q", "hello"]
 
@@ -101,13 +101,13 @@ class TestCoalesceSessionNameArgs:
     # ── subcommand boundary ──────────────────────────────────────────────
 
     def test_stops_at_sessions_subcommand(self):
-        """flux-agent -c my project sessions list → stops before 'sessions'"""
+        """omniworker -c my project sessions list → stops before 'sessions'"""
         assert _coalesce_session_name_args(
             ["-c", "my", "project", "sessions", "list"]
         ) == ["-c", "my project", "sessions", "list"]
 
     def test_stops_at_setup_subcommand(self):
-        """flux-agent -c my setup → 'setup' is a subcommand, not part of name"""
+        """omniworker -c my setup → 'setup' is a subcommand, not part of name"""
         assert _coalesce_session_name_args(
             ["-c", "my", "setup"]
         ) == ["-c", "my", "setup"]

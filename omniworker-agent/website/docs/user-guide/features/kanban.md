@@ -8,14 +8,14 @@ description: "Durable SQLite-backed task board for coordinating multiple Flux Ag
 
 > **Want a walkthrough?** Read the [Kanban tutorial](./kanban-tutorial) — four user stories (solo dev, fleet farming, role pipeline with retry, circuit breaker) with dashboard screenshots of each. This page is the reference; the tutorial is the narrative.
 
-Flux Agent Kanban is a durable task board, shared across all your Flux Agent profiles, that lets multiple named agents collaborate on work without fragile in-process subagent swarms. Every task is a row in `~/.flux-agent/kanban.db`; every handoff is a row anyone can read and write; every worker is a full OS process with its own identity.
+Flux Agent Kanban is a durable task board, shared across all your Flux Agent profiles, that lets multiple named agents collaborate on work without fragile in-process subagent swarms. Every task is a row in `~/.omniworker/kanban.db`; every handoff is a row anyone can read and write; every worker is a full OS process with its own identity.
 
 ### Two surfaces: the model talks through tools, you talk through the CLI
 
-The board has two front doors, both backed by the same `~/.flux-agent/kanban.db`:
+The board has two front doors, both backed by the same `~/.omniworker/kanban.db`:
 
-- **Agents drive the board through a dedicated `kanban_*` toolset** — `kanban_show`, `kanban_list`, `kanban_complete`, `kanban_block`, `kanban_heartbeat`, `kanban_comment`, `kanban_create`, `kanban_link`, `kanban_unblock`. The dispatcher spawns each worker with these tools already in its schema; orchestrator profiles can also enable the `kanban` toolset explicitly. The model reads and routes tasks by calling tools directly, *not* by shelling out to `flux-agent kanban`. See [How workers interact with the board](#how-workers-interact-with-the-board) below.
-- **You (and scripts, and cron) drive the board through `flux-agent kanban …`** on the CLI, `/kanban …` as a slash command, or the dashboard. These are for humans and automation — the places without a tool-calling model behind them.
+- **Agents drive the board through a dedicated `kanban_*` toolset** — `kanban_show`, `kanban_list`, `kanban_complete`, `kanban_block`, `kanban_heartbeat`, `kanban_comment`, `kanban_create`, `kanban_link`, `kanban_unblock`. The dispatcher spawns each worker with these tools already in its schema; orchestrator profiles can also enable the `kanban` toolset explicitly. The model reads and routes tasks by calling tools directly, *not* by shelling out to `omniworker kanban`. See [How workers interact with the board](#how-workers-interact-with-the-board) below.
+- **You (and scripts, and cron) drive the board through `omniworker kanban …`** on the CLI, `/kanban …` as a slash command, or the dashboard. These are for humans and automation — the places without a tool-calling model behind them.
 
 Both surfaces route through the same `kanban_db` layer, so reads see a consistent view and writes can't drift. The rest of this page shows CLI examples because they're easy to copy-paste, but every CLI verb has a tool-call equivalent the model uses.
 
@@ -27,7 +27,7 @@ This is the shape that covers the workloads `delegate_task` can't:
 - **Engineering pipelines** — decompose → implement in parallel worktrees → review → iterate → PR.
 - **Fleet work** — one specialist managing N subjects (50 social accounts, 12 monitored services).
 
-For the full design rationale, comparative analysis against Cline Kanban / Paperclip / NanoClaw / Google Gemini Enterprise, and the eight canonical collaboration patterns, see `docs/flux-agent-kanban-v1-spec.pdf` in the repository.
+For the full design rationale, comparative analysis against Cline Kanban / Paperclip / NanoClaw / Google Gemini Enterprise, and the eight canonical collaboration patterns, see `docs/omniworker-kanban-v1-spec.pdf` in the repository.
 
 ## Kanban vs. `delegate_task`
 
@@ -63,26 +63,26 @@ They coexist: a kanban worker may call `delegate_task` internally during its run
 - **Link** — `task_links` row recording a parent → child dependency. The dispatcher promotes `todo → ready` when all parents are `done`.
 - **Comment** — the inter-agent protocol. Agents and humans append comments; when a worker is (re-)spawned it reads the full comment thread as part of its context.
 - **Workspace** — the directory a worker operates in. Three kinds:
-  - `scratch` (default) — fresh tmp dir under `~/.flux-agent/kanban/workspaces/<id>/` (or `~/.flux-agent/kanban/boards/<slug>/workspaces/<id>/` on non-default boards).
+  - `scratch` (default) — fresh tmp dir under `~/.omniworker/kanban/workspaces/<id>/` (or `~/.omniworker/kanban/boards/<slug>/workspaces/<id>/` on non-default boards).
   - `dir:<path>` — an existing shared directory (Obsidian vault, mail ops dir, per-account folder). **Must be an absolute path.** Relative paths like `dir:../tenants/foo/` are rejected at dispatch because they'd resolve against whatever CWD the dispatcher happens to be in, which is ambiguous and a confused-deputy escape vector. The path is otherwise trusted — it's your box, your filesystem, the worker runs with your uid. This is the trusted-local-user threat model; kanban is single-host by design.
   - `worktree` — a git worktree under `.worktrees/<id>/` for coding tasks. Worker-side `git worktree add` creates it.
-- **Dispatcher** — a long-lived loop that, every N seconds (default 60): reclaims stale claims, reclaims crashed workers (PID gone but TTL not yet expired), promotes ready tasks, atomically claims, spawns assigned profiles. Runs **inside the gateway** by default (`kanban.dispatch_in_gateway: true`). One dispatcher sweeps all boards per tick; workers are spawned with `FLUX AGENT_KANBAN_BOARD` pinned so they can't see other boards. After `kanban.failure_limit` consecutive spawn failures on the same task (default: 2) the dispatcher auto-blocks it with the last error as the reason — prevents thrashing on tasks whose profile doesn't exist, workspace can't mount, etc.
+- **Dispatcher** — a long-lived loop that, every N seconds (default 60): reclaims stale claims, reclaims crashed workers (PID gone but TTL not yet expired), promotes ready tasks, atomically claims, spawns assigned profiles. Runs **inside the gateway** by default (`kanban.dispatch_in_gateway: true`). One dispatcher sweeps all boards per tick; workers are spawned with `OMNIWORKER_KANBAN_BOARD` pinned so they can't see other boards. After `kanban.failure_limit` consecutive spawn failures on the same task (default: 2) the dispatcher auto-blocks it with the last error as the reason — prevents thrashing on tasks whose profile doesn't exist, workspace can't mount, etc.
 - **Tenant** — optional string namespace *within* a board. One specialist fleet can serve multiple businesses (`--tenant business-a`) with data isolation by workspace path and memory key prefix. Tenants are a soft filter; boards are the hard isolation boundary.
 
 ## Boards (multi-project)
 
 Boards let you separate unrelated streams of work — one per project, repo,
 or domain — into isolated queues. A new install has exactly one board
-called `default` (DB at `~/.flux-agent/kanban.db` for back-compat). Users who
+called `default` (DB at `~/.omniworker/kanban.db` for back-compat). Users who
 only want one stream of work never need to know about boards; the feature
 is opt-in.
 
 Per-board isolation is absolute:
 
-- Separate SQLite DB per board (`~/.flux-agent/kanban/boards/<slug>/kanban.db`).
+- Separate SQLite DB per board (`~/.omniworker/kanban/boards/<slug>/kanban.db`).
 - Separate `workspaces/` and `logs/` directories.
 - Workers spawned for a task see **only** their board's tasks — the
-  dispatcher sets `FLUX AGENT_KANBAN_BOARD` in the child env and every
+  dispatcher sets `OMNIWORKER_KANBAN_BOARD` in the child env and every
   `kanban_*` tool the worker has access to reads it.
 - Linking tasks across boards is not allowed (keeps the schema simple; if
   you really need cross-project refs, use free-text mentions and look
@@ -92,40 +92,40 @@ Per-board isolation is absolute:
 
 ```bash
 # See what's on disk. Fresh installs show only "default".
-flux-agent kanban boards list
+omniworker kanban boards list
 
 # Create a new board.
-flux-agent kanban boards create atm10-server \
+omniworker kanban boards create atm10-server \
     --name "ATM10 Server" \
     --description "Minecraft modded server ops" \
     --icon 🎮 \
     --switch                   # optional: make it the active board
 
 # Operate on a specific board without switching.
-flux-agent kanban --board atm10-server list
-flux-agent kanban --board atm10-server create "Restart ATM server" --assignee ops
+omniworker kanban --board atm10-server list
+omniworker kanban --board atm10-server create "Restart ATM server" --assignee ops
 
 # Change which board is "current" for subsequent calls.
-flux-agent kanban boards switch atm10-server
-flux-agent kanban boards show             # who's active right now?
+omniworker kanban boards switch atm10-server
+omniworker kanban boards show             # who's active right now?
 
 # Rename the display name (the slug is immutable — it's the directory name).
-flux-agent kanban boards rename atm10-server "ATM10 (Prod)"
+omniworker kanban boards rename atm10-server "ATM10 (Prod)"
 
 # Archive (default) — moves the board's dir to boards/_archived/<slug>-<ts>/.
 # Recoverable by moving the dir back.
-flux-agent kanban boards rm atm10-server
+omniworker kanban boards rm atm10-server
 
 # Hard delete — `rm -rf` the board dir. No recovery.
-flux-agent kanban boards rm atm10-server --delete
+omniworker kanban boards rm atm10-server --delete
 ```
 
 Board resolution order (highest precedence first):
 
 1. Explicit `--board <slug>` on the CLI call.
-2. `FLUX AGENT_KANBAN_BOARD` env var (set by the dispatcher when spawning a
+2. `OMNIWORKER_KANBAN_BOARD` env var (set by the dispatcher when spawning a
    worker, so workers can't see other boards).
-3. `~/.flux-agent/kanban/current` — the slug persisted by `flux-agent kanban
+3. `~/.omniworker/kanban/current` — the slug persisted by `omniworker kanban
    boards switch`.
 4. `default`.
 
@@ -136,7 +136,7 @@ so path-traversal tricks can't name a board.
 
 ### Managing boards from the dashboard
 
-`flux-agent dashboard` → Kanban tab shows a board switcher at the top as soon
+`omniworker dashboard` → Kanban tab shows a board switcher at the top as soon
 as more than one board exists (or any board has tasks). Single-board users
 see only a small `+ New board` button; the switcher is hidden until it
 matters.
@@ -161,23 +161,23 @@ The commands below are **you** (the human) setting up the board and creating tas
 
 ```bash
 # 1. Create the board (you)
-flux-agent kanban init
+omniworker kanban init
 
 # 2. Start the gateway (hosts the embedded dispatcher)
-flux-agent gateway start
+omniworker gateway start
 
 # 3. Create a task (you — or an orchestrator agent via kanban_create)
-flux-agent kanban create "research AI funding landscape" --assignee researcher
+omniworker kanban create "research AI funding landscape" --assignee researcher
 
 # 4. Watch activity live (you)
-flux-agent kanban watch
+omniworker kanban watch
 
 # 5. See the board (you)
-flux-agent kanban list
-flux-agent kanban stats
+omniworker kanban list
+omniworker kanban stats
 ```
 
-When the dispatcher picks up `t_abcd` and spawns the `researcher` profile, the very first thing that worker's model does is call `kanban_show()` to read its task. It doesn't run `flux-agent kanban show t_abcd`.
+When the dispatcher picks up `t_abcd` and spawns the `researcher` profile, the very first thing that worker's model does is call `kanban_show()` to read its task. It doesn't run `omniworker kanban show t_abcd`.
 
 ### Gateway-embedded dispatcher (default)
 
@@ -192,14 +192,14 @@ kanban:
   dispatch_interval_seconds: 60    # default
 ```
 
-Override the config flag at runtime via `FLUX AGENT_KANBAN_DISPATCH_IN_GATEWAY=0`
-for debugging. Standard gateway supervision applies: run `flux-agent gateway
+Override the config flag at runtime via `OMNIWORKER_KANBAN_DISPATCH_IN_GATEWAY=0`
+for debugging. Standard gateway supervision applies: run `omniworker gateway
 start` directly, or wire the gateway up as a systemd user unit (see the
 gateway docs). Without a running gateway, `ready` tasks stay where they are
-until one comes up — `flux-agent kanban create` warns about this at creation
+until one comes up — `omniworker kanban create` warns about this at creation
 time.
 
-Running `flux-agent kanban daemon` as a separate process is **deprecated**;
+Running `omniworker kanban daemon` as a separate process is **deprecated**;
 use the gateway. If you truly cannot run the gateway (headless host
 policy forbids long-lived services, etc.) a `--force` escape hatch keeps
 the old standalone daemon alive for one release cycle, but running both
@@ -211,7 +211,7 @@ a gateway-embedded dispatcher AND a standalone daemon against the same
 ```bash
 # First call creates the task. Any subsequent call with the same key
 # returns the existing task id instead of duplicating.
-flux-agent kanban create "nightly ops review" \
+omniworker kanban create "nightly ops review" \
     --assignee ops \
     --idempotency-key "nightly-ops-$(date -u +%Y-%m-%d)" \
     --json
@@ -223,15 +223,15 @@ All the lifecycle verbs accept multiple ids so you can clean up a batch
 in one command:
 
 ```bash
-flux-agent kanban complete t_abc t_def t_hij --result "batch wrap"
-flux-agent kanban archive  t_abc t_def t_hij
-flux-agent kanban unblock  t_abc t_def
-flux-agent kanban block    t_abc "need input" --ids t_def t_hij
+omniworker kanban complete t_abc t_def t_hij --result "batch wrap"
+omniworker kanban archive  t_abc t_def t_hij
+omniworker kanban unblock  t_abc t_def
+omniworker kanban block    t_abc "need input" --ids t_def t_hij
 ```
 
 ## How workers interact with the board
 
-**Workers do not shell out to `flux-agent kanban`.** When the dispatcher spawns a worker it sets `FLUX AGENT_KANBAN_TASK=t_abcd` in the child's env, and that env var flips on a dedicated **kanban toolset** in the model's schema. The same toolset is also available to orchestrator profiles that enable `kanban` in their toolsets config. These tools read and mutate the board directly via the Python `kanban_db` layer, same as the CLI does. A running worker calls these like any other tool; it never sees or needs the `flux-agent kanban` CLI.
+**Workers do not shell out to `omniworker kanban`.** When the dispatcher spawns a worker it sets `OMNIWORKER_KANBAN_TASK=t_abcd` in the child's env, and that env var flips on a dedicated **kanban toolset** in the model's schema. The same toolset is also available to orchestrator profiles that enable `kanban` in their toolsets config. These tools read and mutate the board directly via the Python `kanban_db` layer, same as the CLI does. A running worker calls these like any other tool; it never sees or needs the `omniworker kanban` CLI.
 
 | Tool | Purpose | Required params |
 |---|---|---|
@@ -249,7 +249,7 @@ A typical worker turn looks like:
 
 ```
 # Model's tool calls, in order:
-kanban_show()                                     # no args — uses FLUX AGENT_KANBAN_TASK
+kanban_show()                                     # no args — uses OMNIWORKER_KANBAN_TASK
 # (model reads the returned worker_context, does the work via terminal/file tools)
 kanban_heartbeat(note="halfway through — 4 of 8 files transformed")
 # (more work)
@@ -282,15 +282,15 @@ kanban_complete(summary="decomposed into 2 research tasks + 1 writer; linked dep
 
 The "(Orchestrators)" tools — `kanban_list`, `kanban_create`, `kanban_link`, `kanban_unblock`, and `kanban_comment` on foreign tasks — are available through the same toolset; the convention (enforced by the `kanban-orchestrator` skill) is that worker profiles don't fan out or route unrelated work, and orchestrator profiles don't execute implementation work. Dispatcher-spawned workers are still task-scoped for destructive lifecycle operations and cannot mutate unrelated tasks.
 
-### Why tools instead of shelling to `flux-agent kanban`
+### Why tools instead of shelling to `omniworker kanban`
 
 Three reasons:
 
-1. **Backend portability.** Workers whose terminal tool points at a remote backend (Docker / Modal / Singularity / SSH) would run `flux-agent kanban complete` *inside* the container, where `flux-agent` isn't installed and `~/.flux-agent/kanban.db` isn't mounted. The kanban tools run in the agent's own Python process and always reach `~/.flux-agent/kanban.db` regardless of terminal backend.
+1. **Backend portability.** Workers whose terminal tool points at a remote backend (Docker / Modal / Singularity / SSH) would run `omniworker kanban complete` *inside* the container, where `omniworker` isn't installed and `~/.omniworker/kanban.db` isn't mounted. The kanban tools run in the agent's own Python process and always reach `~/.omniworker/kanban.db` regardless of terminal backend.
 2. **No shell-quoting fragility.** Passing `--metadata '{"files": [...]}'` through shlex + argparse is a latent footgun. Structured tool args skip it entirely.
 3. **Better errors.** Tool results are structured JSON the model can reason about, not stderr strings it has to parse.
 
-**Zero schema footprint on normal sessions.** A regular `flux-agent chat` session has zero `kanban_*` tools in its schema. The `check_fn` on each tool only returns True when `FLUX AGENT_KANBAN_TASK` is set, which only happens when the dispatcher spawned this process. No tool bloat for users who never touch kanban.
+**Zero schema footprint on normal sessions.** A regular `omniworker chat` session has zero `kanban_*` tools in its schema. The `check_fn` on each tool only returns True when `OMNIWORKER_KANBAN_TASK` is set, which only happens when the dispatcher spawned this process. No tool bloat for users who never touch kanban.
 
 The `kanban-worker` and `kanban-orchestrator` skills teach the model which tool to call when and in what order.
 
@@ -306,7 +306,7 @@ For engineering and review tasks, prefer this optional metadata shape:
 ```json
 {
   "changed_files": ["path/to/file.py"],
-  "verification": ["pytest tests/flux-agent_cli/test_kanban_db.py -q"],
+  "verification": ["pytest tests/omniworker_cli/test_kanban_db.py -q"],
   "dependencies": ["parent task id or external issue, if any"],
   "blocked_reason": null,
   "retry_notes": "what failed before, if this was a retry",
@@ -333,7 +333,7 @@ does exist, such as source URLs, issue ids, or manual review steps.
 Any profile that should be able to work kanban tasks must load the `kanban-worker` skill. It teaches the worker the full lifecycle in **tool calls**, not CLI commands:
 
 1. On spawn, call `kanban_show()` to read title + body + parent handoffs + prior attempts + full comment thread.
-2. `cd $FLUX AGENT_KANBAN_WORKSPACE` (via the terminal tool) and do the work there.
+2. `cd $OMNIWORKER_KANBAN_WORKSPACE` (via the terminal tool) and do the work there.
 3. Call `kanban_heartbeat(note="...")` every few minutes during long operations.
 4. Complete with `kanban_complete(summary="...", metadata={...})`, or `kanban_block(reason="...")` if stuck.
 
@@ -343,13 +343,13 @@ whichever profile you use for kanban workers (`researcher`, `writer`, `ops`,
 etc.):
 
 ```bash
-flux-agent -p <your-worker-profile> skills list | grep kanban-worker
+omniworker -p <your-worker-profile> skills list | grep kanban-worker
 ```
 
 If the bundled copy is missing, restore it for that profile:
 
 ```bash
-flux-agent -p <your-worker-profile> skills reset kanban-worker --restore
+omniworker -p <your-worker-profile> skills reset kanban-worker --restore
 ```
 
 The dispatcher also auto-passes `--skills kanban-worker` when spawning every worker, so the worker always has the pattern library available even if a profile's default skills config doesn't include it.
@@ -377,11 +377,11 @@ kanban_create(
 **From a human (CLI / slash command)**, repeat `--skill` for each one:
 
 ```bash
-flux-agent kanban create "translate README to Japanese" \
+omniworker kanban create "translate README to Japanese" \
     --assignee linguist \
     --skill translation
 
-flux-agent kanban create "audit auth flow" \
+omniworker kanban create "audit auth flow" \
     --assignee reviewer \
     --skill security-pr-audit \
     --skill github-code-review
@@ -389,7 +389,7 @@ flux-agent kanban create "audit auth flow" \
 
 **From the dashboard**, type the skills comma-separated into the **skills** field of the inline create form.
 
-These skills are **additive** to the built-in `kanban-worker` — the dispatcher emits one `--skills <name>` flag for each (and for the built-in), so the worker spawns with all of them loaded. The skill names must match skills that are actually installed on the assignee's profile (run `flux-agent skills list` to see what's available); there's no runtime install.
+These skills are **additive** to the built-in `kanban-worker` — the dispatcher emits one `--skills <name>` flag for each (and for the built-in), so the worker spawns with all of them loaded. The skill names must match skills that are actually installed on the assignee's profile (run `omniworker skills list` to see what's available); there's no runtime install.
 
 ### The orchestrator skill
 
@@ -419,13 +419,13 @@ install and update, so there is no separate Skills Hub install step. Verify it i
 present in your orchestrator profile:
 
 ```bash
-flux-agent -p orchestrator skills list | grep kanban-orchestrator
+omniworker -p orchestrator skills list | grep kanban-orchestrator
 ```
 
 If the bundled copy is missing, restore it for that profile:
 
 ```bash
-flux-agent -p orchestrator skills reset kanban-orchestrator --restore
+omniworker -p orchestrator skills reset kanban-orchestrator --restore
 ```
 
 For best results, pair it with a profile whose toolsets are restricted to board operations (`kanban`, `gateway`, `memory`) so the orchestrator literally cannot execute implementation tasks even if it tries.
@@ -437,14 +437,14 @@ The `/kanban` CLI and slash command are enough to run the board headlessly, but 
 Open it with:
 
 ```bash
-flux-agent kanban init      # one-time: create kanban.db if not already present
-flux-agent dashboard        # "Kanban" tab appears in the nav, after "Skills"
+omniworker kanban init      # one-time: create kanban.db if not already present
+omniworker dashboard        # "Kanban" tab appears in the nav, after "Skills"
 ```
 
 ### What the plugin gives you
 
 - A **Kanban** tab showing one column per status: `triage`, `todo`, `ready`, `running`, `blocked`, `done` (plus `archived` when the toggle is on).
-  - `triage` is the parking column for rough ideas a specifier is expected to flesh out. Tasks created with `flux-agent kanban create --triage` (or via the Triage column's inline create) land here and the dispatcher leaves them alone until a human or specifier promotes them to `todo` / `ready`. Run `flux-agent kanban specify <id>` to have the auxiliary LLM expand a triage task into a concrete spec (title + body with goal, approach, acceptance criteria) and promote it to `todo` in one shot; `--all` sweeps every triage task at once. Configure which model runs the specifier under `auxiliary.triage_specifier` in `config.yaml`.
+  - `triage` is the parking column for rough ideas a specifier is expected to flesh out. Tasks created with `omniworker kanban create --triage` (or via the Triage column's inline create) land here and the dispatcher leaves them alone until a human or specifier promotes them to `todo` / `ready`. Run `omniworker kanban specify <id>` to have the auxiliary LLM expand a triage task into a concrete spec (title + body with goal, approach, acceptance criteria) and promote it to `todo` in one shot; `--all` sweeps every triage task at once. Configure which model runs the specifier under `auxiliary.triage_specifier` in `config.yaml`.
 - Cards show the task id, title, priority badge, tenant tag, assigned profile, comment/link counts, a **progress pill** (`N/M` children done when the task has dependents), and "created N ago". A per-card checkbox enables multi-select.
 - **Per-profile lanes inside Running** — toolbar checkbox toggles sub-grouping of the Running column by assignee.
 - **Live updates via WebSocket** — the plugin tails the append-only `task_events` table on a short poll interval; the board reflects changes the instant any profile (CLI, gateway, or another dashboard tab) acts. Reloads are debounced so a burst of events triggers a single refetch.
@@ -456,7 +456,7 @@ flux-agent dashboard        # "Kanban" tab appears in the nav, after "Skills"
   - **Editable assignee / priority** — click the meta row to rewrite.
   - **Editable description** — markdown-rendered by default (headings, bold, italic, inline code, fenced code, `http(s)` / `mailto:` links, bullet lists), with an "edit" button that swaps in a textarea. Markdown rendering is a tiny, XSS-safe renderer — every substitution runs on HTML-escaped input, only `http(s)` / `mailto:` links pass through, and `target="_blank"` + `rel="noopener noreferrer"` are always set.
   - **Dependency editor** — chip list of parents and children, each with an `×` to unlink, plus dropdowns over every other task to add a new parent or child. Cycle attempts are rejected server-side with a clear message.
-  - **Status action row** (→ triage / → ready / → running / block / unblock / complete / archive) with confirm prompts for destructive transitions. For cards in the **Triage** column the row also exposes a **✨ Specify** button that calls the auxiliary LLM (`auxiliary.triage_specifier` in `config.yaml`) to expand the one-liner into a concrete spec (title + body with goal, approach, acceptance criteria) and promote the task to `todo`. The same behaviour is reachable from the CLI (`flux-agent kanban specify <id>` / `--all`), from any gateway platform (`/kanban specify <id>`), and programmatically via `POST /api/plugins/kanban/tasks/:id/specify`.
+  - **Status action row** (→ triage / → ready / → running / block / unblock / complete / archive) with confirm prompts for destructive transitions. For cards in the **Triage** column the row also exposes a **✨ Specify** button that calls the auxiliary LLM (`auxiliary.triage_specifier` in `config.yaml`) to expand the one-liner into a concrete spec (title + body with goal, approach, acceptance criteria) and promote the task to `todo`. The same behaviour is reachable from the CLI (`omniworker kanban specify <id>` / `--all`), from any gateway platform (`/kanban specify <id>`), and programmatically via `POST /api/plugins/kanban/tasks/:id/specify`.
   - Result section (also markdown-rendered), comment thread with Enter-to-submit, the last 20 events.
 - **Toolbar filters** — free-text search, tenant dropdown (defaults to `dashboard.kanban.default_tenant` from `config.yaml`), assignee dropdown, "show archived" toggle, "lanes by profile" toggle, and a **Nudge dispatcher** button so you don't have to wait for the next 60 s tick.
 
@@ -481,7 +481,7 @@ The GUI is strictly a **read-through-the-DB + write-through-kanban_db** layer wi
            │                                                  │
            ▼                                                  │
 ┌────────────────────────┐                                    │
-│  ~/.flux-agent/kanban.db   │ ───── append task_events ──────────┘
+│  ~/.omniworker/kanban.db   │ ───── append task_events ──────────┘
 │  (WAL, shared)         │
 └────────────────────────┘
 ```
@@ -505,11 +505,11 @@ All routes are mounted under `/api/plugins/kanban/` and protected by the dashboa
 | `GET` | `/config` | Read `dashboard.kanban` preferences from `config.yaml` — `default_tenant`, `lane_by_profile`, `include_archived_by_default`, `render_markdown` |
 | `WS` | `/events?since=<event_id>` | Live stream of `task_events` rows |
 
-Every handler is a thin wrapper — the plugin is ~700 lines of Python (router + WebSocket tail + bulk batcher + config reader) and adds no new business logic. A tiny `_conn()` helper auto-initializes `kanban.db` on every read and write, so a fresh install works whether the user opened the dashboard first, hit the REST API directly, or ran `flux-agent kanban init`.
+Every handler is a thin wrapper — the plugin is ~700 lines of Python (router + WebSocket tail + bulk batcher + config reader) and adds no new business logic. A tiny `_conn()` helper auto-initializes `kanban.db` on every read and write, so a fresh install works whether the user opened the dashboard first, hit the REST API directly, or ran `omniworker kanban init`.
 
 ### Dashboard config
 
-Any of these keys under `dashboard.kanban` in `~/.flux-agent/config.yaml` changes the tab's defaults — the plugin reads them at load time via `GET /config`:
+Any of these keys under `dashboard.kanban` in `~/.omniworker/config.yaml` changes the tab's defaults — the plugin reads them at load time via `GET /config`:
 
 ```yaml
 dashboard:
@@ -528,9 +528,9 @@ The dashboard's HTTP auth middleware [explicitly skips `/api/plugins/`](./extend
 
 The WebSocket takes one additional step: it requires the dashboard's ephemeral session token as a `?token=…` query parameter (browsers can't set `Authorization` on an upgrade request), matching the pattern used by the in-browser PTY bridge.
 
-If you run `flux-agent dashboard --host 0.0.0.0`, every plugin route — kanban included — becomes reachable from the network. **Don't do that on a shared host.** The board contains task bodies, comments, and workspace paths; an attacker reaching these routes gets read access to your entire collaboration surface and can also create / reassign / archive tasks.
+If you run `omniworker dashboard --host 0.0.0.0`, every plugin route — kanban included — becomes reachable from the network. **Don't do that on a shared host.** The board contains task bodies, comments, and workspace paths; an attacker reaching these routes gets read access to your entire collaboration surface and can also create / reassign / archive tasks.
 
-Tasks in `~/.flux-agent/kanban.db` are profile-agnostic on purpose (that's the coordination primitive). If you open the dashboard with `flux-agent -p <profile> dashboard`, the board still shows tasks created by any other profile on the host. Same user owns all profiles, but this is worth knowing if multiple personas coexist.
+Tasks in `~/.omniworker/kanban.db` are profile-agnostic on purpose (that's the coordination primitive). If you open the dashboard with `omniworker -p <profile> dashboard`, the board still shows tasks created by any other profile on the host. Same user owns all profiles, but this is worth knowing if multiple personas coexist.
 
 ### Live updates
 
@@ -551,49 +551,49 @@ The GUI is deliberately thin. Everything the plugin does is reachable from the C
 This is the surface **you** (or scripts, cron, the dashboard) use to drive the board. Workers running inside the dispatcher use the `kanban_*` [tool surface](#how-workers-interact-with-the-board) for the same operations — the CLI here and the tools there both route through `kanban_db`, so the two surfaces agree by construction.
 
 ```
-flux-agent kanban init                                     # create kanban.db + print daemon hint
-flux-agent kanban create "<title>" [--body ...] [--assignee <profile>]
+omniworker kanban init                                     # create kanban.db + print daemon hint
+omniworker kanban create "<title>" [--body ...] [--assignee <profile>]
                                 [--parent <id>]... [--tenant <name>]
                                 [--workspace scratch|worktree|dir:<path>]
                                 [--priority N] [--triage] [--idempotency-key KEY]
                                 [--max-runtime 30m|2h|1d|<seconds>]
                                 [--skill <name>]...
                                 [--json]
-flux-agent kanban list [--mine] [--assignee P] [--status S] [--tenant T] [--archived] [--json]
-flux-agent kanban show <id> [--json]
-flux-agent kanban assign <id> <profile>                    # or 'none' to unassign
-flux-agent kanban link <parent_id> <child_id>
-flux-agent kanban unlink <parent_id> <child_id>
-flux-agent kanban claim <id> [--ttl SECONDS]
-flux-agent kanban comment <id> "<text>" [--author NAME]
+omniworker kanban list [--mine] [--assignee P] [--status S] [--tenant T] [--archived] [--json]
+omniworker kanban show <id> [--json]
+omniworker kanban assign <id> <profile>                    # or 'none' to unassign
+omniworker kanban link <parent_id> <child_id>
+omniworker kanban unlink <parent_id> <child_id>
+omniworker kanban claim <id> [--ttl SECONDS]
+omniworker kanban comment <id> "<text>" [--author NAME]
 
 # Bulk verbs — accept multiple ids:
-flux-agent kanban complete <id>... [--result "..."]
-flux-agent kanban block <id> "<reason>" [--ids <id>...]
-flux-agent kanban unblock <id>...
-flux-agent kanban archive <id>...
+omniworker kanban complete <id>... [--result "..."]
+omniworker kanban block <id> "<reason>" [--ids <id>...]
+omniworker kanban unblock <id>...
+omniworker kanban archive <id>...
 
-flux-agent kanban tail <id>                                # follow a single task's event stream
-flux-agent kanban watch [--assignee P] [--tenant T]        # live stream ALL events to the terminal
+omniworker kanban tail <id>                                # follow a single task's event stream
+omniworker kanban watch [--assignee P] [--tenant T]        # live stream ALL events to the terminal
         [--kinds completed,blocked,…] [--interval SECS]
-flux-agent kanban heartbeat <id> [--note "..."]            # worker liveness signal for long ops
-flux-agent kanban runs <id> [--json]                       # attempt history (one row per run)
-flux-agent kanban assignees [--json]                       # profiles on disk + per-assignee task counts
-flux-agent kanban dispatch [--dry-run] [--max N]           # one-shot pass
+omniworker kanban heartbeat <id> [--note "..."]            # worker liveness signal for long ops
+omniworker kanban runs <id> [--json]                       # attempt history (one row per run)
+omniworker kanban assignees [--json]                       # profiles on disk + per-assignee task counts
+omniworker kanban dispatch [--dry-run] [--max N]           # one-shot pass
         [--failure-limit N] [--json]
-flux-agent kanban daemon --force                           # DEPRECATED — standalone dispatcher (use `flux-agent gateway start` instead)
+omniworker kanban daemon --force                           # DEPRECATED — standalone dispatcher (use `omniworker gateway start` instead)
         [--failure-limit N] [--pidfile PATH] [-v]
-flux-agent kanban stats [--json]                           # per-status + per-assignee counts
-flux-agent kanban log <id> [--tail BYTES]                  # worker log from ~/.flux-agent/kanban/logs/
-flux-agent kanban notify-subscribe <id>                    # gateway bridge hook (used by /kanban in the gateway)
+omniworker kanban stats [--json]                           # per-status + per-assignee counts
+omniworker kanban log <id> [--tail BYTES]                  # worker log from ~/.omniworker/kanban/logs/
+omniworker kanban notify-subscribe <id>                    # gateway bridge hook (used by /kanban in the gateway)
         --platform <name> --chat-id <id> [--thread-id <id>] [--user-id <id>]
-flux-agent kanban notify-list [<id>] [--json]
-flux-agent kanban notify-unsubscribe <id>
+omniworker kanban notify-list [<id>] [--json]
+omniworker kanban notify-unsubscribe <id>
         --platform <name> --chat-id <id> [--thread-id <id>]
-flux-agent kanban context <id>                             # what a worker sees
-flux-agent kanban specify [<id> | --all] [--tenant T]      # flesh out a triage-column idea
+omniworker kanban context <id>                             # what a worker sees
+omniworker kanban specify [<id> | --all] [--tenant T]      # flesh out a triage-column idea
         [--author NAME] [--json]                       #   into a full spec and promote to todo
-flux-agent kanban gc [--event-retention-days N]            # workspaces + old events + old logs
+omniworker kanban gc [--event-retention-days N]            # workspaces + old events + old logs
         [--log-retention-days N]
 ```
 
@@ -601,7 +601,7 @@ All commands are also available as a slash command in the interactive CLI and in
 
 ## `/kanban` slash command {#kanban-slash-command}
 
-Every `flux-agent kanban <action>` verb is also reachable as `/kanban <action>` — from inside an interactive `flux-agent chat` session **and** from any gateway platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, email, SMS). Both surfaces call the exact same `flux-agent_cli.kanban.run_slash()` entry point that reuses the `flux-agent kanban` argparse tree, so the argument surface, flags, and output format are identical across CLI, `/kanban`, and `flux-agent kanban`. You don't have to leave the chat to drive the board.
+Every `omniworker kanban <action>` verb is also reachable as `/kanban <action>` — from inside an interactive `omniworker chat` session **and** from any gateway platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, email, SMS). Both surfaces call the exact same `omniworker_cli.kanban.run_slash()` entry point that reuses the `omniworker kanban` argparse tree, so the argument surface, flags, and output format are identical across CLI, `/kanban`, and `omniworker kanban`. You don't have to leave the chat to drive the board.
 
 ```
 /kanban list
@@ -618,7 +618,7 @@ Quote multi-word arguments the same way you would on a shell — `run_slash` par
 
 ### Mid-run usage: `/kanban` bypasses the running-agent guard
 
-The gateway normally queues slash commands and user messages while an agent is still thinking — that's what stops you from accidentally starting a second turn while the first is in flight. **`/kanban` is explicitly exempted from this guard.** The board lives in `~/.flux-agent/kanban.db`, not in the running agent's state, so reads (`list`, `show`, `context`, `tail`, `watch`, `stats`, `runs`) and writes (`comment`, `unblock`, `block`, `assign`, `archive`, `create`, `link`, …) all go through immediately, even mid-turn.
+The gateway normally queues slash commands and user messages while an agent is still thinking — that's what stops you from accidentally starting a second turn while the first is in flight. **`/kanban` is explicitly exempted from this guard.** The board lives in `~/.omniworker/kanban.db`, not in the running agent's state, so reads (`list`, `show`, `context`, `tail`, `watch`, `stats`, `runs`) and writes (`comment`, `unblock`, `block`, `assign`, `archive`, `create`, `link`, …) all go through immediately, even mid-turn.
 
 This is the whole point of the separation:
 
@@ -645,7 +645,7 @@ Subscriptions auto-remove themselves once the task reaches `done` or `archived`.
 
 ### Output truncation in messaging
 
-Gateway platforms have practical message-length caps. If `/kanban list`, `/kanban show`, or `/kanban tail` produce more than ~3800 characters of output, the response is truncated with a `… (truncated; use \`flux-agent kanban …\` in your terminal for full output)` footer. The CLI surface has no such cap.
+Gateway platforms have practical message-length caps. If `/kanban list`, `/kanban show`, or `/kanban tail` produce more than ~3800 characters of output, the response is truncated with a `… (truncated; use \`omniworker kanban …\` in your terminal for full output)` footer. The CLI surface has no such cap.
 
 ### Autocomplete
 
@@ -665,22 +665,22 @@ The board supports these eight patterns without any new primitives:
 | **P6 `@mention`** | inline routing from prose | `@reviewer look at this` |
 | **P7 Thread-scoped workspace** | `/kanban here` in a thread | per-project gateway threads |
 | **P8 Fleet farming** | one profile, N subjects | 50 social accounts |
-| **P9 Triage specifier** | rough idea → `triage` → `flux-agent kanban specify` expands body → `todo` | "turn this one-liner into a spec'd task" |
+| **P9 Triage specifier** | rough idea → `triage` → `omniworker kanban specify` expands body → `todo` | "turn this one-liner into a spec'd task" |
 
-For worked examples of each, see `docs/flux-agent-kanban-v1-spec.pdf`.
+For worked examples of each, see `docs/omniworker-kanban-v1-spec.pdf`.
 
 ## Multi-tenant usage
 
 When one specialist fleet serves multiple businesses, tag each task with a tenant:
 
 ```bash
-flux-agent kanban create "monthly report" \
+omniworker kanban create "monthly report" \
     --assignee researcher \
     --tenant business-a \
     --workspace dir:~/tenants/business-a/data/
 ```
 
-Workers receive `$FLUX AGENT_TENANT` and namespace their memory writes by prefix. The board, the dispatcher, and the profile definitions are all shared; only the data is scoped.
+Workers receive `$OMNIWORKER_TENANT` and namespace their memory writes by prefix. The board, the dispatcher, and the profile definitions are all shared; only the data is scoped.
 
 ## Gateway notifications
 
@@ -689,10 +689,10 @@ When you run `/kanban create …` from the gateway (Telegram, Discord, Slack, et
 You can manage subscriptions explicitly from the CLI — useful when a script / cron job wants to notify a chat it didn't originate from:
 
 ```bash
-flux-agent kanban notify-subscribe t_abcd \
+omniworker kanban notify-subscribe t_abcd \
     --platform telegram --chat-id 12345678 --thread-id 7
-flux-agent kanban notify-list
-flux-agent kanban notify-unsubscribe t_abcd \
+omniworker kanban notify-list
+omniworker kanban notify-unsubscribe t_abcd \
     --platform telegram --chat-id 12345678 --thread-id 7
 ```
 
@@ -724,13 +724,13 @@ kanban_complete(
 The same handoff is reachable from the CLI when you (the human) need to close out a task a worker can't — e.g. a task that was abandoned, or one you marked done manually from the dashboard:
 
 ```bash
-flux-agent kanban complete t_abcd \
+omniworker kanban complete t_abcd \
     --result "rate limiter shipped" \
     --summary "implemented token bucket, keys on user_id with IP fallback, all tests pass" \
     --metadata '{"changed_files": ["limiter.py", "tests/test_limiter.py"], "tests_run": 14}'
 
 # Review the attempt history on a retried task:
-flux-agent kanban runs t_abcd
+omniworker kanban runs t_abcd
 #   #  OUTCOME       PROFILE           ELAPSED  STARTED
 #   1  blocked       worker               12s  2026-04-27 14:02
 #        → BLOCKED: need decision on rate-limit key
@@ -740,11 +740,11 @@ flux-agent kanban runs t_abcd
 
 Runs are exposed on the dashboard (Run History section in the drawer, one coloured row per attempt) and on the REST API (`GET /api/plugins/kanban/tasks/:id` returns a `runs[]` array). `PATCH /api/plugins/kanban/tasks/:id` with `{status: "done", summary, metadata}` forwards both to the kernel, so the dashboard's "mark done" button is CLI-equivalent. `task_events` rows carry the `run_id` they belong to so the UI can group them by attempt, and the `completed` event embeds the first-line summary in its payload (capped at 400 chars) so gateway notifiers can render structured handoffs without a second SQL round-trip.
 
-**Bulk close caveat.** `flux-agent kanban complete a b c --summary X` is refused — structured handoff is per-run, so copy-pasting the same summary to N tasks is almost always wrong. Bulk close *without* `--summary` / `--metadata` still works for the common "I finished a pile of admin tasks" case.
+**Bulk close caveat.** `omniworker kanban complete a b c --summary X` is refused — structured handoff is per-run, so copy-pasting the same summary to N tasks is almost always wrong. Bulk close *without* `--summary` / `--metadata` still works for the common "I finished a pile of admin tasks" case.
 
 **Reclaimed runs from status changes.** If you drag a running task off `running` in the dashboard (back to `ready`, or straight to `todo`), or archive a task that was still running, the in-flight run closes with `outcome='reclaimed'` rather than being orphaned. The `task_runs` row is always in a terminal state when `tasks.current_run_id` is `NULL`, and vice versa — that invariant holds across CLI, dashboard, dispatcher, and notifier.
 
-**Synthetic runs for never-claimed completions.** Completing or blocking a task that was never claimed (e.g. a human closes a `ready` task from the dashboard with a summary, or a CLI user runs `flux-agent kanban complete <ready-task> --summary X`) would otherwise drop the handoff. Instead the kernel inserts a zero-duration run row (`started_at == ended_at`) carrying the summary / metadata / reason so attempt history stays complete. The `completed` / `blocked` event's `run_id` points at that row.
+**Synthetic runs for never-claimed completions.** Completing or blocking a task that was never claimed (e.g. a human closes a `ready` task from the dashboard with a summary, or a CLI user runs `omniworker kanban complete <ready-task> --summary X`) would otherwise drop the handoff. Instead the kernel inserts a zero-duration run row (`started_at == ended_at`) carrying the summary / metadata / reason so attempt history stays complete. The `completed` / `blocked` event's `run_id` points at that row.
 
 **Live drawer refresh.** When the dashboard's WebSocket event stream reports new events for the task the user is currently viewing, the drawer reloads itself (via a per-task event counter threaded into its `useEffect` dependency list). Closing and reopening is no longer required to see a run's new row or updated outcome.
 
@@ -754,7 +754,7 @@ Two nullable columns on `tasks` are reserved for v2 workflow routing: `workflow_
 
 ## Event reference
 
-Every transition appends a row to `task_events`. Each row carries an optional `run_id` so UIs can group events by attempt. Kinds group into three clusters so filtering is easy (`flux-agent kanban watch --kinds completed,gave_up,timed_out`):
+Every transition appends a row to `task_events`. Each row carries an optional `run_id` so UIs can group events by attempt. Kinds group into three clusters so filtering is easy (`omniworker kanban watch --kinds completed,gave_up,timed_out`):
 
 **Lifecycle** (what changed about the task as a logical unit):
 
@@ -782,19 +782,19 @@ Every transition appends a row to `task_events`. Each row carries an optional `r
 | Kind | Payload | When |
 |---|---|---|
 | `spawned` | `{pid}` | Dispatcher successfully started a worker process. |
-| `heartbeat` | `{note?}` | Worker called `flux-agent kanban heartbeat $TASK` to signal liveness during long operations. |
+| `heartbeat` | `{note?}` | Worker called `omniworker kanban heartbeat $TASK` to signal liveness during long operations. |
 | `reclaimed` | `{stale_lock}` | Claim TTL expired without a completion; task goes back to `ready`. |
 | `crashed` | `{pid, claimer}` | Worker PID no longer alive but TTL hadn't expired yet. |
 | `timed_out` | `{pid, elapsed_seconds, limit_seconds, sigkill}` | `max_runtime_seconds` exceeded; dispatcher SIGTERM'd (then SIGKILL'd after 5 s grace) and re-queued. |
 | `spawn_failed` | `{error, failures}` | One spawn attempt failed (missing PATH, workspace unmountable, …). Counter increments; task returns to `ready` for retry. |
 | `gave_up` | `{failures, error}` | Circuit breaker fired after N consecutive `spawn_failed`. Task auto-blocks with the last error. Default N = 5; override via `--failure-limit`. |
 
-`flux-agent kanban tail <id>` shows these for a single task. `flux-agent kanban watch` streams them board-wide.
+`omniworker kanban tail <id>` shows these for a single task. `omniworker kanban watch` streams them board-wide.
 
 ## Out of scope
 
-Kanban is deliberately single-host. `~/.flux-agent/kanban.db` is a local SQLite file and the dispatcher spawns workers on the same machine. Running a shared board across two hosts is not supported — there's no coordination primitive for "worker X on host A, worker Y on host B," and the crash-detection path assumes PIDs are host-local. If you need multi-host, run an independent board per host and use `delegate_task` / a message queue to bridge them.
+Kanban is deliberately single-host. `~/.omniworker/kanban.db` is a local SQLite file and the dispatcher spawns workers on the same machine. Running a shared board across two hosts is not supported — there's no coordination primitive for "worker X on host A, worker Y on host B," and the crash-detection path assumes PIDs are host-local. If you need multi-host, run an independent board per host and use `delegate_task` / a message queue to bridge them.
 
 ## Design spec
 
-The complete design — architecture, concurrency correctness, comparison with other systems, implementation plan, risks, open questions — lives in `docs/flux-agent-kanban-v1-spec.pdf`. Read that before filing any behavior-change PR.
+The complete design — architecture, concurrency correctness, comparison with other systems, implementation plan, risks, open questions — lives in `docs/omniworker-kanban-v1-spec.pdf`. Read that before filing any behavior-change PR.

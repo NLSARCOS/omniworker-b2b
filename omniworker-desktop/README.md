@@ -1,33 +1,33 @@
-<img width="100%" alt="FLUX AGENT DESKTOP" src="https://github.com/user-attachments/assets/80585955-3bae-4aee-af90-a1e61757ccb8" />
+<img width="100%" alt="OMNIWORKER DESKTOP" src="https://github.com/user-attachments/assets/80585955-3bae-4aee-af90-a1e61757ccb8" />
 
 <br/>
 <p align="center">
-  <a href="https://flux-agent-agent.flux-agent.com/docs/"><img src="https://img.shields.io/badge/Docs-flux-agent--agent.flux-agent.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://t.me/flux-agent_agent_desktop"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"></a>
-  <a href="https://github.com/fathah/flux-agent-desktop/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://github.com/fathah/flux-agent-desktop/releases/"><img src="https://img.shields.io/badge/Download-Releases-FF6600?style=for-the-badge" alt="Releases"></a>
-<a href="https://github.com/fathah/flux-agent-desktop/stargazers">
-  <img src="https://img.shields.io/github/stars/fathah/flux-agent-desktop?style=for-the-badge&color=FFD700&label=Stars" alt="Stars">
+  <a href="https://omniworker-agent.omniworker.com/docs/"><img src="https://img.shields.io/badge/Docs-omniworker--agent.omniworker.com-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://t.me/omniworker_agent_desktop"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"></a>
+  <a href="https://github.com/fathah/omniworker-desktop/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://github.com/fathah/omniworker-desktop/releases/"><img src="https://img.shields.io/badge/Download-Releases-FF6600?style=for-the-badge" alt="Releases"></a>
+<a href="https://github.com/fathah/omniworker-desktop/stargazers">
+  <img src="https://img.shields.io/github/stars/fathah/omniworker-desktop?style=for-the-badge&color=FFD700&label=Stars" alt="Stars">
 </a>
-  <a href="https://github.com/fathah/flux-agent-desktop/releases/">
-  <img src="https://img.shields.io/github/downloads/fathah/flux-agent-desktop/total?style=for-the-badge&color=00B496&label=Total%20Downloads" alt="Downloads">
+  <a href="https://github.com/fathah/omniworker-desktop/releases/">
+  <img src="https://img.shields.io/github/downloads/fathah/omniworker-desktop/total?style=for-the-badge&color=00B496&label=Total%20Downloads" alt="Downloads">
 </a>
 </p>
 
-> **This project is in active development.** Features may change, and some things might break. If you run into a problem or have an idea, [open an issue](https://github.com/fathah/flux-agent-desktop/issues). Contributions are welcome!
+> **This project is in active development.** Features may change, and some things might break. If you run into a problem or have an idea, [open an issue](https://github.com/fathah/omniworker-desktop/issues). Contributions are welcome!
 
 ## Languages
 
 - English: `README.md`
 - 简体中文: `README.zh-CN.md`
 
-Flux Agent Desktop is a native desktop app for installing, configuring, and chatting with [Flux Agent Agent](https://github.com/Flux Agent/flux-agent-agent) — a self-improving AI assistant with tool use, multi-platform messaging, and a closed learning loop.
+Flux Agent Desktop is a native desktop app for installing, configuring, and chatting with [Flux Agent Agent](https://github.com/Flux Agent/omniworker-agent) — a self-improving AI assistant with tool use, multi-platform messaging, and a closed learning loop.
 
-Instead of managing the CLI by hand, the app walks through install, provider setup, and day-to-day usage in one place. It uses the official Flux Agent install script, stores Flux Agent in `~/.flux-agent`, and gives you a GUI for chat, sessions, profiles, memory, skills, tools, scheduling, messaging gateways, and more.
+Instead of managing the CLI by hand, the app walks through install, provider setup, and day-to-day usage in one place. It uses the official Flux Agent install script, stores Flux Agent in `~/.omniworker`, and gives you a GUI for chat, sessions, profiles, memory, skills, tools, scheduling, messaging gateways, and more.
 
 ## Install
 
-Download the latest build from the [Releases](https://github.com/fathah/flux-agent-desktop/releases/) page.
+Download the latest build from the [Releases](https://github.com/fathah/omniworker-desktop/releases/) page.
 
 | Platform       | File                    |
 | -------------- | ----------------------- |
@@ -42,7 +42,7 @@ Download the latest build from the [Releases](https://github.com/fathah/flux-age
 Once the manifest has been accepted into [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs), you can install with:
 
 ```powershell
-winget install Flux Agent.Flux AgentDesktop
+winget install Flux Agent.OmniWorkerDesktop
 ```
 
 Until then, download the `.exe` from the Releases page.
@@ -52,17 +52,17 @@ Until then, download the `.exe` from the Releases page.
 > **WSL users:** If the installer stalls at `Switching to root user to install dependencies...`, Playwright is waiting for a sudo password that has no TTY to read from. Grant passwordless sudo for the install, then revert when finished:
 >
 > ```bash
-> echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/flux-agent-install
+> echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/omniworker-install
 > # …re-run the installer; once it finishes:
-> sudo rm /etc/sudoers.d/flux-agent-install
+> sudo rm /etc/sudoers.d/omniworker-install
 > ```
 >
-> Tracked in [#109](https://github.com/fathah/flux-agent-desktop/issues/109).
+> Tracked in [#109](https://github.com/fathah/omniworker-desktop/issues/109).
 
 ### Fedora (RPM)
 
 ```bash
-sudo dnf install ./flux-agent-desktop-<version>.rpm
+sudo dnf install ./omniworker-desktop-<version>.rpm
 ```
 
 > **Fedora users:** The `.rpm` is not GPG-signed. If your system enforces signature checking, append `--nogpgcheck` to the install command. Auto-update is not supported for `.rpm` builds (limitation of `electron-updater`); reinstall the new `.rpm` to update.
@@ -122,7 +122,7 @@ sudo dnf install ./flux-agent-desktop-<version>.rpm
 On first launch, the app:
 
 1. Asks whether you want to run Flux Agent **locally** or connect to a **remote** Flux Agent API server.
-2. **Local mode:** checks whether Flux Agent is already installed in `~/.flux-agent`; if not, runs the official Flux Agent installer with dependency resolution (Git, uv, Python 3.11+).
+2. **Local mode:** checks whether Flux Agent is already installed in `~/.omniworker`; if not, runs the official Flux Agent installer with dependency resolution (Git, uv, Python 3.11+).
 3. **Remote mode:** prompts for the remote API URL and API key, validates the connection, and skips local install.
 4. Prompts for an API provider or local model endpoint.
 5. Saves provider config and API keys through Flux Agent config files.
@@ -244,13 +244,13 @@ Local presets are included for:
 
 Flux Agent files are managed in:
 
-- `~/.flux-agent`
-- `~/.flux-agent/.env`
-- `~/.flux-agent/config.yaml`
-- `~/.flux-agent/flux-agent-agent`
-- `~/.flux-agent/profiles/` — named profile directories
-- `~/.flux-agent/state.db` — session history database
-- `~/.flux-agent/cron/jobs.json` — scheduled tasks
+- `~/.omniworker`
+- `~/.omniworker/.env`
+- `~/.omniworker/config.yaml`
+- `~/.omniworker/omniworker-agent`
+- `~/.omniworker/profiles/` — named profile directories
+- `~/.omniworker/state.db` — session history database
+- `~/.omniworker/cron/jobs.json` — scheduled tasks
 
 ## Tech Stack
 
@@ -272,10 +272,10 @@ Flux Agent files are managed in:
 
 ## Contributing
 
-Contributions are welcome! Check out the [Contributing Guide](CONTRIBUTING.md) to get started. If you're not sure where to begin, take a look at the [open issues](https://github.com/Flux Agent/flux-agent-desktop/issues). Found a bug or have a feature request? [File an issue](https://github.com/Flux Agent/flux-agent-desktop/issues/new).
+Contributions are welcome! Check out the [Contributing Guide](CONTRIBUTING.md) to get started. If you're not sure where to begin, take a look at the [open issues](https://github.com/Flux Agent/omniworker-desktop/issues). Found a bug or have a feature request? [File an issue](https://github.com/Flux Agent/omniworker-desktop/issues/new).
 
 ## Related Project
 
 For the core agent, docs, and CLI workflows, see the main Flux Agent Agent repository:
 
-- https://github.com/Flux Agent/flux-agent-agent
+- https://github.com/Flux Agent/omniworker-agent

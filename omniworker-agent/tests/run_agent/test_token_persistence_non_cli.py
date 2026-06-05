@@ -73,9 +73,9 @@ def test_session_search_lazily_opens_db_when_entrypoint_did_not_pass_one(monkeyp
         def __new__(cls):
             return sentinel_db
 
-    flux-agent_state = ModuleType("flux-agent_state")
-    flux-agent_state.SessionDB = FakeSessionDB
-    monkeypatch.setitem(sys.modules, "flux-agent_state", flux-agent_state)
+    omniworker_state = ModuleType("omniworker_state")
+    omniworker_state.SessionDB = FakeSessionDB
+    monkeypatch.setitem(sys.modules, "omniworker_state", omniworker_state)
 
     session_search_mod = ModuleType("tools.session_search_tool")
 

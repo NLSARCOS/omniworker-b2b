@@ -99,7 +99,7 @@ def test_aiagent_reuses_existing_errors_log_handler():
     """Repeated AIAgent init should not accumulate duplicate errors.log handlers."""
     root_logger = logging.getLogger()
     original_handlers = list(root_logger.handlers)
-    error_log_path = (run_agent._flux-agent_home / "logs" / "errors.log").resolve()
+    error_log_path = (run_agent._omniworker_home / "logs" / "errors.log").resolve()
 
     try:
         for handler in list(root_logger.handlers):
@@ -380,7 +380,7 @@ class TestStripThinkBlocks:
         assert "mixed" not in result
         assert "final" in result
 
-    # ─── Tool-call XML block stripping (flux-agent/flux-agent#67318) ─────────
+    # ─── Tool-call XML block stripping (omniworker/omniworker#67318) ─────────
     # Some open models (notably Gemma variants via OpenRouter) emit
     # standalone tool-call XML inside assistant content instead of via the
     # structured `tool_calls` field. Left unstripped, raw XML leaks to
@@ -727,7 +727,7 @@ class TestInit:
             patch("run_agent.get_tool_definitions", return_value=[]),
             patch("run_agent.check_toolset_requirements", return_value={}),
             patch("run_agent.OpenAI"),
-            patch("flux-agent_cli.config.load_config", return_value={}),
+            patch("omniworker_cli.config.load_config", return_value={}),
         ):
             a = AIAgent(
                 api_key="test-k...7890",
@@ -746,7 +746,7 @@ class TestInit:
             patch("run_agent.check_toolset_requirements", return_value={}),
             patch("run_agent.OpenAI"),
             patch(
-                "flux-agent_cli.config.load_config",
+                "omniworker_cli.config.load_config",
                 return_value={"prompt_caching": {"cache_ttl": "1h"}},
             ),
         ):
@@ -767,7 +767,7 @@ class TestInit:
             patch("run_agent.check_toolset_requirements", return_value={}),
             patch("run_agent.OpenAI"),
             patch(
-                "flux-agent_cli.config.load_config",
+                "omniworker_cli.config.load_config",
                 return_value={"model": {"max_tokens": 4096}},
             ),
         ):
@@ -793,7 +793,7 @@ class TestInit:
             patch("run_agent.check_toolset_requirements", return_value={}),
             patch("run_agent.OpenAI"),
             patch(
-                "flux-agent_cli.config.load_config",
+                "omniworker_cli.config.load_config",
                 return_value={"model": {"max_tokens": 4096}},
             ),
         ):
@@ -817,7 +817,7 @@ class TestInit:
             patch("run_agent.check_toolset_requirements", return_value={}),
             patch("run_agent.OpenAI"),
             patch(
-                "flux-agent_cli.config.load_config",
+                "omniworker_cli.config.load_config",
                 return_value={"prompt_caching": {"cache_ttl": "30m"}},
             ),
         ):
@@ -1041,7 +1041,7 @@ class TestToolUseEnforcementConfig:
             patch("run_agent.check_toolset_requirements", return_value={}),
             patch("run_agent.OpenAI"),
             patch(
-                "flux-agent_cli.config.load_config",
+                "omniworker_cli.config.load_config",
                 return_value={"agent": {"tool_use_enforcement": tool_use_enforcement}},
             ),
         ):
@@ -1139,7 +1139,7 @@ class TestToolUseEnforcementConfig:
             patch("run_agent.check_toolset_requirements", return_value={}),
             patch("run_agent.OpenAI"),
             patch(
-                "flux-agent_cli.config.load_config",
+                "omniworker_cli.config.load_config",
                 return_value={"agent": {"tool_use_enforcement": True}},
             ),
         ):
@@ -1342,7 +1342,7 @@ class TestBuildApiKwargs:
 
     def test_reasoning_sent_for_nous_route(self, agent):
         agent.provider = "nous"
-        agent.base_url = "https://inference-api.flux-agent.com/v1"
+        agent.base_url = "https://inference-api.omniworker.com/v1"
         agent.model = "minimax/minimax-m2.5"
         messages = [{"role": "user", "content": "hi"}]
         kwargs = agent._build_api_kwargs(messages)
@@ -1746,8 +1746,8 @@ class TestExecuteToolCalls:
         assert messages[0]["tool_call_id"] == "c1"
 
     def test_result_truncation_over_100k(self, agent, tmp_path, monkeypatch):
-        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path / ".flux-agent"))
-        (tmp_path / ".flux-agent").mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / ".omniworker"))
+        (tmp_path / ".omniworker").mkdir()
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
         mock_msg = _mock_assistant_msg(content="", tool_calls=[tc])
         messages = []
@@ -2064,8 +2064,8 @@ class TestConcurrentToolExecution:
 
     def test_concurrent_truncates_large_results(self, agent, tmp_path, monkeypatch):
         """Concurrent path should save oversized results to file."""
-        monkeypatch.setenv("FLUX AGENT_HOME", str(tmp_path / ".flux-agent"))
-        (tmp_path / ".flux-agent").mkdir()
+        monkeypatch.setenv("OMNIWORKER_HOME", str(tmp_path / ".omniworker"))
+        (tmp_path / ".omniworker").mkdir()
         tc1 = _mock_tool_call(name="web_search", arguments='{}', call_id="c1")
         tc2 = _mock_tool_call(name="web_search", arguments='{}', call_id="c2")
         mock_msg = _mock_assistant_msg(content="", tool_calls=[tc1, tc2])
@@ -2139,7 +2139,7 @@ class TestConcurrentToolExecution:
     def test_invoke_tool_blocked_returns_error_and_skips_execution(self, agent, monkeypatch):
         """_invoke_tool should return error JSON when a plugin blocks the tool."""
         monkeypatch.setattr(
-            "flux-agent_cli.plugins.get_pre_tool_call_block_message",
+            "omniworker_cli.plugins.get_pre_tool_call_block_message",
             lambda *args, **kwargs: "Blocked by test policy",
         )
         with patch("tools.todo_tool.todo_tool", side_effect=AssertionError("should not run")) as mock_todo:
@@ -2151,7 +2151,7 @@ class TestConcurrentToolExecution:
     def test_invoke_tool_blocked_skips_handle_function_call(self, agent, monkeypatch):
         """Blocked registry tools should not reach handle_function_call."""
         monkeypatch.setattr(
-            "flux-agent_cli.plugins.get_pre_tool_call_block_message",
+            "omniworker_cli.plugins.get_pre_tool_call_block_message",
             lambda *args, **kwargs: "Blocked",
         )
         with patch("run_agent.handle_function_call", side_effect=AssertionError("should not run")):
@@ -2168,7 +2168,7 @@ class TestConcurrentToolExecution:
         messages = []
 
         monkeypatch.setattr(
-            "flux-agent_cli.plugins.get_pre_tool_call_block_message",
+            "omniworker_cli.plugins.get_pre_tool_call_block_message",
             lambda *args, **kwargs: "Blocked by policy",
         )
         agent._checkpoint_mgr.enabled = True
@@ -2192,7 +2192,7 @@ class TestConcurrentToolExecution:
         """Blocked memory tool should not reset the nudge counter."""
         agent._turns_since_memory = 5
         monkeypatch.setattr(
-            "flux-agent_cli.plugins.get_pre_tool_call_block_message",
+            "omniworker_cli.plugins.get_pre_tool_call_block_message",
             lambda *args, **kwargs: "Blocked",
         )
         with patch("tools.memory_tool.memory_tool", side_effect=AssertionError("should not run")):
@@ -2509,7 +2509,7 @@ class TestRunConversation:
 
         with (
             patch("run_agent.handle_function_call", return_value="search result"),
-            patch("flux-agent_cli.plugins.invoke_hook", side_effect=_record_hook),
+            patch("omniworker_cli.plugins.invoke_hook", side_effect=_record_hook),
             patch.object(agent, "_persist_session"),
             patch.object(agent, "_save_trajectory"),
             patch.object(agent, "_cleanup_task_resources"),
@@ -3352,7 +3352,7 @@ class TestRunConversation:
         self._setup_agent(agent)
         agent.max_iterations = 2
 
-        monkeypatch.setenv("FLUX AGENT_KANBAN_TASK", "t_test_task_123")
+        monkeypatch.setenv("OMNIWORKER_KANBAN_TASK", "t_test_task_123")
 
         # Return a tool call for every iteration to exhaust the budget.
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
@@ -3394,11 +3394,11 @@ class TestRunConversation:
         assert "Iteration budget exhausted" in call[0][1]["reason"]
 
     def test_no_kanban_block_when_not_in_kanban_mode(self, agent, monkeypatch):
-        """kanban_block must NOT be called when FLUX AGENT_KANBAN_TASK is unset."""
+        """kanban_block must NOT be called when OMNIWORKER_KANBAN_TASK is unset."""
         self._setup_agent(agent)
         agent.max_iterations = 2
 
-        monkeypatch.delenv("FLUX AGENT_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("OMNIWORKER_KANBAN_TASK", raising=False)
 
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
         tool_resp = _mock_response(
@@ -3586,7 +3586,7 @@ class TestNousCredentialRefresh:
             captured.update(kwargs)
             return {
                 "api_key": "new-nous-key",
-                "base_url": "https://inference-api.flux-agent.com/v1",
+                "base_url": "https://inference-api.omniworker.com/v1",
             }
 
         def _fake_openai(**kwargs):
@@ -3594,7 +3594,7 @@ class TestNousCredentialRefresh:
             return _RebuiltClient()
 
         monkeypatch.setattr(
-            "flux-agent_cli.auth.resolve_nous_runtime_credentials", _fake_resolve
+            "omniworker_cli.auth.resolve_nous_runtime_credentials", _fake_resolve
         )
 
         agent.client = _ExistingClient()
@@ -3606,7 +3606,7 @@ class TestNousCredentialRefresh:
         assert captured["force_mint"] is True
         assert rebuilt["kwargs"]["api_key"] == "new-nous-key"
         assert (
-            rebuilt["kwargs"]["base_url"] == "https://inference-api.flux-agent.com/v1"
+            rebuilt["kwargs"]["base_url"] == "https://inference-api.omniworker.com/v1"
         )
         assert "default_headers" not in rebuilt["kwargs"]
         assert isinstance(agent.client, _RebuiltClient)
@@ -3891,7 +3891,7 @@ class TestGpt5ApiModeRouting:
     def test_nous_gpt5_stays_on_chat_completions(self, agent):
         """Nous serves gpt-5.x on /chat/completions — must not upgrade to codex_responses."""
         agent.provider = "nous"
-        agent.base_url = "https://inference-api.flux-agent.com/v1"
+        agent.base_url = "https://inference-api.omniworker.com/v1"
         agent.api_mode = "chat_completions"
         agent.model = "openai/gpt-5.5"
         if (

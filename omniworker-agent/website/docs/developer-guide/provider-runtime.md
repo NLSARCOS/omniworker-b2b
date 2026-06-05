@@ -16,14 +16,14 @@ Flux Agent has a shared provider runtime resolver used across:
 
 Primary implementation:
 
-- `flux-agent_cli/runtime_provider.py` — credential resolution, `_resolve_custom_runtime()`
-- `flux-agent_cli/auth.py` — provider registry, `resolve_provider()`
-- `flux-agent_cli/model_switch.py` — shared `/model` switch pipeline (CLI + gateway)
+- `omniworker_cli/runtime_provider.py` — credential resolution, `_resolve_custom_runtime()`
+- `omniworker_cli/auth.py` — provider registry, `resolve_provider()`
+- `omniworker_cli/model_switch.py` — shared `/model` switch pipeline (CLI + gateway)
 - `agent/auxiliary_client.py` — auxiliary model routing
 - `providers/` — ABC + registry entry points (`ProviderProfile`, `register_provider`, `get_provider_profile`, `list_providers`)
-- `plugins/model-providers/<name>/` — per-provider plugins (bundled) that declare `api_mode`, `base_url`, `env_vars`, `fallback_models` and register themselves into the registry on first access. User plugins at `$FLUX AGENT_HOME/plugins/model-providers/<name>/` override bundled ones of the same name.
+- `plugins/model-providers/<name>/` — per-provider plugins (bundled) that declare `api_mode`, `base_url`, `env_vars`, `fallback_models` and register themselves into the registry on first access. User plugins at `$OMNIWORKER_HOME/plugins/model-providers/<name>/` override bundled ones of the same name.
 
-`get_provider_profile()` in `providers/` returns a `ProviderProfile` for a given provider id. `runtime_provider.py` calls this at resolution time to get the canonical `base_url`, `env_vars` priority list, `api_mode`, and `fallback_models` without needing to duplicate that data in multiple files. Adding a new plugin under `plugins/model-providers/<your-provider>/` (or `$FLUX AGENT_HOME/plugins/model-providers/<your-provider>/`) that calls `register_provider()` is enough for `runtime_provider.py` to pick it up — no branch needed in the resolver itself.
+`get_provider_profile()` in `providers/` returns a `ProviderProfile` for a given provider id. `runtime_provider.py` calls this at resolution time to get the canonical `base_url`, `env_vars` priority list, `api_mode`, and `fallback_models` without needing to duplicate that data in multiple files. Adding a new plugin under `plugins/model-providers/<your-provider>/` (or `$OMNIWORKER_HOME/plugins/model-providers/<your-provider>/`) that calls `register_provider()` is enough for `runtime_provider.py` to pick it up — no branch needed in the resolver itself.
 
 If you are trying to add a new first-class inference provider, read [Adding Providers](./adding-providers.md) and the [Model Provider Plugin guide](./model-provider-plugin.md) alongside this page.
 
@@ -36,7 +36,7 @@ At a high level, provider resolution uses:
 3. environment variables
 4. provider-specific defaults or auto resolution
 
-That ordering matters because Flux Agent treats the saved model/provider choice as the source of truth for normal runs. This prevents a stale shell export from silently overriding the endpoint a user last selected in `flux-agent model`.
+That ordering matters because Flux Agent treats the saved model/provider choice as the source of truth for normal runs. This prevents a stale shell export from silently overriding the endpoint a user last selected in `omniworker model`.
 
 ## Providers
 
@@ -87,7 +87,7 @@ The runtime resolver returns data such as:
 
 This resolver is the main reason Flux Agent can share auth/runtime logic between:
 
-- `flux-agent chat`
+- `omniworker chat`
 - gateway message handling
 - cron jobs running in fresh sessions
 - ACP editor sessions
@@ -95,7 +95,7 @@ This resolver is the main reason Flux Agent can share auth/runtime logic between
 
 ## AI Gateway
 
-Set `AI_GATEWAY_API_KEY` in `~/.flux-agent/.env` and run with `--provider ai-gateway`. Flux Agent fetches available models from the gateway's `/models` endpoint, filtering to language models with tool-use support.
+Set `AI_GATEWAY_API_KEY` in `~/.omniworker/.env` and run with `--provider ai-gateway`. Flux Agent fetches available models from the gateway's `/models` endpoint, filtering to language models with tool-use support.
 
 ## OpenRouter, AI Gateway, and custom OpenAI-compatible base URLs
 
@@ -160,7 +160,7 @@ can use their own provider/model routing rather than the main conversational mod
 When an auxiliary task is configured with provider `main`, Flux Agent resolves that through the same shared runtime path as normal chat. In practice that means:
 
 - env-driven custom endpoints still work
-- custom endpoints saved via `flux-agent model` / `config.yaml` also work
+- custom endpoints saved via `omniworker model` / `config.yaml` also work
 - auxiliary routing can tell the difference between a real saved custom endpoint and the OpenRouter fallback
 
 ## Fallback models

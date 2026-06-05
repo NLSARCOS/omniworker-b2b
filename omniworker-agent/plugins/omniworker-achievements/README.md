@@ -1,8 +1,8 @@
 # Flux Agent Achievements
 
-> **Bundled with Flux Agent Agent.** Originally authored by [@PCinkusz](https://github.com/PCinkusz) at https://github.com/PCinkusz/flux-agent-achievements — vendored into `plugins/flux-agent-achievements/` so it ships with the dashboard out-of-the-box and stays in lockstep with Flux Agent feature changes. Upstream repo remains the staging ground for new badges and UI iteration.
+> **Bundled with Flux Agent Agent.** Originally authored by [@PCinkusz](https://github.com/PCinkusz) at https://github.com/PCinkusz/omniworker-achievements — vendored into `plugins/omniworker-achievements/` so it ships with the dashboard out-of-the-box and stays in lockstep with Flux Agent feature changes. Upstream repo remains the staging ground for new badges and UI iteration.
 >
-> When Flux Agent is installed via `pip install flux-agent-agent` or cloned from source, this plugin auto-registers as a dashboard tab on first `flux-agent dashboard` launch. No separate install step. See [Built-in Plugins → flux-agent-achievements](../../website/docs/user-guide/features/built-in-plugins.md) in the main docs.
+> When Flux Agent is installed via `pip install omniworker-agent` or cloned from source, this plugin auto-registers as a dashboard tab on first `omniworker dashboard` launch. No separate install step. See [Built-in Plugins → omniworker-achievements](../../website/docs/user-guide/features/built-in-plugins.md) in the main docs.
 
 Achievement system for the Flux Agent Dashboard: collectible, tiered badges generated from real local Flux Agent session history.
 
@@ -12,7 +12,7 @@ The screenshots use temporary demo tier data to show the full visual range. The 
 
 > **Update notice (2026-04-29):** If you installed this plugin before today, update to the latest version. The achievements scan path was refactored for much faster warm loads (snapshot cache + incremental checkpoint scan).
 >
-> **Share cards (2026-05-04, vendored in flux-agent-agent v0.4.0):** Unlocked achievement cards now have a "Share" button that renders a 1200×630 PNG share card (client-side canvas, no backend, no network) with Download + Copy-to-clipboard actions. Fits X/Twitter, Discord, LinkedIn, Bluesky link-preview dimensions.
+> **Share cards (2026-05-04, vendored in omniworker-agent v0.4.0):** Unlocked achievement cards now have a "Share" button that renders a 1200×630 PNG share card (client-side canvas, no backend, no network) with Download + Copy-to-clipboard actions. Fits X/Twitter, Discord, LinkedIn, Bluesky link-preview dimensions.
 
 ## What it does
 
@@ -61,14 +61,14 @@ Version `0.2.x` expands the catalog to 60+ achievements, including model/provide
 Clone into your Flux Agent plugins directory:
 
 ```bash
-git clone https://github.com/PCinkusz/flux-agent-achievements ~/.flux-agent/plugins/flux-agent-achievements
+git clone https://github.com/PCinkusz/omniworker-achievements ~/.omniworker/plugins/omniworker-achievements
 ```
 
 For local development, keep the repo elsewhere and symlink it:
 
 ```bash
-git clone https://github.com/PCinkusz/flux-agent-achievements ~/flux-agent-achievements
-ln -s ~/flux-agent-achievements ~/.flux-agent/plugins/flux-agent-achievements
+git clone https://github.com/PCinkusz/omniworker-achievements ~/omniworker-achievements
+ln -s ~/omniworker-achievements ~/.omniworker/plugins/omniworker-achievements
 ```
 
 Then rescan dashboard plugins:
@@ -77,19 +77,19 @@ Then rescan dashboard plugins:
 curl http://127.0.0.1:9119/api/dashboard/plugins/rescan
 ```
 
-If backend API routes 404, restart `flux-agent dashboard`; plugin APIs are mounted at dashboard startup.
+If backend API routes 404, restart `omniworker dashboard`; plugin APIs are mounted at dashboard startup.
 
 ## Updating
 
 If you installed with git:
 
 ```bash
-cd ~/.flux-agent/plugins/flux-agent-achievements
+cd ~/.omniworker/plugins/omniworker-achievements
 git pull --ff-only
 curl http://127.0.0.1:9119/api/dashboard/plugins/rescan
 ```
 
-If the update changes backend routes or `plugin_api.py`, restart `flux-agent dashboard` after pulling.
+If the update changes backend routes or `plugin_api.py`, restart `omniworker dashboard` after pulling.
 
 As of 2026-04-29, updating is strongly recommended because scan performance changed significantly:
 - removed duplicate `/overview` scan path
@@ -121,7 +121,7 @@ dashboard/
 Routes are mounted under:
 
 ```text
-/api/plugins/flux-agent-achievements/
+/api/plugins/omniworker-achievements/
 ```
 
 Endpoints:

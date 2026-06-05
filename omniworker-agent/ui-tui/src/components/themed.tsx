@@ -1,4 +1,4 @@
-import { Text } from '@flux-agent/ink'
+import { Text } from '@omniworker/ink'
 import { useStore } from '@nanostores/react'
 import type { ReactNode } from 'react'
 

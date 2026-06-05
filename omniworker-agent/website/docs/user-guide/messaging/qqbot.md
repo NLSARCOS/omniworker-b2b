@@ -28,14 +28,14 @@ The QQ Bot adapter uses the [Official QQ Bot API](https://bot.q.qq.com/wiki/deve
 ### Interactive setup
 
 ```bash
-flux-agent gateway setup
+omniworker gateway setup
 ```
 
 Select **QQ Bot** from the platform list and follow the prompts.
 
 ### Manual configuration
 
-Set the required environment variables in `~/.flux-agent/.env`:
+Set the required environment variables in `~/.omniworker/.env`:
 
 ```bash
 QQ_APP_ID=your-app-id
@@ -60,7 +60,7 @@ QQ_CLIENT_SECRET=your-app-secret
 
 ## Advanced Configuration
 
-For fine-grained control, add platform settings to `~/.flux-agent/config.yaml`:
+For fine-grained control, add platform settings to `~/.omniworker/config.yaml`:
 
 ```yaml
 platforms:

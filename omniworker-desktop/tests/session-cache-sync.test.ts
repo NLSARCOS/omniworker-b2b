@@ -12,7 +12,7 @@ const { TEST_HOME } = vi.hoisted(() => {
   return {
     TEST_HOME: path.join(
       os.tmpdir(),
-      `flux-agent-session-cache-test-${Date.now()}`,
+      `omniworker-session-cache-test-${Date.now()}`,
     ),
   };
 });
@@ -21,7 +21,7 @@ vi.mock("../src/main/installer", () => ({
   OMNIWORKER_HOME: TEST_HOME,
   OMNIWORKER_PYTHON: "/usr/bin/python3",
   OMNIWORKER_SCRIPT: "/dev/null",
-  flux-agentCliArgs: (args: string[] = []) => ["/dev/null", ...args],
+  omniworkerCliArgs: (args: string[] = []) => ["/dev/null", ...args],
   getEnhancedPath: () => process.env.PATH || "",
 }));
 

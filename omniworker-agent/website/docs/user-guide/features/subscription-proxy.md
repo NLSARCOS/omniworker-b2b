@@ -29,17 +29,17 @@ proxy when you just want **the model** through your subscription.
 ### 1. Log into your provider (one-time)
 
 ```bash
-flux-agent login nous
+omniworker login nous
 ```
 
 This opens your browser for the Nous Portal OAuth flow. Flux Agent stores
-the refresh token in `~/.flux-agent/auth.json` — the same place all Flux Agent
+the refresh token in `~/.omniworker/auth.json` — the same place all Flux Agent
 provider logins live.
 
 ### 2. Start the proxy
 
 ```bash
-flux-agent proxy start
+omniworker proxy start
 ```
 
 ```
@@ -69,17 +69,17 @@ automatically when the bearer approaches expiry.
 ## Available providers
 
 ```bash
-flux-agent proxy providers
+omniworker proxy providers
 ```
 
 Currently shipped: `nous` (Nous Portal). More OAuth providers can be
 added by implementing the `UpstreamAdapter` interface in
-`flux-agent_cli/proxy/adapters/`.
+`omniworker_cli/proxy/adapters/`.
 
 ## Check status
 
 ```bash
-flux-agent proxy status
+omniworker proxy status
 ```
 
 ```
@@ -88,10 +88,10 @@ Flux Agent proxy upstream adapters
   [nous    ] Nous Portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
-If you see `not logged in`, run `flux-agent login nous`. If you see
+If you see `not logged in`, run `omniworker login nous`. If you see
 `credentials need attention`, your refresh token was revoked (rare —
 happens if you signed out from the Portal web UI) — just re-run
-`flux-agent login nous`.
+`omniworker login nous`.
 
 ## Allowed paths
 
@@ -133,7 +133,7 @@ Then start your proxy in a terminal alongside `openviking-server`:
 
 ```bash
 # Terminal 1
-flux-agent proxy start
+omniworker proxy start
 
 # Terminal 2
 openviking-server
@@ -142,7 +142,7 @@ openviking-server
 OpenViking's VLM calls now flow through your Portal subscription. The
 embedding model side still needs its own provider — Portal does serve
 `/v1/embeddings` but the model selection depends on what your tier
-supports; check `portal.flux-agent.com/models`.
+supports; check `portal.omniworker.com/models`.
 
 ## Configuring Karakeep (or any bookmark/summarizer app)
 
@@ -165,7 +165,7 @@ By default the proxy binds `127.0.0.1` (localhost only). To let other
 machines on your network use it:
 
 ```bash
-flux-agent proxy start --host 0.0.0.0 --port 8645
+omniworker proxy start --host 0.0.0.0 --port 8645
 ```
 
 ⚠ **Be aware:** anyone on your network can now use your Portal
@@ -178,7 +178,7 @@ this beyond your trusted network.
 Your Portal tier's RPM/TPM limits apply across the whole proxy. The
 proxy doesn't fan out or pool — it's a single bearer with your full
 subscription quota. Monitor usage at
-[portal.flux-agent.com](https://portal.flux-agent.com).
+[portal.omniworker.com](https://portal.omniworker.com).
 
 ## Architecture
 
@@ -197,7 +197,7 @@ proxy is a credential-attaching pass-through.
 The adapter system is pluggable. Adding a new provider (e.g.
 HuggingFace, GitHub Copilot's chat endpoint, Anthropic via OAuth)
 requires implementing `UpstreamAdapter` in
-`flux-agent_cli/proxy/adapters/<provider>.py` and registering it in
+`omniworker_cli/proxy/adapters/<provider>.py` and registering it in
 `adapters/__init__.py`. Providers that aren't OpenAI-compatible at the
 protocol level (Anthropic Messages API, for example) would need a
 transformation layer, which is out of scope for the current shape.

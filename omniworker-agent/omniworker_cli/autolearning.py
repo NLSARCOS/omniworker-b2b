@@ -11,7 +11,7 @@ from typing import Optional
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from flux-agent_cli.colors import Colors, color
+from omniworker_cli.colors import Colors, color
 
 
 def patterns_list(

@@ -5,16 +5,16 @@
 # Flux Agent Agent ☤
 
 <p align="center">
-  <a href="https://flux-agent-agent.flux-agent.com/docs/"><img src="https://img.shields.io/badge/Docs-flux-agent--agent.flux-agent.com-FFD700?style=for-the-badge" alt="Documentation"></a>
+  <a href="https://omniworker-agent.omniworker.com/docs/"><img src="https://img.shields.io/badge/Docs-omniworker--agent.omniworker.com-FFD700?style=for-the-badge" alt="Documentation"></a>
   <a href="https://discord.gg/Flux Agent"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/Flux Agent/flux-agent-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://flux-agent.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
+  <a href="https://github.com/Flux Agent/omniworker-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://omniworker.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
   <a href="README.md"><img src="https://img.shields.io/badge/Lang-English-lightgrey?style=for-the-badge" alt="English"></a>
 </p>
 
-**由 [Nous Research](https://flux-agent.com) 构建的自进化 AI 代理。** 它是唯一内置学习闭环的智能代理——从经验中创建技能，在使用中改进技能，主动持久化知识，搜索过往对话，并在跨会话中逐步构建对你的深度理解。可以在 $5 的 VPS 上运行，也可以在 GPU 集群上运行，或者使用几乎零成本的 Serverless 基础设施。它不绑定你的笔记本——你可以在 Telegram 上与它对话，而它在云端 VM 上工作。
+**由 [Nous Research](https://omniworker.com) 构建的自进化 AI 代理。** 它是唯一内置学习闭环的智能代理——从经验中创建技能，在使用中改进技能，主动持久化知识，搜索过往对话，并在跨会话中逐步构建对你的深度理解。可以在 $5 的 VPS 上运行，也可以在 GPU 集群上运行，或者使用几乎零成本的 Serverless 基础设施。它不绑定你的笔记本——你可以在 Telegram 上与它对话，而它在云端 VM 上工作。
 
-支持任意模型——[Nous Portal](https://portal.flux-agent.com)、[OpenRouter](https://openrouter.ai)（200+ 模型）、[NVIDIA NIM](https://build.nvidia.com)（Nemotron）、[小米 MiMo](https://platform.xiaomimimo.com)、[z.ai/GLM](https://z.ai)、[Kimi/Moonshot](https://platform.moonshot.ai)、[MiniMax](https://www.minimax.io)、[Hugging Face](https://huggingface.co)、OpenAI，或自定义端点。使用 `flux-agent model` 即可切换——无需改代码，无锁定。
+支持任意模型——[Nous Portal](https://portal.omniworker.com)、[OpenRouter](https://openrouter.ai)（200+ 模型）、[NVIDIA NIM](https://build.nvidia.com)（Nemotron）、[小米 MiMo](https://platform.xiaomimimo.com)、[z.ai/GLM](https://z.ai)、[Kimi/Moonshot](https://platform.moonshot.ai)、[MiniMax](https://www.minimax.io)、[Hugging Face](https://huggingface.co)、OpenAI，或自定义端点。使用 `omniworker model` 即可切换——无需改代码，无锁定。
 
 <table>
 <tr><td><b>真正的终端界面</b></td><td>完整的 TUI，支持多行编辑、斜杠命令自动补全、对话历史、中断重定向和流式工具输出。</td></tr>
@@ -31,12 +31,12 @@
 ## 快速安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Flux Agent/omniworker-agent/main/scripts/install.sh | bash
 ```
 
 支持 Linux、macOS、WSL2 和 Android (Termux)。安装程序会自动处理平台特定的配置。
 
-> **Android / Termux：** 已测试的手动安装路径请参考 [Termux 指南](https://flux-agent-agent.flux-agent.com/docs/getting-started/termux)。在 Termux 上，Flux Agent 会安装精选的 `.[termux]` 扩展，因为完整的 `.[all]` 扩展会拉取 Android 不兼容的语音依赖。
+> **Android / Termux：** 已测试的手动安装路径请参考 [Termux 指南](https://omniworker-agent.omniworker.com/docs/getting-started/termux)。在 Termux 上，Flux Agent 会安装精选的 `.[termux]` 扩展，因为完整的 `.[all]` 扩展会拉取 Android 不兼容的语音依赖。
 >
 > **Windows：** 原生 Windows 不受支持。请安装 [WSL2](https://learn.microsoft.com/zh-cn/windows/wsl/install) 并运行上述命令。
 
@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/Flux Agent/flux-agent-agent/main/sc
 
 ```bash
 source ~/.bashrc    # 重新加载 shell（或: source ~/.zshrc）
-flux-agent              # 开始对话！
+omniworker              # 开始对话！
 ```
 
 ---
@@ -52,26 +52,26 @@ flux-agent              # 开始对话！
 ## 快速入门
 
 ```bash
-flux-agent              # 交互式 CLI — 开始对话
-flux-agent model        # 选择 LLM 提供商和模型
-flux-agent tools        # 配置启用的工具
-flux-agent config set   # 设置单个配置项
-flux-agent gateway      # 启动消息网关（Telegram、Discord 等）
-flux-agent setup        # 运行完整设置向导（一次性配置所有内容）
-flux-agent claw migrate # 从 Flux Agent 迁移（如果来自 Flux Agent）
-flux-agent update       # 更新到最新版本
-flux-agent doctor       # 诊断问题
+omniworker              # 交互式 CLI — 开始对话
+omniworker model        # 选择 LLM 提供商和模型
+omniworker tools        # 配置启用的工具
+omniworker config set   # 设置单个配置项
+omniworker gateway      # 启动消息网关（Telegram、Discord 等）
+omniworker setup        # 运行完整设置向导（一次性配置所有内容）
+omniworker claw migrate # 从 Flux Agent 迁移（如果来自 Flux Agent）
+omniworker update       # 更新到最新版本
+omniworker doctor       # 诊断问题
 ```
 
-📖 **[完整文档 →](https://flux-agent-agent.flux-agent.com/docs/)**
+📖 **[完整文档 →](https://omniworker-agent.omniworker.com/docs/)**
 
 ## CLI 与消息平台 快速对照
 
-Flux Agent 有两种入口：用 `flux-agent` 启动终端 UI，或运行网关从 Telegram、Discord、Slack、WhatsApp、Signal 或 Email 与之对话。进入对话后，许多斜杠命令在两种界面中通用。
+Flux Agent 有两种入口：用 `omniworker` 启动终端 UI，或运行网关从 Telegram、Discord、Slack、WhatsApp、Signal 或 Email 与之对话。进入对话后，许多斜杠命令在两种界面中通用。
 
 | 操作 | CLI | 消息平台 |
 |------|-----|----------|
-| 开始对话 | `flux-agent` | 运行 `flux-agent gateway setup` + `flux-agent gateway start`，然后给机器人发消息 |
+| 开始对话 | `omniworker` | 运行 `omniworker gateway setup` + `omniworker gateway start`，然后给机器人发消息 |
 | 开始新对话 | `/new` 或 `/reset` | `/new` 或 `/reset` |
 | 更换模型 | `/model [provider:model]` | `/model [provider:model]` |
 | 设置人格 | `/personality [name]` | `/personality [name]` |
@@ -81,31 +81,31 @@ Flux Agent 有两种入口：用 `flux-agent` 启动终端 UI，或运行网关�
 | 中断当前工作 | `Ctrl+C` 或发送新消息 | `/stop` 或发送新消息 |
 | 平台特定状态 | `/platforms` | `/status`、`/sethome` |
 
-完整命令列表请参阅 [CLI 指南](https://flux-agent-agent.flux-agent.com/docs/user-guide/cli) 和 [消息网关指南](https://flux-agent-agent.flux-agent.com/docs/user-guide/messaging)。
+完整命令列表请参阅 [CLI 指南](https://omniworker-agent.omniworker.com/docs/user-guide/cli) 和 [消息网关指南](https://omniworker-agent.omniworker.com/docs/user-guide/messaging)。
 
 ---
 
 ## 文档
 
-所有文档位于 **[flux-agent-agent.flux-agent.com/docs](https://flux-agent-agent.flux-agent.com/docs/)**：
+所有文档位于 **[omniworker-agent.omniworker.com/docs](https://omniworker-agent.omniworker.com/docs/)**：
 
 | 章节 | 内容 |
 |------|------|
-| [快速开始](https://flux-agent-agent.flux-agent.com/docs/getting-started/quickstart) | 安装 → 设置 → 2 分钟内开始首次对话 |
-| [CLI 使用](https://flux-agent-agent.flux-agent.com/docs/user-guide/cli) | 命令、快捷键、人格、会话 |
-| [配置](https://flux-agent-agent.flux-agent.com/docs/user-guide/configuration) | 配置文件、提供商、模型、所有选项 |
-| [消息网关](https://flux-agent-agent.flux-agent.com/docs/user-guide/messaging) | Telegram、Discord、Slack、WhatsApp、Signal、Home Assistant |
-| [安全](https://flux-agent-agent.flux-agent.com/docs/user-guide/security) | 命令审批、DM 配对、容器隔离 |
-| [工具与工具集](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/tools) | 40+ 工具、工具集系统、终端后端 |
-| [技能系统](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/skills) | 过程记忆、技能中心、创建技能 |
-| [记忆](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/memory) | 持久记忆、用户画像、最佳实践 |
-| [MCP 集成](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/mcp) | 连接任意 MCP 服务器扩展能力 |
-| [定时调度](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/cron) | 定时任务与平台投递 |
-| [上下文文件](https://flux-agent-agent.flux-agent.com/docs/user-guide/features/context-files) | 影响每次对话的项目上下文 |
-| [架构](https://flux-agent-agent.flux-agent.com/docs/developer-guide/architecture) | 项目结构、代理循环、关键类 |
-| [贡献](https://flux-agent-agent.flux-agent.com/docs/developer-guide/contributing) | 开发设置、PR 流程、代码风格 |
-| [CLI 参考](https://flux-agent-agent.flux-agent.com/docs/reference/cli-commands) | 所有命令和标志 |
-| [环境变量](https://flux-agent-agent.flux-agent.com/docs/reference/environment-variables) | 完整环境变量参考 |
+| [快速开始](https://omniworker-agent.omniworker.com/docs/getting-started/quickstart) | 安装 → 设置 → 2 分钟内开始首次对话 |
+| [CLI 使用](https://omniworker-agent.omniworker.com/docs/user-guide/cli) | 命令、快捷键、人格、会话 |
+| [配置](https://omniworker-agent.omniworker.com/docs/user-guide/configuration) | 配置文件、提供商、模型、所有选项 |
+| [消息网关](https://omniworker-agent.omniworker.com/docs/user-guide/messaging) | Telegram、Discord、Slack、WhatsApp、Signal、Home Assistant |
+| [安全](https://omniworker-agent.omniworker.com/docs/user-guide/security) | 命令审批、DM 配对、容器隔离 |
+| [工具与工具集](https://omniworker-agent.omniworker.com/docs/user-guide/features/tools) | 40+ 工具、工具集系统、终端后端 |
+| [技能系统](https://omniworker-agent.omniworker.com/docs/user-guide/features/skills) | 过程记忆、技能中心、创建技能 |
+| [记忆](https://omniworker-agent.omniworker.com/docs/user-guide/features/memory) | 持久记忆、用户画像、最佳实践 |
+| [MCP 集成](https://omniworker-agent.omniworker.com/docs/user-guide/features/mcp) | 连接任意 MCP 服务器扩展能力 |
+| [定时调度](https://omniworker-agent.omniworker.com/docs/user-guide/features/cron) | 定时任务与平台投递 |
+| [上下文文件](https://omniworker-agent.omniworker.com/docs/user-guide/features/context-files) | 影响每次对话的项目上下文 |
+| [架构](https://omniworker-agent.omniworker.com/docs/developer-guide/architecture) | 项目结构、代理循环、关键类 |
+| [贡献](https://omniworker-agent.omniworker.com/docs/developer-guide/contributing) | 开发设置、PR 流程、代码风格 |
+| [CLI 参考](https://omniworker-agent.omniworker.com/docs/reference/cli-commands) | 所有命令和标志 |
+| [环境变量](https://omniworker-agent.omniworker.com/docs/reference/environment-variables) | 完整环境变量参考 |
 
 ---
 
@@ -113,42 +113,42 @@ Flux Agent 有两种入口：用 `flux-agent` 启动终端 UI，或运行网关�
 
 如果你来自 Flux Agent，Flux Agent 可以自动导入你的设置、记忆、技能和 API 密钥。
 
-**首次安装时：** 安装向导（`flux-agent setup`）会自动检测 `~/.flux-agent` 并在配置开始前提供迁移选项。
+**首次安装时：** 安装向导（`omniworker setup`）会自动检测 `~/.omniworker` 并在配置开始前提供迁移选项。
 
 **安装后任意时间：**
 
 ```bash
-flux-agent claw migrate              # 交互式迁移（完整预设）
-flux-agent claw migrate --dry-run    # 预览将要迁移的内容
-flux-agent claw migrate --preset user-data   # 仅迁移用户数据，不含密钥
-flux-agent claw migrate --overwrite  # 覆盖已有冲突
+omniworker claw migrate              # 交互式迁移（完整预设）
+omniworker claw migrate --dry-run    # 预览将要迁移的内容
+omniworker claw migrate --preset user-data   # 仅迁移用户数据，不含密钥
+omniworker claw migrate --overwrite  # 覆盖已有冲突
 ```
 
 导入内容：
 - **SOUL.md** — 人格文件
 - **记忆** — MEMORY.md 和 USER.md 条目
-- **技能** — 用户创建的技能 → `~/.flux-agent/skills/flux-agent-imports/`
+- **技能** — 用户创建的技能 → `~/.omniworker/skills/omniworker-imports/`
 - **命令白名单** — 审批模式
 - **消息设置** — 平台配置、允许用户、工作目录
 - **API 密钥** — 白名单中的密钥（Telegram、OpenRouter、OpenAI、Anthropic、ElevenLabs）
 - **TTS 资产** — 工作区音频文件
 - **工作区指令** — AGENTS.md（使用 `--workspace-target`）
 
-使用 `flux-agent claw migrate --help` 查看所有选项，或使用 `flux-agent-migration` 技能进行交互式代理引导迁移（含干运行预览）。
+使用 `omniworker claw migrate --help` 查看所有选项，或使用 `omniworker-migration` 技能进行交互式代理引导迁移（含干运行预览）。
 
 ---
 
 ## 贡献
 
-欢迎贡献！请参阅 [贡献指南](https://flux-agent-agent.flux-agent.com/docs/developer-guide/contributing) 了解开发设置、代码风格和 PR 流程。
+欢迎贡献！请参阅 [贡献指南](https://omniworker-agent.omniworker.com/docs/developer-guide/contributing) 了解开发设置、代码风格和 PR 流程。
 
-贡献者快速开始——克隆并使用 `setup-flux-agent.sh`：
+贡献者快速开始——克隆并使用 `setup-omniworker.sh`：
 
 ```bash
-git clone https://github.com/Flux Agent/flux-agent-agent.git
-cd flux-agent-agent
-./setup-flux-agent.sh     # 安装 uv、创建 venv、安装 .[all]、创建符号链接 ~/.local/bin/flux-agent
-./flux-agent              # 自动检测 venv，无需先 source
+git clone https://github.com/Flux Agent/omniworker-agent.git
+cd omniworker-agent
+./setup-omniworker.sh     # 安装 uv、创建 venv、安装 .[all]、创建符号链接 ~/.local/bin/omniworker
+./omniworker              # 自动检测 venv，无需先 source
 ```
 
 手动安装（等效于上述命令）：
@@ -167,9 +167,9 @@ python -m pytest tests/ -q
 
 - 💬 [Discord](https://discord.gg/Flux Agent)
 - 📚 [技能中心](https://agentskills.io)
-- 🐛 [问题反馈](https://github.com/Flux Agent/flux-agent-agent/issues)
-- 💡 [讨论区](https://github.com/Flux Agent/flux-agent-agent/discussions)
-- 🔌 [Flux AgentClaw](https://github.com/AaronWong1999/flux-agentclaw) — 社区微信桥接：在同一微信账号上运行 Flux Agent Agent 和 Flux Agent。
+- 🐛 [问题反馈](https://github.com/Flux Agent/omniworker-agent/issues)
+- 💡 [讨论区](https://github.com/Flux Agent/omniworker-agent/discussions)
+- 🔌 [OmniWorkerClaw](https://github.com/AaronWong1999/omniworkerclaw) — 社区微信桥接：在同一微信账号上运行 Flux Agent Agent 和 Flux Agent。
 
 ---
 
@@ -177,4 +177,4 @@ python -m pytest tests/ -q
 
 MIT — 详见 [LICENSE](LICENSE)。
 
-由 [Nous Research](https://flux-agent.com) 构建。
+由 [Nous Research](https://omniworker.com) 构建。

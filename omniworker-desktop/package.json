@@ -1,10 +1,10 @@
 {
-  "name": "flux-agent-desktop",
+  "name": "omniworker-desktop",
   "version": "0.5.6",
   "description": "Flux Agent By Simplex — self-improving AI assistant",
   "main": "./out/main/index.js",
   "author": "fathah",
-  "homepage": "https://github.com/fathah/flux-agent-desktop",
+  "homepage": "https://github.com/fathah/omniworker-desktop",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -14,7 +14,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
-    "dev:fresh": "FLUX AGENT_HOME=$(mktemp -d -t flux-agent-fresh) electron-vite dev",
+    "dev:fresh": "OMNIWORKER_HOME=$(mktemp -d -t omniworker-fresh) electron-vite dev",
     "prebuild": "bash scripts/download_slm.sh",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",

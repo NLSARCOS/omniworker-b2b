@@ -330,7 +330,7 @@ class TestAllowPrivateUrlsConfig:
 
     def test_browser_config_string_false_stays_disabled(self, monkeypatch):
         monkeypatch.setattr(
-            "flux-agent_cli.config.read_raw_config",
+            "omniworker_cli.config.read_raw_config",
             lambda: {"browser": {"allow_private_urls": "false"}},
         )
 

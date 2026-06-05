@@ -21,15 +21,15 @@ import {
   checkInstallStatus,
   verifyInstall,
   runInstall,
-  getFlux AgentVersion,
+  getOmniWorkerVersion,
   clearVersionCache,
-  runFlux AgentDoctor,
-  runFlux AgentUpdate,
-  checkFlux AgentExists,
+  runOmniWorkerDoctor,
+  runOmniWorkerUpdate,
+  checkOmniWorkerExists,
   runClawMigrate,
-  runFlux AgentBackup,
-  runFlux AgentImport,
-  runFlux AgentDump,
+  runOmniWorkerBackup,
+  runOmniWorkerImport,
+  runOmniWorkerDump,
   listMcpServers,
   discoverMemoryProviders,
   readLogs,
@@ -63,7 +63,7 @@ import {
   getPlanExpired,
   checkAndCleanupOrphans,
   killSpawnedProcessesGracefully,
-} from "./flux-agent";
+} from "./omniworker";
 import {
   startSshTunnel,
   stopSshTunnel,
@@ -103,7 +103,7 @@ import {
   setEnvValue,
   getConfigValue,
   setConfigValue,
-  getFlux AgentHome,
+  getOmniWorkerHome,
   getModelConfig,
   setModelConfig,
   getCredentialPool,
@@ -227,7 +227,7 @@ import {
   sshSetEnvValue,
   sshGetConfigValue,
   sshSetConfigValue,
-  sshGetFlux AgentHome,
+  sshGetOmniWorkerHome,
   sshGetModelConfig,
   sshSetModelConfig,
   sshListSessions,
@@ -240,7 +240,7 @@ import {
   sshStartGateway,
   sshStopGateway,
   sshReadRemoteApiKey,
-  sshGetFlux AgentVersion,
+  sshGetOmniWorkerVersion,
   sshReadLogs,
   sshGetPlatformEnabled,
   sshSetPlatformEnabled,
@@ -253,7 +253,7 @@ import {
 } from "./ssh-remote";
 
 // Force global secrets redaction across all spawned subprocesses and agents for SaaS compliance and B2B security.
-process.env.FLUX AGENT_REDACT_SECRETS = "true";
+process.env.OMNIWORKER_REDACT_SECRETS = "true";
 
 process.on("uncaughtException", (err) => {
   console.error("[MAIN UNCAUGHT]", err);
@@ -306,7 +306,7 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
-      webSecurity: process.env.FLUX AGENT_LEGACY_WEB_SECURITY === "1" ? false : true,
+      webSecurity: process.env.OMNIWORKER_LEGACY_WEB_SECURITY === "1" ? false : true,
       allowRunningInsecureContent: false,
       webviewTag: true,
     },
@@ -636,25 +636,25 @@ function setupIPC(): void {
   });
 
   // Flux Agent engine info
-  ipcMain.handle("get-flux-agent-version", async () => {
+  ipcMain.handle("get-omniworker-version", async () => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh)
-      return sshGetFlux AgentVersion(conn.ssh);
-    return getFlux AgentVersion();
+      return sshGetOmniWorkerVersion(conn.ssh);
+    return getOmniWorkerVersion();
   });
-  ipcMain.handle("refresh-flux-agent-version", async () => {
+  ipcMain.handle("refresh-omniworker-version", async () => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh)
-      return sshGetFlux AgentVersion(conn.ssh);
+      return sshGetOmniWorkerVersion(conn.ssh);
     clearVersionCache();
-    return getFlux AgentVersion();
+    return getOmniWorkerVersion();
   });
-  ipcMain.handle("run-flux-agent-doctor", () => {
+  ipcMain.handle("run-omniworker-doctor", () => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) return sshRunDoctor(conn.ssh);
-    return runFlux AgentDoctor();
+    return runOmniWorkerDoctor();
   });
-  ipcMain.handle("run-flux-agent-update", async (event) => {
+  ipcMain.handle("run-omniworker-update", async (event) => {
     try {
       const conn = getConnectionConfig();
       if (conn.mode === "ssh" && conn.ssh) {
@@ -662,8 +662,8 @@ function setupIPC(): void {
           step: 1,
           totalSteps: 1,
           title: "Updating remote Flux Agent By Simplex",
-          detail: "Running flux-agent update over SSH...",
-          log: "Running flux-agent update over SSH...\n",
+          detail: "Running omniworker update over SSH...",
+          log: "Running omniworker update over SSH...\n",
         });
         await sshRunUpdate(conn.ssh);
         await sshStartGateway(conn.ssh);
@@ -672,7 +672,7 @@ function setupIPC(): void {
         setSshRemoteApiKey(key);
         return { success: true };
       }
-      await runFlux AgentUpdate((progress: InstallProgress) => {
+      await runOmniWorkerUpdate((progress: InstallProgress) => {
         event.sender.send("install-progress", progress);
       });
       return { success: true };
@@ -682,7 +682,7 @@ function setupIPC(): void {
   });
 
   // Flux Agent migration
-  ipcMain.handle("check-flux-agent", () => checkFlux AgentExists());
+  ipcMain.handle("check-omniworker", () => checkOmniWorkerExists());
   ipcMain.handle("run-claw-migrate", async (event) => {
     try {
       await runClawMigrate((progress: InstallProgress) => {
@@ -747,11 +747,11 @@ function setupIPC(): void {
     },
   );
 
-  ipcMain.handle("get-flux-agent-home", (_event, profile?: string) => {
+  ipcMain.handle("get-omniworker-home", (_event, profile?: string) => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh)
-      return sshGetFlux AgentHome(conn.ssh, profile);
-    return getFlux AgentHome(profile);
+      return sshGetOmniWorkerHome(conn.ssh, profile);
+    return getOmniWorkerHome(profile);
   });
 
   ipcMain.handle("get-device-fingerprint", () => {
@@ -1788,13 +1788,13 @@ function setupIPC(): void {
   });
 
   // Backup / Import (legacy — delegates to Python CLI)
-  ipcMain.handle("run-flux-agent-backup", (_event, profile?: string) =>
-    runFlux AgentBackup(profile),
+  ipcMain.handle("run-omniworker-backup", (_event, profile?: string) =>
+    runOmniWorkerBackup(profile),
   );
   ipcMain.handle(
-    "run-flux-agent-import",
+    "run-omniworker-import",
     (_event, archivePath: string, profile?: string) =>
-      runFlux AgentImport(archivePath, profile),
+      runOmniWorkerImport(archivePath, profile),
   );
 
   // Enhanced Backup / Import (Electron-native, full data)
@@ -1812,7 +1812,7 @@ function setupIPC(): void {
       const { dialog } = require("electron");
       const result = await dialog.showSaveDialog(win, {
         title: "Save Flux Agent By Simplex Backup",
-        defaultPath: `flux-agent-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`,
+        defaultPath: `omniworker-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`,
         filters: [
           { name: "Flux Agent By Simplex Backup", extensions: ["tar.gz"] },
           { name: "All Files", extensions: ["*"] },
@@ -1865,10 +1865,10 @@ function setupIPC(): void {
   );
 
   // Debug dump
-  ipcMain.handle("run-flux-agent-dump", () => {
+  ipcMain.handle("run-omniworker-dump", () => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) return sshRunDump(conn.ssh);
-    return runFlux AgentDump();
+    return runOmniWorkerDump();
   });
 
   // MCP servers
@@ -1990,14 +1990,14 @@ function buildMenu(): void {
         {
           label: "Flux Agent Agent on GitHub",
           click: (): void => {
-            openExternalUrl("https://github.com/Flux Agent/flux-agent-agent/");
+            openExternalUrl("https://github.com/Flux Agent/omniworker-agent/");
           },
         },
         {
           label: "Report an Issue",
           click: (): void => {
             openExternalUrl(
-              "https://github.com/fathah/flux-agent-desktop/issues",
+              "https://github.com/fathah/omniworker-desktop/issues",
             );
           },
         },
@@ -2051,7 +2051,7 @@ if [ -n "$NEWAPP" ]; then
 fi
 rm -rf "$TMP"
 `;
-    const scriptPath = pathMod.join(os.tmpdir(), `flux-agent-update-${Date.now()}.sh`);
+    const scriptPath = pathMod.join(os.tmpdir(), `omniworker-update-${Date.now()}.sh`);
     fs.writeFileSync(scriptPath, script, { mode: 0o755 });
 
     const child = spawn("/bin/bash", [scriptPath], {
@@ -2233,7 +2233,7 @@ function setupUpdater(): void {
 app.whenReady().then(async () => {
   app.name = "Flux Agent";
   await checkAndCleanupOrphans();
-  electronApp.setAppUserModelId("com.flux-agent.flux-agent");
+  electronApp.setAppUserModelId("com.omniworker.omniworker");
 
   // Initialize power monitoring for resume catch-up ticks
   try {

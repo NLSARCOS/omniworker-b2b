@@ -382,7 +382,7 @@ def _resolve_config_gates() -> set[str]:
     if not gated:
         return set()
     try:
-        from flux-agent_cli.config import read_raw_config
+        from omniworker_cli.config import read_raw_config
         cfg = read_raw_config()
     except Exception:
         return set()
@@ -444,7 +444,7 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     """Yield (name, description, args_hint) tuples for all plugin slash commands.
 
     Plugin commands are registered via
-    :func:`flux-agent_cli.plugins.PluginContext.register_command`. They behave
+    :func:`omniworker_cli.plugins.PluginContext.register_command`. They behave
     like ``CommandDef`` entries for gateway surfacing: they appear in the
     Telegram command menu, in Slack's ``/hermes`` subcommand mapping, and
     (via :func:`gateway.platforms.discord._register_slash_commands`) in
@@ -455,7 +455,7 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     behavior).
     """
     try:
-        from flux-agent_cli.plugins import get_plugin_commands
+        from omniworker_cli.plugins import get_plugin_commands
     except Exception:
         return []
     try:
@@ -619,7 +619,7 @@ def _collect_gateway_skill_entries(
     # --- Tier 1: Plugin slash commands (never trimmed) ---------------------
     plugin_pairs: list[tuple[str, str]] = []
     try:
-        from flux-agent_cli.plugins import get_plugin_commands
+        from omniworker_cli.plugins import get_plugin_commands
         plugin_cmds = get_plugin_commands()
         for cmd_name in sorted(plugin_cmds):
             name = sanitize_name(cmd_name) if sanitize_name else cmd_name
@@ -1092,7 +1092,7 @@ def _lmstudio_completion_models() -> list[str]:
     # Gate: don't probe 127.0.0.1 on every keystroke for users who don't use LM Studio.
     if not (os.environ.get("LM_API_KEY") or os.environ.get("LM_BASE_URL")):
         try:
-            from flux-agent_cli.auth import _load_auth_store
+            from omniworker_cli.auth import _load_auth_store
             store = _load_auth_store() or {}
             if "lmstudio" not in (store.get("providers") or {}) \
                and "lmstudio" not in (store.get("credential_pool") or {}):
@@ -1103,7 +1103,7 @@ def _lmstudio_completion_models() -> list[str]:
     if _LMSTUDIO_COMPLETION_CACHE and (now - _LMSTUDIO_COMPLETION_CACHE[0]) < 30.0:
         return _LMSTUDIO_COMPLETION_CACHE[1]
     try:
-        from flux-agent_cli.models import fetch_lmstudio_models
+        from omniworker_cli.models import fetch_lmstudio_models
         models = fetch_lmstudio_models(
             api_key=os.environ.get("LM_API_KEY", ""),
             base_url=os.environ.get("LM_BASE_URL") or "http://127.0.0.1:1234/v1",
@@ -1480,7 +1480,7 @@ class SlashCommandCompleter(Completer):
     def _skin_completions(sub_text: str, sub_lower: str):
         """Yield completions for /skin from available skins."""
         try:
-            from flux-agent_cli.skin_engine import list_skins
+            from omniworker_cli.skin_engine import list_skins
             for s in list_skins():
                 name = s["name"]
                 if name.startswith(sub_lower) and name != sub_lower:
@@ -1497,7 +1497,7 @@ class SlashCommandCompleter(Completer):
     def _personality_completions(sub_text: str, sub_lower: str):
         """Yield completions for /personality from configured personalities."""
         try:
-            from flux-agent_cli.config import load_config
+            from omniworker_cli.config import load_config
             personalities = load_config().get("agent", {}).get("personalities", {})
             if "none".startswith(sub_lower) and "none" != sub_lower:
                 yield Completion(
@@ -1526,7 +1526,7 @@ class SlashCommandCompleter(Completer):
         seen = set()
         # Config-based direct aliases (preferred — include provider info)
         try:
-            from flux-agent_cli.model_switch import (
+            from omniworker_cli.model_switch import (
                 _ensure_direct_aliases, DIRECT_ALIASES, MODEL_ALIASES,
             )
             _ensure_direct_aliases()
@@ -1639,7 +1639,7 @@ class SlashCommandCompleter(Completer):
 
         # Plugin-registered slash commands
         try:
-            from flux-agent_cli.plugins import get_plugin_commands
+            from omniworker_cli.plugins import get_plugin_commands
             for cmd_name, cmd_info in get_plugin_commands().items():
                 if cmd_name.startswith(word):
                     desc = str(cmd_info.get("description", "Plugin command"))

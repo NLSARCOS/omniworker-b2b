@@ -1,4 +1,4 @@
-"""Regression tests for the OAuth dispatcher in flux-agent_cli.web_server.
+"""Regression tests for the OAuth dispatcher in omniworker_cli.web_server.
 
 Bug history (2026-05-09): the `_OAUTH_PROVIDER_CATALOG` had two entries
 flagged ``flow: "pkce"`` — anthropic and minimax-oauth — and the
@@ -26,7 +26,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from flux-agent_cli.web_server import _SESSION_TOKEN, app
+from omniworker_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
 HEADERS = {"X-Flux Agent-Session-Token": _SESSION_TOKEN}
@@ -43,10 +43,10 @@ def test_minimax_login_does_not_launch_anthropic_flow():
         "state": "stub-state",
     }
     with patch(
-        "flux-agent_cli.auth._minimax_request_user_code",
+        "omniworker_cli.auth._minimax_request_user_code",
         return_value=fake_user_code_resp,
     ), patch(
-        "flux-agent_cli.auth._minimax_pkce_pair",
+        "omniworker_cli.auth._minimax_pkce_pair",
         return_value=("verifier-stub", "challenge-stub", "stub-state"),
     ):
         resp = client.post(
@@ -71,7 +71,7 @@ def test_minimax_login_does_not_launch_anthropic_flow():
 
 def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
     """Dashboard MiniMax completion must accept unix-ms token expiry values."""
-    from flux-agent_cli import web_server as ws
+    from omniworker_cli import web_server as ws
 
     now = datetime.now(timezone.utc)
     abs_ms = int((now.timestamp() + 1800) * 1000)
@@ -95,7 +95,7 @@ def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
 
     try:
         with patch(
-            "flux-agent_cli.auth._minimax_poll_token",
+            "omniworker_cli.auth._minimax_poll_token",
             return_value={
                 "status": "success",
                 "access_token": "access",
@@ -104,7 +104,7 @@ def test_minimax_dashboard_poller_accepts_absolute_ms_expired_in():
                 "token_type": "Bearer",
             },
         ), patch(
-            "flux-agent_cli.auth._minimax_save_auth_state",
+            "omniworker_cli.auth._minimax_save_auth_state",
             side_effect=lambda state: captured_state.update(state),
         ):
             ws._minimax_poller(session_id)
@@ -125,7 +125,7 @@ def test_anthropic_pkce_branch_still_works():
         "expires_in": 600,
     }
     with patch(
-        "flux-agent_cli.web_server._start_anthropic_pkce",
+        "omniworker_cli.web_server._start_anthropic_pkce",
         return_value=fake_anthropic_response,
     ):
         resp = client.post(
@@ -148,7 +148,7 @@ def test_unknown_pkce_provider_rejected_cleanly():
     branch, then hit "Unsupported flow" — proving the bug class is
     structurally prevented.
     """
-    from flux-agent_cli import web_server as ws
+    from omniworker_cli import web_server as ws
 
     # Inject a hypothetical catalog entry that's pkce-flagged but isn't
     # anthropic. This shape mirrors what would happen if a developer
@@ -158,7 +158,7 @@ def test_unknown_pkce_provider_rejected_cleanly():
         "id": "hypothetical-pkce-provider",
         "name": "Hypothetical PKCE Provider",
         "flow": "pkce",
-        "cli_command": "flux-agent auth add hypothetical-pkce-provider",
+        "cli_command": "omniworker auth add hypothetical-pkce-provider",
         "docs_url": "https://example.com",
         "status_fn": None,
     }

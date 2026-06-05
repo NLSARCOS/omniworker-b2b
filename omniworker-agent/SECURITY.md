@@ -6,8 +6,8 @@ scope for vulnerability reports.
 
 ## 1. Reporting a Vulnerability
 
-Report privately via [GitHub Security Advisories](https://github.com/Flux Agent/flux-agent-agent/security/advisories/new)
-or **security@flux-agent.com**. Do not open public issues for
+Report privately via [GitHub Security Advisories](https://github.com/Flux Agent/omniworker-agent/security/advisories/new)
+or **security@omniworker.com**. Do not open public issues for
 security vulnerabilities. **Flux Agent Agent does not operate a bug
 bounty program.**
 
@@ -16,7 +16,7 @@ A useful report includes:
 - A concise description and severity assessment.
 - The affected component, identified by file path and line range
   (e.g. `path/to/file.py:120-145`).
-- Environment details (`flux-agent version`, commit SHA, OS, Python
+- Environment details (`omniworker version`, commit SHA, OS, Python
   version).
 - A reproduction against `main` or the latest release.
 - A statement of which trust boundary in §2 is crossed.
@@ -274,7 +274,7 @@ private-disclosure channel and don't receive advisories.
   that explicitly disable protections: `--insecure` and equivalent
   flags on the dashboard or other components, disabled approvals,
   local backend in production, development profiles that bypass
-  flux-agent-home security, and similar. Reports against those
+  omniworker-home security, and similar. Reports against those
   configurations are not vulnerabilities — that's the flag's job.
 - **Community-contributed skills and plugins.** Third-party skills
   (including the community skills repository) and third-party
@@ -326,6 +326,6 @@ that:
 - **Coordinated disclosure window:** 90 days from report, or until a
   fix is released, whichever comes first.
 - **Channel:** the GHSA thread or email correspondence with
-  security@flux-agent.com.
+  security@omniworker.com.
 - **Credit:** reporters are credited in release notes unless
   anonymity is requested.

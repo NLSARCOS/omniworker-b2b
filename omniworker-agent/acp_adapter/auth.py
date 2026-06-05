@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import Any, Optional
 
 
-TERMINAL_SETUP_AUTH_METHOD_ID = "flux-agent-setup"
+TERMINAL_SETUP_AUTH_METHOD_ID = "omniworker-setup"
 
 
 def detect_provider() -> Optional[str]:
     """Resolve the active Flux Agent runtime provider, or None if unavailable."""
     try:
-        from flux-agent_cli.runtime_provider import resolve_runtime_provider
+        from omniworker_cli.runtime_provider import resolve_runtime_provider
         runtime = resolve_runtime_provider()
         api_key = runtime.get("api_key")
         provider = runtime.get("provider")

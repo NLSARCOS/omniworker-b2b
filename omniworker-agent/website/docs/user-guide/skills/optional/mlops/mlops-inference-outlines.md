@@ -14,7 +14,7 @@ Outlines: structured JSON/regex/Pydantic LLM generation.
 
 | | |
 |---|---|
-| Source | Optional — install with `flux-agent skills install official/mlops/outlines` |
+| Source | Optional — install with `omniworker skills install official/mlops/outlines` |
 | Path | `optional-skills/mlops/inference/outlines` |
 | Version | `1.0.0` |
 | Author | Orchestra Research |

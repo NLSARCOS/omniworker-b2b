@@ -1,4 +1,4 @@
-import { Box, Text, useInput } from '@flux-agent/ink'
+import { Box, Text, useInput } from '@omniworker/ink'
 import { useState } from 'react'
 
 import { isMac } from '../lib/platform.js'

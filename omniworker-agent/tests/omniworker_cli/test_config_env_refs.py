@@ -1,6 +1,6 @@
 import textwrap
 
-from flux-agent_cli.config import load_config, save_config
+from omniworker_cli.config import load_config, save_config
 
 
 def _write_config(tmp_path, body: str):

@@ -7,7 +7,7 @@ license: MIT
 dependencies: [modal>=0.64.0]
 platforms: [linux, macos, windows]
 metadata:
-  flux-agent:
+  omniworker:
     tags: [Infrastructure, Serverless, GPU, Cloud, Deployment, Modal]
 
 ---
