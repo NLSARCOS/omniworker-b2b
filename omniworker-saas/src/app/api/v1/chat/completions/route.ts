@@ -103,7 +103,7 @@ function trimSystemPrompt(systemContent: string): string {
 }
 
 // Flux Agent virtual models → role-based system prompts
-const FLUX AGENT_ROLES: Record<string, string> = {
+const FLUX_AGENT_ROLES: Record<string, string> = {
   "flux-agent-code": `You are Flux Agent Code, an expert software engineer and coding assistant.
 You write clean, efficient, well-documented code.
 Always prefer production-quality solutions with proper error handling.
@@ -382,31 +382,175 @@ function classifyPromptComplexity(messages: { role: string; content: string }[])
   return "speed";
 }
 
+// ── Deterministic seeding (model stickiness within a conversation) ──────
+// A free Math.random() re-rolled the model on every turn, so a single task
+// bounced between GLM-5.1 → Kimi → MiMo → Qwen and the agent "lost its mind"
+// mid-task. Seeding the selection with a stable conversation key keeps the
+// SAME model for the SAME conversation/tier across turns.
+function hashStringToSeed(s: string): number {
+  // FNV-1a 32-bit
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /**
- * Weighted random selection within a tier.
- * Models with higher weight are picked proportionally more often.
+ * Stable per-conversation seed. Prefers an explicit conversationId; otherwise
+ * derives one from userId + the first user message (stable across turns).
  */
-function selectModelFromTier(tier: "reasoning" | "balanced" | "speed"): ModelTier {
+function conversationSeed(
+  messages: { role: string; content?: unknown }[],
+  userId: string,
+  conversationId?: string
+): number {
+  if (conversationId) return hashStringToSeed(`conv:${conversationId}`);
+  const firstUser = messages.find(m => m.role === "user");
+  const anchor = typeof firstUser?.content === "string"
+    ? firstUser.content
+    : JSON.stringify(firstUser?.content || "");
+  return hashStringToSeed(`${userId}|${anchor.slice(0, 200)}`);
+}
+
+/**
+ * Weighted selection within a tier.
+ * Models with higher weight are picked proportionally more often.
+ * `rng` defaults to Math.random; pass a seeded PRNG for deterministic
+ * (sticky) selection within a conversation.
+ */
+function selectModelFromTier(
+  tier: "reasoning" | "balanced" | "speed",
+  rng: () => number = Math.random
+): ModelTier {
   const candidates = OPENCODE_GO_CATALOG.filter(m => m.tier === tier);
   const totalWeight = candidates.reduce((sum, m) => sum + m.weight, 0);
-  let random = Math.random() * totalWeight;
-  
+  let random = rng() * totalWeight;
+
   for (const model of candidates) {
     random -= model.weight;
     if (random <= 0) return model;
   }
-  
+
   return candidates[0]; // fallback
 }
 
 /**
  * Intelligent OpenCode Go model selection.
  * Returns { model, tier, endpoint } for routing and observability.
+ * When `seed` is provided, selection is deterministic for that conversation.
  */
-function intelligentModelSelect(messages: { role: string; content: string }[]): { model: string; tier: string; endpoint: OpenCodeEndpoint } {
+function intelligentModelSelect(
+  messages: { role: string; content: string }[],
+  seed?: number
+): { model: string; tier: string; endpoint: OpenCodeEndpoint } {
   const tier = classifyPromptComplexity(messages);
-  const selected = selectModelFromTier(tier);
+  const rng = seed !== undefined ? mulberry32(seed) : Math.random;
+  const selected = selectModelFromTier(tier, rng);
   return { model: selected.id, tier, endpoint: selected.endpoint };
+}
+
+// ── Model pin (conversation stickiness, persistent) ────────────────────
+// Stored in ConversationModel. All ops are wrapped in try/catch so that if the
+// migration hasn't been applied yet the router silently degrades to seeded
+// selection instead of failing the request.
+interface ModelPin { provider: string; model: string; endpoint: OpenCodeEndpoint }
+
+async function loadModelPin(conversationKey: string): Promise<ModelPin | null> {
+  try {
+    const pin = await prisma.conversationModel.findUnique({
+      where: { conversationId: conversationKey },
+    });
+    if (pin) {
+      return {
+        provider: pin.provider,
+        model: pin.model,
+        endpoint: (pin.endpoint as OpenCodeEndpoint) || "chat_completions",
+      };
+    }
+  } catch {
+    // Table missing (migration pending) or DB error — degrade gracefully.
+  }
+  return null;
+}
+
+async function saveModelPin(
+  conversationKey: string,
+  userId: string,
+  provider: string,
+  model: string,
+  endpoint: OpenCodeEndpoint
+): Promise<void> {
+  try {
+    await prisma.conversationModel.upsert({
+      where: { conversationId: conversationKey },
+      create: { conversationId: conversationKey, userId, provider, model, endpoint },
+      update: { provider, model, endpoint },
+    });
+  } catch {
+    // Non-fatal: stickiness is best-effort.
+  }
+}
+
+// ── OpenAI → Anthropic message conversion (preserves tool structure) ────
+// The old mapping collapsed every message to { role, content } and dropped
+// tool_calls + the "tool" role entirely, mangling all tool context whenever a
+// fallback landed on an Anthropic-format model (Qwen/MiniMax /messages, or
+// Anthropic itself). This rebuilds proper tool_use / tool_result blocks.
+function toAnthropicMessages(chatMsgs: any[]): any[] {
+  const out: any[] = [];
+  for (const m of chatMsgs) {
+    if (m.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
+      const blocks: any[] = [];
+      if (m.content) {
+        blocks.push({ type: "text", text: typeof m.content === "string" ? m.content : JSON.stringify(m.content) });
+      }
+      for (const tc of m.tool_calls) {
+        let input: unknown = {};
+        const rawArgs = tc.function?.arguments;
+        try {
+          input = typeof rawArgs === "string" ? JSON.parse(rawArgs || "{}") : (rawArgs || {});
+        } catch {
+          input = {};
+        }
+        blocks.push({ type: "tool_use", id: tc.id, name: tc.function?.name, input });
+      }
+      out.push({ role: "assistant", content: blocks });
+    } else if (m.role === "tool") {
+      // Tool result → user turn with a tool_result block. Consecutive tool
+      // results are merged into one user turn (Anthropic groups parallel
+      // tool results together).
+      const block = {
+        type: "tool_result",
+        tool_use_id: m.tool_call_id,
+        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content ?? ""),
+      };
+      const prev = out[out.length - 1];
+      if (prev && prev.role === "user" && Array.isArray(prev.content) &&
+          prev.content.every((b: any) => b?.type === "tool_result")) {
+        prev.content.push(block);
+      } else {
+        out.push({ role: "user", content: [block] });
+      }
+    } else {
+      const content = typeof m.content === "string"
+        ? m.content
+        : (m.content == null ? "" : JSON.stringify(m.content));
+      out.push({ role: m.role === "assistant" ? "assistant" : "user", content });
+    }
+  }
+  return out;
 }
 
 function detectProvider(model: string): string {
@@ -421,7 +565,7 @@ function detectProvider(model: string): string {
   return "openai";
 }
 
-function isFlux AgentVirtualModel(model: string): boolean {
+function isFluxAgentVirtualModel(model: string): boolean {
   return model.startsWith("flux-agent");
 }
 
@@ -472,7 +616,7 @@ export async function POST(request: Request) {
   const isStream = body.stream === true;
 
   // ── Flux Agent virtual model handling ──────────────────────────────
-  if (isFlux AgentVirtualModel(requestedModel)) {
+  if (isFluxAgentVirtualModel(requestedModel)) {
     // Find the highest active priority level
     const topProvider = await prisma.masterProvider.findFirst({
       where: { isActive: true },
@@ -508,13 +652,36 @@ export async function POST(request: Request) {
       shuffledCandidates.push(...[...group].sort(() => Math.random() - 0.5));
     }
 
+    // ── Model stickiness: stable seed + persistent pin ─────────────
+    // The seed keeps OpenCode Go model selection deterministic per
+    // conversation; the pin (if present) forces the exact provider+model
+    // chosen on a previous turn, so the model never changes mid-task unless
+    // it fails. pinKey prefers an explicit conversationId, else a stable hash.
+    const convSeed = conversationSeed(
+      (body.messages as any[]) || [],
+      String(user.id),
+      (body as any).conversationId
+    );
+    const pinKey = (body as any).conversationId || `auto:${String(user.id)}:${convSeed}`;
+    const modelPin = await loadModelPin(pinKey);
+    if (modelPin) {
+      // Move the pinned provider to the front of the cascade.
+      const pinnedFirst = [
+        ...shuffledCandidates.filter(p => p.provider === modelPin.provider),
+        ...shuffledCandidates.filter(p => p.provider !== modelPin.provider),
+      ];
+      shuffledCandidates.length = 0;
+      shuffledCandidates.push(...pinnedFirst);
+      console.log(`[ModelPin] Conversation ${pinKey} pinned to ${modelPin.provider} (${modelPin.model})`);
+    }
+
     // ── Conversation compaction (virtual model path) ───────────────
     if (body.messages && body.messages.length > 30 && topProvider?.apiKey) {
       const userQuery = body.messages.filter((m: any) => m.role === "user").pop()?.content || "";
       let summaryModel: string;
       let summaryEndpoint: "chat_completions" | "messages" | undefined;
       if (topProvider.provider === "opencode-go") {
-        const routing = intelligentModelSelect(body.messages);
+        const routing = intelligentModelSelect(body.messages, convSeed);
         summaryModel = routing.model;
         summaryEndpoint = routing.endpoint;
       } else {
@@ -569,6 +736,7 @@ export async function POST(request: Request) {
     let aiResponse: Response | null = null;
     let selectedProvider: any = null;
     let selectedRealModel = "";
+    let selectedEndpoint: OpenCodeEndpoint = "chat_completions";
     let selectedPayload: any = null;
     let selectedHeaders: any = null;
     let selectedUrl = "";
@@ -582,12 +750,18 @@ export async function POST(request: Request) {
       const targetUrl = PROVIDER_URLS[targetProvider];
       if (!targetUrl) continue;
 
-      // Resolve real model: intelligent routing for OpenCode Go, default for others
+      // Resolve real model: pinned model wins; else intelligent (seeded)
+      // routing for OpenCode Go, default for others.
       let realModel: string;
       let routingTier = "default";
       let resolvedEndpoint: OpenCodeEndpoint = "chat_completions";
-      if (targetProvider === "opencode-go") {
-        const routing = intelligentModelSelect(body.messages || []);
+      const pinAppliesHere = modelPin && modelPin.provider === targetProvider;
+      if (pinAppliesHere) {
+        realModel = modelPin!.model;
+        resolvedEndpoint = modelPin!.endpoint;
+        routingTier = "pinned";
+      } else if (targetProvider === "opencode-go") {
+        const routing = intelligentModelSelect(body.messages || [], convSeed);
         realModel = routing.model;
         routingTier = routing.tier;
         resolvedEndpoint = routing.endpoint;
@@ -599,7 +773,7 @@ export async function POST(request: Request) {
       }
 
       // Inject role-based system prompt for code mode
-      const rolePrompt = FLUX AGENT_ROLES[requestedModel] || null;
+      const rolePrompt = FLUX_AGENT_ROLES[requestedModel] || null;
       let messages = body.messages || [];
       if (rolePrompt && messages.length > 0) {
         messages = [{ role: "system", content: rolePrompt }, ...messages];
@@ -623,10 +797,11 @@ export async function POST(request: Request) {
         }
         // Greetings don't need tool definitions either — agent clients send
         // dozens of function schemas (~7K tokens) that ride along in `...body`.
-        if (body.tools || body.functions) {
-          const toolsChars = JSON.stringify(body.tools || body.functions).length;
+        const _b = body as any;
+        if (_b.tools || _b.functions) {
+          const toolsChars = JSON.stringify(_b.tools || _b.functions).length;
           console.log(`[GreetingTrim] Stripping tools from greeting request (virtual path): ${toolsChars} chars`);
-          const { tools: _t, tool_choice: _tc, functions: _f, function_call: _fc, ...rest } = body;
+          const { tools: _t, tool_choice: _tc, functions: _f, function_call: _fc, ...rest } = _b;
           body = rest;
         }
       }
@@ -658,16 +833,13 @@ export async function POST(request: Request) {
           headers["x-api-key"] = masterProvider.apiKey;
         }
         // Anthropic API format: system as top-level, no system in messages array
-        const systemMsg = messages.find((m: { role: string; content: string }) => m.role === "system");
-        const chatMsgs = messages.filter((m: { role: string; content: string }) => m.role !== "system");
+        const systemMsg = messages.find((m: any) => m.role === "system");
+        const chatMsgs = messages.filter((m: any) => m.role !== "system");
         payload = {
           model: realModel,
           max_tokens: body.max_tokens || 4096,
           ...(systemMsg ? { system: systemMsg.content } : {}),
-          messages: chatMsgs.map((m: { role: string; content: string }) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: m.content,
-          })),
+          messages: toAnthropicMessages(chatMsgs),
           stream: isStream,
         };
       } else {
@@ -725,6 +897,7 @@ export async function POST(request: Request) {
           aiResponse = response;
           selectedProvider = masterProvider;
           selectedRealModel = realModel;
+          selectedEndpoint = resolvedEndpoint;
           selectedPayload = payload;
           selectedHeaders = headers;
           selectedUrl = resolvedUrl;
@@ -741,6 +914,12 @@ export async function POST(request: Request) {
         console.error(`[Flux Agent Cloud] Fetch error to provider ${targetProvider}:`, err);
         lastErrorDetails = { provider: targetProvider, error: err.message || String(err) };
       }
+    }
+
+    // Persist the model pin so the next turn reuses this exact provider/model.
+    // Best-effort: if the table isn't migrated yet, saveModelPin no-ops.
+    if (aiResponse && selectedProvider) {
+      await saveModelPin(pinKey, String(user.id), selectedProvider.provider, selectedRealModel, selectedEndpoint);
     }
 
     if (!aiResponse || !selectedProvider) {
@@ -1020,10 +1199,11 @@ export async function POST(request: Request) {
     }
     // Greetings don't need tool definitions either — agent clients send
     // dozens of function schemas (~7K tokens) that ride along in `...body`.
-    if (body.tools || body.functions) {
-      const toolsChars = JSON.stringify(body.tools || body.functions).length;
+    const _b = body as any;
+    if (_b.tools || _b.functions) {
+      const toolsChars = JSON.stringify(_b.tools || _b.functions).length;
       console.log(`[GreetingTrim] Stripping tools from greeting request (standard path): ${toolsChars} chars`);
-      const { tools: _t, tool_choice: _tc, functions: _f, function_call: _fc, ...rest } = body;
+      const { tools: _t, tool_choice: _tc, functions: _f, function_call: _fc, ...rest } = _b;
       body = rest;
     }
   }
@@ -1079,16 +1259,13 @@ export async function POST(request: Request) {
           headers["x-api-key"] = provider.apiKey;
         }
         const msgs = body.messages || [];
-        const systemMsg = msgs.find((m: { role: string; content: string }) => m.role === "system");
-        const chatMsgs = msgs.filter((m: { role: string; content: string }) => m.role !== "system");
+        const systemMsg = msgs.find((m: any) => m.role === "system");
+        const chatMsgs = msgs.filter((m: any) => m.role !== "system");
         payload = {
           model: requestedModel,
           max_tokens: body.max_tokens || 4096,
           ...(systemMsg ? { system: systemMsg.content } : {}),
-          messages: chatMsgs.map((m: { role: string; content: string }) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: m.content,
-          })),
+          messages: toAnthropicMessages(chatMsgs),
           stream: isStream,
         };
       } else {

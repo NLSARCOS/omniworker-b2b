@@ -90,7 +90,7 @@ Brief paragraph with remaining context needed to continue the conversation natur
 Current user query: "${userQuery}"
 
 Conversation:
-${truncatedMiddle.map(m => \`[\${m.role}]: \${m.content}\`).join("\\n\\n")}
+${truncatedMiddle.map(m => `[${m.role}]: ${m.content}`).join("\n\n")}
 
 Structured summary:`;
 

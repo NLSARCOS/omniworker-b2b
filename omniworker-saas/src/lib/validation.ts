@@ -19,9 +19,17 @@ export const registerSchema = z.object({
 // ─── Chat / LLM ───
 export const chatCompletionSchema = z.object({
   model: z.string().optional(),
+  // Optional conversation identity for model stickiness. When present, the
+  // router pins the same provider/model to this conversation across turns.
+  conversationId: z.string().max(128).optional(),
   messages: z.array(z.object({
     role: z.string(),
-    content: z.string()
+    // content is polymorphic in an LLM proxy: a string, null (assistant turns
+    // that only carry tool_calls), or an array of content blocks (multimodal /
+    // tool results). The previous z.string() rejected null/array and 400'd the
+    // whole request mid-task. z.any() accepts all shapes; downstream code
+    // already guards content with typeof checks before using it as a string.
+    content: z.any(),
   }).passthrough()).min(1, "Se requiere al menos un mensaje"),
   stream: z.boolean().optional(),
   temperature: z.number().min(0).max(2).optional(),
