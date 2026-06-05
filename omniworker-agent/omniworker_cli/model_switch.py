@@ -1794,3 +1794,10 @@ def list_picker_providers(
         filtered.append(p)
 
     return filtered
+
+
+# Back-compat alias — migración hermes/openclaw → omniworker (tests usan el nombre nuevo).
+_check_omniworker_model_warning = _check_hermes_model_warning
+
+# Back-compat alias — hermes/openclaw → omniworker.
+is_nous_omniworker_non_agentic = is_nous_hermes_non_agentic

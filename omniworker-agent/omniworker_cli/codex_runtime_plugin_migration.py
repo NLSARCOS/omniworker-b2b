@@ -755,3 +755,7 @@ def migrate(
     except Exception as exc:
         report.errors.append(f"could not write {target}: {exc}")
     return report
+
+
+# Back-compat alias — migración hermes/openclaw → omniworker (tests usan el nombre nuevo).
+_build_omniworker_tools_mcp_entry = _build_hermes_tools_mcp_entry
