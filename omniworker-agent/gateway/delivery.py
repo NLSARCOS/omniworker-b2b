@@ -147,8 +147,20 @@ class DeliveryRouter:
         Returns:
             Dict with delivery results per target
         """
+        # Opacity boundary: metadata flows to local files and platform adapters,
+        # so strip infrastructure fields (model/provider/base_url/…) and humanise
+        # agent ids here — the single outbound redaction point. The product
+        # surface shows roles ("Agente de Marketing"), never the model behind it.
+        if metadata:
+            try:
+                from .model_opacity import redact_for_user
+
+                metadata = redact_for_user(metadata)
+            except Exception as exc:  # noqa: BLE001 — delivery must never crash on redaction
+                logger.debug("metadata redaction skipped: %s", exc)
+
         results = {}
-        
+
         for target in targets:
             try:
                 if target.platform == Platform.LOCAL:

@@ -2124,6 +2124,14 @@ class AIAgent:
             _agent_section = {}
         self._tool_use_enforcement = _agent_section.get("tool_use_enforcement", "auto")
 
+        # Orchestrator mode: when true, the top-level interactive agent (gateway
+        # chat / desktop chat) adopts the "director that decides and delegates"
+        # system prompt from the agent registry. Off by default — opt-in via
+        # agent.orchestrator_mode in config.yaml. Only ever applied to agents
+        # that carry the delegate_task tool (root agents, never delegated
+        # workers); see agent/system_prompt.build_system_prompt_parts.
+        self._orchestrator_mode = bool(_agent_section.get("orchestrator_mode", False))
+
         # App-level API retry count (wraps each model API call).  Default 3,
         # overridable via agent.api_max_retries in config.yaml.  See #11616.
         try:
@@ -3065,6 +3073,36 @@ class AIAgent:
                 self.status_callback("lifecycle", message)
             except Exception:
                 logger.debug("status_callback error in _emit_status", exc_info=True)
+
+    # Chat autolearning threshold: same request pattern N times → propose a skill.
+    _AUTOLEARN_CHAT_THRESHOLD = 3
+
+    def _autolearn_note_chat(self, user_message) -> Optional[str]:
+        """Record a chat request pattern; return a skill proposal when it recurs.
+
+        Uses the shared persistent tracker (same one the daemon uses), so chat
+        usage feeds the autolearning loop and survives restarts. Returns a
+        user-facing proposal string the first time a pattern hits the threshold,
+        else None. Never raises.
+        """
+        text = user_message if isinstance(user_message, str) else ""
+        if not text.strip():
+            return None
+        try:
+            from agent.autolearn_tracker import AutolearnTracker, bucket_of
+
+            if getattr(self, "_autolearn_tracker", None) is None:
+                self._autolearn_tracker = AutolearnTracker()
+            if self._autolearn_tracker.record_and_check(
+                text, threshold=self._AUTOLEARN_CHAT_THRESHOLD
+            ):
+                return (
+                    f"💡 Pedís seguido algo como «{bucket_of(text)}». "
+                    f"¿Querés que cree un skill para automatizarlo?"
+                )
+        except Exception:  # noqa: BLE001 — autolearning must never break a turn
+            return None
+        return None
 
     def _emit_warning(self, message: str) -> None:
         """Emit a user-visible warning through the same status plumbing.
@@ -12491,6 +12529,18 @@ class AIAgent:
         
         # Track user turns for memory flush and periodic nudge logic
         self._user_turn_count += 1
+
+        # Autolearning in chat (orchestrator mode): feed the user's request into
+        # the shared pattern tracker and surface a skill proposal when the same
+        # ask recurs (D5). The chat learns, not just the daemon. Best-effort —
+        # surfaced as a status note, never altering the message sequence.
+        if getattr(self, "_orchestrator_mode", False):
+            try:
+                _autolearn_note = self._autolearn_note_chat(user_message)
+                if _autolearn_note:
+                    self._emit_status(_autolearn_note)
+            except Exception:
+                pass
 
         # Reset the streaming context scrubber at the top of each turn so a
         # hung span from a prior interrupted stream can't taint this turn's

@@ -1980,6 +1980,8 @@ def delegate_task(
     acp_command: Optional[str] = None,
     acp_args: Optional[List[str]] = None,
     role: Optional[str] = None,
+    agent_type: Optional[str] = None,
+    complexity: Optional[str] = None,
     parent_agent=None,
 ) -> str:
     """
@@ -2073,7 +2075,14 @@ def delegate_task(
         task_list = tasks
     elif goal and isinstance(goal, str) and goal.strip():
         task_list = [
-            {"goal": goal, "context": context, "toolsets": toolsets, "role": top_role}
+            {
+                "goal": goal,
+                "context": context,
+                "toolsets": toolsets,
+                "role": top_role,
+                "agent_type": agent_type,
+                "complexity": complexity,
+            }
         ]
     else:
         return tool_error("Provide either 'goal' (single task) or 'tasks' (batch).")
@@ -2114,26 +2123,44 @@ def delegate_task(
             # Per-task role beats top-level; normalise again so unknown
             # per-task values warn and degrade to leaf uniformly.
             effective_role = _normalize_role(t.get("role") or top_role)
+            # Registry-aware resolution: when the task names an agent_type, its
+            # provider/model/toolset/system-prompt/max_iter come from
+            # agent_types.yaml, overriding the global delegation config. When
+            # absent, this returns the global creds/toolsets unchanged.
+            try:
+                task_creds, task_toolsets, task_context, task_max_iter = (
+                    _resolve_agent_type_task(
+                        t,
+                        parent_agent,
+                        default_creds=creds,
+                        default_toolsets=toolsets,
+                        default_max_iter=effective_max_iter,
+                    )
+                )
+            except (KeyError, ValueError) as exc:
+                return tool_error(
+                    f"Task {i} agent_type resolution failed: {exc}"
+                )
             child = _build_child_agent(
                 task_index=i,
                 goal=t["goal"],
-                context=t.get("context"),
-                toolsets=t.get("toolsets") or toolsets,
-                model=creds["model"],
-                max_iterations=effective_max_iter,
+                context=task_context,
+                toolsets=task_toolsets,
+                model=task_creds["model"],
+                max_iterations=task_max_iter,
                 task_count=n_tasks,
                 parent_agent=parent_agent,
-                override_provider=creds["provider"],
-                override_base_url=creds["base_url"],
-                override_api_key=creds["api_key"],
-                override_api_mode=creds["api_mode"],
+                override_provider=task_creds["provider"],
+                override_base_url=task_creds["base_url"],
+                override_api_key=task_creds["api_key"],
+                override_api_mode=task_creds["api_mode"],
                 override_acp_command=t.get("acp_command")
                 or acp_command
-                or creds.get("command"),
+                or task_creds.get("command"),
                 override_acp_args=(
                     task_acp_args
                     if task_acp_args is not None
-                    else (acp_args if acp_args is not None else creds.get("args"))
+                    else (acp_args if acp_args is not None else task_creds.get("args"))
                 ),
                 role=effective_role,
             )
@@ -2512,6 +2539,86 @@ def _resolve_delegation_credentials(cfg: dict, parent_agent) -> dict:
     }
 
 
+def _resolve_agent_type_task(
+    task: dict,
+    parent_agent,
+    *,
+    default_creds: dict,
+    default_toolsets: Optional[List[str]],
+    default_max_iter: int,
+) -> tuple[dict, Optional[List[str]], Optional[str], int]:
+    """Resolve a delegation task's creds/toolsets/context from the agent registry.
+
+    When a task carries ``agent_type`` (e.g. ``developer``, ``general_agent``),
+    its provider/model/toolset/system-prompt come from ``agent_types.yaml`` via
+    :mod:`agent.agent_registry`, overriding the global ``delegation`` config.
+    ``complexity`` (simple|medium|complex) is forwarded so ``general_agent``
+    picks the right tier at spawn time.
+
+    Returns ``(creds, toolsets, context, max_iterations)``. When ``agent_type``
+    is absent, returns the caller-supplied defaults unchanged.
+    """
+    agent_type = (task.get("agent_type") or "").strip()
+    if not agent_type:
+        return default_creds, task.get("toolsets") or default_toolsets, task.get("context"), default_max_iter
+
+    from agent.agent_registry import get_agent_for_task, load_system_prompt
+
+    acfg = get_agent_for_task(agent_type, complexity=task.get("complexity"))
+
+    # Per-agent credentials resolved through the same runtime-provider path.
+    creds = _resolve_delegation_credentials(acfg.to_delegation_cfg(), parent_agent)
+    # Carry the agent's fallback model into the cred bundle when the registry
+    # specifies one (rides into _build_child_agent's fallback_model handling).
+    if acfg.fallback_model and not creds.get("fallback_model"):
+        creds = {**creds, "fallback_model": acfg.fallback_model}
+
+    toolsets = task.get("toolsets") or acfg.toolset or default_toolsets
+
+    # Sandbox flag: honoured only when a sandbox backend is configured via
+    # TERMINAL_ENV (docker/modal/vercel_sandbox/...). In-process threaded
+    # children share the process env, so we can't isolate per-child here —
+    # surface the gap loudly instead of silently running unsandboxed.
+    if getattr(acfg, "sandbox", False):
+        _env = os.getenv("TERMINAL_ENV", "local").strip().lower() or "local"
+        if _env == "local":
+            logger.warning(
+                "Agent '%s' requests sandbox but TERMINAL_ENV=local — running "
+                "UNSANDBOXED. Configure a sandbox backend (TERMINAL_ENV=docker/"
+                "modal/vercel_sandbox) to enforce isolation.",
+                agent_type,
+            )
+
+    # Prepend the role's system prompt to the task context so the worker boots
+    # with its specialised instructions on top of the standard child scaffolding.
+    role_prompt = load_system_prompt(acfg.system_prompt)
+
+    # Pre-load the role's skills (registry ``skills:``) as active guidance, so a
+    # specialist worker boots already knowing its procedures (objetivo 2).
+    skills_prompt = ""
+    if getattr(acfg, "skills", None):
+        try:
+            from agent.skill_commands import build_preloaded_skills_prompt
+
+            skills_prompt, _loaded, _missing = build_preloaded_skills_prompt(acfg.skills)
+            if _missing:
+                logger.warning("Agent '%s' skills not found: %s", agent_type, _missing)
+        except Exception as exc:  # noqa: BLE001 — missing skills must not block spawn
+            logger.debug("preload skills for %s failed: %s", agent_type, exc)
+
+    extra_context = task.get("context")
+    parts = [
+        p for p in (
+            role_prompt.strip() if role_prompt else "",
+            skills_prompt.strip() if skills_prompt else "",
+            extra_context,
+        ) if p
+    ]
+    composed_context = "\n\n".join(parts) if parts else None
+
+    return creds, toolsets, composed_context, (acfg.max_iterations or default_max_iter)
+
+
 def _load_config() -> dict:
     """Load delegation config from CLI_CONFIG or persistent config.
 
@@ -2771,6 +2878,23 @@ DELEGATE_TASK_SCHEMA = {
                             "enum": ["leaf", "orchestrator"],
                             "description": "Per-task role override. See top-level 'role' for semantics.",
                         },
+                        "agent_type": {
+                            "type": "string",
+                            "description": (
+                                "Registry agent type for this task (e.g. 'developer', "
+                                "'researcher', 'general_agent'). Routes the task to that "
+                                "agent's fixed provider/model/toolset from agent_types.yaml. "
+                                "Use 'general_agent' when no specialist fits."
+                            ),
+                        },
+                        "complexity": {
+                            "type": "string",
+                            "enum": ["simple", "medium", "complex"],
+                            "description": (
+                                "Only for agent_type='general_agent': task complexity, "
+                                "used to pick the model tier at spawn time."
+                            ),
+                        },
                     },
                     "required": ["goal"],
                 },
@@ -2783,6 +2907,22 @@ DELEGATE_TASK_SCHEMA = {
                 "type": "string",
                 "enum": ["leaf", "orchestrator"],
                 "description": "(rebuilt at get_definitions() time)",
+            },
+            "agent_type": {
+                "type": "string",
+                "description": (
+                    "Single-task: route to a registry agent type (e.g. 'developer', "
+                    "'researcher', 'general_agent') with its fixed provider/model/"
+                    "toolset from agent_types.yaml. Omit to inherit the parent's model."
+                ),
+            },
+            "complexity": {
+                "type": "string",
+                "enum": ["simple", "medium", "complex"],
+                "description": (
+                    "Only for agent_type='general_agent': task complexity, used to "
+                    "pick the model tier at spawn time (fixed for the whole run)."
+                ),
             },
             "acp_command": {
                 "type": "string",
@@ -2826,6 +2966,8 @@ registry.register(
         acp_command=args.get("acp_command"),
         acp_args=args.get("acp_args"),
         role=args.get("role"),
+        agent_type=args.get("agent_type"),
+        complexity=args.get("complexity"),
         parent_agent=kw.get("parent_agent"),
     ),
     check_fn=check_delegate_requirements,

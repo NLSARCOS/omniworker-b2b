@@ -100,6 +100,30 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     # Pointer to the hermes-agent skill + docs for user questions about Flux Agent itself.
     stable_parts.append(OMNIWORKER_AGENT_HELP_GUIDANCE)
 
+    # ── Orchestrator mode ──────────────────────────────────────────────
+    # When agent.orchestrator_mode is enabled, the top-level interactive agent
+    # (gateway chat / desktop chat — both flow through this builder) adopts the
+    # "director that decides and delegates" prompt from the agent registry.
+    # Gated to root agents only: delegated workers never carry ``delegate_task``
+    # (it's in DELEGATE_BLOCKED_TOOLS), so they keep their worker prompt. The
+    # injection is idempotent — skipped when the orchestrator prompt is already
+    # present (e.g. the daemon's orchestrator agent that sets it as an ephemeral
+    # prompt), detected via the context-protection sentinel.
+    _ORCH_SENTINEL = "omniworker:context-protected"
+    if getattr(agent, "_orchestrator_mode", False) and "delegate_task" in agent.valid_tool_names:
+        _already = any(_ORCH_SENTINEL in (p or "") for p in stable_parts)
+        _already = _already or (_ORCH_SENTINEL in (getattr(agent, "ephemeral_system_prompt", "") or ""))
+        if not _already:
+            try:
+                from agent.agent_registry import get_agent_for_task, load_system_prompt
+
+                _orch_cfg = get_agent_for_task("orchestrator")
+                _orch_prompt = load_system_prompt(_orch_cfg.system_prompt)
+            except Exception:  # noqa: BLE001 — never break prompt assembly
+                _orch_prompt = ""
+            if _orch_prompt:
+                stable_parts.append(_orch_prompt)
+
     # Tool-aware behavioral guidance: only inject when the tools are loaded
     tool_guidance = []
     if "memory" in agent.valid_tool_names:

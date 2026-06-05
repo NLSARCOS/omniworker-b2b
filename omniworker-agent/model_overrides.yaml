@@ -1,0 +1,32 @@
+# omniworker-agent/model_overrides.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# CAPA DINÁMICA DE MODELOS — escrita por el ORQUESTADOR, no por el humano.
+#
+# agent_types.yaml es la constitución (estable, la toca el humano/operador).
+# Este archivo es la capa de auto-update: cuando el SaaS daily_model_check detecta
+# que un provider lanzó un modelo nuevo o deprecó uno viejo, el router notifica al
+# orquestador y el orquestador escribe acá el reemplazo por familia.
+#
+# RESOLUCIÓN: agent_registry lee primero este archivo. Si hay un override para la
+# model_family del agente, usa el modelo activo. Si no, usa el del registry base.
+#
+# SEVERITY:
+#   minor  → el orquestador aplica el override automáticamente (glm-5 → glm-5.1)
+#   major  → el orquestador activa fallback + notifica al OPERADOR del SaaS
+#            (no al cliente), y espera aprobación antes de escribir acá.
+#
+# Formato:
+#   overrides:
+#     <model_family>:
+#       active: <model-id>          # modelo a usar ahora (reemplaza al del registry)
+#       previous: <model-id>        # el que estaba antes (para rollback)
+#       updated_at: <ISO8601>
+#       source: saas_daily_check | manual | operator_approved
+#       severity: minor | major
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+
+# Vacío = todos los agentes usan el modelo de agent_types.yaml.
+# Se puebla automáticamente cuando el router notifica un cambio de catálogo.
+overrides: {}

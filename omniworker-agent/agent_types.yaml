@@ -1,0 +1,164 @@
+# omniworker-agent/agent_types.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# FUENTE DE VERDAD DEL EJÉRCITO DE AGENTES
+#
+# Cada agente declara: rol, provider, model (FIJO desde creación), fallback_model,
+# model_family (para auto-update), toolset, system_prompt, display (lo único que
+# ve el usuario final), y flags de comportamiento.
+#
+# REGLAS DURAS:
+#   1. model + fallback_model son FIJOS desde el spawn. El router NUNCA los cambia
+#      mid-ejecución. Solo el orquestador los actualiza vía model_overrides.yaml.
+#   2. provider / model / base_url son INFRAESTRUCTURA — nunca salen al desktop/front.
+#      El usuario solo ve display.name + display.icon (ver strip_model_info()).
+#   3. general_agent es el ÚNICO sin modelo hardcodeado: el orquestador analiza la
+#      complejidad UNA VEZ y asigna el modelo AL SPAWN (queda fijo toda la ejecución).
+#
+# Providers disponibles (resueltos por omniworker_cli.runtime_provider):
+#   kimi-coding  → api.moonshot.ai/v1      (Kimi K2, 262K ctx, thinking)
+#   zai          → api.z.ai/api/paas/v4    (GLM-5, GLM-4.x)
+#   opencode-go  → opencode.ai/zen/go/v1   (aggregator GLM/Kimi)
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+
+defaults:
+  max_iterations: 25
+  output_format: structured_summary
+
+agents:
+
+  orchestrator:
+    role: "Director de Operaciones"
+    provider: kimi-coding
+    model: kimi-k2                    # 262K context — decide y delega, ve todo el historial
+    fallback_model: kimi-k2-turbo-preview
+    model_family: kimi
+    context_protection: true          # NUNCA simplify_chitchat_payload() / greeting trim
+    toolset: [kanban, todo, delegation, skills]
+    system_prompt: prompts/orchestrator.md
+    is_orchestrator: true             # único agente con rol de delegación
+    display:
+      name: "Orquestador"
+      icon: "🧭"
+      visible_to_user: false          # infra interna — el usuario no lo ve directamente
+
+  planner:
+    role: "Arquitecto de Soluciones"
+    provider: kimi-coding
+    model: kimi-k2-thinking           # thinking mode = razonamiento profundo
+    fallback_model: kimi-k2
+    model_family: kimi
+    toolset: [file, kanban, web]
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Agente Planificador"
+      icon: "📐"
+
+  researcher:
+    role: "Investigador Web"
+    provider: kimi-coding
+    model: kimi-k2                    # 262K context — investigación profunda
+    fallback_model: kimi-k2-turbo-preview
+    model_family: kimi
+    toolset: [web, browser, vision]
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Agente de Investigación"
+      icon: "🔎"
+
+  developer:
+    role: "Ingeniero de Software"
+    provider: zai
+    model: glm-5                      # provider distinto al orchestrator — cross-model diversity
+    fallback_model: glm-4-9b
+    model_family: glm
+    toolset: [terminal, file, code_execution]
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Agente de Desarrollo"
+      icon: "⚙️"
+
+  reviewer:
+    role: "Auditor Adversarial"
+    provider: zai
+    model: glm-4.5-flash              # rápido y barato — 2 instancias paralelas asequibles
+    fallback_model: glm-4-9b
+    model_family: glm
+    toolset: [file, terminal]
+    parallel_instances: 2             # judgment-day: dos ciegos en paralelo
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Agente de Revisión"
+      icon: "🛡️"
+
+  browser_agent:
+    role: "Operador Web"
+    provider: opencode-go             # aggregator — menor latencia para loops de automation
+    model: glm-4.5-flash
+    fallback_model: glm-4-9b
+    model_family: glm
+    toolset: [browser, vision, web]
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Agente Web"
+      icon: "🌐"
+
+  data_analyst:
+    role: "Analista de Datos"
+    provider: kimi-coding
+    model: kimi-k2-thinking           # thinking mode para análisis matemático
+    fallback_model: kimi-k2
+    model_family: kimi
+    toolset: [code_execution, file, web]
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Agente de Análisis"
+      icon: "📊"
+
+  marketer:
+    role: "Estratega de Marketing"
+    provider: opencode-go
+    model: glm-5                      # creativo y capaz — via aggregator
+    fallback_model: glm-4.5-flash
+    model_family: glm
+    toolset: [web, file, image_gen]
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Agente de Marketing"
+      icon: "📈"
+
+  code_runner:
+    role: "Ejecutor Seguro"
+    provider: zai
+    model: glm-5
+    fallback_model: glm-4-9b
+    model_family: glm
+    toolset: [terminal, code_execution, file]
+    sandbox: true
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Agente Ejecutor"
+      icon: "▶️"
+
+  # ── FALLBACK UNIVERSAL ─────────────────────────────────────────────────────
+  # Único agente SIN modelo fijo en el registry. El orquestador clasifica la
+  # complejidad de la tarea UNA VEZ y asigna el tier AL SPAWN. El modelo queda
+  # fijo toda la ejecución — no hay routing dinámico mid-task.
+  general_agent:
+    role: "Agente General"
+    model_selection: orchestrator_by_complexity
+    complexity_tiers:
+      simple:   { provider: zai,         model: glm-4.5-flash }   # email, resumen, respuesta corta
+      medium:   { provider: zai,         model: glm-5 }            # análisis de doc, extracción
+      complex:  { provider: kimi-coding, model: kimi-k2 }          # investigación + redacción larga
+    default_tier: medium                # si el orquestador no especifica complejidad
+    fallback_model: glm-4-9b
+    model_family: glm                   # familia del tier por defecto (medium = glm)
+    toolset: [terminal, file, code_execution, web, browser, kanban]
+    nudge_after_uses: 5                 # 5 usos del mismo tipo → proponer agente especializado
+    system_prompt: prompts/worker_base.md
+    display:
+      name: "Asistente"
+      icon: "🤖"
+      visible_to_user: false            # fallback interno — no mostrar salvo necesidad

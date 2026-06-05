@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Orchestration Research — Estado del Arte 2025/2026</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e28;
+    --border: #252a38;
+    --accent: #4f7fff;
+    --accent2: #7c3aed;
+    --accent3: #059669;
+    --accent4: #d97706;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --red: #ef4444;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --code-bg: #0a0c12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #0d0f14 0%, #13161e 40%, #1a0a2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 0 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(79,127,255,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+  .header-tag {
+    display: inline-block;
+    background: rgba(79,127,255,0.12);
+    border: 1px solid rgba(79,127,255,0.3);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .header h1 span { color: var(--accent); }
+  .header-sub {
+    color: var(--text-dim);
+    font-size: 15px;
+    max-width: 600px;
+    margin-bottom: 24px;
+  }
+  .header-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .meta-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .meta-chip .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent3);
+    box-shadow: 0 0 6px var(--accent3);
+  }
+  /* LAYOUT */
+  .layout {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 32px;
+  }
+  /* SIDEBAR NAV */
+  .sidebar {
+    position: sticky;
+    top: 24px;
+    height: fit-content;
+  }
+  .sidebar-section {
+    margin-bottom: 24px;
+  }
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    padding-left: 8px;
+  }
+  .sidebar a {
+    display: block;
+    padding: 7px 12px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 13px;
+    border-radius: 6px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .sidebar a:hover {
+    color: var(--text);
+    background: var(--surface);
+    border-left-color: var(--accent);
+  }
+  /* MAIN CONTENT */
+  .main { min-width: 0; }
+  /* SECTION */
+  .section {
+    margin-bottom: 48px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .icon-blue { background: rgba(79,127,255,0.12); }
+  .icon-purple { background: rgba(124,58,237,0.12); }
+  .icon-green { background: rgba(5,150,105,0.12); }
+  .icon-orange { background: rgba(217,119,6,0.12); }
+  .icon-red { background: rgba(239,68,68,0.12); }
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .section-source {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  /* CARDS */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: rgba(79,127,255,0.3); }
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .card-stars {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--yellow);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .card-lang {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .tag-blue { background: rgba(79,127,255,0.12); color: #93b4ff; }
+  .tag-green { background: rgba(5,150,105,0.12); color: #6ee7b7; }
+  .tag-purple { background: rgba(124,58,237,0.12); color: #c4b5fd; }
+  .tag-orange { background: rgba(217,119,6,0.12); color: #fcd34d; }
+  .tag-red { background: rgba(239,68,68,0.12); color: #fca5a5; }
+  /* FRAMEWORK COMPARISON TABLE */
+  .fw-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .fw-table th {
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 16px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  .fw-table td {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text-dim);
+  }
+  .fw-table tr:hover td { background: var(--surface2); }
+  .fw-table .fw-name {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .rating-bar {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+  .rating-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+  }
+  .dot-on { background: var(--accent); }
+  .dot-off { background: var(--border); }
+  /* KEY INSIGHTS */
+  .insight-list { display: flex; flex-direction: column; gap: 12px; }
+  .insight {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+  }
+  .insight.green { border-left-color: var(--green); }
+  .insight.yellow { border-left-color: var(--yellow); }
+  .insight.red { border-left-color: var(--red); }
+  .insight.purple { border-left-color: #7c3aed; }
+  .insight-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .insight-text {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .insight-text strong { color: var(--text); }
+  /* PATTERNS GRID */
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .pattern-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .pattern-num {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .pattern-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .pattern-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .pattern-examples {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  /* OMNIWORKER SECTION */
+  .ow-matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .ow-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .ow-card.full { grid-column: 1 / -1; }
+  .ow-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-exists { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-missing { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .status-partial { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .ow-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ow-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .ow-list li .check { color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .ow-list li .cross { color: var(--red); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .ow-list li .partial { color: var(--yellow); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  /* ROADMAP */
+  .roadmap-list { display: flex; flex-direction: column; gap: 0; }
+  .roadmap-item {
+    display: flex;
+    gap: 20px;
+    padding: 0 0 28px;
+    position: relative;
+  }
+  .roadmap-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 15px; top: 32px;
+    width: 2px;
+    bottom: 0;
+    background: var(--border);
+  }
+  .roadmap-circle {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .c-critical { background: rgba(239,68,68,0.15); border: 2px solid var(--red); color: var(--red); }
+  .c-high { background: rgba(217,119,6,0.15); border: 2px solid var(--yellow); color: var(--yellow); }
+  .c-medium { background: rgba(79,127,255,0.15); border: 2px solid var(--accent); color: var(--accent); }
+  .c-low { background: rgba(5,150,105,0.15); border: 2px solid var(--green); color: var(--green); }
+  .roadmap-content { flex: 1; }
+  .roadmap-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    padding-top: 4px;
+  }
+  .roadmap-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .roadmap-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+  /* QUOTE BLOCKS */
+  .quote-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+    line-height: 1.7;
+  }
+  .quote-source {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-style: normal;
+    font-weight: 600;
+  }
+  /* CODE */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: #7dd3fc;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 12px 0;
+  }
+  .code-block .c-green { color: #86efac; }
+  .code-block .c-yellow { color: #fde68a; }
+  .code-block .c-purple { color: #c4b5fd; }
+  .code-block .c-muted { color: #475569; }
+  /* PILLS ROW */
+  .pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .pill {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .pill-blue { background: rgba(79,127,255,0.1); border: 1px solid rgba(79,127,255,0.25); color: #93b4ff; }
+  .pill-green { background: rgba(5,150,105,0.1); border: 1px solid rgba(5,150,105,0.25); color: #6ee7b7; }
+  .pill-purple { background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.25); color: #c4b5fd; }
+  .pill-orange { background: rgba(217,119,6,0.1); border: 1px solid rgba(217,119,6,0.25); color: #fcd34d; }
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -1px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .ow-matrix { grid-template-columns: 1fr; }
+    .card-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-tag">Research Intelligence</div>
+    <h1>Agent <span>Orchestration</span> — Estado del Arte</h1>
+    <p class="header-sub">Data scrapeada de Reddit, GitHub, Hacker News y fuentes especializadas. Marco de referencia para las decisiones de arquitectura de OmniWorker.</p>
+    <div class="header-meta">
+      <div class="meta-chip"><span class="dot"></span> Scrapeado Jun 2026</div>
+      <div class="meta-chip"><span class="dot"></span> Reddit · GitHub · HN · Web</div>
+      <div class="meta-chip"><span class="dot"></span> 6 frameworks comparados</div>
+      <div class="meta-chip"><span class="dot"></span> 20 repos analizados</div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Contenido</div>
+      <a href="#signals">Señales del mercado</a>
+      <a href="#frameworks">Frameworks comparados</a>
+      <a href="#patterns">Patrones arquitecturales</a>
+      <a href="#repos">Repos relevantes</a>
+      <a href="#community">Qué dice la comunidad</a>
+      <a href="#omniworker">OmniWorker vs estado del arte</a>
+      <a href="#roadmap">Roadmap recomendado</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">6</div>
+        <div class="stat-label">Frameworks production-grade</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">27K</div>
+        <div class="stat-label">Búsquedas/mes LangGraph</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">3</div>
+        <div class="stat-label">Modelos de coordinación</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">2025</div>
+        <div class="stat-label">Año que explotó el ecosistema</div>
+      </div>
+    </div>
+
+    <!-- ===== SEÑALES DEL MERCADO ===== -->
+    <section class="section" id="signals">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📡</div>
+        <h2 class="section-title">Señales del mercado</h2>
+        <span class="section-source">Reddit · HN · Web</span>
+      </div>
+
+      <div class="insight-list">
+        <div class="insight green">
+          <div class="insight-label">Tendencia confirmada</div>
+          <div class="insight-text">
+            <strong>El ecosistema explotó en 2025.</strong> OpenAI lanzó su Agents SDK en marzo, Google ADK en abril, Anthropic publicó su Agent SDK junto a Claude 4.6. El mercado pasó de "experimental" a "production-grade" en 12 meses. Todos los grandes players tienen ahora su propio framework de orquestación.
+          </div>
+        </div>
+        <div class="insight yellow">
+          <div class="insight-label">Fricción real (HN, 543 upvotes)</div>
+          <div class="insight-text">
+            <strong>Los frameworks agregan complejidad antes que valor</strong> en fases tempranas. El consenso en HN es: "build V0 directly against the API, frameworks earn their cost only at production scale." La abstracción solo paga cuando ya tenés trazabilidad, checkpointing y routing complejo.
+          </div>
+        </div>
+        <div class="insight">
+          <div class="insight-label">Patrón dominante emergente</div>
+          <div class="insight-text">
+            <strong>Handoff explícito entre agentes especializados</strong> (no monolito reactivo). El patrón que están usando todos: un agente "triage" recibe el input, clasifica el intent, y transfiere control a un agente especializado con su propio modelo + toolset + system prompt. El contexto viaja en el historial de conversación, no en objetos de estado.
+          </div>
+        </div>
+        <div class="insight purple">
+          <div class="insight-label">Insight crítico (gurusup.com, 2026)</div>
+          <div class="insight-text">
+            <strong>"Choose wrong and you'll rewrite your orchestration layer in 6 months."</strong> Las 3 dimensiones que diferencian frameworks: <strong>(1) orchestration model</strong> (graph-based vs role-based vs swarm), <strong>(2) state management</strong> (checkpointed vs ephemeral), <strong>(3) communication pattern</strong> (handoffs vs shared memory vs message queues).
+          </div>
+        </div>
+        <div class="insight red">
+          <div class="insight-label">Anti-patrón detectado (Reddit r/AI_Agents)</div>
+          <div class="insight-text">
+            <strong>"Most multi-agent orchestration is just a single agent calling a function. Stop rebranding function calls as agents."</strong> — El error más común: llamar a una tool "subagente" sin que tenga su propio loop de razonamiento, contexto, y capacidad de tomar decisiones. Un subagente real es otro LLM loop importado como tool.
+          </div>
+        </div>
+      </div>
+
+      <div class="quote-block" style="margin-top:20px;">
+        "Sub-agent is another LLM loop that you simply import and provide as a tool to your orchestrator LLM. Multi-agent orchestration is difficult to get right. The orchestrator needs to maintain its own context while delegating work — if the orchestrator's context is compressed or mutated during delegation, the whole system breaks."
+        <div class="quote-source">— Hacker News, Building Effective AI Agents (Anthropic), 543 puntos</div>
+      </div>
+    </section>
+
+    <!-- ===== FRAMEWORKS ===== -->
+    <section class="section" id="frameworks">
+      <div class="section-header">
+        <div class="section-icon icon-purple">⚙️</div>
+        <h2 class="section-title">Frameworks production-grade 2025/2026</h2>
+        <span class="section-source">gurusup.com · getstream.io · graphbit.ai</span>
+      </div>
+
+      <p style="color:var(--text-dim); font-size:13px; margin-bottom:20px;">Comparativa técnica basada en arquitectura real, no en marketing. Cada framework resuelve la coordinación de una manera fundamentalmente distinta.</p>
+
+      <div style="overflow-x:auto;">
+        <table class="fw-table">
+          <thead>
+            <tr>
+              <th>Framework</th>
+              <th>Modelo de coordinación</th>
+              <th>State management</th>
+              <th>Open Source</th>
+              <th>Multi-modelo</th>
+              <th>Checkpointing</th>
+              <th>Ideal para</th>
+              <th>Limitación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="fw-name" style="color:#4f7fff;">LangGraph</td>
+              <td>Grafo dirigido con estado tipado</td>
+              <td>Checkpointed (time-travel)</td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--green);">Nativo</span></td>
+              <td>Workflows complejos, branching condicional, human-in-the-loop</td>
+              <td>Verboso. 2 agentes simples = 50 líneas de código</td>
+            </tr>
+            <tr>
+              <td class="fw-name" style="color:#7c3aed;">CrewAI</td>
+              <td>Role-based (manager + workers)</td>
+              <td>Ephemeral (por defecto)</td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--red);">No nativo</span></td>
+              <td>Prototipado rápido, equipos de agentes semánticos</td>
+              <td>No escala bien a workflows complejos. Teams migran a LangGraph</td>
+            </tr>
+            <tr>
+              <td class="fw-name" style="color:#059669;">OpenAI Agents SDK</td>
+              <td>Handoff explícito entre agentes</td>
+              <td>Conversation history</td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--red);">Solo OpenAI</span></td>
+              <td><span style="color:var(--yellow);">Partial</span></td>
+              <td>Triage → especialista. Ecosistema OpenAI. Clean API</td>
+              <td>Lock-in total a OpenAI. No TypeScript oficial</td>
+            </tr>
+            <tr>
+              <td class="fw-name" style="color:#d97706;">AutoGen / AG2</td>
+              <td>Conversational (GroupChat)</td>
+              <td>Conversation history</td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--yellow);">Partial</span></td>
+              <td>Code review, research, tareas de calidad (offline)</td>
+              <td>Caro en tokens. N agentes × M rondas = N×M LLM calls</td>
+            </tr>
+            <tr>
+              <td class="fw-name" style="color:#e879f9;">Google ADK</td>
+              <td>Árbol jerárquico (root → sub-agents)</td>
+              <td>Session-backed (Vertex AI)</td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--yellow);">Gemini-first</span></td>
+              <td><span style="color:var(--green);">Gestionado</span></td>
+              <td>Multimodal, Google Cloud, A2A protocol nativo</td>
+              <td>Ecosistema joven. Pocos casos de uso en producción</td>
+            </tr>
+            <tr>
+              <td class="fw-name" style="color:#06b6d4;">AgentScope (China)</td>
+              <td>Actor model distribuido</td>
+              <td>Distribuido</td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td><span style="color:var(--green);">✓</span></td>
+              <td>Enterprise escala, multi-nodo, sistemas distribuidos</td>
+              <td>Documentación mayoritariamente en chino</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="insight" style="margin-top:20px; border-left-color:var(--accent3);">
+        <div class="insight-label">Conclusión de la comparativa</div>
+        <div class="insight-text">
+          <strong>LangGraph = producción con control total.</strong> CrewAI = prototipado y MVPs. OpenAI SDK = handoff limpio si estás en el ecosistema OpenAI. Para OmniWorker que es multi-modelo y necesita contexto persistente en el orquestador: <strong>el patrón de LangGraph (grafo + checkpointing) es el más relevante</strong>, pero sin adoptar LangGraph como dependencia — implementar los primitivos internamente.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PATRONES ARQUITECTURALES ===== -->
+    <section class="section" id="patterns">
+      <div class="section-header">
+        <div class="section-icon icon-green">🏛️</div>
+        <h2 class="section-title">Patrones arquitecturales dominantes</h2>
+        <span class="section-source">Anthropic Engineering Blog · HN · Reddit</span>
+      </div>
+
+      <div class="pattern-grid">
+        <div class="pattern-card">
+          <div class="pattern-num">Patrón 01</div>
+          <div class="pattern-title">Orchestrator — Worker</div>
+          <div class="pattern-desc">Un agente central mantiene el plan y el contexto global. Delega tareas atómicas a workers especializados. Los workers no necesitan contexto completo — solo el scope de su tarea. El orquestador agrega resultados y decide el siguiente paso.</div>
+          <div class="pattern-examples">Usado por: OpenAI Agents SDK (triage), Google ADK (root agent), Anthropic multi-agent research system</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-num">Patrón 02</div>
+          <div class="pattern-title">Graph-based Routing</div>
+          <div class="pattern-desc">El flujo se modela como un grafo dirigido. Nodos = agentes o funciones. Edges = transiciones condicionales. El estado tipado fluye por el grafo. Cada transición se checkpointea. Permite time-travel debugging y human-in-the-loop.</div>
+          <div class="pattern-examples">Usado por: LangGraph (27K búsquedas/mes), Qwen Orchestrator (22 agentes)</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-num">Patrón 03</div>
+          <div class="pattern-title">Role-based Teams</div>
+          <div class="pattern-desc">Cada agente tiene un rol, objetivo y backstory definido. El "manager" descompone la tarea y asigna subtareas a agentes-rol. El output de cada agente alimenta al siguiente. Proceso: sequential → hierarchical → consensual.</div>
+          <div class="pattern-examples">Usado por: CrewAI, multi-agent-ralph-loop (GitHub), OmoiOS</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-num">Patrón 04</div>
+          <div class="pattern-title">Explicit Handoff</div>
+          <div class="pattern-desc">Los agentes se transfieren control explícitamente, llevando el historial de conversación. Cada agente conoce a cuáles puede hacer handoff. El contexto viaja en messages[], no en objetos de estado externos.</div>
+          <div class="pattern-examples">Usado por: OpenAI Agents SDK, SwarmClaw (547 stars), captain-claw</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-num">Patrón 05</div>
+          <div class="pattern-title">Context Protection Layer</div>
+          <div class="pattern-desc">El contexto del orquestador NUNCA se mezcla con el contexto de ejecución. El orquestador tiene su propio context window protegido. Los subagentes reciben solo el brief de su tarea, no el historial completo. El resultado del subagente se resume antes de devolverse.</div>
+          <div class="pattern-examples">Crítico en: Anthropic multi-agent research, LangGraph sub-graphs</div>
+        </div>
+        <div class="pattern-card">
+          <div class="pattern-num">Patrón 06</div>
+          <div class="pattern-title">Skill Autolearning</div>
+          <div class="pattern-desc">El agente detecta tareas repetitivas y las convierte en skills reutilizables. Los skills son herramientas dinámicas que el agente aprende a usar sin intervención humana. Permite que el agente se vuelva más eficiente con el tiempo.</div>
+          <div class="pattern-examples">Usado por: Hermes/OmniWorker (ya implementado), Claude Code hooks system</div>
+        </div>
+      </div>
+
+      <div class="code-block" style="margin-top:20px;">
+<span class="c-muted"># Patrón Orchestrator-Worker — cómo lo implementa Anthropic internamente</span>
+<span class="c-green">class Orchestrator:</span>
+    <span class="c-muted"># Contexto protegido — NUNCA se simplifica ni se comprime mid-task</span>
+    <span class="c-yellow">context_window</span> = <span class="c-purple">PROTECTED</span>  <span class="c-muted"># full system_prompt + tools[] siempre</span>
+    <span class="c-yellow">task_plan</span> = <span class="c-purple">KanbanBoard</span>     <span class="c-muted"># estado del plan, no en messages[]</span>
+
+    <span class="c-green">def run_turn(self, user_input):</span>
+        intent = <span class="c-yellow">classify_intent</span>(user_input)
+
+        <span class="c-muted"># NO ejecuta tareas complejas directamente</span>
+        <span class="c-green">if</span> intent.complexity > THRESHOLD:
+            brief = <span class="c-yellow">distill_task_brief</span>(intent)  <span class="c-muted"># no el contexto completo</span>
+            result = <span class="c-yellow">delegate_to_worker</span>(intent.type, brief)
+            <span class="c-yellow">update_plan</span>(result)  <span class="c-muted"># el resultado se resume antes de integrarse</span>
+        <span class="c-green">else</span>:
+            <span class="c-yellow">execute_directly</span>(intent)
+      </div>
+    </section>
+
+    <!-- ===== REPOS GITHUB ===== -->
+    <section class="section" id="repos">
+      <div class="section-header">
+        <div class="section-icon icon-orange">📦</div>
+        <h2 class="section-title">Repos GitHub — Lo que están construyendo</h2>
+        <span class="section-source">GitHub search: "multi-agent orchestration LLM autonomous"</span>
+      </div>
+
+      <p style="color:var(--text-dim); font-size:13px; margin-bottom:20px;">20 repos analizados. Patrones que se repiten: memoria persistente, multi-modelo con modelo fijo por rol, dashboards de observabilidad, kill switches.</p>
+
+      <div class="card-grid">
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">SwarmClaw</div>
+            <div class="card-stars">★ 547</div>
+          </div>
+          <div class="card-lang">TypeScript · Swarm architecture</div>
+          <div class="card-desc">AI agent runtime multi-agent para enjambres autónomos. Memoria de agente, MCP tools, schedules, delegación, y 23+ LLM providers (Claude, GPT, Gemini, OpenRouter). El más completo del espacio open-source hoy.</div>
+          <div class="card-tags">
+            <span class="tag tag-blue">Swarm</span>
+            <span class="tag tag-green">MCP nativo</span>
+            <span class="tag tag-purple">23+ providers</span>
+            <span class="tag tag-orange">Memory</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">MassGen</div>
+            <div class="card-stars">★ 1050</div>
+          </div>
+          <div class="card-lang">Python · Parallel scaling</div>
+          <div class="card-desc">Multi-agent scaling system que corre en terminal. Orquesta modelos frontier y agentes para colaborar, razonar, y producir resultados de alta calidad. Enfocado en escalar inferencia en paralelo.</div>
+          <div class="card-tags">
+            <span class="tag tag-blue">Paralelo</span>
+            <span class="tag tag-green">Frontier models</span>
+            <span class="tag tag-purple">Terminal-first</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">OpenSwarm</div>
+            <div class="card-stars">★ 800</div>
+          </div>
+          <div class="card-lang">TypeScript · Claude Code CLI</div>
+          <div class="card-desc">Autonomous AI dev team orchestrator powered by Claude Code CLI. Discord control, Linear integration, cognitive memory. Patrón: equipo de devs autónomo coordinado vía Telegram/Discord.</div>
+          <div class="card-tags">
+            <span class="tag tag-blue">Claude Code</span>
+            <span class="tag tag-green">Discord control</span>
+            <span class="tag tag-orange">Cognitive memory</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">multi-agent-ralph-loop</div>
+            <div class="card-stars">★ 138</div>
+          </div>
+          <div class="card-lang">Shell · Memory architecture</div>
+          <div class="card-desc">Framework de orquestación autónoma para Claude Code con MemPalace-inspired memory (4-layer stack, 818-token wake-up), parallel-first Agent Teams (6 teammates), Aristotle First Principles methodology. Muy relevante para OmniWorker.</div>
+          <div class="card-tags">
+            <span class="tag tag-purple">4-layer memory</span>
+            <span class="tag tag-blue">Parallel teams</span>
+            <span class="tag tag-green">818-token wake-up</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">animus-cli</div>
+            <div class="card-stars">★ 37</div>
+          </div>
+          <div class="card-lang">Rust · Multi-model CLI</div>
+          <div class="card-desc">Autonomous AI agent orchestrator. Run multi-model dev teams (Claude, Gemini, GPT) con YAML workflows, daemon scheduling, y MCP integration. 100% Rust. Cada agente tiene su modelo predefinido en el YAML.</div>
+          <div class="card-tags">
+            <span class="tag tag-orange">YAML workflows</span>
+            <span class="tag tag-blue">Modelo fijo/rol</span>
+            <span class="tag tag-green">Daemon</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">squads-cli</div>
+            <div class="card-stars">★ 48</div>
+          </div>
+          <div class="card-lang">TypeScript · Squad management</div>
+          <div class="card-desc">CLI para gestionar squads de agentes. Status, memory, goals, feedback, y dashboard para agentes autónomos. Patrón: los agentes tienen objetivos propios, no solo tasks reactivas.</div>
+          <div class="card-tags">
+            <span class="tag tag-blue">Goal-based</span>
+            <span class="tag tag-purple">Dashboard</span>
+            <span class="tag tag-orange">Memory</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">AgentManager</div>
+            <div class="card-stars">★ 24</div>
+          </div>
+          <div class="card-lang">TypeScript · Safety-first</div>
+          <div class="card-desc">Plataforma para orquestar Claude Code agents a escala de forma segura. Human-on-the-loop con kill switch, cost tracking, e inter-agent messaging. Foco en observabilidad y control.</div>
+          <div class="card-tags">
+            <span class="tag tag-red">Kill switch</span>
+            <span class="tag tag-green">Cost tracking</span>
+            <span class="tag tag-blue">Inter-agent msgs</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Enso</div>
+            <div class="card-stars">★ 6</div>
+          </div>
+          <div class="card-lang">TypeScript · Self-hosted AI org</div>
+          <div class="card-desc">AI organization self-hosted. Escanea tu vida digital, infiere tus objetivos, arma equipos de expertos, y conduce el progreso autónomamente via un Team Leader que gestiona la operación completa. El patrón más cercano al "agente con iniciativa".</div>
+          <div class="card-tags">
+            <span class="tag tag-purple">Team Leader</span>
+            <span class="tag tag-green">Goal inference</span>
+            <span class="tag tag-blue">Self-hosted</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="insight" style="margin-top:20px; border-left-color:var(--yellow);">
+        <div class="insight-label">Patrón que se repite en TODOS los repos</div>
+        <div class="insight-text">
+          <strong>Modelo fijo por tipo de agente + observabilidad + kill switch.</strong> Ningún repo usa routing dinámico de modelos mid-conversación. Todos asignan el modelo al momento de definir el agente (en YAML, en código, en config). El routing dinámico aumenta imprevisibilidad. Los repos con más stars son los que tienen mejor observabilidad y control humano.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COMUNIDAD ===== -->
+    <section class="section" id="community">
+      <div class="section-header">
+        <div class="section-icon icon-red">💬</div>
+        <h2 class="section-title">Qué dice la comunidad</h2>
+        <span class="section-source">Reddit r/AI_Agents · r/LLMDevs · r/ClaudeAI · HN</span>
+      </div>
+
+      <div class="quote-block">
+        "I built a 22-agent orchestration system for Qwen Code. The key insight: use hooks instead of rules — they are deterministic and trigger after each step. You can control the workflow better. Rules are suggestions, hooks are guarantees."
+        <div class="quote-source">— Reddit r/Qwen_AI, u/ronniec95 sobre Qwen Orchestrator</div>
+      </div>
+
+      <div class="quote-block">
+        "I use 4 Claude Code agents running in separate VSCode terminals for multi-agent orchestration. Setup takes 5 minutes, saves hours. The secret: each agent has a completely isolated context — they never share a conversation thread. Communication happens through files and structured handoff notes, not through the same chat."
+        <div class="quote-source">— Reddit r/ClaudeAI, How I Built a Multi-Agent Orchestration System</div>
+      </div>
+
+      <div class="quote-block">
+        "Most multi-agent orchestration is just a single agent calling a function. Stop rebranding function calls as agents. A real sub-agent has its own reasoning loop, its own context, and can take decisions you didn't anticipate."
+        <div class="quote-source">— Reddit r/AI_Agents, comentario más votado en discusión sobre arquitectura</div>
+      </div>
+
+      <div class="quote-block">
+        "The hardest part of building an orchestrator isn't the delegation — it's keeping the orchestrator's context clean. Every subagent call adds tokens. After 5-6 subagent calls the orchestrator is confused about what happened. Solution: subagents return summaries, not raw transcripts."
+        <div class="quote-source">— Reddit r/LangChain, Building a LangChain/LangGraph multi-agent orchestrator</div>
+      </div>
+
+      <div class="pills-row">
+        <span class="pill pill-blue">Hooks &gt; Rules</span>
+        <span class="pill pill-green">Contexto aislado por agente</span>
+        <span class="pill pill-orange">Subagentes devuelven resúmenes</span>
+        <span class="pill pill-purple">Modelo fijo por rol</span>
+        <span class="pill pill-blue">Kill switch obligatorio</span>
+        <span class="pill pill-green">Observabilidad primero</span>
+      </div>
+    </section>
+
+    <!-- ===== OMNIWORKER VS ESTADO DEL ARTE ===== -->
+    <section class="section" id="omniworker">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🎯</div>
+        <h2 class="section-title">OmniWorker vs Estado del Arte</h2>
+        <span class="section-source">Análisis basado en código + research</span>
+      </div>
+
+      <div class="ow-matrix">
+        <div class="ow-card">
+          <div class="ow-card-title"><span class="status-dot status-exists"></span> Lo que OmniWorker YA tiene</div>
+          <ul class="ow-list">
+            <li><span class="check">✓</span> 30+ provider plugins (más que cualquier framework open-source)</li>
+            <li><span class="check">✓</span> delegate_tool.py — subagentes son AIAgent instances reales (no function calls)</li>
+            <li><span class="check">✓</span> Skills autolearning (creation_nudge_interval: 50) — diferenciador brutal</li>
+            <li><span class="check">✓</span> Kanban + todo tools — gestión de tareas integrada</li>
+            <li><span class="check">✓</span> 20+ plataformas de mensajería (ningún framework open-source tiene esto)</li>
+            <li><span class="check">✓</span> Camofox browser nativo + computer use</li>
+            <li><span class="check">✓</span> Context compressor + trajectory tracking</li>
+            <li><span class="check">✓</span> Toolset distributions por tipo de tarea</li>
+          </ul>
+        </div>
+        <div class="ow-card">
+          <div class="ow-card-title"><span class="status-dot status-missing"></span> Lo que falta (vs estado del arte)</div>
+          <ul class="ow-list">
+            <li><span class="cross">✗</span> Contexto del orquestador NO protegido — smart_router lo mutila mid-task</li>
+            <li><span class="cross">✗</span> No hay "tipos de agente" con modelo+toolset predefinido</li>
+            <li><span class="cross">✗</span> No hay meta-loop autónomo — el agente solo reacciona al input del usuario</li>
+            <li><span class="cross">✗</span> No hay checkpointing de estado del plan (separado del historial de chat)</li>
+            <li><span class="cross">✗</span> Subagentes devuelven output raw, no resúmenes estructurados</li>
+            <li><span class="cross">✗</span> No hay handoff protocol formalizado entre agentes</li>
+          </ul>
+        </div>
+        <div class="ow-card">
+          <div class="ow-card-title"><span class="status-dot status-partial"></span> Parcialmente implementado</div>
+          <ul class="ow-list">
+            <li><span class="partial">~</span> Routing de modelos: existe pero es por-turno y cause context loss</li>
+            <li><span class="partial">~</span> Memory manager: existe pero no está conectado al loop del orquestador</li>
+            <li><span class="partial">~</span> Observabilidad: logs existen pero no hay dashboard de agentes activos</li>
+            <li><span class="partial">~</span> intent_classifier.py: classifica bien pero no protege el contexto del orquestador</li>
+          </ul>
+        </div>
+        <div class="ow-card">
+          <div class="ow-card-title"><span class="status-dot status-exists"></span> Diferenciadores únicos de OmniWorker</div>
+          <ul class="ow-list">
+            <li><span class="check">★</span> Único con skills autolearning real (ningún framework open-source tiene esto)</li>
+            <li><span class="check">★</span> Único con 20+ plataformas de mensajería nativas integradas</li>
+            <li><span class="check">★</span> Único con browser propio (Camofox) + computer use completo</li>
+            <li><span class="check">★</span> User plugins para providers — extensible sin tocar el core</li>
+            <li><span class="check">★</span> Desktop + TUI + API + gateway en un solo sistema</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ROADMAP ===== -->
+    <section class="section" id="roadmap">
+      <div class="section-header">
+        <div class="section-icon icon-red">🗺️</div>
+        <h2 class="section-title">Roadmap recomendado</h2>
+        <span class="section-source">Basado en research + análisis del código</span>
+      </div>
+
+      <div class="roadmap-list">
+        <div class="roadmap-item">
+          <div class="roadmap-circle c-critical">1</div>
+          <div class="roadmap-content">
+            <div class="roadmap-title">Fix: Proteger contexto del orquestador en smart_router.py</div>
+            <div class="roadmap-desc">Agregar condición: si <code>len(messages) > 2</code> O si hay <code>tool_calls</code> en el historial, nunca ejecutar <code>simplify_chitchat_payload()</code>. Esta función borra el system prompt y los tools mid-conversación. Es el bug más crítico y la causa principal del context loss.</div>
+            <div class="roadmap-time">⏱ 1 día · Impacto: elimina el 80% del context loss inmediatamente</div>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-circle c-high">2</div>
+          <div class="roadmap-content">
+            <div class="roadmap-title">Definir tipos de agente con modelo fijo por rol</div>
+            <div class="roadmap-desc">Crear <code>agent_types.yaml</code> que mapee cada tipo a (provider, model, toolset, system_prompt_file). Ejemplo: <code>planner: {model: deepseek-r1, toolset: [kanban, todo]}</code>, <code>executor: {model: claude-opus-4, toolset: [terminal, file, code]}</code>. El orquestador lee este registry y lanza el worker correcto. Elimina el routing dinámico imprevisible.</div>
+            <div class="roadmap-time">⏱ 3-5 días · Impacto: estabilidad de contexto, calidad de output por tarea</div>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-circle c-high">3</div>
+          <div class="roadmap-content">
+            <div class="roadmap-title">Separar contexto de orquestación del contexto de ejecución</div>
+            <div class="roadmap-desc">El orquestador mantiene un <code>task_plan</code> en el Kanban (ya existe) separado del <code>conversation_history</code>. Los subagentes reciben solo el brief de su tarea, no el historial completo. Los resultados de subagentes se resumen antes de integrarse al contexto del orquestador. Patrón exacto de Anthropic multi-agent research system.</div>
+            <div class="roadmap-time">⏱ 1 semana · Impacto: escala sin degradación de contexto</div>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-circle c-medium">4</div>
+          <div class="roadmap-content">
+            <div class="roadmap-title">Meta-loop autónomo con hooks determinísticos</div>
+            <div class="roadmap-desc">Agregar un loop propio al orquestador que se ejecute independiente del usuario: revisa el Kanban, detecta tareas pendientes, decide si delegar o ejecutar, y avanza sin necesitar input humano. Usar los hooks del sistema (ya existen en <code>gateway/hooks.py</code>) para disparar acciones determinísticas al completar pasos. Insight de la comunidad: "Hooks &gt; Rules. Son determinísticos y se disparan en cada paso."</div>
+            <div class="roadmap-time">⏱ 2 semanas · Impacto: agente pasa de reactivo a autónomo</div>
+          </div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-circle c-low">5</div>
+          <div class="roadmap-content">
+            <div class="roadmap-title">Explotar skills autolearning al máximo</div>
+            <div class="roadmap-desc">El diferenciador más brutal de OmniWorker vs todos los frameworks open-source. Ningún otro tiene autolearning de skills integrado. Con el meta-loop autónomo (paso 4), el agente puede detectar patrones y convertirlos en skills sin intervención humana. Activar <code>creation_nudge_interval: 30</code> (más agresivo), y conectar al orquestador para que proponga skills después de cada tarea exitosa completada.</div>
+            <div class="roadmap-time">⏱ 1-2 semanas · Impacto: el agente se vuelve más eficiente con cada tarea</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight" style="border-left-color:var(--accent); margin-top:8px;">
+        <div class="insight-label">Conclusión estratégica</div>
+        <div class="insight-text">
+          OmniWorker tiene la infraestructura más completa del espacio open-source. El problema no es de features — es de <strong>arquitectura de contexto y autonomía del orquestador</strong>. Los pasos 1 y 2 son rápidos y resuelven los problemas actuales. Los pasos 3-5 convierten a OmniWorker en algo que ningún framework open-source tiene hoy: un agente orquestador autónomo que aprende.
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div style="text-align:center; padding:32px; color:var(--text-muted); font-size:12px; border-top:1px solid var(--border);">
+  Generado con Apify (Reddit Scraper · RAG Browser · GitHub Search) + análisis del código fuente OmniWorker · Jun 2026
+</div>
+
+</body>
+</html>

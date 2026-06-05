@@ -16795,7 +16795,23 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
         name="cron-ticker",
     )
     cron_thread.start()
-    
+
+    # Start the orchestrator daemon (autonomous kanban-polling delegation loop).
+    # Opt-in: off unless OMNIWORKER_ORCHESTRATOR_DAEMON is truthy, so existing
+    # deployments are unaffected until explicitly enabled. Failure to build it
+    # never blocks gateway startup.
+    orchestrator_daemon = None
+    if os.environ.get("OMNIWORKER_ORCHESTRATOR_DAEMON", "").strip().lower() in ("1", "true", "yes", "on"):
+        try:
+            from orchestrator_daemon import build_orchestrator_daemon
+
+            orchestrator_daemon = build_orchestrator_daemon()
+            orchestrator_daemon.start()
+            logger.info("Orchestrator daemon started.")
+        except Exception as exc:  # noqa: BLE001 — never let it block the gateway
+            logger.warning("Orchestrator daemon failed to start: %s", exc)
+            orchestrator_daemon = None
+
     # Wait for shutdown
     await runner.wait_for_shutdown()
 
@@ -16807,6 +16823,13 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # Stop cron ticker cleanly
     cron_stop.set()
     cron_thread.join(timeout=5)
+
+    # Stop the orchestrator daemon if it was started.
+    if orchestrator_daemon is not None:
+        try:
+            orchestrator_daemon.stop()
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Orchestrator daemon stop failed: %s", exc)
 
     # Close MCP server connections
     try:

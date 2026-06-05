@@ -456,6 +456,41 @@ def is_local_slm_alive() -> bool:
 
 
 
+# Context-protection signal. Agents flagged `context_protection: true` in
+# agent_types.yaml (the orchestrator) must NEVER have their payload simplified —
+# doing so would replace their delegation system prompt with the friendly
+# chitchat one and strip their tools, destroying orchestrator behaviour.
+# Two equivalent signals are honoured (whichever the caller can set):
+#   1. HTTP header `X-OmniWorker-Context-Protection: 1`
+#   2. The sentinel string below embedded anywhere in a system message.
+CONTEXT_PROTECTION_HEADER = "x-omniworker-context-protection"
+CONTEXT_PROTECTION_SENTINEL = "<!--omniworker:context-protected-->"
+
+
+def is_context_protected(data: dict, headers=None) -> bool:
+    """True when this request belongs to a context-protected agent.
+
+    Checked before any payload simplification so the orchestrator's system
+    prompt and tools survive intact. Never raises — a bad signal degrades to
+    "not protected" (i.e. normal optimisation).
+    """
+    try:
+        if headers is not None:
+            val = headers.get(CONTEXT_PROTECTION_HEADER) or headers.get(
+                CONTEXT_PROTECTION_HEADER.title()
+            )
+            if val and str(val).strip().lower() not in ("0", "false", ""):
+                return True
+        for msg in data.get("messages", []) or []:
+            if msg.get("role") == "system":
+                content = msg.get("content") or ""
+                if isinstance(content, str) and CONTEXT_PROTECTION_SENTINEL in content:
+                    return True
+    except Exception:  # noqa: BLE001 — signal detection must never break routing
+        return False
+    return False
+
+
 def simplify_chitchat_payload(data: dict) -> dict:
     """Simplify the payload for simple chitchat to drastically reduce token usage in the cloud.
     Removes the heavy tools schemas and condenses the huge agent system prompt into a concise one.
@@ -530,9 +565,17 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         # Classify the request
         target = classify_request(data)
 
-        # Since we are Cloud-Only, we never use the local SLM.
+        # Since we are Cloud-Only, we never use the local SLM. Instead, if the
+        # request is greeting/chitchat we optimize the payload to save ~98% of
+        # tokens — UNLESS it belongs to a context-protected agent (orchestrator),
+        # whose full prompt + tools must survive intact.
         is_greeting = is_greeting_message(messages)
-        if is_greeting or (target == "local" and not data.get("tools")):
+        should_simplify = is_greeting or (target == "local" and not data.get("tools"))
+        if should_simplify and is_context_protected(data, self.headers):
+            # Context-protected agent (orchestrator): keep full prompt + tools.
+            if ROUTER_LOG:
+                logger.info("🛡️ Context-protected request — skipping chitchat simplification.")
+        elif should_simplify:
             try:
                 optimized_data = simplify_chitchat_payload(data)
                 body = json.dumps(optimized_data).encode("utf-8")
