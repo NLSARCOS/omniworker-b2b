@@ -3,7 +3,7 @@ title: "guía completa de Empleados digitales ia para empresas latinoamericanas 
 description: "Descubrí cómo empleados digitales IA puede ayudar a tu empresa. Guía práctica para LATAM. By Simplex Latam."
 keywords: "empleados digitales IA"
 author: "Flux Agent"
-date: "2026-06-01"
+date: "2026-06-04"
 slug: "guia-completa-de-empleados-digitales-ia-para-empresas-latino"
 og_image: "/og-blog.jpg"
 ---
