@@ -35,7 +35,7 @@ function getCachedVersion(): string | null {
   }
 }
 
-function getCachedFlux Agent(): { found: boolean; path: string | null } | null {
+function getCachedOmniWorker(): { found: boolean; path: string | null } | null {
   try {
     const raw = localStorage.getItem("omniworker-omniworker-cache");
     return raw ? JSON.parse(raw) : null;
@@ -59,7 +59,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   const [updateResultType, setUpdateResultType] = useState<"success" | "error" | null>(null);
 
   // Migration state
-  const cachedClaw = getCachedFlux Agent();
+  const cachedClaw = getCachedOmniWorker();
   const [omniworkerFound, setOpenclawFound] = useState(cachedClaw?.found ?? false);
   const [omniworkerPath, setOpenclawPath] = useState<string | null>(cachedClaw?.path ?? null);
   const [migrationDismissed, setMigrationDismissed] = useState(
@@ -137,7 +137,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
     });
 
     if (localStorage.getItem("omniworker-omniworker-dismissed") !== "true") {
-      window.omniworkerAPI.checkFlux Agent().then((claw) => {
+      window.omniworkerAPI.checkOmniWorker().then((claw) => {
         setOpenclawFound(claw.found);
         setOpenclawPath(claw.path);
         try {
@@ -307,7 +307,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
     });
   }
 
-  async function handleUpdateFlux Agent(): Promise<void> {
+  async function handleUpdateOmniWorker(): Promise<void> {
     setUpdating(true);
     setUpdateResult(null);
     const result = await window.omniworkerAPI.runOmniWorkerUpdate();
@@ -467,7 +467,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           )}
           <div className="flex gap-2">
             <button className="px-3 py-1.5 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0e0e11] text-xs font-semibold transition-all" onClick={handleMigrate} disabled={migrating}>
-              {migrating ? t("settings.migrating") : t("settings.migrateToFlux Agent")}
+              {migrating ? t("settings.migrating") : t("settings.migrateToOmniWorker")}
             </button>
             <button className="px-3 py-1.5 rounded border border-[var(--border)] hover:bg-[rgba(255,255,255,0.02)] text-[var(--text-primary)] text-xs font-semibold transition-all" onClick={handleDismissMigration}>
               {t("settings.skip")}
@@ -543,7 +543,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
             
             <div className="flex flex-wrap gap-2">
               {parsedVersion?.updateInfo ? (
-                <button className="px-3 py-1.5 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0e0e11] text-xs font-semibold transition-all flex items-center gap-1.5" onClick={handleUpdateFlux Agent} disabled={updating}>
+                <button className="px-3 py-1.5 rounded bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[#0e0e11] text-xs font-semibold transition-all flex items-center gap-1.5" onClick={handleUpdateOmniWorker} disabled={updating}>
                   <RefreshCw size={12} className={updating ? "animate-spin" : ""} />
                   {updating ? t("settings.updating") : t("settings.updateEngine")}
                 </button>

@@ -71,7 +71,7 @@ export default {
     "Flux Agent ditemukan di <code>{{path}}</code>. Anda dapat memigrasikan konfigurasi, API key, sesi, dan skill ke Flux Agent.",
   migrationDismiss: "Jangan tampilkan lagi",
   migrating: "Memigrasikan...",
-  migrateToFlux Agent: "Migrasi ke Flux Agent",
+  migrateToOmniWorker: "Migrasi ke Flux Agent",
   skip: "Lewati",
   appearanceHint: "Pilih tampilan antarmuka yang Anda sukai",
   apiKeyPlaceholder: "API Key",

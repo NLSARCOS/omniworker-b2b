@@ -73,7 +73,7 @@ export default {
     "Found Flux Agent at <code>{{path}}</code>. You can migrate your configuration, API keys, sessions, and skills to Flux Agent.",
   migrationDismiss: "Don't show again",
   migrating: "Migrating...",
-  migrateToFlux Agent: "Migrate to Flux Agent",
+  migrateToOmniWorker: "Migrate to Flux Agent",
   skip: "Skip",
   appearanceHint: "Choose your preferred interface appearance",
   apiKeyPlaceholder: "API Key",

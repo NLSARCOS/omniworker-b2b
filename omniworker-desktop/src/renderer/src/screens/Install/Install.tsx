@@ -123,7 +123,7 @@ function Install({
           ? t("install.installationComplete")
           : failed
             ? t("install.installationFailed")
-            : t("install.installingFlux Agent")}
+            : t("install.installingOmniWorker")}
       </h1>
 
       <div className="install-progress-container">

@@ -132,7 +132,7 @@ interface OmniWorkerAPI {
   runOmniWorkerUpdate: () => Promise<{ success: boolean; error?: string }>;
 
   // Flux Agent migration
-  checkFlux Agent: () => Promise<{ found: boolean; path: string | null }>;
+  checkOmniWorker: () => Promise<{ found: boolean; path: string | null }>;
   runClawMigrate: () => Promise<{ success: boolean; error?: string }>;
 
   getLocale: () => Promise<AppLocale>;

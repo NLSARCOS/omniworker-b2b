@@ -66,7 +66,7 @@ export default {
     "在 <code>{{path}}</code> 发现 Flux Agent。你可以将配置、API Key、会话和技能迁移到 Flux Agent。",
   migrationDismiss: "不再显示",
   migrating: "迁移中...",
-  migrateToFlux Agent: "迁移到 Flux Agent",
+  migrateToOmniWorker: "迁移到 Flux Agent",
   skip: "跳过",
   appearanceHint: "选择你偏好的界面外观",
   apiKeyPlaceholder: "API Key",

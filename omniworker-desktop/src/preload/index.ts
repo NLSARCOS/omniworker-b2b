@@ -71,7 +71,7 @@ const omniworkerAPI = {
     ipcRenderer.invoke("run-omniworker-update"),
 
   // Flux Agent migration
-  checkFlux Agent: (): Promise<{ found: boolean; path: string | null }> =>
+  checkOmniWorker: (): Promise<{ found: boolean; path: string | null }> =>
     ipcRenderer.invoke("check-omniworker"),
   runClawMigrate: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke("run-claw-migrate"),

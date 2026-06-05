@@ -69,7 +69,7 @@ export default {
     "<code>{{path}}</code> に Flux Agent が見つかりました。設定・API キー・セッション・スキルを Flux Agent に移行できます。",
   migrationDismiss: "再表示しない",
   migrating: "移行中...",
-  migrateToFlux Agent: "Flux Agent に移行",
+  migrateToOmniWorker: "Flux Agent に移行",
   skip: "スキップ",
   appearanceHint: "好みのインターフェース外観を選択",
   apiKeyPlaceholder: "API キー",
