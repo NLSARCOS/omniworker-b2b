@@ -99,7 +99,8 @@ RUN cd web && npm run build && \
 # Without this, `uv pip install` fails with EACCES and all messaging
 # adapters silently fail to load.  See tools/lazy_deps.py.
 USER root
-RUN chmod -R a+rX /opt/omniworker && \
+RUN chmod +x /opt/omniworker/docker/entrypoint.sh && \
+    chmod -R a+rX /opt/omniworker && \
     chown -R omniworker:omniworker /opt/omniworker/.venv /opt/omniworker/ui-tui /opt/omniworker/node_modules
 # Start as root so the entrypoint can usermod/groupmod + gosu.
 # If OMNIWORKER_UID is unset, the entrypoint drops to the default omniworker user (10000).
