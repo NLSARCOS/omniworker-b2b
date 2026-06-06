@@ -1,9 +1,11 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 
 import { AgentMarkdown } from "../../components/AgentMarkdown";
+import { AttachmentChip } from "../../components/AttachmentChip";
 import { useI18n } from "../../components/useI18n";
 import { FluxLogo } from "../../components/common/FluxLogo";
-import type { ChatMessage } from "./types";
+import { LiveToolGroupCard } from "./LiveToolGroupCard";
+import type { Attachment, ChatMessage } from "./types";
 
 export const APPROVAL_RE =
   /⚠️.*dangerous|requires? (your )?approval|\/approve.*\/deny|do you want (me )?to (proceed|continue|run|execute)/i;
@@ -47,11 +49,15 @@ export const MessageRow = memo(function MessageRow({
   onDeny,
 }: MessageRowProps): React.JSX.Element {
   const { t } = useI18n();
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(
+    null,
+  );
   const showApprovalBar =
     msg.role === "agent" &&
     !isLoading &&
     isLast &&
     APPROVAL_RE.test(msg.content);
+  const hasAttachments = !!msg.attachments && msg.attachments.length > 0;
 
   return (
     <div className={`chat-message chat-message-${msg.role}`}>
@@ -61,10 +67,30 @@ export const MessageRow = memo(function MessageRow({
         <OmniWorkerAvatar />
       )}
       <div className={`chat-bubble chat-bubble-${msg.role}`}>
-        {msg.role === "agent" ? (
-          <AgentMarkdown>{msg.content}</AgentMarkdown>
-        ) : (
-          msg.content
+        {hasAttachments && (
+          <div className="chat-message-attachments">
+            {msg.attachments!.map((att) => (
+              <AttachmentChip
+                key={att.id}
+                attachment={att}
+                onPreview={(a) => a.kind === "image" && setPreviewAttachment(a)}
+              />
+            ))}
+          </div>
+        )}
+        {msg.content &&
+          (msg.role === "agent" ? (
+            <AgentMarkdown>{msg.content}</AgentMarkdown>
+          ) : (
+            msg.content
+          ))}
+        {/* Structured tool call groups (live stream) */}
+        {msg.role === "agent" && msg.toolGroups && msg.toolGroups.length > 0 && (
+          <div className="chat-tool-groups">
+            {msg.toolGroups.map((group) => (
+              <LiveToolGroupCard key={group.groupId} group={group} />
+            ))}
+          </div>
         )}
       </div>
       {showApprovalBar && (
@@ -78,6 +104,21 @@ export const MessageRow = memo(function MessageRow({
           <button className="chat-approval-btn chat-deny" onClick={onDeny}>
             {t("chat.deny")}
           </button>
+        </div>
+      )}
+      {previewAttachment && previewAttachment.dataUrl && (
+        <div
+          className="chat-image-preview-backdrop"
+          onClick={() => setPreviewAttachment(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <img
+            src={previewAttachment.dataUrl}
+            alt={previewAttachment.name}
+            className="chat-image-preview-image"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

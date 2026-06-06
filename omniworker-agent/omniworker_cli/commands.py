@@ -472,6 +472,52 @@ def _iter_plugin_command_entries() -> list[tuple[str, str, str]]:
     return entries
 
 
+_TELEGRAM_COMMAND_DESCRIPTIONS_ES = {
+    "new": "Iniciar una nueva sesión y limpiar historial",
+    "topic": "Configurar o inspeccionar temas de Telegram",
+    "clear": "Limpiar pantalla e iniciar nueva sesión",
+    "retry": "Reintentar el último mensaje enviado",
+    "undo": "Deshacer el último intercambio de mensajes",
+    "title": "Establecer un título para la sesión actual",
+    "branch": "Crear una bifurcación de la sesión actual",
+    "compress": "Comprimir el contexto de la conversación manualmente",
+    "rollback": "Listar o restaurar puntos de control",
+    "stop": "Detener procesos activos en segundo plano",
+    "approve": "Aprobar el comando peligroso pendiente",
+    "deny": "Denegar el comando peligroso pendiente",
+    "background": "Ejecutar una instrucción en segundo plano",
+    "agents": "Mostrar agentes activos y tareas ejecutándose",
+    "queue": "Encolar mensaje para el siguiente turno",
+    "steer": "Guiar al agente en su siguiente acción",
+    "goal": "Establecer un objetivo permanente",
+    "subgoal": "Administrar criterios extra del objetivo",
+    "status": "Mostrar el estado actual de la sesión",
+    "whoami": "Mostrar tu nivel de acceso al bot",
+    "profile": "Mostrar perfil activo y directorio de inicio",
+    "sethome": "Establecer este chat como canal principal",
+    "resume": "Reanudar una sesión guardada anteriormente",
+    "sessions": "Explorar y reanudar sesiones previas",
+    "model": "Cambiar el modelo de IA para esta sesión",
+    "codex-runtime": "Alternar el entorno de ejecución de Codex",
+    "personality": "Establecer una personalidad para el agente",
+    "footer": "Alternar pie de página con metadatos",
+    "yolo": "Alternar modo YOLO (sin confirmar comandos)",
+    "reasoning": "Configurar el esfuerzo de razonamiento del LLM",
+    "fast": "Alternar el modo de procesamiento rápido",
+    "voice": "Alternar el modo de voz / TTS",
+    "reload-mcp": "Recargar servidores MCP desde configuración",
+    "reload-skills": "Recargar habilidades locales desde disco",
+    "commands": "Explorar todos los comandos disponibles",
+    "help": "Mostrar ayuda y comandos de la sesión",
+    "restart": "Reiniciar el gateway de forma segura",
+    "usage": "Mostrar consumo de tokens y límites",
+    "insights": "Mostrar estadísticas de uso y análisis",
+    "platform": "Pausar o reanudar plataformas del gateway",
+    "update": "Actualizar el agente a la última versión",
+    "debug": "Generar reporte de depuración del sistema",
+}
+
+
 def telegram_bot_commands() -> list[tuple[str, str]]:
     """Return (command_name, description) pairs for Telegram setMyCommands.
 
@@ -496,13 +542,19 @@ def telegram_bot_commands() -> list[tuple[str, str]]:
         # the menu hurts discoverability (issue #24312).
         tg_name = _sanitize_telegram_name(cmd.name)
         if tg_name:
-            result.append((tg_name, cmd.description))
+            desc = _TELEGRAM_COMMAND_DESCRIPTIONS_ES.get(cmd.name, cmd.description)
+            if len(desc) > 120:  # Telegram description limit is 120 characters
+                desc = desc[:117] + "..."
+            result.append((tg_name, desc))
     for name, description, args_hint in _iter_plugin_command_entries():
         if _requires_argument(args_hint):
             continue
         tg_name = _sanitize_telegram_name(name)
         if tg_name:
-            result.append((tg_name, description))
+            desc = _TELEGRAM_COMMAND_DESCRIPTIONS_ES.get(name, description)
+            if len(desc) > 120:
+                desc = desc[:117] + "..."
+            result.append((tg_name, desc))
     return result
 
 

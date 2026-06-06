@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Trash2 as Trash, Plus, Zap } from "lucide-react";
+import { Trash2 as Trash, Plus, Zap, FolderOpen, X } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
 import type { UsageState } from "./types";
 
@@ -11,6 +11,8 @@ interface ChatHeaderProps {
   onToggleFast: () => void;
   onNewChat?: () => void;
   onClear: () => void;
+  contextFolder?: string;
+  onSelectContextFolder?: (folder: string | undefined) => void;
 }
 
 function UsageBadge({ usage }: { usage: UsageState }): React.JSX.Element {
@@ -37,8 +39,25 @@ export const ChatHeader = memo(function ChatHeader({
   onToggleFast,
   onNewChat,
   onClear,
+  contextFolder,
+  onSelectContextFolder,
 }: ChatHeaderProps): React.JSX.Element {
   const { t } = useI18n();
+
+  const handleSelectFolder = async () => {
+    if (onSelectContextFolder) {
+      const folder = await window.omniworkerAPI.selectFolder();
+      if (folder) {
+        onSelectContextFolder(folder);
+      }
+    }
+  };
+
+  const handleClearFolder = () => {
+    if (onSelectContextFolder) {
+      onSelectContextFolder(undefined);
+    }
+  };
 
   return (
     <div className="chat-header">
@@ -49,6 +68,37 @@ export const ChatHeader = memo(function ChatHeader({
             : t("chat.title")}
         </div>
         {usage && <UsageBadge usage={usage} />}
+        {onSelectContextFolder && (
+          <div className="flex items-center ml-3 shrink-0">
+            {contextFolder ? (
+              <div
+                className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-md text-xs font-medium max-w-[200px] select-none"
+                title={contextFolder}
+              >
+                <FolderOpen size={12} className="shrink-0" />
+                <span className="truncate">
+                  {contextFolder.split(/[\\/]/).pop() || contextFolder}
+                </span>
+                <button
+                  className="hover:text-amber-300 cursor-pointer p-0.5 rounded hover:bg-amber-500/20 shrink-0"
+                  onClick={handleClearFolder}
+                  title="Remove context folder"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ) : (
+              <button
+                className="flex items-center gap-1 px-2 py-0.5 bg-slate-500/10 hover:bg-slate-500/20 text-slate-400 hover:text-slate-300 border border-slate-500/20 rounded-md text-xs font-medium cursor-pointer transition-colors"
+                onClick={handleSelectFolder}
+                title="Select working context folder"
+              >
+                <FolderOpen size={12} />
+                <span>Context</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <div className="chat-header-actions">
         <div className="chat-fast-wrapper">

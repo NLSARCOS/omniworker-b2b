@@ -25,7 +25,8 @@ async function fetchWorkspaceState(sessionId: string): Promise<WorkspaceState | 
     const res = await fetchWithBackoff(
       `${AGENT_BASE_URL}/v1/sessions/${encodeURIComponent(sessionId)}/workspace`,
       { method: "GET", headers },
-      { maxRetries: 1, baseDelayMs: 200 },
+      1,
+      2000
     );
     if (!res.ok) return undefined;
     const data = (await res.json()) as { workspace?: Record<string, unknown> };
@@ -86,14 +87,14 @@ interface Message {
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const MIN_MESSAGES_FOR_HEADER = 6;    // Don't generate for short conversations
 const REGEN_DELTA = 5;                // Regenerate when conversation grows by 5+ messages
-const MAX_HEADER_TOKENS = 1200;       // Hard cap on header size (chars / 4)
+const MAX_HEADER_TOKENS = 2048;       // Hard cap on header size (chars / 4)
 const MAX_HEADER_CHARS = MAX_HEADER_TOKENS * 4;
 
 // ── In-memory cache (per-user, per-session) ──────────────────────────────
+// Exported so the chat route can pre-warm it from PostgreSQL on cold starts.
+export const headerCache = new Map<string, CacheEntry>();
 
-const headerCache = new Map<string, CacheEntry>();
-
-function getCacheKey(userId: string, messages: Message[]): string {
+export function getCacheKey(userId: string, messages: Message[]): string {
   // Key by user + first message hash (session identity)
   const firstMsg = messages[0]?.content?.slice(0, 200) || "";
   let h = 5381;
@@ -134,16 +135,16 @@ const OPENCODE_GO_ENDPOINTS = {
 const EXTRACTION_PROMPT = `You are a context extraction engine. Analyze the conversation and output a JSON object with exactly these fields:
 
 {
-  "sessionSummary": "1-2 sentence summary of what this session is about",
-  "recentDecisions": ["list of the last 3-5 key technical or design decisions made"],
-  "currentTask": "what is currently being worked on or discussed",
-  "keyEntities": ["files", "modules", "concepts", "technologies mentioned"]
+  "sessionSummary": "A detailed summary (1-2 paragraphs) of what this session is about, detailing the architecture, features being built, and current progress",
+  "recentDecisions": ["list of the last 5-10 key technical or design decisions made"],
+  "currentTask": "what is currently being worked on or discussed in detail",
+  "keyEntities": ["files", "modules", "concepts", "functions", "technologies mentioned"]
 }
 
 Rules:
-- Be extremely concise. Each field should be minimal but complete.
+- Be precise, detailed and clear. Don't omit critical architecture details.
 - recentDecisions: Only include actual decisions, not questions or discussion.
-- keyEntities: Max 8 items. Only include specific names (files, functions, libraries).
+- keyEntities: Max 12 items. Only include specific names (files, functions, libraries).
 - Output ONLY valid JSON, no markdown, no explanation.`;
 
 async function generateContextHeader(
@@ -232,11 +233,11 @@ async function generateContextHeader(
 
     const parsed = JSON.parse(content);
     return {
-      sessionSummary: String(parsed.sessionSummary || "").slice(0, 300),
-      recentDecisions: (parsed.recentDecisions || []).slice(0, 5).map((d: any) => String(d).slice(0, 200)),
-      currentTask: String(parsed.currentTask || "").slice(0, 200),
+      sessionSummary: String(parsed.sessionSummary || "").slice(0, 1000),
+      recentDecisions: (parsed.recentDecisions || []).slice(0, 10).map((d: any) => String(d).slice(0, 300)),
+      currentTask: String(parsed.currentTask || "").slice(0, 500),
       previousModel: config.model,
-      keyEntities: (parsed.keyEntities || []).slice(0, 8).map((e: any) => String(e).slice(0, 80)),
+      keyEntities: (parsed.keyEntities || []).slice(0, 12).map((e: any) => String(e).slice(0, 100)),
       generatedAt: Date.now(),
       messageCountAtGen: messages.length,
     };
@@ -367,6 +368,8 @@ export async function getOrBuildContextHeader(
   messages: Message[],
   config: ProviderConfig,
   sessionId?: string,
+  prisma?: any,
+  tenantId?: string,
 ): Promise<ContextHeader | null> {
   if (!messages || messages.length < MIN_MESSAGES_FOR_HEADER) return null;
 
@@ -375,51 +378,90 @@ export async function getOrBuildContextHeader(
   const key = getCacheKey(userId, messages);
   const cached = headerCache.get(key);
 
+  const triggerBackgroundRegen = (currentHeader: ContextHeader) => {
+    console.log(`[ContextBridge] Triggering background LLM extraction for user ${userId.slice(0, 8)}...`);
+    void (async () => {
+      try {
+        const newHeader = await generateContextHeader(messages, config);
+        if (newHeader) {
+          if (sessionId) {
+            const ws = await fetchWorkspaceState(sessionId);
+            if (ws) {
+              enrichHeaderWithWorkspace(newHeader, ws);
+            }
+          }
+          // Update in-memory cache
+          headerCache.set(key, {
+            header: newHeader,
+            expiresAt: Date.now() + CACHE_TTL_MS,
+          });
+
+          // Save to PostgreSQL if prisma client is provided
+          if (prisma && tenantId && sessionId) {
+            const { saveAgentMemory } = await import("./agent-memory");
+            await saveAgentMemory(prisma, {
+              tenantId,
+              sessionId,
+              userId,
+              header: newHeader,
+              messages,
+              messageCount: messages.length,
+              lastModel: config.model,
+            });
+          }
+          console.log(`[ContextBridge] Background LLM extraction completed & cached for user ${userId.slice(0, 8)}`);
+        }
+      } catch (err) {
+        console.error("[ContextBridge] Background regeneration failed:", err);
+      }
+    })();
+  };
+
+  // Cache hit: return immediate cached header, and trigger background update if delta is large enough
   if (cached && cached.expiresAt > Date.now()) {
-    // Check if conversation grew enough to warrant regeneration
     const delta = messages.length - cached.header.messageCountAtGen;
-    if (delta < REGEN_DELTA) {
-      return cached.header;
+    if (delta >= REGEN_DELTA) {
+      triggerBackgroundRegen(cached.header);
     }
-    // Conversation grew — regenerate below
+    return cached.header;
   }
 
-  console.log(`[ContextBridge] Generating header for user ${userId.slice(0, 8)}... (${messages.length} msgs)`);
-
-  // Try LLM extraction first, fall back to heuristic
-  let header = await generateContextHeader(messages, config);
-  if (!header) {
-    header = generateFallbackHeader(messages);
-  }
-
-  // Enrich with structured workspace state from agent DB if available
+  // Cache miss (cold start / session start):
+  // Generate fallback header instantly (0 latency, 0 tokens) and trigger background LLM extraction
+  console.log(`[ContextBridge] Cache miss. Generating fast fallback header & triggering background LLM extraction...`);
+  const fallbackHeader = generateFallbackHeader(messages);
   if (sessionId) {
     const ws = await fetchWorkspaceState(sessionId);
     if (ws) {
-      header.workspaceState = ws;
-      // Merge workspace decisions into recentDecisions if empty
-      if (header.recentDecisions.length === 0 && ws.decisions) {
-        header.recentDecisions = ws.decisions.slice(0, 5);
-      }
-      // Use lastTask as currentTask if empty
-      if (!header.currentTask && ws.lastTask) {
-        header.currentTask = ws.lastTask;
-      }
-      // Merge files into keyEntities
-      if (ws.files) {
-        const existing = new Set(header.keyEntities);
-        ws.files.forEach(f => existing.add(f));
-        header.keyEntities = [...existing].slice(0, 8);
-      }
+      enrichHeaderWithWorkspace(fallbackHeader, ws);
     }
   }
 
+  // Set the fallback in cache immediately so subsequent request/retry hits cache
   headerCache.set(key, {
-    header,
+    header: fallbackHeader,
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
 
-  return header;
+  // Trigger background LLM extraction
+  triggerBackgroundRegen(fallbackHeader);
+
+  return fallbackHeader;
+}
+
+function enrichHeaderWithWorkspace(header: ContextHeader, ws: WorkspaceState): void {
+  header.workspaceState = ws;
+  if (header.recentDecisions.length === 0 && ws.decisions) {
+    header.recentDecisions = ws.decisions.slice(0, 5);
+  }
+  if (!header.currentTask && ws.lastTask) {
+    header.currentTask = ws.lastTask;
+  }
+  if (ws.files) {
+    const existing = new Set(header.keyEntities);
+    ws.files.forEach(f => existing.add(f));
+    header.keyEntities = [...existing].slice(0, 8);
+  }
 }
 
 /**

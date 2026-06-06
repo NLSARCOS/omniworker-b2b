@@ -1,14 +1,13 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { OMNIWORKER_HOME } from "./installer";
-import { safeWriteFile } from "./utils";
+import { safeWriteFile, activeStateDbPath } from "./utils";
 import Database from "better-sqlite3";
 import { t } from "../shared/i18n";
 import { getAppLocale } from "./locale";
 
 const CACHE_DIR = join(OMNIWORKER_HOME, "desktop");
 const CACHE_FILE = join(CACHE_DIR, "sessions.json");
-const DB_PATH = join(OMNIWORKER_HOME, "state.db");
 
 export interface CachedSession {
   id: string;
@@ -73,8 +72,9 @@ function writeCache(data: CacheData): void {
 }
 
 function getDb(): Database.Database | null {
-  if (!existsSync(DB_PATH)) return null;
-  return new Database(DB_PATH, { readonly: true });
+  const dbPath = activeStateDbPath();
+  if (!existsSync(dbPath)) return null;
+  return new Database(dbPath, { readonly: true });
 }
 
 // Sync from omniworker DB to local cache — only fetches new/updated sessions
@@ -179,3 +179,13 @@ export function updateSessionTitle(sessionId: string, title: string): void {
     writeCache(cache);
   }
 }
+
+export function removeSessionFromCache(sessionId: string): void {
+  const cache = readCache();
+  const next = cache.sessions.filter((s) => s.id !== sessionId);
+  if (next.length !== cache.sessions.length) {
+    cache.sessions = next;
+    writeCache(cache);
+  }
+}
+

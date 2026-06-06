@@ -191,7 +191,7 @@ export function getApiUrl(): string {
     return sshUrl;
   }
   if (conn.mode === "remote" && conn.remoteUrl) {
-    return conn.remoteUrl.replace(/\/+$/, "");
+    return conn.remoteUrl.replace(/\/+$/, "").replace(/\/v1\/?$/, "");
   }
   // Local mode: use the local Flux Agent gateway (port 8642).
   // The gateway runs the full agent with tools (file system, terminal, etc.)
@@ -348,12 +348,17 @@ export interface ChatCallbacks {
   }) => void;
 }
 
+export function contextFolderSystemMessage(contextFolder: string): string {
+  return `You are running in a specific context folder. All file system, terminal, and command operations MUST be executed relative to this absolute path: ${contextFolder}. Do not leave this directory unless explicitly instructed by the user.`;
+}
+
 function sendMessageViaApi(
   message: string,
   cb: ChatCallbacks,
   profile?: string,
   _resumeSessionId?: string,
   history?: Array<{ role: string; content: string }> | undefined,
+  contextFolder?: string,
 ): ChatHandle {
   const mc = getModelConfig(profile);
   const controller = new AbortController();
@@ -363,6 +368,12 @@ function sendMessageViaApi(
   // the current user message so the API server recovers the full transcript
   // (with tool_calls, reasoning, etc.) from SQLite via X-Flux Agent-Session-Id.
   const rawMessages: Array<{ role: string; content: string }> = [];
+  if (contextFolder) {
+    rawMessages.push({
+      role: "system",
+      content: contextFolderSystemMessage(contextFolder),
+    });
+  }
   if (history && history.length > 0) {
     for (const msg of history) {
       rawMessages.push({
@@ -701,6 +712,7 @@ function sendMessageViaCli(
   cb: ChatCallbacks,
   profile?: string,
   resumeSessionId?: string,
+  _contextFolder?: string,
 ): ChatHandle {
   const mc = getModelConfig(profile);
   const profileEnv = readEnv(profile);
@@ -1049,6 +1061,7 @@ function sendMessageViaApiWithLocalRecovery(
   profile?: string,
   resumeSessionId?: string,
   history?: Array<{ role: string; content: string }> | undefined,
+  contextFolder?: string,
 ): ChatHandle {
   let aborted = false;
   let retrying = false;
@@ -1103,13 +1116,13 @@ function sendMessageViaApiWithLocalRecovery(
 
           if (recovered) {
             apiServerAvailable = true;
-            activeHandle = sendMessageViaApi(message, cb, profile, resumeSessionId, history);
+            activeHandle = sendMessageViaApi(message, cb, profile, resumeSessionId, history, contextFolder);
             return;
           }
 
           // Gateway recovery failed — fall back to CLI
           console.log("[LocalRecovery] Gateway recovery failed, falling back to CLI");
-          activeHandle = sendMessageViaCli(message, cb, profile, resumeSessionId);
+          activeHandle = sendMessageViaCli(message, cb, profile, resumeSessionId, contextFolder);
         })();
         return;
       }
@@ -1127,7 +1140,7 @@ function sendMessageViaApiWithLocalRecovery(
     },
   };
 
-  activeHandle = sendMessageViaApi(message, callbacks, profile, resumeSessionId, history);
+  activeHandle = sendMessageViaApi(message, callbacks, profile, resumeSessionId, history, contextFolder);
   return handle;
 }
 
@@ -1561,6 +1574,7 @@ export async function sendMessage(
   profile?: string,
   resumeSessionId?: string,
   history?: Array<{ role: string; content: string }> | undefined,
+  contextFolder?: string,
 ): Promise<ChatHandle> {
   ensureInitialized();
 
@@ -1625,7 +1639,7 @@ export async function sendMessage(
 
   // Remote mode: always use API, no CLI fallback
   if (isRemoteMode()) {
-    return sendMessageViaApi(message, cb, profile, resumeSessionId, history);
+    return sendMessageViaApi(message, cb, profile, resumeSessionId, history, contextFolder);
   }
 
   // Ensure memory config defaults are set for local/gateway paths
@@ -1643,11 +1657,11 @@ export async function sendMessage(
   if (apiServerAvailable) {
     // Route through recovery-aware wrapper: if the gateway dies mid-request
     // (e.g. after system sleep), it auto-restarts and retries.
-    return sendMessageViaApiWithLocalRecovery(message, cb, profile, resumeSessionId, history);
+    return sendMessageViaApiWithLocalRecovery(message, cb, profile, resumeSessionId, history, contextFolder);
   }
 
   // Gateway could not be started — fall back to CLI as last resort
-  return sendMessageViaCli(message, cb, profile, resumeSessionId);
+  return sendMessageViaCli(message, cb, profile, resumeSessionId, contextFolder);
 }
 
 // Lazy init — called on first sendMessage or gateway start
@@ -2108,6 +2122,10 @@ let gatewayStartedByApp = false;
 
 export async function startGateway(profile?: string): Promise<boolean> {
   ensureInitialized();
+  if (isRemoteMode()) {
+    console.log("[Gateway] Skipping local gateway start because remote connection mode is active.");
+    return false;
+  }
   if (gatewayProcess && !gatewayProcess.killed) {
     return true; // Already running and managed
   }
@@ -2350,6 +2368,10 @@ export function testRemoteConnection(
 }
 
 export async function restartGateway(profile?: string): Promise<void> {
+  if (isRemoteMode()) {
+    console.log("[Gateway] Skipping local gateway restart because remote connection mode is active.");
+    return;
+  }
   if (!gatewayStartedByApp && !isGatewayRunning()) return;
   stopGateway(true);
   await new Promise((r) => setTimeout(r, 1000));

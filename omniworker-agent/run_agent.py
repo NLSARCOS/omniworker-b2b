@@ -404,6 +404,19 @@ def _is_destructive_command(cmd: str) -> bool:
     return False
 
 
+def _is_mcp_tool_parallel_safe(tool_name: str) -> bool:
+    """Check if an MCP tool comes from a server with parallel tool calls enabled.
+
+    Lazy-imports from ``tools.mcp_tool`` to avoid circular dependencies.
+    Returns False if the MCP module is not available.
+    """
+    try:
+        from tools.mcp_tool import is_mcp_tool_parallel_safe
+        return is_mcp_tool_parallel_safe(tool_name)
+    except Exception:
+        return False
+
+
 def _should_parallelize_tool_batch(tool_calls) -> bool:
     """Return True when a tool-call batch is safe to run concurrently."""
     if len(tool_calls) <= 1:
@@ -443,7 +456,9 @@ def _should_parallelize_tool_batch(tool_calls) -> bool:
             continue
 
         if tool_name not in _PARALLEL_SAFE_TOOLS:
-            return False
+            # Check if it's an MCP tool from a server that opted into parallel calls.
+            if not _is_mcp_tool_parallel_safe(tool_name):
+                return False
 
     return True
 
@@ -10147,6 +10162,7 @@ class AIAgent:
         )
         _is_tokenhub = base_url_host_matches(self._base_url_lower, "tokenhub.tencentmaas.com")
         _is_lmstudio = (self.provider or "").strip().lower() == "lmstudio"
+        _is_deepseek = base_url_host_matches(self.base_url, "api.deepseek.com")
 
         # Temperature: _fixed_temperature_for_model may return OMIT_TEMPERATURE
         # sentinel (temperature omitted entirely), a numeric override, or None.
@@ -10268,6 +10284,7 @@ class AIAgent:
             is_kimi=_is_kimi,
             is_tokenhub=_is_tokenhub,
             is_lmstudio=_is_lmstudio,
+            is_deepseek=_is_deepseek,
             is_custom_provider=self.provider == "custom",
             ollama_num_ctx=self._ollama_num_ctx,
             provider_preferences=_prefs or None,
@@ -10727,6 +10744,11 @@ class AIAgent:
         # 5. reasoning_content was present but not a string (e.g. None after
         # context compaction).  Don't pass null to the API.
         api_msg.pop("reasoning_content", None)
+
+        # DeepSeek: strip reasoning_content on all assistant messages so the API
+        # doesn't return 400 when the model was invoked with thinking enabled.
+        if base_url_host_matches(self.base_url, "api.deepseek.com"):
+            api_msg.pop("reasoning_content", None)
 
     @staticmethod
     def _sanitize_tool_calls_for_strict_api(api_msg: dict) -> dict:

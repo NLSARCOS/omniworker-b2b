@@ -360,13 +360,13 @@ DANGEROUS_PATTERNS = [
     # Gateway lifecycle protection: prevent the agent from killing its own
     # gateway process.  These commands trigger a gateway restart/stop that
     # terminates all running agents mid-work.
-    (r'\bhermes\s+gateway\s+(stop|restart)\b', "stop/restart hermes gateway (kills running agents)"),
-    (r'\bhermes\s+update\b', "hermes update (restarts gateway, kills running agents)"),
+    (r'\bomniworker\s+gateway\s+(stop|restart)\b', "stop/restart omniworker gateway (kills running agents)"),
+    (r'\bomniworker\s+update\b', "omniworker update (restarts gateway, kills running agents)"),
     # Gateway protection: never start gateway outside systemd management
-    (r'gateway\s+run\b.*(&\s*$|&\s*;|\bdisown\b|\bsetsid\b)', "start gateway outside systemd (use 'systemctl --user restart hermes-gateway')"),
-    (r'\bnohup\b.*gateway\s+run\b', "start gateway outside systemd (use 'systemctl --user restart hermes-gateway')"),
+    (r'gateway\s+run\b.*(&\s*$|&\s*;|\bdisown\b|\bsetsid\b)', "start gateway outside systemd (use 'systemctl --user restart omniworker-gateway')"),
+    (r'\bnohup\b.*gateway\s+run\b', "start gateway outside systemd (use 'systemctl --user restart omniworker-gateway')"),
     # Self-termination protection: prevent agent from killing its own process
-    (r'\b(pkill|killall)\b.*\b(hermes|gateway|cli\.py)\b', "kill hermes/gateway process (self-termination)"),
+    (r'\b(pkill|killall)\b.*\b(omniworker|gateway|cli\.py)\b', "kill omniworker/gateway process (self-termination)"),
     # Self-termination via kill + command substitution (pgrep/pidof).
     # The name-based pattern above catches `pkill hermes` but not
     # `kill -9 $(pgrep -f hermes)` because the substitution is opaque

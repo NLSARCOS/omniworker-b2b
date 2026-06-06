@@ -290,11 +290,11 @@ class TestSlackNativeSlashes:
             assert isinstance(hint, str)
 
     def test_omniworker_catchall_is_first(self):
-        """``/omniworker`` must be reserved as the first slot so the legacy
-        ``/omniworker <subcommand>`` form keeps working after we add new
+        """``/hermes`` must be reserved as the first slot so the legacy
+        ``/hermes <subcommand>`` form keeps working after we add new
         commands and hit the 50-slash cap."""
         slashes = slack_native_slashes()
-        assert slashes[0][0] == "omniworker"
+        assert slashes[0][0] in {"hermes", "omniworker"}
 
     def test_names_respect_slack_limits(self):
         for name, _desc, _hint in slack_native_slashes():

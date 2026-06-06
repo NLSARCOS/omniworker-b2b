@@ -1,5 +1,6 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type { AppLocale } from "../shared/i18n/types";
+import type { Attachment } from "../shared/attachments";
 
 const electronAPI = {
   process: {
@@ -190,6 +191,8 @@ const omniworkerAPI = {
     profile?: string,
     resumeSessionId?: string,
     history?: Array<{ role: string; content: string }> | undefined,
+    attachments?: Attachment[],
+    contextFolder?: string,
   ): Promise<{ response: string; sessionId?: string }> =>
     ipcRenderer.invoke(
       "send-message",
@@ -197,6 +200,8 @@ const omniworkerAPI = {
       profile,
       resumeSessionId,
       history,
+      attachments,
+      contextFolder,
     ),
 
   abortChat: (): Promise<void> => ipcRenderer.invoke("abort-chat"),
@@ -308,6 +313,22 @@ const omniworkerAPI = {
       timestamp: number;
     }>
   > => ipcRenderer.invoke("get-session-messages", sessionId),
+
+  deleteSession: (sessionId: string): Promise<void> =>
+    ipcRenderer.invoke("delete-session", sessionId),
+  deleteSessions: (
+    sessionIds: string[],
+  ): Promise<{ requested: number; deleted: number }> =>
+    ipcRenderer.invoke("delete-sessions", sessionIds),
+  clearStagedAttachments: (sessionId: string): Promise<void> =>
+    ipcRenderer.invoke("clear-staged-attachments", sessionId),
+  stageAttachment: (
+    sessionId: string,
+    filename: string,
+    base64: string,
+  ): Promise<string> =>
+    ipcRenderer.invoke("stage-attachment", sessionId, filename, base64),
+
 
   // Profiles
   listProfiles: (): Promise<
@@ -1165,6 +1186,32 @@ const omniworkerAPI = {
   },
   stopTokenRefreshLoop: (): void => {
     ipcRenderer.send("stop-token-refresh-loop");
+  },
+
+  // Media (agent-generated images / files — issue #299)
+  readMediaFile: (filePath: string): Promise<string | null> =>
+    ipcRenderer.invoke("read-media-file", filePath),
+  saveMediaFile: (src: string, name: string): Promise<boolean> =>
+    ipcRenderer.invoke("save-media-file", src, name),
+  mediaFileExists: (filePath: string): Promise<boolean> =>
+    ipcRenderer.invoke("media-file-exists", filePath),
+  showMediaMenu: (
+    src: string,
+    name: string,
+    labels: { open: string; saveAs: string },
+  ): void => {
+    ipcRenderer.send("show-media-menu", src, name, labels);
+  },
+
+  // Resolve the absolute filesystem path for a File coming from drag-drop
+  // or the file picker.  Returns "" for blobs that have no origin path
+  // (e.g. clipboard paste) — caller should stageAttachment for those.
+  getPathForFile: (file: File): string => {
+    try {
+      return webUtils.getPathForFile(file) || "";
+    } catch {
+      return "";
+    }
   },
 };
 

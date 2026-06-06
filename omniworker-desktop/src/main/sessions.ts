@@ -2,8 +2,10 @@ import Database from "better-sqlite3";
 import { join } from "path";
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { OMNIWORKER_HOME } from "./installer";
-
-const DB_PATH = join(OMNIWORKER_HOME, "state.db");
+import { activeStateDbPath } from "./utils";
+import { clearStagedAttachments } from "./attachment-staging";
+import { removeSessionFromCache } from "./session-cache";
+import { deletePromptImageAttachmentsForSession } from "./session-attachment-store";
 
 function getCronOutputMessage(sessionId: string): SessionMessage | null {
   const match = /^cron_([^_]+)_/.exec(sessionId);
@@ -59,9 +61,10 @@ export interface SearchResult {
   snippet: string;
 }
 
-function getDb(): Database.Database | null {
-  if (!existsSync(DB_PATH)) return null;
-  return new Database(DB_PATH, { readonly: true });
+function getDb(readonly = true): Database.Database | null {
+  const dbPath = activeStateDbPath();
+  if (!existsSync(dbPath)) return null;
+  return new Database(dbPath, { readonly });
 }
 
 export function listSessions(limit = 30, offset = 0): SessionSummary[] {
@@ -214,4 +217,80 @@ export function getSessionMessages(sessionId: string): SessionMessage[] {
   } finally {
     db.close();
   }
+}
+
+export interface DeleteSessionsResult {
+  requested: number;
+  deleted: number;
+}
+
+function normalizeSessionIds(sessionIds: string[]): string[] {
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  for (const id of sessionIds) {
+    if (typeof id !== "string") continue;
+    const trimmed = id.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    normalized.push(trimmed);
+  }
+  return normalized;
+}
+
+function deleteSessionRows(db: Database.Database, sessionId: string): number {
+  deletePromptImageAttachmentsForSession(db, sessionId);
+  db.prepare("DELETE FROM messages WHERE session_id = ?").run(sessionId);
+  const result = db.prepare("DELETE FROM sessions WHERE id = ?").run(sessionId);
+  return result.changes;
+}
+
+function cleanupDeletedSession(sessionId: string): void {
+  clearStagedAttachments(sessionId);
+  removeSessionFromCache(sessionId);
+}
+
+export function deleteSession(sessionId: string): void {
+  const id = normalizeSessionIds([sessionId])[0];
+  if (!id) return;
+
+  const db = getDb(false);
+
+  if (db) {
+    try {
+      const tx = db.transaction((sessionIdToDelete: string) => {
+        deleteSessionRows(db, sessionIdToDelete);
+      });
+      tx(id);
+    } finally {
+      db.close();
+    }
+  }
+
+  cleanupDeletedSession(id);
+}
+
+export function deleteSessions(sessionIds: string[]): DeleteSessionsResult {
+  const ids = normalizeSessionIds(sessionIds);
+  let deleted = 0;
+
+  const db = getDb(false);
+
+  if (db) {
+    try {
+      const tx = db.transaction((idsToDelete: string[]) => {
+        for (const id of idsToDelete) {
+          deleted += deleteSessionRows(db, id);
+        }
+      });
+      tx(ids);
+    } finally {
+      db.close();
+    }
+  }
+
+  for (const id of ids) {
+    cleanupDeletedSession(id);
+  }
+
+  return { requested: ids.length, deleted };
 }

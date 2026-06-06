@@ -10,7 +10,10 @@ import { useChatActions } from "./hooks/useChatActions";
 import { useModelConfig } from "./hooks/useModelConfig";
 import { useFastMode } from "./hooks/useFastMode";
 import { useLocalCommands } from "./hooks/useLocalCommands";
+import { useI18n } from "../../components/useI18n";
 import type { ChatMessage, UsageState } from "./types";
+import type { Attachment } from "../../../../shared/attachments";
+
 
 export type { ChatMessage } from "./types";
 
@@ -33,13 +36,21 @@ function Chat({
   onNewChat,
   isPlanExpired,
 }: ChatProps): React.JSX.Element {
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
+
   const [omniworkerSessionId, setOmniWorkerSessionId] = useState<string | null>(
     null,
   );
+  const [contextFolder, setContextFolder] = useState<string | undefined>(undefined);
   const [toolProgress, setToolProgress] = useState<string | null>(null);
   const [usage, setUsage] = useState<UsageState | null>(null);
   const chatInputRef = useRef<ChatInputHandle>(null);
+
+  const [dragActive, setDragActive] = useState(false);
+  const dragCounter = useRef(0);
+  const [queuedCount, setQueuedCount] = useState(0);
+  const queueRef = useRef<{ text: string; attachments: Attachment[] }[]>([]);
 
   const { containerRef, bottomRef } = useChatScroll(messages);
   const modelConfig = useModelConfig(profile);
@@ -57,6 +68,12 @@ function Chat({
     setUsage,
   });
 
+  // Sync internal session ID and reset context folder on session switch
+  useEffect(() => {
+    setOmniWorkerSessionId(sessionId);
+    setContextFolder(undefined);
+  }, [sessionId]);
+
   // Reset omniworker session when the parent clears messages (new chat).
   // Effect-driven sync because `messages` is owned by the parent; a key-based
   // remount would discard unrelated local state (model picker, etc.).
@@ -64,6 +81,7 @@ function Chat({
     if (messages.length === 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setOmniWorkerSessionId(null);
+      setContextFolder(undefined);
     }
   }, [messages]);
 
@@ -119,14 +137,99 @@ function Chat({
     onSessionStarted,
     chatInputRef,
     localCommands,
+    contextFolder,
   });
+
+  // Stable ref to handleSend so the drain effect doesn't re-trigger on
+  // identity changes
+  const handleSendRef = useRef(actions.handleSend);
+  useEffect(() => {
+    handleSendRef.current = actions.handleSend;
+  });
+
+  // Drain queued messages one at a time when the agent finishes.
+  useEffect(() => {
+    if (isLoading) return;
+    const next = queueRef.current.shift();
+    if (!next) return;
+    setQueuedCount(queueRef.current.length);
+    handleSendRef.current(next.text, next.attachments).catch(() => {
+      queueRef.current.unshift(next);
+      setQueuedCount(queueRef.current.length);
+    });
+  }, [isLoading]);
+
+  const handleSubmitOrQueue = useCallback(
+    (text: string, attachments: Attachment[]) => {
+      if (isLoading) {
+        queueRef.current.push({ text, attachments });
+        setQueuedCount(queueRef.current.length);
+        return;
+      }
+      void handleSendRef.current(text, attachments);
+    },
+    [isLoading],
+  );
+
+  const eventHasFiles = useCallback((e: React.DragEvent): boolean => {
+    const types = e.dataTransfer?.types;
+    if (!types) return false;
+    for (let i = 0; i < types.length; i++) {
+      if (types[i] === "Files") return true;
+    }
+    return false;
+  }, []);
+
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent) => {
+      if (!eventHasFiles(e)) return;
+      e.preventDefault();
+      dragCounter.current += 1;
+      if (dragCounter.current === 1) setDragActive(true);
+    },
+    [eventHasFiles],
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (!eventHasFiles(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    },
+    [eventHasFiles],
+  );
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current = Math.max(0, dragCounter.current - 1);
+    if (dragCounter.current === 0) setDragActive(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      if (!eventHasFiles(e)) return;
+      e.preventDefault();
+      dragCounter.current = 0;
+      setDragActive(false);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) return;
+      void chatInputRef.current?.addFiles(files);
+    },
+    [eventHasFiles],
+  );
 
   const handleSuggestion = useCallback((text: string) => {
     chatInputRef.current?.setText(text);
   }, []);
 
   return (
-    <div className="chat-container">
+    <div
+      className="chat-container"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <ChatHeader
         sessionId={sessionId}
         usage={usage}
@@ -135,6 +238,8 @@ function Chat({
         onToggleFast={toggleFastMode}
         onNewChat={onNewChat}
         onClear={handleClear}
+        contextFolder={contextFolder}
+        onSelectContextFolder={setContextFolder}
       />
 
       <div className={messages.length === 0 ? "chat-messages" : "chat-messages !overflow-hidden !p-0"} ref={containerRef}>
@@ -154,12 +259,18 @@ function Chat({
         )}
       </div>
 
+      {queuedCount > 0 && (
+        <div className="chat-queue-indicator">
+          {t("chat.queued", { count: queuedCount }) || `${queuedCount} message(s) queued`}
+        </div>
+      )}
+
       <div className="chat-input-area">
         <ChatInput
           ref={chatInputRef}
           isLoading={isLoading}
           hasSession={!!omniworkerSessionId}
-          onSubmit={actions.handleSend}
+          onSubmit={handleSubmitOrQueue}
           onQuickAsk={actions.handleQuickAsk}
           onAbort={actions.handleAbort}
           isPlanExpired={isPlanExpired}
@@ -173,6 +284,13 @@ function Chat({
           onSelectModel={modelConfig.selectModel}
         />
       </div>
+      {dragActive && (
+        <div className="chat-drop-overlay" aria-hidden>
+          <div className="chat-drop-overlay-inner">
+            {t("chat.dropToAttach") || "Drop files to attach"}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,12 +1,11 @@
 // src/app/api/cron/provider-health/route.ts — Automated provider model health checks
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { checkModelHealth, updateModelHealth, categorizeError } from "@/lib/provider-health";
+import { checkModelHealth, updateModelHealth, invalidateHealthCache } from "@/lib/provider-health";
 import { getAllModelIds } from "@/lib/provider-models";
 
 const CRON_SECRET = process.env.CRON_SECRET;
-const HEALTH_CHECK_DELAY_MS = 500; // Delay between checks to avoid rate limits
-const MAX_TOTAL_DURATION_MS = 5 * 60 * 1000; // 5 minute max
+const MAX_TOTAL_DURATION_MS = 5 * 60 * 1000; // 5 minute max (Vercel cron budget)
 
 export async function POST(request: Request) {
   // 1. Authenticate via CRON_SECRET
@@ -30,13 +29,6 @@ export async function POST(request: Request) {
   }
 
   const startTime = Date.now();
-  const results: Array<{
-    providerId: string;
-    modelId: string;
-    status: string;
-    latencyMs?: number;
-    error?: string;
-  }> = [];
 
   // 3. Get providers to check
   let providers;
@@ -51,53 +43,48 @@ export async function POST(request: Request) {
     });
   }
 
-  let tested = 0;
-  let available = 0;
-  let degraded = 0;
-  let unavailable = 0;
-
-  // 4. Process each provider sequentially
-  for (const provider of providers) {
-    const modelIds = getAllModelIds(provider.provider);
-    if (modelIds.length === 0) continue;
-
-    for (const modelId of modelIds) {
-      // Check total duration
-      if (Date.now() - startTime > MAX_TOTAL_DURATION_MS) {
-        console.warn(`[ProviderHealth] Timeout reached, stopping early`);
-        break;
+  // 4. Providers run in parallel; models within each provider run sequentially
+  // (same strategy as the manual health-check endpoint for consistency).
+  const perProviderResults = await Promise.all(
+    providers.map(async (provider) => {
+      const modelIds = getAllModelIds(provider.provider);
+      const results = [];
+      for (const modelId of modelIds) {
+        // Hard time-box: stop early if we are close to the cron budget
+        if (Date.now() - startTime > MAX_TOTAL_DURATION_MS - 10_000) {
+          console.warn(`[ProviderHealth] Approaching time limit, stopping ${provider.provider} early`);
+          break;
+        }
+        const result = await checkModelHealth(provider, modelId);
+        await updateModelHealth(prisma, result);
+        results.push({
+          providerId: result.providerId,
+          modelId: result.modelId,
+          status: result.status,
+          latencyMs: result.latencyMs,
+          error: result.lastError,
+        });
+        // Short delay between models of the same provider (rate limit buffer)
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
+      return results;
+    })
+  );
 
-      // Check this model
-      const result = await checkModelHealth(provider, modelId);
-      await updateModelHealth(prisma, result);
+  // 5. Flatten + invalidate cache so next panel GET reads fresh data
+  const results = perProviderResults.flat();
+  invalidateHealthCache();
 
-      results.push({
-        providerId: result.providerId,
-        modelId: result.modelId,
-        status: result.status,
-        latencyMs: result.latencyMs,
-        error: result.lastError,
-      });
-
-      tested++;
-      if (result.status === "available") available++;
-      else if (result.status === "degraded") degraded++;
-      else unavailable++;
-
-      // Delay between checks
-      await new Promise((resolve) => setTimeout(resolve, HEALTH_CHECK_DELAY_MS));
-    }
-
-    // Break outer loop if timed out
-    if (Date.now() - startTime > MAX_TOTAL_DURATION_MS) {
-      break;
-    }
-  }
-
+  const tested = results.length;
+  const available = results.filter((r) => r.status === "available").length;
+  const degraded = results.filter((r) => r.status === "degraded").length;
+  const unavailable = results.filter((r) => r.status === "unavailable").length;
   const durationMs = Date.now() - startTime;
 
-  console.log(`[ProviderHealth] Complete: ${tested} tested, ${available} available, ${degraded} degraded, ${unavailable} unavailable (${durationMs}ms)`);
+  console.log(
+    `[ProviderHealth] Complete: ${tested} tested, ${available} available, ` +
+      `${degraded} degraded, ${unavailable} unavailable (${durationMs}ms)`
+  );
 
   return NextResponse.json({
     ok: true,

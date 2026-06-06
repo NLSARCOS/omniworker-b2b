@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { randomUUID } from "crypto";
-import { OMNIWORKER_HOME } from "./installer";
+import { OMNIWORKER_HOME, OMNIWORKER_PYTHON, OMNIWORKER_REPO } from "./installer";
 import { safeWriteFile, profilePaths } from "./utils";
 import DEFAULT_MODELS from "./default-models";
 
@@ -139,11 +139,78 @@ function seedDefaults(profile?: string): SavedModel[] {
   return models;
 }
 
-export function listModels(): SavedModel[] {
-  if (!existsSync(MODELS_FILE)) {
-    return seedDefaults();
+export function discoverOAuthModels(): SavedModel[] {
+  try {
+    const pythonPath = OMNIWORKER_PYTHON;
+    const repoPath = OMNIWORKER_REPO;
+    if (!pythonPath || !existsSync(pythonPath)) {
+      return [];
+    }
+    const env = {
+      ...process.env,
+      PATH: require("./installer").getEnhancedPath(),
+      OMNIWORKER_HOME: OMNIWORKER_HOME,
+    };
+    
+    // Command to execute build_models_payload() via Python
+    const code = `
+import sys, json
+try:
+    from omniworker_cli.inventory import build_models_payload
+    payload = build_models_payload()
+    print(json.dumps(payload))
+except Exception as e:
+    print(json.dumps({"error": str(e)}))
+`;
+    const result = require("child_process").execSync(
+      `"${pythonPath}" -c "${code.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
+      { cwd: repoPath, env, encoding: "utf-8", timeout: 5000 }
+    );
+    const parsed = JSON.parse(result);
+    if (parsed && !parsed.error && parsed.providers) {
+      const discovered: SavedModel[] = [];
+      for (const provider of parsed.providers) {
+        if (provider.models && Array.isArray(provider.models)) {
+          for (const m of provider.models) {
+            discovered.push({
+              id: randomUUID(),
+              name: m.label || m.name,
+              provider: provider.id,
+              model: m.id,
+              baseUrl: provider.base_url || "",
+              createdAt: Date.now(),
+            });
+          }
+        }
+      }
+      return discovered;
+    }
+  } catch (err) {
+    console.error("[ModelDiscovery] Failed to discover models via Python:", err);
   }
-  return readModels();
+  return [];
+}
+
+export function listModels(profile?: string): SavedModel[] {
+  let saved: SavedModel[] = [];
+  if (!existsSync(MODELS_FILE)) {
+    saved = seedDefaults(profile);
+  } else {
+    saved = readModels();
+  }
+  
+  // Discover dynamic OAuth models
+  const oauthModels = discoverOAuthModels();
+  if (oauthModels.length > 0) {
+    // Merge: add discovered models if not already in saved by model + provider
+    for (const om of oauthModels) {
+      if (!saved.some((sm) => sm.model === om.model && sm.provider === om.provider)) {
+        saved.push(om);
+      }
+    }
+  }
+  
+  return saved;
 }
 
 export function addModel(

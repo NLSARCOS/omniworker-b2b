@@ -1,6 +1,23 @@
 // src/lib/provider-health.ts — Per-model health monitoring for providers
 import { PrismaClient } from "@prisma/client";
 
+// ── In-memory health cache ────────────────────────────────────────────────────
+// Avoids hitting the DB on every admin panel GET. Invalidated after each
+// manual health-check run so the next read always gets fresh data.
+const HEALTH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface HealthCacheEntry {
+  data: Map<string, string[]>;
+  expiresAt: number;
+}
+
+let _healthCache: HealthCacheEntry | null = null;
+
+/** Invalidate the in-memory health cache (call after updateModelHealth runs). */
+export function invalidateHealthCache(): void {
+  _healthCache = null;
+}
+
 // Reuse the same provider URL mapping from chat/completions/route.ts
 const PROVIDER_TEST_URLS: Record<string, string> = {
   openai: "https://api.openai.com/v1/chat/completions",
@@ -243,7 +260,7 @@ export async function checkModelHealth(
 export async function updateModelHealth(
   prisma: PrismaClient,
   result: ModelHealthResult
-): Promise<ProviderModelHealth> {
+) {
   const existing = await prisma.providerModelHealth.findUnique({
     where: {
       providerId_modelId: {
@@ -372,4 +389,21 @@ export async function getAllHealthyModels(
     map.set(r.providerId, existing);
   }
   return map;
+}
+
+/**
+ * Cached variant of getAllHealthyModels — returns the in-memory result if
+ * it was computed less than HEALTH_CACHE_TTL_MS ago, otherwise refreshes.
+ * Use this for read-heavy paths (admin panel GET, chat completions routing).
+ */
+export async function getAllHealthyModelsCached(
+  prisma: PrismaClient
+): Promise<Map<string, string[]>> {
+  const now = Date.now();
+  if (_healthCache && _healthCache.expiresAt > now) {
+    return _healthCache.data;
+  }
+  const fresh = await getAllHealthyModels(prisma);
+  _healthCache = { data: fresh, expiresAt: now + HEALTH_CACHE_TTL_MS };
+  return fresh;
 }

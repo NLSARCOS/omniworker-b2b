@@ -55,19 +55,142 @@ function evictExpired(): void {
   }
 }
 
+function extractPinnedCodeBlocks(messages: Message[]): string[] {
+  const pinnedBlocks: string[] = [];
+  const codeBlockRegex = /```[\s\S]*?```/g;
+
+  for (const msg of messages) {
+    const content = msg.content || "";
+    if (content.includes("@keep") || content.includes("@preserve")) {
+      const matches = content.match(codeBlockRegex);
+      if (matches) {
+        for (const block of matches) {
+          if (block.includes("@keep") || block.includes("@preserve")) {
+            pinnedBlocks.push(block.trim());
+          }
+        }
+      }
+    }
+  }
+  return pinnedBlocks;
+}
+
+function extractExplicitDecisions(messages: Message[]): string[] {
+  const decisions: string[] = [];
+  const decisionRegex = /^\s*[-*+]?\s*(?:decisión|decision|design decision|arquitectura|architecture)[^:=]*[:=]\s*(.+)/i;
+
+  for (const msg of messages) {
+    const content = msg.content || "";
+    const lines = content.split("\n");
+    for (const line of lines) {
+      const match = line.match(decisionRegex);
+      if (match && match[1]) {
+        decisions.push(match[1].trim());
+      }
+    }
+  }
+  return [...new Set(decisions)];
+}
+
+function postProcessSummary(
+  summary: string,
+  pinnedCode: string[],
+  explicitDecisions: string[]
+): string {
+  let processed = summary;
+
+  // 1. Decisions injection
+  if (explicitDecisions.length > 0) {
+    const decisionsHeaderRegex = /^(?:#+\s*Decisions|#+\s*decisiones)\b/im;
+    const headerMatch = processed.match(decisionsHeaderRegex);
+
+    if (headerMatch && headerMatch.index !== undefined) {
+      const headerIdx = headerMatch.index;
+      const startOfSection = headerIdx + headerMatch[0].length;
+      
+      const rest = processed.slice(startOfSection);
+      const nextHeaderMatch = rest.match(/\n#+\s+/);
+      const endOfSection = nextHeaderMatch && nextHeaderMatch.index !== undefined
+        ? startOfSection + nextHeaderMatch.index
+        : processed.length;
+
+      const sectionContent = processed.slice(startOfSection, endOfSection);
+
+      const missingDecisions = explicitDecisions.filter(d => {
+        const normalizedD = d.toLowerCase().replace(/[^a-z0-9]/g, "");
+        return !sectionContent.toLowerCase().replace(/[^a-z0-9]/g, "").includes(normalizedD);
+      });
+
+      if (missingDecisions.length > 0) {
+        const insertion = "\n" + missingDecisions.map(d => `- ${d} (pinned)`).join("\n");
+        processed = processed.slice(0, endOfSection) + insertion + "\n" + processed.slice(endOfSection);
+      }
+    } else {
+      const insertion = `\n## Decisions\n${explicitDecisions.map(d => `- ${d} (pinned)`).join("\n")}\n`;
+      processed = insertion + processed;
+    }
+  }
+
+  // 2. Code blocks injection
+  if (pinnedCode.length > 0) {
+    const codeHeaderRegex = /^(?:#+\s*Code\s*&\s*Files|#+\s*code\s*&\s*files|#+\s*Código\s*y\s*archivos)\b/im;
+    const headerMatch = processed.match(codeHeaderRegex);
+
+    if (headerMatch && headerMatch.index !== undefined) {
+      const headerIdx = headerMatch.index;
+      const startOfSection = headerIdx + headerMatch[0].length;
+
+      const rest = processed.slice(startOfSection);
+      const nextHeaderMatch = rest.match(/\n#+\s+/);
+      const endOfSection = nextHeaderMatch && nextHeaderMatch.index !== undefined
+        ? startOfSection + nextHeaderMatch.index
+        : processed.length;
+
+      const sectionContent = processed.slice(startOfSection, endOfSection);
+
+      const missingCode = pinnedCode.filter(block => {
+        const blockContent = block.replace(/```[a-z]*\n?/i, "").replace(/```$/, "").trim();
+        const blockSample = blockContent.slice(0, 100).toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (!blockSample) return false;
+        return !sectionContent.toLowerCase().replace(/[^a-z0-9]/g, "").includes(blockSample);
+      });
+
+      if (missingCode.length > 0) {
+        const insertion = "\n" + missingCode.join("\n\n");
+        processed = processed.slice(0, endOfSection) + insertion + "\n" + processed.slice(endOfSection);
+      }
+    } else {
+      const insertion = `\n\n## Code & Files\n${pinnedCode.join("\n\n")}\n`;
+      processed = processed + insertion;
+    }
+  }
+
+  return processed.trim();
+}
+
 async function generateSummary(
   middle: Message[],
   userQuery: string,
   config: CompactionConfig
 ): Promise<string> {
-  // Truncate very long messages in the middle section to cap extraction cost
+  const pinnedCode = extractPinnedCodeBlocks(middle);
+  const explicitDecisions = extractExplicitDecisions(middle);
+
   const truncatedMiddle = middle.map(m => ({
     role: m.role,
     content: m.content.length > 800 ? m.content.slice(0, 800) + "..." : m.content,
   }));
 
-  const prompt = `Analyze the following conversation and produce a structured summary that preserves ALL important context for session continuity.
+  let extraContext = "";
+  if (pinnedCode.length > 0) {
+    extraContext += `\nCRITICAL: The following pinned code blocks MUST be preserved verbatim in your '## Code & Files' section (do NOT summarize, alter or omit them):\n${pinnedCode.join("\n\n")}\n`;
+  }
+  if (explicitDecisions.length > 0) {
+    extraContext += `\nCRITICAL: The following explicit decisions MUST be included verbatim in your '## Decisions' section:\n${explicitDecisions.map(d => `- ${d}`).join("\n")}\n`;
+  }
 
+  const prompt = `Analyze the following conversation and produce a structured summary that preserves ALL important context for session continuity.
+${extraContext}
 Your summary MUST include these sections:
 
 ## Status
@@ -139,29 +262,46 @@ Structured summary:`;
     if (!res.ok) {
       const err = await res.text();
       console.error("[Compaction] Summary generation failed:", err.slice(0, 300));
-      return fallbackSummary(middle);
+      return fallbackSummary(middle, pinnedCode, explicitDecisions);
     }
 
     const data = (await res.json()) as Record<string, unknown>;
 
+    let summaryText = "";
     const choice = (data.choices as any)?.[0]?.message?.content;
-    if (choice) return String(choice);
+    if (choice) summaryText = String(choice);
 
     const anthropicText = (data.content as any)?.[0]?.text;
-    if (anthropicText) return String(anthropicText);
+    if (anthropicText && !summaryText) summaryText = String(anthropicText);
 
     const rawContent = data.content;
-    if (rawContent) return String(rawContent);
+    if (rawContent && !summaryText) summaryText = String(rawContent);
 
-    return fallbackSummary(middle);
+    if (!summaryText) {
+      return fallbackSummary(middle, pinnedCode, explicitDecisions);
+    }
+
+    return postProcessSummary(summaryText, pinnedCode, explicitDecisions);
   } catch (err) {
     console.error("[Compaction] Summary fetch error:", err);
-    return fallbackSummary(middle);
+    return fallbackSummary(middle, pinnedCode, explicitDecisions);
   }
 }
 
-function fallbackSummary(middle: Message[]): string {
-  return middle.map(m => `[${m.role}]: ${m.content.substring(0, 300)}...`).join("\n");
+function fallbackSummary(
+  middle: Message[],
+  pinnedCode: string[] = [],
+  explicitDecisions: string[] = []
+): string {
+  let fallback = "";
+  if (explicitDecisions.length > 0) {
+    fallback += "## Decisions (pinned):\n" + explicitDecisions.map(d => `- ${d}`).join("\n") + "\n\n";
+  }
+  if (pinnedCode.length > 0) {
+    fallback += "## Code & Files (pinned):\n" + pinnedCode.join("\n\n") + "\n\n";
+  }
+  fallback += "## Conversation History:\n" + middle.map(m => `[${m.role}]: ${m.content.substring(0, 300)}...`).join("\n");
+  return fallback;
 }
 
 /**

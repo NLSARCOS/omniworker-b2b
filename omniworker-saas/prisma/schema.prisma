@@ -44,6 +44,7 @@ model Tenant {
   licenses    License[]
   tasks       TaskLog[]
   invoices    Invoice[]
+  orchestratorTasks OrchestratorTask[]
 }
 
 // ─── API KEYS (para edge agents) ───
@@ -84,6 +85,70 @@ model User {
   refreshTokens RefreshToken[]
 
   @@index([tenantId])
+}
+
+// ─── ORCHESTRATOR TASK — multi-tenant distributed task queue ────────────────
+// Each tenant enqueues tasks here. The cron endpoint uses PostgreSQL's
+// SELECT … FOR UPDATE SKIP LOCKED to process rows across multiple pods
+// without duplicates or a Redis broker.
+model OrchestratorTask {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String    // who created the task
+  title       String
+  body        String?   @db.Text
+  agentType   String    @default("general_agent")  // developer|reviewer|researcher|planner|general_agent
+  status      String    @default("pending")         // pending|in_progress|done|failed|cancelled
+  priority    Int       @default(5)                 // 1=critical … 10=low
+  retries     Int       @default(0)
+  maxRetries  Int       @default(3)
+  result      String?   @db.Text
+  error       String?   @db.Text
+  lockedAt    DateTime?                             // set when a worker picks it up
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, priority, createdAt])
+  @@index([tenantId, status])
+  @@index([userId])
+}
+
+// ─── AGENT MEMORY — persistent cross-session context store ─────────────────
+// Persists the context-bridge ContextHeader to PostgreSQL so that agents
+// remember decisions, active files, and current task across server restarts,
+// model switches, and browser refreshes.
+//
+// Write path: async, after each LLM response (non-blocking).
+// Read path:  on session start — seed the in-memory cache before the first
+//             request so the model never starts cold.
+model AgentMemory {
+  id          String   @id @default(cuid())
+  tenantId    String
+  sessionId   String   // conversationId or derived hash (see chat route)
+  userId      String
+
+  // Structured context (mirrors ContextHeader from context-bridge.ts)
+  sessionSummary  String?  @db.Text
+  currentTask     String?  @db.Text
+  recentDecisions String[] @default([])   // last 5 decisions
+  keyEntities     String[] @default([])   // files, modules, concepts
+  goals           String[] @default([])
+  activeFiles     String[] @default([])
+  pendingErrors   String[] @default([])
+  lastModel       String?                 // which model produced this memory
+
+  // Raw tail (last 5 messages, JSON-encoded) for quick session resume
+  lastMessages    Json?
+
+  messageCount    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, sessionId])
+  @@index([tenantId, userId])
+  @@index([updatedAt])
 }
 
 // ─── REFRESH TOKEN ───

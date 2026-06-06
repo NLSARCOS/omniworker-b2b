@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getHealthyModels, getAllHealthyModels } from "@/lib/provider-health";
+import { getHealthyModels } from "@/lib/provider-health";
 
 const PROVIDER_OPTIONS = [
   { id: "openai",      label: "OpenAI",        baseUrl: null },
@@ -86,10 +86,9 @@ export async function GET(request: Request) {
     orderBy: [{ provider: "asc" }, { priority: "asc" }],
   });
 
-  // Fetch model health status for all providers
+  // Fetch model health status — single DB read, cached for 5 min
   let modelHealth: Record<string, { status: string; latencyMs: number | null; lastCheckedAt: string; lastError?: string }> = {};
   try {
-    const healthyMap = await getAllHealthyModels(prisma);
     const allHealthRecords = await prisma.providerModelHealth.findMany();
     for (const record of allHealthRecords) {
       modelHealth[`${record.providerId}:${record.modelId}`] = {

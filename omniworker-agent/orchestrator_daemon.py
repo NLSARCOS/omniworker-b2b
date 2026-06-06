@@ -23,6 +23,7 @@ already tracks ``consecutive_failures``, so we honour it.
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 import threading
 import time
@@ -109,6 +110,7 @@ class OrchestratorDaemon:
 
     _stop: threading.Event = field(default_factory=threading.Event, init=False)
     _thread: Optional[threading.Thread] = field(default=None, init=False)
+    _tick_executor: Optional[concurrent.futures.ThreadPoolExecutor] = field(default=None, init=False)
     # Cron tasks: list of {"schedule": cron-expr, "task": label, "agent_type": str}
     cron_tasks: List[Dict[str, Any]] = field(default_factory=list)
     _last_cron_run: Dict[str, float] = field(default_factory=dict, init=False)
@@ -119,6 +121,11 @@ class OrchestratorDaemon:
         if self._thread and self._thread.is_alive():
             return
         self._stop.clear()
+        # One persistent executor for the watchdog. Using shutdown(wait=False)
+        # on stop() ensures a hung tick thread is abandoned — not waited on.
+        self._tick_executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="orch-tick"
+        )
         self._thread = threading.Thread(
             target=self._run_forever, name="orchestrator-daemon", daemon=True
         )
@@ -127,14 +134,47 @@ class OrchestratorDaemon:
 
     def stop(self, timeout: float = 5.0) -> None:
         self._stop.set()
+        # Abandon any in-flight tick without waiting (it may be hung).
+        if self._tick_executor is not None:
+            self._tick_executor.shutdown(wait=False)
         if self._thread:
             self._thread.join(timeout=timeout)
         logger.info("OrchestratorDaemon stopped")
 
     def _run_forever(self) -> None:
+        """Main daemon loop with per-tick watchdog.
+
+        Each tick is submitted to ``_tick_executor`` (a thread pool with one
+        worker). ``future.result(timeout=…)`` raises ``TimeoutError`` if the
+        tick hangs — the loop logs it, skips to the next cycle, and submits a
+        *new* future (which runs in the same executor thread once the old one
+        eventually unblocks or is killed at process exit).
+
+        Key design constraint: we do NOT call ``executor.shutdown(wait=True)``
+        inside the loop — that would block until the stuck thread finishes,
+        defeating the purpose of the timeout. The executor is shut down only in
+        ``stop()`` with ``wait=False``.
+        """
+        tick_timeout = self.config.poll_interval * 3
         while not self._stop.is_set():
             try:
-                self.tick()
+                future = self._tick_executor.submit(self.tick)
+                try:
+                    future.result(timeout=tick_timeout)
+                except concurrent.futures.TimeoutError:
+                    # Cancel the future so it won't run if still queued.
+                    # If already running, it finishes in the background — the
+                    # next submit() will queue behind it, so we skip one poll
+                    # interval as back-pressure. This is acceptable.
+                    future.cancel()
+                    logger.error(
+                        "Orchestrator tick hung for >%.0fs — skipping this cycle. "
+                        "Check if the delegated model is responding.",
+                        tick_timeout,
+                    )
+            except RuntimeError:
+                # Executor was shut down (gateway stopping) — exit cleanly.
+                break
             except Exception as exc:  # noqa: BLE001 — never let the loop die
                 logger.exception("daemon tick error: %s", exc)
             self._stop.wait(self.config.poll_interval)

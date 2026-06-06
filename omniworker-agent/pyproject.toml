@@ -41,11 +41,15 @@ dependencies = [
   "ruamel.yaml==0.18.17",
   "requests==2.33.0",  # CVE-2026-25645
   "jinja2==3.1.6",
-  "pydantic==2.12.5",
+  "pydantic==2.13.4",
   # Interactive CLI (prompt_toolkit is used directly by cli.py)
   "prompt_toolkit==3.0.52",
   # Cron scheduler (built-in feature — scheduled cron/interval jobs use croniter).
   "croniter==6.0.0",
+  # Markdown rendering — used by Matrix platform adapter and skill renderers.
+  # Moved to core on 2026-06-06 (upstream hermes-agent) to avoid requiring the
+  # full [matrix] extra just for basic markdown output.
+  "Markdown==3.10.2",
   # Skills Hub (GitHub App JWT auth — optional, only needed for bot identity)
   "PyJWT[crypto]==2.12.1",  # CVE-2026-32597
   # Windows has no IANA tzdata shipped with the OS, so Python's ``zoneinfo``
@@ -84,7 +88,8 @@ dev = ["debugpy==1.8.20", "pytest==9.0.2", "pytest-asyncio==1.3.0", "pytest-xdis
 messaging = ["python-telegram-bot[webhooks]==22.6", "discord.py[voice]==2.7.1", "aiohttp==3.13.3", "brotlicffi==1.2.0.1", "slack-bolt==1.27.0", "slack-sdk==3.40.1", "qrcode==7.4.2"]
 cron = []  # croniter is now a core dependency; this extra kept for back-compat
 slack = ["slack-bolt==1.27.0", "slack-sdk==3.40.1", "aiohttp==3.13.3"]
-matrix = ["mautrix[encryption]==0.21.0", "Markdown==3.10.2", "aiosqlite==0.22.1", "asyncpg==0.31.0", "aiohttp-socks==0.11.0"]
+matrix = ["mautrix[encryption]==0.21.0", "aiosqlite==0.22.1", "asyncpg==0.31.0", "aiohttp-socks==0.11.0"]
+
 cli = ["simple-term-menu==1.6.6"]
 tts-premium = ["elevenlabs==1.59.0"]
 voice = [

@@ -16802,12 +16802,27 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # never blocks gateway startup.
     orchestrator_daemon = None
     if os.environ.get("OMNIWORKER_ORCHESTRATOR_DAEMON", "").strip().lower() in ("1", "true", "yes", "on"):
-        try:
-            from orchestrator_daemon import build_orchestrator_daemon
+        async def _build_orchestrator_async():
+            """Build the daemon off the event loop so slow provider resolution
+            or toolset loading never freezes the gateway startup."""
+            from orchestrator_daemon import build_orchestrator_daemon as _build
 
-            orchestrator_daemon = build_orchestrator_daemon()
+            _loop = asyncio.get_running_loop()
+            return await asyncio.wait_for(
+                _loop.run_in_executor(None, _build),
+                timeout=30.0,
+            )
+
+        try:
+            orchestrator_daemon = await _build_orchestrator_async()
             orchestrator_daemon.start()
             logger.info("Orchestrator daemon started.")
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Orchestrator daemon build timed out after 30s — "
+                "gateway continues without it. Check provider connectivity."
+            )
+            orchestrator_daemon = None
         except Exception as exc:  # noqa: BLE001 — never let it block the gateway
             logger.warning("Orchestrator daemon failed to start: %s", exc)
             orchestrator_daemon = None

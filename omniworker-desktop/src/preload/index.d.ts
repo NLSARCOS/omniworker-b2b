@@ -1,4 +1,5 @@
 import type { AppLocale } from "../shared/i18n/types";
+import type { Attachment } from "../shared/attachments";
 
 interface ElectronAPI {
   process: {
@@ -204,6 +205,8 @@ interface OmniWorkerAPI {
     profile?: string,
     resumeSessionId?: string,
     history?: Array<{ role: string; content: string }> | undefined,
+    attachments?: Attachment[],
+    contextFolder?: string,
   ) => Promise<{ response: string; sessionId?: string }>;
   abortChat: () => Promise<void>;
   onChatChunk: (callback: (chunk: string) => void) => () => void;
@@ -264,6 +267,17 @@ interface OmniWorkerAPI {
       timestamp: number;
     }>
   >;
+  deleteSession: (sessionId: string) => Promise<void>;
+  deleteSessions: (
+    sessionIds: string[],
+  ) => Promise<{ requested: number; deleted: number }>;
+  clearStagedAttachments: (sessionId: string) => Promise<void>;
+  stageAttachment: (
+    sessionId: string,
+    filename: string,
+    base64: string,
+  ) => Promise<string>;
+
 
   // Profiles
   listProfiles: () => Promise<
@@ -889,6 +903,19 @@ interface OmniWorkerAPI {
   onSessionExpired: (callback: () => void) => () => void;
   startTokenRefreshLoop: () => void;
   stopTokenRefreshLoop: () => void;
+
+  // Media (agent-generated images / files — issue #299)
+  readMediaFile: (filePath: string) => Promise<string | null>;
+  saveMediaFile: (src: string, name: string) => Promise<boolean>;
+  mediaFileExists: (filePath: string) => Promise<boolean>;
+  showMediaMenu: (
+    src: string,
+    name: string,
+    labels: { open: string; saveAs: string },
+  ) => void;
+
+  // Resolve the absolute filesystem path for a File coming from drag-drop
+  getPathForFile: (file: File) => string;
 }
 
 

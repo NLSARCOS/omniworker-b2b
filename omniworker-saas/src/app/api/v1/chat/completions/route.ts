@@ -742,6 +742,31 @@ export async function POST(request: Request) {
     }
     const pinKey = (body as any).conversationId || `auto:${String(user.id)}:${convSeed}`;
     const modelPin = await loadModelPin(pinKey);
+
+    // ── Persistent Agent Memory: seed in-memory cache on cold start ────
+    // If the context-bridge has no cached header for this session yet
+    // (e.g. server restart, first message on a new tab) load the last
+    // persisted header from PostgreSQL and pre-warm the cache so the model
+    // always starts with full session context — not a blank slate.
+    if (user.tenantId && body.messages && body.messages.length > 0) {
+      try {
+        const { headerCache, getCacheKey } = await import("@/lib/context-bridge");
+        const cacheKey = getCacheKey(String(user.id), body.messages);
+        if (!headerCache.has(cacheKey)) {
+          const { loadAgentMemory } = await import("@/lib/agent-memory");
+          const persistedHeader = await loadAgentMemory(prisma, user.tenantId, pinKey);
+          if (persistedHeader) {
+            headerCache.set(cacheKey, {
+              header: persistedHeader,
+              expiresAt: Date.now() + 15 * 60 * 1000,
+            });
+            console.log(`[AgentMemory] Seeded in-memory cache from PostgreSQL for session ${pinKey.slice(0, 16)}`);
+          }
+        }
+      } catch (err) {
+        console.error("[AgentMemory] Failed to seed memory (non-fatal):", err);
+      }
+    }
     if (modelPin) {
       // Move the pinned provider to the front of the cascade.
       const pinnedFirst = [
@@ -817,7 +842,12 @@ export async function POST(request: Request) {
           endpoint: topProvider.provider === "opencode-go" ? ("chat_completions" as const) : undefined,
         };
         const contextHeader = await getOrBuildContextHeader(
-          String(user.id), body.messages, cbConfig
+          String(user.id),
+          body.messages,
+          cbConfig,
+          pinKey,
+          prisma,
+          user.tenantId
         );
         if (contextHeader) {
           body = { ...body, messages: injectContextHeader(body.messages, contextHeader) };
@@ -1023,6 +1053,45 @@ export async function POST(request: Request) {
     // Best-effort: if the table isn't migrated yet, saveModelPin no-ops.
     if (aiResponse && selectedProvider) {
       await saveModelPin(pinKey, String(user.id), selectedProvider.provider, selectedRealModel, selectedEndpoint);
+
+      // ── Persistent Agent Memory: async save after successful response ─
+      // Fire-and-forget: never awaited so it cannot add latency to the
+      // response. If the context-bridge has a fresh header for this session
+      // we persist it to PostgreSQL so the next cold start can resume it.
+      if (user.tenantId) {
+        void (async () => {
+          try {
+            const { getOrBuildContextHeader } = await import("@/lib/context-bridge");
+            const { saveAgentMemory } = await import("@/lib/agent-memory");
+            // Re-use the header that context-bridge already built (cached).
+            const savedHeader = await getOrBuildContextHeader(
+              String(user.id),
+              (body.messages as any[]) || [],
+              {
+                provider: selectedProvider.provider,
+                apiKey: selectedProvider.apiKey,
+                model: selectedRealModel,
+              },
+              pinKey,
+              prisma,
+              user.tenantId
+            );
+            if (savedHeader) {
+              await saveAgentMemory(prisma, {
+                tenantId: user.tenantId!,
+                sessionId: pinKey,
+                userId: String(user.id),
+                header: savedHeader,
+                messages: (body.messages as any[]) || [],
+                messageCount: ((body.messages as any[]) || []).length,
+                lastModel: selectedRealModel,
+              });
+            }
+          } catch {
+            // Non-fatal: memory persistence failure should never affect the user.
+          }
+        })();
+      }
     }
 
     if (!aiResponse || !selectedProvider) {

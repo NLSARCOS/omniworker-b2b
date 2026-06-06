@@ -1,5 +1,5 @@
 import { join, dirname } from "path";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from "fs";
 import { OMNIWORKER_HOME } from "./installer";
 
 const PROFILE_NAME_RE = /^[a-z0-9_][a-z0-9_-]{0,63}$/;
@@ -104,4 +104,27 @@ export function getExecErrorMessage(err: unknown): string {
   }
   return String(err).trim();
 }
+
+/**
+ * Read the active profile name from ~/.omniworker/active_profile. Returns "default"
+ * when the file is missing, empty, or unreadable. Shared sync helper.
+ */
+export function getActiveProfileNameSync(): string {
+  try {
+    const activeFile = join(OMNIWORKER_HOME, "active_profile");
+    if (!existsSync(activeFile)) return "default";
+    const name = readFileSync(activeFile, "utf-8").trim();
+    return name || "default";
+  } catch {
+    return "default";
+  }
+}
+
+/**
+ * Resolve the session database for the currently active profile.
+ */
+export function activeStateDbPath(): string {
+  return join(profileHome(getActiveProfileNameSync()), "state.db");
+}
+
 

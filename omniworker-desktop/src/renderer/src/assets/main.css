@@ -1887,6 +1887,161 @@ body {
   animation: fadeIn 0.2s ease;
 }
 
+/* ── Live Tool Groups (PR #545 port) ──────────────────── */
+
+.chat-tool-groups {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.live-tool-group {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.live-tool-group-open {
+  border-color: var(--accent-subtle, rgba(99, 102, 241, 0.3));
+}
+
+.live-tool-group-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: background 0.15s ease;
+}
+
+.live-tool-group-summary:hover {
+  background: var(--bg-hover);
+}
+
+.live-tool-group-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.live-tool-group-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.live-tool-group-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--success, #22c55e);
+  background: rgba(34, 197, 94, 0.1);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.live-tool-group-chevron {
+  font-size: 9px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Pulsing dot for live groups */
+.live-tool-group-pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, #6366f1);
+  flex-shrink: 0;
+  animation: livePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.live-tool-group-calls {
+  padding: 4px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--bg-secondary, rgba(0,0,0,0.1));
+}
+
+.live-tool-call {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  padding: 3px 4px;
+  border-radius: 5px;
+  transition: background 0.1s;
+}
+
+.live-tool-call:hover {
+  background: var(--bg-hover);
+}
+
+.live-tool-call-running {
+  color: var(--text-primary);
+}
+
+.live-tool-call-done {
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.live-tool-call-error {
+  color: var(--error, #ef4444);
+}
+
+.live-tool-call-icon {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.live-tool-call-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-tool-call-status {
+  font-size: 10px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Spinner for running tool calls */
+.live-tool-call-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--accent-subtle, rgba(99,102,241,0.3));
+  border-top-color: var(--accent, #6366f1);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+
 @keyframes fadeIn {
   from {
     opacity: 0;

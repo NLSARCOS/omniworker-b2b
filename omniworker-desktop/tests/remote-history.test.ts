@@ -48,13 +48,13 @@ describe("Remote/SSH Mode History Preservation", () => {
   it("sendMessageViaApi builds messages from history + current message", () => {
     // Extract sendMessageViaApi function
     const funcMatch = omniworkerSrc.match(
-      /function sendMessageViaApi\([\s\S]*?\): ChatHandle \{[\s\S]*?const messages: Array<\{ role: string; content: string \}> = \[\];[\s\S]*?if \(history && history\.length > 0\) \{[\s\S]*?for \(const msg of history\) \{[\s\S]*?messages\.push\(\{[\s\S]*?role: msg\.role === "agent" \? "assistant" : msg\.role,[\s\S]*?content: msg\.content,[\s\S]*?\}\);[\s\S]*?\}[\s\S]*?\}[\s\S]*?messages\.push\(\{ role: "user", content: message \}\);/,
+      /function sendMessageViaApi\([\s\S]*?\): ChatHandle \{[\s\S]*?const rawMessages: Array<\{ role: string; content: string \}> = \[\];[\s\S]*?if \(history && history\.length > 0\) \{[\s\S]*?for \(const msg of history\) \{[\s\S]*?rawMessages\.push\(\{[\s\S]*?role: msg\.role === "agent" \? "assistant" : msg\.role,[\s\S]*?content: msg\.content,[\s\S]*?\}\);[\s\S]*?\}[\s\S]*?\}[\s\S]*?rawMessages\.push\(\{ role: "user", content: message \}\);/,
     );
 
     expect(funcMatch).toBeDefined();
 
     // Verify the function:
-    // 1. Creates messages array
+    // 1. Creates rawMessages array
     // 2. Iterates through history and converts "agent" to "assistant"
     // 3. Pushes current user message at the end
 
@@ -68,14 +68,14 @@ describe("Remote/SSH Mode History Preservation", () => {
 
     // Check current message is appended
     expect(funcCode).toContain(
-      'messages.push({ role: "user", content: message })',
+      'rawMessages.push({ role: "user", content: message })',
     );
   });
 
   it("local API available branch also passes history", () => {
     // Extract the local API available branch
     const localApiBranch = omniworkerSrc.match(
-      /if \(apiServerAvailable\) \{[\s\S]*?return sendMessageViaApi\([^)]+\);[\s\S]*?\}/,
+      /if \(apiServerAvailable\) \{[\s\S]*?return sendMessageViaApiWithLocalRecovery\([^)]+\);[\s\S]*?\}/,
     );
 
     expect(localApiBranch).toBeDefined();
@@ -83,7 +83,7 @@ describe("Remote/SSH Mode History Preservation", () => {
     const branchCode = localApiBranch![0];
 
     const apiCallMatch = branchCode.match(
-      /return sendMessageViaApi\(([^)]+)\)/,
+      /return sendMessageViaApiWithLocalRecovery\(([^)]+)\)/,
     );
 
     expect(apiCallMatch).toBeDefined();
@@ -110,8 +110,8 @@ describe("Remote/SSH Mode History Preservation", () => {
     const funcCode =
       endMatch > 0 ? remainingCode.substring(0, endMatch) : remainingCode;
 
-    // Find all sendMessageViaApi calls
-    const apiCalls = funcCode.matchAll(/sendMessageViaApi\(([^)]+)\)/g);
+    // Find all sendMessageViaApi / sendMessageViaApiWithLocalRecovery calls
+    const apiCalls = funcCode.matchAll(/sendMessageViaApi(?:WithLocalRecovery)?\(([^)]+)\)/g);
 
     const calls = Array.from(apiCalls);
 

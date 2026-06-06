@@ -1,4 +1,5 @@
 process.env.OMNIWORKER_DESKTOP = "1";
+import { rotateLogIfNeeded } from "./log-rotation";
 import {
   app,
   shell,
@@ -7,6 +8,7 @@ import {
   Menu,
   Notification,
   dialog,
+  clipboard,
 } from "electron";
 import {
   scanBackupData,
@@ -15,6 +17,12 @@ import {
   restoreBackup,
 } from "./backup";
 import { join } from "path";
+import {
+  materializeDataUrlToTemp,
+  readMediaAsDataUrl,
+  saveMedia,
+  mediaFileExists,
+} from "./media";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import type { AppUpdater } from "electron-updater";
 import icon from "../../resources/icon.png?asset";
@@ -121,12 +129,20 @@ import {
   deleteSecureTokens,
   removeEnvValue,
 } from "./config";
-import { listSessions, getSessionMessages, searchSessions } from "./sessions";
+import {
+  listSessions,
+  getSessionMessages,
+  searchSessions,
+  deleteSession,
+  deleteSessions,
+} from "./sessions";
 import {
   syncSessionCache,
   listCachedSessions,
   updateSessionTitle,
 } from "./session-cache";
+import { clearStagedAttachments, stageAttachment } from "./attachment-staging";
+
 import { listModels, addModel, removeModel, updateModel } from "./models";
 import {
   listProfiles,
@@ -952,6 +968,8 @@ function setupIPC(): void {
       profile?: string,
       resumeSessionId?: string,
       history?: Array<{ role: string; content: string }> | undefined,
+      _attachments?: any,
+      contextFolder?: string,
     ) => {
       if (!isRemoteMode() && !isGatewayRunning()) {
         await startGateway(profile);
@@ -1034,6 +1052,7 @@ function setupIPC(): void {
         profile,
         resumeSessionId,
         history,
+        contextFolder,
       );
 
       currentChatAbort = handle.abort;
@@ -1051,6 +1070,9 @@ function setupIPC(): void {
   // Gateway
   ipcMain.handle("start-gateway", async () => {
     const conn = getConnectionConfig();
+    if (conn.mode === "remote") {
+      return true;
+    }
     if (conn.mode === "ssh" && conn.ssh) {
       await sshStartGateway(conn.ssh);
       return true;
@@ -1061,6 +1083,9 @@ function setupIPC(): void {
   });
   ipcMain.handle("stop-gateway", async () => {
     const conn = getConnectionConfig();
+    if (conn.mode === "remote") {
+      return true;
+    }
     if (conn.mode === "ssh" && conn.ssh) {
       await sshStopGateway(conn.ssh);
       return true;
@@ -1070,6 +1095,7 @@ function setupIPC(): void {
   });
   ipcMain.handle("gateway-status", () => {
     const conn = getConnectionConfig();
+    if (conn.mode === "remote") return true;
     if (conn.mode === "ssh" && conn.ssh) return sshGatewayStatus(conn.ssh);
     return isGatewayRunning();
   });
@@ -1129,6 +1155,25 @@ function setupIPC(): void {
       return sshGetSessionMessages(conn.ssh, sessionId);
     return getSessionMessages(sessionId);
   });
+
+  ipcMain.handle("delete-session", (_event, sessionId: string) => {
+    return deleteSession(sessionId);
+  });
+
+  ipcMain.handle("delete-sessions", (_event, sessionIds: string[]) => {
+    return deleteSessions(Array.isArray(sessionIds) ? sessionIds : []);
+  });
+
+  ipcMain.handle("clear-staged-attachments", (_event, sessionId: string) => {
+    return clearStagedAttachments(sessionId);
+  });
+
+  ipcMain.handle(
+    "stage-attachment",
+    (_event, sessionId: string, filename: string, base64: string) => {
+      return stageAttachment(sessionId, filename, base64);
+    },
+  );
 
   // Profiles
   ipcMain.handle("list-profiles", async () => {
@@ -1406,10 +1451,10 @@ function setupIPC(): void {
   );
 
   // Models
-  ipcMain.handle("list-models", () => {
+  ipcMain.handle("list-models", (_event, profile?: string) => {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) return sshListModels(conn.ssh);
-    return listModels();
+    return listModels(profile);
   });
   ipcMain.handle(
     "add-model",
@@ -1421,6 +1466,62 @@ function setupIPC(): void {
     "update-model",
     (_event, id: string, fields: Record<string, string>) =>
       updateModel(id, fields),
+  );
+
+  // Copy to clipboard
+  ipcMain.handle("copy-to-clipboard", (_event, text: string) => {
+    clipboard.writeText(typeof text === "string" ? text : "");
+  });
+
+  // Media — render agent-generated images and save them to disk (#299).
+  ipcMain.handle("read-media-file", (_event, filePath: string) =>
+    readMediaAsDataUrl(filePath),
+  );
+  ipcMain.handle("save-media-file", (event, src: string, name: string) =>
+    saveMedia(src, name, BrowserWindow.fromWebContents(event.sender)),
+  );
+  ipcMain.handle("media-file-exists", (_event, filePath: string) =>
+    mediaFileExists(filePath),
+  );
+
+  // Native right-click menu for a rendered media element (#299)
+  ipcMain.on(
+    "show-media-menu",
+    (
+      event,
+      src: string,
+      name: string,
+      labels: { open: string; saveAs: string },
+    ) => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (!win || !src) return;
+      const isUrl = /^https?:\/\//i.test(src);
+      const isData = src.startsWith("data:");
+      const template: Electron.MenuItemConstructorOptions[] = [];
+      template.push({
+        label: labels.open,
+        click: () => {
+          if (isUrl) {
+            openExternalUrl(src);
+            return;
+          }
+
+          const target = isData ? materializeDataUrlToTemp(src, name) : src;
+          if (target) {
+            shell.openPath(target).catch(() => {});
+          }
+        },
+      });
+      template.push({
+        label: labels.saveAs,
+        click: () => {
+          void saveMedia(src, name, win);
+        },
+      });
+
+      const menu = Menu.buildFromTemplate(template);
+      menu.popup({ window: win });
+    },
   );
 
   // Claw3D
@@ -2151,6 +2252,20 @@ function setupUpdater(): void {
 
 app.whenReady().then(async () => {
   app.name = "Flux Agent";
+
+  // Rotate agent logs before doing anything else.
+  // Prevents boot-loop artifacts from filling the disk (upstream fix 2026-06-06).
+  try {
+    const { join: pathJoin } = await import("path");
+    const { homedir: getHomedir } = await import("os");
+    const omniworkerLogsDir = pathJoin(getHomedir(), ".omniworker", "logs");
+    for (const logName of ["agent.log", "gateway.log", "errors.log"]) {
+      rotateLogIfNeeded(pathJoin(omniworkerLogsDir, logName));
+    }
+  } catch (err) {
+    console.warn("[log-rotation] Non-fatal rotation error:", err);
+  }
+
   await checkAndCleanupOrphans();
   electronApp.setAppUserModelId("com.omniworker.omniworker");
 
