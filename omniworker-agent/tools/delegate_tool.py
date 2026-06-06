@@ -484,7 +484,10 @@ def _get_orchestrator_enabled() -> bool:
     Lets an operator disable the feature without a code revert.
     """
     cfg = _load_config()
-    val = cfg.get("orchestrator_enabled", True)
+    # Default OFF: the orchestrator (recursive delegate_task / agent army) was
+    # hanging conversations on the 2nd+ turn in production. Disabled globally
+    # until stabilised; re-enable explicitly via delegation.orchestrator_enabled=true.
+    val = cfg.get("orchestrator_enabled", False)
     if isinstance(val, bool):
         return val
     # Accept "true"/"false" strings from YAML that doesn't auto-coerce.

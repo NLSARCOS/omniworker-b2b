@@ -650,6 +650,7 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                         break
                     self.wfile.write(line)
                     self.wfile.flush()
+                self.close_connection = True
             else:
                 resp_body = resp.read()
                 self.send_response(200)
@@ -659,6 +660,7 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(resp_body)
                 self.wfile.flush()
+                self.close_connection = True
 
             conn.close()
             return True
@@ -669,7 +671,6 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
 
     def _proxy_to_cloud(self, body: bytes, stream: bool):
         """Proxy request to cloud SaaS with connection reuse and error resilience."""
-        global CLOUD_CONN
         parsed = urlparse(CLOUD_API_URL)
         use_https = parsed.scheme == "https"
         host = parsed.hostname
@@ -679,7 +680,8 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
         headers = {
             "Content-Type": "application/json",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Connection": "keep-alive",
+            "Connection": "close",
+            "Accept-Encoding": "identity",
         }
 
         # Prefer incoming Authorization header unless it is generic/absent,
@@ -713,19 +715,15 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
 
-        acquired = CLOUD_CONN_LOCK.acquire(blocking=False)
         conn = None
         verify_ssl = True
         try:
-            if acquired:
-                conn = get_cloud_connection(use_https, host, port, verify=verify_ssl)
+            # Create a new connection for every request to prevent hangs on stale sockets
+            if use_https:
+                context = get_resilient_ssl_context(verify=verify_ssl)
+                conn = HTTPSConnection(host, port=port, timeout=120, context=context)
             else:
-                # Create ad-hoc connection for concurrent request
-                if use_https:
-                    context = get_resilient_ssl_context(verify=verify_ssl)
-                    conn = HTTPSConnection(host, port=port, timeout=120, context=context)
-                else:
-                    conn = HTTPConnection(host, port=port, timeout=120)
+                conn = HTTPConnection(host, port=port, timeout=120)
 
             path = f"{parsed.path.rstrip('/')}/v1/chat/completions"
 
@@ -747,22 +745,21 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                             conn.close()
                         except Exception:
                             pass
-                        if acquired:
-                            CLOUD_CONN = None
-                            conn = get_cloud_connection(use_https, host, port, verify=False)
-                        else:
-                            context = get_resilient_ssl_context(verify=False)
-                            conn = HTTPSConnection(host, port=port, timeout=120, context=context)
+                        context = get_resilient_ssl_context(verify=False)
+                        conn = HTTPSConnection(host, port=port, timeout=120, context=context)
                         continue
 
-                    if acquired and attempt == 0:
-                        logger.info(f"Cached cloud connection failed ({req_err}), resetting and retrying...")
+                    if attempt < max_attempts - 1:
+                        logger.info(f"Cloud connection attempt failed ({req_err}), retrying with a fresh connection...")
                         try:
                             conn.close()
                         except Exception:
                             pass
-                        CLOUD_CONN = None
-                        conn = get_cloud_connection(use_https, host, port, verify=verify_ssl)
+                        if use_https:
+                            context = get_resilient_ssl_context(verify=verify_ssl)
+                            conn = HTTPSConnection(host, port=port, timeout=120, context=context)
+                        else:
+                            conn = HTTPConnection(host, port=port, timeout=120)
                         continue
                     else:
                         raise req_err
@@ -774,7 +771,7 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                 # Forward relevant headers
                 for key, val in resp.getheaders():
                     lower = key.lower()
-                    if lower in ("transfer-encoding", "connection", "server"):
+                    if lower in ("transfer-encoding", "connection", "server", "content-encoding"):
                         continue
                     self.send_header(key, val)
                 self.send_header("Connection", "close")
@@ -787,6 +784,7 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                         break
                     self.wfile.write(line)
                     self.wfile.flush()
+                self.close_connection = True
             else:
                 # Read entire body first so we can determine Content-Length
                 resp_body = resp.read()
@@ -794,7 +792,7 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
                 # Forward relevant headers
                 for key, val in resp.getheaders():
                     lower = key.lower()
-                    if lower in ("transfer-encoding", "connection", "server", "content-length"):
+                    if lower in ("transfer-encoding", "connection", "server", "content-length", "content-encoding"):
                         continue
                     self.send_header(key, val)
                 
@@ -805,25 +803,18 @@ class SmartRouterHandler(BaseHTTPRequestHandler):
 
                 self.wfile.write(resp_body)
                 self.wfile.flush()
+                self.close_connection = True
 
         except Exception as e:
             logger.error(f"Cloud proxy error: {e}")
+            self.close_connection = True
             try:
                 self.send_error(502, f"Cloud API error: {e}")
             except Exception:
                 pass  # Headers already sent during streaming
 
         finally:
-            if acquired:
-                # If exception occurred, connection is bad. Reset it.
-                if sys.exc_info()[0] is not None:
-                    try:
-                        conn.close()
-                    except Exception:
-                        pass
-                    CLOUD_CONN = None
-                CLOUD_CONN_LOCK.release()
-            else:
+            if conn:
                 try:
                     conn.close()
                 except Exception:

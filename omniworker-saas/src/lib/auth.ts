@@ -274,7 +274,7 @@ export async function authenticateRequest(request: Request): Promise<{
   }
 
   const payload = verifyAccessToken(token);
-  if (!payload) return null;
+  if (!payload || !payload.userId) return null;
 
   const dbUser = await prisma.user.findUnique({
     where: { id: payload.userId },

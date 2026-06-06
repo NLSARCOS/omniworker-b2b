@@ -56,7 +56,7 @@ mac:
     - NSRemovableVolumesUsageDescription: Application requests access to files on removable volumes.
   hardenedRuntime: true
   gatekeeperAssess: false
-  notarize: true
+  notarize: false
 dmg:
   artifactName: ${name}-${version}-${arch}.${ext}
 linux:

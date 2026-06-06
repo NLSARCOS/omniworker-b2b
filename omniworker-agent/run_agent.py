@@ -2130,7 +2130,14 @@ class AIAgent:
         # agent.orchestrator_mode in config.yaml. Only ever applied to agents
         # that carry the delegate_task tool (root agents, never delegated
         # workers); see agent/system_prompt.build_system_prompt_parts.
-        self._orchestrator_mode = bool(_agent_section.get("orchestrator_mode", False))
+        # Respect global delegation.orchestrator_enabled (defaults to False).
+        _delegation_section = _agent_cfg.get("delegation") or {}
+        _orch_enabled = _delegation_section.get("orchestrator_enabled", False)
+        if isinstance(_orch_enabled, str):
+            _orch_enabled = _orch_enabled.lower() in {"true", "1", "yes"}
+        else:
+            _orch_enabled = bool(_orch_enabled)
+        self._orchestrator_mode = bool(_agent_section.get("orchestrator_mode", False)) and _orch_enabled
 
         # App-level API retry count (wraps each model API call).  Default 3,
         # overridable via agent.api_max_retries in config.yaml.  See #11616.
@@ -7492,6 +7499,8 @@ class AIAgent:
         return True
 
     def _try_refresh_saas_client_credentials(self) -> bool:
+        if os.getenv("OMNIWORKER_DESKTOP") == "1":
+            return False
         refresh_token = os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
         base_url = os.getenv("OMNIWORKER_SAAS_BASE_URL") or os.getenv("CLOUD_API_URL")
         fingerprint = os.getenv("OMNIWORKER_DEVICE_FINGERPRINT")
@@ -7541,6 +7550,8 @@ class AIAgent:
         return False
 
     def _is_saas_token_expiring_soon(self) -> bool:
+        if os.getenv("OMNIWORKER_DESKTOP") == "1":
+            return False
         token = self.api_key
         if not token or not token.startswith("eyJ"):
             return False
@@ -10180,6 +10191,15 @@ class AIAgent:
                 "promptId": str(uuid.uuid4()),
             }
 
+        # Flux Agent cloud (SaaS) conversation stickiness: forward a stable
+        # conversationId so the SaaS router pins this conversation to the SAME
+        # provider+model every turn (prompt-cache affinity). Without it the
+        # router falls back to hashing the first user message, which drifts
+        # once the history is compacted. Only sent to the Flux SaaS (_is_nous).
+        _flux_conv_extra = None
+        if _is_nous and getattr(self, "session_id", None):
+            _flux_conv_extra = {"conversationId": str(self.session_id)}
+
         # ── Provider profile path (registered providers) ───────────────────
         # Profiles handle per-provider quirks via hooks. When a profile is
         # found, delegate fully; otherwise fall through to the legacy flag path.
@@ -10214,6 +10234,7 @@ class AIAgent:
                 anthropic_max_output=_ant_max,
                 supports_reasoning=self._supports_reasoning_extra_body(),
                 qwen_session_metadata=_qwen_meta,
+                extra_body_additions=_flux_conv_extra,
             )
 
         # ── Legacy flag path ────────────────────────────────────────────
@@ -10261,6 +10282,7 @@ class AIAgent:
             lmstudio_reasoning_options=self._lmstudio_reasoning_options_cached() if _is_lmstudio else None,
             anthropic_max_output=_ant_max,
             provider_name=self.provider,
+            extra_body_additions=_flux_conv_extra,
         )
 
     def _supports_reasoning_extra_body(self) -> bool:
@@ -14334,6 +14356,7 @@ class AIAgent:
                             continue
                     if (
                         status_code == 401
+                        and os.getenv("OMNIWORKER_DESKTOP") != "1"
                         and os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
                         and not saas_auth_retry_attempted
                     ):

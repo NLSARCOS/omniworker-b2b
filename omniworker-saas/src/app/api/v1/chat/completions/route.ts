@@ -17,6 +17,7 @@ const PROVIDER_URLS: Record<string, string> = {
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
   "z-ai": "https://api.z.ai/api/coding/paas/v4/chat/completions",
   "kimi-code": "https://api.kimi.com/coding/v1/chat/completions",
+  stepfun: "https://api.stepfun.ai/step_plan/v1/chat/completions",
 };
 
 // Default model for each provider
@@ -60,6 +61,26 @@ const OPENCODE_GO_ENDPOINTS = {
 } as const;
 
 type OpenCodeEndpoint = keyof typeof OPENCODE_GO_ENDPOINTS;
+
+/**
+ * Detects whether the conversation is in the middle of a tool exchange:
+ * the last meaningful (non-system) message is either a tool result awaiting
+ * the model's continuation, or an assistant turn that requested tools.
+ * Switching to a DIFFERENT model at this point would hand a half-finished
+ * tool sequence to a model that didn't start it — the classic "agent goes
+ * dumb mid-task" failure. The router uses this to lock onto the pinned model.
+ */
+function isMidToolSequence(messages: any[]): boolean {
+  if (!Array.isArray(messages)) return false;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (!m || m.role === "system") continue;
+    if (m.role === "tool") return true;
+    if (m.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) return true;
+    return false; // last meaningful turn is a normal user/assistant message
+  }
+  return false;
+}
 
 function isSimpleGreeting(messages: any[]): boolean {
   const last = messages.filter((m: any) => m.role === "user").pop();
@@ -408,6 +429,22 @@ function mulberry32(seed: number): () => number {
 }
 
 /**
+ * Deterministic Fisher-Yates shuffle driven by a seeded PRNG. Using a stable
+ * conversation seed instead of Math.random() keeps the candidate ordering
+ * identical across turns of the SAME conversation, so a conversation lands on
+ * the same provider every turn (prompt-cache affinity) while still spreading
+ * load across DIFFERENT conversations.
+ */
+function seededShuffle<T>(arr: T[], rng: () => number): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
  * Stable per-conversation seed. Prefers an explicit conversationId; otherwise
  * derives one from userId + the first user message (stable across turns).
  */
@@ -570,6 +607,9 @@ function isFluxAgentVirtualModel(model: string): boolean {
 }
 
 export async function POST(request: Request) {
+  const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  console.log(`[ChatCompletions:${requestId}] Request started`);
+
   // 0. Rate limiting
   const ip = request.headers.get("x-forwarded-for") || "unknown-ip";
   const rateLimit = await checkRateLimit(ip, "chat");
@@ -581,10 +621,13 @@ export async function POST(request: Request) {
   }
 
   // 1. Auth
+  console.log(`[ChatCompletions:${requestId}] Authenticating...`);
   const auth = await authenticateRequest(request);
   if (!auth) {
+    console.log(`[ChatCompletions:${requestId}] Auth failed`);
     return NextResponse.json({ error: "No autorizado. Token requerido." }, { status: 401 });
   }
+  console.log(`[ChatCompletions:${requestId}] Auth OK, user=${auth.user.email}, balance=${auth.user.tokenBalance}`);
 
   const { user } = auth;
 
@@ -608,7 +651,9 @@ export async function POST(request: Request) {
       );
     }
     body = parsed.data;
+    console.log(`[ChatCompletions:${requestId}] Body parsed, model=${body.model}, stream=${body.stream}, messages=${(body.messages || []).length}`);
   } catch {
+    console.log(`[ChatCompletions:${requestId}] JSON parse failed`);
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
   }
 
@@ -617,26 +662,53 @@ export async function POST(request: Request) {
 
   // ── Flux Agent virtual model handling ──────────────────────────────
   if (isFluxAgentVirtualModel(requestedModel)) {
-    // Find the highest active priority level
-    const topProvider = await prisma.masterProvider.findFirst({
+    console.log(`[ChatCompletions:${requestId}] Virtual model path for ${requestedModel}`);
+    // Fallback cascade: get ALL active providers, ordered by priority.
+    // Same-priority providers are shuffled for load balancing,
+    // then lower-priority providers are tried as fallback.
+    const allProvidersRaw = await prisma.masterProvider.findMany({
       where: { isActive: true },
       orderBy: { priority: "asc" },
     });
 
+    // ── Health filter (virtual path) ───────────────────────────────
+    // Skip providers the 12h health checker marked as having no healthy
+    // models (e.g. quota-exhausted opencode-go / z-ai). THIS is what makes
+    // the checker actually protect routing: unhealthy providers are skipped
+    // automatically and re-included the moment the checker sees them healthy
+    // again — no manual isActive toggling needed, fully self-healing.
+    // Falls back to ALL providers if none look healthy (stale data / first
+    // run) or if the lookup errors, so routing never hard-fails on health.
+    let allProviders = allProvidersRaw;
+    try {
+      const healthy: any[] = [];
+      for (const p of allProvidersRaw) {
+        const healthyModels = await getHealthyModels(prisma, p.provider);
+        if (healthyModels.length > 0) {
+          healthy.push(p);
+        } else {
+          console.log(`[HealthFilter] (virtual) skipping ${p.provider} — no healthy models`);
+        }
+      }
+      if (healthy.length > 0) {
+        const skipped = allProvidersRaw.length - healthy.length;
+        if (skipped > 0) console.log(`[HealthFilter] (virtual) skipped ${skipped} unhealthy provider(s)`);
+        allProviders = healthy;
+      }
+      // If ALL look unhealthy, keep allProvidersRaw as a last resort.
+    } catch (healthErr) {
+      console.warn("[HealthFilter] (virtual) failed, using all providers:", healthErr);
+    }
+
+    // The highest-priority HEALTHY provider drives auxiliary calls
+    // (compaction, context bridge) so those never hit a dead provider.
+    const topProvider = allProviders[0];
     if (!topProvider?.apiKey) {
       return NextResponse.json(
         { error: "No hay proveedores de IA configurados. Contacta al admin." },
         { status: 503 }
       );
     }
-
-    // Fallback cascade: get ALL active providers, ordered by priority.
-    // Same-priority providers are shuffled for load balancing,
-    // then lower-priority providers are tried as fallback.
-    const allProviders = await prisma.masterProvider.findMany({
-      where: { isActive: true },
-      orderBy: { priority: "asc" },
-    });
 
     // Group by priority, shuffle within each group, then flatten
     const priorityGroups = new Map<number, any[]>();
@@ -646,14 +718,9 @@ export async function POST(request: Request) {
       priorityGroups.set(p.priority, group);
     }
     const sortedPriorities = [...priorityGroups.keys()].sort((a, b) => a - b);
-    const shuffledCandidates: any[] = [];
-    for (const pri of sortedPriorities) {
-      const group = priorityGroups.get(pri)!;
-      shuffledCandidates.push(...[...group].sort(() => Math.random() - 0.5));
-    }
 
     // ── Model stickiness: stable seed + persistent pin ─────────────
-    // The seed keeps OpenCode Go model selection deterministic per
+    // The seed keeps provider/model selection deterministic per
     // conversation; the pin (if present) forces the exact provider+model
     // chosen on a previous turn, so the model never changes mid-task unless
     // it fails. pinKey prefers an explicit conversationId, else a stable hash.
@@ -662,6 +729,17 @@ export async function POST(request: Request) {
       String(user.id),
       (body as any).conversationId
     );
+
+    // Seeded shuffle: same candidate order across turns of the SAME
+    // conversation (prompt-cache affinity), varied across DIFFERENT
+    // conversations (load balancing). Replaces the old Math.random() shuffle
+    // that re-rolled the provider every turn and defeated provider caches.
+    const _shuffleRng = mulberry32(convSeed);
+    const shuffledCandidates: any[] = [];
+    for (const pri of sortedPriorities) {
+      const group = priorityGroups.get(pri)!;
+      shuffledCandidates.push(...seededShuffle(group, _shuffleRng));
+    }
     const pinKey = (body as any).conversationId || `auto:${String(user.id)}:${convSeed}`;
     const modelPin = await loadModelPin(pinKey);
     if (modelPin) {
@@ -675,6 +753,22 @@ export async function POST(request: Request) {
       console.log(`[ModelPin] Conversation ${pinKey} pinned to ${modelPin.provider} (${modelPin.model})`);
     }
 
+    // ── Anti-"dumb mid-task" guard ─────────────────────────────────
+    // If we're mid tool-sequence and the conversation is pinned, do NOT
+    // fall back to a different provider: handing a half-finished tool
+    // exchange to a model that didn't start it breaks coherence. Lock the
+    // cascade to the pinned provider only. If it's down, the request fails
+    // cleanly (client retries) instead of returning an incoherent answer
+    // from a different model.
+    if (modelPin && isMidToolSequence((body.messages as any[]) || [])) {
+      const pinnedOnly = shuffledCandidates.filter(p => p.provider === modelPin.provider);
+      if (pinnedOnly.length > 0) {
+        shuffledCandidates.length = 0;
+        shuffledCandidates.push(...pinnedOnly);
+        console.log(`[ToolSeqGuard] Mid tool-sequence — locked to pinned provider ${modelPin.provider} (no cross-model fallback)`);
+      }
+    }
+
     // ── Conversation compaction (virtual model path) ───────────────
     if (body.messages && body.messages.length > 30 && topProvider?.apiKey) {
       const userQuery = body.messages.filter((m: any) => m.role === "user").pop()?.content || "";
@@ -685,7 +779,10 @@ export async function POST(request: Request) {
         summaryModel = routing.model;
         summaryEndpoint = routing.endpoint;
       } else {
-        summaryModel = topProvider.defaultModel || DEFAULT_PROVIDER_MODELS[topProvider.provider] || "gpt-4o-mini";
+        const dbModel = topProvider.defaultModel;
+        summaryModel = (dbModel && dbModel !== "gpt-4o-mini" || topProvider.provider === "openai")
+          ? dbModel
+          : (DEFAULT_PROVIDER_MODELS[topProvider.provider] || "gpt-4o-mini");
       }
       const compacted = await compactMessages(body.messages, userQuery, {
         provider: topProvider.provider,
@@ -709,10 +806,14 @@ export async function POST(request: Request) {
     if (body.messages && body.messages.length >= 6 && topProvider?.apiKey) {
       try {
         const { getOrBuildContextHeader, injectContextHeader } = await import("@/lib/context-bridge");
+        const dbModel = topProvider.defaultModel;
+        const cbModel = (dbModel && dbModel !== "gpt-4o-mini" || topProvider.provider === "openai")
+          ? dbModel
+          : (DEFAULT_PROVIDER_MODELS[topProvider.provider] || "gpt-4o-mini");
         const cbConfig = {
           provider: topProvider.provider,
           apiKey: topProvider.apiKey,
-          model: topProvider.defaultModel || DEFAULT_PROVIDER_MODELS[topProvider.provider] || "gpt-4o-mini",
+          model: cbModel,
           endpoint: topProvider.provider === "opencode-go" ? ("chat_completions" as const) : undefined,
         };
         const contextHeader = await getOrBuildContextHeader(
@@ -885,6 +986,7 @@ export async function POST(request: Request) {
       payload = applyNvidiaGLMConfig(payload, realModel, targetProvider);
 
       console.log(`[Flux Agent Cloud] ${user.email} → trying provider ${targetProvider} (${realModel}) [${requestedModel}]`);
+      console.log(`[ChatCompletions:${requestId}] Fetching provider ${targetProvider}, url=${resolvedUrl}`);
 
       try {
         const response = await fetchWithBackoff(resolvedUrl, {
@@ -893,6 +995,7 @@ export async function POST(request: Request) {
           body: JSON.stringify(payload),
         });
 
+        console.log(`[ChatCompletions:${requestId}] Provider ${targetProvider} responded status=${response.status}, ok=${response.ok}`);
         if (response.ok) {
           aiResponse = response;
           selectedProvider = masterProvider;
@@ -925,6 +1028,7 @@ export async function POST(request: Request) {
     if (!aiResponse || !selectedProvider) {
       // Log internally for debugging — never expose provider details to the client
       console.error("[Flux Agent Cloud] All providers failed:", JSON.stringify(lastErrorDetails));
+      console.log(`[ChatCompletions:${requestId}] All providers failed, returning 502`);
       return NextResponse.json(
         { error: "El servicio no está disponible temporalmente. Intenta de nuevo más tarde." },
         { status: 502 }
@@ -992,6 +1096,7 @@ export async function POST(request: Request) {
           reconcileOnce();
         });
 
+        console.log(`[ChatCompletions:${requestId}] Starting stream to client`);
         const bodyStream = aiResponse.body || new ReadableStream();
         const reader = bodyStream.getReader();
         const customStream = new ReadableStream({
@@ -999,17 +1104,31 @@ export async function POST(request: Request) {
             try {
               const { done, value } = await reader.read();
               if (done) {
+                console.log(`[ChatCompletions:${requestId}] Provider stream ended`);
                 await reconcileOnce();
-                controller.close();
+                try {
+                  controller.close();
+                } catch {}
                 return;
               }
               counter.feed(value);
-              controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
+              try {
+                controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
+              } catch (enqueueErr) {
+                console.warn("[Stream] Error enqueuing chunk:", enqueueErr);
+                await reader.cancel();
+                await reconcileOnce();
+                try {
+                  controller.close();
+                } catch {}
+              }
             } catch (err) {
               console.error("[Stream Error] Upstream connection dropped:", err);
               const encoder = new TextEncoder();
               const errorEvent = `data: ${JSON.stringify({ error: "Conexión interrumpida. Intenta de nuevo." })}\n\n`;
-              controller.enqueue(encoder.encode(errorEvent));
+              try {
+                controller.enqueue(encoder.encode(errorEvent));
+              } catch {}
               await reconcileOnce();
               try {
                 controller.close();
@@ -1021,6 +1140,7 @@ export async function POST(request: Request) {
           }
         });
 
+        console.log(`[ChatCompletions:${requestId}] Returning SSE stream to client`);
         return new Response(customStream, {
           headers: {
             "Content-Type": "text/event-stream",
@@ -1085,7 +1205,7 @@ export async function POST(request: Request) {
       }
       return NextResponse.json(responseData || {});
     } catch (error) {
-      console.error("[LLM Gateway Error]", error);
+      console.error(`[ChatCompletions:${requestId}] [LLM Gateway Error]`, error);
       await prisma.taskLog.create({
         data: {
           userId: user.id,
@@ -1391,6 +1511,7 @@ export async function POST(request: Request) {
           reconcileOnce();
         });
 
+        console.log(`[ChatCompletions:${requestId}] Starting stream to client`);
         const bodyStream = aiResponse.body || new ReadableStream();
         const reader = bodyStream.getReader();
         const customStream = new ReadableStream({
@@ -1398,17 +1519,31 @@ export async function POST(request: Request) {
             try {
               const { done, value } = await reader.read();
               if (done) {
+                console.log(`[ChatCompletions:${requestId}] Provider stream ended`);
                 await reconcileOnce();
-                controller.close();
+                try {
+                  controller.close();
+                } catch {}
                 return;
               }
               counter.feed(value);
-              controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
+              try {
+                controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
+              } catch (enqueueErr) {
+                console.warn("[Stream] Error enqueuing chunk:", enqueueErr);
+                await reader.cancel();
+                await reconcileOnce();
+                try {
+                  controller.close();
+                } catch {}
+              }
             } catch (err) {
               console.error("[Stream Error] Upstream connection dropped:", err);
               const encoder = new TextEncoder();
               const errorEvent = `data: ${JSON.stringify({ error: "Conexión interrumpida. Intenta de nuevo." })}\n\n`;
-              controller.enqueue(encoder.encode(errorEvent));
+              try {
+                controller.enqueue(encoder.encode(errorEvent));
+              } catch {}
               await reconcileOnce();
               try {
                 controller.close();
@@ -1420,6 +1555,7 @@ export async function POST(request: Request) {
           }
         });
 
+        console.log(`[ChatCompletions:${requestId}] Returning SSE stream to client`);
         return new Response(customStream, {
           headers: {
             "Content-Type": "text/event-stream",

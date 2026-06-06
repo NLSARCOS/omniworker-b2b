@@ -1,3 +1,4 @@
+process.env.OMNIWORKER_DESKTOP = "1";
 import {
   app,
   shell,
@@ -762,89 +763,7 @@ function setupIPC(): void {
     return getDeviceName();
   });
 
-  // ─── Token Refresh Loop ───
-  let tokenRefreshInterval: NodeJS.Timeout | null = null;
 
-  async function doTokenRefresh() {
-    const tokens = getSecureTokens();
-    if (!tokens || !tokens.refreshToken) {
-      if (tokenRefreshInterval) {
-        clearInterval(tokenRefreshInterval);
-        tokenRefreshInterval = null;
-      }
-      return;
-    }
-
-    const saasUrl = process.env.VITE_SAAS_URL || "https://flux.simplex.lat";
-    try {
-      const res = await fetch(`${saasUrl}/api/v1/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: tokens.refreshToken }),
-      });
-
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          if (tokenRefreshInterval) {
-            clearInterval(tokenRefreshInterval);
-            tokenRefreshInterval = null;
-          }
-          deleteSecureTokens();
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send("session-expired");
-          }
-        }
-        return;
-      }
-
-      const data = await res.json();
-      if (data.success && data.accessToken && data.refreshToken) {
-        saveSecureTokens(data.accessToken, data.refreshToken);
-        try {
-          setEnvValue("OPENAI_API_KEY", data.accessToken);
-          setEnvValue("CUSTOM_API_KEY", data.accessToken);
-        } catch (e) {}
-        try {
-          setConfigValue("model:api_key", data.accessToken);
-          setConfigValue("api_key", data.accessToken);
-        } catch (e) {}
-
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send("token-refreshed", {
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-            user: data.user,
-          });
-        }
-        console.log("[TokenRefreshLoop] Token refreshed successfully.");
-      } else {
-        if (tokenRefreshInterval) {
-          clearInterval(tokenRefreshInterval);
-          tokenRefreshInterval = null;
-        }
-        deleteSecureTokens();
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send("session-expired");
-        }
-      }
-    } catch (err) {
-      console.error("[TokenRefreshLoop] Error calling refresh:", err);
-    }
-  }
-
-  ipcMain.on("start-token-refresh-loop", () => {
-    if (tokenRefreshInterval) return;
-    console.log("[TokenRefreshLoop] Starting token refresh loop (12m interval)");
-    tokenRefreshInterval = setInterval(doTokenRefresh, 12 * 60 * 1000);
-  });
-
-  ipcMain.on("stop-token-refresh-loop", () => {
-    if (tokenRefreshInterval) {
-      console.log("[TokenRefreshLoop] Stopping token refresh loop");
-      clearInterval(tokenRefreshInterval);
-      tokenRefreshInterval = null;
-    }
-  });
 
   // safeStorage Token Handlers
   ipcMain.handle("save-tokens", (_event, tokens: { accessToken: string; refreshToken: string }) => {
@@ -1035,7 +954,7 @@ function setupIPC(): void {
       history?: Array<{ role: string; content: string }> | undefined,
     ) => {
       if (!isRemoteMode() && !isGatewayRunning()) {
-        startGateway(profile);
+        await startGateway(profile);
       }
 
       await ensureSshTunnelIfNeeded();

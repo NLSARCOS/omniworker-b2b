@@ -2661,6 +2661,8 @@ async def _retry_same_provider_async(
 
 def _refresh_saas_credentials() -> bool:
     """Refresh the SaaS JWT access token using the refresh token."""
+    if os.getenv("OMNIWORKER_DESKTOP") == "1":
+        return False
     refresh_token = os.getenv("OMNIWORKER_SAAS_REFRESH_TOKEN")
     base_url = os.getenv("OMNIWORKER_SAAS_BASE_URL")
     fingerprint = os.getenv("OMNIWORKER_DEVICE_FINGERPRINT")

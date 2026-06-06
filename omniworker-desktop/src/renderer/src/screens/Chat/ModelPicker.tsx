@@ -12,13 +12,13 @@ const OMNIWORKER_MODELS: OmniWorkerModel[] = [
   {
     id: "normal",
     label: "Flux Agent Normal",
-    provider: "omniworker",
+    provider: "custom",
     model: "omniworker",
   },
   {
     id: "code",
     label: "Flux Agent Code",
-    provider: "omniworker",
+    provider: "custom",
     model: "omniworker-code",
   },
 ];

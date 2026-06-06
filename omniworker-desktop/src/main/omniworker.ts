@@ -34,7 +34,6 @@ import { stripAnsi, profilePaths } from "./utils";
 import { readModels } from "./models";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
 import { PowerManager } from "./power";
-import { HistoryCache } from "./history-cache";
 const pidsFile = join(OMNIWORKER_HOME, "pids.json");
 
 interface PidEntry {
@@ -705,6 +704,7 @@ function sendMessageViaCli(
       process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
     PYTHONUNBUFFERED: "1",
     OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
+    OMNIWORKER_DESKTOP: "1",
   };
 
   const secureTokens = getSecureTokens();
@@ -939,6 +939,173 @@ function sendMessageViaCli(
 // ────────────────────────────────────────────────────
 
 let apiServerAvailable: boolean | null = null; // cached after first check
+
+// ────────────────────────────────────────────────────
+//  Gateway recovery helpers (ported from upstream)
+// ────────────────────────────────────────────────────
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForApiServerReady(
+  timeoutMs = 8000,
+  pollMs = 250,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await isApiServerReady()) return true;
+    await delay(pollMs);
+  }
+  return false;
+}
+
+/**
+ * Detect errors that indicate a local gateway transport failure
+ * (connection refused, reset, timeout, broken pipe, socket hang up).
+ * Cloud/SaaS errors (HTTP 400/401/500) are NOT transport errors.
+ */
+function isLocalApiTransportError(error: string): boolean {
+  return /^API request failed:.*(?:\b(?:ECONNREFUSED|ECONNRESET|ETIMEDOUT|EPIPE)\b|socket hang up)/i.test(
+    error,
+  );
+}
+
+/**
+ * Attempt to start (or restart) the local gateway and verify it becomes
+ * healthy. Returns true if the gateway is confirmed healthy.
+ */
+export async function startGatewayWithRecovery(
+  profile?: string,
+  healthTimeoutMs = 8000,
+  healthPollMs = 250,
+): Promise<boolean> {
+  if (isRemoteMode()) return false;
+
+  // If gateway process exists and is running, check if it's actually healthy
+  if (isGatewayRunning()) {
+    const healthy = await isApiServerReady();
+    if (healthy) return true;
+    // Running but not healthy — restart it
+    console.log("[GatewayRecovery] Gateway running but unhealthy, restarting...");
+    stopGateway(true);
+    await delay(1000);
+  }
+
+  // Start gateway
+  const started = await startGateway(profile);
+  if (!started) return false;
+
+  // Wait for it to become healthy
+  const ready = await waitForApiServerReady(healthTimeoutMs, healthPollMs);
+  if (ready) {
+    apiServerAvailable = true;
+    console.log("[GatewayRecovery] Gateway recovered and healthy");
+    return true;
+  }
+
+  // Still not healthy after start — try one more restart
+  console.log("[GatewayRecovery] Gateway started but not healthy, forcing restart...");
+  stopGateway(true);
+  await delay(1000);
+  await startGateway(profile);
+  const readyAfterRestart = await waitForApiServerReady(healthTimeoutMs * 2, healthPollMs);
+  apiServerAvailable = readyAfterRestart;
+  return readyAfterRestart;
+}
+
+/**
+ * Wraps sendMessageViaApi with automatic gateway recovery for local mode.
+ * If the API call fails with a transport error (ECONNREFUSED, etc.),
+ * restarts the gateway and retries. Cloud errors pass through as-is.
+ */
+function sendMessageViaApiWithLocalRecovery(
+  message: string,
+  cb: ChatCallbacks,
+  profile?: string,
+  resumeSessionId?: string,
+  history?: Array<{ role: string; content: string }> | undefined,
+): ChatHandle {
+  let aborted = false;
+  let retrying = false;
+  let sawOutput = false;
+  let settled = false;
+  let activeHandle: ChatHandle | null = null;
+
+  const handle: ChatHandle = {
+    abort: () => {
+      aborted = true;
+      activeHandle?.abort();
+    },
+  };
+
+  const callbacks: ChatCallbacks = {
+    ...cb,
+    onChunk: (text) => {
+      sawOutput = true;
+      cb.onChunk(text);
+    },
+    onDone: (sessionId) => {
+      settled = true;
+      cb.onDone(sessionId);
+    },
+    onError: (error) => {
+      if (aborted || retrying || settled) return;
+
+      // If we already got partial output, don't retry — surface the error
+      // but kick off a background recovery for the next request.
+      if (sawOutput) {
+        retrying = true;
+        activeHandle?.abort();
+        apiServerAvailable = false;
+        settled = true;
+        cb.onError(error);
+        void startGatewayWithRecovery(profile)
+          .then((recovered) => { apiServerAvailable = recovered; })
+          .catch(() => { apiServerAvailable = false; });
+        return;
+      }
+
+      // Transport error (gateway died/sleeping) — try to recover and retry
+      if (isLocalApiTransportError(error)) {
+        retrying = true;
+        activeHandle?.abort();
+        apiServerAvailable = false;
+        console.log("[LocalRecovery] Transport error detected, recovering gateway...", error);
+        void (async () => {
+          if (aborted) return;
+          const recovered = await startGatewayWithRecovery(profile);
+          if (aborted) return;
+
+          if (recovered) {
+            apiServerAvailable = true;
+            activeHandle = sendMessageViaApi(message, cb, profile, resumeSessionId, history);
+            return;
+          }
+
+          // Gateway recovery failed — fall back to CLI
+          console.log("[LocalRecovery] Gateway recovery failed, falling back to CLI");
+          activeHandle = sendMessageViaCli(message, cb, profile, resumeSessionId);
+        })();
+        return;
+      }
+
+      // Non-transport error (cloud 400/401/500 etc.) — pass through and
+      // kick off background recovery in case gateway is also degraded.
+      retrying = true;
+      activeHandle?.abort();
+      apiServerAvailable = false;
+      void startGatewayWithRecovery(profile)
+        .then((recovered) => { apiServerAvailable = recovered; })
+        .catch(() => { apiServerAvailable = false; });
+      settled = true;
+      cb.onError(error);
+    },
+  };
+
+  activeHandle = sendMessageViaApi(message, callbacks, profile, resumeSessionId, history);
+  return handle;
+}
 
 // ────────────────────────────────────────────────────
 //  Greeting detection — lightweight check for simple chitchat
@@ -1399,16 +1566,22 @@ export async function sendMessage(
   // Ensure memory config defaults are set for local/gateway paths
   ensureMemoryConfig(profile);
 
-  // Check API server availability (cache the result, re-check periodically)
+  // Check API server availability — if cold or known-bad, attempt recovery.
+  // startGatewayWithRecovery handles starting, restarting, and health polling.
   if (apiServerAvailable === null || apiServerAvailable === false) {
     apiServerAvailable = await isApiServerReady();
+    if (!apiServerAvailable) {
+      apiServerAvailable = await startGatewayWithRecovery(profile);
+    }
   }
 
   if (apiServerAvailable) {
-    return sendMessageViaApi(message, cb, profile, resumeSessionId, history);
+    // Route through recovery-aware wrapper: if the gateway dies mid-request
+    // (e.g. after system sleep), it auto-restarts and retries.
+    return sendMessageViaApiWithLocalRecovery(message, cb, profile, resumeSessionId, history);
   }
 
-  // Fallback to CLI
+  // Gateway could not be started — fall back to CLI as last resort
   return sendMessageViaCli(message, cb, profile, resumeSessionId);
 }
 
@@ -1766,6 +1939,7 @@ export async function startSmartRouter(): Promise<boolean> {
     CLOUD_API_URL: cloudApiUrl,
     SMART_ROUTER_LOG: "1", // Enable logging
     FORCE_IPV4: forceIpv4 ? "true" : "false",
+    OMNIWORKER_DESKTOP: "1",
   };
 
   // Forward the JWT token or local API key so the router can auth with cloud
@@ -1788,10 +1962,13 @@ export async function startSmartRouter(): Promise<boolean> {
 
   const args = [OMNIWORKER_PYTHON, routerScript];
 
+  const fs = require("fs");
+  const routerLogFd = fs.openSync(join(OMNIWORKER_HOME, "smart-router.log"), "a");
+
   smartRouterProcess = spawn(args[0], args.slice(1), {
     cwd: OMNIWORKER_REPO,
     env: routerEnv,
-    stdio: "ignore",
+    stdio: ["ignore", routerLogFd, routerLogFd],
     ...HIDDEN_SUBPROCESS_OPTIONS,
   });
 
@@ -1899,6 +2076,7 @@ export async function startGateway(profile?: string): Promise<boolean> {
     OMNIWORKER_YOLO_MODE: "1", // Grant automatic indefinite tool approval permissions (YOLO Mode)
     OMNIWORKER_SAAS_BASE_URL:
       process.env.OMNIWORKER_SAAS_BASE_URL || `${SAAS_BASE_URL}/api/v1`,
+    OMNIWORKER_DESKTOP: "1",
     // Prevent loading AGENTS.md (~51K chars / ~12K tokens) from the agent repo.
     // Without this the agent discovers OMNIWORKER_REPO/AGENTS.md via os.getcwd()
     // and injects the entire dev guide into every conversation — wasting ~12K tokens.

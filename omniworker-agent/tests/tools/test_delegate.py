@@ -844,7 +844,7 @@ class TestBlockedTools(unittest.TestCase):
         self.assertEqual(_get_max_concurrent_children(), 3)
         self.assertEqual(MAX_DEPTH, 1)
         self.assertEqual(_get_max_spawn_depth(), 1)       # default: flat
-        self.assertTrue(_get_orchestrator_enabled())      # default
+        self.assertFalse(_get_orchestrator_enabled())      # default
         self.assertEqual(_MIN_SPAWN_DEPTH, 1)
         self.assertEqual(_MAX_SPAWN_DEPTH_CAP, 3)
 
@@ -1979,7 +1979,7 @@ class TestOrchestratorRoleSchema(unittest.TestCase):
 
     @patch("tools.delegate_tool._resolve_delegation_credentials")
     @patch("tools.delegate_tool._load_config",
-           return_value={"max_spawn_depth": 2})
+           return_value={"max_spawn_depth": 2, "orchestrator_enabled": True})
     def _run_with_mock_child(self, role_arg, mock_cfg, mock_creds):
         mock_creds.return_value = {
             "provider": None, "base_url": None,
@@ -2088,7 +2088,7 @@ class TestOrchestratorRoleBehavior(unittest.TestCase):
 
     @patch("tools.delegate_tool._resolve_delegation_credentials")
     @patch("tools.delegate_tool._load_config",
-           return_value={"max_spawn_depth": 2})
+           return_value={"max_spawn_depth": 2, "orchestrator_enabled": True})
     def test_orchestrator_role_keeps_delegation_at_depth_1(
         self, mock_cfg, mock_creds
     ):
@@ -2112,7 +2112,7 @@ class TestOrchestratorRoleBehavior(unittest.TestCase):
 
     @patch("tools.delegate_tool._resolve_delegation_credentials")
     @patch("tools.delegate_tool._load_config",
-           return_value={"max_spawn_depth": 2})
+           return_value={"max_spawn_depth": 2, "orchestrator_enabled": True})
     def test_orchestrator_blocked_at_max_spawn_depth(
         self, mock_cfg, mock_creds
     ):
@@ -2219,7 +2219,7 @@ class TestOrchestratorRoleBehavior(unittest.TestCase):
 
     @patch("tools.delegate_tool._resolve_delegation_credentials")
     @patch("tools.delegate_tool._load_config",
-           return_value={"max_spawn_depth": 2})
+           return_value={"max_spawn_depth": 2, "orchestrator_enabled": True})
     def test_batch_mode_per_task_role_override(self, mock_cfg, mock_creds):
         """Per-task role beats top-level; no top-level role → "leaf".
 
@@ -2255,7 +2255,7 @@ class TestOrchestratorRoleBehavior(unittest.TestCase):
 
     @patch("tools.delegate_tool._resolve_delegation_credentials")
     @patch("tools.delegate_tool._load_config",
-           return_value={"max_spawn_depth": 2})
+           return_value={"max_spawn_depth": 2, "orchestrator_enabled": True})
     def test_intersection_preserves_delegation_bound(
         self, mock_cfg, mock_creds
     ):
@@ -2301,7 +2301,7 @@ class TestOrchestratorEndToEnd(unittest.TestCase):
 
     @patch("tools.delegate_tool._resolve_delegation_credentials")
     @patch("tools.delegate_tool._load_config",
-           return_value={"max_spawn_depth": 2})
+           return_value={"max_spawn_depth": 2, "orchestrator_enabled": True})
     def test_end_to_end_nested_orchestration(self, mock_cfg, mock_creds):
         mock_creds.return_value = {
             "provider": None, "base_url": None,

@@ -121,6 +121,7 @@ const PROVIDER_URLS: Record<string, string> = {
   "opencode-go": "https://opencode.ai/zen/go/v1/chat/completions",
   "z-ai": "https://api.z.ai/api/coding/paas/v4/chat/completions",
   "kimi-code": "https://api.kimi.com/coding/v1/chat/completions",
+  stepfun: "https://api.stepfun.ai/step_plan/v1/chat/completions",
 };
 
 const OPENCODE_GO_ENDPOINTS = {
