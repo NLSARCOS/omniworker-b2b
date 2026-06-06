@@ -408,6 +408,7 @@ function sendMessageViaApi(
   const toolProgressRe = /^`([^\s`]+)\s+([^`]+)`$/;
 
   let watchdogTimer: NodeJS.Timeout | null = null;
+  let activeRes: any = null;
 
   function resetWatchdog(): void {
     if (watchdogTimer) {
@@ -431,6 +432,18 @@ function sendMessageViaApi(
     clearWatchdog();
     if (finished) return;
     finished = true;
+    try {
+      req.destroy();
+    } catch (e) {
+      /* ignore */
+    }
+    if (activeRes) {
+      try {
+        activeRes.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
     if (error) {
       cb.onError(error);
     } else {
@@ -566,6 +579,7 @@ function sendMessageViaApi(
       timeout: 120000,
     },
     (res) => {
+      activeRes = res;
       const sid = res.headers["x-omniworker-session-id"];
       if (sid && typeof sid === "string") sessionId = sid;
 
@@ -1180,15 +1194,51 @@ function sendSimpleGreeting(
     ...getRemoteAuthHeader(profile),
   };
 
+  let req: any = null;
   let finished = false;
+  let activeRes: any = null;
+  let fallbackReq: any = null;
+  let fallbackRes: any = null;
+
   function finish(error?: string): void {
     if (finished) return;
     finished = true;
+
+    if (req) {
+      try {
+        req.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    if (activeRes) {
+      try {
+        activeRes.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    if (fallbackReq) {
+      try {
+        fallbackReq.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    if (fallbackRes) {
+      try {
+        fallbackRes.destroy();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+
     if (error) cb.onError(error);
     else cb.onDone();
   }
 
-  const req = http.request(
+  const requester = targetUrl.startsWith("https") ? https.request : http.request;
+  req = requester(
     targetUrl,
     {
       method: "POST",
@@ -1197,6 +1247,7 @@ function sendSimpleGreeting(
       timeout: 30000,
     },
     (res) => {
+      activeRes = res;
       if (res.statusCode !== 200) {
         // On any non-200 (provider 400/503, quota, etc.) silently fall back to
         // the full agent path instead of showing an error to the user.
@@ -1206,6 +1257,8 @@ function sendSimpleGreeting(
           console.warn(`[GreetingFastPath] Provider returned ${res.statusCode}, falling back to full path:`, errBody.slice(0, 200));
           if (!finished) {
             finished = true;
+            try { req.destroy(); } catch (e) {}
+            try { res.destroy(); } catch (e) {}
             sendMessageViaApi(message, cb, profile, undefined, undefined);
           }
         });
@@ -1270,7 +1323,8 @@ function sendSimpleGreeting(
       messages: [{ role: "user", content: message }],
       stream: true,
     });
-    const fallbackReq = http.request(
+    const fallbackRequester = fallbackUrl.startsWith("https") ? https.request : http.request;
+    fallbackReq = fallbackRequester(
       fallbackUrl,
       {
         method: "POST",
@@ -1279,6 +1333,7 @@ function sendSimpleGreeting(
         timeout: 30000,
       },
       (fRes) => {
+        fallbackRes = fRes;
         if (fRes.statusCode !== 200) {
           finish(`Fallback API error ${fRes.statusCode}`);
           return;

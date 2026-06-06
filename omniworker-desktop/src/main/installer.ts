@@ -30,7 +30,9 @@ const IS_WINDOWS = process.platform === "win32";
 export const OMNIWORKER_HOME =
   process.env.OMNIWORKER_HOME?.trim() || join(homedir(), ".omniworker");
 export const OMNIWORKER_REPO = join(OMNIWORKER_HOME, "omniworker-agent");
-export const OMNIWORKER_VENV = join(OMNIWORKER_REPO, "venv");
+export const OMNIWORKER_VENV = existsSync(join(OMNIWORKER_REPO, ".venv"))
+  ? join(OMNIWORKER_REPO, ".venv")
+  : join(OMNIWORKER_REPO, "venv");
 export const OMNIWORKER_PYTHON = IS_WINDOWS
   ? join(OMNIWORKER_VENV, "Scripts", "python.exe")
   : join(OMNIWORKER_VENV, "bin", "python");
