@@ -492,6 +492,12 @@ function sendMessageViaApi(
         });
       },
     );
+    probeReq.setTimeout(15000, () => {
+      probeReq.destroy();
+      finish(
+        "No response received from the model. Check your model configuration and API key.",
+      );
+    });
     probeReq.on("error", () => {
       finish(
         "No response received from the model. Check your model configuration and API key.",
@@ -580,7 +586,7 @@ function sendMessageViaApi(
     },
     (res) => {
       activeRes = res;
-      const sid = res.headers["x-omniworker-session-id"];
+      const sid = res.headers["x-flux agent-session-id"];
       if (sid && typeof sid === "string") sessionId = sid;
 
       if (res.statusCode !== 200) {
@@ -624,8 +630,12 @@ function sendMessageViaApi(
       }
 
       res.on("data", (chunk: Buffer) => {
-        resetWatchdog();
-        buffer += chunk.toString();
+        const chunkStr = chunk.toString();
+        // Only reset watchdog on actual SSE data lines, not keepalive comments
+        if (chunkStr.includes("data:")) {
+          resetWatchdog();
+        }
+        buffer += chunkStr;
         const parts = buffer.split("\n\n");
         buffer = parts.pop() || "";
 
