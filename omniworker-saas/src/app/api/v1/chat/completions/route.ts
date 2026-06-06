@@ -1116,7 +1116,9 @@ export async function POST(request: Request) {
                 controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
               } catch (enqueueErr) {
                 console.warn("[Stream] Error enqueuing chunk:", enqueueErr);
-                await reader.cancel();
+                try {
+                  await reader.cancel();
+                } catch {}
                 await reconcileOnce();
                 try {
                   controller.close();
@@ -1136,7 +1138,11 @@ export async function POST(request: Request) {
             }
           },
           async cancel() {
-            await reader.cancel();
+            try {
+              await reader.cancel();
+            } catch (err) {
+              console.log("[Stream] Reader cancel failed (likely already closed):", err.message || err);
+            }
           }
         });
 
@@ -1531,7 +1537,9 @@ export async function POST(request: Request) {
                 controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
               } catch (enqueueErr) {
                 console.warn("[Stream] Error enqueuing chunk:", enqueueErr);
-                await reader.cancel();
+                try {
+                  await reader.cancel();
+                } catch {}
                 await reconcileOnce();
                 try {
                   controller.close();
@@ -1551,7 +1559,11 @@ export async function POST(request: Request) {
             }
           },
           async cancel() {
-            await reader.cancel();
+            try {
+              await reader.cancel();
+            } catch (err) {
+              console.log("[Stream] Reader cancel failed (likely already closed):", err.message || err);
+            }
           }
         });
 
