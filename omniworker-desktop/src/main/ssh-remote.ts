@@ -369,22 +369,29 @@ function remoteUserPath(profile?: string): string {
 async function sshGetSessionStats(
   config: SshConfig,
   profile?: string,
-): Promise<{ totalSessions: number; totalMessages: number }> {
+): Promise<{ totalSessions: number; totalMessages: number; memoryChunks: number; memoryFacts: number }> {
   const script = `
 import sqlite3, json, os, sys
 payload = json.load(sys.stdin)
 profile = payload.get("profile")
 db = os.path.expanduser(f"~/.omniworker/profiles/{profile}/state.db" if profile and profile != "default" else "~/.omniworker/state.db")
 if not os.path.exists(db):
-    print(json.dumps({"totalSessions": 0, "totalMessages": 0}))
+    print(json.dumps({"totalSessions": 0, "totalMessages": 0, "memoryChunks": 0, "memoryFacts": 0}))
     sys.exit(0)
 conn = sqlite3.connect(db)
 try:
     s = conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
     m = conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
-    print(json.dumps({"totalSessions": s, "totalMessages": m}))
+    tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+    chunks = 0
+    facts = 0
+    if "memory_chunks" in tables:
+        chunks = conn.execute("SELECT COUNT(*) FROM memory_chunks").fetchone()[0]
+    if "memory_facts" in tables:
+        facts = conn.execute("SELECT COUNT(*) FROM memory_facts").fetchone()[0]
+    print(json.dumps({"totalSessions": s, "totalMessages": m, "memoryChunks": chunks, "memoryFacts": facts}))
 except:
-    print(json.dumps({"totalSessions": 0, "totalMessages": 0}))
+    print(json.dumps({"totalSessions": 0, "totalMessages": 0, "memoryChunks": 0, "memoryFacts": 0}))
 finally:
     conn.close()
 `;
@@ -392,7 +399,7 @@ finally:
     const out = await sshPython(config, script, pythonJsonInput({ profile }));
     return JSON.parse(out.trim());
   } catch {
-    return { totalSessions: 0, totalMessages: 0 };
+    return { totalSessions: 0, totalMessages: 0, memoryChunks: 0, memoryFacts: 0 };
   }
 }
 
