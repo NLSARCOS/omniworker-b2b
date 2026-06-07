@@ -73,6 +73,7 @@
 - 2026-05-21 | Compiled desktop version 0.4.3 installers and successfully deployed (DMG, EXE, AppImage, deb) to the VPS with Apple Silicon symlink support
 - 2026-06-07 | Integrated Scrapling stealth scraper tool, generated GitHub release v0.6.5, updated download links, and deployed SaaS on VPS.
 - 2026-06-07 | Integrated Google Workspace (Gmail, Calendar, Drive) tools, added Advanced Mode toggle, and uploaded desktop v0.6.5 installers to VPS.
+- 2026-06-07 | Released v0.6.6 with prefetch memory gate, fixed remote SSH memory stats types, uploaded binaries to VPS/GitHub, and restarted production containers.
 - 2026-06-06 | Optimized SaaS/Desktop persistent memory to use async out-of-band LLM extraction and fixed cache key mismatches, reducing API latency to 0ms.
 - 2026-06-06 | Deployed memory & dependency fixes to VPS (resolved hermes-parser 404 and entrypoint executable permissions), and designed programmatic SEO templates.
 
