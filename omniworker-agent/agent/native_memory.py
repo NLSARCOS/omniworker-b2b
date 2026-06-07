@@ -79,6 +79,7 @@ def _get_sqlite_vec() -> Any:
 
 _MAX_INJECTED_TOKENS = 4000  # hard cap on memory context injected per turn
 _MAX_CHUNKS_PER_PREFETCH = 20
+_PREFETCH_MIN_QUERY_LEN = 12  # skip memory recall for very short messages
 _CHUNK_OVERLAP_CHARS = 50
 _MIN_CHUNK_CHARS = 40
 _MAX_CHUNK_CHARS = 800
@@ -843,13 +844,31 @@ class NativeMemory:
                 if path:
                     self._workspace.on_file_edit(path, session_id=session_id)
 
+    # Trivial messages that don't need memory recall.
+    # These are greetings, acknowledgments, or single-word commands
+    # where injecting 2-4K tokens of past context is wasteful.
+    _SKIP_PATTERNS: List[re.Pattern] = [
+        re.compile(r"^(hola|hey|hi|hello|buenos\s*d[ií]as|buenas|sup|yo|ok|si|s[ií]|no|gracias|thanks|bye|chao|adi[oó]s|listo|dale|va|vale|perfecto|genial|cool|nice|great|good|bad|ok|okay|amen|as[ií]|seguro|claro|entendido|entiendo|perfect|excellent|wow|nan)\s*[!.?]*$", re.IGNORECASE),
+        re.compile(r"^.{1,8}$", re.IGNORECASE),  # anything under 8 chars
+    ]
+
     def prefetch(self, query: str, session_id: str = "", k: int = _MAX_CHUNKS_PER_PREFETCH) -> str:
         """Recall relevant context for the upcoming turn.
 
         Returns formatted text ready for injection into the system prompt.
+        Skips recall for trivial/greeting messages to save tokens.
         """
         if not query or not query.strip():
             return ""
+
+        # Skip memory recall for trivial messages (greetings, short acks)
+        # This saves thousands of tokens per turn on simple interactions.
+        stripped = query.strip()
+        if len(stripped) < _PREFETCH_MIN_QUERY_LEN:
+            return ""
+        for pat in self._SKIP_PATTERNS:
+            if pat.match(stripped):
+                return ""
 
         # 1. BM25 search (always works)
         bm25_results = self._bm25.search(query, session_id=session_id, k=k * 2)
