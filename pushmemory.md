@@ -302,3 +302,27 @@ c333b8b6d docs: update memory with v0.6.6 session notes
 | **Scrapling** | ✅ Auto-install funcional con browsers |
 | **Compilación y Release (v0.6.6)** | ✅ Release v0.6.6 en GitHub y archivos de Auto-Update en el VPS |
 | **Despliegue de Producción (v0.6.6)** | ✅ SaaS y Agent actualizados y reiniciados en VPS |
+
+---
+
+## 🚀 Actualización y Release v0.6.7 (NativeMemory Upgrade)
+
+Hemos integrado y desplegado la actualización mayor de memoria **NativeMemory (F1-F7 + D2-D4)** que unifica y optimiza el almacenamiento persistente en ambos lados (Agent y Desktop):
+
+### 1. Mejoras en el Agente (Python)
+* **F1 — Protocolo Proactivo:** Inyección del protocolo en el system prompt para indicarle al LLM cuándo guardar memorias.
+* **F2 — Herramientas Explícitas:** Nuevas herramientas expuestas (`memory_save`, `memory_search`, `memory_recall`) para control directo del LLM.
+* **F3 — Topic-key Upsert & Soft-delete:** Actualizaciones automáticas por topic en vez de duplicar recuerdos, y soporte para borrado lógico.
+* **F4 — Session Summary:** Resúmenes automáticos al cerrar sesiones.
+* **F6 — Delegation Memory:** Historial de tareas delegadas entre agentes.
+* **F7 — Memory Scope:** Filtro por ámbito (personal o de proyecto).
+
+### 2. Mejoras en el Desktop (TypeScript)
+* **D2 — Panel de Sesiones Recientes:** Renderizado de resúmenes de sesión en la pantalla de Memoria.
+* **D3 — Etiquetas de Tipo:** Clasificación visual de recuerdos con badges dinámicos.
+* **D4 — Panel de Backend Activo:** Descubrimiento real del proveedor de memoria activo leyendo la configuración del agente.
+
+### 3. Release & Despliegue v0.6.7
+* **Compilación:** Generados instaladores v0.6.7 para Windows, macOS y Linux.
+* **VPS Downloads:** Subidos todos los instaladores e ymls de auto-update.
+* **SaaS:** Actualizados los enlaces en el dashboard y desplegado en producción.
