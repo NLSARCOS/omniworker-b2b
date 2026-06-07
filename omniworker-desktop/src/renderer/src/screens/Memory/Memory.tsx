@@ -750,6 +750,14 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
                 <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>{data.stats.totalMessages}</div>
                 <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Messages</div>
               </div>
+              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "8px", padding: "12px", textAlign: "center" }}>
+                <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>{data.stats.memoryChunks ?? 0}</div>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Memory Chunks</div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "8px", padding: "12px", textAlign: "center" }}>
+                <div style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)" }}>{data.stats.memoryFacts ?? 0}</div>
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Known Facts</div>
+              </div>
             </div>
             <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "8px", padding: "12px", textAlign: "center", marginTop: "12px" }}>
               <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--accent)" }}>{data.memory.entries.length}</div>
