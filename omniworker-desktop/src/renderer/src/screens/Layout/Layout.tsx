@@ -433,7 +433,7 @@ function Layout({
           </button>
         </div>
       )}
-      <div className="layout" style={{ height: "auto", flex: 1 }}>
+      <div className="layout" style={{ height: "100%", flex: 1, minHeight: 0 }}>
         <aside ref={sidebarRef} className="sidebar">
         <div className="sidebar-brand" style={{ padding: "20px 16px", display: "flex", justifyContent: "center" }}>
           <OmniWorkerLogo size={24} />

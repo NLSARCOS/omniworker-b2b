@@ -258,16 +258,16 @@ class MemoryManager:
     def add_provider(self, provider: MemoryProvider) -> None:
         """Register a memory provider.
 
-        Built-in provider (name ``"builtin"``) is always accepted.
+        Built-in provider (name ``"builtin"`` or ``"native"``) is always accepted.
         Only **one** external (non-builtin) provider is allowed — a second
         attempt is rejected with a warning.
         """
-        is_builtin = provider.name == "builtin"
+        is_builtin = provider.name in ("builtin", "native")
 
         if not is_builtin:
             if self._has_external:
                 existing = next(
-                    (p.name for p in self._providers if p.name != "builtin"), "unknown"
+                    (p.name for p in self._providers if p.name not in ("builtin", "native")), "unknown"
                 )
                 logger.warning(
                     "Rejected memory provider '%s' — external provider '%s' is "
@@ -625,10 +625,10 @@ class MemoryManager:
     ) -> None:
         """Notify external providers when the built-in memory tool writes.
 
-        Skips the builtin provider itself (it's the source of the write).
+        Skips the builtin/native providers themselves (they are the source of the write or handle it natively).
         """
         for provider in self._providers:
-            if provider.name == "builtin":
+            if provider.name in ("builtin", "native"):
                 continue
             try:
                 metadata_mode = self._provider_memory_write_metadata_mode(provider)
