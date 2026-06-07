@@ -232,8 +232,8 @@ class MemoryStore:
 
     def __init__(
         self,
-        memory_char_limit: int = 2200,
-        user_char_limit: int = 1375,
+        memory_char_limit: int = 50_000,
+        user_char_limit: int = 10_000,
         memory_token_limit: Optional[int] = None,
         user_token_limit: Optional[int] = None,
     ):
@@ -1044,8 +1044,10 @@ MEMORY_SCHEMA = {
     "name": "memory",
     "description": (
         "Save durable information to persistent memory that survives across sessions. "
-        "Memory is injected into future turns, so keep it compact and focused on facts "
-        "that will still matter later.\n\n"
+        "You also have an automatic memory system (NativeMemory) that indexes every "
+        "conversation turn with full-text and semantic search — so past context is "
+        "recalled automatically when relevant. Use this tool for facts you want to "
+        "guarantee are always visible.\n\n"
         "WHEN TO SAVE (do this proactively, don't wait to be asked):\n"
         "- User corrects you or says 'remember this' / 'don't do that again'\n"
         "- User shares a preference, habit, or personal detail (name, role, timezone, coding style)\n"
