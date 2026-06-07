@@ -178,6 +178,13 @@ def _run_async(coro):
 
 discover_builtin_tools()
 
+# Load agent-created custom tools so they appear alongside built-ins.
+try:
+    from agent.tool_sandbox import load_custom_tools
+    load_custom_tools()
+except Exception as e:
+    logger.debug("Custom tool loading failed: %s", e)
+
 # MCP tool discovery (external MCP servers from config) used to run here as
 # a module-level side effect.  It was removed because discover_mcp_tools()
 # internally uses a blocking future.result(timeout=120) wait, and the

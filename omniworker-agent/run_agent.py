@@ -2132,6 +2132,15 @@ class AIAgent:
         except Exception:
             pass
 
+        # Custom tools config: nudge interval for tool creation reminders
+        self._tool_nudge_interval = 0   # 0 = disabled by default
+        self._iters_since_tool = 0
+        try:
+            _tools_config = _agent_cfg.get("custom_tools", {})
+            self._tool_nudge_interval = int(_tools_config.get("creation_nudge_interval", 0))
+        except Exception:
+            pass
+
         # Tool-use enforcement config: "auto" (default — matches hardcoded
         # model list), true (always), false (never), or list of substrings.
         _agent_section = _agent_cfg.get("agent", {})
@@ -4454,8 +4463,9 @@ class AIAgent:
         messages_snapshot: List[Dict],
         review_memory: bool = False,
         review_skills: bool = False,
+        review_tools: bool = False,
     ) -> None:
-        """Spawn a background thread to review the conversation for memory/skill saves.
+        """Spawn a background thread to review the conversation for memory/skill/tool saves.
 
         Creates a full AIAgent fork with the same model, tools, and context as the
         main session. The review prompt is appended as the next user turn in the
@@ -4465,7 +4475,23 @@ class AIAgent:
         import threading
 
         # Pick the right prompt based on which triggers fired
-        if review_memory and review_skills:
+        if review_tools:
+            prompt = getattr(self, "_TOOL_REVIEW_PROMPT", None)
+            if prompt is None:
+                from agent.background_review import _TOOL_REVIEW_PROMPT
+                prompt = _TOOL_REVIEW_PROMPT
+            if review_memory or review_skills:
+                _combined = getattr(self, "_COMBINED_REVIEW_PROMPT", None)
+                if _combined is None:
+                    from agent.background_review import _COMBINED_REVIEW_PROMPT
+                    _combined = _COMBINED_REVIEW_PROMPT
+                prompt = (
+                    _combined
+                    + "\n\nAdditionally, consider whether a custom tool would be "
+                    "valuable based on the criteria above.\n\n"
+                    + prompt
+                )
+        elif review_memory and review_skills:
             prompt = self._COMBINED_REVIEW_PROMPT
         elif review_memory:
             prompt = self._MEMORY_REVIEW_PROMPT
@@ -4563,31 +4589,58 @@ class AIAgent:
                     review_agent.session_start = self.session_start
                     review_agent.session_id = self.session_id
 
+                    # If tool review is active, inject recent tool-sequence candidates
+                    _sequence_context = ""
+                    if review_tools:
+                        try:
+                            from agent.tool_sequence_detector import get_top_tool_sequence_candidates
+                            _candidates = get_top_tool_sequence_candidates(top_n=3, min_confidence=0.75)
+                            if _candidates:
+                                _sequence_context = (
+                                    "\n\n--- Detected recurring tool sequences (data-driven signals) ---\n"
+                                )
+                                for _i, _c in enumerate(_candidates, 1):
+                                    _sequence_context += (
+                                        f"{_i}. Sequence: {_c['sequence']}\n"
+                                        f"   Occurrences: {_c['occurrences']}, Confidence: {_c['confidence']}\n"
+                                    )
+                                _sequence_context += (
+                                    "These sequences were detected by analyzing recent session history. "
+                                    "If any matches workflows above, consider creating a custom tool.\n"
+                                )
+                        except Exception as _seq_err:
+                            logger.debug("Tool sequence candidate lookup failed: %s", _seq_err)
+
                     from model_tools import get_tool_definitions
                     from omniworker_cli.plugins import (
                         set_thread_tool_whitelist,
                         clear_thread_tool_whitelist,
                     )
 
+                    _review_toolsets = ["memory", "skills"]
+                    if review_tools:
+                        _review_toolsets.append("custom_tools")
                     review_whitelist = {
                         t["function"]["name"]
                         for t in get_tool_definitions(
-                            enabled_toolsets=["memory", "skills"],
+                            enabled_toolsets=_review_toolsets,
                             quiet_mode=True,
                         )
                     }
+                    _allowed_label = "memory, skill, and custom tool" if review_tools else "memory and skill"
                     set_thread_tool_whitelist(
                         review_whitelist,
                         deny_msg_fmt=(
                             "Background review denied non-whitelisted tool: "
-                            "{tool_name}. Only memory/skill tools are allowed."
+                            "{tool_name}. Only " + _allowed_label + " tools are allowed."
                         ),
                     )
                     try:
                         review_agent.run_conversation(
                             user_message=(
                                 prompt
-                                + "\n\nYou can only call memory and skill "
+                                + _sequence_context
+                                + "\n\nYou can only call " + _allowed_label + " "
                                 "management tools. Other tools will be denied "
                                 "at runtime — do not attempt them."
                             ),
@@ -11309,6 +11362,8 @@ class AIAgent:
                 self._turns_since_memory = 0
             elif function_name == "skill_manage":
                 self._iters_since_skill = 0
+            elif function_name == "tool_create":
+                self._iters_since_tool = 0
 
             try:
                 function_args = json.loads(tool_call.function.arguments)
@@ -11744,6 +11799,8 @@ class AIAgent:
                 self._turns_since_memory = 0
             elif function_name == "skill_manage":
                 self._iters_since_skill = 0
+            elif function_name == "tool_create":
+                self._iters_since_tool = 0
 
             if not self.quiet_mode:
                 args_str = json.dumps(function_args, ensure_ascii=False)
@@ -12967,6 +13024,12 @@ class AIAgent:
             if (self._skill_nudge_interval > 0
                     and "skill_manage" in self.valid_tool_names):
                 self._iters_since_skill += 1
+
+            # Track tool-calling iterations for custom tool nudge.
+            # Counter resets whenever tool_create is actually used.
+            if (self._tool_nudge_interval > 0
+                    and "tool_create" in self.valid_tool_names):
+                self._iters_since_tool += 1
             
             # ── Pre-API-call /steer drain ──────────────────────────────────
             # If a /steer arrived during the previous API call (while the model
@@ -16388,6 +16451,14 @@ class AIAgent:
             _should_review_skills = True
             self._iters_since_skill = 0
 
+        # Check custom tool trigger NOW — based on how many tool iterations THIS turn used.
+        _should_review_tools = False
+        if (self._tool_nudge_interval > 0
+                and self._iters_since_tool >= self._tool_nudge_interval
+                and "tool_create" in self.valid_tool_names):
+            _should_review_tools = True
+            self._iters_since_tool = 0
+
         # External memory provider: sync the completed turn + queue next prefetch.
         # Extract tool results from the current turn for NativeMemory indexing.
         _turn_tool_results = None
@@ -16415,14 +16486,15 @@ class AIAgent:
             tool_results=_turn_tool_results,
         )
 
-        # Background memory/skill review — runs AFTER the response is delivered
+        # Background memory/skill/tool review — runs AFTER the response is delivered
         # so it never competes with the user's task for model attention.
-        if final_response and not interrupted and (_should_review_memory or _should_review_skills):
+        if final_response and not interrupted and (_should_review_memory or _should_review_skills or _should_review_tools):
             try:
                 self._spawn_background_review(
                     messages_snapshot=list(messages),
                     review_memory=_should_review_memory,
                     review_skills=_should_review_skills,
+                    review_tools=_should_review_tools,
                 )
             except Exception:
                 pass  # Background review is best-effort
@@ -16582,6 +16654,19 @@ class AIAgent:
             should_review_skills = True
             self._iters_since_skill = 0
 
+        # Check custom tool nudge — same pattern.
+        self._iters_since_tool = (
+            getattr(self, "_iters_since_tool", 0) + turn.tool_iterations
+        )
+        should_review_tools = False
+        if (
+            self._tool_nudge_interval > 0
+            and self._iters_since_tool >= self._tool_nudge_interval
+            and "tool_create" in self.valid_tool_names
+        ):
+            should_review_tools = True
+            self._iters_since_tool = 0
+
         # External memory provider sync (mirrors line ~15439). Skipped on
         # interrupt/error to avoid feeding partial transcripts to memory.
         if not turn.interrupted and turn.error is None:
@@ -16620,13 +16705,14 @@ class AIAgent:
         if (
             turn.final_text
             and not turn.interrupted
-            and (should_review_memory or should_review_skills)
+            and (should_review_memory or should_review_skills or should_review_tools)
         ):
             try:
                 self._spawn_background_review(
                     messages_snapshot=list(messages),
                     review_memory=should_review_memory,
                     review_skills=should_review_skills,
+                    review_tools=should_review_tools,
                 )
             except Exception:
                 logger.debug("background review spawn raised", exc_info=True)

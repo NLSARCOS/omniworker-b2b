@@ -19,7 +19,8 @@ function getRoutes(dir: string, baseDir: string = ""): string[] {
         file === "api" ||
         file === "components" ||
         file.startsWith("_") ||
-        file.startsWith("(")
+        file.startsWith("(") ||
+        file.startsWith("[")
       ) {
         continue;
       }
@@ -33,6 +34,8 @@ function getRoutes(dir: string, baseDir: string = ""): string[] {
   return routes;
 }
 
+import { PROGRAMMATIC_KEYWORDS } from "../lib/programmatic-data";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://flux.simplex.lat";
   const appDir = path.join(process.cwd(), "src/app");
@@ -40,7 +43,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   try {
     const publicRoutes = getRoutes(appDir);
     
-    return publicRoutes.map((route) => {
+    const staticSitemap = publicRoutes.map((route) => {
       // Normalizar la URL (remover slashes extras)
       const cleanRoute = route ? `/${route}` : "";
       const isHome = cleanRoute === "";
@@ -48,10 +51,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       return {
         url: `${baseUrl}${cleanRoute}`,
         lastModified: new Date(),
-        changeFrequency: isHome ? "weekly" : "monthly",
+        changeFrequency: (isHome ? "weekly" : "monthly") as any,
         priority: isHome ? 1.0 : 0.8,
       };
     });
+
+    const programmaticSitemap = PROGRAMMATIC_KEYWORDS.map((k) => ({
+      url: `${baseUrl}/${k.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as any,
+      priority: 0.7,
+    }));
+    
+    return [...staticSitemap, ...programmaticSitemap];
   } catch (error) {
     console.error("Error generating dynamic sitemap:", error);
     // Fallback estático de seguridad

@@ -144,6 +144,37 @@ _SKILL_REVIEW_PROMPT = (
     "Otherwise, act."
 )
 
+_TOOL_REVIEW_PROMPT = (
+    "Review the conversation above and consider whether a CUSTOM TOOL "
+    "would be valuable.\n\n"
+    "A custom tool is a small Python function that becomes a first-class "
+    "tool in the agent's toolkit. It compresses repetitive multi-step "
+    "workflows into a single tool call.\n\n"
+    "Signals that WARRANT creating or updating a custom tool (any one):\n"
+    "  • You ran the same sequence of 3+ tool calls in the same order "
+    "more than once in this session (e.g. 'search X → fetch → parse JSON').\n"
+    "  • A workflow is deterministic enough to encode as code: pure "
+    "data transformation (JSON parsing, regex, math, string formatting), "
+    "light calculation, or orchestration of existing tools.\n"
+    "  • You notice yourself using terminal() to run the same Python "
+    "one-liner or script repeatedly.\n"
+    "  • An existing custom tool is missing a parameter, has a bug, or "
+    "could be generalized to cover a broader class of tasks.\n\n"
+    "Signals that do NOT warrant a custom tool:\n"
+    "  • One-off tasks that won't recur.\n"
+    "  • Workflows that require human judgment or creativity each time.\n"
+    "  • Anything that needs network/file access beyond what existing "
+    "tools already provide (custom tools cannot import requests, urllib, "
+    "subprocess, os, etc.).\n\n"
+    "When creating a tool:\n"
+    "  1. Pick a clear, descriptive name (valid Python identifier).\n"
+    "  2. Keep it focused — one responsibility per tool.\n"
+    "  3. Use the tool_create action='create' with full source code.\n"
+    "  4. The source MUST include a handler function and registry.register().\n"
+    "  5. Only use safe stdlib imports (json, re, math, datetime, pathlib, etc.).\n\n"
+    "If nothing warrants a tool, say 'Nothing to save.' and stop."
+)
+
 _COMBINED_REVIEW_PROMPT = (
     "Review the conversation above and update two things:\n\n"
     "**Memory**: who the user is. Did the user reveal persona, "
@@ -279,6 +310,8 @@ def summarize_background_review_actions(
             actions.append(message)
         elif "updated" in message.lower():
             actions.append(message)
+        elif "deleted" in message.lower():
+            actions.append(message)
         elif "added" in message.lower() or (target and "add" in message.lower()):
             label = "Memory" if target == "memory" else "User profile" if target == "user" else target
             actions.append(f"{label} updated")
@@ -322,6 +355,7 @@ def _run_review_in_thread(
     agent: Any,
     messages_snapshot: List[Dict],
     prompt: str,
+    review_tools: bool = False,
 ) -> None:
     """Worker function executed in the background-review daemon thread.
 
@@ -439,31 +473,62 @@ def _run_review_in_thread(
             review_agent.session_start = agent.session_start
             review_agent.session_id = agent.session_id
 
+            # If tool review is active, inject recent tool-sequence candidates
+            # so the review agent has data-driven signals of what to create.
+            _sequence_context = ""
+            if review_tools:
+                try:
+                    from agent.tool_sequence_detector import get_top_tool_sequence_candidates
+                    candidates = get_top_tool_sequence_candidates(top_n=3, min_confidence=0.75)
+                    if candidates:
+                        _sequence_context = (
+                            "\n\n--- Detected recurring tool sequences (data-driven signals) ---\n"
+                        )
+                        for i, c in enumerate(candidates, 1):
+                            _sequence_context += (
+                                f"{i}. Sequence: {c['sequence']}\n"
+                                f"   Occurrences: {c['occurrences']}, Confidence: {c['confidence']}\n"
+                            )
+                        _sequence_context += (
+                            "These sequences were detected by analyzing recent session history. "
+                            "If any of them matches workflows in the conversation above, "
+                            "consider creating a custom tool to compress them into a single call.\n"
+                        )
+                except Exception as _seq_err:
+                    logger.debug("Tool sequence candidate lookup failed: %s", _seq_err)
+
             from model_tools import get_tool_definitions
             from omniworker_cli.plugins import (
                 set_thread_tool_whitelist,
                 clear_thread_tool_whitelist,
             )
 
+            _toolsets = ["memory", "skills"]
+            if review_tools:
+                _toolsets.append("custom_tools")
             review_whitelist = {
                 t["function"]["name"]
                 for t in get_tool_definitions(
-                    enabled_toolsets=["memory", "skills"],
+                    enabled_toolsets=_toolsets,
                     quiet_mode=True,
                 )
             }
+            _allowed = "memory, skill, and custom tool"
+            if not review_tools:
+                _allowed = "memory and skill"
             set_thread_tool_whitelist(
                 review_whitelist,
                 deny_msg_fmt=(
                     "Background review denied non-whitelisted tool: "
-                    "{tool_name}. Only memory/skill tools are allowed."
+                    "{tool_name}. Only " + _allowed + " tools are allowed."
                 ),
             )
             try:
                 review_agent.run_conversation(
                     user_message=(
                         prompt
-                        + "\n\nYou can only call memory and skill "
+                        + _sequence_context
+                        + "\n\nYou can only call " + _allowed + " "
                         "management tools. Other tools will be denied "
                         "at runtime — do not attempt them."
                     ),
@@ -549,6 +614,7 @@ def spawn_background_review_thread(
     messages_snapshot: List[Dict],
     review_memory: bool = False,
     review_skills: bool = False,
+    review_tools: bool = False,
 ):
     """Build the review thread target and prompt for a background review.
 
@@ -559,7 +625,19 @@ def spawn_background_review_thread(
     # Pick the right prompt based on which triggers fired.  Allow per-agent
     # override (the prompts moved to module-level constants but old code paths
     # that set agent._MEMORY_REVIEW_PROMPT etc. directly keep working).
-    if review_memory and review_skills:
+    if review_tools:
+        # When tool review is active, use the tool-specific prompt.
+        # If memory/skills also triggered, prepend them so the review agent
+        # still has context, but keep the tool focus primary.
+        prompt = getattr(agent, "_TOOL_REVIEW_PROMPT", _TOOL_REVIEW_PROMPT)
+        if review_memory or review_skills:
+            prompt = (
+                getattr(agent, "_COMBINED_REVIEW_PROMPT", _COMBINED_REVIEW_PROMPT)
+                + "\n\nAdditionally, consider whether a custom tool would be "
+                "valuable based on the criteria above.\n\n"
+                + prompt
+            )
+    elif review_memory and review_skills:
         prompt = getattr(agent, "_COMBINED_REVIEW_PROMPT", _COMBINED_REVIEW_PROMPT)
     elif review_memory:
         prompt = getattr(agent, "_MEMORY_REVIEW_PROMPT", _MEMORY_REVIEW_PROMPT)
@@ -567,7 +645,7 @@ def spawn_background_review_thread(
         prompt = getattr(agent, "_SKILL_REVIEW_PROMPT", _SKILL_REVIEW_PROMPT)
 
     def _target() -> None:
-        _run_review_in_thread(agent, messages_snapshot, prompt)
+        _run_review_in_thread(agent, messages_snapshot, prompt, review_tools=review_tools)
 
     return _target, prompt
 
@@ -575,6 +653,7 @@ def spawn_background_review_thread(
 __all__ = [
     "_MEMORY_REVIEW_PROMPT",
     "_SKILL_REVIEW_PROMPT",
+    "_TOOL_REVIEW_PROMPT",
     "_COMBINED_REVIEW_PROMPT",
     "spawn_background_review_thread",
     "summarize_background_review_actions",

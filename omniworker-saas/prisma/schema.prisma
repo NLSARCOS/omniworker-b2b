@@ -346,3 +346,18 @@ model Invoice {
 
   @@index([tenantId])
 }
+
+// ─── CONTACT FORM SUBMISSIONS (Programmatic SEO Leads) ───
+model ContactSubmission {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  companySize String?
+  useCase     String?  @db.Text
+  source      String   // the landing page slug (e.g. "agente-ia-notion-whatsapp")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([source])
+  @@index([createdAt])
+}

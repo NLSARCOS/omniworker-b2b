@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Terminal, Box, ShieldAlert, Cpu, Activity, Database, DollarSign, Zap, Download, FlaskConical, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Terminal, Box, ShieldAlert, Cpu, Activity, Database, DollarSign, Zap, Download, FlaskConical, CheckCircle2, XCircle, Loader2, Mail } from "lucide-react";
 
 interface Provider {
   id: string;
@@ -107,7 +107,17 @@ interface Invoice {
   tenant?: { id: string; name: string };
 }
 
-type View = "dashboard" | "providers" | "tenants" | "plans" | "audit" | "updates";
+interface ContactSubmission {
+  id: string;
+  name: string;
+  email: string;
+  companySize: string | null;
+  useCase: string | null;
+  source: string;
+  createdAt: string;
+}
+
+type View = "dashboard" | "providers" | "tenants" | "plans" | "audit" | "updates" | "submissions";
 
 export default function SuperAdminCommandCenter() {
   const [view, setView] = useState<View>("dashboard");
@@ -133,6 +143,7 @@ export default function SuperAdminCommandCenter() {
 
   const [error, setError] = useState("");
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
+  const [submissions, setSubmissions] = useState<ContactSubmission[]>([]);
   const [showCreateUpdate, setShowCreateUpdate] = useState(false);
   const [showCreatePlan, setShowCreatePlan] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -169,13 +180,14 @@ export default function SuperAdminCommandCenter() {
         }
       };
 
-      const [pRes, tRes, plRes, auditRes, metricsRes, upRes] = await Promise.all([
+      const [pRes, tRes, plRes, auditRes, metricsRes, upRes, subRes] = await Promise.all([
         fetchJson("/api/admin/providers"),
         fetchJson("/api/admin/tenants"),
         fetchJson("/api/admin/plans"),
         fetchJson("/api/admin/audit"),
         fetchJson("/api/admin/metrics"),
-        fetchJson("/api/admin/updates")
+        fetchJson("/api/admin/updates"),
+        fetchJson("/api/admin/submissions")
       ]);
       setProviders(pRes.providers || []);
       setProviderOptions(pRes.availableProviders || []);
@@ -187,9 +199,28 @@ export default function SuperAdminCommandCenter() {
       setAuditLogs(auditRes.logs || []);
       setModelMetrics(metricsRes.models || []);
       setUpdates(upRes.updates || []);
+      setSubmissions(subRes.submissions || []);
     } catch (err) {
       console.error(err);
       setError("SYSTEM_FAULT: Error de conexión.");
+    }
+  };
+
+  const handleSubmissionDelete = async (id: string) => {
+    if (!confirm("⚠️ ¿Estás seguro de que deseas eliminar este formulario?")) return;
+    try {
+      const res = await fetch(`/api/admin/submissions?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("ow_token")}` },
+      });
+      if (res.ok) {
+        loadAll();
+      } else {
+        const data = await res.json();
+        setError(data.error || "Error al eliminar el formulario");
+      }
+    } catch {
+      setError("Error de red al eliminar el formulario");
     }
   };
 
@@ -577,7 +608,7 @@ export default function SuperAdminCommandCenter() {
         <div className="p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3 text-zinc-100 font-bold tracking-widest text-lg">
             <Terminal size={20} className="text-zinc-400" />
-            <span>OMNIWORKER</span>
+            <span>FLUX AGENT</span>
           </div>
           <div className="text-xs text-zinc-500 mt-1 font-mono uppercase tracking-widest">Administrador raíz</div>
         </div>
@@ -600,6 +631,9 @@ export default function SuperAdminCommandCenter() {
           </button>
           <button onClick={() => setView("updates")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "updates" ? "bg-zinc-800 text-zinc-300 font-semibold" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
             <Download size={18} /> Actualizaciones del sistema
+          </button>
+          <button onClick={() => setView("submissions")} className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${view === "submissions" ? "bg-zinc-800 text-zinc-300 font-semibold" : "hover:bg-zinc-800/50 hover:text-zinc-100"}`}>
+            <Mail size={18} /> Formularios recibidos
           </button>
         </nav>
 
@@ -1850,6 +1884,85 @@ export default function SuperAdminCommandCenter() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {view === "submissions" && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex justify-between items-center border-b border-zinc-800 pb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight uppercase flex items-center gap-3">
+                  <Mail size={28} className="text-zinc-400" />
+                  Formularios Recibidos (Leads)
+                </h1>
+                <p className="text-zinc-500 font-mono text-sm mt-1">Leads capturados a través de las landing pages de SEO programático.</p>
+              </div>
+              <button 
+                onClick={() => loadAll()} 
+                className="bg-zinc-800 text-zinc-300 border border-zinc-700 px-6 py-2 font-bold uppercase tracking-wider text-sm hover:bg-zinc-700 transition-colors"
+              >
+                Actualizar
+              </button>
+            </div>
+
+            <div className="bg-zinc-900 border border-zinc-800">
+              <div className="p-4 border-b border-zinc-800 bg-zinc-950/40 text-xs font-mono text-zinc-500 uppercase tracking-widest">
+                Listado de Leads ({submissions.length})
+              </div>
+              
+              {submissions.length === 0 ? (
+                <div className="p-12 text-center text-zinc-600 font-mono text-sm uppercase tracking-widest">
+                  No se han recibido formularios de contacto aún.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-800 bg-zinc-950/50 font-mono text-zinc-500 text-xs uppercase">
+                        <th className="p-4">Fecha</th>
+                        <th className="p-4">Contacto</th>
+                        <th className="p-4">Tamaño</th>
+                        <th className="p-4">Caso de Uso</th>
+                        <th className="p-4">Origen (Slug)</th>
+                        <th className="p-4 text-right">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-850">
+                      {submissions.map((sub) => (
+                        <tr key={sub.id} className="hover:bg-zinc-800/20 transition-colors border-b border-zinc-800/50">
+                          <td className="p-4 whitespace-nowrap font-mono text-xs text-zinc-500">
+                            {new Date(sub.createdAt).toLocaleString()}
+                          </td>
+                          <td className="p-4">
+                            <div className="font-semibold text-white">{sub.name}</div>
+                            <div className="text-xs text-zinc-400 font-mono">{sub.email}</div>
+                          </td>
+                          <td className="p-4 text-zinc-300 font-mono text-xs">
+                            {sub.companySize || "N/A"}
+                          </td>
+                          <td className="p-4 text-zinc-300 text-xs max-w-xs truncate" title={sub.useCase || ""}>
+                            {sub.useCase || "—"}
+                          </td>
+                          <td className="p-4">
+                            <span className="bg-zinc-950 text-zinc-400 px-2.5 py-1 text-xs border border-zinc-800 rounded-sm font-mono">
+                              /{sub.source}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              onClick={() => handleSubmissionDelete(sub.id)}
+                              className="text-xs font-mono text-red-500 hover:text-red-400 uppercase tracking-widest"
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

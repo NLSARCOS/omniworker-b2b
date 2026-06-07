@@ -14,9 +14,46 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://flux.simplex.lat"),
   title: "Flux Agent — El asistente digital que trabaja por tu empresa",
   description:
     "Flux Agent asigna a tu empresa un asistente digital que atiende clientes, gestiona tareas y automatiza procesos — sin contratar a nadie más. By Simplex Latam.",
+};
+
+const globalJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://flux.simplex.lat/#organization",
+      "name": "Flux Agent",
+      "alternateName": "Simplex Latam",
+      "url": "https://flux.simplex.lat",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://flux.simplex.lat/logo.svg",
+      },
+      "description": "Plataforma de agentes de IA autónomos para empresas latinoamericanas. Fuerza laboral digital 24/7.",
+      "foundingDate": "2025",
+      "areaServed": {
+        "@type": "Place",
+        "name": "Latinoamérica",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://flux.simplex.lat/#website",
+      "url": "https://flux.simplex.lat",
+      "name": "Flux Agent",
+      "publisher": { "@id": "https://flux.simplex.lat/#organization" },
+      "inLanguage": "es",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://flux.simplex.lat/?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -31,6 +68,10 @@ export default function RootLayout({
     >
       <head>
         <meta name="google-site-verification" content="xbsXB7XNWQBYUZAS6WXFFyls3wNXzvyUJPUbcBfqh7E" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(globalJsonLd) }}
+        />
         <GTMScript />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
