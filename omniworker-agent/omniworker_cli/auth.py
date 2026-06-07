@@ -6057,6 +6057,8 @@ def get_auth_status(provider_id: Optional[str] = None) -> Dict[str, Any]:
     target = (provider_id or get_active_provider() or "").strip().lower()
     if not target:
         return {"logged_in": False}
+    if target == "google":
+        return get_google_auth_status()
     if target == "spotify":
         return get_spotify_auth_status()
     if target == "nous":

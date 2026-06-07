@@ -45,6 +45,9 @@ import {
   InstallProgress,
   downloadSLM,
   downloadAndInstallOpenwa,
+  runGoogleAuth,
+  runGoogleLogout,
+  getGoogleAuthStatus,
 } from "./installer";
 import {
   getSmtpSettings,
@@ -670,6 +673,15 @@ function setupIPC(): void {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) return sshRunDoctor(conn.ssh);
     return runOmniWorkerDoctor();
+  });
+  ipcMain.handle("run-google-auth", async (_event, profile?: string) => {
+    return runGoogleAuth(profile);
+  });
+  ipcMain.handle("run-google-logout", async (_event, profile?: string) => {
+    return runGoogleLogout(profile);
+  });
+  ipcMain.handle("get-google-auth-status", async (_event, profile?: string) => {
+    return getGoogleAuthStatus(profile);
   });
   ipcMain.handle("run-omniworker-update", async (event) => {
     try {

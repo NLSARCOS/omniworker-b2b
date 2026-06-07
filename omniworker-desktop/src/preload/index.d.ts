@@ -857,6 +857,13 @@ interface OmniWorkerAPI {
     type: "smtp" | "imap",
   ) => Promise<{ success: boolean; message: string }>;
 
+  // Google Auth
+  runGoogleAuth: (profile?: string) => Promise<{ success: boolean; error?: string }>;
+  runGoogleLogout: (profile?: string) => Promise<{ success: boolean; error?: string }>;
+  getGoogleAuthStatus: (
+    profile?: string,
+  ) => Promise<{ loggedIn: boolean; email?: string; detail?: string }>;
+
   // Onboarding
   getOnboardingStatus: () => Promise<boolean>;
   saveOnboardingData: (data: {

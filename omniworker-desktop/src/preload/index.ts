@@ -774,6 +774,16 @@ const omniworkerAPI = {
   ): Promise<{ success: boolean; message: string }> =>
     ipcRenderer.invoke("test-smtp-settings", host, port, encryption, type),
 
+  // Google Auth
+  runGoogleAuth: (profile?: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("run-google-auth", profile),
+  runGoogleLogout: (profile?: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("run-google-logout", profile),
+  getGoogleAuthStatus: (
+    profile?: string,
+  ): Promise<{ loggedIn: boolean; email?: string; detail?: string }> =>
+    ipcRenderer.invoke("get-google-auth-status", profile),
+
   // Updates
   checkForUpdates: (): Promise<string | null> =>
     ipcRenderer.invoke("check-for-updates"),

@@ -1413,3 +1413,100 @@ export async function downloadAndInstallOpenwa(
   });
 }
 
+// ────────────────────────────────────────────────────
+//  Google Workspace OAuth Helper functions
+// ────────────────────────────────────────────────────
+
+export function runGoogleAuth(profile?: string): Promise<{ success: boolean; error?: string }> {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
+    return Promise.resolve({ success: false, error: "Flux Agent is not installed." });
+  }
+  return new Promise((resolve) => {
+    const cliArgs = profile ? ["--profile", profile, "auth", "google"] : ["auth", "google"];
+    spawn(OMNIWORKER_PYTHON, omniworkerCliArgs(cliArgs), {
+      cwd: OMNIWORKER_REPO,
+      env: {
+        ...process.env,
+        PATH: getEnhancedPath(),
+        HOME: homedir(),
+        OMNIWORKER_HOME,
+      },
+      stdio: ["ignore", "ignore", "ignore"],
+      ...HIDDEN_SUBPROCESS_OPTIONS,
+    });
+    resolve({ success: true });
+  });
+}
+
+export function runGoogleLogout(profile?: string): Promise<{ success: boolean; error?: string }> {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
+    return Promise.resolve({ success: false, error: "Flux Agent is not installed." });
+  }
+  return new Promise((resolve) => {
+    const cliArgs = profile ? ["--profile", profile, "auth", "google", "logout"] : ["auth", "google", "logout"];
+    execFile(
+      OMNIWORKER_PYTHON,
+      omniworkerCliArgs(cliArgs),
+      {
+        cwd: OMNIWORKER_REPO,
+        env: {
+          ...process.env,
+          PATH: getEnhancedPath(),
+          HOME: homedir(),
+          OMNIWORKER_HOME,
+          TERM: "dumb",
+        },
+        timeout: 15000,
+        ...HIDDEN_SUBPROCESS_OPTIONS,
+      },
+      (error, _stdout, stderr) => {
+        if (error) {
+          resolve({ success: false, error: stripAnsi(stderr || error.message) });
+        } else {
+          resolve({ success: true });
+        }
+      }
+    );
+  });
+}
+
+export function getGoogleAuthStatus(profile?: string): Promise<{ loggedIn: boolean; email?: string; detail?: string }> {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
+    return Promise.resolve({ loggedIn: false, detail: "Flux Agent is not installed." });
+  }
+  return new Promise((resolve) => {
+    const cliArgs = profile ? ["--profile", profile, "auth", "google", "status"] : ["auth", "google", "status"];
+    execFile(
+      OMNIWORKER_PYTHON,
+      omniworkerCliArgs(cliArgs),
+      {
+        cwd: OMNIWORKER_REPO,
+        env: {
+          ...process.env,
+          PATH: getEnhancedPath(),
+          HOME: homedir(),
+          OMNIWORKER_HOME,
+          TERM: "dumb",
+        },
+        timeout: 10000,
+        ...HIDDEN_SUBPROCESS_OPTIONS,
+      },
+      (error, stdout) => {
+        if (error) {
+          resolve({ loggedIn: false });
+        } else {
+          const output = stdout.toString().trim();
+          const loggedIn = output.includes("logged in");
+          const emailMatch = output.match(/email:\s*([^\s\n]+)/i);
+          resolve({
+            loggedIn,
+            email: emailMatch ? emailMatch[1] : undefined,
+            detail: output,
+          });
+        }
+      }
+    );
+  });
+}
+
+

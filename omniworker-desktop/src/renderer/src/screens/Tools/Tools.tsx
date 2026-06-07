@@ -310,12 +310,85 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isSmtpPanelExpanded, setIsSmtpPanelExpanded] = useState(false);
 
+  // Google Workspace Auth Panel state
+  const [googleAuth, setGoogleAuth] = useState<{ loggedIn: boolean; email?: string; detail?: string }>({ loggedIn: false });
+  const [checkingGoogleAuth, setCheckingGoogleAuth] = useState(true);
+  const [isGooglePanelExpanded, setIsGooglePanelExpanded] = useState(false);
+  const [loadingGoogleAction, setLoadingGoogleAction] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState("");
+  const [googleClientSecret, setGoogleClientSecret] = useState("");
+  const [savingGoogleCreds, setSavingGoogleCreds] = useState(false);
+  const [googleCredsSaveStatus, setGoogleCredsSaveStatus] = useState<"idle" | "saved" | "error">("idle");
+
+  const checkGoogleStatus = useCallback(async () => {
+    try {
+      const status = await window.omniworkerAPI.getGoogleAuthStatus(profile);
+      setGoogleAuth(status);
+    } catch {
+      setGoogleAuth({ loggedIn: false });
+    } finally {
+      setCheckingGoogleAuth(false);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    checkGoogleStatus();
+  }, [checkGoogleStatus]);
+
+  const handleGoogleLogin = async () => {
+    setLoadingGoogleAction(true);
+    try {
+      await window.omniworkerAPI.runGoogleAuth(profile);
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        const status = await window.omniworkerAPI.getGoogleAuthStatus(profile);
+        if (status.loggedIn || attempts > 20) {
+          clearInterval(interval);
+          setGoogleAuth(status);
+          setLoadingGoogleAction(false);
+        }
+      }, 3000);
+    } catch (err) {
+      setLoadingGoogleAction(false);
+    }
+  };
+
+  const handleGoogleLogout = async () => {
+    setLoadingGoogleAction(true);
+    try {
+      await window.omniworkerAPI.runGoogleLogout(profile);
+      await checkGoogleStatus();
+    } catch (err) {
+      // ignore
+    } finally {
+      setLoadingGoogleAction(false);
+    }
+  };
+
+  const handleSaveGoogleCreds = async () => {
+    setSavingGoogleCreds(true);
+    setGoogleCredsSaveStatus("idle");
+    try {
+      await window.omniworkerAPI.setEnv("GOOGLE_CLIENT_ID", googleClientId.trim(), profile);
+      await window.omniworkerAPI.setEnv("GOOGLE_CLIENT_SECRET", googleClientSecret.trim(), profile);
+      setGoogleCredsSaveStatus("saved");
+      setTimeout(() => setGoogleCredsSaveStatus("idle"), 3000);
+    } catch (err) {
+      setGoogleCredsSaveStatus("error");
+      setTimeout(() => setGoogleCredsSaveStatus("idle"), 4000);
+    } finally {
+      setSavingGoogleCreds(false);
+    }
+  };
+
   const loadToolsets = useCallback(async (): Promise<void> => {
     setLoading(true);
-    const [list, mcp, settings] = await Promise.all([
+    const [list, mcp, settings, env] = await Promise.all([
       window.omniworkerAPI.getToolsets(profile),
       window.omniworkerAPI.listMcpServers(profile),
       window.omniworkerAPI.getSmtpSettings(profile),
+      window.omniworkerAPI.getEnv(profile),
     ]);
     setToolsets(list);
     setMcpServers(mcp);
@@ -331,6 +404,10 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
       setImapUser(settings.imap_user || "");
       setImapPassword(settings.imap_password || "");
       setImapEncryption(settings.imap_encryption || "ssl");
+    }
+    if (env) {
+      setGoogleClientId(env.GOOGLE_CLIENT_ID || "");
+      setGoogleClientSecret(env.GOOGLE_CLIENT_SECRET || "");
     }
     setLoading(false);
   }, [profile]);
@@ -855,6 +932,261 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
                 {saveStatus === "saving" ? "Guardando..." : "Guardar y Habilitar Cliente"}
               </button>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Google Workspace Connection Panel */}
+      <div style={{
+        marginTop: "24px",
+        background: "rgba(255, 255, 255, 0.02)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        borderRadius: "16px",
+        overflow: "hidden",
+        backdropFilter: "blur(12px)",
+        transition: "all 0.3s ease"
+      }}>
+        {/* Panel Header */}
+        <div 
+          onClick={() => setIsGooglePanelExpanded(!isGooglePanelExpanded)}
+          style={{
+            padding: "20px 24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            cursor: "pointer",
+            background: "rgba(255, 255, 255, 0.01)",
+            borderBottom: isGooglePanelExpanded ? "1px solid rgba(255, 255, 255, 0.08)" : "none",
+            userSelect: "none",
+            transition: "all 0.2s ease"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, rgba(219, 68, 85, 0.2), rgba(244, 180, 0, 0.2))",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ea4335"
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "#f3f4f6" }}>
+                Integración de Google Workspace
+              </h3>
+              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
+                Conecta tu cuenta de Google para dar acceso a Gmail, Google Calendar y Google Drive a tus agentes
+              </p>
+            </div>
+          </div>
+          <div style={{
+            transform: isGooglePanelExpanded ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.3s ease",
+            color: "var(--text-muted)"
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        {/* Panel Content */}
+        {isGooglePanelExpanded && (
+          <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px", textAlign: "left" }}>
+            {/* Google OAuth Credentials Configuration */}
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+              paddingBottom: "20px",
+              marginBottom: "4px"
+            }}>
+              <h4 style={{ margin: "0 0 4px 0", color: "#ea4335", fontWeight: "600", fontSize: "13px", letterSpacing: "0.5px", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ea4335" }} /> Credenciales de Aplicación Google (OAuth2)
+              </h4>
+              <p style={{ margin: 0, fontSize: "12px", color: "var(--text-muted)", lineHeight: "1.4" }}>
+                Configura tu Client ID y Client Secret de Google Cloud para conectar tus servicios de Gmail, Google Calendar y Google Drive.
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Google Client ID</label>
+                  <input
+                    value={googleClientId}
+                    onChange={(e) => setGoogleClientId(e.target.value)}
+                    placeholder="ej. 200976823351-...apps.googleusercontent.com"
+                    style={{
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      color: "#f3f4f6",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Google Client Secret</label>
+                  <input
+                    type="password"
+                    value={googleClientSecret}
+                    onChange={(e) => setGoogleClientSecret(e.target.value)}
+                    placeholder="ej. GOCSPX-..."
+                    style={{
+                      background: "rgba(0, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      color: "#f3f4f6",
+                      fontSize: "13px",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "12px", marginTop: "4px" }}>
+                {googleCredsSaveStatus === "saved" && (
+                  <span style={{ color: "#4ade80", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Credenciales guardadas
+                  </span>
+                )}
+                {googleCredsSaveStatus === "error" && (
+                  <span style={{ color: "#f87171", fontSize: "12px" }}>
+                    Error al guardar credenciales
+                  </span>
+                )}
+                <button
+                  onClick={handleSaveGoogleCreds}
+                  disabled={savingGoogleCreds}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.04)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    borderRadius: "8px",
+                    padding: "8px 16px",
+                    color: "#f3f4f6",
+                    fontSize: "12px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {savingGoogleCreds ? "Guardando..." : "Guardar Credenciales"}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: "200px" }}>
+                <div style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "4px" }}>
+                  Estado de conexión:
+                </div>
+                {checkingGoogleAuth ? (
+                  <div style={{ fontSize: "14px", color: "var(--text-secondary)", fontStyle: "italic" }}>
+                    Verificando estado...
+                  </div>
+                ) : googleAuth.loggedIn ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e" }} />
+                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#22c55e" }}>
+                      Conectado
+                    </span>
+                    {googleAuth.email && (
+                      <span style={{ fontSize: "13px", color: "var(--text-secondary)", marginLeft: "4px" }}>
+                        ({googleAuth.email})
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444" }} />
+                    <span style={{ fontSize: "14px", fontWeight: "600", color: "#ef4444" }}>
+                      Desconectado
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                {googleAuth.loggedIn ? (
+                  <button
+                    onClick={handleGoogleLogout}
+                    disabled={loadingGoogleAction}
+                    style={{
+                      background: "rgba(239, 68, 68, 0.16)",
+                      border: "1px solid rgba(239, 68, 68, 0.3)",
+                      borderRadius: "8px",
+                      padding: "10px 20px",
+                      color: "#ef4444",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: loadingGoogleAction ? "default" : "pointer",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {loadingGoogleAction ? "Desconectando..." : "Desconectar Cuenta"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleGoogleLogin}
+                    disabled={loadingGoogleAction}
+                    style={{
+                      background: "linear-gradient(135deg, #ea4335, #f4b400)",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "10px 24px",
+                      color: "white",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      cursor: loadingGoogleAction ? "default" : "pointer",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {loadingGoogleAction ? "Abriendo navegador..." : "Conectar Cuenta de Google"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {!googleAuth.loggedIn && !loadingGoogleAction && (
+              <p style={{ margin: "8px 0 0 0", fontSize: "11px", color: "var(--text-muted)", lineHeight: "1.4" }}>
+                * Al hacer clic, se abrirá tu navegador predeterminado para autorizar la integración de Google Workspace mediante OAuth2 de forma segura.
+              </p>
+            )}
+            
+            {googleAuth.detail && (
+              <details style={{ marginTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px" }}>
+                <summary style={{ fontSize: "11px", color: "var(--text-muted)", cursor: "pointer", outline: "none" }}>
+                  Ver detalles de la conexión
+                </summary>
+                <pre style={{
+                  background: "rgba(0,0,0,0.2)",
+                  padding: "8px",
+                  borderRadius: "6px",
+                  fontSize: "10px",
+                  color: "var(--text-secondary)",
+                  marginTop: "6px",
+                  overflowX: "auto",
+                  whiteSpace: "pre-wrap"
+                }}>
+                  {googleAuth.detail}
+                </pre>
+              </details>
+            )}
           </div>
         )}
       </div>
