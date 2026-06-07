@@ -315,10 +315,6 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
   const [checkingGoogleAuth, setCheckingGoogleAuth] = useState(true);
   const [isGooglePanelExpanded, setIsGooglePanelExpanded] = useState(false);
   const [loadingGoogleAction, setLoadingGoogleAction] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState("");
-  const [googleClientSecret, setGoogleClientSecret] = useState("");
-  const [savingGoogleCreds, setSavingGoogleCreds] = useState(false);
-  const [googleCredsSaveStatus, setGoogleCredsSaveStatus] = useState<"idle" | "saved" | "error">("idle");
 
   const checkGoogleStatus = useCallback(async () => {
     try {
@@ -366,29 +362,12 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
     }
   };
 
-  const handleSaveGoogleCreds = async () => {
-    setSavingGoogleCreds(true);
-    setGoogleCredsSaveStatus("idle");
-    try {
-      await window.omniworkerAPI.setEnv("GOOGLE_CLIENT_ID", googleClientId.trim(), profile);
-      await window.omniworkerAPI.setEnv("GOOGLE_CLIENT_SECRET", googleClientSecret.trim(), profile);
-      setGoogleCredsSaveStatus("saved");
-      setTimeout(() => setGoogleCredsSaveStatus("idle"), 3000);
-    } catch (err) {
-      setGoogleCredsSaveStatus("error");
-      setTimeout(() => setGoogleCredsSaveStatus("idle"), 4000);
-    } finally {
-      setSavingGoogleCreds(false);
-    }
-  };
-
   const loadToolsets = useCallback(async (): Promise<void> => {
     setLoading(true);
-    const [list, mcp, settings, env] = await Promise.all([
+    const [list, mcp, settings] = await Promise.all([
       window.omniworkerAPI.getToolsets(profile),
       window.omniworkerAPI.listMcpServers(profile),
       window.omniworkerAPI.getSmtpSettings(profile),
-      window.omniworkerAPI.getEnv(profile),
     ]);
     setToolsets(list);
     setMcpServers(mcp);
@@ -404,10 +383,6 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
       setImapUser(settings.imap_user || "");
       setImapPassword(settings.imap_password || "");
       setImapEncryption(settings.imap_encryption || "ssl");
-    }
-    if (env) {
-      setGoogleClientId(env.GOOGLE_CLIENT_ID || "");
-      setGoogleClientSecret(env.GOOGLE_CLIENT_SECRET || "");
     }
     setLoading(false);
   }, [profile]);
@@ -1001,95 +976,6 @@ function Tools({ profile, onToggleToolset }: ToolsProps): React.JSX.Element {
         {/* Panel Content */}
         {isGooglePanelExpanded && (
           <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px", textAlign: "left" }}>
-            {/* Google OAuth Credentials Configuration */}
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-              paddingBottom: "20px",
-              marginBottom: "4px"
-            }}>
-              <h4 style={{ margin: "0 0 4px 0", color: "#ea4335", fontWeight: "600", fontSize: "13px", letterSpacing: "0.5px", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#ea4335" }} /> Credenciales de Aplicación Google (OAuth2)
-              </h4>
-              <p style={{ margin: 0, fontSize: "12px", color: "var(--text-muted)", lineHeight: "1.4" }}>
-                Configura tu Client ID y Client Secret de Google Cloud para conectar tus servicios de Gmail, Google Calendar y Google Drive.
-              </p>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Google Client ID</label>
-                  <input
-                    value={googleClientId}
-                    onChange={(e) => setGoogleClientId(e.target.value)}
-                    placeholder="ej. 200976823351-...apps.googleusercontent.com"
-                    style={{
-                      background: "rgba(0, 0, 0, 0.2)",
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
-                      borderRadius: "8px",
-                      padding: "10px 12px",
-                      color: "#f3f4f6",
-                      fontSize: "13px",
-                      outline: "none"
-                    }}
-                  />
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>Google Client Secret</label>
-                  <input
-                    type="password"
-                    value={googleClientSecret}
-                    onChange={(e) => setGoogleClientSecret(e.target.value)}
-                    placeholder="ej. GOCSPX-..."
-                    style={{
-                      background: "rgba(0, 0, 0, 0.2)",
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
-                      borderRadius: "8px",
-                      padding: "10px 12px",
-                      color: "#f3f4f6",
-                      fontSize: "13px",
-                      outline: "none"
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "12px", marginTop: "4px" }}>
-                {googleCredsSaveStatus === "saved" && (
-                  <span style={{ color: "#4ade80", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    Credenciales guardadas
-                  </span>
-                )}
-                {googleCredsSaveStatus === "error" && (
-                  <span style={{ color: "#f87171", fontSize: "12px" }}>
-                    Error al guardar credenciales
-                  </span>
-                )}
-                <button
-                  onClick={handleSaveGoogleCreds}
-                  disabled={savingGoogleCreds}
-                  style={{
-                    background: "rgba(255, 255, 255, 0.04)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    borderRadius: "8px",
-                    padding: "8px 16px",
-                    color: "#f3f4f6",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {savingGoogleCreds ? "Guardando..." : "Guardar Credenciales"}
-                </button>
-              </div>
-            </div>
-
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: "200px" }}>
                 <div style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "4px" }}>
