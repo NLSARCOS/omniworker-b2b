@@ -40,7 +40,7 @@ interface MemoryData {
     charCount: number;
     charLimit: number;
   };
-  stats: { totalSessions: number; totalMessages: number };
+  stats: { totalSessions: number; totalMessages: number; memoryChunks: number; memoryFacts: number };
 }
 
 interface TimelineEntry {

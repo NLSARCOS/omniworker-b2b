@@ -113,6 +113,8 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     # ─── Memory providers ──────────────────────────────────────────────────
     "memory.honcho": ("honcho-ai==2.0.1",),
     "memory.hindsight": ("hindsight-client==0.6.1",),
+    # sqlite-vec: vector search for NativeMemory semantic recall
+    "memory.sqlite_vec": ("sqlite-vec==0.1.6",),
 
     # ─── Messaging platforms (lazy-installable on demand) ──────────────────
     "platform.telegram": ("python-telegram-bot[webhooks]==22.6",),

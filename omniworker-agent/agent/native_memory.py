@@ -59,7 +59,17 @@ def _get_sqlite_vec() -> Any:
 
             _sqlite_vec = sqlite_vec
         except Exception as exc:
-            logger.debug("sqlite-vec not available: %s", exc)
+            logger.debug("sqlite-vec not available, attempting lazy install: %s", exc)
+            try:
+                from tools.lazy_deps import ensure
+
+                ensure("memory.sqlite_vec", prompt=False)
+                import sqlite_vec
+
+                _sqlite_vec = sqlite_vec
+                logger.info("sqlite-vec installed via lazy deps")
+            except Exception as install_exc:
+                logger.debug("sqlite-vec lazy install failed: %s", install_exc)
     return _sqlite_vec
 
 
@@ -67,8 +77,8 @@ def _get_sqlite_vec() -> Any:
 # Constants
 # ---------------------------------------------------------------------------
 
-_MAX_INJECTED_TOKENS = 2000  # hard cap on memory context injected per turn
-_MAX_CHUNKS_PER_PREFETCH = 10
+_MAX_INJECTED_TOKENS = 4000  # hard cap on memory context injected per turn
+_MAX_CHUNKS_PER_PREFETCH = 20
 _CHUNK_OVERLAP_CHARS = 50
 _MIN_CHUNK_CHARS = 40
 _MAX_CHUNK_CHARS = 800
@@ -86,8 +96,10 @@ _ENTITY_PATTERNS = [
 ]
 
 # Scoring weights for BM25 hybrid ranking
-_W_RECENCY = 0.35
-_W_BM25 = 0.30
+# BM25 relevance is the primary signal; recency helps but shouldn't dominate
+# so memories from weeks ago are still surfaced when relevant.
+_W_BM25 = 0.40
+_W_RECENCY = 0.25
 _W_SESSION_AFFINITY = 0.20
 _W_ROLE = 0.15
 
@@ -295,7 +307,7 @@ class BM25Layer:
             # Composite scoring
             bm25_score = -row[7] if row[7] is not None else 0.0
             age_hours = (now - chunk.created_at) / 3600.0
-            recency = max(0.0, 1.0 - (age_hours / 168.0))  # decay over 7 days
+            recency = max(0.0, 1.0 - (age_hours / 720.0))  # decay over 30 days
             session_affinity = 2.0 if chunk.session_id == session_id else 1.0
             role_weight = 1.5 if chunk.chunk_type in ("decision", "error", "file_edit") else 1.0
 
