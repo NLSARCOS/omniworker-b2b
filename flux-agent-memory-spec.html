@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flux Agent · Memory Spec — Estado Real v1.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Azeret+Mono:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:          #030609;
+  --bg-1:        #060b12;
+  --bg-2:        #0a1220;
+  --bg-3:        #0e192c;
+  --bg-4:        #132038;
+  --border:      #182a40;
+  --border-md:   #1f3852;
+  --border-hi:   #285070;
+  --cyan:        #3bc8e8;
+  --cyan-dim:    #1a4e60;
+  --cyan-glow:   rgba(59,200,232,0.09);
+  --amber:       #e8a840;
+  --amber-dim:   #7a4e14;
+  --amber-glow:  rgba(232,168,64,0.09);
+  --green:       #4cffa2;
+  --green-dim:   #1a5c3a;
+  --green-glow:  rgba(76,255,162,0.07);
+  --red:         #ff6060;
+  --red-dim:     #5c1c1c;
+  --steel:       #8eb3cc;
+  --steel-dim:   #2a4a60;
+  --steel-glow:  rgba(142,179,204,0.07);
+  --text:        #a8bfd4;
+  --text-dim:    #3a5270;
+  --text-bright: #d8eaf5;
+  --text-dimmer: #243548;
+  --serif:   'Instrument Serif', Georgia, serif;
+  --mono:    'Azeret Mono', 'Fira Code', monospace;
+  --sans:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --r: 3px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--border-hi) var(--bg)}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+body{
+  background:var(--bg);
+  background-image:
+    linear-gradient(rgba(24,42,64,0.4) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(24,42,64,0.4) 1px,transparent 1px);
+  background-size:32px 32px;
+  color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.65;overflow-x:hidden;
+}
+
+/* HERO */
+.hero{padding:64px 64px 48px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 100% at 90% 50%,rgba(59,200,232,0.05) 0%,transparent 70%),radial-gradient(ellipse 40% 80% at 10% 100%,rgba(232,168,64,0.04) 0%,transparent 60%);pointer-events:none}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:48px;max-width:1360px;margin:0 auto}
+.hero-tag{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);background:var(--amber-glow);border:1px solid var(--amber-dim);display:inline-block;padding:3px 10px;margin-bottom:18px}
+.hero-title{font-family:var(--serif);font-size:clamp(34px,4vw,58px);font-weight:400;color:var(--text-bright);line-height:1.08;margin-bottom:10px}
+.hero-title em{font-style:italic;color:var(--cyan)}
+.val-grid{display:grid;grid-template-columns:repeat(2,140px);gap:2px;flex-shrink:0}
+.val-box{background:var(--bg-2);border:1px solid var(--border);padding:16px 18px}
+.val-n{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;margin-bottom:4px}
+.val-l{font-family:var(--mono);font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em}
+.hero-meta{max-width:1360px;margin:24px auto 0;display:flex;gap:32px;font-family:var(--mono);font-size:10.5px;color:var(--text-dim)}
+.hero-meta span{color:var(--text)}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(3,6,9,0.93);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 64px}
+.nav-inner{max-width:1360px;margin:0 auto;display:flex}
+.nav a{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);text-decoration:none;padding:13px 18px;border-right:1px solid var(--border);display:flex;gap:7px;align-items:center;transition:color .2s,background .2s}
+.nav a:first-child{border-left:1px solid var(--border)}
+.nav a:hover,.nav a.active{color:var(--cyan);background:var(--cyan-glow)}
+.nav a.agent:hover{color:var(--amber);background:var(--amber-glow)}
+.nav a.desk:hover{color:var(--steel);background:var(--steel-glow)}
+.nav-n{font-size:9px;color:var(--text-dimmer)}
+
+/* MAIN */
+main{max-width:1360px;margin:0 auto;padding:0 64px 120px}
+section{padding-top:72px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+section:last-child{border-bottom:none}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:36px}
+.sec-num{font-family:var(--mono);font-size:10px;color:var(--text-dimmer);letter-spacing:.1em;flex-shrink:0}
+.sec-title{font-family:var(--serif);font-size:clamp(20px,2.5vw,30px);font-weight:400;color:var(--text-bright);line-height:1.15}
+.sec-title em{font-style:italic;color:var(--cyan)}
+.sec-desc{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:4px}
+
+/* STATUS BADGES */
+.st{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9.5px;padding:3px 9px;border-radius:2px;white-space:nowrap;font-weight:700}
+.st-done   {background:var(--green-glow);color:var(--green);border:1px solid var(--green-dim)}
+.st-partial{background:var(--amber-glow);color:var(--amber);border:1px solid var(--amber-dim)}
+.st-todo   {background:var(--bg-3);color:var(--text-dim);border:1px solid var(--border)}
+.st-new    {background:var(--steel-glow);color:var(--steel);border:1px solid var(--steel-dim)}
+.st-block  {background:rgba(255,96,96,0.07);color:var(--red);border:1px solid var(--red-dim)}
+
+/* DELTA TABLE */
+.delta-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+.delta-table th{padding:10px 14px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid var(--border);background:var(--bg-2);color:var(--text-dim)}
+.delta-table td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+.delta-table tr:last-child td{border-bottom:none}
+.delta-table tr:hover td{background:rgba(255,255,255,0.012)}
+.td-id{font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap;border-right:1px solid var(--border);background:var(--bg-2);width:44px;text-align:center}
+.td-name{color:var(--text);background:var(--bg-1)}
+.td-done{color:var(--text-dim);font-size:10.5px;background:rgba(76,255,162,0.03)}
+.td-gap{color:var(--text-dim);font-size:10.5px;background:rgba(255,96,96,0.03)}
+.td-status{width:110px;text-align:center}
+/* done row tint */
+.done-row td{background:rgba(76,255,162,0.025) !important}
+.done-row td.td-id{background:rgba(76,255,162,0.05) !important}
+
+/* INFO BOX */
+.info-box{background:var(--bg-2);border:1px solid var(--border);padding:18px;margin-top:14px}
+.info-title{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:12px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.info-cell{background:var(--bg-3);border:1px solid var(--border);padding:14px}
+.ic-label{font-family:var(--mono);font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.ic-body{font-family:var(--mono);font-size:11.5px;color:var(--text);line-height:1.55}
+
+/* FEATURE CARDS */
+.spec-card{border:1px solid var(--border);margin-bottom:2px;overflow:hidden;transition:border-color .2s}
+.spec-card:hover{border-color:var(--border-md)}
+.spec-card.p1{border-left:3px solid var(--red)}
+.spec-card.p2{border-left:3px solid var(--amber)}
+.spec-card.p3{border-left:3px solid var(--cyan)}
+.spec-card.desktop{border-left:3px solid var(--steel)}
+/* done overlay */
+.spec-card.is-done{border-left-color:var(--green);opacity:.75}
+.spec-card.is-done .spec-header{background:rgba(76,255,162,0.03)}
+.spec-card.is-partial{border-left-color:var(--amber)}
+
+.spec-header{display:grid;grid-template-columns:52px 1fr auto;background:var(--bg-2);border-bottom:1px solid var(--border)}
+.spec-id{display:flex;align-items:center;justify-content:center;border-right:1px solid var(--border);font-family:var(--mono);font-weight:700;font-size:14px;color:var(--text-dimmer);padding:16px 0}
+.spec-title-area{padding:14px 18px}
+.spec-name{font-family:var(--serif);font-size:17px;color:var(--text-bright);margin-bottom:6px}
+.spec-name em{font-style:italic;color:var(--cyan)}
+.spec-tags{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.stag{font-family:var(--mono);font-size:9.5px;padding:2px 7px;border-radius:2px}
+.stag.r{background:rgba(255,96,96,0.07);color:var(--red);border:1px solid var(--red-dim)}
+.stag.a{background:var(--amber-glow);color:var(--amber);border:1px solid var(--amber-dim)}
+.stag.c{background:var(--cyan-glow);color:var(--cyan);border:1px solid var(--cyan-dim)}
+.stag.g{background:var(--green-glow);color:var(--green);border:1px solid var(--green-dim)}
+.stag.s{background:var(--steel-glow);color:var(--steel);border:1px solid var(--steel-dim)}
+
+.spec-meta-col{display:flex;flex-direction:column;border-left:1px solid var(--border);min-width:140px}
+.spec-meta-item{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:1px}
+.spec-meta-item:last-child{border-bottom:none}
+.sm-label{font-family:var(--mono);font-size:9px;color:var(--text-dimmer);text-transform:uppercase;letter-spacing:.06em}
+.sm-val{font-family:var(--mono);font-size:10.5px;font-weight:700}
+.sm-h{color:var(--red)}.sm-m{color:var(--amber)}.sm-l{color:var(--green)}.sm-file{color:var(--text-dim);font-size:9.5px;font-weight:400}
+
+.spec-body{display:grid;grid-template-columns:1fr 1fr}
+.spec-panel{padding:18px 20px;border-right:1px solid var(--border)}
+.spec-panel:last-child{border-right:none}
+.sp-label{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:10px}
+.sp-text{font-size:12.5px;color:var(--text);line-height:1.6}
+
+/* CODE */
+.code-block{background:var(--bg);border:1px solid var(--border-md);border-radius:var(--r);padding:12px 14px;font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--text);overflow-x:auto;margin-top:10px}
+.code-block .kw{color:var(--cyan)}
+.code-block .fn{color:var(--amber)}
+.code-block .str{color:var(--green)}
+.code-block .cmt{color:var(--text-dimmer);font-style:italic}
+.code-block .hdr{color:var(--text-dim)}
+.code-block .add{color:var(--green)}
+.code-block .del{color:var(--red);opacity:.7}
+.inline-file{font-family:var(--mono);font-size:10px;color:var(--amber);background:var(--amber-glow);border:1px solid var(--amber-dim);padding:1px 6px;border-radius:2px}
+.inline-fn{font-family:var(--mono);font-size:10px;color:var(--cyan);background:var(--cyan-glow);border:1px solid var(--cyan-dim);padding:1px 6px;border-radius:2px}
+
+/* DONE BANNER */
+.done-banner{background:rgba(76,255,162,0.06);border:1px solid var(--green-dim);padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:2px}
+.db-label{font-family:var(--mono);font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:.1em}
+.db-body{font-family:var(--mono);font-size:11.5px;color:var(--text);line-height:1.5}
+
+/* EXTRAS TABLE */
+.extras-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.extra-item{background:var(--bg-2);border:1px solid var(--border);padding:12px 16px;display:flex;align-items:flex-start;gap:10px}
+.ei-icon{font-size:9px;color:var(--green);flex-shrink:0;padding-top:2px}
+.ei-body{font-family:var(--mono);font-size:11px;color:var(--text);line-height:1.5}
+.ei-sub{font-size:10px;color:var(--text-dim);margin-top:2px}
+
+/* CRITICAL PATH */
+.crit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin-bottom:2px}
+.crit-phase{background:var(--bg-2);border:1px solid var(--border);padding:20px}
+.crit-phase.ph1{border-top:2px solid var(--red)}
+.crit-phase.ph2{border-top:2px solid var(--amber)}
+.crit-phase.ph3{border-top:2px solid var(--cyan)}
+.crit-phase.ph4{border-top:2px solid var(--steel)}
+.ph-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.ph1 .ph-label{color:var(--red)}.ph2 .ph-label{color:var(--amber)}.ph3 .ph-label{color:var(--cyan)}.ph4 .ph-label{color:var(--steel)}
+.ph-title{font-family:var(--serif);font-size:17px;color:var(--text-bright);margin-bottom:4px}
+.ph-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:14px}
+.ph-item{display:flex;align-items:flex-start;gap:9px;font-family:var(--mono);font-size:11px;color:var(--text);padding:7px 0;border-bottom:1px solid var(--bg-4)}
+.ph-item:last-child{border-bottom:none}
+.ph-item.done{opacity:.45}
+.ph-fid{font-size:9.5px;color:var(--text-dimmer);width:22px;flex-shrink:0;padding-top:1px}
+.ph-dep{font-size:10px;color:var(--text-dim);margin-top:1px}
+
+.subsec{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--text-dim);margin:32px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.subsec::before{content:'';width:20px;height:1px;background:var(--border-hi)}
+
+footer{border-top:1px solid var(--border);padding:28px 64px;max-width:1360px;margin:0 auto;display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--text-dim)}
+footer span{color:var(--text)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-top">
+    <div>
+      <div class="hero-tag">Spec v1.1 · Actualizado con pushmemory.md · 2026-06-07</div>
+      <h1 class="hero-title">Memory Spec<br><em>Estado Real</em></h1>
+      <p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:8px;">Contrastado contra trabajo real del equipo — solo sumar, nunca pisar</p>
+      <div class="hero-meta">
+        <div>Spec original <span>flux-agent-memory-spec.html v1.0</span></div>
+        <div>Partner work <span>pushmemory.md · commits 4a8a37…8d4bbc…93a272</span></div>
+        <div>Fecha <span>2026-06-07</span></div>
+      </div>
+    </div>
+    <div class="val-grid">
+      <div class="val-box"><div class="val-n" style="color:var(--green)">10</div><div class="val-l">implementado</div></div>
+      <div class="val-box"><div class="val-n" style="color:var(--amber)">1</div><div class="val-l">parcial (F8)</div></div>
+      <div class="val-box"><div class="val-n" style="color:var(--text-dimmer)">1</div><div class="val-l">deferred (F5)</div></div>
+      <div class="val-box"><div class="val-n" style="color:var(--cyan)">3</div><div class="val-l">extras bonus</div></div>
+    </div>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#delta" class="active"><span class="nav-n">00</span> Delta Analysis</a>
+    <a href="#done"><span class="nav-n">01</span> Ya hecho</a>
+    <a href="#agent" class="agent"><span class="nav-n">02</span> Agent TODO</a>
+    <a href="#desktop" class="desk"><span class="nav-n">03</span> Desktop TODO</a>
+    <a href="#path"><span class="nav-n">04</span> Critical Path</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- S0: DELTA ANALYSIS -->
+<section id="delta">
+  <div class="sec-head">
+    <span class="sec-num">00</span>
+    <div>
+      <h2 class="sec-title">Delta <em>Analysis</em></h2>
+      <p class="sec-desc">Spec v1.0 vs. pushmemory.md — qué ya existe, qué falta, qué cambió</p>
+    </div>
+  </div>
+
+  <!-- KEY DISCOVERIES -->
+  <div class="info-box" style="border-color:var(--green-dim);background:rgba(76,255,162,0.04);margin-bottom:16px">
+    <div class="info-title" style="color:var(--green)">✅ Hallazgo crítico resuelto — DB path</div>
+    <div class="info-grid">
+      <div class="info-cell" style="background:rgba(76,255,162,0.04);border-color:var(--green-dim)">
+        <div class="ic-label" style="color:var(--green)">Spec v1.0 decía</div>
+        <div class="ic-body">⚠ Integration point: "verificar si el agent usa state.db compartido o native_memory.db separado antes de D1/D2"</div>
+      </div>
+      <div class="info-cell" style="background:rgba(76,255,162,0.06);border-color:var(--green-dim)">
+        <div class="ic-label" style="color:var(--green)">pushmemory.md resuelve</div>
+        <div class="ic-body"><strong style="color:var(--green)">Todo usa state.db.</strong> Desktop crea memory_chunks en state.db via <code style="font-family:var(--mono);font-size:10.5px">ensureNativeMemoryTables()</code>. Agent escribe a la misma DB. D1/D2 usan <code style="font-family:var(--mono);font-size:10.5px">activeStateDbPath()</code>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box" style="border-color:var(--amber-dim);margin-bottom:16px">
+    <div class="info-title" style="color:var(--amber)">⚠ Hallazgo nuevo — Schema mismatch a coordinar</div>
+    <div class="ic-body" style="font-family:var(--mono);font-size:11.5px;line-height:1.6">
+      Desktop crea <code>memory_chunks</code> en state.db SIN <code>topic_key</code>, <code>deleted_at</code>, <code>revision_count</code> (confirmado en <code>ensureNativeMemoryTables():106</code>). Cuando implementemos <strong>F3</strong>, hay que actualizar <strong>también</strong> <code>ensureNativeMemoryTables()</code> en memory.ts para que instalaciones nuevas tengan el schema completo desde el inicio. Las DBs existentes las migra el agent via <code>_run_migration()</code>.
+    </div>
+  </div>
+
+  <!-- MASTER TABLE -->
+  <table class="delta-table">
+    <thead>
+      <tr>
+        <th class="td-id" style="text-align:center">ID</th>
+        <th>Feature</th>
+        <th>Lo que hizo el partner</th>
+        <th style="width:120px;text-align:center">Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- AGENT -->
+      <tr><td colspan="4" style="padding:8px 14px;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-dimmer);background:var(--bg-3)">AGENT TRACK — omniworker-agent/agent/native_memory.py</td></tr>
+
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--amber)">F8</td>
+        <td class="td-name">Adaptive Context Budget</td>
+        <td class="td-done">PARTIAL deliberado. Budget subido a <strong style="color:var(--green)">4000 tokens / 20 chunks</strong> (líneas 80-81). El platform-aware completo (CLI/gateway/cron) se omite: tocaría el pipeline run_agent.py sin beneficio pedido (regla "no sumar complejidad innecesaria").</td>
+        <td class="td-status"><span class="st st-partial">⚡ PARTIAL (intencional)</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">F3</td>
+        <td class="td-name">Topic-key Upsert + Soft-delete</td>
+        <td class="td-done">IMPLEMENTADO. Schema nuevo + _run_migration() (ALTER idempotente) en native_memory.py + ensureNativeMemoryTables() en memory.ts. index() hace upsert por topic_key, search() filtra deleted_at, recall_by_topic()/soft_delete() agregados. 5/5 checks + 65 tests verdes.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">F2</td>
+        <td class="td-name">Explicit Memory Tools</td>
+        <td class="td-done">IMPLEMENTADO. get_tool_schemas() expone memory_save / memory_search / memory_recall (formato real {name,description,parameters}). handle_tool_call() rutea las 3 vía tool_result/tool_error. NativeMemory.save_explicit()/search_explicit()/recall_topic(). 6/6 checks verdes.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">F1</td>
+        <td class="td-name">Proactive Memory Protocol</td>
+        <td class="td-done">IMPLEMENTADO. system_prompt_block() inyecta _MEMORY_PROTOCOL siempre (triggers de save, topic_key, scope, self-check). Workspace state se mantiene como bloque opcional.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">F4</td>
+        <td class="td-name">Session Summary</td>
+        <td class="td-done">IMPLEMENTADO. on_session_end() override en NativeMemoryProvider — arma summary (files_edited, decisions, last_task, msg_count) desde workspace state y lo guarda como chunk session_summary con topic_key estable. Skippea sesiones vacías. Verificado.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--text-dimmer)">F5</td>
+        <td class="td-name" style="color:var(--text-dim)">Graphify Corpus Search</td>
+        <td class="td-gap" style="color:var(--text-dim)">DEFERRED — graphify no está en el stack del agent. graphify-out/ es solo del repo de desarrollo. Sería no-op en todos los deployments reales.</td>
+        <td class="td-status"><span class="st" style="background:var(--bg-3);color:var(--text-dimmer);border:1px solid var(--border)">⏸ DEFERRED</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">F6</td>
+        <td class="td-name">Delegation Memory</td>
+        <td class="td-done">IMPLEMENTADO. on_delegation() override — guarda agent_type + task + result como chunk delegation_result con topic_key delegation/&lt;child_id&gt;. El orquestador puede recall delegaciones previas. Verificado.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">F7</td>
+        <td class="td-name">Memory Scope (project/personal)</td>
+        <td class="td-done">IMPLEMENTADO. BM25Layer.search() acepta scope opcional (default None = todos, additive — no toca el smart prefetch gate). Expuesto en search_explicit() y en la tool memory_search (param scope). 3/3 checks verdes.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+
+      <!-- EXTRAS NOT IN SPEC -->
+      <tr><td colspan="4" style="padding:8px 14px;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-dimmer);background:var(--bg-3)">EXTRAS DEL PARTNER — no estaban en el spec, ya implementados</td></tr>
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--green)">+</td>
+        <td class="td-name">Recency decay 7d → 30d + BM25 rebalance</td>
+        <td class="td-done">_W_BM25=0.40 (era 0.30), _W_RECENCY=0.25 (era 0.35), decay=720h (era 168h). Líneas 102-103 y 311.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--green)">+</td>
+        <td class="td-name">Smart Prefetch Gate</td>
+        <td class="td-done">_PREFETCH_MIN_QUERY_LEN=12 + _SKIP_PATTERNS. Skippea saludos, acks cortos. Ahorra ~50% tokens. Línea 82+850.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--green)">+</td>
+        <td class="td-name">sqlite-vec auto-install</td>
+        <td class="td-done">Lazy dep "memory.sqlite_vec" en tools/lazy_deps.py. _get_sqlite_vec() auto-instala si no disponible.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+
+      <!-- DESKTOP -->
+      <tr><td colspan="4" style="padding:8px 14px;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-dimmer);background:var(--bg-3)">DESKTOP TRACK — omniworker-desktop/src/main/memory.ts</td></tr>
+
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--green)">D1</td>
+        <td class="td-name">searchObservations → agent SQLite</td>
+        <td class="td-done">Implementado completo (línea 506). FTS5 + LIKE fallback + memory_facts lookup. Usa state.db compartido.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--green)">D1+</td>
+        <td class="td-name">getTimeline() implementado</td>
+        <td class="td-done">Real (línea 619). Contexto antes/después de un chunk ID. No estaba en el spec original.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">D2</td>
+        <td class="td-name">Session Summary Panel</td>
+        <td class="td-done">WIRED END-TO-END. getSessionSummaries() (memory.ts) → IPC get-session-summaries (index.ts) → preload → panel "Recent Sessions" en Memory.tsx (session_id, last_task, files/decisions/msgs + timeAgo). tsc verde.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">D3</td>
+        <td class="td-name">Memory Entry Type Tags</td>
+        <td class="td-done">WIRED END-TO-END. parse/serialize del prefix [type] (memory.ts) + MemoryEntry.type en renderer + badge dinámico en Memory.tsx (antes hardcodeado "FACT"). Backward compatible. tsc verde.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr>
+        <td class="td-id" style="color:var(--green)">D4</td>
+        <td class="td-name">Real Provider Discovery</td>
+        <td class="td-done">WIRED END-TO-END. discoverMemoryProviders() reutiliza getActiveMemoryProvider() (config.yaml) → consumido en Memory.tsx con panel "Active Backend" (offline_fts local + externo). Sin import circular. tsc verde.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <!-- DESKTOP EXTRAS -->
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--green)">+</td>
+        <td class="td-name">MEMORY_CHAR_LIMIT 2200 → 50K · USER 1375 → 10K</td>
+        <td class="td-done">Líneas 6-7. Límites realistas para memoria real.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--green)">+</td>
+        <td class="td-name">addMemoryEntry() → escribe a FTS5</td>
+        <td class="td-done">Línea 398+423. Escribe en MEMORY.md Y memory_chunks/FTS5 simultáneamente. Bridge real.</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+      <tr class="done-row">
+        <td class="td-id" style="color:var(--green)">+</td>
+        <td class="td-name">ensureNativeMemoryTables()</td>
+        <td class="td-done">Línea 106. Crea memory_chunks + FTS5 + triggers + memory_facts en state.db. Sin topic_key/deleted_at (ver ⚠ arriba).</td>
+        <td class="td-status"><span class="st st-done">✅ DONE</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- S1: YA HECHO -->
+<section id="done">
+  <div class="sec-head">
+    <span class="sec-num">01</span>
+    <div>
+      <h2 class="sec-title">Ya <em>Hecho</em> — no tocar</h2>
+      <p class="sec-desc">Lo que el partner implementó y está funcionando en v0.6.6 — preservar intacto</p>
+    </div>
+  </div>
+
+  <div class="subsec">Agent — native_memory.py</div>
+  <div class="extras-grid">
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">BM25 rebalancing + recency 30 días</div>
+        <div class="ei-sub">_W_BM25=0.40 · _W_RECENCY=0.25 · decay=720h (líneas 102-103, 311)</div>
+      </div>
+    </div>
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">Smart Prefetch Gate</div>
+        <div class="ei-sub">Skip saludos/acks cortos · ~50% ahorro tokens (líneas 82, 850-870)</div>
+      </div>
+    </div>
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">Límites aumentados</div>
+        <div class="ei-sub">4000 tokens · 20 chunks (líneas 80-81)</div>
+      </div>
+    </div>
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">sqlite-vec auto-install</div>
+        <div class="ei-sub">lazy_deps.py "memory.sqlite_vec" · _get_sqlite_vec() auto-instala</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="subsec">Desktop — memory.ts</div>
+  <div class="extras-grid">
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">searchObservations() — real FTS5 + fallback + facts</div>
+        <div class="ei-sub">memory.ts:506 · usa state.db compartido · D1 del spec ✓</div>
+      </div>
+    </div>
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">getTimeline() — contexto antes/después de un chunk</div>
+        <div class="ei-sub">memory.ts:619 · no estaba en el spec</div>
+      </div>
+    </div>
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">Char limits 50K / 10K</div>
+        <div class="ei-sub">memory.ts:6-7 · era 2200/1375</div>
+      </div>
+    </div>
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">addMemoryEntry() → FTS5 + MEMORY.md simultáneo</div>
+        <div class="ei-sub">memory.ts:398 · bridge real Desktop ↔ Agent</div>
+      </div>
+    </div>
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">ensureNativeMemoryTables() — crea schema en state.db</div>
+        <div class="ei-sub">memory.ts:106 · ⚠ sin topic_key/deleted_at — coordinar con F3</div>
+      </div>
+    </div>
+    <div class="extra-item">
+      <div class="ei-icon">✅</div>
+      <div>
+        <div class="ei-body">Memory.tsx — chunks + facts en stats UI</div>
+        <div class="ei-sub">Grid 2x2 · muestra conteos reales de memoria</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S2: AGENT TODO -->
+<section id="agent">
+  <div class="sec-head">
+    <span class="sec-num">02</span>
+    <div>
+      <h2 class="sec-title" style="color:var(--text-bright)">Agent <em>TODO</em> — F3 → F2 → F1 → F4/F5/F6</h2>
+      <p class="sec-desc">native_memory.py — features pendientes, ordenadas por dependencia</p>
+    </div>
+  </div>
+
+  <div class="info-box" style="border-color:var(--red-dim);background:rgba(255,96,96,0.04);margin-bottom:14px">
+    <div class="info-title" style="color:var(--red)">F3 es el bloqueante — implementar primero · también actualizar ensureNativeMemoryTables() en memory.ts</div>
+    <div class="ic-body" style="font-family:var(--mono);font-size:11.5px;line-height:1.55">F3 agrega topic_key, deleted_at, revision_count, scope. Sin esto, F2 no puede hacer upsert y F1 no tiene sentido. Además, <strong>coordinar con Desktop</strong>: actualizar <code>ensureNativeMemoryTables()</code> en memory.ts para que las instalaciones nuevas incluyan las columnas desde el inicio. Las DBs existentes las migra el agent vía _run_migration().</div>
+  </div>
+
+  <!-- F3 -->
+  <div class="spec-card p1">
+    <div class="spec-header">
+      <div class="spec-id" style="color:var(--red)">F3</div>
+      <div class="spec-title-area">
+        <div class="spec-name">Topic-key <em>Upsert</em> + Soft-delete Schema</div>
+        <div class="spec-tags">
+          <span class="stag r">P1 · BLOCKER</span>
+          <span class="stag a">native_memory.py:218</span>
+          <span class="stag a">memory.ts:108 también</span>
+          <span class="st st-todo">◯ TODO</span>
+        </div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Agent</span><span class="sm-val sm-file">native_memory.py:218<br>BM25Layer._ensure_tables()</span></div>
+        <div class="spec-meta-item"><span class="sm-label">Desktop</span><span class="sm-val sm-file">memory.ts:108<br>ensureNativeMemoryTables()</span></div>
+        <div class="spec-meta-item"><span class="sm-label">Bloquea</span><span class="sm-val sm-file">F1, F2, F4, F6, F7, D2</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">Agent — _run_migration() en native_memory.py:218</div>
+        <div class="code-block">
+<span class="hdr"># native_memory.py — agregar _run_migration() + llamarlo en BM25Layer.__init__</span>
+<span class="kw">def</span> <span class="fn">_run_migration</span>(<span class="kw">self</span>) -> <span class="kw">None</span>:
+    alters = [
+        <span class="str">"ALTER TABLE memory_chunks ADD COLUMN topic_key TEXT"</span>,
+        <span class="str">"ALTER TABLE memory_chunks ADD COLUMN revision_count INTEGER DEFAULT 1"</span>,
+        <span class="str">"ALTER TABLE memory_chunks ADD COLUMN deleted_at REAL"</span>,
+        <span class="str">"ALTER TABLE memory_chunks ADD COLUMN scope TEXT DEFAULT 'project'"</span>,
+    ]
+    <span class="kw">for</span> sql <span class="kw">in</span> alters:
+        <span class="kw">try</span>: <span class="kw">self</span>._conn.execute(sql)
+        <span class="kw">except</span>: <span class="kw">pass</span>  <span class="cmt"># columna ya existe — ok</span>
+    <span class="kw">self</span>._conn.execute(<span class="str">"""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_memory_topic
+        ON memory_chunks(topic_key)
+        WHERE topic_key IS NOT NULL"""</span>)
+
+<span class="hdr"># BM25Layer.index() — agregar upsert si topic_key</span>
+<span class="kw">def</span> <span class="fn">index</span>(<span class="kw">self</span>, chunk, topic_key=<span class="kw">None</span>):
+    <span class="kw">if</span> topic_key:
+        row = <span class="kw">self</span>._conn.execute(
+            <span class="str">"SELECT id FROM memory_chunks WHERE topic_key=?"</span>,
+            (topic_key,)).fetchone()
+        <span class="kw">if</span> row:
+            <span class="kw">self</span>._conn.execute(<span class="str">"""
+              UPDATE memory_chunks SET content=?,
+                chunk_type=?, revision_count=revision_count+1,
+                created_at=? WHERE topic_key=?"""</span>,
+              (chunk.content, chunk.chunk_type,
+               chunk.created_at, topic_key))
+            <span class="kw">self</span>._conn.execute(
+                <span class="str">"UPDATE memory_chunks_fts SET content=? WHERE rowid=?"</span>,
+                (chunk.content, row[0]))
+            <span class="kw">return</span>
+    <span class="cmt"># INSERT normal si no hay topic_key o es nuevo</span>
+    ...  <span class="cmt"># INSERT existente + agregar topic_key, scope</span>
+
+<span class="hdr"># BM25Layer.search() — agregar WHERE deleted_at IS NULL</span>
+<span class="add">+ AND c.deleted_at IS NULL</span></div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">Desktop — actualizar ensureNativeMemoryTables() en memory.ts:108</div>
+        <div class="code-block">
+<span class="hdr">// memory.ts:108 — ensureNativeMemoryTables()</span>
+<span class="hdr">// Agregar columnas nuevas al CREATE TABLE</span>
+<span class="del">-   id INTEGER PRIMARY KEY,
+-   session_id TEXT NOT NULL DEFAULT '',
+-   turn_id INTEGER NOT NULL DEFAULT 0,
+-   chunk_type TEXT NOT NULL DEFAULT 'manual',
+-   content TEXT NOT NULL,
+-   metadata TEXT,
+-   created_at REAL NOT NULL</span>
+<span class="add">+   id INTEGER PRIMARY KEY,
++   session_id TEXT NOT NULL DEFAULT '',
++   turn_id INTEGER NOT NULL DEFAULT 0,
++   chunk_type TEXT NOT NULL DEFAULT 'manual',
++   content TEXT NOT NULL,
++   metadata TEXT,
++   created_at REAL NOT NULL,
++   topic_key TEXT,
++   revision_count INTEGER DEFAULT 1,
++   deleted_at REAL,
++   scope TEXT DEFAULT 'project'</span>
+
+<span class="hdr">// Y agregar el índice único para topic_key:</span>
+<span class="add">+ db.exec(`
++   CREATE UNIQUE INDEX IF NOT EXISTS idx_memory_topic
++   ON memory_chunks(topic_key)
++   WHERE topic_key IS NOT NULL;
++ `);</span>
+
+<span class="cmt">// DBs existentes: el agent corre _run_migration()
+// que agrega las columnas vía ALTER TABLE — compatible</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F2 -->
+  <div class="spec-card p1">
+    <div class="spec-header">
+      <div class="spec-id" style="color:var(--red)">F2</div>
+      <div class="spec-title-area">
+        <div class="spec-name">Explicit <em>Memory Tools</em> — save · search · recall</div>
+        <div class="spec-tags">
+          <span class="stag r">P1 · Después de F3</span>
+          <span class="stag a">native_memory.py:1025</span>
+          <span class="stag c">get_tool_schemas() → return []</span>
+          <span class="st st-todo">◯ TODO</span>
+        </div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Línea exacta</span><span class="sm-val sm-file">native_memory.py:1025<br><code style="color:var(--red)">return []</code></span></div>
+        <div class="spec-meta-item"><span class="sm-label">Requiere</span><span class="sm-val sm-file">F3 (upsert)</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">Cambio exacto en línea 1025</div>
+        <div class="code-block">
+<span class="hdr"># native_memory.py:1025 — NativeMemoryProvider.get_tool_schemas()</span>
+<span class="del">-   # NativeMemory does not expose tools to the model — it works silently.
+-   return []</span>
+<span class="add">+   return [
++     {"name": "memory_save",
++      "description": "Persist a decision, bug fix, convention or preference.",
++      "input_schema": {"type": "object",
++        "properties": {
++          "content": {"type": "string"},
++          "type": {"type": "string",
++            "enum": ["decision","bugfix","convention",
++                     "preference","session_summary","delegation_result"]},
++          "topic_key": {"type": "string"},
++          "scope": {"type": "string",
++            "enum": ["project","personal"], "default": "project"}
++        },
++        "required": ["content","type"]}},
++     {"name": "memory_search",
++      "description": "Search persistent memory by query.",
++      "input_schema": {"type": "object",
++        "properties": {"query": {"type": "string"},
++                       "limit": {"type": "integer", "default": 5}},
++        "required": ["query"]}},
++     {"name": "memory_recall",
++      "description": "Get a memory by exact topic_key.",
++      "input_schema": {"type": "object",
++        "properties": {"topic_key": {"type": "string"}},
++        "required": ["topic_key"]}}
++   ]</span></div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">handle_tool_call() + _save_explicit() en NativeMemory</div>
+        <div class="code-block">
+<span class="hdr"># Agregar a NativeMemoryProvider:</span>
+<span class="kw">def</span> <span class="fn">handle_tool_call</span>(<span class="kw">self</span>, name, inputs):
+    <span class="kw">if</span> name == <span class="str">"memory_save"</span>:
+        <span class="kw">return self</span>._native._save_explicit(
+            content=inputs[<span class="str">"content"</span>],
+            chunk_type=inputs[<span class="str">"type"</span>],
+            topic_key=inputs.get(<span class="str">"topic_key"</span>),
+            scope=inputs.get(<span class="str">"scope"</span>,<span class="str">"project"</span>))
+    <span class="kw">elif</span> name == <span class="str">"memory_search"</span>:
+        chunks = <span class="kw">self</span>._native.bm25.search(
+            inputs[<span class="str">"query"</span>], k=inputs.get(<span class="str">"limit"</span>,5))
+        <span class="kw">return</span> [{<span class="str">"content"</span>:c.content,
+                   <span class="str">"type"</span>:c.chunk_type,
+                   <span class="str">"topic_key"</span>:c.metadata.get(<span class="str">"topic_key"</span>)}
+                  <span class="kw">for</span> c <span class="kw">in</span> chunks]
+    <span class="kw">elif</span> name == <span class="str">"memory_recall"</span>:
+        <span class="kw">return self</span>._native.bm25.recall_by_topic(
+            inputs[<span class="str">"topic_key"</span>])
+
+<span class="hdr"># Agregar a NativeMemory:</span>
+<span class="kw">def</span> <span class="fn">_save_explicit</span>(<span class="kw">self</span>, content, chunk_type,
+                      topic_key=<span class="kw">None</span>, scope=<span class="str">"project"</span>):
+    chunk = MemoryChunk(id=0, session_id=<span class="kw">self</span>._session_id,
+        turn_id=-1, chunk_type=chunk_type, content=content,
+        created_at=time.time(),
+        metadata={<span class="str">"scope"</span>:scope,<span class="str">"topic_key"</span>:topic_key})
+    <span class="kw">self</span>.bm25.index(chunk, topic_key=topic_key)
+    <span class="kw">return</span> {<span class="str">"saved"</span>:<span class="kw">True</span>, <span class="str">"topic_key"</span>:topic_key}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F1 -->
+  <div class="spec-card p1">
+    <div class="spec-header">
+      <div class="spec-id" style="color:var(--red)">F1</div>
+      <div class="spec-title-area">
+        <div class="spec-name">Proactive Memory <em>Protocol</em></div>
+        <div class="spec-tags">
+          <span class="stag r">P1 · Implementar después de F2</span>
+          <span class="stag a">native_memory.py:~960</span>
+          <span class="stag g">Solo prompt — sin schema change</span>
+          <span class="st st-todo">◯ TODO</span>
+        </div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Esfuerzo</span><span class="sm-val sm-l">Bajo</span></div>
+        <div class="spec-meta-item"><span class="sm-label">Requiere</span><span class="sm-val sm-file">F2 (tools activas)</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">Expandir system_prompt_block()</div>
+        <div class="code-block">
+<span class="hdr"># Agregar al final de NativeMemoryProvider.system_prompt_block()</span>
+PROTOCOL = <span class="str">"""
+## Memory Protocol — MANDATORY
+
+Call memory_save IMMEDIATELY after ANY of:
+- Decision made (architecture, tool choice, approach)
+- Bug fixed — include root cause
+- User preference expressed
+- Non-obvious discovery or gotcha
+
+Types:  decision · bugfix · convention · preference
+topic_key: slug estable para upsert. e.g. 'arch/db', 'pref/lang'
+  Mismo key → actualiza, no duplica.
+
+Self-check after EVERY task:
+  "¿Decidí algo? ¿Resolví algo no obvio?"
+  Si sí → memory_save ahora.
+"""</span></div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">Cuándo agregar</div>
+        <div class="sp-text">
+          Solo tiene sentido una vez que F2 esté activo — el protocolo le dice al agente que use <span class="inline-fn">memory_save</span>, que debe existir como tool. Orden: F3 → F2 → F1.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- F4 / F6 compact -->
+  <div class="subsec">F4, F5, F6 — hooks pendientes (requieren F3)</div>
+
+  <div class="spec-card p2">
+    <div class="spec-header">
+      <div class="spec-id" style="color:var(--amber)">F4</div>
+      <div class="spec-title-area">
+        <div class="spec-name">Session <em>Summary</em> — on_session_end()</div>
+        <div class="spec-tags"><span class="stag a">P2</span><span class="stag a">NativeMemoryProvider · memory_manager.py:528 ya despacha</span><span class="st st-todo">◯ TODO</span></div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Requiere</span><span class="sm-val sm-file">F3</span></div>
+        <div class="spec-meta-item"><span class="sm-label">Habilita</span><span class="sm-val sm-file">D2 completo</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">Implementar on_session_end()</div>
+        <div class="code-block">
+<span class="kw">def</span> <span class="fn">on_session_end</span>(<span class="kw">self</span>, messages):
+    ws = <span class="kw">self</span>._native.get_workspace_state()
+    summary = {
+        <span class="str">"files_edited"</span>: [f[<span class="str">"path"</span>] <span class="kw">for</span> f <span class="kw">in</span>
+                         ws.recently_edited_files[:5]],
+        <span class="str">"decisions"</span>:   [d[<span class="str">"content"</span>][:200] <span class="kw">for</span> d <span class="kw">in</span>
+                         ws.pending_decisions[:3]],
+        <span class="str">"last_task"</span>:    ws.last_task_summary[:300],
+        <span class="str">"msg_count"</span>:    len(messages),
+    }
+    <span class="kw">self</span>._native._save_explicit(
+        content=json.dumps(summary, ensure_ascii=<span class="kw">False</span>),
+        chunk_type=<span class="str">"session_summary"</span>,
+        topic_key=<span class="str">f"session/{self._session_id}/summary"</span>)</div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">No hay wiring nuevo</div>
+        <div class="sp-text">
+          <span class="inline-file">memory_manager.py:528</span> ya despacha <code style="font-family:var(--mono);font-size:10.5px">on_session_end</code> a todos los providers. Solo hay que implementar el método en NativeMemoryProvider.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec-card p2" style="opacity:.5;border-left-color:var(--text-dimmer)">
+    <div class="spec-header" style="background:var(--bg-3)">
+      <div class="spec-id" style="color:var(--text-dimmer)">F5</div>
+      <div class="spec-title-area">
+        <div class="spec-name" style="color:var(--text-dim)">Graphify <em>Corpus</em> Search en prefetch</div>
+        <div class="spec-tags"><span class="stag a">DEFERRED</span><span class="st st-block" style="background:var(--bg-3);color:var(--text-dimmer);border-color:var(--border)">⏸ OUT OF SCOPE</span></div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Motivo</span><span class="sm-val sm-file" style="color:var(--red);font-size:10px">graphify no está en el stack del agent. graphify-out/ existe solo en el repo de desarrollo, no en el runtime del usuario. Sería no-op en 100% de deployments reales.</span></div>
+        <div class="spec-meta-item"><span class="sm-label">Cuándo</span><span class="sm-val sm-file">Cuando graphify sea dependencia del agent</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">Nueva clase GraphifyLayer (lazy)</div>
+        <div class="code-block">
+<span class="kw">class</span> <span class="fn">GraphifyLayer</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>, cwd=<span class="kw">None</span>):
+        self._path = (cwd or Path.cwd()) / <span class="str">"graphify-out/graph.json"</span>
+        self._nodes = []; self._loaded = <span class="kw">False</span>
+
+    <span class="kw">def</span> <span class="fn">search</span>(<span class="kw">self</span>, query, k=6):
+        <span class="kw">if not self</span>._loaded:
+            self._loaded = <span class="kw">True</span>
+            <span class="kw">if self</span>._path.exists():
+                <span class="kw">try</span>: self._nodes = json.loads(
+                    self._path.read_text()).get(<span class="str">"nodes"</span>,[])
+                <span class="kw">except</span>: <span class="kw">pass</span>
+        <span class="kw">if not self</span>._nodes: <span class="kw">return</span> []
+        kws = set(query.lower().split())
+        scored = [(sum(1 <span class="kw">for</span> kw <span class="kw">in</span> kws
+                      <span class="kw">if</span> kw <span class="kw">in</span> n.get(<span class="str">"name"</span>,<span class="str">""</span>).lower()), n)
+                  <span class="kw">for</span> n <span class="kw">in self</span>._nodes]
+        <span class="kw">return</span> [n <span class="kw">for</span> s,n <span class="kw">in</span> sorted(scored,key=<span class="kw">lambda</span> x:-x[0])[:k] <span class="kw">if</span> s]</div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">Agregar a prefetch()</div>
+        <div class="code-block">
+<span class="hdr"># En NativeMemory.__init__:</span>
+self.graphify = GraphifyLayer()
+
+<span class="hdr"># En NativeMemory.prefetch() — agregar al final:</span>
+gf = self.graphify.search(query)
+<span class="kw">if</span> gf:
+    parts.append(<span class="str">"Known codebase concepts:\n"</span> +
+        <span class="str">"\n"</span>.join(<span class="str">f"  · {n['name']}"</span> <span class="kw">for</span> n <span class="kw">in</span> gf))</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec-card p2">
+    <div class="spec-header">
+      <div class="spec-id" style="color:var(--amber)">F6</div>
+      <div class="spec-title-area">
+        <div class="spec-name">Delegation <em>Memory</em> — on_delegation()</div>
+        <div class="spec-tags"><span class="stag a">P2 · Bajo esfuerzo</span><span class="stag a">memory_manager.py:649 ya despacha</span><span class="st st-todo">◯ TODO</span></div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Requiere</span><span class="sm-val sm-file">F3</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">Implementar on_delegation()</div>
+        <div class="code-block">
+<span class="kw">def</span> <span class="fn">on_delegation</span>(<span class="kw">self</span>, task, result, *,
+    child_session_id=<span class="str">""</span>, agent_type=<span class="str">"unknown"</span>, **kw):
+    content = (
+        <span class="str">f"Agent: {agent_type}\n"</span>
+        <span class="str">f"Task: {task[:400]}\n"</span>
+        <span class="str">f"Result: {result[:600]}"</span>)
+    tk = (<span class="str">f"delegation/{child_session_id[:8]}"</span>
+          <span class="kw">if</span> child_session_id <span class="kw">else None</span>)
+    <span class="kw">self</span>._native._save_explicit(
+        content=content,
+        chunk_type=<span class="str">"delegation_result"</span>,
+        topic_key=tk)</div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">Valor</div>
+        <div class="sp-text">El orquestador puede buscar en memoria antes de delegar: "¿qué worker usé para tareas similares?". Habilita aprendizaje real en el ejército de agentes. <span class="inline-file">memory_manager.py:649</span> ya despacha — solo implementar el método.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S3: DESKTOP TODO -->
+<section id="desktop">
+  <div class="sec-head">
+    <span class="sec-num">03</span>
+    <div>
+      <h2 class="sec-title" style="color:var(--text-bright)">Desktop <em>TODO</em> — D3, D4 + completar D2</h2>
+      <p class="sec-desc">D1 ya hecho por el partner · D3/D4 independientes · D2 completo necesita F4</p>
+    </div>
+  </div>
+
+  <!-- D2 complement -->
+  <div class="spec-card is-partial desktop">
+    <div class="spec-header">
+      <div class="spec-id" style="color:var(--amber)">D2</div>
+      <div class="spec-title-area">
+        <div class="spec-name steel">Session <em>Summary Panel</em> — completar cuando F4 esté listo</div>
+        <div class="spec-tags">
+          <span class="stag a">P2</span>
+          <span class="stag s">memory.ts — nueva función</span>
+          <span class="stag g">Requiere Agent F4 primero</span>
+          <span class="st st-partial">⚡ PARTIAL</span>
+        </div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Ya hecho</span><span class="sm-val sm-file">chunks + facts en stats UI</span></div>
+        <div class="spec-meta-item"><span class="sm-label">Falta</span><span class="sm-val sm-file">getSessionSummaries()<br>cuando F4 esté activo</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">getSessionSummaries() — agregar cuando F4 esté activo</div>
+        <div class="code-block">
+<span class="hdr">// memory.ts — agregar después de que F4 genere session_summary chunks</span>
+<span class="kw">export async function</span> <span class="fn">getSessionSummaries</span>(
+  limit = 10
+): <span class="kw">Promise</span>&lt;DesktopSessionSummary[]&gt; {
+  <span class="kw">const</span> dbPath = activeStateDbPath(); <span class="cmt">// ← state.db confirmado</span>
+  <span class="kw">if</span> (!existsSync(dbPath)) <span class="kw">return</span> [];
+  <span class="kw">const</span> db = <span class="kw">new</span> Database(dbPath, {readonly:<span class="kw">true</span>});
+  <span class="kw">const</span> rows = db.prepare(<span class="str">`
+    SELECT topic_key, content, created_at
+    FROM memory_chunks
+    WHERE chunk_type = 'session_summary'
+      AND deleted_at IS NULL
+    ORDER BY created_at DESC LIMIT ?`</span>
+  ).all(limit);
+  db.close();
+  <span class="kw">return</span> rows.map(r => ({
+    session_id: r.topic_key
+      ?.replace(<span class="str">"session/"</span>,<span class="str">""</span>).replace(<span class="str">"/summary"</span>,<span class="str">""</span>),
+    created_at: r.created_at,
+    ...JSON.parse(r.content),
+  }));
+}</div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">No implementar aún</div>
+        <div class="sp-text">
+          Sin F4 activo en el agent, no se generan chunks tipo <code style="font-family:var(--mono);font-size:10.5px">session_summary</code>. La función existiría pero retornaría siempre vacío.<br><br>
+          Implementar D2 completo <strong>inmediatamente después</strong> de que F4 esté funcionando en el agent. La función es pequeña y directa.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D3 -->
+  <div class="spec-card desktop">
+    <div class="spec-header">
+      <div class="spec-id" style="color:var(--steel)">D3</div>
+      <div class="spec-title-area">
+        <div class="spec-name steel">Memory Entry <em>Type Tags</em> — parseMemoryEntries()</div>
+        <div class="spec-tags">
+          <span class="stag a">P2</span>
+          <span class="stag s">memory.ts:68</span>
+          <span class="stag g">Independiente — sin dependencias</span>
+          <span class="st st-todo">◯ TODO</span>
+        </div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Archivo</span><span class="sm-val sm-file">memory.ts:68</span></div>
+        <div class="spec-meta-item"><span class="sm-label">Riesgo</span><span class="sm-val sm-l">Mínimo — backward compat</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">Cambio en parseMemoryEntries():68</div>
+        <div class="code-block">
+<span class="hdr">// memory.ts:68 — parseMemoryEntries()</span>
+<span class="kw">const</span> TYPE_PREFIX = /^\[([a-z_]+)\]\s*/;
+
+<span class="hdr">// Extender MemoryEntry interface:</span>
+<span class="kw">export interface</span> MemoryEntry {
+  index: <span class="kw">number</span>; content: <span class="kw">string</span>;
+<span class="add">+ type: string;  // 'decision'|'bugfix'|'note'|...</span>
+}
+
+<span class="kw">function</span> <span class="fn">parseMemoryEntries</span>(content: <span class="kw">string</span>) {
+  <span class="kw">return</span> content.split(<span class="str">"\n§\n"</span>).map((entry, index) => {
+    <span class="kw">const</span> t = entry.trim();
+    <span class="kw">const</span> m = TYPE_PREFIX.exec(t);
+    <span class="kw">return</span> {
+      index,
+      type: m?.[1] ?? <span class="str">"note"</span>,  <span class="cmt">// backward compat</span>
+<span class="add">+     content: t.replace(TYPE_PREFIX, ""),</span>
+<span class="del">-     content: t,</span>
+    };
+  }).filter(e => e.content.length > 0);
+}
+
+<span class="hdr">// serializeEntries() — preservar prefix al guardar</span>
+<span class="kw">function</span> <span class="fn">serializeEntries</span>(entries: MemoryEntry[]) {
+  <span class="kw">return</span> entries.map(e => {
+    <span class="kw">const</span> p = e.type !== <span class="str">"note"</span> ? <span class="str">`[${e.type}] `</span> : <span class="str">""</span>;
+    <span class="kw">return</span> p + e.content;
+  }).join(<span class="str">"\n§\n"</span>);
+}</div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">Backward compatible + habilita filtros en UI</div>
+        <div class="sp-text">
+          Entries existentes sin prefix → type="note". Una vez F1+F2 activos en el agent, las entries nuevas vendrán con <code style="font-family:var(--mono);font-size:10.5px">[decision] contenido</code>. Desktop las parsea automáticamente.<br><br>
+          La UI puede agregar tabs: <strong>Todas · Decisions · Bugfixes · Preferences</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D4 -->
+  <div class="spec-card desktop">
+    <div class="spec-header">
+      <div class="spec-id" style="color:var(--steel)">D4</div>
+      <div class="spec-title-area">
+        <div class="spec-name steel">Real Provider <em>Discovery</em> — leer config.yaml</div>
+        <div class="spec-tags">
+          <span class="stag a">P3</span>
+          <span class="stag s">memory.ts:733</span>
+          <span class="stag g">Independiente — 10 líneas de cambio</span>
+          <span class="st st-todo">◯ TODO</span>
+        </div>
+      </div>
+      <div class="spec-meta-col">
+        <div class="spec-meta-item"><span class="sm-label">Línea exacta</span><span class="sm-val sm-file">memory.ts:733<br>hardcoded ["offline_fts"]</span></div>
+      </div>
+    </div>
+    <div class="spec-body">
+      <div class="spec-panel">
+        <div class="sp-label">Reemplazar hardcode en línea 733</div>
+        <div class="code-block">
+<span class="hdr">// memory.ts:733 — discoverMemoryProviders()</span>
+<span class="kw">export function</span> <span class="fn">discoverMemoryProviders</span>(
+  profile?: <span class="kw">string</span>
+): <span class="kw">string</span>[] {
+  <span class="kw">const</span> { configFile } = profilePaths(profile);
+  <span class="kw">try</span> {
+    <span class="kw">const</span> content = readFileSync(configFile, <span class="str">"utf-8"</span>);
+    <span class="kw">const</span> m = /memory:\s*\n(?:\s+\S[^\n]*\n)*?\s+provider:\s*(\S+)/m
+      .exec(content);
+    <span class="kw">return</span> [m?.[1] ?? <span class="str">"offline_fts"</span>];
+  } <span class="kw">catch</span> {
+    <span class="kw">return</span> [<span class="str">"offline_fts"</span>]; <span class="cmt">// fallback</span>
+  }
+}</div>
+      </div>
+      <div class="spec-panel">
+        <div class="sp-label">Valor inmediato</div>
+        <div class="sp-text">
+          Con el stub actual, la UI siempre muestra "offline_fts" aunque el usuario tenga Honcho, Mem0 u otro provider activo en config.yaml. Con D4, el panel refleja el estado real del agent y puede mostrar controles específicos por provider.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S4: CRITICAL PATH ACTUALIZADO -->
+<section id="path">
+  <div class="sec-head">
+    <span class="sec-num">04</span>
+    <div>
+      <h2 class="sec-title">Critical Path <em>Actualizado</em></h2>
+      <p class="sec-desc">Con lo que ya está hecho — solo lo que falta, en orden</p>
+    </div>
+  </div>
+
+  <div class="crit-grid">
+    <div class="crit-phase ph1">
+      <div class="ph-label">Fase 1 — Agent schema (primero)</div>
+      <div class="ph-title">Foundation</div>
+      <div class="ph-sub">F3 bloquea F2, F1, F4, F6. Coordinar Desktop también.</div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--red)">F3</div>
+        <div>
+          <div>Topic-key Upsert + Soft-delete</div>
+          <div class="ph-dep">→ native_memory.py:218 + memory.ts:108</div>
+        </div>
+      </div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--red)">F2</div>
+        <div>
+          <div>Explicit Memory Tools</div>
+          <div class="ph-dep">→ native_memory.py:1025 — return [] → 3 tools</div>
+        </div>
+      </div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--red)">F1</div>
+        <div>
+          <div>Proactive Memory Protocol</div>
+          <div class="ph-dep">→ system_prompt_block() — solo prompt</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="crit-phase ph2">
+      <div class="ph-label">Fase 2 — Agent hooks + Desktop independientes</div>
+      <div class="ph-title">Persistent Intelligence</div>
+      <div class="ph-sub">F4/F6 post-F3. D3/D4 en paralelo (independientes).</div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--amber)">F4</div>
+        <div>
+          <div>Session Summary (on_session_end)</div>
+          <div class="ph-dep">→ requiere F3 · habilita D2</div>
+        </div>
+      </div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--amber)">F6</div>
+        <div>
+          <div>Delegation Memory (on_delegation)</div>
+          <div class="ph-dep">→ requiere F3</div>
+        </div>
+      </div>
+      <div class="ph-item" style="opacity:.35">
+        <div class="ph-fid" style="color:var(--text-dimmer)">F5</div>
+        <div>
+          <div style="color:var(--text-dim)">Graphify Corpus Search</div>
+          <div class="ph-dep">⏸ DEFERRED — graphify no está en el stack</div>
+        </div>
+      </div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--steel)">D3</div>
+        <div>
+          <div>Memory Entry Type Tags</div>
+          <div class="ph-dep">→ independiente del agent</div>
+        </div>
+      </div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--steel)">D4</div>
+        <div>
+          <div>Real Provider Discovery</div>
+          <div class="ph-dep">→ independiente del agent</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="crit-grid" style="margin-top:2px">
+    <div class="crit-phase ph3">
+      <div class="ph-label">Fase 3 — Desktop completar</div>
+      <div class="ph-title">Desktop Complete</div>
+      <div class="ph-sub">Solo D2 — cuando F4 esté en producción</div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--steel)">D2</div>
+        <div>
+          <div>Session Summary Panel</div>
+          <div class="ph-dep">→ requiere F4 activo · getSessionSummaries()</div>
+        </div>
+      </div>
+    </div>
+    <div class="crit-phase ph4">
+      <div class="ph-label">Fase 4 — Refinamiento (cuando todo lo anterior esté activo)</div>
+      <div class="ph-title">Adaptive Context</div>
+      <div class="ph-sub">F7/F8 — scope y budget adaptivo</div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--cyan)">F7</div>
+        <div>
+          <div>Memory Scope (project/personal)</div>
+          <div class="ph-dep">→ scope column ya migrada en F3</div>
+        </div>
+      </div>
+      <div class="ph-item">
+        <div class="ph-fid" style="color:var(--cyan)">F8</div>
+        <div>
+          <div>Adaptive Context Budget por plataforma</div>
+          <div class="ph-dep">→ 4000 tokens (F8 partial ya hecho) → platform-aware</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- YA HECHO summary -->
+  <div class="subsec">Ya hecho por el partner — no tocar</div>
+  <div class="extras-grid">
+    <div class="extra-item done-row" style="background:rgba(76,255,162,0.025)">
+      <div class="ei-icon" style="color:var(--green)">✅</div>
+      <div><div class="ei-body">BM25 rebalance + decay 30d</div><div class="ei-sub">native_memory.py:102-103, 311</div></div>
+    </div>
+    <div class="extra-item done-row" style="background:rgba(76,255,162,0.025)">
+      <div class="ei-icon" style="color:var(--green)">✅</div>
+      <div><div class="ei-body">Smart Prefetch Gate</div><div class="ei-sub">native_memory.py:82, 850</div></div>
+    </div>
+    <div class="extra-item done-row" style="background:rgba(76,255,162,0.025)">
+      <div class="ei-icon" style="color:var(--green)">✅</div>
+      <div><div class="ei-body">Tokens 4K · Chunks 20 (F8 partial)</div><div class="ei-sub">native_memory.py:80-81</div></div>
+    </div>
+    <div class="extra-item done-row" style="background:rgba(76,255,162,0.025)">
+      <div class="ei-icon" style="color:var(--green)">✅</div>
+      <div><div class="ei-body">sqlite-vec auto-install</div><div class="ei-sub">lazy_deps.py + native_memory.py</div></div>
+    </div>
+    <div class="extra-item done-row" style="background:rgba(76,255,162,0.025)">
+      <div class="ei-icon" style="color:var(--green)">✅</div>
+      <div><div class="ei-body">D1 — searchObservations() real</div><div class="ei-sub">memory.ts:506 · FTS5 + fallback</div></div>
+    </div>
+    <div class="extra-item done-row" style="background:rgba(76,255,162,0.025)">
+      <div class="ei-icon" style="color:var(--green)">✅</div>
+      <div><div class="ei-body">ensureNativeMemoryTables() · límites 50K/10K</div><div class="ei-sub">memory.ts:6-7, 106</div></div>
+    </div>
+  </div>
+
+  <div class="info-box" style="margin-top:14px">
+    <div class="info-title">Principio — siempre sumar, nunca pisar</div>
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="ic-label">No modificar</div>
+        <div class="ic-body">Los weights BM25/recency, el decay de 30 días, el Smart Prefetch Gate, los límites 4K/20/50K, ensureNativeMemoryTables(), searchObservations(), getTimeline(). Todo eso funciona — solo agregar encima.</div>
+      </div>
+      <div class="info-cell" style="background:rgba(76,255,162,0.04);border-color:var(--green-dim)">
+        <div class="ic-label" style="color:var(--green)">F3 es el único punto de contacto</div>
+        <div class="ic-body">La única modificación a código existente del partner es agregar columnas a memory_chunks (F3). Todo lo demás son adiciones puras: nuevos métodos, nuevo hook, nueva clase. No se toca ningún método existente del partner.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div>Flux Agent Memory Spec v1.1 · omniworker-b2b · 2026-06-07</div>
+  <div style="display:flex;gap:24px">
+    <div>Ya hecho <span>6 features</span></div>
+    <div>Pendiente <span>7 features</span></div>
+    <div>F3 → F2 → F1 → F4/F5/F6 → D2/D3/D4</div>
+  </div>
+</footer>
+
+</body>
+</html>

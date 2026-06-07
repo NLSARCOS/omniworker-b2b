@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flux Agent · Memory Features Brief</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Azeret+Mono:wght@300;400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:          #04070d;
+  --bg-1:        #070c16;
+  --bg-2:        #0c1521;
+  --bg-3:        #111d2e;
+  --bg-4:        #162540;
+  --border:      #1b2f48;
+  --border-md:   #25425f;
+  --border-hi:   #2d5278;
+  --amber:       #e8a840;
+  --amber-dim:   #7a4e14;
+  --amber-glow:  rgba(232,168,64,0.1);
+  --amber-glow2: rgba(232,168,64,0.06);
+  --cyan:        #3bc8e8;
+  --cyan-dim:    #1a4e60;
+  --cyan-glow:   rgba(59,200,232,0.1);
+  --green:       #4cffa2;
+  --green-dim:   #1a5c3a;
+  --green-glow:  rgba(76,255,162,0.08);
+  --red:         #ff6060;
+  --red-dim:     #5c1c1c;
+  --purple:      #b58cf7;
+  --purple-dim:  #3a2a60;
+  --text:        #adc0d4;
+  --text-dim:    #3d5470;
+  --text-bright: #dceaf5;
+  --text-dimmer: #28394d;
+  --serif:   'Instrument Serif', Georgia, serif;
+  --mono:    'Azeret Mono', 'Fira Code', monospace;
+  --sans:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --r: 4px;
+  --r-lg: 8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--border-hi) var(--bg)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:3px}
+
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
+  background-size: 28px 28px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+/* HERO */
+.hero {
+  position: relative;
+  padding: 72px 64px 60px;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 90% at 85% 50%, rgba(59,200,232,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 80% at 15% 0%, rgba(76,255,162,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 48px;
+  align-items: center;
+}
+.hero-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  background: var(--cyan-glow);
+  border: 1px solid var(--cyan-dim);
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 2px;
+  margin-bottom: 20px;
+}
+.hero-title {
+  font-family: var(--serif);
+  font-size: clamp(36px, 4vw, 60px);
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--text-bright);
+  margin-bottom: 16px;
+}
+.hero-title em { font-style: italic; color: var(--cyan); }
+.hero-sub { color: var(--text-dim); font-size: 13px; font-family: var(--mono); }
+.hero-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 24px;
+  display: flex;
+  gap: 24px;
+}
+.hero-meta span { color: var(--text); }
+
+.stats-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  min-width: 280px;
+}
+.stat-box {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-box:first-child { border-radius: var(--r) 0 0 0; }
+.stat-box:nth-child(2) { border-radius: 0 var(--r) 0 0; }
+.stat-box:nth-child(3) { border-radius: 0 0 0 var(--r); }
+.stat-box:last-child { border-radius: 0 0 var(--r) 0; }
+.stat-n {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--cyan);
+  line-height: 1;
+}
+.stat-n.amber { color: var(--amber); }
+.stat-n.green { color: var(--green); }
+.stat-n.red   { color: var(--red); }
+.stat-l {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* NAV */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(4,7,13,0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 64px;
+}
+.nav-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+}
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 14px 20px;
+  border-right: 1px solid var(--border);
+  transition: color .2s, background .2s;
+}
+.nav a:first-child { border-left: 1px solid var(--border); }
+.nav a:hover { color: var(--cyan); background: var(--cyan-glow); }
+.nav-num { font-size: 9px; color: var(--text-dimmer); }
+
+/* MAIN */
+main { max-width: 1280px; margin: 0 auto; padding: 0 64px 120px; }
+section {
+  padding-top: 80px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+section:last-child { border-bottom: none; }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.section-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dimmer);
+  letter-spacing: .1em;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: clamp(22px, 2.5vw, 32px);
+  font-weight: 400;
+  color: var(--text-bright);
+  line-height: 1.15;
+}
+.section-title em { font-style: italic; color: var(--cyan); }
+.section-desc {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-family: var(--mono);
+  margin-top: 6px;
+}
+
+/* LAYER STACK */
+.stack-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stack-layer {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+.stack-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 16px 16px 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-right: 2px solid var(--border);
+}
+.stack-label.cyan   { color: var(--cyan);  border-color: var(--cyan-dim); }
+.stack-label.green  { color: var(--green); border-color: var(--green-dim); }
+.stack-label.amber  { color: var(--amber); border-color: var(--amber-dim); }
+.stack-label.purple { color: var(--purple); border-color: var(--purple-dim); }
+.stack-label.red    { color: var(--red);   border-color: var(--red-dim); }
+
+.stack-content {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: none;
+  padding: 14px 20px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.stack-content.cyan   { background: var(--cyan-glow);   border-color: var(--cyan-dim); }
+.stack-content.green  { background: var(--green-glow);  border-color: var(--green-dim); }
+.stack-content.amber  { background: var(--amber-glow2); border-color: var(--amber-dim); }
+.stack-content.purple { background: rgba(181,140,247,0.05); border-color: var(--purple-dim); }
+.stack-content.red    { background: rgba(255,96,96,0.04);   border-color: var(--red-dim); }
+
+.stack-name {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-bright);
+  white-space: nowrap;
+}
+.stack-name.cyan   { color: var(--cyan); }
+.stack-name.green  { color: var(--green); }
+.stack-name.amber  { color: var(--amber); }
+.stack-name.purple { color: var(--purple); }
+.stack-name.red    { color: var(--red); }
+
+.stack-desc { font-size: 12.5px; color: var(--text); flex: 1; line-height: 1.5; }
+.stack-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+.sb-ok  { background: var(--green-glow);  color: var(--green);  border: 1px solid var(--green-dim); }
+.sb-gap { background: var(--red-dim);     color: var(--red);    border: 1px solid var(--red-dim);   opacity:.9; }
+.sb-opt { background: var(--amber-glow);  color: var(--amber);  border: 1px solid var(--amber-dim); }
+
+.stack-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  color: var(--text-dimmer);
+  font-size: 14px;
+  padding-left: 160px;
+}
+
+/* PLUGINS GRID */
+.plugins-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  margin-top: 16px;
+}
+.plugin-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+.plugin-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+.plugin-desc {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* GAP TABLE */
+.compare-wrap { overflow-x: auto; }
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.compare-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  border-bottom: 2px solid var(--border);
+}
+.th-dim   { color: var(--text-dim);   background: var(--bg-2); }
+.th-flux  { color: var(--cyan);       background: var(--cyan-glow); border-bottom-color: var(--cyan-dim); }
+.th-brain { color: var(--amber);      background: var(--amber-glow2); border-bottom-color: var(--amber-dim); }
+.th-delta { color: var(--green);      background: var(--green-glow); border-bottom-color: var(--green-dim); }
+
+.compare-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.compare-table tr:last-child td { border-bottom: none; }
+.compare-table tr:hover td { background: rgba(255,255,255,0.015); }
+.td-dim   { color: var(--text-dim); background: var(--bg-2); font-size: 11px; white-space: nowrap; border-right: 1px solid var(--border); }
+.td-flux  { color: var(--text);     background: var(--bg-1); }
+.td-brain { color: var(--text-bright); background: var(--amber-glow2); }
+.td-delta { color: var(--green);    background: var(--green-glow); font-size: 11px; }
+
+.badge-ok  { display: inline-block; background: rgba(76,255,162,0.1);  color: var(--green);  font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--green-dim); margin-right: 4px; }
+.badge-no  { display: inline-block; background: rgba(255,96,96,0.1);   color: var(--red);    font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--red-dim); margin-right: 4px; }
+.badge-part{ display: inline-block; background: var(--amber-glow);     color: var(--amber);  font-size: 10px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--amber-dim); margin-right: 4px; }
+
+/* FEATURE CARDS */
+.features-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.feature-card {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 0;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.feature-card:hover { border-color: var(--border-hi); }
+.feature-card.p1 { border-left: 3px solid var(--red); }
+.feature-card.p2 { border-left: 3px solid var(--amber); }
+.feature-card.p3 { border-left: 3px solid var(--cyan); }
+
+.feature-num {
+  background: var(--bg-3);
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px 0 0;
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dimmer);
+}
+
+.feature-body {
+  background: var(--bg-2);
+  padding: 18px 20px;
+}
+.feature-title {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--text-bright);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.feature-title em { font-style: italic; color: var(--cyan); }
+.feature-what {
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.feature-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.ftag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+.ftag.a { background: var(--amber-glow);  color: var(--amber);  border: 1px solid var(--amber-dim); }
+.ftag.c { background: var(--cyan-glow);   color: var(--cyan);   border: 1px solid var(--cyan-dim); }
+.ftag.g { background: var(--green-glow);  color: var(--green);  border: 1px solid var(--green-dim); }
+.ftag.r { background: rgba(255,96,96,0.08); color: var(--red);  border: 1px solid var(--red-dim); }
+
+.feature-how {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  border-radius: var(--r);
+  line-height: 1.6;
+}
+.feature-how .kw { color: var(--cyan); }
+.feature-how .fn { color: var(--amber); }
+.feature-how .path { color: var(--green); }
+
+.feature-meta {
+  background: var(--bg-3);
+  border-left: 1px solid var(--border);
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 140px;
+  align-items: flex-end;
+}
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.meta-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-dimmer);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.meta-value {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+.mv-h { color: var(--red); }
+.mv-m { color: var(--amber); }
+.mv-l { color: var(--green); }
+.mv-imp-h { color: var(--green); }
+.mv-imp-m { color: var(--cyan); }
+.mv-imp-l { color: var(--text-dim); }
+
+/* ROADMAP */
+.roadmap {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+.phase {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 24px 20px;
+}
+.phase.ph1 { border-top: 2px solid var(--red); }
+.phase.ph2 { border-top: 2px solid var(--amber); }
+.phase.ph3 { border-top: 2px solid var(--cyan); }
+
+.phase-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin-bottom: 8px;
+}
+.ph1 .phase-label { color: var(--red); }
+.ph2 .phase-label { color: var(--amber); }
+.ph3 .phase-label { color: var(--cyan); }
+
+.phase-title {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--text-bright);
+  margin-bottom: 6px;
+}
+.phase-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+.phase-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.phase-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bg-4);
+}
+.phase-feature:last-child { border-bottom: none; }
+.pf-id {
+  font-size: 10px;
+  color: var(--text-dimmer);
+  flex-shrink: 0;
+  padding-top: 1px;
+  width: 24px;
+}
+.pf-name { flex: 1; }
+.pf-outcome {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* INSIGHT BOX */
+.insight-box {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-top: 16px;
+}
+.insight-title {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 14px;
+}
+.insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+.insight-cell {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+.ic-label { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.ic-body  { font-family: var(--mono); font-size: 12.5px; color: var(--text); line-height: 1.5; }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 64px;
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-left { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.footer-right {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dimmer);
+  display: flex;
+  gap: 24px;
+}
+.footer-right span { color: var(--text-dim); }
+
+/* UTILS */
+.mono  { font-family: var(--mono); }
+.amber { color: var(--amber); }
+.cyan  { color: var(--cyan); }
+.green { color: var(--green); }
+.red   { color: var(--red); }
+.dim   { color: var(--text-dim); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  .hero, main, footer { padding-left: 24px; padding-right: 24px; }
+  .nav { padding: 0 24px; overflow-x: auto; }
+  .roadmap { grid-template-columns: 1fr; }
+  .plugins-grid { grid-template-columns: 1fr 1fr; }
+  .feature-card { grid-template-columns: 40px 1fr; }
+  .feature-meta { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">Product Brief · 2026-06-07</div>
+      <h1 class="hero-title">Flux Agent<br><em>Memory Brief</em></h1>
+      <p class="mono dim" style="margin-top:10px;font-size:12.5px;">Qué mejorar y cómo en la arquitectura de memoria — aprendizajes del sistema Brain + Engram</p>
+      <div class="hero-meta">
+        <div>Ref <span>brain/outputs/arquitectura-memoria-persistente.html</span></div>
+        <div>Código <span>agent/native_memory.py · memory_manager.py</span></div>
+        <div>Fecha <span>2026-06-07</span></div>
+      </div>
+    </div>
+    <div class="stats-panel">
+      <div class="stat-box">
+        <span class="stat-n">4</span>
+        <span class="stat-l">capas nativas</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-n amber">10</span>
+        <span class="stat-l">providers externos</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-n green">8</span>
+        <span class="stat-l">features propuestas</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-n red">6</span>
+        <span class="stat-l">gaps vs Brain</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- IMPLEMENTATION RULE -->
+<div style="background:rgba(232,168,64,0.07);border-top:1px solid var(--amber);border-bottom:1px solid var(--amber);padding:18px 40px;">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:flex-start;gap:16px;">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);background:rgba(232,168,64,0.12);border:1px solid var(--amber);padding:5px 10px;white-space:nowrap;flex-shrink:0;">REGLA · DUAL-TRACK</div>
+    <div style="font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text);">
+      <strong style="color:var(--text-bright);">Implementar SIEMPRE en ambos lados — Agent (Python) <em>y</em> Desktop (TypeScript).</strong><br>
+      Toda feature que toque el schema de memoria, los tipos de chunk, o la forma de leer/escribir datos debe aplicarse coordinadamente en <code style="color:var(--amber);">omniworker-agent/agent/native_memory.py</code> <strong>y</strong> en <code style="color:var(--steel);">omniworker-desktop/src/main/memory.ts</code>. El Desktop lee la DB del agent en modo read-only; nunca dejar los dos esquemas desincronizados. Una feature no se considera completa hasta que ambos tracks estén alineados.
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#actual"><span class="nav-num">01</span> Estado Actual</a>
+    <a href="#gaps"><span class="nav-num">02</span> Gap Analysis</a>
+    <a href="#features"><span class="nav-num">03</span> Features</a>
+    <a href="#roadmap"><span class="nav-num">04</span> Roadmap</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- S1: ESTADO ACTUAL -->
+<section id="actual">
+  <div class="section-head">
+    <span class="section-num">01</span>
+    <div>
+      <h2 class="section-title">Estado <em>Actual</em></h2>
+      <p class="section-desc">Arquitectura de memoria en omniworker-agent — lo que existe hoy</p>
+    </div>
+  </div>
+
+  <!-- 4 capas nativas -->
+  <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">NativeMemory — 4 capas siempre activas (native_memory.py)</div>
+  <div class="stack-diagram">
+    <div class="stack-layer">
+      <div class="stack-label cyan">BM25</div>
+      <div class="stack-content cyan">
+        <span class="stack-name cyan">BM25Layer</span>
+        <span class="stack-desc">Full-text search con SQLite FTS5 trigram. Indexa todos los turnos: user, assistant, tool_results, errors. Scoring híbrido: BM25 × recency × session_affinity × role_weight. <strong style="color:var(--cyan)">Siempre disponible</strong> — solo necesita SQLite.</span>
+        <span class="stack-badge sb-ok">ACTIVO</span>
+      </div>
+    </div>
+    <div class="stack-arrow">↓</div>
+    <div class="stack-layer">
+      <div class="stack-label" style="color:var(--purple);border-color:var(--purple-dim)">Vector</div>
+      <div class="stack-content" style="background:rgba(181,140,247,0.04);border-color:var(--purple-dim)">
+        <span class="stack-name purple">VectorLayer</span>
+        <span class="stack-desc">Búsqueda semántica con sqlite-vec (optional). Si disponible: reranking vectorial sobre los candidatos BM25. Soporta embeddings locales (all-MiniLM-L6-v2, 384 dims) o via API (text-embedding-3-small, 1536 dims).</span>
+        <span class="stack-badge sb-opt">OPCIONAL</span>
+      </div>
+    </div>
+    <div class="stack-arrow">↓</div>
+    <div class="stack-layer">
+      <div class="stack-label amber">Facts</div>
+      <div class="stack-content amber">
+        <span class="stack-name amber">FactLayer</span>
+        <span class="stack-desc">Extracción de hechos estructurados via regex: archivos, funciones, clases, errores, decisiones. Trust scoring + occurrence_count + dedup por (subject, predicate, object). Disponible en prefetch como "Known facts".</span>
+        <span class="stack-badge sb-ok">ACTIVO</span>
+      </div>
+    </div>
+    <div class="stack-arrow">↓</div>
+    <div class="stack-layer">
+      <div class="stack-label green">Workspace</div>
+      <div class="stack-content green">
+        <span class="stack-name green">WorkspaceStateLayer</span>
+        <span class="stack-desc">Estado activo del workspace: recently_edited_files (20), active_errors (10), pending_decisions (10), active_goals (5), last_task_summary. Persiste en SQLite key-value. Inyectado en system_prompt_block() de NativeMemoryProvider.</span>
+        <span class="stack-badge sb-ok">ACTIVO</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MemoryManager -->
+  <div style="margin-top:24px">
+    <div class="insight-box">
+      <div class="insight-title">MemoryManager — orquestador (memory_manager.py)</div>
+      <div class="grid-2">
+        <div class="insight-cell">
+          <div class="ic-label">Lifecycle hooks</div>
+          <div class="ic-body mono" style="font-size:11px;color:var(--cyan)">
+            initialize_all() → prefetch_all() → sync_all() → on_session_end()<br>
+            on_turn_start() · on_session_switch() · on_pre_compress()<br>
+            on_memory_write() · on_delegation() · shutdown_all()
+          </div>
+        </div>
+        <div class="insight-cell">
+          <div class="ic-label">Regla de providers</div>
+          <div class="ic-body">
+            <strong style="color:var(--text-bright)">1 builtin (NativeMemory) + max 1 externo</strong><br>
+            <span style="font-size:11.5px;color:var(--text-dim)">Enforced en add_provider() para evitar tool schema bloat. Selección via <span class="cyan">memory.provider</span> en config.yaml.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 providers externos -->
+  <div style="margin-top:24px">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">10 Providers externos — plugins/memory/ (solo uno activo a la vez)</div>
+    <div class="plugins-grid">
+      <div class="plugin-card">
+        <div class="plugin-name">Honcho</div>
+        <div class="plugin-desc">AI-native memory con dialectic Q&A y user modeling persistente.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">Hindsight</div>
+        <div class="plugin-desc">Memory con retrospective extraction al final de sesión.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">Holographic</div>
+        <div class="plugin-desc">Hechos estructurados con entity resolution y HRR retrieval.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">Mem0</div>
+        <div class="plugin-desc">Provider cloud Mem0.ai — memoria user/agent persistente en API.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">Supermemory</div>
+        <div class="plugin-desc">Supermemory.ai — cloud semantic memory con herramientas explícitas.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">RetainDB</div>
+        <div class="plugin-desc">DB local optimizada para retención de hechos con write queue.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">ByteRover</div>
+        <div class="plugin-desc">Memoria distribuida ByteRover con herramientas explícitas al modelo.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">OpenViking</div>
+        <div class="plugin-desc">Memory cloud OpenViking con client propio y embeddings.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">LocalEmbed</div>
+        <div class="plugin-desc">Embeddings locales ONNX para VectorLayer sin API key.</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-name">OfflineFTS</div>
+        <div class="plugin-desc">FTS offline mode — solo BM25, sin red, sin dependencias.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Límites actuales -->
+  <div style="margin-top:24px">
+    <div class="insight-box">
+      <div class="insight-title">Límites hard-coded actuales</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px">
+        <div style="background:var(--bg-3);border:1px solid var(--border);padding:14px;text-align:center">
+          <div class="mono" style="font-size:22px;font-weight:700;color:var(--red)">2000</div>
+          <div class="mono" style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em">tokens max inyectados</div>
+        </div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);padding:14px;text-align:center">
+          <div class="mono" style="font-size:22px;font-weight:700;color:var(--amber)">10</div>
+          <div class="mono" style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em">chunks max por prefetch</div>
+        </div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);padding:14px;text-align:center">
+          <div class="mono" style="font-size:22px;font-weight:700;color:var(--amber)">800</div>
+          <div class="mono" style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em">chars max por chunk</div>
+        </div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);padding:14px;text-align:center">
+          <div class="mono" style="font-size:22px;font-weight:700;color:var(--red)">0</div>
+          <div class="mono" style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em">tools expuestas al modelo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S2: GAP ANALYSIS -->
+<section id="gaps">
+  <div class="section-head">
+    <span class="section-num">02</span>
+    <div>
+      <h2 class="section-title"><em>Gap Analysis</em> — Brain vs Flux Agent</h2>
+      <p class="section-desc">Lo que el sistema brain/Engram tiene que Flux Agent no tiene (o tiene parcialmente)</p>
+    </div>
+  </div>
+
+  <div class="compare-wrap">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th class="th-dim">Dimensión</th>
+          <th class="th-flux">Flux Agent — hoy</th>
+          <th class="th-brain">Brain/Engram — referencia</th>
+          <th class="th-delta">Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="td-dim">Captura proactiva</td>
+          <td class="td-flux"><span class="badge-no">NO</span> Pasiva total — indexa todos los turnos sin distinción. Decisiones importantes se pierden en ruido de tool calls.</td>
+          <td class="td-brain">CLAUDE.md define CUÁNDO guardar. mem_save se llama explícitamente después de decisiones, bugs, discoveries. Protocolo obligatorio.</td>
+          <td class="td-delta">El agente no sabe qué vale la pena preservar. No hay protocolo.</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Evolución de memoria</td>
+          <td class="td-flux"><span class="badge-no">NO</span> Append-only puro. Cada turno genera nuevos chunks. Si "vamos con Vue" reemplaza "vamos con React", ambas versiones coexisten.</td>
+          <td class="td-brain">topic_key + upsert: el mismo "topic" actualiza el mismo row, revision_count++. Una decisión que evoluciona = 1 fila, N revisiones.</td>
+          <td class="td-delta">Stale memories nunca mueren. Recall puede retornar decisiones contradictorias.</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Herramientas explícitas</td>
+          <td class="td-flux"><span class="badge-no">NO</span> get_tool_schemas() retorna []. El modelo no puede buscar ni guardar memoria explícitamente. Solo los providers externos tienen tools.</td>
+          <td class="td-brain">15 tools: mem_save, mem_search, mem_timeline, mem_get_observation, mem_context, mem_session_summary, etc. El agente es actor activo de su memoria.</td>
+          <td class="td-delta">El agente es pasivo. No puede afirmar "recuerda que usamos X" ni buscar decisiones previas bajo demanda.</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Búsqueda de corpus</td>
+          <td class="td-flux"><span class="badge-no">NO</span> prefetch() solo busca en lo que el propio agente generó (turns + tool_results). No busca en el codebase, docs, ni graphify.</td>
+          <td class="td-brain">brain-context.py hook: keywords → graphify graph.json + grep vault → inyecta <brain-context> ANTES del prompt. Contexto automático del corpus completo.</td>
+          <td class="td-delta">El agente no recuerda arquitectura documentada ni decisiones que están en código/docs, solo sus propias conversaciones.</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Lifecycle de memoria</td>
+          <td class="td-flux"><span class="badge-no">NO</span> No hay soft-delete. Los chunks son permanentes. No hay forma de marcar una memoria como obsoleta.</td>
+          <td class="td-brain">deleted_at soft-delete en todos los observaciones. mem_search filtra WHERE deleted_at IS NULL. Hard-delete disponible como opción explícita.</td>
+          <td class="td-delta">La memoria crece infinitamente sin poda. Memorias obsoletas confunden el recall.</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Resumen de sesión</td>
+          <td class="td-flux"><span class="badge-part">PARCIAL</span> on_session_end() existe en MemoryProvider pero NativeMemoryProvider no lo implementa. Solo on_pre_compress extrae facts.</td>
+          <td class="td-brain">mem_session_summary es un ritual explícito: Goal, Discoveries, Accomplished, Next Steps, Relevant Files. Se guarda como observación type='session_summary'.</td>
+          <td class="td-delta">No hay cierre estructurado. La historia de lo que se hizo en una sesión no está disponible en futuras sesiones.</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Memoria de delegación</td>
+          <td class="td-flux"><span class="badge-no">NO</span> on_delegation() existe en MemoryManager pero NativeMemoryProvider no lo overridea. Los resultados de subagentes se pierden.</td>
+          <td class="td-brain">SubagentStop hook: persiste memoria del subagente en la DB principal del parent. El orquestador sabe qué delegó y qué resultó.</td>
+          <td class="td-delta">El orquestador pierde el resultado del trabajo delegado. Contexto del ejército de agentes no se acumula.</td>
+        </tr>
+        <tr>
+          <td class="td-dim">Scope de memoria</td>
+          <td class="td-flux"><span class="badge-part">PARCIAL</span> Solo project scope implícito via session_id. No hay separación entre memorias del workspace vs memorias de preferencias del usuario.</td>
+          <td class="td-brain">scope field en observations: "project" (workspace-specific) vs "personal" (cross-project user prefs). mem_search puede filtrar por scope.</td>
+          <td class="td-delta">Una preferencia del usuario ("siempre usa tabs") mezcla con datos del proyecto ("usamos Django"). Imposible de aislar.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight-box" style="margin-top:16px">
+    <div class="insight-title">Diferencia fundamental</div>
+    <div class="grid-2">
+      <div class="insight-cell">
+        <div class="ic-label">Flux Agent hoy</div>
+        <div class="ic-body">La memoria <strong style="color:var(--text-bright)">captura todo</strong> automáticamente pero <strong style="color:var(--red)">no sabe qué importa</strong>. El ruido crece con el tiempo. El recall puede ser irrelevante o contradictorio.</div>
+      </div>
+      <div class="insight-cell" style="background:var(--amber-glow2);border-color:var(--amber-dim)">
+        <div class="ic-label" style="color:var(--amber)">Brain (target state)</div>
+        <div class="ic-body">La memoria <strong style="color:var(--amber)">captura lo que importa</strong> por protocolo + todo el corpus por graphify. El agente es actor activo. La memoria evoluciona y se poda.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S3: FEATURES -->
+<section id="features">
+  <div class="section-head">
+    <span class="section-num">03</span>
+    <div>
+      <h2 class="section-title">Feature <em>Proposals</em></h2>
+      <p class="section-desc">8 mejoras — ordenadas por prioridad (P1=crítica, P2=alta, P3=mejora)</p>
+    </div>
+  </div>
+
+  <div class="features-grid">
+
+    <!-- F1 -->
+    <div class="feature-card p1">
+      <div class="feature-num" style="color:var(--red)">F1</div>
+      <div class="feature-body">
+        <div class="feature-title">Proactive Memory <em>Protocol</em></div>
+        <div class="feature-tags">
+          <span class="ftag r">P1 · Crítico</span>
+          <span class="ftag c">NativeMemoryProvider</span>
+          <span class="ftag a">system_prompt_block()</span>
+        </div>
+        <div class="feature-what">
+          El mayor gap del sistema: el agente captura todo pero no sabe <em>qué vale la pena preservar</em>.
+          Agregar un protocolo explícito en system_prompt_block() que le diga al agente cuándo llamar
+          memory_save() y qué tipo asignar. Sin esto, todas las demás mejoras de memoria son ruido
+          sin señal — el agente no cultivará su memoria, solo la acumulará.
+        </div>
+        <div class="feature-how">
+          <span class="kw">What to add</span> — en NativeMemoryProvider.system_prompt_block():<br>
+          <span class="path">→</span> Reglas de cuándo save: después de decisión arquitectónica, bug resuelto, convención establecida, preferencia del usuario<br>
+          <span class="path">→</span> Tipos canónicos: <span class="fn">decision</span> · <span class="fn">bugfix</span> · <span class="fn">convention</span> · <span class="fn">preference</span> · <span class="fn">session_summary</span><br>
+          <span class="path">→</span> Self-check tras cada tarea: "¿Decidí algo? ¿Resolví algo no obvio? Si sí → memory_save()"<br>
+          <span class="kw">File</span>: agent/native_memory.py · NativeMemoryProvider.system_prompt_block()
+        </div>
+      </div>
+      <div class="feature-meta">
+        <div class="meta-item">
+          <span class="meta-label">Prioridad</span>
+          <span class="meta-value mv-h">CRÍTICA</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Esfuerzo</span>
+          <span class="meta-value mv-l">Bajo</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Impacto</span>
+          <span class="meta-value mv-imp-h">Alto</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archivos</span>
+          <span class="meta-value" style="color:var(--text-dim);font-size:10px">native_memory.py</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F2 -->
+    <div class="feature-card p1">
+      <div class="feature-num" style="color:var(--red)">F2</div>
+      <div class="feature-body">
+        <div class="feature-title">Explicit <em>Memory Tools</em> — save, search, recall</div>
+        <div class="feature-tags">
+          <span class="ftag r">P1 · Crítico</span>
+          <span class="ftag c">NativeMemoryProvider.get_tool_schemas()</span>
+          <span class="ftag a">3 tools mínimas</span>
+        </div>
+        <div class="feature-what">
+          NativeMemoryProvider.get_tool_schemas() retorna []. El agente no puede explícitamente guardar
+          decisiones, buscar historia, ni actualizar un topic. Solo los providers externos de pago tienen
+          esta capacidad. Agregar 3 tools mínimas al provider builtin: <strong>memory_save</strong> (con type y topic_key),
+          <strong>memory_search</strong> (query sobre chunks y facts), <strong>memory_recall</strong> (por topic_key exacto).
+        </div>
+        <div class="feature-how">
+          <span class="kw">Tools a implementar</span> en NativeMemoryProvider:<br>
+          <span class="fn">memory_save</span>(content, type, topic_key?) → INSERT o upsert si topic_key existe<br>
+          <span class="fn">memory_search</span>(query, limit=5) → BM25 + fact lookup compacto<br>
+          <span class="fn">memory_recall</span>(topic_key) → fetch exacto por topic_key, full content<br>
+          <span class="kw">handle_tool_call()</span>: router hacia las 3 operaciones en NativeMemory<br>
+          <span class="kw">Files</span>: agent/native_memory.py (añadir métodos), NativeMemoryProvider.get_tool_schemas()
+        </div>
+      </div>
+      <div class="feature-meta">
+        <div class="meta-item">
+          <span class="meta-label">Prioridad</span>
+          <span class="meta-value mv-h">CRÍTICA</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Esfuerzo</span>
+          <span class="meta-value mv-m">Medio</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Impacto</span>
+          <span class="meta-value mv-imp-h">Alto</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archivos</span>
+          <span class="meta-value" style="color:var(--text-dim);font-size:10px">native_memory.py</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F3 -->
+    <div class="feature-card p1">
+      <div class="feature-num" style="color:var(--red)">F3</div>
+      <div class="feature-body">
+        <div class="feature-title">Topic-key <em>Upsert</em> + Memory Evolution</div>
+        <div class="feature-tags">
+          <span class="ftag r">P1 · Crítico</span>
+          <span class="ftag c">BM25Layer schema</span>
+          <span class="ftag a">topic_key + revision_count</span>
+        </div>
+        <div class="feature-what">
+          La memoria actual es append-only. Si una decisión se revisa, coexisten versiones contradictorias.
+          El principal mecanismo del sistema Brain es el <strong>topic_key upsert</strong>: un identificador semántico
+          que permite que "la decisión de arquitectura de X" sea siempre 1 fila, N revisiones.
+          Elimina el ruido de chunks redundantes y garantiza que el recall retorne la versión más reciente.
+        </div>
+        <div class="feature-how">
+          <span class="kw">Schema change</span> en memory_chunks:<br>
+          + <span class="fn">topic_key</span> TEXT (nullable, unique por project+scope)<br>
+          + <span class="fn">revision_count</span> INTEGER DEFAULT 1<br>
+          + <span class="fn">deleted_at</span> REAL (soft-delete)<br>
+          <span class="kw">BM25Layer.index()</span>: si chunk.topic_key existe → UPDATE content + revision_count++ en lugar de INSERT<br>
+          <span class="kw">BM25Layer.search()</span>: añadir WHERE deleted_at IS NULL<br>
+          <span class="kw">Files</span>: agent/native_memory.py — BM25Layer._ensure_tables(), .index(), .search()
+        </div>
+      </div>
+      <div class="feature-meta">
+        <div class="meta-item">
+          <span class="meta-label">Prioridad</span>
+          <span class="meta-value mv-h">CRÍTICA</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Esfuerzo</span>
+          <span class="meta-value mv-m">Medio</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Impacto</span>
+          <span class="meta-value mv-imp-h">Alto</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archivos</span>
+          <span class="meta-value" style="color:var(--text-dim);font-size:10px">native_memory.py</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F4 -->
+    <div class="feature-card p2">
+      <div class="feature-num" style="color:var(--amber)">F4</div>
+      <div class="feature-body">
+        <div class="feature-title">Session <em>Summary</em> — cierre estructurado</div>
+        <div class="feature-tags">
+          <span class="ftag a">P2 · Alta</span>
+          <span class="ftag c">NativeMemoryProvider.on_session_end()</span>
+          <span class="ftag g">topic_key: sessions/summary</span>
+        </div>
+        <div class="feature-what">
+          on_session_end() existe en el contrato MemoryProvider pero NativeMemoryProvider no lo implementa.
+          El Brain tiene mem_session_summary como ritual explícito. Implementar un cierre de sesión estructurado
+          que extraiga Goal / Discoveries / Accomplished / Next Steps y lo guarde como chunk type='session_summary'
+          con topic_key por session_id. En futuras sesiones, este summary se inyecta como contexto histórico.
+        </div>
+        <div class="feature-how">
+          <span class="kw">Implement</span> NativeMemoryProvider.on_session_end(messages):<br>
+          <span class="path">1.</span> Extraer último assistant message + últimas N decisiones del WorkspaceStateLayer<br>
+          <span class="path">2.</span> Generar structured summary (sin llamada LLM — heurístico sobre workspace state)<br>
+          <span class="path">3.</span> memory_save(type='session_summary', topic_key=f'session/{session_id}/summary', content=summary)<br>
+          <span class="kw">Bonus</span>: memory_save también agrega al session log opcional en OMNIWORKER_HOME/session-log.md<br>
+          <span class="kw">Files</span>: agent/native_memory.py (NativeMemoryProvider), run_agent.py (wiring on_session_end)
+        </div>
+      </div>
+      <div class="feature-meta">
+        <div class="meta-item">
+          <span class="meta-label">Prioridad</span>
+          <span class="meta-value mv-m">ALTA</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Esfuerzo</span>
+          <span class="meta-value mv-m">Medio</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Impacto</span>
+          <span class="meta-value mv-imp-m">Medio</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archivos</span>
+          <span class="meta-value" style="color:var(--text-dim);font-size:10px">native_memory.py · run_agent.py</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F5 -->
+    <div class="feature-card p2">
+      <div class="feature-num" style="color:var(--amber)">F5</div>
+      <div class="feature-body">
+        <div class="feature-title">Graphify <em>Corpus Search</em> en prefetch</div>
+        <div class="feature-tags">
+          <span class="ftag a">P2 · Alta</span>
+          <span class="ftag c">NativeMemory.prefetch()</span>
+          <span class="ftag g">graphify-out/graph.json</span>
+        </div>
+        <div class="feature-what">
+          La diferencia más poderosa del Brain: brain-context.py busca en el corpus completo del vault
+          (graphify graph.json + grep vault) <em>antes</em> de que el LLM procese el prompt. En Flux Agent,
+          prefetch() solo busca turnos propios. Conectar la búsqueda de prefetch al knowledge graph
+          graphify-out/ significa que el agente tiene contexto semántico del codebase completo desde el
+          primer turno — sin necesitar volver a explorar.
+        </div>
+        <div class="feature-how">
+          <span class="kw">Agregar</span> GraphifyLayer opcional a NativeMemory:<br>
+          <span class="path">1.</span> En prefetch(): si graphify-out/graph.json existe → extraer keywords del query<br>
+          <span class="path">2.</span> Buscar nodos relevantes en graph.json (score por nombre + community + edges)<br>
+          <span class="path">3.</span> Retornar top 6 conceptos como <span class="fn">"Known codebase concepts"</span> block<br>
+          <span class="path">4.</span> Combinarlo con BM25 + facts en el output de prefetch()<br>
+          <span class="kw">Zero dependencies</span>: leer graph.json directamente (JSON), no requiere graphify CLI en runtime<br>
+          <span class="kw">Files</span>: agent/native_memory.py (nuevo GraphifyLayer), NativeMemory.prefetch()
+        </div>
+      </div>
+      <div class="feature-meta">
+        <div class="meta-item">
+          <span class="meta-label">Prioridad</span>
+          <span class="meta-value mv-m">ALTA</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Esfuerzo</span>
+          <span class="meta-value mv-m">Medio</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Impacto</span>
+          <span class="meta-value mv-imp-h">Alto</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archivos</span>
+          <span class="meta-value" style="color:var(--text-dim);font-size:10px">native_memory.py</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F6 -->
+    <div class="feature-card p2">
+      <div class="feature-num" style="color:var(--amber)">F6</div>
+      <div class="feature-body">
+        <div class="feature-title">Delegation <em>Memory</em> — subagent result store</div>
+        <div class="feature-tags">
+          <span class="ftag a">P2 · Alta</span>
+          <span class="ftag c">NativeMemoryProvider.on_delegation()</span>
+          <span class="ftag g">tipo: delegation_result</span>
+        </div>
+        <div class="feature-what">
+          El orquestador de Flux Agent delega tareas a workers especializados. on_delegation() existe
+          en el contrato MemoryManager pero NativeMemoryProvider no lo implementa — los resultados
+          del ejército de agentes se pierden. Implementar este hook significa que el orquestador
+          acumula historial de qué delegó, a qué agente, y qué resultó. Esencial para un sistema
+          multi-agente con aprendizaje real.
+        </div>
+        <div class="feature-how">
+          <span class="kw">Implement</span> NativeMemoryProvider.on_delegation(task, result, child_session_id, **kwargs):<br>
+          <span class="path">1.</span> Crear chunk type='delegation_result' con task + result truncado<br>
+          <span class="path">2.</span> Metadata: {agent_type, child_session_id, timestamp}<br>
+          <span class="path">3.</span> topic_key = f'delegation/{child_session_id[:8]}' (upsert si mismo worker reintentó)<br>
+          <span class="path">4.</span> BM25.index(chunk) → disponible en futuras búsquedas del orquestador<br>
+          <span class="kw">Files</span>: agent/native_memory.py (NativeMemoryProvider.on_delegation)<br>
+          <span class="kw">Ver también</span>: memory_manager.py:649 — on_delegation() ya llama al provider
+        </div>
+      </div>
+      <div class="feature-meta">
+        <div class="meta-item">
+          <span class="meta-label">Prioridad</span>
+          <span class="meta-value mv-m">ALTA</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Esfuerzo</span>
+          <span class="meta-value mv-l">Bajo</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Impacto</span>
+          <span class="meta-value mv-imp-h">Alto</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archivos</span>
+          <span class="meta-value" style="color:var(--text-dim);font-size:10px">native_memory.py</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F7 -->
+    <div class="feature-card p3">
+      <div class="feature-num" style="color:var(--cyan)">F7</div>
+      <div class="feature-body">
+        <div class="feature-title">Memory <em>Scope</em> — project vs personal</div>
+        <div class="feature-tags">
+          <span class="ftag c">P3 · Mejora</span>
+          <span class="ftag c">BM25Layer schema</span>
+          <span class="ftag a">scope field</span>
+        </div>
+        <div class="feature-what">
+          Actualmente todas las memorias son project-scoped implícitamente. No hay forma de separar
+          "prefiero tabs sobre espacios" (preferencia personal, cross-project) de "este proyecto usa
+          Django 4.2" (dato del workspace). Agregar un scope field al schema permite que las
+          preferencias personales persistan entre proyectos y las del workspace se aislen.
+        </div>
+        <div class="feature-how">
+          <span class="kw">Schema</span>: + scope TEXT DEFAULT 'project' en memory_chunks<br>
+          <span class="kw">memory_save</span>(content, type, topic_key?, scope='project'|'personal')<br>
+          <span class="kw">prefetch()</span>: buscar primero scope='personal' global, luego scope='project' del CWD<br>
+          <span class="kw">system_prompt_block()</span>: separar workspace state de user preferences en la inyección<br>
+          <span class="kw">Files</span>: agent/native_memory.py — BM25Layer schema + NativeMemory.prefetch()
+        </div>
+      </div>
+      <div class="feature-meta">
+        <div class="meta-item">
+          <span class="meta-label">Prioridad</span>
+          <span class="meta-value mv-l">MEDIA</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Esfuerzo</span>
+          <span class="meta-value mv-l">Bajo</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Impacto</span>
+          <span class="meta-value mv-imp-m">Medio</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archivos</span>
+          <span class="meta-value" style="color:var(--text-dim);font-size:10px">native_memory.py</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F8 -->
+    <div class="feature-card p3">
+      <div class="feature-num" style="color:var(--cyan)">F8</div>
+      <div class="feature-body">
+        <div class="feature-title">Context Budget <em>Adaptivo</em> por plataforma</div>
+        <div class="feature-tags">
+          <span class="ftag c">P3 · Mejora</span>
+          <span class="ftag c">_MAX_INJECTED_TOKENS</span>
+          <span class="ftag g">OMNIWORKER_MEMORY_TIMEOUT ref.</span>
+        </div>
+        <div class="feature-what">
+          _MAX_INJECTED_TOKENS = 2000 es un valor hard-coded en native_memory.py. Para sesiones de
+          código complejas necesita ser mayor; para plataformas gateway (Telegram, Discord) donde el
+          contexto es caro, necesita ser menor. Siguiendo el patrón de OMNIWORKER_MEMORY_TIMEOUT
+          (ya configurable via env var), hacer el budget adaptivo por plataforma y configurable.
+        </div>
+        <div class="feature-how">
+          <span class="kw">Config</span>: añadir memory.max_tokens_injected en config.yaml (default: 2000)<br>
+          <span class="kw">Platform overrides</span>: cli=3000, gateway=1200, cron=500<br>
+          <span class="kw">NativeMemory.prefetch()</span>: leer budget de config en lugar de constante<br>
+          <span class="kw">Env var fallback</span>: OMNIWORKER_MEMORY_TOKENS (siguiendo el patrón existente)<br>
+          <span class="kw">Files</span>: agent/native_memory.py (constantes), run_agent.py (pasar platform a prefetch)
+        </div>
+      </div>
+      <div class="feature-meta">
+        <div class="meta-item">
+          <span class="meta-label">Prioridad</span>
+          <span class="meta-value mv-l">MEDIA</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Esfuerzo</span>
+          <span class="meta-value mv-l">Bajo</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Impacto</span>
+          <span class="meta-value mv-imp-m">Medio</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Archivos</span>
+          <span class="meta-value" style="color:var(--text-dim);font-size:10px">native_memory.py · config</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- S4: ROADMAP -->
+<section id="roadmap">
+  <div class="section-head">
+    <span class="section-num">04</span>
+    <div>
+      <h2 class="section-title">Implementation <em>Roadmap</em></h2>
+      <p class="section-desc">3 fases · archivo único principal: agent/native_memory.py</p>
+    </div>
+  </div>
+
+  <div class="roadmap">
+    <div class="phase ph1">
+      <div class="phase-label">Fase 1 · Urgente</div>
+      <div class="phase-title">Signal over Noise</div>
+      <div class="phase-sub">El agente aprende a distinguir qué importa</div>
+      <div class="phase-features">
+        <div class="phase-feature">
+          <div class="pf-id" style="color:var(--red)">F1</div>
+          <div>
+            <div class="pf-name">Proactive Memory Protocol</div>
+            <div class="pf-outcome dim">→ El agente sabe cuándo y qué guardar</div>
+          </div>
+        </div>
+        <div class="phase-feature">
+          <div class="pf-id" style="color:var(--red)">F2</div>
+          <div>
+            <div class="pf-name">Explicit Memory Tools</div>
+            <div class="pf-outcome dim">→ memory_save / memory_search / memory_recall</div>
+          </div>
+        </div>
+        <div class="phase-feature">
+          <div class="pf-id" style="color:var(--red)">F3</div>
+          <div>
+            <div class="pf-name">Topic-key Upsert + Soft-delete</div>
+            <div class="pf-outcome dim">→ Memorias evolucionan, stale ones se retiran</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase ph2">
+      <div class="phase-label">Fase 2 · Alta prioridad</div>
+      <div class="phase-title">Persistent Intelligence</div>
+      <div class="phase-sub">El agente acumula conocimiento real entre sesiones</div>
+      <div class="phase-features">
+        <div class="phase-feature">
+          <div class="pf-id" style="color:var(--amber)">F4</div>
+          <div>
+            <div class="pf-name">Session Summary</div>
+            <div class="pf-outcome dim">→ Cierre estructurado + historial navegable</div>
+          </div>
+        </div>
+        <div class="phase-feature">
+          <div class="pf-id" style="color:var(--amber)">F6</div>
+          <div>
+            <div class="pf-name">Delegation Memory</div>
+            <div class="pf-outcome dim">→ Orquestador acumula historial de workers</div>
+          </div>
+        </div>
+        <div class="phase-feature">
+          <div class="pf-id" style="color:var(--amber)">F5</div>
+          <div>
+            <div class="pf-name">Graphify Corpus Search</div>
+            <div class="pf-outcome dim">→ Prefetch incluye conocimiento del codebase</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase ph3">
+      <div class="phase-label">Fase 3 · Refinamiento</div>
+      <div class="phase-title">Adaptive Context</div>
+      <div class="phase-sub">Optimización por plataforma y usuario</div>
+      <div class="phase-features">
+        <div class="phase-feature">
+          <div class="pf-id" style="color:var(--cyan)">F7</div>
+          <div>
+            <div class="pf-name">Memory Scope</div>
+            <div class="pf-outcome dim">→ Personal prefs vs workspace knowledge</div>
+          </div>
+        </div>
+        <div class="phase-feature">
+          <div class="pf-id" style="color:var(--cyan)">F8</div>
+          <div>
+            <div class="pf-name">Adaptive Context Budget</div>
+            <div class="pf-outcome dim">→ Token budget ajustado por plataforma</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key insight -->
+  <div class="insight-box" style="margin-top:20px">
+    <div class="insight-title">Principio de implementación — todo en un archivo</div>
+    <div class="grid-2">
+      <div class="insight-cell">
+        <div class="ic-label">Superficie de cambio</div>
+        <div class="ic-body">
+          Las 8 features impactan principalmente <span class="cyan">agent/native_memory.py</span>.
+          El MemoryManager y el contrato MemoryProvider ya tienen todos los hooks necesarios (on_delegation,
+          on_session_end, on_session_switch, on_pre_compress). Solo hay que implementarlos en NativeMemoryProvider.
+        </div>
+      </div>
+      <div class="insight-cell" style="background:var(--amber-glow2);border-color:var(--amber-dim)">
+        <div class="ic-label" style="color:var(--amber)">Lo que NO cambiar</div>
+        <div class="ic-body">
+          La arquitectura de MemoryManager + MemoryProvider + plugins externos está bien diseñada.
+          No tocar la interfaz pública ni el sistema de plugins. Las mejoras van <strong style="color:var(--amber)">dentro</strong>
+          del provider builtin, no alrededor de él.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics to track -->
+  <div style="margin-top:16px">
+    <div class="insight-box">
+      <div class="insight-title">Métricas para validar el impacto</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px">
+        <div style="background:var(--bg-3);border:1px solid var(--border);padding:14px">
+          <div class="mono" style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Signal ratio</div>
+          <div class="mono" style="font-size:12px;color:var(--text)">memory_save calls / turns<br><span style="color:var(--text-dim)">&gt;0.1 = el protocolo funciona</span></div>
+        </div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);padding:14px">
+          <div class="mono" style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Recall precision</div>
+          <div class="mono" style="font-size:12px;color:var(--text)">relevant chunks / total injected<br><span style="color:var(--text-dim)">&gt;70% relevante</span></div>
+        </div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);padding:14px">
+          <div class="mono" style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Topic reuse</div>
+          <div class="mono" style="font-size:12px;color:var(--text)">% chunks con topic_key<br><span style="color:var(--text-dim)">upserts vs inserts</span></div>
+        </div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);padding:14px">
+          <div class="mono" style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Session coverage</div>
+          <div class="mono" style="font-size:12px;color:var(--text)">sesiones con summary / total<br><span style="color:var(--text-dim)">&gt;90% = cierre consistente</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="footer-left">
+    <div style="margin-bottom:4px">Flux Agent Memory Brief · omniworker-b2b · 2026-06-07</div>
+    <div style="color:var(--text-dimmer)">Generado por Claude Code · Basado en brain/outputs/arquitectura-memoria-persistente.html</div>
+  </div>
+  <div class="footer-right">
+    <div>Native layers <span>4</span></div>
+    <div>Plugins <span>10</span></div>
+    <div>Features <span>8</span></div>
+    <div>File <span>native_memory.py</span></div>
+  </div>
+</footer>
+
+<script>
+// Nav active link
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav a');
+const navObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector(`.nav a[href="#${e.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-40% 0px -50% 0px' });
+sections.forEach(s => navObs.observe(s));
+</script>
+</body>
+</html>

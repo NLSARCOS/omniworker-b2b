@@ -166,6 +166,7 @@ import {
   EngramDaemonManager,
   searchObservations,
   getTimeline,
+  getSessionSummaries,
   getConflicts,
   judgeConflict,
   getSyncStatus,
@@ -1300,6 +1301,10 @@ function setupIPC(): void {
       return getTimeline(observationId, before, after);
     },
   );
+
+  ipcMain.handle("get-session-summaries", (_event, limit?: number) => {
+    return getSessionSummaries(limit);
+  });
 
   ipcMain.handle(
     "get-conflicts",

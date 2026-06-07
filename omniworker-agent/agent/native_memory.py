@@ -226,8 +226,11 @@ class BM25Layer:
     def __init__(self, conn: Any) -> None:
         self._conn = conn
         self._ensure_tables()
+        self._run_migration()
 
     def _ensure_tables(self) -> None:
+        # New installs get the full schema (incl. F3 columns) from the start.
+        # Existing DBs are upgraded by _run_migration() via ALTER TABLE.
         self._conn.executescript(
             """
             CREATE VIRTUAL TABLE IF NOT EXISTS memory_chunks_fts USING fts5(
@@ -240,7 +243,11 @@ class BM25Layer:
                 chunk_type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 metadata TEXT,
-                created_at REAL NOT NULL
+                created_at REAL NOT NULL,
+                topic_key TEXT,
+                revision_count INTEGER NOT NULL DEFAULT 1,
+                deleted_at REAL,
+                scope TEXT NOT NULL DEFAULT 'project'
             );
             CREATE INDEX IF NOT EXISTS idx_memory_chunks_session ON memory_chunks(session_id, created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_memory_chunks_type ON memory_chunks(chunk_type);
@@ -253,14 +260,65 @@ class BM25Layer:
             """
         )
 
-    def index(self, chunk: MemoryChunk) -> None:
+    def _run_migration(self) -> None:
+        """Add F3 columns to pre-existing DBs that lack them. Idempotent."""
+        alters = [
+            "ALTER TABLE memory_chunks ADD COLUMN topic_key TEXT",
+            "ALTER TABLE memory_chunks ADD COLUMN revision_count INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE memory_chunks ADD COLUMN deleted_at REAL",
+            "ALTER TABLE memory_chunks ADD COLUMN scope TEXT NOT NULL DEFAULT 'project'",
+        ]
+        for sql in alters:
+            try:
+                self._conn.execute(sql)
+            except Exception:
+                pass  # column already exists — fine
+        # Unique index lets topic_key act as an upsert key.
+        try:
+            self._conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_memory_topic
+                ON memory_chunks(topic_key)
+                WHERE topic_key IS NOT NULL
+                """
+            )
+        except Exception as exc:
+            logger.debug("BM25Layer: topic_key index creation skipped: %s", exc)
+
+    def index(self, chunk: MemoryChunk, topic_key: Optional[str] = None) -> None:
+        scope = chunk.metadata.get("scope", "project") if chunk.metadata else "project"
+        # Upsert path: same topic_key updates the existing row instead of duplicating.
+        if topic_key:
+            row = self._conn.execute(
+                "SELECT id FROM memory_chunks WHERE topic_key = ? AND deleted_at IS NULL",
+                (topic_key,),
+            ).fetchone()
+            if row:
+                self._conn.execute(
+                    """
+                    UPDATE memory_chunks
+                    SET content = ?, metadata = ?, created_at = ?, chunk_type = ?,
+                        scope = ?, revision_count = revision_count + 1
+                    WHERE id = ?
+                    """,
+                    (chunk.content,
+                     json.dumps(chunk.metadata) if chunk.metadata else None,
+                     chunk.created_at, chunk.chunk_type, scope, row[0]),
+                )
+                self._conn.execute(
+                    "UPDATE memory_chunks_fts SET content = ? WHERE rowid = ?",
+                    (chunk.content, row[0]),
+                )
+                chunk.id = row[0]
+                return
         cur = self._conn.execute(
             """
-            INSERT INTO memory_chunks(session_id, turn_id, chunk_type, content, metadata, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO memory_chunks(session_id, turn_id, chunk_type, content, metadata, created_at, topic_key, scope)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (chunk.session_id, chunk.turn_id, chunk.chunk_type, chunk.content,
-             json.dumps(chunk.metadata) if chunk.metadata else None, chunk.created_at),
+             json.dumps(chunk.metadata) if chunk.metadata else None, chunk.created_at,
+             topic_key, scope),
         )
         chunk.id = cur.lastrowid
 
@@ -269,8 +327,13 @@ class BM25Layer:
         query: str,
         session_id: str = "",
         k: int = 10,
+        scope: Optional[str] = None,
     ) -> List[MemoryChunk]:
-        """Search memory chunks using BM25 with recency + session affinity scoring."""
+        """Search memory chunks using BM25 with recency + session affinity scoring.
+
+        F7: pass scope='project' or 'personal' to restrict results to that
+        scope. Default (None) returns all scopes — preserves prior behavior.
+        """
         if not query or not query.strip():
             return []
 
@@ -281,32 +344,45 @@ class BM25Layer:
         quoted = " ".join(f'"{t}"' for t in tokens)
 
         now = time.time()
+        params: List[Any] = [quoted]
+        scope_clause = ""
+        if scope:
+            scope_clause = "AND c.scope = ?"
+            params.append(scope)
+        params.append(k * 3)
         rows = self._conn.execute(
-            """
+            f"""
             SELECT c.id, c.session_id, c.turn_id, c.chunk_type, c.content, c.metadata, c.created_at,
-                   rank
+                   c.topic_key, c.scope, rank
             FROM memory_chunks_fts f
             JOIN memory_chunks c ON c.id = f.rowid
             WHERE memory_chunks_fts MATCH ?
+              AND c.deleted_at IS NULL
+              {scope_clause}
             ORDER BY rank
             LIMIT ?
             """,
-            (quoted, k * 3),
+            tuple(params),
         ).fetchall()
 
         results: List[MemoryChunk] = []
         for row in rows:
+            metadata = json.loads(row[5]) if row[5] else {}
+            # Surface F3 columns through metadata for downstream consumers.
+            if row[7] is not None:
+                metadata.setdefault("topic_key", row[7])
+            metadata.setdefault("scope", row[8])
             chunk = MemoryChunk(
                 id=row[0],
                 session_id=row[1],
                 turn_id=row[2],
                 chunk_type=row[3],
                 content=row[4],
-                metadata=json.loads(row[5]) if row[5] else {},
+                metadata=metadata,
                 created_at=row[6],
             )
             # Composite scoring
-            bm25_score = -row[7] if row[7] is not None else 0.0
+            bm25_score = -row[9] if row[9] is not None else 0.0
             age_hours = (now - chunk.created_at) / 3600.0
             recency = max(0.0, 1.0 - (age_hours / 720.0))  # decay over 30 days
             session_affinity = 2.0 if chunk.session_id == session_id else 1.0
@@ -322,6 +398,22 @@ class BM25Layer:
 
         results.sort(key=lambda c: c.score, reverse=True)
         return results[:k]
+
+    def recall_by_topic(self, topic_key: str) -> Optional[str]:
+        """Return the content of the live chunk for a topic_key, or None."""
+        row = self._conn.execute(
+            "SELECT content FROM memory_chunks WHERE topic_key = ? AND deleted_at IS NULL",
+            (topic_key,),
+        ).fetchone()
+        return row[0] if row else None
+
+    def soft_delete(self, topic_key: str) -> bool:
+        """Mark a chunk deleted by topic_key. Returns True if a row was hit."""
+        cur = self._conn.execute(
+            "UPDATE memory_chunks SET deleted_at = ? WHERE topic_key = ? AND deleted_at IS NULL",
+            (time.time(), topic_key),
+        )
+        return cur.rowcount > 0
 
     def clear_session(self, session_id: str) -> None:
         self._conn.execute("DELETE FROM memory_chunks WHERE session_id = ?", (session_id,))
@@ -953,6 +1045,42 @@ class NativeMemory:
     def clear_session(self, session_id: str) -> None:
         self._bm25.clear_session(session_id)
 
+    # -- Explicit memory tools (F2) -------------------------------------------
+
+    def save_explicit(
+        self,
+        content: str,
+        chunk_type: str = "decision",
+        *,
+        topic_key: Optional[str] = None,
+        scope: str = "project",
+        session_id: str = "",
+    ) -> Dict[str, Any]:
+        """Persist an explicit memory chunk. Upserts when topic_key is given."""
+        chunk = MemoryChunk(
+            id=0,
+            session_id=session_id,
+            turn_id=-1,  # -1 marks an explicit (non-turn) memory
+            chunk_type=chunk_type,
+            content=content,
+            metadata={"scope": scope, "topic_key": topic_key, "explicit": True},
+            created_at=time.time(),
+        )
+        with self._lock:
+            self._bm25.index(chunk, topic_key=topic_key)
+            self._vector.index(chunk)
+        return {"saved": True, "id": chunk.id, "topic_key": topic_key, "scope": scope}
+
+    def search_explicit(
+        self, query: str, k: int = 5, scope: Optional[str] = None
+    ) -> List[MemoryChunk]:
+        """Search memory chunks for explicit recall (no prefetch dedup)."""
+        return self._bm25.search(query, k=k, scope=scope)
+
+    def recall_topic(self, topic_key: str) -> Optional[str]:
+        """Return the live content stored under a topic_key."""
+        return self._bm25.recall_by_topic(topic_key)
+
     @property
     def has_vector_search(self) -> bool:
         return self._vector.is_available
@@ -988,16 +1116,37 @@ class NativeMemoryProvider(MemoryProvider):
         self._session_id = session_id
         self._turn_counter = 0
 
+    # F1: tells the model when to use the F2 memory_save tool. Only meaningful
+    # because get_tool_schemas() now exposes memory_save/search/recall.
+    _MEMORY_PROTOCOL = (
+        "## Memory Protocol\n"
+        "You have persistent memory tools: memory_save, memory_search, memory_recall.\n"
+        "Call memory_save IMMEDIATELY (before replying) after any of:\n"
+        "- A decision is made (architecture, tool choice, approach)\n"
+        "- A bug is fixed — include the root cause, not just the fix\n"
+        "- The user states a preference (\"siempre X\", \"prefer Y\")\n"
+        "- A non-obvious discovery, gotcha, or constraint surfaces\n"
+        "- The user confirms a recommendation (\"dale\", \"sí, esa\", \"go with that\")\n\n"
+        "type: decision | bugfix | convention | preference | session_summary\n"
+        "topic_key: a stable slug for things that evolve, e.g. 'arch/db', 'pref/lang'. "
+        "Reusing a key updates the memory instead of duplicating it. Omit for one-off facts.\n"
+        "scope: 'project' (this workspace) | 'personal' (cross-project preference).\n\n"
+        "Before starting work that may have been done before, call memory_search first.\n"
+        "Self-check after every task: \"Did I decide something or solve something non-obvious?\" "
+        "If yes → memory_save now."
+    )
+
     def system_prompt_block(self) -> str:
+        parts = [self._MEMORY_PROTOCOL]
         ws_text = self._native.get_workspace_state_text(max_tokens=600)
-        if not ws_text:
-            return ""
-        return (
-            "## Your Workspace State\n"
-            "The following reflects your current active workspace. "
-            "It is automatically maintained and updated as you work.\n\n"
-            f"{ws_text}"
-        )
+        if ws_text:
+            parts.append(
+                "## Your Workspace State\n"
+                "The following reflects your current active workspace. "
+                "It is automatically maintained and updated as you work.\n\n"
+                f"{ws_text}"
+            )
+        return "\n\n".join(parts)
 
     def prefetch(self, query: str, *, session_id: str = "") -> str:
         sid = session_id or self._session_id
@@ -1023,8 +1172,115 @@ class NativeMemoryProvider(MemoryProvider):
         self._native.sync_turn(user_content, assistant_content, tr, sid, self._turn_counter)
 
     def get_tool_schemas(self) -> List[Dict[str, Any]]:
-        # NativeMemory does not expose tools to the model — it works silently.
-        return []
+        # F2: explicit memory tools so the model can persist/recall on demand,
+        # in addition to the silent automatic prefetch.
+        return [
+            {
+                "name": "memory_save",
+                "description": (
+                    "Persist a decision, bug fix, convention, or user preference "
+                    "to long-term memory. Pass a stable topic_key to update an "
+                    "existing memory instead of creating a duplicate."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "content": {"type": "string", "description": "The fact to remember."},
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "decision", "bugfix", "convention",
+                                "preference", "session_summary", "delegation_result",
+                            ],
+                            "description": "Category of the memory (default: decision).",
+                        },
+                        "topic_key": {
+                            "type": "string",
+                            "description": "Stable slug for upsert, e.g. 'arch/db' or 'pref/lang'. Same key updates instead of duplicating.",
+                        },
+                        "scope": {
+                            "type": "string",
+                            "enum": ["project", "personal"],
+                            "description": "project = this workspace; personal = cross-project preference (default: project).",
+                        },
+                    },
+                    "required": ["content"],
+                },
+            },
+            {
+                "name": "memory_search",
+                "description": "Search long-term memory by semantic query. Returns ranked past decisions, facts, and context.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "What to search for."},
+                        "limit": {"type": "integer", "description": "Max results (default: 5, max: 20)."},
+                        "scope": {
+                            "type": "string",
+                            "enum": ["project", "personal"],
+                            "description": "Restrict to a scope. Omit to search all scopes.",
+                        },
+                    },
+                    "required": ["query"],
+                },
+            },
+            {
+                "name": "memory_recall",
+                "description": "Fetch a single memory by its exact topic_key. Use when you know the stable slug.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "topic_key": {"type": "string", "description": "The stable slug, e.g. 'arch/db'."},
+                    },
+                    "required": ["topic_key"],
+                },
+            },
+        ]
+
+    def handle_tool_call(self, tool_name: str, args: Dict[str, Any], **kwargs: Any) -> str:
+        from tools.registry import tool_error, tool_result
+
+        if tool_name == "memory_save":
+            content = (args.get("content") or "").strip()
+            if not content:
+                return tool_error("memory_save requires non-empty 'content'")
+            result = self._native.save_explicit(
+                content=content,
+                chunk_type=args.get("type", "decision"),
+                topic_key=args.get("topic_key"),
+                scope=args.get("scope", "project"),
+                session_id=self._session_id,
+            )
+            return tool_result(result)
+
+        if tool_name == "memory_search":
+            query = (args.get("query") or "").strip()
+            if not query:
+                return tool_error("memory_search requires non-empty 'query'")
+            limit = max(1, min(int(args.get("limit", 5) or 5), 20))
+            scope = args.get("scope") or None
+            chunks = self._native.search_explicit(query, k=limit, scope=scope)
+            results = [
+                {
+                    "content": c.content,
+                    "type": c.chunk_type,
+                    "topic_key": c.metadata.get("topic_key"),
+                    "scope": c.metadata.get("scope", "project"),
+                }
+                for c in chunks
+            ]
+            return tool_result({"results": results, "count": len(results)})
+
+        if tool_name == "memory_recall":
+            topic_key = (args.get("topic_key") or "").strip()
+            if not topic_key:
+                return tool_error("memory_recall requires non-empty 'topic_key'")
+            content = self._native.recall_topic(topic_key)
+            if content is None:
+                return tool_result({"found": False, "topic_key": topic_key})
+            return tool_result({"found": True, "topic_key": topic_key, "content": content})
+
+        return tool_error(f"NativeMemory does not handle tool '{tool_name}'")
 
     def on_session_switch(
         self,
@@ -1063,6 +1319,57 @@ class NativeMemoryProvider(MemoryProvider):
         # Mirror built-in memory writes into native memory as decisions/facts
         if action == "add" and content:
             self._native.on_decision(content, session_id=self._session_id)
+
+    def on_session_end(self, messages: List[Dict[str, Any]]) -> None:
+        # F4: persist a structured summary of the session as a memory chunk.
+        # Dispatched by MemoryManager.on_session_end at real session boundaries.
+        try:
+            ws = self._native.get_workspace_state()
+            summary = {
+                "files_edited": [
+                    f.get("path") for f in ws.recently_edited_files[:5] if f.get("path")
+                ],
+                "decisions": [
+                    str(d.get("content", ""))[:200] for d in ws.pending_decisions[:3]
+                ],
+                "last_task": (ws.last_task_summary or "")[:300],
+                "msg_count": len(messages),
+            }
+            # Skip empty summaries (nothing happened worth recording).
+            if not any([summary["files_edited"], summary["decisions"], summary["last_task"]]):
+                return
+            self._native.save_explicit(
+                content=json.dumps(summary, ensure_ascii=False),
+                chunk_type="session_summary",
+                topic_key=f"session/{self._session_id}/summary",
+                scope="project",
+                session_id=self._session_id,
+            )
+        except Exception as exc:
+            logger.debug("NativeMemory on_session_end failed: %s", exc)
+
+    def on_delegation(
+        self, task: str, result: str, *, child_session_id: str = "", **kwargs: Any
+    ) -> None:
+        # F6: record what a subagent was asked and what it returned, so the
+        # orchestrator can recall prior delegations before delegating again.
+        try:
+            agent_type = kwargs.get("agent_type", "unknown")
+            content = (
+                f"Agent: {agent_type}\n"
+                f"Task: {task[:400]}\n"
+                f"Result: {result[:600]}"
+            )
+            topic_key = f"delegation/{child_session_id[:8]}" if child_session_id else None
+            self._native.save_explicit(
+                content=content,
+                chunk_type="delegation_result",
+                topic_key=topic_key,
+                scope="project",
+                session_id=self._session_id,
+            )
+        except Exception as exc:
+            logger.debug("NativeMemory on_delegation failed: %s", exc)
 
     def shutdown(self) -> None:
         pass

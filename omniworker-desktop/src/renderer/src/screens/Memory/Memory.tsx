@@ -22,6 +22,16 @@ import {
 interface MemoryEntry {
   index: number;
   content: string;
+  type?: string; // D3: parsed [type] prefix (decision/bugfix/...); "note" if none
+}
+
+interface SessionSummary {
+  session_id: string;
+  created_at: string;
+  files_edited: string[];
+  decisions: string[];
+  last_task: string;
+  msg_count: number;
 }
 
 interface MemoryData {
@@ -118,6 +128,11 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   );
   const [error, setError] = useState("");
 
+  // D4: active memory backends (offline_fts + external provider if configured)
+  const [providers, setProviders] = useState<string[]>([]);
+  // D2: recent session summaries produced by the agent's on_session_end hook
+  const [sessionSummaries, setSessionSummaries] = useState<SessionSummary[]>([]);
+
   // FTS5 Fuzzy Search
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -163,6 +178,25 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
     } catch (err: any) {
       setError("Failed to load memory data");
       setLoading(false);
+    }
+    // D4 + D2: best-effort side loads — never block the main memory view.
+    try {
+      const provs = await window.omniworkerAPI.discoverMemoryProviders(profile);
+      // discoverMemoryProviders may return string[] (native) or richer objects
+      // from the SSH path; normalize to display names.
+      setProviders(
+        (provs as any[]).map((p) =>
+          typeof p === "string" ? p : (p?.name ?? String(p))
+        )
+      );
+    } catch (err) {
+      console.error("Failed to load memory providers:", err);
+    }
+    try {
+      const summaries = await window.omniworkerAPI.getSessionSummaries(10);
+      setSessionSummaries(summaries as SessionSummary[]);
+    } catch (err) {
+      console.error("Failed to load session summaries:", err);
     }
   }, [profile]);
 
@@ -394,7 +428,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
 
   // Choose entries source based on search query
   const displayedEntries = searchQuery.trim()
-    ? searchResults.map((r) => ({ index: r.id, content: r.content }))
+    ? searchResults.map((r) => ({ index: r.id, content: r.content, type: r.type }))
     : data.memory.entries;
 
   return (
@@ -765,6 +799,64 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
             </div>
           </div>
 
+          {/* D4: Active memory backends */}
+          {providers.length > 0 && (
+            <div className="engram-glass-card" style={{ padding: "18px" }}>
+              <h3 style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 14px 0", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <Database size={15} style={{ color: "var(--accent)" }} />
+                Active Backend
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {providers.map((p) => {
+                  const isNative = p === "offline_fts";
+                  return (
+                    <div key={p} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "var(--text-secondary)" }}>
+                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
+                      <span style={{ fontFamily: "var(--font-mono)", color: "var(--text-primary)" }}>{p}</span>
+                      <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                        {isNative ? "(local)" : "(external)"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* D2: Recent session summaries (from agent on_session_end / F4) */}
+          {sessionSummaries.length > 0 && (
+            <div className="engram-glass-card" style={{ padding: "18px" }}>
+              <h3 style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 14px 0", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <Clock size={15} style={{ color: "var(--accent)" }} />
+                Recent Sessions
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {sessionSummaries.map((s, i) => (
+                  <div key={`${s.session_id}-${i}`} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "8px", padding: "10px 12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "11px", fontFamily: "var(--font-mono)", color: "var(--accent)" }}>
+                        {s.session_id ? s.session_id.slice(0, 12) : "session"}
+                      </span>
+                      <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                        {s.created_at ? timeAgo(Math.floor(new Date(s.created_at).getTime() / 1000)) : ""}
+                      </span>
+                    </div>
+                    {s.last_task && (
+                      <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "6px", whiteSpace: "pre-wrap" }}>
+                        {s.last_task}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: "12px", fontSize: "10px", color: "var(--text-muted)" }}>
+                      {s.files_edited.length > 0 && <span>{s.files_edited.length} files</span>}
+                      {s.decisions.length > 0 && <span>{s.decisions.length} decisions</span>}
+                      {s.msg_count > 0 && <span>{s.msg_count} msgs</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Storage capacity with modern neon progress bars */}
           <div className="engram-glass-card" style={{ padding: "18px" }}>
             <h3 style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 14px 0", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -1049,7 +1141,10 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
                         ) : (
                           <>
                             <div className="observation-card-header">
-                              <span className="observation-badge badge-fact">FACT</span>
+                              {/* D3: show the parsed entry type instead of a hardcoded FACT */}
+                              <span className="observation-badge badge-fact">
+                                {(entry.type ?? "note").toUpperCase()}
+                              </span>
                               <span className="observation-id">ID: {entry.index}</span>
                             </div>
                             <div className="observation-content">{entry.content}</div>

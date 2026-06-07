@@ -417,6 +417,9 @@ const omniworkerAPI = {
   ): Promise<any> =>
     ipcRenderer.invoke("get-timeline", observationId, before, after),
 
+  getSessionSummaries: (limit?: number): Promise<any[]> =>
+    ipcRenderer.invoke("get-session-summaries", limit),
+
   getConflicts: (
     project?: string,
     status?: string,

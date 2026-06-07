@@ -349,6 +349,16 @@ interface OmniWorkerAPI {
     before?: number,
     after?: number,
   ) => Promise<any>;
+  getSessionSummaries: (limit?: number) => Promise<
+    Array<{
+      session_id: string;
+      created_at: string;
+      files_edited: string[];
+      decisions: string[];
+      last_task: string;
+      msg_count: number;
+    }>
+  >;
   getConflicts: (
     project?: string,
     status?: string,

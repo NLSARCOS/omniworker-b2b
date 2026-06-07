@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, statSync } from "fs";
 import { join } from "path";
 import Database from "better-sqlite3";
 import { profileHome, profilePaths, safeWriteFile } from "./utils";
+import { getActiveMemoryProvider } from "./installer";
 
 const MEMORY_CHAR_LIMIT = 50_000; // was 2200 — too small for real memory
 const USER_CHAR_LIMIT = 10_000;
@@ -15,6 +16,11 @@ const subscribers = new Set<MemoryChangeCallback>();
 export interface MemoryEntry {
   index: number;
   content: string;
+  /**
+   * D3: parsed from a leading `[type]` prefix, e.g. `[decision] ...`.
+   * Defaults to "note" for legacy entries without a prefix.
+   */
+  type?: string;
 }
 
 export interface MemoryInfo {
@@ -74,16 +80,34 @@ function readFileSafe(filePath: string): {
   }
 }
 
+// D3: leading `[type]` tag, e.g. "[decision] use sqlite". Lowercase + underscore
+// only, matching the agent's chunk_type values (decision, bugfix, ...).
+const TYPE_PREFIX = /^\[([a-z_]+)\]\s*/;
+
 function parseMemoryEntries(content: string): MemoryEntry[] {
   if (!content.trim()) return [];
   return content
     .split("\n§\n")
-    .map((entry, index) => ({ index, content: entry.trim() }))
+    .map((entry, index) => {
+      const t = entry.trim();
+      const m = TYPE_PREFIX.exec(t);
+      return {
+        index,
+        type: m?.[1] ?? "note", // legacy entries without a prefix → "note"
+        content: t.replace(TYPE_PREFIX, ""),
+      };
+    })
     .filter((e) => e.content.length > 0);
 }
 
 function serializeEntries(entries: MemoryEntry[]): string {
-  return entries.map((e) => e.content).join("\n§\n");
+  return entries
+    .map((e) => {
+      // Preserve the type prefix on round-trip; omit it for plain notes.
+      const prefix = e.type && e.type !== "note" ? `[${e.type}] ` : "";
+      return `${prefix}${e.content}`;
+    })
+    .join("\n§\n");
 }
 
 const writeFileSafe = safeWriteFile;
@@ -104,6 +128,10 @@ function nativeMemoryTablesExist(db: Database.Database): boolean {
 }
 
 function ensureNativeMemoryTables(db: Database.Database): void {
+  // New installs get the full schema (incl. F3 columns: topic_key,
+  // revision_count, deleted_at, scope) from the start. Existing DBs are
+  // upgraded below via ALTER TABLE — kept in lockstep with the agent's
+  // BM25Layer._run_migration() in native_memory.py.
   db.exec(`
     CREATE TABLE IF NOT EXISTS memory_chunks (
       id INTEGER PRIMARY KEY,
@@ -112,13 +140,41 @@ function ensureNativeMemoryTables(db: Database.Database): void {
       chunk_type TEXT NOT NULL DEFAULT 'manual',
       content TEXT NOT NULL,
       metadata TEXT,
-      created_at REAL NOT NULL
+      created_at REAL NOT NULL,
+      topic_key TEXT,
+      revision_count INTEGER NOT NULL DEFAULT 1,
+      deleted_at REAL,
+      scope TEXT NOT NULL DEFAULT 'project'
     );
     CREATE INDEX IF NOT EXISTS idx_memory_chunks_session
       ON memory_chunks(session_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_memory_chunks_type
       ON memory_chunks(chunk_type);
   `);
+  // F3 migration for pre-existing DBs that lack the new columns. Idempotent —
+  // SQLite throws "duplicate column" if it already exists, which we ignore.
+  const f3Alters = [
+    "ALTER TABLE memory_chunks ADD COLUMN topic_key TEXT",
+    "ALTER TABLE memory_chunks ADD COLUMN revision_count INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE memory_chunks ADD COLUMN deleted_at REAL",
+    "ALTER TABLE memory_chunks ADD COLUMN scope TEXT NOT NULL DEFAULT 'project'",
+  ];
+  for (const sql of f3Alters) {
+    try {
+      db.exec(sql);
+    } catch {
+      // Column already exists — fine.
+    }
+  }
+  try {
+    db.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_memory_topic
+        ON memory_chunks(topic_key)
+        WHERE topic_key IS NOT NULL;
+    `);
+  } catch {
+    // Index already exists or older SQLite — ignore.
+  }
   // Create FTS5 virtual table if not exists
   try {
     db.exec(`
@@ -703,6 +759,85 @@ export async function getTimeline(
   }
 }
 
+export interface DesktopSessionSummary {
+  session_id: string;
+  created_at: string;
+  files_edited: string[];
+  decisions: string[];
+  last_task: string;
+  msg_count: number;
+}
+
+/**
+ * D2: read session_summary chunks produced by the agent's F4 on_session_end
+ * hook. Read-only over the shared state.db — never writes.
+ */
+export async function getSessionSummaries(
+  limit = 20,
+): Promise<DesktopSessionSummary[]> {
+  const db = openStateDb(undefined, true);
+  if (!db) return [];
+
+  try {
+    if (!nativeMemoryTablesExist(db)) return [];
+
+    // deleted_at filter is best-effort: it exists once the agent has run its
+    // F3 migration. Fall back to a query without it on legacy schemas.
+    let rows: any[];
+    try {
+      rows = db
+        .prepare(
+          `SELECT session_id, content, created_at, topic_key
+           FROM memory_chunks
+           WHERE chunk_type = 'session_summary' AND deleted_at IS NULL
+           ORDER BY created_at DESC
+           LIMIT ?`
+        )
+        .all(limit) as any[];
+    } catch {
+      rows = db
+        .prepare(
+          `SELECT session_id, content, created_at, topic_key
+           FROM memory_chunks
+           WHERE chunk_type = 'session_summary'
+           ORDER BY created_at DESC
+           LIMIT ?`
+        )
+        .all(limit) as any[];
+    }
+
+    const summaries: DesktopSessionSummary[] = [];
+    for (const row of rows) {
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(row.content);
+      } catch {
+        // Non-JSON content — skip the structured fields but keep the row.
+      }
+      const sessionId =
+        (row.topic_key as string | null)
+          ?.replace(/^session\//, "")
+          .replace(/\/summary$/, "") ||
+        row.session_id ||
+        "";
+      summaries.push({
+        session_id: sessionId,
+        created_at: new Date(row.created_at * 1000).toISOString(),
+        files_edited: Array.isArray(parsed.files_edited) ? parsed.files_edited : [],
+        decisions: Array.isArray(parsed.decisions) ? parsed.decisions : [],
+        last_task: typeof parsed.last_task === "string" ? parsed.last_task : "",
+        msg_count: typeof parsed.msg_count === "number" ? parsed.msg_count : 0,
+      });
+    }
+    return summaries;
+  } catch (err) {
+    console.error("[memory] getSessionSummaries failed:", err);
+    return [];
+  } finally {
+    db.close();
+  }
+}
+
 export async function getConflicts(
   _project = "omniworker",
   _status = "pending",
@@ -730,6 +865,18 @@ export async function triggerSync(_project = "omniworker"): Promise<any> {
   return { success: true };
 }
 
-export function discoverMemoryProviders(_profile?: string): string[] {
-  return ["offline_fts"];
+export function discoverMemoryProviders(profile?: string): string[] {
+  // The native FTS5 layer (offline_fts) is always active. If config.yaml
+  // declares an external memory provider (honcho, mem0, ...), surface it too
+  // so the UI reflects the real backend instead of a hardcoded stub.
+  const providers = ["offline_fts"];
+  try {
+    const active = getActiveMemoryProvider(profile);
+    if (active && active !== "native" && active !== "offline_fts") {
+      providers.push(active);
+    }
+  } catch {
+    // config unreadable — native layer is still accurate on its own.
+  }
+  return providers;
 }
