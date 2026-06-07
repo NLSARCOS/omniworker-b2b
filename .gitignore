@@ -42,6 +42,13 @@ omniworker-saas/public/downloads/
 omniworker-agent.tar.gz
 omniworker-desktop/dist_bak/
 
-# Graphify generated outputs
-graphify-out/
+# Graphify - track lightweight reports, ignore cache + heavy generated blobs
+graphify-out/cache/
+graphify-out/.graphify_*.json
+graphify-out/.graphify_*.txt
+# Heavy generated artifacts (too large for git): regenerate with `graphify update .`
+graphify-out/graph.json
+graphify-out/graph.html
+# Machine-specific interpreter path
+graphify-out/.graphify_python
 
