@@ -158,6 +158,8 @@ LAZY_DEPS: dict[str, tuple[str, ...]] = {
     "skill.youtube": ("youtube-transcript-api==1.2.4",),
 
     # ─── Tools ─────────────────────────────────────────────────────────────
+    # Scrapling — stealthy web scraping with anti-bot bypass
+    "tool.scrapling": ("scrapling[fetchers]==0.4.8",),
     # ACP adapter (VS Code / Zed / JetBrains integration)
     "tool.acp": ("agent-client-protocol==0.9.0",),
     # Dashboard (`omniworker dashboard`)
