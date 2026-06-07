@@ -308,6 +308,30 @@ TOOLSETS = {
         "includes": []
     },
 
+    "gmail": {
+        "description": "Gmail email management — search, read, send, reply, and label management via Google OAuth",
+        "tools": [
+            "gmail_search", "gmail_read", "gmail_send", "gmail_labels",
+        ],
+        "includes": []
+    },
+
+    "gcalendar": {
+        "description": "Google Calendar — list events, create events, manage calendars via Google OAuth",
+        "tools": [
+            "gcalendar_list_events", "gcalendar_create_event", "gcalendar_list_calendars",
+        ],
+        "includes": []
+    },
+
+    "gdrive": {
+        "description": "Google Drive — search, read, upload files, and browse folders via Google OAuth",
+        "tools": [
+            "gdrive_search", "gdrive_read", "gdrive_upload", "gdrive_list_folder",
+        ],
+        "includes": []
+    },
+
 
     # Scenario-specific toolsets
     

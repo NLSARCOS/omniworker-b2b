@@ -146,7 +146,23 @@ DEFAULT_SPOTIFY_SCOPE = " ".join((
 ))
 SERVICE_PROVIDER_NAMES: Dict[str, str] = {
     "spotify": "Spotify",
+    "google": "Google Workspace",
 }
+
+# Google Workspace OAuth2 (Gmail + Calendar + Drive)
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+DEFAULT_GOOGLE_REDIRECT_URI = "http://127.0.0.1:43828/google/callback"
+GOOGLE_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
+DEFAULT_GOOGLE_SCOPE = " ".join((
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar.events",
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/drive.file",
+))
 
 # Google Gemini OAuth (google-gemini-cli provider, Cloud Code Assist backend)
 DEFAULT_GEMINI_CLOUDCODE_BASE_URL = "cloudcode-pa://google"
@@ -2885,6 +2901,464 @@ def login_spotify_command(args) -> None:
     print(f"  Auth state: {saved_to}")
     print("  Provider state saved under providers.spotify")
     print(f"  Docs: {SPOTIFY_DOCS_URL}")
+
+
+# =============================================================================
+# Google Workspace OAuth2 (Gmail + Calendar + Drive)
+# =============================================================================
+
+def _google_client_id(explicit: str = None, state: Dict[str, Any] = None) -> str:
+    candidates = [
+        explicit,
+        os.getenv("GOOGLE_CLIENT_ID"),
+    ]
+    if state:
+        candidates.append(state.get("client_id"))
+    try:
+        from omniworker_cli.config import get_env_value
+        candidates.append(get_env_value("GOOGLE_CLIENT_ID"))
+    except Exception:
+        pass
+    for c in candidates:
+        if c and str(c).strip():
+            return str(c).strip()
+    raise AuthError(
+        "GOOGLE_CLIENT_ID is required. Run `omniworker auth google` to set it up.",
+        provider="google",
+        code="google_client_id_missing",
+    )
+
+
+def _google_client_secret(explicit: str = None, state: Dict[str, Any] = None) -> str:
+    candidates = [
+        explicit,
+        os.getenv("GOOGLE_CLIENT_SECRET"),
+    ]
+    if state:
+        candidates.append(state.get("client_secret"))
+    try:
+        from omniworker_cli.config import get_env_value
+        candidates.append(get_env_value("GOOGLE_CLIENT_SECRET"))
+    except Exception:
+        pass
+    for c in candidates:
+        if c and str(c).strip():
+            return str(c).strip()
+    raise AuthError(
+        "GOOGLE_CLIENT_SECRET is required. Run `omniworker auth google` to set it up.",
+        provider="google",
+        code="google_client_secret_missing",
+    )
+
+
+def _google_exchange_code_for_tokens(
+    *,
+    client_id: str,
+    client_secret: str,
+    code: str,
+    redirect_uri: str,
+    code_verifier: str,
+    timeout_seconds: float = 20.0,
+) -> Dict[str, Any]:
+    try:
+        response = httpx.post(
+            GOOGLE_TOKEN_URL,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "code_verifier": code_verifier,
+            },
+            timeout=timeout_seconds,
+        )
+    except Exception as exc:
+        raise AuthError(
+            f"Google token exchange failed: {exc}",
+            provider="google",
+            code="google_token_exchange_failed",
+        ) from exc
+
+    if response.status_code >= 400:
+        detail = response.text.strip()
+        raise AuthError(
+            "Google token exchange failed."
+            + (f" Response: {detail}" if detail else ""),
+            provider="google",
+            code="google_token_exchange_failed",
+        )
+    payload = response.json()
+    if not isinstance(payload, dict) or not str(payload.get("access_token", "") or "").strip():
+        raise AuthError(
+            "Google token response did not include an access_token.",
+            provider="google",
+            code="google_token_exchange_invalid",
+        )
+    return payload
+
+
+def _google_token_payload_to_state(
+    token_payload: Dict[str, Any],
+    *,
+    client_id: str,
+    client_secret: str,
+    redirect_uri: str,
+    requested_scope: str,
+    previous_state: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    now = datetime.now(timezone.utc)
+    expires_in = _coerce_ttl_seconds(token_payload.get("expires_in", 0))
+    expires_at = datetime.fromtimestamp(now.timestamp() + expires_in, tz=timezone.utc)
+    state = dict(previous_state or {})
+    state.update({
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": redirect_uri,
+        "scope": requested_scope,
+        "granted_scope": str(token_payload.get("scope") or requested_scope).strip(),
+        "token_type": str(token_payload.get("token_type", "Bearer") or "Bearer").strip() or "Bearer",
+        "access_token": str(token_payload.get("access_token", "") or "").strip(),
+        "refresh_token": str(
+            token_payload.get("refresh_token")
+            or state.get("refresh_token")
+            or ""
+        ).strip(),
+        "obtained_at": now.isoformat(),
+        "expires_at": expires_at.isoformat(),
+        "expires_in": expires_in,
+        "auth_type": "oauth_pkce",
+    })
+    return state
+
+
+def _refresh_google_oauth_state(
+    state: Dict[str, Any],
+    *,
+    timeout_seconds: float = 20.0,
+) -> Dict[str, Any]:
+    refresh_token = str(state.get("refresh_token", "") or "").strip()
+    if not refresh_token:
+        raise AuthError(
+            "Google refresh token missing. Run `omniworker auth google` again.",
+            provider="google",
+            code="google_refresh_token_missing",
+            relogin_required=True,
+        )
+
+    client_id = _google_client_id(state=state)
+    client_secret = _google_client_secret(state=state)
+    try:
+        response = httpx.post(
+            GOOGLE_TOKEN_URL,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+            timeout=timeout_seconds,
+        )
+    except Exception as exc:
+        raise AuthError(
+            f"Google token refresh failed: {exc}",
+            provider="google",
+            code="google_refresh_failed",
+        ) from exc
+
+    if response.status_code >= 400:
+        detail = response.text.strip()
+        raise AuthError(
+            "Google token refresh failed. Run `omniworker auth google` again."
+            + (f" Response: {detail}" if detail else ""),
+            provider="google",
+            code="google_refresh_failed",
+            relogin_required=True,
+        )
+
+    payload = response.json()
+    if not isinstance(payload, dict) or not str(payload.get("access_token", "") or "").strip():
+        raise AuthError(
+            "Google refresh response did not include an access_token.",
+            provider="google",
+            code="google_refresh_invalid",
+            relogin_required=True,
+        )
+
+    return _google_token_payload_to_state(
+        payload,
+        client_id=client_id,
+        client_secret=client_secret,
+        redirect_uri=str(state.get("redirect_uri") or DEFAULT_GOOGLE_REDIRECT_URI),
+        requested_scope=str(state.get("scope") or DEFAULT_GOOGLE_SCOPE),
+        previous_state=state,
+    )
+
+
+def resolve_google_runtime_credentials(
+    *,
+    force_refresh: bool = False,
+    refresh_if_expiring: bool = True,
+    refresh_skew_seconds: int = GOOGLE_ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
+) -> Dict[str, Any]:
+    with _auth_store_lock():
+        auth_store = _load_auth_store()
+        state = _load_provider_state(auth_store, "google")
+        if not state:
+            raise AuthError(
+                "Google is not authenticated. Run `omniworker auth google` first.",
+                provider="google",
+                code="google_auth_missing",
+                relogin_required=True,
+            )
+
+        should_refresh = bool(force_refresh)
+        if not should_refresh and refresh_if_expiring:
+            should_refresh = _is_expiring(state.get("expires_at"), refresh_skew_seconds)
+        if should_refresh:
+            state = _refresh_google_oauth_state(state)
+            _store_provider_state(auth_store, "google", state, set_active=False)
+            _save_auth_store(auth_store)
+
+    access_token = str(state.get("access_token", "") or "").strip()
+    if not access_token:
+        raise AuthError(
+            "Google access token missing. Run `omniworker auth google` again.",
+            provider="google",
+            code="google_access_token_missing",
+            relogin_required=True,
+        )
+
+    return {
+        "provider": "google",
+        "access_token": access_token,
+        "token_type": str(state.get("token_type", "Bearer") or "Bearer"),
+        "scope": str(state.get("granted_scope") or state.get("scope") or "").strip(),
+        "client_id": _google_client_id(state=state),
+        "expires_at": state.get("expires_at"),
+        "refresh_token": str(state.get("refresh_token", "") or "").strip(),
+    }
+
+
+def get_google_auth_status() -> Dict[str, Any]:
+    state = get_provider_auth_state("google")
+    if not state:
+        return {"logged_in": False}
+
+    expires_at = state.get("expires_at")
+    refresh_token = str(state.get("refresh_token", "") or "").strip()
+    return {
+        "logged_in": bool(refresh_token or not _is_expiring(expires_at, 0)),
+        "auth_type": state.get("auth_type", "oauth_pkce"),
+        "client_id": state.get("client_id"),
+        "scope": state.get("granted_scope") or state.get("scope"),
+        "expires_at": expires_at,
+        "has_refresh_token": bool(refresh_token),
+    }
+
+
+def _google_interactive_setup(redirect_uri_hint: str) -> tuple:
+    from omniworker_cli.config import save_env_value
+
+    print()
+    print("=" * 70)
+    print("Google Workspace first-time setup (Gmail + Calendar + Drive)")
+    print("=" * 70)
+    print()
+    print("You need to create a Google Cloud project with OAuth credentials.")
+    print("This takes about 5 minutes and only has to be done once.")
+    print()
+    print("Steps:")
+    print("  1. Go to https://console.cloud.google.com")
+    print("  2. Create a project → Enable Gmail API, Calendar API, Drive API")
+    print("  3. Go to Credentials → Create OAuth 2.0 Client ID (Desktop app)")
+    print(f"  4. Add this redirect URI: {redirect_uri_hint}")
+    print("  5. Copy the Client ID and Client Secret below.")
+    print()
+
+    if not _is_remote_session():
+        try:
+            webbrowser.open("https://console.cloud.google.com/apis/credentials")
+        except Exception:
+            pass
+
+    try:
+        client_id = input("Google Client ID: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        raise SystemExit("Google setup cancelled.")
+
+    if not client_id:
+        raise SystemExit("Google setup cancelled: empty Client ID.")
+
+    try:
+        client_secret = input("Google Client Secret: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        raise SystemExit("Google setup cancelled.")
+
+    if not client_secret:
+        raise SystemExit("Google setup cancelled: empty Client Secret.")
+
+    save_env_value("GOOGLE_CLIENT_ID", client_id)
+    save_env_value("GOOGLE_CLIENT_SECRET", client_secret)
+
+    print()
+    print("Saved GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to ~/.omniworker/.env")
+    print()
+    return client_id, client_secret
+
+
+def _google_build_authorize_url(
+    *,
+    client_id: str,
+    redirect_uri: str,
+    scope: str,
+    state: str,
+    code_challenge: str,
+) -> str:
+    query = urlencode({
+        "client_id": client_id,
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "scope": scope,
+        "state": state,
+        "code_challenge_method": "S256",
+        "code_challenge": code_challenge,
+        "access_type": "offline",
+        "prompt": "consent",
+    })
+    return f"{GOOGLE_AUTH_URL}?{query}"
+
+
+def _google_wait_for_callback(
+    redirect_uri: str,
+    *,
+    timeout_seconds: float = 180.0,
+) -> dict[str, Any]:
+    parsed = urlparse(redirect_uri)
+    host = parsed.hostname or "127.0.0.1"
+    port = parsed.port or 43828
+    path = parsed.path or "/google/callback"
+
+    handler_cls, result = _make_spotify_callback_handler(path)
+
+    class _ReuseHTTPServer(HTTPServer):
+        allow_reuse_address = True
+
+    try:
+        server = _ReuseHTTPServer((host, port), handler_cls)
+    except OSError as exc:
+        raise AuthError(
+            f"Could not bind Google callback server on {host}:{port}: {exc}",
+            provider="google",
+            code="google_callback_bind_failed",
+        ) from exc
+
+    thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.1}, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + max(5.0, timeout_seconds)
+    try:
+        while time.monotonic() < deadline:
+            if result["code"] or result["error"]:
+                return result
+            time.sleep(0.1)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=1.0)
+    raise AuthError(
+        "Google authorization timed out waiting for the local callback.",
+        provider="google",
+        code="google_callback_timeout",
+    )
+
+
+def login_google_command(args) -> None:
+    """Authenticate with Google Workspace (Gmail + Calendar + Drive) via OAuth2 PKCE."""
+    existing_state = get_provider_auth_state("google") or {}
+
+    # Get or set up credentials
+    explicit_client_id = getattr(args, "client_id", None)
+    explicit_client_secret = getattr(args, "client_secret", None)
+    redirect_uri = DEFAULT_GOOGLE_REDIRECT_URI
+
+    try:
+        client_id = _google_client_id(explicit_client_id, existing_state)
+        client_secret = _google_client_secret(explicit_client_secret, existing_state)
+    except AuthError:
+        client_id, client_secret = _google_interactive_setup(redirect_uri)
+
+    scope = DEFAULT_GOOGLE_SCOPE
+    open_browser = not getattr(args, "no_browser", False)
+
+    code_verifier = _oauth_pkce_code_verifier()
+    code_challenge = _oauth_pkce_code_challenge(code_verifier)
+    state_nonce = uuid.uuid4().hex
+    authorize_url = _google_build_authorize_url(
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+        scope=scope,
+        state=state_nonce,
+        code_challenge=code_challenge,
+    )
+
+    print("Starting Google Workspace OAuth login...")
+    print(f"Client ID: {client_id[:20]}...")
+    print(f"Redirect URI: {redirect_uri}")
+    print()
+    print("Open this URL to authorize Flux Agent:")
+    print(authorize_url)
+    print()
+
+    _print_loopback_ssh_hint(redirect_uri)
+
+    if open_browser and not _is_remote_session():
+        try:
+            opened = webbrowser.open(authorize_url)
+        except Exception:
+            opened = False
+        if opened:
+            print("Browser opened for Google authorization.")
+        else:
+            print("Could not open the browser automatically; use the URL above.")
+
+    callback = _google_wait_for_callback(
+        redirect_uri,
+        timeout_seconds=float(getattr(args, "timeout", None) or 180.0),
+    )
+    if callback.get("error"):
+        detail = callback.get("error_description") or callback["error"]
+        raise SystemExit(f"Google authorization failed: {detail}")
+    if callback.get("state") != state_nonce:
+        raise SystemExit("Google authorization failed: state mismatch.")
+
+    token_payload = _google_exchange_code_for_tokens(
+        client_id=client_id,
+        client_secret=client_secret,
+        code=str(callback.get("code") or ""),
+        redirect_uri=redirect_uri,
+        code_verifier=code_verifier,
+    )
+    google_state = _google_token_payload_to_state(
+        token_payload,
+        client_id=client_id,
+        client_secret=client_secret,
+        redirect_uri=redirect_uri,
+        requested_scope=scope,
+    )
+
+    with _auth_store_lock():
+        auth_store = _load_auth_store()
+        _store_provider_state(auth_store, "google", google_state, set_active=False)
+        saved_to = _save_auth_store(auth_store)
+
+    print("Google Workspace login successful!")
+    print(f"  Auth state: {saved_to}")
+    print("  Services: Gmail, Calendar, Drive")
+    print("  Provider state saved under providers.google")
 
 # =============================================================================
 # SSH / remote session detection

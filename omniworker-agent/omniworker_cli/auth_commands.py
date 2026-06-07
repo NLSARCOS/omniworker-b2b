@@ -539,7 +539,22 @@ def auth_spotify_command(args) -> None:
     raise SystemExit(f"Unknown Spotify auth action: {action}")
 
 
+def auth_google_command(args) -> None:
+    action = str(getattr(args, "google_action", "") or "login").strip().lower()
+    if action in {"", "login"}:
+        auth_mod.login_google_command(args)
+        return
+    if action == "status":
+        auth_status_command(SimpleNamespace(provider="google"))
+        return
+    if action == "logout":
+        auth_logout_command(SimpleNamespace(provider="google"))
+        return
+    raise SystemExit(f"Unknown Google auth action: {action}")
+
+
 def _interactive_auth() -> None:
+
     """Interactive credential pool management when `hermes auth` is called bare."""
     # Show current pool status first
     print("Credential Pool Status")
@@ -792,6 +807,9 @@ def auth_command(args) -> None:
         return
     if action == "spotify":
         auth_spotify_command(args)
+        return
+    if action == "google":
+        auth_google_command(args)
         return
     # No subcommand — launch interactive mode
     _interactive_auth()

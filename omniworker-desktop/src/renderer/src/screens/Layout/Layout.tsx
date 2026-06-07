@@ -60,22 +60,22 @@ type View =
   | "settings"
   | "account";
 
-const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
+const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string; advancedOnly?: boolean }[] = [
   { view: "chat", icon: ChatBubble, labelKey: "navigation.chat" },
   { view: "sessions", icon: Clock, labelKey: "navigation.sessions" },
-  { view: "agents", icon: Users, labelKey: "navigation.agents" },
+  { view: "agents", icon: Users, labelKey: "navigation.agents", advancedOnly: true },
   { view: "whatsapp", icon: Bot, labelKey: "navigation.whatsapp" },
   { view: "kanban", icon: KanbanIcon, labelKey: "navigation.kanban" },
   //  { view: "models", icon: Layers, labelKey: "navigation.models" },
   //  { view: "providers", icon: KeyRound, labelKey: "navigation.providers" },
-  { view: "skills", icon: Puzzle, labelKey: "navigation.skills" },
-  { view: "soul", icon: Sparkles, labelKey: "navigation.soul" },
-  { view: "memory", icon: Brain, labelKey: "navigation.memory" },
-  { view: "tools", icon: Wrench, labelKey: "navigation.tools" },
-  { view: "tokens", icon: TokenMetrics, labelKey: "navigation.tokens" },
-  { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
-  { view: "smartpatterns", icon: Brain, labelKey: "navigation.smartpatterns" },
-  { view: "gateway", icon: Signal, labelKey: "navigation.gateway" },
+  { view: "skills", icon: Puzzle, labelKey: "navigation.skills", advancedOnly: true },
+  { view: "soul", icon: Sparkles, labelKey: "navigation.soul", advancedOnly: true },
+  { view: "memory", icon: Brain, labelKey: "navigation.memory", advancedOnly: true },
+  { view: "tools", icon: Wrench, labelKey: "navigation.tools", advancedOnly: true },
+  { view: "tokens", icon: TokenMetrics, labelKey: "navigation.tokens", advancedOnly: true },
+  { view: "schedules", icon: Timer, labelKey: "navigation.schedules", advancedOnly: true },
+  { view: "smartpatterns", icon: Brain, labelKey: "navigation.smartpatterns", advancedOnly: true },
+  { view: "gateway", icon: Signal, labelKey: "navigation.gateway", advancedOnly: true },
   { view: "settings", icon: SettingsIcon, labelKey: "navigation.settings" },
   { view: "account", icon: User, labelKey: "navigation.account" },
 ];
@@ -101,6 +101,20 @@ function Layout({
   const [view, setView] = useState<View>("chat");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+  // Simple/Advanced mode — default is Simple (false)
+  const [advancedMode, setAdvancedMode] = useState<boolean>(
+    () => localStorage.getItem("flux-advanced-mode") === "true",
+  );
+
+  // Listen for Settings toggle changes in real-time
+  useEffect(() => {
+    const handler = (): void => {
+      setAdvancedMode(localStorage.getItem("flux-advanced-mode") === "true");
+    };
+    window.addEventListener("advancedModeChanged", handler);
+    return () => window.removeEventListener("advancedModeChanged", handler);
+  }, []);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -426,7 +440,8 @@ function Layout({
         </div>
 
         <nav className="sidebar-nav">
-          {NAV_ITEMS.filter(({ view: v }) => {
+          {NAV_ITEMS.filter(({ view: v, advancedOnly }) => {
+            if (advancedOnly && !advancedMode) return false;
             if (v === "whatsapp") return whatsappBotEnabled;
             return true;
           }).map(({ view: v, icon: Icon, labelKey }) => (

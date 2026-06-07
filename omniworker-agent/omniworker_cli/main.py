@@ -10497,7 +10497,7 @@ def main():
     )
     logout_parser.add_argument(
         "--provider",
-        choices=["nous", "openai-codex", "xai-oauth", "spotify"],
+        choices=["nous", "openai-codex", "xai-oauth", "spotify", "google"],
         default=None,
         help="Provider to log out from (default: active provider)",
     )
@@ -10596,6 +10596,29 @@ def main():
         help="Do not attempt to open the browser automatically",
     )
     auth_spotify.add_argument(
+        "--timeout", type=float, help="Callback/token exchange timeout in seconds"
+    )
+    auth_google = auth_subparsers.add_parser(
+        "google", help="Authenticate Flux Agent with Google Workspace (Gmail, Calendar, Drive)"
+    )
+    auth_google.add_argument(
+        "google_action",
+        nargs="?",
+        choices=["login", "status", "logout"],
+        default="login",
+    )
+    auth_google.add_argument(
+        "--client-id", help="Google OAuth client_id (or set GOOGLE_CLIENT_ID in .env)"
+    )
+    auth_google.add_argument(
+        "--client-secret", help="Google OAuth client_secret (or set GOOGLE_CLIENT_SECRET in .env)"
+    )
+    auth_google.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Do not attempt to open the browser automatically",
+    )
+    auth_google.add_argument(
         "--timeout", type=float, help="Callback/token exchange timeout in seconds"
     )
     auth_parser.set_defaults(func=cmd_auth)

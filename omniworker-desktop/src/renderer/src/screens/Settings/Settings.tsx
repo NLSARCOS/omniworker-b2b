@@ -101,6 +101,11 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   const [httpProxy, setHttpProxy] = useState("");
   const [networkSaved, setNetworkSaved] = useState(false);
 
+  // Advanced mode toggle state
+  const [advancedMode, setAdvancedMode] = useState(
+    () => localStorage.getItem("flux-advanced-mode") === "true",
+  );
+
   // Debug dump
   const [dumpOutput, setDumpOutput] = useState<string | null>(null);
   const [dumpRunning, setDumpRunning] = useState(false);
@@ -607,9 +612,36 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
               <LanguageSelect locale={locale} onSelect={setLocale} />
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{t("settings.language.hint")}</p>
             </div>
+
+            {/* Advanced Mode Toggle */}
+            <div className="flex items-start justify-between bg-white/[0.01] p-3 rounded-lg border border-[var(--border)]">
+              <div className="space-y-1 pr-4">
+                <span className="text-xs font-semibold text-[var(--text-primary)] block flex items-center gap-1.5">
+                  🔧 Modo Avanzado
+                </span>
+                <span className="text-[11px] text-[var(--text-muted)] leading-relaxed block">
+                  Muestra perfiles, habilidades, personalidad, memoria, herramientas, métricas de tokens, programaciones, patrones inteligentes y gateway.
+                </span>
+              </div>
+              <label className="custom-toggle inline-flex items-center flex-shrink-0 mt-1 select-none">
+                <input
+                  type="checkbox"
+                  className="hidden"
+                  checked={advancedMode}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    setAdvancedMode(val);
+                    localStorage.setItem("flux-advanced-mode", val ? "true" : "false");
+                    window.dispatchEvent(new CustomEvent("advancedModeChanged"));
+                  }}
+                />
+                <span className="toggle-track" />
+              </label>
+            </div>
           </div>
           <div className="h-6" /> {/* Spacer alignment */}
         </div>
+
 
         {/* Card 3: Intelligent Network */}
         <div className="cockpit-card p-6 flex flex-col justify-between">
