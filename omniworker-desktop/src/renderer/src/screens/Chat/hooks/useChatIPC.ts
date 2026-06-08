@@ -162,7 +162,13 @@ export function useChatIPC({
         promptTokens: (prev?.promptTokens || 0) + u.promptTokens,
         completionTokens: (prev?.completionTokens || 0) + u.completionTokens,
         totalTokens: (prev?.totalTokens || 0) + u.totalTokens,
+        inputTokensNew: (prev?.inputTokensNew || 0) + (u.inputTokensNew || 0),
+        cacheReadTokens: (prev?.cacheReadTokens || 0) + (u.cacheReadTokens || 0),
+        cacheWriteTokens: (prev?.cacheWriteTokens || 0) + (u.cacheWriteTokens || 0),
+        reasoningTokens: (prev?.reasoningTokens || 0) + (u.reasoningTokens || 0),
         cost: u.cost != null ? (prev?.cost || 0) + u.cost : prev?.cost,
+        costStatus: u.costStatus,
+        apiCalls: (prev?.apiCalls || 0) + (u.apiCalls || 0),
       }));
     });
 

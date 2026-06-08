@@ -54,5 +54,17 @@ export interface UsageState {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  /** Input tokens that were NOT served from cache (billable at full rate). */
+  inputTokensNew: number;
+  /** Tokens served from prompt cache (billed at ~0.1× rate). */
+  cacheReadTokens: number;
+  /** Tokens written to prompt cache (billed at ~1.25× rate). */
+  cacheWriteTokens: number;
+  /** Reasoning/thinking tokens. */
+  reasoningTokens: number;
   cost?: number;
+  /** Whether cost is a real estimate, subscription-included, or unknown. */
+  costStatus?: string;
+  /** Number of LLM API calls made for this session. */
+  apiCalls?: number;
 }
