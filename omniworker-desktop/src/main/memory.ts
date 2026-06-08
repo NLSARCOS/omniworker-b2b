@@ -5,7 +5,6 @@ import { profileHome, profilePaths, safeWriteFile } from "./utils";
 import { getActiveMemoryProvider } from "./installer";
 import {
   LocalMemoryEngine,
-  ensureSuperMemorySchema,
   type LocalProfile,
   type HybridSearchResult,
   type FactNode,
