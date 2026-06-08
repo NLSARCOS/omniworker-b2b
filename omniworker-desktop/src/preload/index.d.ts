@@ -217,7 +217,13 @@ interface OmniWorkerAPI {
       promptTokens: number;
       completionTokens: number;
       totalTokens: number;
+      inputTokensNew: number;
+      cacheReadTokens: number;
+      cacheWriteTokens: number;
+      reasoningTokens: number;
       cost?: number;
+      costStatus?: string;
+      apiCalls?: number;
       rateLimitRemaining?: number;
       rateLimitReset?: number;
     }) => void,

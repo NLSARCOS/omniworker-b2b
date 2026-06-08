@@ -16,15 +16,28 @@ interface ChatHeaderProps {
 }
 
 function UsageBadge({ usage }: { usage: UsageState }): React.JSX.Element {
+  // Billable at full rate: new input + output. Cache is shown separately.
+  const billable = (usage.inputTokensNew || 0) + usage.completionTokens;
+  const cached = usage.cacheReadTokens || 0;
+  const apiCalls = usage.apiCalls || 0;
+
   const tooltip =
-    `Prompt: ${usage.promptTokens.toLocaleString()} | ` +
-    `Completion: ${usage.completionTokens.toLocaleString()}` +
-    (usage.cost != null ? ` | Cost: $${usage.cost.toFixed(4)}` : "");
+    `Sesión — ` +
+    `Input nuevo: ${(usage.inputTokensNew || 0).toLocaleString()} · ` +
+    `Output: ${usage.completionTokens.toLocaleString()} · ` +
+    `Caché leída: ${cached.toLocaleString()} (0.1×) · ` +
+    `Caché escrita: ${(usage.cacheWriteTokens || 0).toLocaleString()} (1.25×)` +
+    (usage.reasoningTokens ? ` · Reasoning: ${usage.reasoningTokens.toLocaleString()}` : "") +
+    (apiCalls > 0 ? ` · ${apiCalls} llamadas` : "") +
+    (usage.cost != null ? ` · $${usage.cost.toFixed(4)}` : "");
 
   return (
     <span className="chat-token-counter" title={tooltip}>
-      {usage.totalTokens.toLocaleString()} tokens
-      {usage.cost != null && (
+      {billable.toLocaleString()} tokens
+      {cached > 0 && (
+        <span className="chat-cache"> · ♻ {cached.toLocaleString()}</span>
+      )}
+      {usage.cost != null && usage.cost > 0 && (
         <span className="chat-cost"> · ${usage.cost.toFixed(4)}</span>
       )}
     </span>
