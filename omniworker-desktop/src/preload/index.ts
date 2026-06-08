@@ -457,6 +457,33 @@ const omniworkerAPI = {
     };
   },
 
+  // SuperMemory Local Engine
+  ingestConversation: (
+    messages: Array<{ role: string; content: string }>,
+    sessionId: string,
+    profile?: string,
+  ): Promise<{ chunksStored: number; factsExtracted: number }> =>
+    ipcRenderer.invoke("ingest-conversation", messages, sessionId, profile),
+
+  getLocalProfile: (profile?: string): Promise<{ static: string[]; dynamic: string[] }> =>
+    ipcRenderer.invoke("get-local-profile", profile),
+
+  hybridSearch: (
+    query: string,
+    limit?: number,
+    profile?: string,
+  ): Promise<any[]> =>
+    ipcRenderer.invoke("hybrid-search", query, limit, profile),
+
+  getMemoryGraph: (profile?: string): Promise<any[]> =>
+    ipcRenderer.invoke("get-memory-graph", profile),
+
+  getMemoryHealth: (profile?: string): Promise<any> =>
+    ipcRenderer.invoke("get-memory-health", profile),
+
+  runMemoryMaintenance: (profile?: string): Promise<{ decayed: number; expired: number }> =>
+    ipcRenderer.invoke("run-memory-maintenance", profile),
+
   // Soul
   readSoul: (profile?: string): Promise<string> =>
     ipcRenderer.invoke("read-soul", profile),

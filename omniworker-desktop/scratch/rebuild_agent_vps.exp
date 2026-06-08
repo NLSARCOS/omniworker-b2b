@@ -1,0 +1,18 @@
+#!/usr/bin/expect -f
+set timeout 1800
+set password "19748961Nl"
+
+send_user ">>> Connecting to VPS to build and restart omniworker-agent...\n"
+spawn ssh -o StrictHostKeyChecking=no -p 2424 root@217.76.62.37 "bash -c '
+  cd /opt/omniworker/omniworker-agent
+  docker compose build
+  docker compose up -d
+'"
+expect {
+    "*assword:*" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+send_user ">>> Agent docker image rebuilt and container restarted successfully!\n"

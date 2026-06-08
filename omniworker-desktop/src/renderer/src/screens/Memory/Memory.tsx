@@ -16,7 +16,11 @@ import {
   CheckCircle,
   ChevronRight,
   Database,
-  Info
+  Info,
+  Sparkles,
+  Activity,
+  Shield,
+  ArrowRight,
 } from "lucide-react";
 
 interface MemoryEntry {
@@ -123,9 +127,15 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   const { t } = useI18n();
   const [data, setData] = useState<MemoryData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"facts" | "profile" | "conflicts" | "sync">(
+  const [tab, setTab] = useState<"facts" | "profile" | "conflicts" | "sync" | "supermemory">(
     "facts"
   );
+
+  // SuperMemory Local Engine state
+  const [localProfile, setLocalProfile] = useState<{ static: string[]; dynamic: string[] } | null>(null);
+  const [memoryHealth, setMemoryHealth] = useState<any>(null);
+  const [factGraph, setFactGraph] = useState<any[]>([]);
+  const [loadingSuperMemory, setLoadingSuperMemory] = useState(false);
   const [error, setError] = useState("");
 
   // D4: active memory backends (offline_fts + external provider if configured)
@@ -239,13 +249,34 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   }, [loadData]);
 
   // Tab change reactions
+  // Load SuperMemory data
+  const loadSuperMemoryData = useCallback(async () => {
+    setLoadingSuperMemory(true);
+    try {
+      const [profileData, healthData, graphData] = await Promise.all([
+        window.omniworkerAPI.getLocalProfile(profile),
+        window.omniworkerAPI.getMemoryHealth(profile),
+        window.omniworkerAPI.getMemoryGraph(profile),
+      ]);
+      setLocalProfile(profileData);
+      setMemoryHealth(healthData);
+      setFactGraph(graphData || []);
+    } catch (err) {
+      console.error("Failed to load SuperMemory data:", err);
+    } finally {
+      setLoadingSuperMemory(false);
+    }
+  }, [profile]);
+
   useEffect(() => {
     if (tab === "conflicts") {
       void loadConflicts();
     } else if (tab === "sync") {
       void loadSyncStatus();
+    } else if (tab === "supermemory") {
+      void loadSuperMemoryData();
     }
-  }, [tab, loadConflicts, loadSyncStatus]);
+  }, [tab, loadConflicts, loadSyncStatus, loadSuperMemoryData]);
 
   // Subscribe to real-time engram changes
   useEffect(() => {
@@ -1021,6 +1052,14 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
               <Globe size={14} />
               Reconciliation
             </button>
+            <button
+              className={`engram-glass-tab ${tab === "supermemory" ? "active" : ""}`}
+              onClick={() => setTab("supermemory")}
+              style={tab === "supermemory" ? { background: "linear-gradient(135deg, var(--accent), #a855f7)", boxShadow: "0 4px 16px rgba(168, 85, 247, 0.3)" } : {}}
+            >
+              <Sparkles size={14} />
+              SuperMemory
+            </button>
           </div>
 
           {error && <div className="memory-error" style={{ marginBottom: 16, flexShrink: 0 }}>{error}</div>}
@@ -1461,6 +1500,259 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
             )}
 
           </div>
+
+            {/* SuperMemory Tab */}
+            {tab === "supermemory" && (
+              <div className="engram-glass-container">
+                <style>{`
+                  .sm-gradient-header {
+                    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(59, 130, 246, 0.08));
+                    border: 1px solid rgba(168, 85, 247, 0.2);
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-bottom: 8px;
+                  }
+                  .sm-fact-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 8px 12px;
+                    background: rgba(255,255,255,0.02);
+                    border: 1px solid rgba(255,255,255,0.04);
+                    border-radius: 8px;
+                    transition: all 0.2s ease;
+                  }
+                  .sm-fact-row:hover {
+                    background: rgba(255,255,255,0.05);
+                    border-color: rgba(168, 85, 247, 0.2);
+                  }
+                  .sm-confidence-bar {
+                    height: 4px;
+                    border-radius: 2px;
+                    background: rgba(255,255,255,0.05);
+                    overflow: hidden;
+                    flex: 1;
+                    max-width: 60px;
+                  }
+                  .sm-confidence-fill {
+                    height: 100%;
+                    border-radius: 2px;
+                    transition: width 0.3s ease;
+                  }
+                  .sm-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                  }
+                  .sm-metric-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 10px;
+                  }
+                  .sm-metric-cell {
+                    background: rgba(255,255,255,0.02);
+                    border: 1px solid rgba(255,255,255,0.04);
+                    border-radius: 10px;
+                    padding: 14px;
+                    text-align: center;
+                    transition: all 0.2s ease;
+                  }
+                  .sm-metric-cell:hover {
+                    border-color: rgba(168, 85, 247, 0.2);
+                    background: rgba(168, 85, 247, 0.03);
+                  }
+                `}</style>
+
+                {loadingSuperMemory ? (
+                  <div style={{ display: "flex", justifyContent: "center", padding: 64 }}>
+                    <Spinner className="animate-spin" size={24} style={{ color: "#a855f7" }} />
+                  </div>
+                ) : (
+                  <>
+                    {/* SuperMemory Header */}
+                    <div className="sm-gradient-header">
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <Sparkles size={20} style={{ color: "#a855f7" }} />
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
+                          Local SuperMemory Engine
+                        </h3>
+                        <span className="sm-badge" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}>
+                          100% Local
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                        Automatic fact extraction, profile synthesis, contradiction resolution, and memory decay — all running locally in SQLite. No external APIs needed.
+                      </p>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={async () => {
+                          const result = await window.omniworkerAPI.runMemoryMaintenance(profile);
+                          if (result.decayed > 0 || result.expired > 0) {
+                            void loadSuperMemoryData();
+                          }
+                        }}
+                        style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}
+                      >
+                        <Activity size={12} />
+                        Run Maintenance ({memoryHealth?.expiredFacts ?? 0} expired)
+                      </button>
+                    </div>
+
+                    {/* Memory Health Dashboard */}
+                    {memoryHealth && (
+                      <div className="engram-glass-card" style={{ padding: 18 }}>
+                        <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px 0", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                          <Activity size={15} style={{ color: "#a855f7" }} />
+                          Memory Health
+                        </h3>
+                        <div className="sm-metric-grid">
+                          <div className="sm-metric-cell">
+                            <div style={{ fontSize: 22, fontWeight: 800, color: "#a855f7" }}>{memoryHealth.activeFacts}</div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Active Facts</div>
+                          </div>
+                          <div className="sm-metric-cell">
+                            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)" }}>{memoryHealth.totalChunks}</div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Memory Chunks</div>
+                          </div>
+                          <div className="sm-metric-cell">
+                            <div style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{Math.round(memoryHealth.avgConfidence * 100)}%</div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Avg Confidence</div>
+                          </div>
+                          <div className="sm-metric-cell">
+                            <div style={{ fontSize: 22, fontWeight: 800, color: "#f97316" }}>{memoryHealth.supersededFacts}</div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Superseded</div>
+                          </div>
+                          <div className="sm-metric-cell">
+                            <div style={{ fontSize: 22, fontWeight: 800, color: "#3b82f6" }}>{memoryHealth.temporalFacts}</div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Temporal</div>
+                          </div>
+                          <div className="sm-metric-cell">
+                            <div style={{ fontSize: 22, fontWeight: 800, color: "#ef4444" }}>{memoryHealth.expiredFacts}</div>
+                            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>Expired</div>
+                          </div>
+                        </div>
+                        {memoryHealth.oldestMemory && (
+                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 10, color: "var(--text-muted)" }}>
+                            <span>Oldest: {new Date(memoryHealth.oldestMemory).toLocaleDateString()}</span>
+                            <span>Newest: {memoryHealth.newestMemory ? new Date(memoryHealth.newestMemory).toLocaleDateString() : "—"}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Local Profile Card */}
+                    {localProfile && (localProfile.static.length > 0 || localProfile.dynamic.length > 0) && (
+                      <div className="engram-glass-card" style={{ padding: 18 }}>
+                        <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px 0", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                          <User size={15} style={{ color: "#a855f7" }} />
+                          Synthesized Profile
+                        </h3>
+
+                        {localProfile.static.length > 0 && (
+                          <div style={{ marginBottom: 16 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                              <Shield size={12} style={{ color: "#10b981" }} />
+                              <span style={{ fontSize: 11, fontWeight: 600, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                Permanent Facts
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              {localProfile.static.map((fact, i) => (
+                                <div key={`s-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-secondary)", padding: "4px 0" }}>
+                                  <ArrowRight size={10} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                                  <span>{fact}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {localProfile.dynamic.length > 0 && (
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                              <Zap size={12} style={{ color: "#3b82f6" }} />
+                              <span style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                Recent Context (7d)
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              {localProfile.dynamic.map((fact, i) => (
+                                <div key={`d-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-secondary)", padding: "4px 0" }}>
+                                  <ArrowRight size={10} style={{ color: "#3b82f6", flexShrink: 0 }} />
+                                  <span>{fact}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Fact Graph */}
+                    <div className="engram-glass-card" style={{ padding: 18 }}>
+                      <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 14px 0", color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                        <Brain size={15} style={{ color: "#a855f7" }} />
+                        Fact Graph
+                        <span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-muted)", marginLeft: "auto" }}>
+                          {factGraph.length} facts
+                        </span>
+                      </h3>
+
+                      {factGraph.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: 32, color: "var(--text-muted)", fontSize: 13 }}>
+                          <Sparkles size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
+                          <div>No facts extracted yet.</div>
+                          <div style={{ fontSize: 11, marginTop: 4 }}>
+                            Facts are automatically extracted from conversations. Chat with your agent to populate the knowledge graph.
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {factGraph.map((fact) => {
+                            const confColor = fact.confidence >= 0.7 ? "#10b981" : fact.confidence >= 0.4 ? "#f97316" : "#ef4444";
+                            const typeColors: Record<string, string> = {
+                              preference: "#a855f7", tech_stack: "#3b82f6", decision: "#f97316",
+                              identity: "#10b981", location: "#06b6d4", project: "#8b5cf6",
+                              error: "#ef4444", file_edit: "#6b7280",
+                            };
+                            const typeColor = typeColors[fact.fact_type] || "#6b7280";
+
+                            return (
+                              <div key={fact.id} className="sm-fact-row" style={fact.is_superseded ? { opacity: 0.4 } : {}}>
+                                <span className="sm-badge" style={{ background: `${typeColor}15`, color: typeColor, minWidth: 65, justifyContent: "center" }}>
+                                  {fact.fact_type}
+                                </span>
+                                <span style={{ flex: 1, fontSize: 12, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {fact.subject} → <span style={{ color: "var(--text-secondary)" }}>{fact.predicate}</span>
+                                  {fact.object && <span style={{ color: "var(--accent)" }}> → {fact.object}</span>}
+                                </span>
+                                <div className="sm-confidence-bar">
+                                  <div className="sm-confidence-fill" style={{ width: `${Math.round(fact.confidence * 100)}%`, background: confColor }} />
+                                </div>
+                                <span style={{ fontSize: 9, color: "var(--text-muted)", minWidth: 20, textAlign: "right" }}>
+                                  ×{fact.occurrence_count}
+                                </span>
+                                {fact.is_superseded && (
+                                  <span className="sm-badge" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", fontSize: 8 }}>
+                                    OLD
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
         </div>
 
       </div>

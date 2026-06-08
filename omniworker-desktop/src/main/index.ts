@@ -172,6 +172,13 @@ import {
   getSyncStatus,
   triggerSync,
   bootstrapEngram,
+  // SuperMemory Local Engine
+  ingestConversation,
+  getLocalProfile,
+  hybridSearch,
+  getMemoryGraph,
+  getMemoryHealth,
+  runMemoryMaintenance,
 } from "./memory";
 import { readSoul, writeSoul, resetSoul } from "./soul";
 import { getToolsets, setToolsetEnabled } from "./tools";
@@ -1027,6 +1034,17 @@ function setupIPC(): void {
             currentChatAbort = null;
             event.sender.send("chat-done", sessionId || "");
             resolveChat({ response: fullResponse, sessionId });
+            // Auto-ingest into SuperMemory engine (async, non-blocking)
+            if (sessionId && fullResponse) {
+              const msgs = [
+                ...(history || []),
+                { role: "user", content: message },
+                { role: "assistant", content: fullResponse },
+              ];
+              ingestConversation(msgs, sessionId, profile).catch((err) =>
+                console.error("[SuperMemory] auto-ingest failed:", err),
+              );
+            }
             // Desktop notification when window is not focused and response took >10s
             if (
               mainWindow &&
@@ -1921,6 +1939,35 @@ function setupIPC(): void {
     return discoverMemoryProviders(profile);
   });
 
+  // ── SuperMemory Local Engine IPC ─────────────────────────
+  ipcMain.handle(
+    "ingest-conversation",
+    (_event, messages: Array<{ role: string; content: string }>, sessionId: string, profile?: string) =>
+      ingestConversation(messages, sessionId, profile),
+  );
+
+  ipcMain.handle("get-local-profile", (_event, profile?: string) =>
+    getLocalProfile(profile),
+  );
+
+  ipcMain.handle(
+    "hybrid-search",
+    (_event, query: string, limit?: number, profile?: string) =>
+      hybridSearch(query, limit, profile),
+  );
+
+  ipcMain.handle("get-memory-graph", (_event, profile?: string) =>
+    getMemoryGraph(profile),
+  );
+
+  ipcMain.handle("get-memory-health", (_event, profile?: string) =>
+    getMemoryHealth(profile),
+  );
+
+  ipcMain.handle("run-memory-maintenance", (_event, profile?: string) =>
+    runMemoryMaintenance(profile),
+  );
+
   // Log viewer
   ipcMain.handle("read-logs", (_event, logFile?: string, lines?: number) => {
     const conn = getConnectionConfig();
@@ -2305,6 +2352,12 @@ app.whenReady().then(async () => {
 
   buildMenu();
   setupIPC();
+
+  // SuperMemory: auto-run maintenance on startup (decay old facts, expire temporals)
+  runMemoryMaintenance().catch((err) =>
+    console.warn("[SuperMemory] startup maintenance skipped:", err),
+  );
+
   createWindow();
   setupUpdater();
 

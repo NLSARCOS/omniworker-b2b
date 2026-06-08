@@ -3,6 +3,20 @@ import { join } from "path";
 import Database from "better-sqlite3";
 import { profileHome, profilePaths, safeWriteFile } from "./utils";
 import { getActiveMemoryProvider } from "./installer";
+import {
+  LocalMemoryEngine,
+  ensureSuperMemorySchema,
+  type LocalProfile,
+  type HybridSearchResult,
+  type FactNode,
+  type MemoryHealth,
+} from "./memory-engine";
+
+// Re-export engine types for IPC consumers
+export type { LocalProfile, HybridSearchResult, FactNode, MemoryHealth };
+
+// Singleton engine instance
+const _engine = new LocalMemoryEngine();
 
 const MEMORY_CHAR_LIMIT = 50_000; // was 2200 — too small for real memory
 const USER_CHAR_LIMIT = 10_000;
@@ -880,3 +894,130 @@ export function discoverMemoryProviders(profile?: string): string[] {
   }
   return providers;
 }
+
+// ── SuperMemory Local Engine API ─────────────────────────
+
+/**
+ * Ingest conversation messages into the local memory engine.
+ * Extracts facts, resolves contradictions, stores chunks.
+ */
+export async function ingestConversation(
+  messages: Array<{ role: string; content: string }>,
+  sessionId: string,
+  profile?: string,
+): Promise<{ chunksStored: number; factsExtracted: number }> {
+  const db = openStateDb(profile, false);
+  if (!db) return { chunksStored: 0, factsExtracted: 0 };
+  try {
+    ensureNativeMemoryTables(db);
+    return _engine.ingest(db, messages, sessionId);
+  } catch (err) {
+    console.error("[memory] ingestConversation failed:", err);
+    return { chunksStored: 0, factsExtracted: 0 };
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Get the locally-synthesized user profile (static + dynamic facts).
+ */
+export async function getLocalProfile(
+  profile?: string,
+): Promise<LocalProfile> {
+  const db = openStateDb(profile, true);
+  if (!db) return { static: [], dynamic: [] };
+  try {
+    if (!nativeMemoryTablesExist(db)) return { static: [], dynamic: [] };
+    return _engine.getProfile(db);
+  } catch (err) {
+    console.error("[memory] getLocalProfile failed:", err);
+    return { static: [], dynamic: [] };
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Hybrid search: BM25 chunks + fact matching + recency scoring.
+ */
+export async function hybridSearch(
+  query: string,
+  limit = 20,
+  profile?: string,
+): Promise<HybridSearchResult[]> {
+  const db = openStateDb(profile, true);
+  if (!db) return [];
+  try {
+    return _engine.search(db, query, limit);
+  } catch (err) {
+    console.error("[memory] hybridSearch failed:", err);
+    return [];
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Get the full fact graph (active + superseded facts).
+ */
+export async function getMemoryGraph(
+  profile?: string,
+): Promise<FactNode[]> {
+  const db = openStateDb(profile, true);
+  if (!db) return [];
+  try {
+    if (!nativeMemoryTablesExist(db)) return [];
+    return _engine.getFactGraph(db);
+  } catch (err) {
+    console.error("[memory] getMemoryGraph failed:", err);
+    return [];
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Get memory health statistics.
+ */
+export async function getMemoryHealth(
+  profile?: string,
+): Promise<MemoryHealth> {
+  const db = openStateDb(profile, true);
+  const empty: MemoryHealth = {
+    totalFacts: 0, activeFacts: 0, supersededFacts: 0, temporalFacts: 0,
+    expiredFacts: 0, totalChunks: 0, oldestMemory: null, newestMemory: null,
+    avgConfidence: 0,
+  };
+  if (!db) return empty;
+  try {
+    if (!nativeMemoryTablesExist(db)) return empty;
+    return _engine.getHealth(db);
+  } catch (err) {
+    console.error("[memory] getMemoryHealth failed:", err);
+    return empty;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Run memory maintenance: decay old facts, expire temporals.
+ * Call on app startup or periodically.
+ */
+export async function runMemoryMaintenance(
+  profile?: string,
+): Promise<{ decayed: number; expired: number }> {
+  const db = openStateDb(profile, false);
+  if (!db) return { decayed: 0, expired: 0 };
+  try {
+    if (!nativeMemoryTablesExist(db)) return { decayed: 0, expired: 0 };
+    return _engine.runMaintenance(db);
+  } catch (err) {
+    console.error("[memory] runMemoryMaintenance failed:", err);
+    return { decayed: 0, expired: 0 };
+  } finally {
+    db.close();
+  }
+}
+

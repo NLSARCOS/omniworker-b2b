@@ -1,0 +1,14 @@
+#!/usr/bin/expect -f
+set timeout 1800
+set password "19748961Nl"
+
+send_user ">>> SCPing desktop 0.6.6 build assets to VPS downloads folder (port 2424)...\n"
+spawn bash -c "scp -P 2424 omniworker-desktop/dist/omniworker-desktop-0.6.6* omniworker-desktop/dist/omniworker-desktop_0.6.6* omniworker-desktop/dist/latest*.yml omniworker-desktop/dist/Omniworker-Setup-latest.exe omniworker-desktop/dist/Omniworker-latest-mac.zip omniworker-desktop/dist/Omniworker-latest.AppImage root@217.76.62.37:/opt/omniworker-downloads/"
+expect {
+    "*assword:*" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}
+send_user ">>> Desktop 0.6.6 files uploaded successfully!\n"

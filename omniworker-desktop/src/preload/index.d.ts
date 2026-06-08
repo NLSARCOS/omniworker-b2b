@@ -377,6 +377,63 @@ interface OmniWorkerAPI {
     callback: (payload: { changed: "memory" | "user"; profile?: string }) => void,
   ) => () => void;
 
+  // SuperMemory Local Engine
+  ingestConversation: (
+    messages: Array<{ role: string; content: string }>,
+    sessionId: string,
+    profile?: string,
+  ) => Promise<{ chunksStored: number; factsExtracted: number }>;
+  getLocalProfile: (profile?: string) => Promise<{
+    static: string[];
+    dynamic: string[];
+  }>;
+  hybridSearch: (
+    query: string,
+    limit?: number,
+    profile?: string,
+  ) => Promise<
+    Array<{
+      id: number;
+      content: string;
+      snippet: string;
+      type: string;
+      session_id: string;
+      created_at: string;
+      score: number;
+      source: "chunk" | "fact";
+      age: string;
+    }>
+  >;
+  getMemoryGraph: (profile?: string) => Promise<
+    Array<{
+      id: number;
+      fact_type: string;
+      subject: string;
+      predicate: string;
+      object: string | null;
+      confidence: number;
+      occurrence_count: number;
+      first_seen: string;
+      last_seen: string;
+      is_superseded: boolean;
+    }>
+  >;
+  getMemoryHealth: (profile?: string) => Promise<{
+    totalFacts: number;
+    activeFacts: number;
+    supersededFacts: number;
+    temporalFacts: number;
+    expiredFacts: number;
+    totalChunks: number;
+    oldestMemory: string | null;
+    newestMemory: string | null;
+    avgConfidence: number;
+  }>;
+  runMemoryMaintenance: (profile?: string) => Promise<{
+    decayed: number;
+    expired: number;
+  }>;
+
   // Soul
   readSoul: (profile?: string) => Promise<string>;
   writeSoul: (content: string, profile?: string) => Promise<boolean>;
