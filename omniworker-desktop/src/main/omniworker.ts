@@ -342,7 +342,13 @@ export interface ChatCallbacks {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
+    inputTokensNew: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    reasoningTokens: number;
     cost?: number;
+    costStatus?: string;
+    apiCalls?: number;
     rateLimitRemaining?: number;
     rateLimitReset?: number;
   }) => void;
@@ -556,13 +562,19 @@ function sendMessageViaApi(
       const choice = parsed.choices?.[0];
       const delta = choice?.delta;
 
-      // Extract usage from final chunk (with optional cost + rate limit info)
+      // Extract usage from final chunk (includes provider breakdown when available)
       if (parsed.usage && cb.onUsage) {
         cb.onUsage({
           promptTokens: parsed.usage.prompt_tokens || 0,
           completionTokens: parsed.usage.completion_tokens || 0,
           totalTokens: parsed.usage.total_tokens || 0,
+          inputTokensNew: parsed.usage.input_tokens_new || 0,
+          cacheReadTokens: parsed.usage.cache_read_tokens || 0,
+          cacheWriteTokens: parsed.usage.cache_write_tokens || 0,
+          reasoningTokens: parsed.usage.reasoning_tokens || 0,
           cost: parsed.usage.cost,
+          costStatus: parsed.usage.cost_status,
+          apiCalls: parsed.usage.api_calls,
           rateLimitRemaining: parsed.usage.rate_limit_remaining,
           rateLimitReset: parsed.usage.rate_limit_reset,
         });

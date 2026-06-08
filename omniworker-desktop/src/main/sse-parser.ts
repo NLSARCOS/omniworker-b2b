@@ -6,7 +6,19 @@ export interface ParsedUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  /** Input tokens that were NOT served from cache (billable at full rate). */
+  inputTokensNew: number;
+  /** Tokens served from prompt cache (billed at ~0.1× rate). */
+  cacheReadTokens: number;
+  /** Tokens written to prompt cache (billed at ~1.25× rate). */
+  cacheWriteTokens: number;
+  /** Reasoning/thinking tokens (model-specific). */
+  reasoningTokens: number;
   cost?: number;
+  /** Whether cost is a real estimate ("ok"), subscription-included, or unknown. */
+  costStatus?: string;
+  /** Number of LLM API calls made for this message. */
+  apiCalls?: number;
   rateLimitRemaining?: number;
   rateLimitReset?: number;
 }
@@ -78,13 +90,19 @@ export function processSseData(
 
     const delta = parsed.choices?.[0]?.delta;
 
-    // Extract usage from final chunk
+    // Extract usage from final chunk (includes provider breakdown when available)
     if (parsed.usage && cb.onUsage) {
       cb.onUsage({
         promptTokens: parsed.usage.prompt_tokens || 0,
         completionTokens: parsed.usage.completion_tokens || 0,
         totalTokens: parsed.usage.total_tokens || 0,
+        inputTokensNew: parsed.usage.input_tokens_new || 0,
+        cacheReadTokens: parsed.usage.cache_read_tokens || 0,
+        cacheWriteTokens: parsed.usage.cache_write_tokens || 0,
+        reasoningTokens: parsed.usage.reasoning_tokens || 0,
         cost: parsed.usage.cost,
+        costStatus: parsed.usage.cost_status,
+        apiCalls: parsed.usage.api_calls,
         rateLimitRemaining: parsed.usage.rate_limit_remaining,
         rateLimitReset: parsed.usage.rate_limit_reset,
       });
