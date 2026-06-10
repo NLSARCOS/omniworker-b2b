@@ -660,6 +660,14 @@ export async function POST(request: Request) {
   const requestedModel = (body.model || "gpt-4o-mini").toLowerCase();
   const isStream = body.stream === true;
 
+  // ── Session ID & Seed ────────────────────────────────────────────────
+  const convSeed = conversationSeed(
+    (body.messages as any[]) || [],
+    String(user.id),
+    (body as any).conversationId
+  );
+  const pinKey = (body as any).conversationId || `auto:${String(user.id)}:${convSeed}`;
+
   // ── Flux Agent virtual model handling ──────────────────────────────
   if (isFluxAgentVirtualModel(requestedModel)) {
     console.log(`[ChatCompletions:${requestId}] Virtual model path for ${requestedModel}`);
@@ -724,11 +732,7 @@ export async function POST(request: Request) {
     // conversation; the pin (if present) forces the exact provider+model
     // chosen on a previous turn, so the model never changes mid-task unless
     // it fails. pinKey prefers an explicit conversationId, else a stable hash.
-    const convSeed = conversationSeed(
-      (body.messages as any[]) || [],
-      String(user.id),
-      (body as any).conversationId
-    );
+    // convSeed is already defined globally
 
     // Seeded shuffle: same candidate order across turns of the SAME
     // conversation (prompt-cache affinity), varied across DIFFERENT
@@ -740,7 +744,7 @@ export async function POST(request: Request) {
       const group = priorityGroups.get(pri)!;
       shuffledCandidates.push(...seededShuffle(group, _shuffleRng));
     }
-    const pinKey = (body as any).conversationId || `auto:${String(user.id)}:${convSeed}`;
+    // pinKey is already defined globally
     const modelPin = await loadModelPin(pinKey);
 
     // ── Persistent Agent Memory: seed in-memory cache on cold start ────
@@ -1221,6 +1225,7 @@ export async function POST(request: Request) {
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
             Connection: "keep-alive",
+            "X-Flux-Agent-Session-Id": pinKey,
           },
         });
       }
@@ -1278,7 +1283,11 @@ export async function POST(request: Request) {
       if (responseData && requestedModel) {
         responseData.model = requestedModel;
       }
-      return NextResponse.json(responseData || {});
+      return NextResponse.json(responseData || {}, {
+        headers: {
+          "X-Flux-Agent-Session-Id": pinKey,
+        },
+      });
     } catch (error) {
       console.error(`[ChatCompletions:${requestId}] [LLM Gateway Error]`, error);
       await prisma.taskLog.create({
@@ -1642,6 +1651,7 @@ export async function POST(request: Request) {
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
             Connection: "keep-alive",
+            "X-Flux-Agent-Session-Id": pinKey,
           },
         });
       }
@@ -1694,7 +1704,11 @@ export async function POST(request: Request) {
         },
       });
 
-      return NextResponse.json(responseData || {});
+      return NextResponse.json(responseData || {}, {
+        headers: {
+          "X-Flux-Agent-Session-Id": pinKey,
+        },
+      });
   } catch (error) {
     console.error("[LLM Gateway Error]", error);
 
