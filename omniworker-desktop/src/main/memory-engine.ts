@@ -500,8 +500,8 @@ export class HybridRanker {
             age: this._formatAge(ageHours),
           });
         }
-      } catch {
-        // DB might not have tables yet
+      } catch (err) {
+        console.warn("[SuperMemory] chunk search failed (FTS5 and LIKE):", err);
       }
     }
 
@@ -539,8 +539,8 @@ export class HybridRanker {
           age: this._formatAge(ageHours),
         });
       }
-    } catch {
-      // facts table might not exist
+    } catch (err) {
+      console.warn("[SuperMemory] fact search failed:", err);
     }
 
     // 3. Sort by combined score descending, deduplicate
@@ -574,6 +574,29 @@ export class HybridRanker {
  * Idempotent — safe to call on every startup.
  */
 export function ensureSuperMemorySchema(db: Database.Database): void {
+  // Old installs may not have memory_facts at all (it normally comes from
+  // ensureNativeMemoryTables in memory.ts, but not every caller goes through
+  // that path). Base schema kept in lockstep with memory.ts and the agent's
+  // native_memory.py.
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS memory_facts (
+        id INTEGER PRIMARY KEY,
+        session_id TEXT,
+        fact_type TEXT NOT NULL DEFAULT 'general',
+        subject TEXT NOT NULL,
+        predicate TEXT NOT NULL,
+        object TEXT,
+        confidence REAL DEFAULT 1.0,
+        occurrence_count INTEGER DEFAULT 1,
+        first_seen REAL,
+        last_seen REAL
+      );
+    `);
+  } catch (err) {
+    console.warn("[SuperMemory] could not ensure memory_facts table:", err);
+  }
+
   // Add SuperMemory-specific columns to memory_facts if missing
   const additions = [
     "ALTER TABLE memory_facts ADD COLUMN superseded_at REAL",
@@ -583,8 +606,12 @@ export function ensureSuperMemorySchema(db: Database.Database): void {
   for (const sql of additions) {
     try {
       db.exec(sql);
-    } catch {
-      // Column already exists — fine
+    } catch (err) {
+      // "duplicate column name" is the expected idempotent case; anything
+      // else means the migration actually failed and must not stay silent.
+      if (!String(err).toLowerCase().includes("duplicate column")) {
+        console.warn("[SuperMemory] schema migration step failed:", sql, err);
+      }
     }
   }
 
@@ -732,6 +759,13 @@ export class LocalMemoryEngine {
         )
         .all() as any[];
 
+      // first_seen/last_seen can be NULL in old DBs — new Date(null * 1000)
+      // yields an Invalid Date whose toISOString() throws and crashes the
+      // IPC handler.
+      const toIso = (ts: unknown): string =>
+        typeof ts === "number" && Number.isFinite(ts)
+          ? new Date(ts * 1000).toISOString()
+          : "";
       return rows.map((r) => ({
         id: r.id,
         fact_type: r.fact_type,
@@ -740,11 +774,12 @@ export class LocalMemoryEngine {
         object: r.object,
         confidence: r.confidence,
         occurrence_count: r.occurrence_count,
-        first_seen: new Date(r.first_seen * 1000).toISOString(),
-        last_seen: new Date(r.last_seen * 1000).toISOString(),
+        first_seen: toIso(r.first_seen),
+        last_seen: toIso(r.last_seen),
         is_superseded: r.is_superseded === 1,
       }));
-    } catch {
+    } catch (err) {
+      console.warn("[SuperMemory] getFactGraph failed:", err);
       return [];
     }
   }

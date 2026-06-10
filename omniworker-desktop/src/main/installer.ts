@@ -5,6 +5,8 @@ import {
   readdirSync,
   createWriteStream,
   mkdirSync,
+  statSync,
+  writeFileSync,
 } from "fs";
 import { join, delimiter } from "path";
 import { homedir, tmpdir } from "os";
@@ -422,6 +424,7 @@ export async function runClawMigrate(
 
 export async function runOmniWorkerUpdate(
   onProgress: (progress: InstallProgress) => void,
+  authToken?: string,
 ): Promise<void> {
   if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
     throw new Error("Flux Agent is not installed. Please install it first.");
@@ -437,6 +440,15 @@ export async function runOmniWorkerUpdate(
       detail: text.trim().slice(0, 120),
       log,
     });
+  }
+
+  // Production installs (tarball, no .git) can't be updated by
+  // `omniworker update` (git pull) — use the release-server tarball flow.
+  // Git checkouts (development) keep the legacy CLI update below.
+  if (!existsSync(join(OMNIWORKER_REPO, ".git"))) {
+    await updateAgentFromTarball(authToken, emit);
+    emit("\nUpdate complete!\n");
+    return;
   }
 
   emit("Running omniworker update...\n");
@@ -476,6 +488,192 @@ export async function runOmniWorkerUpdate(
       reject(new Error(`Failed to run update: ${err.message}`));
     });
   });
+}
+
+// ── Agent auto-update ────────────────────────────────────────────────
+// Production agent installs come from the authenticated tarball at
+// ${SAAS_BASE_URL}/downloads/omniworker-agent.tar.gz — they have no .git,
+// so `omniworker update` (git pull) can never update them; its old
+// Windows fallback would even replace this distribution with the upstream
+// NousResearch ZIP. The desktop is therefore the agent's real updater:
+// it compares the installed version against the release server's
+// omniworker-agent-version.json and re-downloads the tarball on mismatch.
+
+const AGENT_AUTOUPDATE_STAMP = join(OMNIWORKER_HOME, ".agent-autoupdate");
+const AGENT_AUTOUPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+function shouldAutoUpdateAgent(): boolean {
+  try {
+    const age = Date.now() - statSync(AGENT_AUTOUPDATE_STAMP).mtimeMs;
+    return age >= AGENT_AUTOUPDATE_INTERVAL_MS;
+  } catch {
+    return true; // no stamp yet — first run after this feature shipped
+  }
+}
+
+function touchAutoUpdateStamp(): void {
+  try {
+    writeFileSync(AGENT_AUTOUPDATE_STAMP, new Date().toISOString());
+  } catch (err) {
+    console.warn("[AgentUpdate] could not write stamp file:", err);
+  }
+}
+
+/** Extract "0.14.0" from `omniworker --version` output ("Flux Agent Agent v0.14.0 (…)"). */
+function parseAgentVersion(raw: string | null): string | null {
+  if (!raw) return null;
+  const match = raw.match(/v?(\d+\.\d+\.\d+)/);
+  return match ? match[1] : null;
+}
+
+async function fetchRemoteAgentVersion(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const req = https.get(
+      `${SAAS_BASE_URL}/downloads/omniworker-agent-version.json`,
+      { headers: { "Cache-Control": "no-cache" } },
+      (response: any) => {
+        if (response.statusCode !== 200) {
+          response.resume();
+          resolve(null);
+          return;
+        }
+        let body = "";
+        response.on("data", (chunk: Buffer) => (body += chunk.toString()));
+        response.on("end", () => {
+          try {
+            const version = String(JSON.parse(body).version || "").trim();
+            resolve(/^\d+\.\d+\.\d+$/.test(version) ? version : null);
+          } catch {
+            resolve(null);
+          }
+        });
+      },
+    );
+    req.on("error", () => resolve(null));
+    req.setTimeout(15000, () => {
+      req.destroy();
+      resolve(null);
+    });
+  });
+}
+
+async function downloadAgentTarball(authToken?: string): Promise<string> {
+  const tarballPath = join(
+    tmpdir(),
+    `omniworker-agent-${randomBytes(6).toString("hex")}.tar.gz`,
+  );
+  await new Promise<void>((res, rej) => {
+    const url = `${SAAS_BASE_URL}/downloads/omniworker-agent.tar.gz`;
+    const file = createWriteStream(tarballPath);
+    const req = https.get(
+      url,
+      {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      },
+      (response: any) => {
+        if (response.statusCode !== 200) {
+          rej(new Error(`Agent download failed (HTTP ${response.statusCode})`));
+          return;
+        }
+        response.pipe(file);
+        file.on("finish", () => {
+          file.close();
+          res();
+        });
+      },
+    );
+    req.on("error", rej);
+  });
+  return tarballPath;
+}
+
+/**
+ * Replace the installed agent with the latest tarball from the release
+ * server. The venv installs the agent editable (`pip install -e .`), so
+ * extracting new files over OMNIWORKER_REPO IS the code update; the pip
+ * step only refreshes dependencies and is best-effort.
+ */
+export async function updateAgentFromTarball(
+  authToken: string | undefined,
+  emit: (text: string) => void,
+): Promise<void> {
+  emit("Downloading latest agent package...\n");
+  const tarballPath = await downloadAgentTarball(authToken);
+  emit("Extracting agent package...\n");
+  await extract({ cwd: OMNIWORKER_REPO, file: tarballPath, strip: 1 });
+
+  emit("Refreshing agent dependencies...\n");
+  await new Promise<void>((resolve) => {
+    const proc = spawn(
+      OMNIWORKER_PYTHON,
+      ["-m", "pip", "install", "-e", ".[all]", "--quiet"],
+      {
+        cwd: OMNIWORKER_REPO,
+        env: {
+          ...process.env,
+          PATH: getEnhancedPath(),
+          HOME: homedir(),
+          OMNIWORKER_HOME,
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+        ...HIDDEN_SUBPROCESS_OPTIONS,
+      },
+    );
+    proc.on("close", (code) => {
+      if (code !== 0)
+        emit(`⚠ Dependency refresh exited ${code} — continuing (code files already updated).\n`);
+      resolve();
+    });
+    proc.on("error", (err) => {
+      emit(`⚠ Dependency refresh failed: ${err.message} — continuing.\n`);
+      resolve();
+    });
+  });
+
+  clearVersionCache();
+  emit("Agent updated.\n");
+}
+
+/**
+ * Update the Python agent in the background if due. Resolves to `true`
+ * when the installed agent version changed (caller should restart the
+ * gateway so the new code is actually loaded).
+ */
+export async function autoUpdateAgentInBackground(
+  authToken?: string,
+): Promise<boolean> {
+  if (!existsSync(OMNIWORKER_PYTHON) || !existsSync(OMNIWORKER_SCRIPT)) {
+    return false; // not installed — the installer flow handles first setup
+  }
+  if (existsSync(join(OMNIWORKER_REPO, ".git"))) {
+    return false; // development install — managed via git, never auto-overwrite
+  }
+  if (!shouldAutoUpdateAgent()) return false;
+  // Stamp before running so a crashing update can't retry-loop every launch.
+  touchAutoUpdateStamp();
+
+  const [installedRaw, remote] = await Promise.all([
+    getOmniWorkerVersion(),
+    fetchRemoteAgentVersion(),
+  ]);
+  const installed = parseAgentVersion(installedRaw);
+  if (!remote) {
+    console.log("[AgentUpdate] no version manifest on release server — skipping");
+    return false;
+  }
+  if (installed === remote) {
+    console.log(`[AgentUpdate] agent up to date (${installed})`);
+    return false;
+  }
+
+  console.log(
+    `[AgentUpdate] updating agent ${installed ?? "unknown"} → ${remote}`,
+  );
+  await updateAgentFromTarball(authToken, (text) =>
+    console.log("[AgentUpdate]", text.trim()),
+  );
+  console.log("[AgentUpdate] background update done");
+  return true;
 }
 
 function getShellProfile(home: string): string | null {

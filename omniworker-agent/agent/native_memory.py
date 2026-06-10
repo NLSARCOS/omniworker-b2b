@@ -271,8 +271,14 @@ class BM25Layer:
         for sql in alters:
             try:
                 self._conn.execute(sql)
-            except Exception:
-                pass  # column already exists — fine
+            except Exception as exc:
+                # "duplicate column name" is the expected idempotent case.
+                # Anything else (locked DB, corrupt schema, disk full) leaves
+                # search/upsert broken later — it must not stay silent.
+                if "duplicate column" not in str(exc).lower():
+                    logger.warning(
+                        "BM25Layer: migration step failed (%s): %s", sql, exc
+                    )
         # Unique index lets topic_key act as an upsert key.
         try:
             self._conn.execute(
@@ -445,8 +451,12 @@ class VectorLayer:
             return
         try:
             self._conn.enable_load_extension(True)
-            sv.load(self._conn)
-            self._conn.enable_load_extension(False)
+            try:
+                sv.load(self._conn)
+            finally:
+                # Never leave extension loading enabled on the shared
+                # connection if sv.load() throws.
+                self._conn.enable_load_extension(False)
             dims = self._embedder.dimensions or _VEC_DIMENSIONS
             self._conn.execute(
                 f"CREATE VIRTUAL TABLE IF NOT EXISTS memory_embeddings USING vec0(embedding float[{dims}])"
@@ -957,9 +967,18 @@ class NativeMemory:
         # This saves thousands of tokens per turn on simple interactions.
         stripped = query.strip()
         if len(stripped) < _PREFETCH_MIN_QUERY_LEN:
+            logger.debug(
+                "NativeMemory: prefetch skipped (query under %d chars): %r",
+                _PREFETCH_MIN_QUERY_LEN,
+                stripped[:40],
+            )
             return ""
         for pat in self._SKIP_PATTERNS:
             if pat.match(stripped):
+                logger.debug(
+                    "NativeMemory: prefetch skipped (trivial message): %r",
+                    stripped[:40],
+                )
                 return ""
 
         # 1. BM25 search (always works)
@@ -986,8 +1005,14 @@ class NativeMemory:
         # 4. Deduplicate and format
         selected = bm25_results[:k]
         with self._lock:
-            # Don't re-inject chunks injected in the immediately previous turn
-            selected = [c for c in selected if c.id not in self._last_injected_chunks]
+            # Don't re-inject chunks injected in the immediately previous turn —
+            # unless that would filter out EVERYTHING. A follow-up question on
+            # the same topic matches exactly last turn's chunks; dropping them
+            # all would leave the model with zero recalled context right when
+            # the user is drilling into a topic.
+            fresh = [c for c in selected if c.id not in self._last_injected_chunks]
+            if fresh:
+                selected = fresh
             self._last_injected_chunks = {c.id for c in selected}
 
         parts: List[str] = []

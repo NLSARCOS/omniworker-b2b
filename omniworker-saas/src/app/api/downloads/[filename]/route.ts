@@ -38,11 +38,13 @@ export async function GET(
     ".zip": "application/zip",
     ".yml": "text/yaml",
     ".yaml": "text/yaml",
+    ".json": "application/json",
   };
 
-  // Update manifests (.yml) must never be cached — a stale latest-mac.yml
-  // delays update detection on clients by up to the cache TTL.
-  const isManifest = ext === ".yml" || ext === ".yaml";
+  // Update manifests (.yml, .json) must never be cached — a stale
+  // latest-mac.yml or omniworker-agent-version.json delays update
+  // detection on clients by up to the cache TTL.
+  const isManifest = ext === ".yml" || ext === ".yaml" || ext === ".json";
   const headers = new Headers({
     "Content-Type": contentTypes[ext] || "application/octet-stream",
     "Content-Disposition": `attachment; filename="${safeName}"`,

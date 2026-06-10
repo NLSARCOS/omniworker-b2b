@@ -175,8 +175,13 @@ function ensureNativeMemoryTables(db: Database.Database): void {
   for (const sql of f3Alters) {
     try {
       db.exec(sql);
-    } catch {
-      // Column already exists — fine.
+    } catch (err) {
+      // "duplicate column name" is the expected idempotent case; anything
+      // else is a real migration failure that would leave search/upsert
+      // broken — surface it instead of failing silently.
+      if (!String(err).toLowerCase().includes("duplicate column")) {
+        console.warn("[memory] F3 migration step failed:", sql, err);
+      }
     }
   }
   try {
@@ -234,8 +239,19 @@ function openStateDb(profile?: string, readonly = true): Database.Database | nul
   const dbPath = stateDbPath(profile);
   if (!existsSync(dbPath)) return null;
   try {
-    const db = new Database(dbPath, { readonly });
-    db.pragma("journal_mode = WAL");
+    // The Python agent shares this DB and writes concurrently — give the
+    // busy handler real headroom instead of failing on first contention.
+    const db = new Database(dbPath, { readonly, timeout: 5000 });
+    try {
+      // The agent already puts state.db in WAL (with DELETE fallback on
+      // filesystems that reject WAL). Re-asserting it from a readonly
+      // connection throws in the fallback case — never drop the connection
+      // over that.
+      db.pragma("journal_mode = WAL");
+    } catch (err) {
+      console.warn("[memory] WAL pragma skipped:", err);
+    }
+    db.pragma("busy_timeout = 5000");
     return db;
   } catch (err) {
     console.error("[memory] Failed to open state.db:", err);

@@ -1812,6 +1812,19 @@ The user has requested that this compaction PRIORITISE preserving all informatio
         compress_start = self._protect_head_size(messages)
         compress_start = self._align_boundary_forward(messages, compress_start)
 
+        # Edge case (#10896 follow-up): a single user request followed by a
+        # long tool-call chain can leave the *active* user message sitting
+        # exactly at compress_start. The tail anchor in
+        # _ensure_last_user_message_in_tail never moves the cut to head_end
+        # or earlier, so that message would be summarised away mid-task —
+        # the agent then "forgets" what it was working on. Protect it as
+        # part of the head instead and compress only the turns after it.
+        last_user_idx = self._find_last_user_message_idx(messages, compress_start)
+        if last_user_idx == compress_start:
+            compress_start = self._align_boundary_forward(
+                messages, compress_start + 1
+            )
+
         # Use token-budget tail protection instead of fixed message count
         compress_end = self._find_tail_cut_by_tokens(messages, compress_start)
 

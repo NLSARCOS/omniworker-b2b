@@ -7962,25 +7962,23 @@ def _cmd_update_impl(args, gateway_mode: bool):
     # always roll back to the exact state they had before this update.
     _run_pre_update_backup(args)
 
-    # Try git-based update first, fall back to ZIP download on Windows
-    # when git file I/O is broken (antivirus, NTFS filter drivers, etc.)
-    use_zip_update = False
     git_dir = PROJECT_ROOT / ".git"
 
     if not git_dir.exists():
-        if sys.platform == "win32":
-            use_zip_update = True
-        else:
-            from omniworker_cli.config import detect_install_method
-            method = detect_install_method(PROJECT_ROOT)
-            if method == "pip":
-                _cmd_update_pip(args)
-                return
-            print("✗ Not a git repository. Please reinstall:")
-            print(
-                "  curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash"
-            )
-            sys.exit(1)
+        from omniworker_cli.config import detect_install_method
+        method = detect_install_method(PROJECT_ROOT)
+        if method == "pip":
+            _cmd_update_pip(args)
+            return
+        # Tarball install (provisioned by the desktop app — no .git).
+        # The old Windows fallback here downloaded the upstream
+        # NousResearch ZIP, which would replace this distribution's agent
+        # (native memory, gateway, routing) with foreign code. Never do
+        # that — the desktop app owns updates for these installs.
+        print("⚕ This agent install is managed by the Flux Agent desktop app.")
+        print("  Open the app and use Settings → Update, or simply restart it")
+        print("  (the desktop updates the agent automatically on launch).")
+        return
 
     # On Windows, git can fail with "unable to write loose object file: Invalid argument"
     # due to filesystem atomicity issues. Set the recommended workaround.
@@ -8012,11 +8010,6 @@ def _cmd_update_impl(args, gateway_mode: bool):
         print("⚠ Updating from fork:")
         print(f"  {origin_url}")
         print()
-
-    if use_zip_update:
-        # ZIP-based update for Windows when git is broken
-        _update_via_zip(args)
-        return
 
     # Fetch and pull
     try:

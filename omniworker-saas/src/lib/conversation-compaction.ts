@@ -310,12 +310,42 @@ function fallbackSummary(
  * - > 30 messages: first 5 + summary of middle + last 20
  * Summaries are cached in-memory with a 5-minute TTL.
  */
+// Markers the local agent's ContextCompressor inserts when IT compacts.
+// (SUMMARY_PREFIX / LEGACY_SUMMARY_PREFIX in omniworker-agent/agent/context_compressor.py)
+const AGENT_SUMMARY_MARKERS = ["[CONTEXT COMPACTION", "[CONTEXT SUMMARY]:"];
+
+/**
+ * Conversations driven by the local agent must pass through untouched:
+ * the agent already manages its own context window (ContextCompressor),
+ * so compacting again here stacks two incompatible summaries on top of
+ * each other. Additionally, the fixed first-5/last-20 slicing below has
+ * no notion of tool_call/tool_result pairing — it splits those groups
+ * apart, which tool-capable providers reject. Agent traffic is detected
+ * by message shape: tool turns, tool_calls, or the agent's own summary
+ * marker.
+ */
+function isAgentManagedConversation(messages: Message[]): boolean {
+  return messages.some((m) => {
+    if (m.role === "tool") return true;
+    const toolCalls = (m as { tool_calls?: unknown[] }).tool_calls;
+    if (Array.isArray(toolCalls) && toolCalls.length > 0) return true;
+    return (
+      typeof m.content === "string" &&
+      AGENT_SUMMARY_MARKERS.some((marker) => m.content.includes(marker))
+    );
+  });
+}
+
 export async function compactMessages(
   messages: Message[],
   userQuery: string,
   config: CompactionConfig
 ): Promise<Message[]> {
   if (messages.length <= 30) return messages;
+  if (isAgentManagedConversation(messages)) {
+    console.log("[Compaction] skipped — agent-managed conversation (agent compacts its own context)");
+    return messages;
+  }
 
   const first = messages.slice(0, 5);
   const tail = messages.slice(-20);

@@ -34,6 +34,7 @@ import {
   clearVersionCache,
   runOmniWorkerDoctor,
   runOmniWorkerUpdate,
+  autoUpdateAgentInBackground,
   checkOmniWorkerExists,
   runClawMigrate,
   runOmniWorkerBackup,
@@ -709,9 +710,15 @@ function setupIPC(): void {
         setSshRemoteApiKey(key);
         return { success: true };
       }
+      let updateToken: string | undefined;
+      try {
+        updateToken = getSecureTokens().accessToken || undefined;
+      } catch {
+        // No session — tarball endpoint is public, continue without token.
+      }
       await runOmniWorkerUpdate((progress: InstallProgress) => {
         event.sender.send("install-progress", progress);
-      });
+      }, updateToken);
       return { success: true };
     } catch (err) {
       return { success: false, error: (err as Error).message };
@@ -2531,6 +2538,25 @@ app.whenReady().then(async () => {
     })().catch((err) => {
       console.error("[LOCAL GATEWAY] Failed to start on launch:", err);
     });
+
+    // Keep the Python agent current without requiring the user to click
+    // Update in Settings. Runs in the background; if the agent version
+    // changed, restart the gateway so the running process loads new code.
+    let agentUpdateToken: string | undefined;
+    try {
+      agentUpdateToken = getSecureTokens().accessToken || undefined;
+    } catch {
+      // No session — tarball endpoint is public, continue without token.
+    }
+    autoUpdateAgentInBackground(agentUpdateToken)
+      .then(async (updated) => {
+        if (updated && getConnectionConfig().mode === "local") {
+          await restartGateway();
+        }
+      })
+      .catch((err) => {
+        console.warn("[AgentUpdate] background update failed:", err);
+      });
   }
 
   app.on("activate", () => {
