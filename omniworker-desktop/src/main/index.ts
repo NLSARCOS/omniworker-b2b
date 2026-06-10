@@ -1039,16 +1039,17 @@ function setupIPC(): void {
           },
           onDone: (sessionId) => {
             currentChatAbort = null;
-            event.sender.send("chat-done", sessionId || "");
-            resolveChat({ response: fullResponse, sessionId });
+            const finalSessionId = sessionId || resumeSessionId || `local_${Date.now()}`;
+            event.sender.send("chat-done", finalSessionId);
+            resolveChat({ response: fullResponse, sessionId: finalSessionId });
             // Auto-ingest into SuperMemory engine (async, non-blocking)
-            if (sessionId && fullResponse) {
+            if (finalSessionId && fullResponse) {
               const msgs = [
                 ...(history || []),
                 { role: "user", content: message },
                 { role: "assistant", content: fullResponse },
               ];
-              ingestConversation(msgs, sessionId, profile).catch((err) =>
+              ingestConversation(msgs, finalSessionId, profile).catch((err) =>
                 console.error("[SuperMemory] auto-ingest failed:", err),
               );
             }

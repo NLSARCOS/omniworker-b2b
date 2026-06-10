@@ -237,7 +237,13 @@ function ensureNativeMemoryTables(db: Database.Database): void {
 
 function openStateDb(profile?: string, readonly = true): Database.Database | null {
   const dbPath = stateDbPath(profile);
-  if (!existsSync(dbPath)) return null;
+  if (!existsSync(dbPath)) {
+    if (readonly) return null;
+    const parentDir = profileHome(profile);
+    if (!existsSync(parentDir)) {
+      mkdirSync(parentDir, { recursive: true });
+    }
+  }
   try {
     // The Python agent shares this DB and writes concurrently — give the
     // busy handler real headroom instead of failing on first contention.
@@ -286,12 +292,21 @@ function getSessionStats(profile?: string): {
   }
 
   try {
-    const sessionRow = db
-      .prepare("SELECT COUNT(*) as count FROM sessions")
-      .get() as { count: number } | undefined;
-    const messageRow = db
-      .prepare("SELECT COUNT(*) as count FROM messages")
-      .get() as { count: number } | undefined;
+    let totalSessions = 0;
+    try {
+      const sessionRow = db
+        .prepare("SELECT COUNT(*) as count FROM sessions")
+        .get() as { count: number } | undefined;
+      totalSessions = sessionRow?.count ?? 0;
+    } catch {}
+
+    let totalMessages = 0;
+    try {
+      const messageRow = db
+        .prepare("SELECT COUNT(*) as count FROM messages")
+        .get() as { count: number } | undefined;
+      totalMessages = messageRow?.count ?? 0;
+    } catch {}
 
     let memoryChunks = 0;
     let memoryFacts = 0;
@@ -307,8 +322,8 @@ function getSessionStats(profile?: string): {
     }
 
     return {
-      totalSessions: sessionRow?.count ?? 0,
-      totalMessages: messageRow?.count ?? 0,
+      totalSessions,
+      totalMessages,
       memoryChunks,
       memoryFacts,
     };

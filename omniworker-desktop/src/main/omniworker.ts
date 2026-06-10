@@ -609,7 +609,7 @@ function sendMessageViaApi(
     },
     (res) => {
       activeRes = res;
-      const sid = res.headers["x-flux agent-session-id"];
+      const sid = res.headers["x-flux agent-session-id"] || res.headers["x-flux-agent-session-id"];
       if (sid && typeof sid === "string") sessionId = sid;
 
       if (res.statusCode !== 200) {

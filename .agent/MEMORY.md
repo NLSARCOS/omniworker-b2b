@@ -76,6 +76,7 @@
 - 2026-06-07 | Released v0.6.6 with prefetch memory gate, fixed remote SSH memory stats types, uploaded binaries to VPS/GitHub, and restarted production containers.
 - 2026-06-06 | Optimized SaaS/Desktop persistent memory to use async out-of-band LLM extraction and fixed cache key mismatches, reducing API latency to 0ms.
 - 2026-06-06 | Deployed memory & dependency fixes to VPS (resolved hermes-parser 404 and entrypoint executable permissions), and designed programmatic SEO templates.
+- 2026-06-08 | Released v0.6.9 with real token breakdown by provider, SSE parser updates, desktop Chat badge, and updated VPS gateway.
 
 ---
 
