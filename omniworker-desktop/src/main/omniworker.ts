@@ -438,7 +438,7 @@ function sendMessageViaApi(
   // Build message list.  When the server has already issued a session ID
   // and the client did not supply an explicit history snapshot, send only
   // the current user message so the API server recovers the full transcript
-  // (with tool_calls, reasoning, etc.) from SQLite via X-Flux Agent-Session-Id.
+  // (with tool_calls, reasoning, etc.) from SQLite via X-Flux-Agent-Session-Id.
   const rawMessages: Array<{ role: string; content: string }> = [];
   if (contextFolder) {
     rawMessages.push({
@@ -480,7 +480,7 @@ function sendMessageViaApi(
     ...getRemoteAuthHeader(profile),
   };
   if (_resumeSessionId) {
-    headers["X-Flux Agent-Session-Id"] = _resumeSessionId;
+    headers["X-Flux-Agent-Session-Id"] = _resumeSessionId;
   }
 
   let sessionId = _resumeSessionId || "";
@@ -680,7 +680,7 @@ function sendMessageViaApi(
       ...getRemoteAuthHeader(profile),
     };
     if (_resumeSessionId) {
-      currentHeaders["X-Flux Agent-Session-Id"] = _resumeSessionId;
+      currentHeaders["X-Flux-Agent-Session-Id"] = _resumeSessionId;
     }
     // Reset transient per-attempt state so the retry starts clean.
     hasContent = false;
@@ -696,7 +696,7 @@ function sendMessageViaApi(
       },
       (res) => {
         activeRes = res;
-        const sid = res.headers["x-flux agent-session-id"] || res.headers["x-flux-agent-session-id"];
+        const sid = res.headers["x-flux-agent-session-id"];
         if (sid && typeof sid === "string") sessionId = sid;
 
         // 401 retry: the access token expired between turns (or the refresh
@@ -715,7 +715,11 @@ function sendMessageViaApi(
             .then((ok) => {
               if (ok && !controller.signal.aborted) {
                 console.log("[sendMessageViaApi] 401 → token refreshed, retrying request");
-                executeRequest();
+                try {
+                  executeRequest();
+                } catch (err: any) {
+                  finish(`API request failed: ${err?.message || err}`);
+                }
               } else {
                 finish("Session expired. Please log in again.");
               }
@@ -821,7 +825,13 @@ function sendMessageViaApi(
   req.end();
   }
 
-  executeRequest();
+  // Never let a synchronous failure (bad header, bad URL) escape to the IPC
+  // layer — the renderer must always get an onError so the UI doesn't hang.
+  try {
+    executeRequest();
+  } catch (err: any) {
+    finish(`API request failed: ${err?.message || err}`);
+  }
 
   return {
     abort: () => {

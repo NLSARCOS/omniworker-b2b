@@ -5,6 +5,7 @@ import { profileHome, profilePaths, safeWriteFile } from "./utils";
 import { getActiveMemoryProvider } from "./installer";
 import {
   LocalMemoryEngine,
+  ensureSuperMemorySchema,
   type LocalProfile,
   type HybridSearchResult,
   type FactNode,
@@ -926,6 +927,32 @@ export function discoverMemoryProviders(profile?: string): string[] {
 }
 
 // ── SuperMemory Local Engine API ─────────────────────────
+
+/**
+ * Provision state.db with the full native + SuperMemory schema.
+ *
+ * Existing installs whose Python agent predates native_memory never get
+ * state.db created for them, and until now the desktop only created it as a
+ * side effect of the first successful chat. Calling this at startup (and from
+ * the health banner's repair path) guarantees local memory works for users
+ * that only updated the desktop app.
+ */
+export async function bootstrapLocalMemory(profile?: string): Promise<boolean> {
+  try {
+    const db = openStateDb(profile, false);
+    if (!db) return false;
+    try {
+      ensureNativeMemoryTables(db);
+      ensureSuperMemorySchema(db);
+      return true;
+    } finally {
+      db.close();
+    }
+  } catch (err) {
+    console.error("[memory] bootstrapLocalMemory failed:", err);
+    return false;
+  }
+}
 
 /**
  * Ingest conversation messages into the local memory engine.

@@ -182,6 +182,7 @@ import {
   triggerSync,
   bootstrapEngram,
   // SuperMemory Local Engine
+  bootstrapLocalMemory,
   ingestConversation,
   getLocalProfile,
   hybridSearch,
@@ -1155,7 +1156,13 @@ function setupIPC(): void {
     return getLocalMemoryStatus();
   });
   ipcMain.handle("ensure-local-memory-dirs", async (): Promise<boolean> => {
-    return ensureLocalMemoryDirs();
+    const ok = await ensureLocalMemoryDirs();
+    if (!ok) return false;
+    // Don't stop at the directory — provision the DB and schema too, so the
+    // "repair" button actually leaves local memory in a working state.
+    const bootstrapped = await bootstrapLocalMemory();
+    invalidateLocalMemoryCache();
+    return bootstrapped;
   });
   ipcMain.handle("detect-agent-python", async (): Promise<{ available: boolean; path: string | null }> => {
     return detectAgentPython();
@@ -1166,6 +1173,11 @@ function setupIPC(): void {
   // Re-run the check after a user clicks "Recheck" or after an action that
   // might have changed the state (e.g. starting the agent).
   ipcMain.handle("refresh-local-memory-status", async (): Promise<LocalMemoryStatus> => {
+    // Recheck doubles as self-repair: if state.db or its schema is missing in
+    // local mode, create it right here instead of just reporting it.
+    if (!isRemoteMode()) {
+      await bootstrapLocalMemory().catch(() => false);
+    }
     invalidateLocalMemoryCache();
     return getLocalMemoryStatus();
   });
@@ -2570,6 +2582,19 @@ app.whenReady().then(async () => {
     })().catch((err) => {
       console.error("[LOCAL GATEWAY] Failed to start on launch:", err);
     });
+
+    // Provision state.db + SuperMemory schema up front. Existing installs
+    // running an old agent never get the DB created otherwise, so users who
+    // only update the desktop app would have local memory permanently off.
+    bootstrapLocalMemory()
+      .then((ok) => {
+        invalidateLocalMemoryCache();
+        if (ok) console.log("[SuperMemory] local memory schema verified at startup");
+        else console.warn("[SuperMemory] could not provision state.db at startup");
+      })
+      .catch((err) => {
+        console.warn("[SuperMemory] startup bootstrap failed:", err);
+      });
 
     // Keep the Python agent current without requiring the user to click
     // Update in Settings. Runs in the background; if the agent version

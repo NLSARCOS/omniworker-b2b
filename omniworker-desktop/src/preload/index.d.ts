@@ -262,6 +262,7 @@ interface OmniWorkerAPI {
   ensureLocalMemoryDirs: () => Promise<boolean>;
   detectAgentPython: () => Promise<{ available: boolean; path: string | null }>;
   detectAgentVersion: () => Promise<string | null>;
+  copyToClipboard: (text: string) => Promise<boolean>;
 
   // Smart Router (local SLM ↔ cloud routing)
   startSmartRouter: () => Promise<boolean>;

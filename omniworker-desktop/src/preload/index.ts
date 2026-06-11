@@ -316,6 +316,8 @@ const omniworkerAPI = {
     ipcRenderer.invoke("detect-agent-python"),
   detectAgentVersion: (): Promise<string | null> =>
     ipcRenderer.invoke("detect-agent-version"),
+  copyToClipboard: (text: string): Promise<boolean> =>
+    ipcRenderer.invoke("copy-to-clipboard", text),
 
   // Smart Router (local SLM ↔ cloud routing)
   startSmartRouter: (): Promise<boolean> =>
