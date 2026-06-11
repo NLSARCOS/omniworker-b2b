@@ -51,6 +51,18 @@ function Chat({
   const dragCounter = useRef(0);
   const [queuedCount, setQueuedCount] = useState(0);
   const queueRef = useRef<{ text: string; attachments: Attachment[] }[]>([]);
+  // Local SuperMemory health (only relevant in local mode). Polled every
+  // 10s so the banner is up-to-date without forcing a hard refresh.
+  const [localMemory, setLocalMemory] = useState<{
+    isHealthy: boolean;
+    message: string;
+    remoteMode: boolean;
+    agentRunning: boolean;
+    dbPath: string | null;
+    schemaPresent: boolean;
+    chunkCount: number;
+    factCount: number;
+  } | null>(null);
 
   const { containerRef, bottomRef } = useChatScroll(messages);
   const modelConfig = useModelConfig(profile);
@@ -96,6 +108,26 @@ function Chat({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onNewChat]);
+
+  // Poll local SuperMemory health so the user gets a banner when local
+  // memory is off (agent offline / state.db missing / schema missing).
+  useEffect(() => {
+    let cancelled = false;
+    async function tick(): Promise<void> {
+      try {
+        const status = await window.omniworkerAPI.getLocalMemoryStatus();
+        if (!cancelled) setLocalMemory(status);
+      } catch {
+        /* ignore — banner just stays hidden */
+      }
+    }
+    tick();
+    const id = setInterval(tick, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   const addAgentMessage = useCallback(
     (content: string) => {
@@ -241,6 +273,37 @@ function Chat({
         contextFolder={contextFolder}
         onSelectContextFolder={setContextFolder}
       />
+
+      {localMemory && !localMemory.isHealthy && !localMemory.remoteMode && (
+        <div
+          className="local-memory-banner"
+          role="status"
+          title={
+            localMemory.dbPath
+              ? `${localMemory.dbPath} — agent ${localMemory.agentRunning ? "running" : "offline"}`
+              : "state.db not found"
+          }
+        >
+          <span className="local-memory-banner__icon" aria-hidden>
+            ⚠
+          </span>
+          <span className="local-memory-banner__text">{localMemory.message}</span>
+          <button
+            type="button"
+            className="local-memory-banner__action"
+            onClick={async () => {
+              try {
+                const status = await window.omniworkerAPI.refreshLocalMemoryStatus();
+                setLocalMemory(status);
+              } catch {
+                /* ignore */
+              }
+            }}
+          >
+            Recheck
+          </button>
+        </div>
+      )}
 
       <div className={messages.length === 0 ? "chat-messages" : "chat-messages !overflow-hidden !p-0"} ref={containerRef}>
         {messages.length === 0 ? (

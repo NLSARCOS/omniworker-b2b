@@ -92,6 +92,13 @@ export function useChatIPC({
       setIsLoading(false);
     });
 
+    // Ephemeral status updates (e.g. "Refreshing session…" during 401 retry)
+    // surface as a transient tool-progress line and a subtle footer banner.
+    // The cleanup listener registered below is `cleanupStatus`.
+    const cleanupStatus = window.omniworkerAPI.onChatStatus((status) => {
+      setToolProgress(status);
+    });
+
     const cleanupToolProgress = window.omniworkerAPI.onChatToolProgress(
       (tool) => {
         setToolProgress(tool);
@@ -176,6 +183,7 @@ export function useChatIPC({
       cleanupChunk();
       cleanupDone();
       cleanupError();
+      cleanupStatus();
       cleanupToolProgress();
       cleanupUsage();
     };

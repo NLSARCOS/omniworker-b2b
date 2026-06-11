@@ -68,7 +68,7 @@ function userPath(profile?: string): string {
   return join(profileHome(profile), "memories", "USER.md");
 }
 
-function stateDbPath(profile?: string): string {
+export function stateDbPath(profile?: string): string {
   return join(profileHome(profile), "state.db");
 }
 

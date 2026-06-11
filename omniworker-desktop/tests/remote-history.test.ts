@@ -38,11 +38,15 @@ describe("Remote/SSH Mode History Preservation", () => {
     const params = apiCallMatch![1].split(",").map((p) => p.trim());
 
     // Should have 5 parameters: message, cb, profile, resumeSessionId, history
+    // (Plus an optional 6th: contextFolder, added in a02fa49a0)
     expect(params.length).toBeGreaterThanOrEqual(5);
 
-    // The last parameter should be history (or include history)
-    const lastParam = params[params.length - 1];
-    expect(lastParam).toContain("history");
+    // history should appear as one of the parameters (not necessarily the
+    // last one — the optional contextFolder was appended after it).
+    const hasHistory = params.some(
+      (p) => p === "history" || p.includes("history"),
+    );
+    expect(hasHistory).toBe(true);
   });
 
   it("sendMessageViaApi builds messages from history + current message", () => {
@@ -90,11 +94,14 @@ describe("Remote/SSH Mode History Preservation", () => {
 
     const params = apiCallMatch![1].split(",").map((p) => p.trim());
 
-    // Should have 5 parameters including history
+    // Should have at least 5 parameters including history
+    // (the optional contextFolder may also be appended as a 6th)
     expect(params.length).toBeGreaterThanOrEqual(5);
 
-    const lastParam = params[params.length - 1];
-    expect(lastParam).toContain("history");
+    const hasHistory = params.some(
+      (p) => p === "history" || p.includes("history"),
+    );
+    expect(hasHistory).toBe(true);
   });
 
   it("all sendMessageViaApi calls in sendMessage include history parameter", () => {

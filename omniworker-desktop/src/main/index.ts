@@ -146,6 +146,14 @@ import {
   updateSessionTitle,
 } from "./session-cache";
 import { clearStagedAttachments, stageAttachment } from "./attachment-staging";
+import {
+  getLocalMemoryStatus,
+  ensureLocalMemoryDirs,
+  detectAgentPython,
+  detectAgentVersion,
+  invalidateLocalMemoryCache,
+  type LocalMemoryStatus,
+} from "./localMemoryStatus";
 
 import { listModels, addModel, removeModel, updateModel } from "./models";
 import {
@@ -1081,6 +1089,9 @@ function setupIPC(): void {
               }).show();
             }
           },
+          onStatus: (status) => {
+            event.sender.send("chat-status", status);
+          },
           onToolProgress: (tool) => {
             event.sender.send("chat-tool-progress", tool);
           },
@@ -1137,6 +1148,26 @@ function setupIPC(): void {
     if (conn.mode === "remote") return true;
     if (conn.mode === "ssh" && conn.ssh) return sshGatewayStatus(conn.ssh);
     return isGatewayRunning();
+  });
+
+  // Local SuperMemory health (file + agent + schema)
+  ipcMain.handle("get-local-memory-status", async (): Promise<LocalMemoryStatus> => {
+    return getLocalMemoryStatus();
+  });
+  ipcMain.handle("ensure-local-memory-dirs", async (): Promise<boolean> => {
+    return ensureLocalMemoryDirs();
+  });
+  ipcMain.handle("detect-agent-python", async (): Promise<{ available: boolean; path: string | null }> => {
+    return detectAgentPython();
+  });
+  ipcMain.handle("detect-agent-version", async (): Promise<string | null> => {
+    return detectAgentVersion();
+  });
+  // Re-run the check after a user clicks "Recheck" or after an action that
+  // might have changed the state (e.g. starting the agent).
+  ipcMain.handle("refresh-local-memory-status", async (): Promise<LocalMemoryStatus> => {
+    invalidateLocalMemoryCache();
+    return getLocalMemoryStatus();
   });
 
   // Smart Router (local SLM ↔ cloud routing)

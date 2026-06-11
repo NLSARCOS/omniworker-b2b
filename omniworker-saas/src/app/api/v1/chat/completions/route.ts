@@ -1172,20 +1172,41 @@ export async function POST(request: Request) {
         console.log(`[ChatCompletions:${requestId}] Starting stream to client`);
         const bodyStream = aiResponse.body || new ReadableStream();
         const reader = bodyStream.getReader();
+        // Guard against the ReadableStreamDefaultController being closed while a
+        // stale read promise is still in flight (causes "Invalid state: ReadableStream
+        // is already closed" on every retry). desiredSize === null means closed.
+        let streamClosed = false;
+        const safeClose = (controller: ReadableStreamDefaultController) => {
+          if (streamClosed) return;
+          streamClosed = true;
+          try {
+            controller.close();
+          } catch {
+            /* already closed */
+          }
+        };
         const customStream = new ReadableStream({
           async pull(controller) {
+            if (streamClosed) return;
             try {
               const { done, value } = await reader.read();
               if (done) {
                 console.log(`[ChatCompletions:${requestId}] Provider stream ended`);
                 await reconcileOnce();
-                try {
-                  controller.close();
-                } catch {}
+                safeClose(controller);
                 return;
               }
               counter.feed(value);
               try {
+                if (controller.desiredSize === null) {
+                  // Controller was closed while we were reading; abort the upstream
+                  // and bail. No need to enqueue or error — client already gone.
+                  try {
+                    await reader.cancel();
+                  } catch {}
+                  streamClosed = true;
+                  return;
+                }
                 controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
               } catch (enqueueErr) {
                 console.warn("[Stream] Error enqueuing chunk:", enqueueErr);
@@ -1193,24 +1214,25 @@ export async function POST(request: Request) {
                   await reader.cancel();
                 } catch {}
                 await reconcileOnce();
-                try {
-                  controller.close();
-                } catch {}
+                safeClose(controller);
               }
             } catch (err) {
               console.error("[Stream Error] Upstream connection dropped:", err);
               const encoder = new TextEncoder();
               const errorEvent = `data: ${JSON.stringify({ error: "Conexión interrumpida. Intenta de nuevo." })}\n\n`;
               try {
-                controller.enqueue(encoder.encode(errorEvent));
-              } catch {}
+                if (controller.desiredSize !== null) {
+                  controller.enqueue(encoder.encode(errorEvent));
+                }
+              } catch {
+                /* already closed */
+              }
               await reconcileOnce();
-              try {
-                controller.close();
-              } catch {}
+              safeClose(controller);
             }
           },
           async cancel() {
+            streamClosed = true;
             try {
               await reader.cancel();
             } catch (err) {
@@ -1598,20 +1620,41 @@ export async function POST(request: Request) {
         console.log(`[ChatCompletions:${requestId}] Starting stream to client`);
         const bodyStream = aiResponse.body || new ReadableStream();
         const reader = bodyStream.getReader();
+        // Guard against the ReadableStreamDefaultController being closed while a
+        // stale read promise is still in flight (causes "Invalid state: ReadableStream
+        // is already closed" on every retry). desiredSize === null means closed.
+        let streamClosed = false;
+        const safeClose = (controller: ReadableStreamDefaultController) => {
+          if (streamClosed) return;
+          streamClosed = true;
+          try {
+            controller.close();
+          } catch {
+            /* already closed */
+          }
+        };
         const customStream = new ReadableStream({
           async pull(controller) {
+            if (streamClosed) return;
             try {
               const { done, value } = await reader.read();
               if (done) {
                 console.log(`[ChatCompletions:${requestId}] Provider stream ended`);
                 await reconcileOnce();
-                try {
-                  controller.close();
-                } catch {}
+                safeClose(controller);
                 return;
               }
               counter.feed(value);
               try {
+                if (controller.desiredSize === null) {
+                  // Controller was closed while we were reading; abort the upstream
+                  // and bail. No need to enqueue or error — client already gone.
+                  try {
+                    await reader.cancel();
+                  } catch {}
+                  streamClosed = true;
+                  return;
+                }
                 controller.enqueue(sanitizeSSEChunk(value, realModel, requestedModel));
               } catch (enqueueErr) {
                 console.warn("[Stream] Error enqueuing chunk:", enqueueErr);
@@ -1619,24 +1662,25 @@ export async function POST(request: Request) {
                   await reader.cancel();
                 } catch {}
                 await reconcileOnce();
-                try {
-                  controller.close();
-                } catch {}
+                safeClose(controller);
               }
             } catch (err) {
               console.error("[Stream Error] Upstream connection dropped:", err);
               const encoder = new TextEncoder();
               const errorEvent = `data: ${JSON.stringify({ error: "Conexión interrumpida. Intenta de nuevo." })}\n\n`;
               try {
-                controller.enqueue(encoder.encode(errorEvent));
-              } catch {}
+                if (controller.desiredSize !== null) {
+                  controller.enqueue(encoder.encode(errorEvent));
+                }
+              } catch {
+                /* already closed */
+              }
               await reconcileOnce();
-              try {
-                controller.close();
-              } catch {}
+              safeClose(controller);
             }
           },
           async cancel() {
+            streamClosed = true;
             try {
               await reader.cancel();
             } catch (err) {

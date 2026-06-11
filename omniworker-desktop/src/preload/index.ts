@@ -273,10 +273,49 @@ const omniworkerAPI = {
     return () => ipcRenderer.removeListener("chat-error", handler);
   },
 
+  onChatStatus: (callback: (status: string) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, status: string): void =>
+      callback(status);
+    ipcRenderer.on("chat-status", handler);
+    return () => ipcRenderer.removeListener("chat-status", handler);
+  },
+
   // Gateway
   startGateway: (): Promise<boolean> => ipcRenderer.invoke("start-gateway"),
   stopGateway: (): Promise<boolean> => ipcRenderer.invoke("stop-gateway"),
   gatewayStatus: (): Promise<boolean> => ipcRenderer.invoke("gateway-status"),
+
+  // Local SuperMemory health
+  getLocalMemoryStatus: (): Promise<{
+    health: string;
+    dbPath: string | null;
+    dbSize: number;
+    agentRunning: boolean;
+    remoteMode: boolean;
+    schemaPresent: boolean;
+    message: string;
+    isHealthy: boolean;
+    chunkCount: number;
+    factCount: number;
+  }> => ipcRenderer.invoke("get-local-memory-status"),
+  refreshLocalMemoryStatus: (): Promise<{
+    health: string;
+    dbPath: string | null;
+    dbSize: number;
+    agentRunning: boolean;
+    remoteMode: boolean;
+    schemaPresent: boolean;
+    message: string;
+    isHealthy: boolean;
+    chunkCount: number;
+    factCount: number;
+  }> => ipcRenderer.invoke("refresh-local-memory-status"),
+  ensureLocalMemoryDirs: (): Promise<boolean> =>
+    ipcRenderer.invoke("ensure-local-memory-dirs"),
+  detectAgentPython: (): Promise<{ available: boolean; path: string | null }> =>
+    ipcRenderer.invoke("detect-agent-python"),
+  detectAgentVersion: (): Promise<string | null> =>
+    ipcRenderer.invoke("detect-agent-version"),
 
   // Smart Router (local SLM ↔ cloud routing)
   startSmartRouter: (): Promise<boolean> =>

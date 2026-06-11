@@ -1,6 +1,26 @@
 import type { AppLocale } from "../shared/i18n/types";
 import type { Attachment } from "../shared/attachments";
 
+export type LocalMemoryHealth =
+  | "ok"
+  | "agent_offline"
+  | "db_missing"
+  | "db_stale"
+  | "schema_missing";
+
+export interface LocalMemoryStatus {
+  health: LocalMemoryHealth;
+  dbPath: string | null;
+  dbSize: number;
+  agentRunning: boolean;
+  remoteMode: boolean;
+  schemaPresent: boolean;
+  message: string;
+  isHealthy: boolean;
+  chunkCount: number;
+  factCount: number;
+}
+
 interface ElectronAPI {
   process: {
     platform: NodeJS.Platform;
@@ -229,11 +249,19 @@ interface OmniWorkerAPI {
     }) => void,
   ) => () => void;
   onChatError: (callback: (error: string) => void) => () => void;
+  onChatStatus: (callback: (status: string) => void) => () => void;
 
   // Gateway
   startGateway: () => Promise<boolean>;
   stopGateway: () => Promise<boolean>;
   gatewayStatus: () => Promise<boolean>;
+
+  // Local SuperMemory health
+  getLocalMemoryStatus: () => Promise<LocalMemoryStatus>;
+  refreshLocalMemoryStatus: () => Promise<LocalMemoryStatus>;
+  ensureLocalMemoryDirs: () => Promise<boolean>;
+  detectAgentPython: () => Promise<{ available: boolean; path: string | null }>;
+  detectAgentVersion: () => Promise<string | null>;
 
   // Smart Router (local SLM ↔ cloud routing)
   startSmartRouter: () => Promise<boolean>;

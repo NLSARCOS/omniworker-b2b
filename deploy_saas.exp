@@ -1,6 +1,19 @@
 #!/usr/bin/expect -f
-set timeout 600
-spawn ssh -o StrictHostKeyChecking=no -p 2424 root@217.76.62.37 "cd /opt/omniworker && git pull && cd omniworker-saas && docker compose up -d --build"
+# Deploy the SaaS to the VPS.
+#
+# IMPORTANT: /opt/omniworker is NOT a git repo on the server (production
+# deployments go through rsync, not git pull). This script ONLY triggers
+# the docker build on the server. You must rsync the local source into
+# /opt/omniworker/omniworker-saas BEFORE running this script.
+#
+# Typical flow:
+#   rsync -avz --exclude '.next' --exclude 'node_modules' \
+#     --exclude '.git' -e "ssh -p 2424" \
+#     omniworker-saas/ root@217.76.62.37:/opt/omniworker/omniworker-saas/
+#   ./deploy_saas.exp
+#
+set timeout 900
+spawn ssh -o StrictHostKeyChecking=no -p 2424 root@217.76.62.37 "cd /opt/omniworker/omniworker-saas && docker compose build --pull && docker compose up -d --force-recreate"
 expect "*assword:*"
 send "19748961Nl\r"
 expect eof

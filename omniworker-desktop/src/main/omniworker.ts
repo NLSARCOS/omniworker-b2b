@@ -22,7 +22,7 @@ import {
   getEnhancedPath,
   SAAS_BASE_URL,
 } from "./installer";
-import { getModelConfig, readEnv, getConnectionConfig, setEnvValue, getConfigValue, getSecureTokens, getDeviceFingerprint } from "./config";
+import { getModelConfig, readEnv, getConnectionConfig, setEnvValue, getConfigValue, setConfigValue, getSecureTokens, saveSecureTokens, getDeviceFingerprint } from "./config";
 import { ensureMemoryConfig } from "./memory";
 import {
   getSshTunnelUrl,
@@ -352,10 +352,76 @@ export interface ChatCallbacks {
     rateLimitRemaining?: number;
     rateLimitReset?: number;
   }) => void;
+  /** Optional status updates (e.g. "refreshing authentication", "reconnecting") */
+  onStatus?: (status: string) => void;
 }
 
 export function contextFolderSystemMessage(contextFolder: string): string {
   return `You are running in a specific context folder. All file system, terminal, and command operations MUST be executed relative to this absolute path: ${contextFolder}. Do not leave this directory unless explicitly instructed by the user.`;
+}
+
+/**
+ * Refresh the SaaS access token using the stored refresh token. Persists the
+ * new pair to safeStorage on success and also mirrors them to the
+ * OPENAI_API_KEY / CUSTOM_API_KEY env vars the local agent reads.
+ *
+ * Used to recover from a 401 returned by /v1/chat/completions — the most
+ * common reason the second message of a session fails to get a response when
+ * the first one worked.
+ */
+async function tryRefreshAuthToken(_profile?: string): Promise<boolean> {
+  try {
+    const tokens = getSecureTokens();
+    if (!tokens.refreshToken) return false;
+
+    let fingerprint: string | undefined;
+    try {
+      fingerprint = getDeviceFingerprint();
+    } catch {
+      /* non-fatal */
+    }
+
+    const res = await fetch(`${SAAS_BASE_URL}/api/v1/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        refreshToken: tokens.refreshToken,
+        deviceFingerprint: fingerprint,
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn(`[AuthRefresh] Refresh endpoint returned ${res.status}`);
+      return false;
+    }
+
+    const data: any = await res.json();
+    const newAccess = data?.accessToken;
+    const newRefresh = data?.refreshToken || tokens.refreshToken;
+    if (!newAccess) {
+      console.warn("[AuthRefresh] Refresh response missing accessToken");
+      return false;
+    }
+
+    saveSecureTokens(newAccess, newRefresh);
+    try {
+      setEnvValue("OPENAI_API_KEY", newAccess);
+      setEnvValue("CUSTOM_API_KEY", newAccess);
+    } catch {
+      /* non-fatal */
+    }
+    try {
+      setConfigValue("model:api_key", newAccess);
+      setConfigValue("api_key", newAccess);
+    } catch {
+      /* non-fatal */
+    }
+    console.log("[AuthRefresh] Token refreshed successfully");
+    return true;
+  } catch (err) {
+    console.error("[AuthRefresh] Refresh threw:", err);
+    return false;
+  }
 }
 
 function sendMessageViaApi(
@@ -599,36 +665,84 @@ function sendMessageViaApi(
 
   const chatUrl = `${cleanBaseUrl(getApiUrl())}/v1/chat/completions`;
   const requester = chatUrl.startsWith("https") ? https.request : http.request;
-  const req = requester(
-    chatUrl,
-    {
-      method: "POST",
-      headers,
-      signal: controller.signal,
-      timeout: 120000,
-    },
-    (res) => {
-      activeRes = res;
-      const sid = res.headers["x-flux agent-session-id"] || res.headers["x-flux-agent-session-id"];
-      if (sid && typeof sid === "string") sessionId = sid;
+  // `req` is reassigned on each retry attempt; the same controller.signal is
+  // shared so a single abort() call cancels both the in-flight and the retry.
+  let req: any = null;
+  // Single-shot guard: we only refresh+retry once per sendMessage call. If the
+  // refreshed token still returns 401, surface the error to the user.
+  let retriedAfterRefresh = false;
 
-      if (res.statusCode !== 200) {
-        let errBody = "";
-        res.on("data", (d) => {
-          errBody += d.toString();
-        });
-        res.on("end", () => {
+  function executeRequest(): void {
+    // Re-build headers on every attempt so a refreshed token takes effect.
+    // getRemoteAuthHeader() reads from safeStorage via getSecureTokens().
+    const currentHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...getRemoteAuthHeader(profile),
+    };
+    if (_resumeSessionId) {
+      currentHeaders["X-Flux Agent-Session-Id"] = _resumeSessionId;
+    }
+    // Reset transient per-attempt state so the retry starts clean.
+    hasContent = false;
+    lastError = "";
+
+    req = requester(
+      chatUrl,
+      {
+        method: "POST",
+        headers: currentHeaders,
+        signal: controller.signal,
+        timeout: 120000,
+      },
+      (res) => {
+        activeRes = res;
+        const sid = res.headers["x-flux agent-session-id"] || res.headers["x-flux-agent-session-id"];
+        if (sid && typeof sid === "string") sessionId = sid;
+
+        // 401 retry: the access token expired between turns (or the refresh
+        // interval in main process hadn't fired yet). Hit /auth/refresh and
+        // re-issue the request once. The renderer gets a brief "Refreshing
+        // session…" status update so the user knows what is happening.
+        if (res.statusCode === 401 && !retriedAfterRefresh) {
+          retriedAfterRefresh = true;
           try {
-            const err = JSON.parse(errBody);
-            finish(err.error?.message || `API error ${res.statusCode}`);
+            res.resume();
           } catch {
-            finish(
-              `API server returned ${res.statusCode}: ${errBody.slice(0, 200)}`,
-            );
+            /* socket may already be torn down */
           }
-        });
-        return;
-      }
+          cb.onStatus?.("Refreshing session…");
+          tryRefreshAuthToken(profile)
+            .then((ok) => {
+              if (ok && !controller.signal.aborted) {
+                console.log("[sendMessageViaApi] 401 → token refreshed, retrying request");
+                executeRequest();
+              } else {
+                finish("Session expired. Please log in again.");
+              }
+            })
+            .catch(() => {
+              finish("Session expired. Please log in again.");
+            });
+          return;
+        }
+
+        if (res.statusCode !== 200) {
+          let errBody = "";
+          res.on("data", (d) => {
+            errBody += d.toString();
+          });
+          res.on("end", () => {
+            try {
+              const err = JSON.parse(errBody);
+              finish(err.error?.message || `API error ${res.statusCode}`);
+            } catch {
+              finish(
+                `API server returned ${res.statusCode}: ${errBody.slice(0, 200)}`,
+              );
+            }
+          });
+          return;
+        }
 
       let buffer = "";
 
@@ -705,6 +819,9 @@ function sendMessageViaApi(
   resetWatchdog();
   req.write(body);
   req.end();
+  }
+
+  executeRequest();
 
   return {
     abort: () => {
