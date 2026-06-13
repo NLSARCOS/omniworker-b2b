@@ -3,7 +3,7 @@ title: "5 señales de que tu empresa necesita Fuerza laboral autónoma ia como f
 description: "Descubrí cómo fuerza laboral autónoma IA puede ayudar a tu empresa. Guía práctica para LATAM. By Simplex Latam."
 keywords: "fuerza laboral autónoma IA"
 author: "Flux Agent"
-date: "2026-06-04"
+date: "2026-06-13"
 slug: "5-senales-de-que-tu-empresa-necesita-fuerza-laboral-autonoma"
 og_image: "/og-blog.jpg"
 ---
