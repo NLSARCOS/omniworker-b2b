@@ -3,7 +3,7 @@ title: "el futuro de Fuerza laboral autónoma ia: empleados digitales que trabaj
 description: "Descubrí cómo fuerza laboral autónoma IA puede ayudar a tu empresa. Guía práctica para LATAM. By Simplex Latam."
 keywords: "fuerza laboral autónoma IA"
 author: "Flux Agent"
-date: "2026-06-01"
+date: "2026-06-13"
 slug: "el-futuro-de-fuerza-laboral-autonoma-ia-empleados-digitales-"
 og_image: "/og-blog.jpg"
 ---

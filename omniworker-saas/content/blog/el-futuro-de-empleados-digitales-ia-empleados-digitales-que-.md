@@ -3,7 +3,7 @@ title: "el futuro de Empleados digitales ia: empleados digitales que trabajan 24
 description: "Descubrí cómo empleados digitales IA puede ayudar a tu empresa. Guía práctica para LATAM. By Simplex Latam."
 keywords: "empleados digitales IA"
 author: "Flux Agent"
-date: "2026-06-04"
+date: "2026-06-13"
 slug: "el-futuro-de-empleados-digitales-ia-empleados-digitales-que-"
 og_image: "/og-blog.jpg"
 ---
